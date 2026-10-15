@@ -186,7 +186,6 @@ Security problems are reported privately through this repository's
 
 ## A note on the history
 
-This repository begins at one commit. The software has a longer history than
-that, in a private repository, which was not carried over — it contained
-deployment configuration, real report data and secrets, and disentangling it
-would have been slower and less trustworthy than starting clean.
+This repository begins at one commit. The software has a longer history in
+a private repository, which was not carried over; the public record starts
+here.
