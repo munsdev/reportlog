@@ -1,0 +1,45 @@
+{
+  "reportlog_list": 1,
+  "slug": "tips",
+  "title": "Send a link",
+  "blurb": "Links to posts, articles or video about something that happened. Not your own account of what you saw, and no uploads.",
+  "email": "required",
+  "aggregates_published": false,
+  "fields": [
+    {
+      "key": "links",
+      "kind": "url",
+      "label": "Link",
+      "help": "A post, article or video about something that happened. Up to three.",
+      "required": true,
+      "max_values": 3,
+      "retention": "durable"
+    },
+    {
+      "key": "state",
+      "kind": "choice_one",
+      "label": "Where",
+      "required": true,
+      "aggregatable": true,
+      "retention": "durable",
+      "options": { "options": ["Not sure"], "allowOther": false }
+    },
+    {
+      "key": "category",
+      "kind": "choice_one",
+      "label": "What kind of thing is it",
+      "required": true,
+      "aggregatable": true,
+      "retention": "durable",
+      "options": { "options": ["Not sure"], "allowOther": false }
+    },
+    {
+      "key": "description",
+      "kind": "long_text",
+      "label": "Anything we should know about the link",
+      "help": "Optional. Context about the link, not an account of what you saw.",
+      "required": false,
+      "retention": "transient"
+    }
+  ]
+}

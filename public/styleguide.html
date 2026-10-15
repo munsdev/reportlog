@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en" data-palette="flint" data-theme="signal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Style guide — ReportLog</title>
+<meta name="robots" content="noindex">
+<meta name="description" content="Every colour, size and component the site is built from, on one page.">
+
+<!-- THE TWO STYLESHEETS, AND NOTHING ELSE.
+     This page has no design of its own. It loads exactly what the site
+     loads — the look, then the Client-First layer — and everything below is
+     drawn with the layer's own classes. That is the whole point of it: if a
+     component looks wrong here it looks wrong on the site, and if a palette
+     reads badly here it reads badly on the site.
+
+     It is a static file, so it is reachable without unlocking the site,
+     like /docs and /app. It holds no reports and no settings — only the
+     sample words on this page. -->
+<link rel="stylesheet" href="/fonts/fonts.css">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/client-first.css">
+
+<link rel="stylesheet" href="/css/styleguide-page.css">
+</head>
+
+<body>
+<div class="page-wrapper">
+
+  <!-- ============================================================
+       The bar. Changing either dial sets data-palette / data-theme on
+       <html>, which is exactly what the site does when an operator picks a
+       look. Nothing else on this page changes — every sample below is
+       reading tokens, so they all repaint together or the look system is
+       broken.
+       ============================================================ -->
+  <header class="sg-bar">
+    <div class="padding-global">
+      <div class="container-large">
+        <div class="layout_row is-spread sg-bar__inner">
+          <div class="layout_row is-nowrap">
+            <strong class="text-style-allcaps text-size-small">Style guide</strong>
+            <span class="text-size-small hide-mobile-landscape sg-bar__note">
+              tokens.css + client-first.css
+            </span>
+          </div>
+          <div class="layout_row">
+            <label for="sg-palette">Palette</label>
+            <select id="sg-palette"></select>
+            <label for="sg-theme">Theme</label>
+            <select id="sg-theme"></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-wrapper">
+
+    <!-- ---- intro ------------------------------------------------- -->
+    <section class="section_intro">
+      <div class="padding-global">
+        <div class="container-large">
+          <div class="padding-section-medium">
+            <p class="heading-style-eyebrow">ReportLog</p>
+            <h1 class="heading-style-h1 margin-top margin-tiny">Style guide</h1>
+            <p class="text-size-medium text-color-secondary margin-top margin-xsmall max-width-large">
+              Every colour, size and component the site is built from, drawn with the
+              classes that draw it. Change the palette or the theme in the bar above and
+              watch the whole page follow: nothing here has a colour or a shape of its own.
+            </p>
+
+            <div class="layout_grid is-auto margin-top margin-medium">
+              <div class="card_component is-flat">
+                <h2 class="heading-style-h5">Palette owns colour</h2>
+                <p class="text-size-small text-color-secondary">
+                  Gold is the action you came to take. Teal means a moderator confirmed
+                  something and crimson means serious — those two are status, never
+                  decoration and never a button.
+                </p>
+              </div>
+              <div class="card_component is-flat">
+                <h2 class="heading-style-h5">Theme owns shape</h2>
+                <p class="text-size-small text-color-secondary">
+                  Type, borders, shadows, radii and the width of the page. A theme sets
+                  no colour at all, so a palette and a theme can be picked separately
+                  and the pair is predictable.
+                </p>
+              </div>
+              <div class="card_component is-flat">
+                <h2 class="heading-style-h5">The layer owns neither</h2>
+                <p class="text-size-small text-color-secondary">
+                  <code class="text-style-mono">client-first.css</code> names no colour
+                  and no face. It is structure, spacing, type scale and a few components,
+                  named the way Finsweet's Client-First convention names them.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="padding-global"><div class="container-large"><hr class="divider"></div></div>
+
+    <!-- ---- the guide proper -------------------------------------- -->
+    <section class="section_guide">
+      <div class="padding-global">
+        <div class="container-large">
+          <div class="padding-section-medium">
+            <div class="sg-layout">
+
+              <nav class="sg-toc" aria-label="Sections">
+                <p class="heading-style-eyebrow margin-bottom margin-xxsmall">On this page</p>
+                <a href="#colour">Colour</a>
+                <a href="#type">Typography</a>
+                <a href="#space">Spacing</a>
+                <a href="#structure">Structure</a>
+                <a href="#buttons">Buttons</a>
+                <a href="#forms">Form fields</a>
+                <a href="#choices">Choices</a>
+                <a href="#surfaces">Cards and chips</a>
+                <a href="#layout">Grids and stacks</a>
+                <a href="#utilities">Utilities</a>
+              </nav>
+
+              <div class="layout_stack is-gap-large">
+
+                <!-- ---- colour ---------------------------------- -->
+                <section id="colour" class="sg-section">
+                  <h2 class="heading-style-h2">Colour</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    Read live out of the page, so this is the palette you have chosen and
+                    not a picture of one. A colour is named for the job it does.
+                  </p>
+
+                  <h3 class="heading-style-h5 margin-top margin-small">The page</h3>
+                  <div class="layout_grid is-tight is-gap-small margin-top margin-xsmall"
+                       id="sg-colour-page"></div>
+
+                  <h3 class="heading-style-h5 margin-top margin-small">Meaning</h3>
+                  <div class="layout_grid is-tight is-gap-small margin-top margin-xsmall"
+                       id="sg-colour-status"></div>
+
+                  <p class="text-size-small text-color-muted margin-top margin-xsmall">
+                    A report nobody has assessed gets no colour at all — outlined ink,
+                    unfilled. It has not earned one.
+                  </p>
+                </section>
+
+                <!-- ---- type ------------------------------------ -->
+                <section id="type" class="sg-section">
+                  <h2 class="heading-style-h2">Typography</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    <code class="text-style-mono">heading-style-*</code> sets how something
+                    looks; the tag in the markup says what it is. A screen often needs an
+                    h2 that reads quietly, and the wrong fix is to make it an h4 and break
+                    the outline a screen reader announces.
+                  </p>
+
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <p class="heading-style-eyebrow">Eyebrow above a heading</p>
+                      <p class="heading-style-h1">Every report is filed through a logbook</p>
+                      <p class="heading-style-h2">Every logbook is its own chain</p>
+                      <p class="heading-style-h3">Nothing is public until a moderator approves it</p>
+                      <p class="heading-style-h4">A correction is a new entry</p>
+                      <p class="heading-style-h5">One card asks one question</p>
+                      <p class="heading-style-h6">The archive is append-only</p>
+                    </div>
+                    <code class="sg-demo__code">heading-style-eyebrow · heading-style-h1 … heading-style-h6</code>
+                  </div>
+
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <p class="text-size-xlarge">Extra large — an opening line</p>
+                      <p class="text-size-large">Large — a standfirst under a heading</p>
+                      <p class="text-size-medium">Medium — a paragraph that wants a little more room</p>
+                      <p class="text-size-regular">Regular — the size nearly everything is set at</p>
+                      <p class="text-size-small">Small — help text under a field, a note on a card</p>
+                      <p class="text-size-tiny">Tiny — a label, a chip, a timestamp</p>
+                    </div>
+                    <code class="sg-demo__code">text-size-xlarge · large · medium · regular · small · tiny</code>
+                  </div>
+
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <p class="text-color-ink">Ink — the words themselves</p>
+                      <p class="text-color-secondary">Secondary — a line explaining the one above it</p>
+                      <p class="text-color-muted">Muted — a timestamp, a count, a caption</p>
+                      <p class="text-color-action">Action — a link to the thing you came to do</p>
+                      <p class="text-color-serious">Serious — something went badly wrong</p>
+                      <p class="text-color-confirmed">Confirmed — a moderator checked this</p>
+                      <p><span class="text-style-allcaps text-size-small">All caps</span> ·
+                         <em class="text-style-italic">italic</em> ·
+                         <span class="text-style-mono">RL-K4M2QX-7HB3PD</span> ·
+                         <a class="text-style-link" href="#type">a link</a></p>
+                    </div>
+                    <code class="sg-demo__code">text-color-* · text-style-allcaps · italic · mono · link</code>
+                  </div>
+
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage text-rich-text max-width-large">
+                      <h3>Prose written somewhere else</h3>
+                      <p>A logbook's blurb, a moderator's note, a paragraph out of an email.
+                         The one place a rule reaches a bare element, fenced inside this
+                         single class.</p>
+                      <ul>
+                        <li>Lists get their spacing from the same scale.</li>
+                        <li>So do the headings inside it.</li>
+                      </ul>
+                    </div>
+                    <code class="sg-demo__code">text-rich-text</code>
+                  </div>
+                </section>
+
+                <!-- ---- space ----------------------------------- -->
+                <section id="space" class="sg-section">
+                  <h2 class="heading-style-h2">Spacing</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    Eleven steps and no more. A gap of 1.25rem where the scale offers 1rem
+                    and 1.5rem is a value somebody typed by eye, and the next one will be
+                    1.3rem.
+                  </p>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small" id="sg-space"></div>
+                    <code class="sg-demo__code">--space--tiny … --space--xxhuge · margin-bottom margin-small · spacer-medium</code>
+                  </div>
+                </section>
+
+                <!-- ---- structure ------------------------------- -->
+                <section id="structure" class="sg-section">
+                  <h2 class="heading-style-h2">Structure</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    Four classes, in this order, on every screen. The gutter is set in one
+                    place and the measure in one place, so two screens cannot disagree
+                    about where the page starts.
+                  </p>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage">
+                      <div class="panel_component is-quiet">
+                        <p class="text-size-tiny text-style-mono text-color-muted">padding-global</p>
+                        <div class="panel_component margin-top margin-xxsmall">
+                          <p class="text-size-tiny text-style-mono text-color-muted">container-large — this theme's measure</p>
+                          <div class="panel_component is-quiet margin-top margin-xxsmall">
+                            <p class="text-size-tiny text-style-mono text-color-muted">padding-section-medium</p>
+                            <p class="margin-top margin-xxsmall">The screen goes here.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <code class="sg-demo__code">page-wrapper › main-wrapper › section_name › padding-global › container-large › padding-section-medium</code>
+                  </div>
+                  <p class="text-size-small text-color-muted margin-top margin-xsmall">
+                    <code class="text-style-mono">container-large</code> is the theme's own
+                    width — width belongs to the theme, and each one states its measure.
+                    Switch the theme in the bar and this page gets wider or narrower with it.
+                  </p>
+                </section>
+
+                <!-- ---- buttons --------------------------------- -->
+                <section id="buttons" class="sg-section">
+                  <h2 class="heading-style-h2">Buttons</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    Gold carries dark text, always — white on gold measures 2.08:1 and fails
+                    outright. Status colour never becomes a button.
+                  </p>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage">
+                      <div class="button-group">
+                        <button type="button" class="button">File a report</button>
+                        <button type="button" class="button is-secondary">Go back</button>
+                        <button type="button" class="button is-quiet">Cancel</button>
+                        <button type="button" class="button is-solid">Approve</button>
+                        <button type="button" class="button is-small">Change</button>
+                        <button type="button" class="button is-large">Send report</button>
+                        <button type="button" class="button" disabled>Not yet</button>
+                      </div>
+                    </div>
+                    <code class="sg-demo__code">button · is-secondary · is-quiet · is-solid · is-small · is-large · [disabled] — in a button-group</code>
+                  </div>
+                  <p class="text-size-small text-color-muted margin-top margin-xsmall">
+                    Every one of them shows a focus outline when you reach it with a
+                    keyboard — try tabbing through — and every one is at least 44px tall
+                    except <code class="text-style-mono">is-small</code>, which is the
+                    Change link beside an answer rather than something anybody hunts for.
+                  </p>
+                </section>
+
+                <!-- ---- forms ----------------------------------- -->
+                <section id="forms" class="sg-section">
+                  <h2 class="heading-style-h2">Form fields</h2>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack max-width-medium">
+                      <div class="form_field-wrapper">
+                        <label class="form_label" for="sg-email">Where can we reach you</label>
+                        <input class="form_input" id="sg-email" type="email" placeholder="you@example.org">
+                        <p class="form_help">Only a moderator sees this. You can erase it later.</p>
+                      </div>
+                      <div class="form_field-wrapper">
+                        <label class="form_label" for="sg-logbook">Which logbook</label>
+                        <select class="form_select" id="sg-logbook">
+                          <option>Election incidents</option>
+                          <option>Workplace or safety incidents</option>
+                        </select>
+                      </div>
+                      <div class="form_field-wrapper">
+                        <label class="form_label" for="sg-account">What happened</label>
+                        <textarea class="form_textarea" id="sg-account"
+                          placeholder="In your own words."></textarea>
+                      </div>
+                      <div class="form_field-wrapper">
+                        <label class="form_label" for="sg-bad">A field with a problem</label>
+                        <input class="form_input is-invalid" id="sg-bad" value="not an address"
+                          aria-describedby="sg-bad-err">
+                        <p class="form_error is-shown" id="sg-bad-err" role="alert">
+                          That does not look like an email address.
+                        </p>
+                      </div>
+                    </div>
+                    <code class="sg-demo__code">form_field-wrapper · form_label · form_input · form_select · form_textarea · form_help · form_error is-shown</code>
+                  </div>
+                </section>
+
+                <!-- ---- choices --------------------------------- -->
+                <section id="choices" class="sg-section">
+                  <h2 class="heading-style-h2">Choices</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    The whole tile is the label, so the tap target is the tile and not the
+                    twelve pixels of the radio button. Choosing one selects it and nothing
+                    else — the card in front of somebody never changes underneath them.
+                  </p>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage">
+                      <fieldset class="max-width-medium">
+                        <legend class="form_label margin-bottom margin-xxsmall">May we publish it?</legend>
+                        <div class="choice_list" id="sg-choices">
+                          <label class="choice_item is-selected">
+                            <input class="choice_input" type="radio" name="sg-publish" checked>
+                            <span class="choice_text">
+                              <span class="choice_title">Yes, it may be published</span>
+                              <span class="choice_note">Publication is permanent. Your address is never published.</span>
+                            </span>
+                          </label>
+                          <label class="choice_item">
+                            <input class="choice_input" type="radio" name="sg-publish">
+                            <span class="choice_text">
+                              <span class="choice_title">No, keep it out of the public archive</span>
+                              <span class="choice_note">It is still filed, sealed and counted.</span>
+                            </span>
+                          </label>
+                        </div>
+                      </fieldset>
+                    </div>
+                    <code class="sg-demo__code">choice_list › choice_item (is-selected) › choice_input + choice_text › choice_title + choice_note</code>
+                  </div>
+                </section>
+
+                <!-- ---- surfaces -------------------------------- -->
+                <section id="surfaces" class="sg-section">
+                  <h2 class="heading-style-h2">Cards and chips</h2>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_grid is-auto">
+                      <article class="card_component">
+                        <div class="card_header">
+                          <h3 class="heading-style-h5">Long lines at a polling place</h3>
+                          <span class="chip is-open">Not assessed</span>
+                        </div>
+                        <div class="card_body">
+                          <p class="text-size-small text-color-secondary">
+                            Filed through <strong>Election incidents</strong>, 3 November.
+                          </p>
+                          <p class="text-style-clamp-3">The line went round the block and
+                            nobody came out to say how long the wait was. Several people
+                            left before voting.</p>
+                        </div>
+                        <div class="card_footer">
+                          <span class="text-size-tiny text-style-mono text-color-muted">RL-K4M2QX-7HB3PD</span>
+                        </div>
+                      </article>
+                      <article class="card_component is-raised">
+                        <div class="card_header">
+                          <h3 class="heading-style-h5">Equipment failure</h3>
+                          <span class="chip is-confirmed">Confirmed</span>
+                        </div>
+                        <div class="card_body">
+                          <p class="text-size-small text-color-secondary">A raised card, for
+                            something that has to be noticed.</p>
+                        </div>
+                      </article>
+                      <article class="card_component is-flat">
+                        <div class="card_header">
+                          <h3 class="heading-style-h5">Observer expelled</h3>
+                          <span class="chip is-serious">Serious</span>
+                        </div>
+                        <div class="card_body">
+                          <p class="text-size-small text-color-secondary">A flat card, for a
+                            list where twenty of them sit together.</p>
+                        </div>
+                      </article>
+                    </div>
+                    <code class="sg-demo__code">card_component (is-raised / is-flat) › card_header · card_body · card_footer — chip is-open / is-confirmed / is-serious</code>
+                  </div>
+
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <div class="panel_component">
+                        <p class="text-size-small">A panel — a region of a screen.</p>
+                      </div>
+                      <div class="panel_component is-quiet">
+                        <p class="text-size-small">Quiet, for something set aside from the rest.</p>
+                      </div>
+                      <div class="panel_component is-deep">
+                        <p class="text-size-small">Deep, for furniture: the bar, the lock
+                          screen, the strip under the navigation. Dark in every palette,
+                          light and dark alike.</p>
+                      </div>
+                    </div>
+                    <code class="sg-demo__code">panel_component · is-quiet · is-deep</code>
+                  </div>
+                </section>
+
+                <!-- ---- layout ---------------------------------- -->
+                <section id="layout" class="sg-section">
+                  <h2 class="heading-style-h2">Grids and stacks</h2>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <div class="layout_grid is-3col">
+                        <div class="panel_component is-quiet text-align-center text-size-small">1</div>
+                        <div class="panel_component is-quiet text-align-center text-size-small">2</div>
+                        <div class="panel_component is-quiet text-align-center text-size-small">3</div>
+                      </div>
+                      <div class="layout_grid is-auto is-gap-small">
+                        <div class="panel_component is-quiet text-size-small">As many columns as fit</div>
+                        <div class="panel_component is-quiet text-size-small">each at least 16rem</div>
+                        <div class="panel_component is-quiet text-size-small">no breakpoint written</div>
+                      </div>
+                      <div class="layout_row is-spread">
+                        <span class="text-size-small">A row, spread apart</span>
+                        <button type="button" class="button is-small">Do it</button>
+                      </div>
+                    </div>
+                    <code class="sg-demo__code">layout_grid is-2col / is-3col / is-auto / is-sidebar · layout_stack · layout_row is-spread</code>
+                  </div>
+                </section>
+
+                <!-- ---- utilities ------------------------------- -->
+                <section id="utilities" class="sg-section">
+                  <h2 class="heading-style-h2">Utilities</h2>
+                  <p class="text-color-secondary margin-top margin-xsmall">
+                    One decided value each. They are loaded last, so they win over a
+                    component's own rule — which is what a utility class is for.
+                  </p>
+                  <div class="sg-demo margin-top margin-small">
+                    <div class="sg-demo__stage layout_stack is-gap-small">
+                      <p class="max-width-small panel_component is-quiet text-size-small">
+                        max-width-small, so a line never gets too long to read.
+                      </p>
+                      <p class="text-align-center text-size-small">text-align-center</p>
+                      <p class="text-size-small">
+                        <span class="hide-visually">This sentence is read aloud but not shown.</span>
+                        hide-visually keeps a label for a screen reader without showing it.
+                      </p>
+                      <p class="text-size-small hide-mobile-landscape">
+                        hide-mobile-landscape — this line is gone on a narrow screen.
+                      </p>
+                      <p class="text-size-small text-style-break">
+                        text-style-break: a4f9c1e08b7d63a2f5e4c9b8a7d6e5f4c3b2a1908f7e6d5c4b3a29180f7e6d5c
+                      </p>
+                      <hr class="divider">
+                    </div>
+                    <code class="sg-demo__code">max-width-* · text-align-* · hide · hide-visually · hide-tablet · hide-mobile-landscape · text-style-break · divider</code>
+                  </div>
+                </section>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="padding-global">
+    <div class="container-large">
+      <div class="padding-section-small">
+        <hr class="divider margin-bottom margin-small">
+        <p class="text-size-small text-color-muted">
+          Drawn from <code class="text-style-mono">public/tokens.css</code> and
+          <code class="text-style-mono">public/client-first.css</code>. How to build a
+          screen out of it: <code class="text-style-mono">docs/client-first.md</code>.
+        </p>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script src="/js/styleguide.js"></script>
+</body>
+</html>

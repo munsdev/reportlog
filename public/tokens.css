@@ -1,0 +1,946 @@
+/* ======================================================================
+   ReportLog — the look
+   ======================================================================
+
+   THE PALETTE AND THEME AXES, IN ONE FILE. Everything that decides what
+   colour anything is, and everything that decides its type, borders,
+   shadows, radii and width. Nothing else: not one rule that draws a box.
+
+   It lives here rather than inside public/index.html because it is no
+   longer one page's stylesheet. The page reads it, public/client-first.css
+   reads it, and public/styleguide.html reads it — and a second copy of
+   these values is exactly how two surfaces end up disagreeing about a
+   colour, which is the thing this file exists to prevent.
+
+   Moved out of the page unchanged. Anything below this header was in the
+   page's own <style> block and is here verbatim, comments and all.
+   ====================================================================== */
+
+/* ---- The ReportLog palette -------------------------------------------
+   Colour is exclusive: every chromatic value has exactly one job, and a
+   value that marks status may not also mark brand or chrome. If it does, a
+   confirmation stops being a signal and becomes decoration.
+
+     gold      the action you came to take — buttons only, and the rule
+               under the nav. Carries DARK text, never white: white on gold
+               measures 2.08:1 and fails outright.
+     teal      confirmed by a moderator — status only, never a button.
+     crimson   serious, and errors — status only, never a button.
+
+   A report nobody has assessed gets no colour at all: outlined ink,
+   unfilled. It has not earned one. Adding a fourth hue for a new state is
+   the wrong move — separate it by fill, weight or shape instead. */
+/* ================= THE LOOK =================
+   Three axes, and they are orthogonal on purpose. This is ported from the
+   design preview, and its central rule comes with it:
+
+     PALETTE owns every colour.
+     THEME owns type, borders, shadows, radii and spacing, and sets NO colour.
+     LAYOUT owns how wide the page is.
+
+   A theme that reached for a colour would make the two axes fight, and the
+   combination an operator picked would stop being predictable. The suite
+   asserts no theme block names a colour.
+
+   STATUS COLOUR IS MEANING, NOT BRAND, and it is the same in every palette:
+   crimson is serious or an error, teal is a moderator confirmed this. That
+   was already the rule at the top of this file before palettes existed
+   (`colour is exclusive`) and palettes do not get to break it — each one
+   restates the same three status values rather than inventing its own.
+
+   The palette layer is `--color--*`, exactly as authored. ReportLog's own
+   tokens are BRIDGED onto it just below, so every rule already written
+   against --ink, --paper, --act and the rest goes on working untouched.
+   That bridge is the whole reason this was safe to adopt in one step. */
+
+/* ================= THE MAP'S SCALES =================
+   A fourth meaning-set, after gold, teal and crimson, and declared the
+   same way: ONCE, identically in every palette. Status colour is meaning
+   rather than brand and does not vary with the operator's palette; a map
+   scale that did would make two deployments' maps incomparable, and
+   eighteen palettes' worth of ten tokens would be unmaintainable besides.
+
+   SCOPED TO THE MAP. `colour is exclusive` still holds: no scale value
+   appears on a chip and no chip colour appears on the map. These are used
+   only by public/css/map.css.
+
+   WHY NOT THE THREE WE ALREADY HAVE. Gold is the action you came to take
+   and lives on buttons; teal means a moderator confirmed this; crimson
+   means serious, or an error. An area wearing any of them would be saying
+   something the map does not mean.
+
+   VOLUME is sequential and monotonic in lightness, so it reads in
+   greyscale and under every form of colour blindness. That property is why
+   it is the view a reader gets first.
+
+   OUTCOME is diverging AND monotonic in lightness, which is the part worth
+   not undoing. A symmetric diverging ramp puts dark at both ends, so when
+   hue collapses the ends collapse onto each other: simulated, green-to-red
+   INVERTS the polarity for a deuteranope — the most positive area renders
+   darker than the most negative, which is not a degraded map but a wrong
+   one. Lightness carries the axis for everyone and hue carries it as well
+   for those who see it. The cost is real and the legend states it: the
+   middle step does not look neutral, so it is labelled "evenly split". */
+:root{
+  /* Volume — sequential. */
+  --map-vol-1:#E6E9F4; --map-vol-2:#C0C7E3; --map-vol-3:#8D97C8;
+  --map-vol-4:#5A64A2; --map-vol-5:#333B6B;
+  /* Severity — sequential, and a different family from volume so the two
+     views cannot be mistaken for each other at a glance. */
+  --map-sev-1:#F3EAEE; --map-sev-2:#DCBFCA; --map-sev-3:#BE8A9D;
+  --map-sev-4:#94566C; --map-sev-5:#5E2A3E;
+  /* Outcome — diverging, monotonic lightness. s1 is most positive. */
+  --map-out-1:#E2F0D2; --map-out-2:#A5D086; --map-out-3:#C6BCC0;
+  --map-out-4:#AC5F8A; --map-out-5:#5F0E40;
+  /* An area with no reports. Not a step: it has not earned a colour. */
+  --map-nodata:#DCE3E7;
+}
+
+/* The shipped palette, and the one the brand was designed in.
+
+   TWO SELECTORS, ONE BLOCK. The bare `:root` is the page with no attribute
+   at all, which is what applyLook leaves behind for an axis at its shipped
+   value. The named one lets any ELEMENT ask for this palette by id — the
+   preview frames do — without a second copy of these values to keep in
+   step. Writing them twice is how two surfaces end up disagreeing about a
+   colour, which is the thing this file exists to prevent. */
+:root,
+[data-palette="flint"]{
+  --color--background:#E7ECEF;
+  --color--background-alt:#DDE4E8;
+  --color--background-deep:#121A24;
+  --color--surface:#FFFFFF;
+  --color--border:#A4B4BE;
+  --color--scrim:rgba(231,236,239,0.92);
+  --color--text:#0E151C;
+  --color--text-alt:#46586A;
+  --color--text-muted:#566470;
+  --color--text-on-deep:#FFFFFF;
+  --color--brand-primary:#7D5B10;
+  --color--brand-primary-on-deep:#E9A81C;
+  --color--brand-secondary:#E9A81C;
+  --color--brand-secondary-on-deep:#E9A81C;
+  --color--on-brand:#0E151C;
+  --color--on-secondary:#0E151C;
+  --color--status-serious:#A81D33;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#566470;
+  --color--on-serious:#FFFFFF;
+  --color--on-confirmed:#FFFFFF;
+  --color--action:#E9A81C;
+  --color--accent:#E9A81C;
+  --color--brand-word:#FFFFFF;
+  --color--brand-mark:#E9A81C;
+  --color--brand-tld:#999999;
+  --color--brand-word-light:#0E151C;
+  --color--brand-mark-light:#7D5B10;
+  --color--brand-tld-light:#999999;
+}
+
+/* ---- the bridge ----------------------------------------------------
+   ReportLog's own token names, resolved from the palette. Nothing else in
+   this stylesheet had to change: every existing rule reads these.
+
+   TWO SELECTORS, AND THE SECOND ONE IS NOT DECORATIVE. A custom property
+   is substituted where it is DECLARED, so `--paper: var(--color--background)`
+   on :root resolves once, against :root's palette, and every descendant
+   inherits that finished colour. An element deeper in the page carrying
+   data-palette redefines --color--background underneath it and changes
+   nothing at all, because --paper was resolved upstream and is not
+   recomputed.
+
+   Repeating the block for [data-palette] makes it resolve again on that
+   element, against the palette the element is asking for. The preview
+   frames are the only thing that needs it, and they need it absolutely:
+   without this a frame took the attribute and the page's colours.
+
+   It was invisible for as long as changing a dial also repainted the whole
+   page — the frames looked right because everything behind them had already
+   become the palette being previewed. Making the preview preview-only is
+   what exposed it. Themes have no equivalent problem: they set --sans,
+   --radius and --page-max directly, with no bridge to re-resolve. */
+:root,
+[data-palette]{
+  --ink:var(--color--text);
+  --paper:var(--color--background);
+  --card:var(--color--surface);
+  --nav:var(--color--background-deep);
+  --ink-2:var(--color--text-alt);
+  --act:var(--color--action);
+  --act-dk:var(--color--brand-primary);
+  --act-fg:var(--color--on-brand);
+  --gold-deep:var(--color--brand-primary);
+  --seal:var(--color--status-serious);
+  --verify:var(--color--status-confirmed);
+  --rule:var(--color--border);
+  --muted:var(--color--text-muted);
+  --focus:var(--color--text);
+  /* The two-tone name. A palette says which colour each half takes. */
+  --brand-word:var(--color--brand-word-light);
+  --brand-mark:var(--color--brand-mark-light);
+  --brand-word-deep:var(--color--brand-word);
+  --brand-mark-deep:var(--color--brand-secondary-on-deep);
+  /* The SECOND accent, marked with single quotes where the first is marked
+     with double. It is deliberately the palette's muted text rather than
+     another brand hue: a name gets one loud half at most, and a colour
+     invented for a second one would either collide with the first or start
+     competing with the status colours, which are the only other colour on
+     the page and mean something. Muted reads as "quieter", which is what a
+     second accent is for. */
+  --brand-second:var(--color--text-muted);
+  --brand-second-deep:var(--on-deep-muted);
+  /* Secondary text ON the deep surface. The nav and the About contents bar
+     used two hardcoded greys picked for one particular navy; on a warmer
+     or lighter deep ground they fell under 4.5:1. Mixed from the palette's
+     own on-deep text so it follows the ground it sits on. */
+  --on-deep-muted:var(--color--text-on-deep);
+  /* 82%, not 72%: parchment's deep ground is a lighter navy and the mix
+     landed at 4.47:1 against a required 4.5:1. Measured across every
+     offered palette rather than eyeballed. */
+  --on-deep-muted:color-mix(in srgb, var(--color--text-on-deep) 82%, var(--color--background-deep));
+
+  /* Tokens the palettes have no direct equivalent for, derived rather than
+     dropped. Each is written twice: a plain fallback first, then the mix a
+     modern browser takes instead. A browser that does not understand
+     color-mix ignores the second line and keeps a readable value.
+
+     --field is deliberately STRONGER than --rule and not equal to it: a
+     form control border has to clear 3:1 to meet WCAG for a UI component,
+     while a decorative hairline does not. That distinction was in the
+     original palette with a measurement beside it, and losing it would
+     have been an accessibility regression nobody would have noticed. */
+  --rule-soft:var(--color--border);
+  --field:var(--color--text-muted);
+  --amber:var(--color--text-alt);
+  --amber-bg:var(--color--background-alt);
+  --seal-bg:var(--color--background-alt);
+  --seal-bg:color-mix(in srgb, var(--color--status-serious) 8%, var(--color--surface));
+  --verify-bg:var(--color--background-alt);
+  --verify-bg:color-mix(in srgb, var(--color--status-confirmed) 8%, var(--color--surface));
+
+  /* ---- the inverse-surface tokens -------------------------------------
+     This is what made the dark palettes shippable, and the distinction it
+     draws is the whole of it. Two different things in this stylesheet both
+     used to be written `background:var(--ink);color:#fff`, and they are
+     not the same thing:
+
+       A SOLID BLOCK is the inverse of the page — a primary button, a
+       status chip, a pressed toggle. It has to FLIP with the palette: dark
+       block on a light page, light block on a dark one. That is --solid
+       and --on-solid, and they are the text and surface colours swapped.
+
+       A DEEP SURFACE is the navigation bar, the lock screen, the closing
+       panel on the About page. It is dark in EVERY palette, light and dark
+       alike, because it is a fixed part of the furniture rather than an
+       inversion of the page. That is --color--background-deep and
+       --color--text-on-deep, which every palette already defined.
+
+     Conflating the two is exactly how nine correct palettes measured
+     1.41:1. Anything written against --ink as a BACKGROUND is a solid
+     block and wants --solid; anything sitting on the nav wants the deep
+     pair. */
+  --solid:var(--color--text);
+  --on-solid:var(--color--surface);
+  /* Pressed and unavailable versions of a solid block. Were #000 and a
+     fixed grey, both of which disappear on a dark ground. */
+  --solid-hover:var(--color--text-alt);
+  --solid-off:var(--color--text-muted);
+  /* Text on a status-coloured chip. Serious is dark in every palette so
+     white always read on it; confirmed is NOT — a dark palette needs a
+     light teal to show at all, and white on light teal is unreadable. So
+     the palette says, rather than the chip assuming. */
+  --on-seal:var(--color--on-serious);
+  --on-verify:var(--color--on-confirmed);
+  /* A hairline ON the deep ground. Four fixed slate greys did this job and
+     each was picked for one particular navy. */
+  --rule-deep:var(--color--border);
+  --rule-deep:color-mix(in srgb, var(--color--text-on-deep) 26%, var(--color--background-deep));
+  /* The menu that drops out of the navigation bar sits one step deeper
+     than the bar itself, so the two are told apart when both are open. */
+  --nav-deeper:var(--color--background-deep);
+  --nav-deeper:color-mix(in srgb, var(--color--background-deep) 86%, #000);
+}
+
+/* paper */
+[data-palette="paper"]{
+  --color--background:#F6F4EF;
+  --color--background-alt:#EBE8E0;
+  --color--background-deep:#1F1D1A;
+  --color--surface:#FFFFFF;
+  --color--border:#C9C4B8;
+  --color--scrim:rgba(246,244,239,0.9);
+  --color--text:#17150F;
+  --color--text-alt:#3C382F;
+  --color--text-muted:#5E5849;
+  --color--text-on-deep:#F4F1E8;
+  --color--brand-primary:#8A6307;
+  --color--brand-primary-on-deep:#E0B356;
+  --color--brand-secondary:#3F5E8C;
+  --color--brand-secondary-on-deep:#9BB6DD;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#C0392B;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#5E5849;
+  --color--on-serious:#FFFFFF;
+  --color--action:#8A6307;
+  --color--accent:#9BB6DD;
+  --color--brand-word:#F4F1E8;
+  --color--brand-mark:#E0B356;
+  --color--brand-tld:#5E5849;
+  --color--brand-word-light:#17150F;
+  --color--brand-mark-light:#8A6307;
+  --color--brand-tld-light:#5E5849;
+}
+/* bureau */
+[data-palette="bureau"]{
+  --color--background:#F3F5F8;
+  --color--background-alt:#E7EBF1;
+  --color--background-deep:#121A26;
+  --color--surface:#FFFFFF;
+  --color--border:#C2CBD8;
+  --color--scrim:rgba(243,245,248,0.9);
+  --color--text:#0F1620;
+  --color--text-alt:#33414F;
+  --color--text-muted:#566371;
+  --color--text-on-deep:#EDF2F8;
+  --color--brand-primary:#1F5AA8;
+  --color--brand-primary-on-deep:#78AEF0;
+  --color--brand-secondary:#146A63;
+  --color--brand-secondary-on-deep:#5FC9BE;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#C0392B;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#566371;
+  --color--on-serious:#FFFFFF;
+  --color--action:#1F5AA8;
+  --color--accent:#5FC9BE;
+  --color--brand-word:#EDF2F8;
+  --color--brand-mark:#78AEF0;
+  --color--brand-tld:#566371;
+  --color--brand-word-light:#0F1620;
+  --color--brand-mark-light:#1F5AA8;
+  --color--brand-tld-light:#566371;
+}
+/* sage */
+[data-palette="sage"]{
+  --color--background:#F2F5F0;
+  --color--background-alt:#E5EAE1;
+  --color--background-deep:#17211A;
+  --color--surface:#FCFDFB;
+  --color--border:#C1CBBD;
+  --color--scrim:rgba(242,245,240,0.9);
+  --color--text:#131A14;
+  --color--text-alt:#35422F;
+  --color--text-muted:#57634F;
+  --color--text-on-deep:#EEF4EC;
+  --color--brand-primary:#2F6B45;
+  --color--brand-primary-on-deep:#7DCB99;
+  --color--brand-secondary:#8A5A15;
+  --color--brand-secondary-on-deep:#E3B361;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#C0392B;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#57634F;
+  --color--on-serious:#FFFFFF;
+  --color--action:#2F6B45;
+  --color--accent:#E3B361;
+  --color--brand-word:#EEF4EC;
+  --color--brand-mark:#7DCB99;
+  --color--brand-tld:#57634F;
+  --color--brand-word-light:#131A14;
+  --color--brand-mark-light:#2F6B45;
+  --color--brand-tld-light:#57634F;
+}
+/* gallery */
+[data-palette="gallery"]{
+  --color--background:#F7F3EB;
+  --color--background-alt:#EFEADF;
+  --color--background-deep:#2B2620;
+  --color--surface:#FFFDF8;
+  --color--border:#D6CFC2;
+  --color--scrim:rgba(247,243,235,0.92);
+  --color--text:#2B2620;
+  --color--text-alt:#4A443B;
+  --color--text-muted:#6E6558;
+  --color--text-on-deep:#E4DED2;
+  --color--brand-primary:#7A2E24;
+  --color--brand-primary-on-deep:#D9B463;
+  --color--brand-secondary:#3E4A5C;
+  --color--brand-secondary-on-deep:#D9B463;
+  --color--on-brand:#FFFDF8;
+  --color--on-secondary:#FFFDF8;
+  --color--status-serious:#A32B22;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#6E6558;
+  --color--on-serious:#FFFDF8;
+  --color--action:#3E4A5C;
+  --color--accent:#C9A24E;
+  --color--brand-word:#E4DED2;
+  --color--brand-mark:#D9B463;
+  --color--brand-tld:#A79C8C;
+  --color--brand-word-light:#2B2620;
+  --color--brand-mark-light:#8A6A20;
+  --color--brand-tld-light:#6E6558;
+}
+/* parchment */
+[data-palette="parchment"]{
+  --color--background:#EDE3CC;
+  --color--background-alt:#DFD2B6;
+  --color--background-deep:#1E3A5F;
+  --color--surface:#F7F1E1;
+  --color--border:#BCA98A;
+  --color--scrim:rgba(237,227,204,0.92);
+  --color--text:#2C1A14;
+  --color--text-alt:#4A3428;
+  --color--text-muted:#6B5443;
+  --color--text-on-deep:#EDE3CC;
+  --color--brand-primary:#7A5A1C;
+  --color--brand-primary-on-deep:#D9A441;
+  --color--brand-secondary:#1E3A5F;
+  --color--brand-secondary-on-deep:#D9A441;
+  --color--on-brand:#F7F1E1;
+  --color--on-secondary:#F7F1E1;
+  --color--status-serious:#8E2230;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#6B5443;
+  --color--on-serious:#F7F1E1;
+  --color--action:#1E3A5F;
+  --color--accent:#9A7226;
+  --color--brand-word:#EDE3CC;
+  --color--brand-mark:#D9A441;
+  --color--brand-tld:#C0B49C;
+  --color--brand-word-light:#2C1A14;
+  --color--brand-mark-light:#7A5A1C;
+  --color--brand-tld-light:#6B5443;
+}
+/* ledger */
+[data-palette="ledger"]{
+  --color--background:#F1F2ED;
+  --color--background-alt:#E4E7DE;
+  --color--background-deep:#1C2620;
+  --color--surface:#FFFFFF;
+  --color--border:#B9BFB2;
+  --color--scrim:rgba(241,242,237,0.92);
+  --color--text:#161A14;
+  --color--text-alt:#3E463A;
+  --color--text-muted:#5A6152;
+  --color--text-on-deep:#EDF0E7;
+  --color--brand-primary:#2F5D50;
+  --color--brand-primary-on-deep:#6FBFA8;
+  --color--brand-secondary:#8A5A12;
+  --color--brand-secondary-on-deep:#D9A93F;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#B3202C;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#5A6152;
+  --color--on-serious:#FFFFFF;
+  --color--action:#8A5A12;
+  --color--accent:#6FBFA8;
+  --color--brand-word:#EDF0E7;
+  --color--brand-mark:#6FBFA8;
+  --color--brand-tld:#8D9686;
+  --color--brand-word-light:#161A14;
+  --color--brand-mark-light:#2F5D50;
+  --color--brand-tld-light:#5A6152;
+}
+/* indigo */
+[data-palette="indigo"]{
+  --color--background:#F2F3F8;
+  --color--background-alt:#E5E7F0;
+  --color--background-deep:#191C33;
+  --color--surface:#FFFFFF;
+  --color--border:#C3C7DA;
+  --color--scrim:rgba(242,243,248,0.92);
+  --color--text:#14162B;
+  --color--text-alt:#363A57;
+  --color--text-muted:#545974;
+  --color--text-on-deep:#E9EBF6;
+  --color--brand-primary:#3A3F9E;
+  --color--brand-primary-on-deep:#9AA1F0;
+  --color--brand-secondary:#8A5F0F;
+  --color--brand-secondary-on-deep:#E0B45A;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#B3202C;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#545974;
+  --color--on-serious:#FFFFFF;
+  --color--action:#3A3F9E;
+  --color--accent:#9AA1F0;
+  --color--brand-word:#E9EBF6;
+  --color--brand-mark:#9AA1F0;
+  --color--brand-tld:#8A8FA8;
+  --color--brand-word-light:#14162B;
+  --color--brand-mark-light:#3A3F9E;
+  --color--brand-tld-light:#545974;
+}
+/* bone */
+[data-palette="bone"]{
+  --color--background:#FAFAF8;
+  --color--background-alt:#EFEFEC;
+  --color--background-deep:#111111;
+  --color--surface:#FFFFFF;
+  --color--border:#CFCFC8;
+  --color--scrim:rgba(250,250,248,0.92);
+  --color--text:#111111;
+  --color--text-alt:#3A3A36;
+  --color--text-muted:#5C5C56;
+  --color--text-on-deep:#F2F2EE;
+  --color--brand-primary:#3A3A36;
+  --color--brand-primary-on-deep:#C9C9C0;
+  --color--brand-secondary:#111111;
+  --color--brand-secondary-on-deep:#F2F2EE;
+  --color--on-brand:#FFFFFF;
+  --color--on-secondary:#FFFFFF;
+  --color--status-serious:#B3202C;
+  --color--status-confirmed:#296B60;
+  --color--status-open:#5C5C56;
+  --color--on-serious:#FFFFFF;
+  --color--action:#111111;
+  --color--accent:#B9B9B0;
+  --color--brand-word:#F2F2EE;
+  --color--brand-mark:#C9C9C0;
+  --color--brand-tld:#8A8A82;
+  --color--brand-word-light:#111111;
+  --color--brand-mark-light:#3A3A36;
+  --color--brand-tld-light:#5C5C56;
+}
+
+
+
+/* ---- the dark palettes ----------------------------------------------
+   Nine of them, and they were held back one release for a reason worth
+   keeping written down.
+
+   `--ink` in this stylesheet means THE TEXT COLOUR, bridged to
+   --color--text. On a dark palette that is near-white — while twenty-five
+   rules used `background:var(--ink)` because they were written when ink was
+   reliably the dark one, and forty-one paired a surface with a hardcoded
+   `color:#fff`. Switching a dark palette on measured 1.41:1 against a
+   required 4.5:1 on the Standards page, and the accessibility scan caught
+   it across sixty of a hundred and twelve page-and-palette pairs.
+
+   What fixed it was not a palette change. It was the inverse-surface pass
+   described beside --solid above: separating "a solid block, which flips
+   with the palette" from "a deep surface, which is dark in every palette".
+   Once those were two different tokens instead of one habit, the palettes
+   worked unaltered.
+
+   EVERY VALUE HERE WAS MEASURED, not eyeballed. Twenty contrast pairs per
+   palette — text on card, text on page, muted on both, the accent as text,
+   the accent on the navigation bar, both sides of every button and every
+   status chip, and the hairline as a UI component at 3:1 — are checked
+   before these ship, and the browser suite then re-measures the real
+   rendered pages across all eighteen palettes. Six borders were lightened
+   because of it; nothing else here is a guess.
+
+   THE TWO STATUS COLOURS STILL MEAN WHAT THEY MEAN. Teal is a moderator
+   confirmed this, in all eighteen. On a dark ground the shipped #296B60 is
+   too dark to read, so these carry #6FC7B6 — the same hue, tuned to the
+   ground, which is the one kind of change a status colour is allowed. Red
+   for serious likewise. --color--on-confirmed exists because of this: a
+   light teal chip needs DARK text on it, and every light palette's dark
+   teal chip needs white, so the palette says rather than the chip
+   assuming.
+
+   RE-AUTHORED, not ported. The nine that came across in the original
+   preview were lost with the machine they were written on before they were
+   ever committed. These are new, drawn to the same token shape and held to
+   a stricter check than the originals ever were. */
+
+[data-palette="midnight"]{
+  --color--background:#121A24;
+  --color--background-alt:#1A2430;
+  --color--background-deep:#0A1017;
+  --color--surface:#1B2531;
+  --color--border:#5E7286;
+  --color--scrim:rgba(18,26,36,0.92);
+  --color--text:#E8EEF5;
+  --color--text-alt:#BAC7D6;
+  --color--text-muted:#A2B2C4;
+  --color--text-on-deep:#E8EEF5;
+  --color--brand-primary:#E9A81C;
+  --color--brand-primary-on-deep:#E9A81C;
+  --color--brand-secondary:#7FB2E0;
+  --color--brand-secondary-on-deep:#7FB2E0;
+  --color--on-brand:#0A1017;
+  --color--on-secondary:#0A1017;
+  --color--status-serious:#FF7B87;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#A2B2C4;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#E9A81C;
+  --color--accent:#E9A81C;
+  --color--brand-word:#E8EEF5;
+  --color--brand-mark:#7FB2E0;
+  --color--brand-tld:#8FA0B2;
+  --color--brand-word-light:#E8EEF5;
+  --color--brand-mark-light:#E9A81C;
+  --color--brand-tld-light:#A2B2C4;
+}
+[data-palette="ink"]{
+  --color--background:#14172A;
+  --color--background-alt:#1C2038;
+  --color--background-deep:#0A0C18;
+  --color--surface:#1D2136;
+  --color--border:#656C93;
+  --color--scrim:rgba(20,23,42,0.92);
+  --color--text:#E7E9F5;
+  --color--text-alt:#BFC4E0;
+  --color--text-muted:#A8AED0;
+  --color--text-on-deep:#E7E9F5;
+  --color--brand-primary:#9FB4FF;
+  --color--brand-primary-on-deep:#9FB4FF;
+  --color--brand-secondary:#E0B8FF;
+  --color--brand-secondary-on-deep:#E0B8FF;
+  --color--on-brand:#0A0C18;
+  --color--on-secondary:#0A0C18;
+  --color--status-serious:#FF8093;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#A8AED0;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#9FB4FF;
+  --color--accent:#9FB4FF;
+  --color--brand-word:#E7E9F5;
+  --color--brand-mark:#E0B8FF;
+  --color--brand-tld:#9096BA;
+  --color--brand-word-light:#E7E9F5;
+  --color--brand-mark-light:#9FB4FF;
+  --color--brand-tld-light:#A8AED0;
+}
+[data-palette="graphite"]{
+  --color--background:#191B1E;
+  --color--background-alt:#212427;
+  --color--background-deep:#0E1012;
+  --color--surface:#232629;
+  --color--border:#6B7076;
+  --color--scrim:rgba(25,27,30,0.92);
+  --color--text:#E9EBEE;
+  --color--text-alt:#C2C6CB;
+  --color--text-muted:#AAAFB5;
+  --color--text-on-deep:#E9EBEE;
+  --color--brand-primary:#D7DBE0;
+  --color--brand-primary-on-deep:#D7DBE0;
+  --color--brand-secondary:#9FD2C8;
+  --color--brand-secondary-on-deep:#9FD2C8;
+  --color--on-brand:#0E1012;
+  --color--on-secondary:#0E1012;
+  --color--status-serious:#FF8087;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#AAAFB5;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#D7DBE0;
+  --color--accent:#AAAFB5;
+  --color--brand-word:#E9EBEE;
+  --color--brand-mark:#9FD2C8;
+  --color--brand-tld:#93989E;
+  --color--brand-word-light:#E9EBEE;
+  --color--brand-mark-light:#D7DBE0;
+  --color--brand-tld-light:#AAAFB5;
+}
+[data-palette="harbour"]{
+  --color--background:#10212B;
+  --color--background-alt:#182C37;
+  --color--background-deep:#081419;
+  --color--surface:#192D38;
+  --color--border:#567886;
+  --color--scrim:rgba(16,33,43,0.92);
+  --color--text:#E3EEF0;
+  --color--text-alt:#B6CBD1;
+  --color--text-muted:#9FB7BE;
+  --color--text-on-deep:#E3EEF0;
+  --color--brand-primary:#5FD0C4;
+  --color--brand-primary-on-deep:#5FD0C4;
+  --color--brand-secondary:#F0C270;
+  --color--brand-secondary-on-deep:#F0C270;
+  --color--on-brand:#081419;
+  --color--on-secondary:#081419;
+  --color--status-serious:#FF8189;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#9FB7BE;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#5FD0C4;
+  --color--accent:#F0C270;
+  --color--brand-word:#E3EEF0;
+  --color--brand-mark:#F0C270;
+  --color--brand-tld:#8CA5AD;
+  --color--brand-word-light:#E3EEF0;
+  --color--brand-mark-light:#5FD0C4;
+  --color--brand-tld-light:#9FB7BE;
+}
+[data-palette="dusk"]{
+  --color--background:#1B1524;
+  --color--background-alt:#241C30;
+  --color--background-deep:#110C18;
+  --color--surface:#261E33;
+  --color--border:#77668F;
+  --color--scrim:rgba(27,21,36,0.92);
+  --color--text:#EDE8F2;
+  --color--text-alt:#C7BCD6;
+  --color--text-muted:#B0A4C2;
+  --color--text-on-deep:#EDE8F2;
+  --color--brand-primary:#D9A7F0;
+  --color--brand-primary-on-deep:#D9A7F0;
+  --color--brand-secondary:#F2B98C;
+  --color--brand-secondary-on-deep:#F2B98C;
+  --color--on-brand:#110C18;
+  --color--on-secondary:#110C18;
+  --color--status-serious:#FF8496;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#B0A4C2;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#D9A7F0;
+  --color--accent:#F2B98C;
+  --color--brand-word:#EDE8F2;
+  --color--brand-mark:#F2B98C;
+  --color--brand-tld:#9C90AE;
+  --color--brand-word-light:#EDE8F2;
+  --color--brand-mark-light:#D9A7F0;
+  --color--brand-tld-light:#B0A4C2;
+}
+[data-palette="blackedition"]{
+  --color--background:#101010;
+  --color--background-alt:#181818;
+  --color--background-deep:#000000;
+  --color--surface:#1A1A1A;
+  --color--border:#676767;
+  --color--scrim:rgba(16,16,16,0.92);
+  --color--text:#EDEAE4;
+  --color--text-alt:#C4C0B8;
+  --color--text-muted:#ACA8A0;
+  --color--text-on-deep:#EDEAE4;
+  --color--brand-primary:#E9A81C;
+  --color--brand-primary-on-deep:#E9A81C;
+  --color--brand-secondary:#EDEAE4;
+  --color--brand-secondary-on-deep:#EDEAE4;
+  --color--on-brand:#101010;
+  --color--on-secondary:#101010;
+  --color--status-serious:#FF7F86;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#ACA8A0;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#E9A81C;
+  --color--accent:#E9A81C;
+  --color--brand-word:#EDEAE4;
+  --color--brand-mark:#EDEAE4;
+  --color--brand-tld:#95918A;
+  --color--brand-word-light:#EDEAE4;
+  --color--brand-mark-light:#E9A81C;
+  --color--brand-tld-light:#ACA8A0;
+}
+[data-palette="moss"]{
+  --color--background:#131A15;
+  --color--background-alt:#1B241D;
+  --color--background-deep:#0A0F0B;
+  --color--surface:#1D261F;
+  --color--border:#5F7364;
+  --color--scrim:rgba(19,26,21,0.92);
+  --color--text:#E6EFE7;
+  --color--text-alt:#BDCCBF;
+  --color--text-muted:#A6B8A9;
+  --color--text-on-deep:#E6EFE7;
+  --color--brand-primary:#8FD6A6;
+  --color--brand-primary-on-deep:#8FD6A6;
+  --color--brand-secondary:#E8C878;
+  --color--brand-secondary-on-deep:#E8C878;
+  --color--on-brand:#0A0F0B;
+  --color--on-secondary:#0A0F0B;
+  --color--status-serious:#FF858C;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#A6B8A9;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#8FD6A6;
+  --color--accent:#E8C878;
+  --color--brand-word:#E6EFE7;
+  --color--brand-mark:#E8C878;
+  --color--brand-tld:#94A597;
+  --color--brand-word-light:#E6EFE7;
+  --color--brand-mark-light:#8FD6A6;
+  --color--brand-tld-light:#A6B8A9;
+}
+[data-palette="umber"]{
+  --color--background:#1C1712;
+  --color--background-alt:#251F18;
+  --color--background-deep:#110D09;
+  --color--surface:#27211A;
+  --color--border:#7B6C5E;
+  --color--scrim:rgba(28,23,18,0.92);
+  --color--text:#F1EAE1;
+  --color--text-alt:#CCC0B2;
+  --color--text-muted:#B5A899;
+  --color--text-on-deep:#F1EAE1;
+  --color--brand-primary:#E8B972;
+  --color--brand-primary-on-deep:#E8B972;
+  --color--brand-secondary:#9FC5D8;
+  --color--brand-secondary-on-deep:#9FC5D8;
+  --color--on-brand:#110D09;
+  --color--on-secondary:#110D09;
+  --color--status-serious:#FF8A84;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#B5A899;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#E8B972;
+  --color--accent:#E8B972;
+  --color--brand-word:#F1EAE1;
+  --color--brand-mark:#9FC5D8;
+  --color--brand-tld:#A29586;
+  --color--brand-word-light:#F1EAE1;
+  --color--brand-mark-light:#E8B972;
+  --color--brand-tld-light:#B5A899;
+}
+[data-palette="slate"]{
+  --color--background:#161B22;
+  --color--background-alt:#1E242D;
+  --color--background-deep:#0C1016;
+  --color--surface:#1F262F;
+  --color--border:#657282;
+  --color--scrim:rgba(22,27,34,0.92);
+  --color--text:#E6EAF0;
+  --color--text-alt:#BEC6D1;
+  --color--text-muted:#A7B0BD;
+  --color--text-on-deep:#E6EAF0;
+  --color--brand-primary:#8FC2F0;
+  --color--brand-primary-on-deep:#8FC2F0;
+  --color--brand-secondary:#F0B97F;
+  --color--brand-secondary-on-deep:#F0B97F;
+  --color--on-brand:#0C1016;
+  --color--on-secondary:#0C1016;
+  --color--status-serious:#FF838F;
+  --color--status-confirmed:#6FC7B6;
+  --color--status-open:#A7B0BD;
+  --color--on-serious:#101010;
+  --color--on-confirmed:#101010;
+  --color--action:#8FC2F0;
+  --color--accent:#F0B97F;
+  --color--brand-word:#E6EAF0;
+  --color--brand-mark:#F0B97F;
+  --color--brand-tld:#939CA9;
+  --color--brand-word-light:#E6EAF0;
+  --color--brand-mark-light:#8FC2F0;
+  --color--brand-tld-light:#A7B0BD;
+}
+
+/* ---- the theme axis ------------------------------------------------
+   Type, borders, shadows, radii and spacing. NO COLOUR — every value here
+   is a size, a weight, a family or a shape, and the suite asserts it. A
+   theme that named a colour would fight the palette and make the pair
+   unpredictable.
+
+   Only fonts this deployment already ships are named. A theme that wanted
+   a face we do not carry would be a theme that silently falls back to a
+   system font on somebody else's server. */
+:root,
+[data-theme="signal"]{
+  /* Width is a THEME property now, not an axis of its own. See the note
+     where the layout axis used to be. */
+  --page-max:760px;
+  --radius:10px; --radius-sm:5px;
+  --shadow:4px 4px 0 var(--ink);
+  --press:translate(0,1px);
+  --border-main:1px;
+  --sans:'Public Sans',system-ui,sans-serif;
+  --cond:'Archivo',system-ui,sans-serif;
+  --mono:'Red Hat Mono',ui-monospace,monospace;
+  --h1-weight:700;
+  --h1-tracking:-.015em;
+  --display-transform:none;
+  --label-tracking:.09em;
+}
+/* Docket — a typewritten record. Square, unshadowed, one family. */
+[data-theme="docket"]{
+  /* A typewritten record wants a narrow measure; this is the
+     combination the free axis let somebody get wrong. */
+  --page-max:720px;
+  --radius:0; --radius-sm:0;
+  --shadow:none;
+  --press:translate(1px,1px);
+  --border-main:2px;
+  --sans:'Red Hat Mono',ui-monospace,monospace;
+  --cond:'Red Hat Mono',ui-monospace,monospace;
+  --h1-weight:700;
+  --h1-tracking:.01em;
+  --display-transform:uppercase;
+  --label-tracking:.16em;
+}
+/* Plain — the same type, nothing raised off the page. */
+[data-theme="plain"]{
+  /* The same measure as Signal. Stated rather than inherited, so
+     each theme is a finished opinion on its own. */
+  --page-max:760px;
+  --radius:2px; --radius-sm:2px;
+  --shadow:none;
+  --press:translate(0,1px);
+  --border-main:1px;
+  --h1-tracking:-.01em;
+}
+/* Bulletin — one family, set tight and dense. For a deployment with a lot
+   on the board: no display face, so nothing competes with the volume of
+   text, and a slightly wider measure to fit more per line. */
+[data-theme="bulletin"]{
+  --page-max:820px;
+  --radius:4px; --radius-sm:2px;
+  --shadow:none;
+  --press:translate(0,1px);
+  --border-main:1px;
+  /* Public Sans for headings TOO. Only faces this deployment ships may be
+     named here — a theme reaching for a face we do not carry is a theme
+     that silently falls back to a system font on somebody else's server. */
+  --cond:'Public Sans',system-ui,sans-serif;
+  --h1-weight:700;
+  --h1-tracking:-.02em;
+  --display-transform:none;
+  --label-tracking:.07em;
+}
+/* Register — monospace headings over ordinary text, square and wide. The
+   widest theme offered, and the one that replaces what the retired `wide`
+   layout was for: a board with a great deal on it. Distinct from Docket,
+   which is monospace throughout and deliberately narrow. */
+[data-theme="register"]{
+  --page-max:1080px;
+  --radius:0; --radius-sm:0;
+  --shadow:none;
+  --press:translate(1px,1px);
+  --border-main:2px;
+  --cond:'Red Hat Mono',ui-monospace,monospace;
+  --h1-weight:700;
+  --h1-tracking:0;
+  --display-transform:none;
+  --label-tracking:.14em;
+}
+/* Broadsheet — heavier headings, tighter set. */
+[data-theme="broadsheet"]{
+  /* Heavier headings and a tighter set carry a wider column. */
+  --page-max:900px;
+  --radius:0; --radius-sm:0;
+  --shadow:none;
+  --border-main:2px;
+  --h1-weight:700;
+  --h1-tracking:-.03em;
+  --display-transform:none;
+  --label-tracking:.12em;
+}
+
+/* ---- where the layout axis used to be -------------------------------
+   THREE AXES BECAME TWO. Width was its own choice — sheet, folio, wide —
+   which made twelve theme-and-width pairs nobody had authored and one of
+   them, a typewritten record at 1140px, a bad idea anyone could pick.
+
+   Each theme now states its own `--page-max` and owns its measure the same
+   way it owns its type. What is honestly lost is the operator who wanted
+   Docket wider; the answer to that is another theme, not another axis.
+
+   `site_settings.layout` still exists and is still read by nothing —
+   migrations are additive, so the column stays. Migration 021 comments it
+   as dead and says why. Nothing stored became wrong. */

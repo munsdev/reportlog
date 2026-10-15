@@ -1,0 +1,407 @@
+/* docs-page.css — The install guide. Standalone: somebody reading it is standing up a deployment and may not have one serving yet.
+ *
+ * A file rather than an inline <style> block so that no page in public/
+ * carries one, which is what lets the deployment set style-src-elem 'self'
+ * — nginx serves these off disk and cannot supply a nonce. Moved
+ * unchanged. See docs/frontend-files.md.
+ */
+
+  :root{
+    --paper:#EDF0F2; --card:#FFFFFF; --ink:#16191C; --muted:#5A6570;
+    --rule:#CBD4DA; --rule-soft:#DFE5E9;
+    --gold:#7D5B10; --gold-ink:#5E440C; --gold-wash:#F6EFDC;
+    --warn:#8A2B20; --warn-wash:#F8E8E5;
+    --code-bg:#12161B; --code-ink:#DCE4EA; --code-dim:#7E8B96;
+    --sans:'Public Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --cond:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'Red Hat Mono',ui-monospace,'SF Mono',Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --paper:#10151B; --card:#171D25; --ink:#E4EAEF; --muted:#94A2AE;
+      --rule:#2B353F; --rule-soft:#222B34;
+      --gold:#E9A81C; --gold-ink:#F0BC4E; --gold-wash:#241D0C;
+      --warn:#E88C7D; --warn-wash:#2A1613;
+      --code-bg:#0A0E12; --code-ink:#D5DEE5; --code-dim:#7E8B96;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#10151B; --card:#171D25; --ink:#E4EAEF; --muted:#94A2AE;
+    --rule:#2B353F; --rule-soft:#222B34;
+    --gold:#E9A81C; --gold-ink:#F0BC4E; --gold-wash:#241D0C;
+    --warn:#E88C7D; --warn-wash:#2A1613;
+    --code-bg:#0A0E12; --code-ink:#D5DEE5; --code-dim:#7E8B96;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.62;margin:0}
+
+  .bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;
+    background:var(--card);border-bottom:1px solid var(--rule);
+    display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;
+    padding:12px 20px}
+  .bar b{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.01em}
+  .chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;
+    background:var(--gold-wash);color:var(--gold-ink);
+    border:1px solid var(--gold);border-radius:3px;padding:1px 7px}
+  .bar span.f{margin-left:auto;color:var(--muted);font-size:12.5px;
+    font-family:var(--mono)}
+
+  .wrap{max-width:720px;margin:0 auto;padding-inline:20px;padding-block:40px 72px}
+
+  h1{font-family:var(--cond);font-weight:700;font-size:clamp(30px,6vw,42px);
+    line-height:1.08;letter-spacing:-.015em;margin:0 0 14px;text-wrap:balance}
+  .lede{font-size:18px;color:var(--muted);margin:0 0 8px;max-width:60ch}
+
+  h2{font-family:var(--cond);font-weight:600;font-size:23px;letter-spacing:-.005em;
+    margin:0;text-wrap:balance}
+  h3{font-family:var(--cond);font-weight:600;font-size:16.5px;margin:0 0 6px}
+  /* A step inside a step — "find the right DNS editor" before "create
+     the record". Smaller than h3 and set apart above, so a reader skimming
+     for the next thing to do can see it is a sub-part and not a new task. */
+  h4{font-family:var(--cond);font-weight:600;font-size:14.5px;
+    letter-spacing:.01em;margin:22px 0 6px;color:var(--muted)}
+  p{margin:0 0 14px;max-width:66ch}
+  p:last-child{margin-bottom:0}
+  a{color:var(--gold-ink);text-underline-offset:2px}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+
+  section{margin-top:44px}
+  .sechead{display:flex;align-items:baseline;gap:12px;margin-bottom:16px;
+    border-bottom:1px solid var(--rule);padding-bottom:9px}
+
+  pre{background:var(--code-bg);color:var(--code-ink);font-family:var(--mono);
+    font-size:13.5px;line-height:1.72;border-radius:5px;
+    padding:14px 16px;margin:0 0 14px;overflow-x:auto}
+  /* ONE DIM FOR BOTH THEMES. It used to be #6C7A85 in dark, which put a code
+     comment at 4.39:1 — under AA by a hair, and invisible to anybody not
+     measuring. The two code backgrounds are nearly the same colour in both
+     themes (#12161B and #0A0E12), so there was never much reason for the
+     comment colour to differ, and the darker background is the one that
+     needed MORE light rather than less. */
+  pre .c{color:var(--code-dim)}
+  code{font-family:var(--mono);font-size:.9em;background:var(--rule-soft);
+    padding:1px 5px;border-radius:3px}
+  pre code{background:none;padding:0;font-size:inherit}
+
+  /* The fast path is one object, lifted. Everything else stays flat. */
+  .fast{background:var(--card);border:1px solid var(--rule);border-radius:6px;
+    padding:20px;margin-top:26px}
+  .fast p{font-size:14.5px;color:var(--muted)}
+
+  ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;
+    display:flex;flex-direction:column;gap:30px}
+  ol.steps>li{counter-increment:s;display:grid;
+    grid-template-columns:34px 1fr;gap:14px;align-items:start}
+  /* A 1fr track is min-width:auto, so it refuses to shrink below the widest
+     thing inside it — and inside a step that is a `sudo adduser --system
+     --group --home ...` line. Without this the step body stayed 528px wide
+     in a 390px viewport and the WHOLE PAGE scrolled sideways on a phone;
+     `pre` already has overflow-x:auto and never got the chance to use it. */
+  ol.steps>li>div{min-width:0}
+  ol.steps>li::before{content:counter(s);font-family:var(--mono);font-size:12px;
+    font-weight:500;color:var(--gold-ink);background:var(--gold-wash);
+    border:1px solid var(--gold);border-radius:3px;
+    height:26px;display:grid;place-items:center;margin-top:2px}
+
+  .note{border-left:3px solid var(--gold);background:var(--gold-wash);
+    padding:12px 15px;border-radius:0 4px 4px 0;margin:0 0 14px}
+  .note.stop{border-left-color:var(--warn);background:var(--warn-wash)}
+  /* li as well as p: a note with a list in it otherwise renders the list at
+     page size inside smaller text. details.wrong below sets both for the same
+     reason. */
+  .note p,.note li{font-size:14.5px;margin-bottom:8px}
+  .note strong{font-weight:600}
+
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  .scroll{overflow-x:auto;margin-bottom:14px}
+  th,td{text-align:left;padding:9px 12px 9px 0;border-bottom:1px solid var(--rule-soft);
+    vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted);font-weight:400;white-space:nowrap}
+  td code{white-space:nowrap}
+
+  ul.plain{margin:0 0 14px;padding-left:20px}
+  ul.plain li{margin-bottom:7px;max-width:64ch}
+
+  footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--rule);
+    color:var(--muted);font-size:13.5px}
+  @media (max-width:430px){
+    ol.steps>li{grid-template-columns:28px 1fr;gap:11px}
+    .wrap{padding-block:30px 56px}
+  }
+
+  /* ------------------------------------------------------------------ *
+   * The hand-holding layer: copy buttons, the fill-in-once panel, the
+   * per-step ticks, "what you should see", and the collapsible
+   * "if it goes wrong".
+   *
+   * All of it is classes and all of it is here rather than inline,
+   * because no page in public/ may carry a <style> block or an inline
+   * style attribute — nginx serves these off disk and cannot supply a nonce,
+   * which is what lets the deployment set style-src 'self'. A script
+   * that needs a computed value sets it through the CSSOM.
+   * ------------------------------------------------------------------ */
+
+  /* Code blocks become a positioned shell so the button can sit in them. */
+  .cmd{position:relative;margin:0 0 14px}
+  .cmd pre{margin:0;padding-right:84px}
+  .copy{position:absolute;top:8px;right:8px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;cursor:pointer;
+    /* RECESSED, NOT LIFTED. A translucent WHITE surface lightened the
+       backdrop under a deliberately quiet grey label and took it to 4.34:1
+       in light and 3.76:1 in dark — both under AA, at 11px, which is where
+       it matters most. Darkening the chip instead keeps the label quiet and
+       clears the bar, rather than shouting the text to compensate. */
+    background:rgba(0,0,0,.35);color:var(--code-dim);
+    border:1px solid rgba(255,255,255,.22);border-radius:3px;
+    padding:4px 9px;line-height:1.4}
+  .copy:hover{color:var(--code-ink);border-color:rgba(255,255,255,.34)}
+  .copy.done{color:#7FD1A0;border-color:#7FD1A0}
+  .copy.failed{color:var(--warn);border-color:var(--warn)}
+  /* No pointer, no hover: on a touch screen the button is always visible. */
+  @media (hover:none){ .copy{opacity:1} }
+
+  /* Fill these in once and every command on the page updates. */
+  .setup{background:var(--card);border:1px solid var(--gold);
+    border-radius:6px;padding:18px 20px;margin:26px 0 0}
+  .setup h3{margin-bottom:4px}
+  .setup .hint{font-size:13.5px;color:var(--muted);margin:0 0 14px}
+  /* ONE ROW PER QUESTION, at every width. It used to be
+     `repeat(auto-fit,minmax(190px,1fr))`, which on a phone makes two ragged
+     columns: fields of different heights, a chip wrapped onto its own line,
+     and whichever field is last sitting alone beside a gap. Five short
+     questions do not need columns. */
+  .fields{display:grid;gap:14px;grid-template-columns:1fr}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted)}
+  .field input{font-family:var(--mono);font-size:13.5px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--rule);border-radius:4px;
+    padding:8px 10px;width:100%}
+  .field input:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+  .field .ex{font-size:12px;color:var(--muted)}
+  /* Which fields need an answer. Both chips are measured against --card and
+     clear AA; the "default is fine" one is deliberately the quieter of the
+     two, because it is the one you can ignore. */
+  .setup .needs,.setup .has-default{font-size:11px;font-weight:600;
+    white-space:nowrap;
+    letter-spacing:.04em;text-transform:uppercase;padding:1px 6px;
+    border-radius:3px;vertical-align:1px}
+  .setup .needs{background:var(--gold-wash);color:var(--gold-ink);
+    border:1px solid var(--gold)}
+  .setup .has-default{background:transparent;color:var(--muted);
+    border:1px solid var(--rule);font-weight:400}
+  /* A QUIET LINE, NOT A CALLOUT. This was `class="ex note"`, and `.note` is
+     the page's amber block for things that bite — so a note about leaving a
+     field alone rendered as the loudest thing on the screen. */
+  .setup .fieldnote{color:var(--muted);font-size:12px;line-height:1.45;
+    border-left:2px solid var(--rule);padding-left:9px;margin-top:1px}
+
+  /* THE START SCREEN, screen-only. Print and a scripting-off reader get the
+     whole document with nothing hidden, which is why these two rules live
+     inside @media screen and hang off an attribute docs-page.js sets rather
+     than off anything in the markup. */
+  @media screen {
+    body[data-mode="start"] .toc,
+    body[data-mode="start"] .wrap > section{display:none}
+    body[data-mode="guide"] [data-start-screen]{display:none}
+  }
+
+  /* Inline commands are click-to-copy. The cue is deliberately faint until
+     you are on it: every inline <code> on the page is copyable, so a loud
+     affordance on each one would be 248 of them shouting at once. */
+  .cancopy{cursor:pointer}
+  .cancopy:hover{outline:1px solid var(--rule);outline-offset:2px}
+  .cancopy:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+  .cancopy.copied{outline:1px solid var(--gold);outline-offset:2px;
+    background:var(--gold-wash);color:var(--gold-ink)}
+  .cancopy.copyfailed{outline:1px dashed var(--muted);outline-offset:2px}
+
+  /* ONE STEP AT A TIME, screen only and script only: a `stepaway` class this
+     file never applies on its own, so print and a scripting-off reader get
+     every step. */
+  @media screen {
+    ol.steps > li.stepaway{display:none}
+    body.walking{padding-bottom:72px}
+  }
+
+  /* "Do it the other way" — one decision changed where you are standing,
+     rather than a walk back to the first screen. */
+  .otherway{font:inherit;font-size:12.5px;cursor:pointer;margin:0 0 12px;
+    padding:6px 12px;border-radius:4px;background:transparent;
+    color:var(--ink);border:1px dashed var(--rule)}
+  .otherway:hover{border-style:solid;border-color:var(--ink)}
+  .otherway:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+  @media print{.otherway{display:none}}
+
+  .walktoggle{font:inherit;font-size:13px;cursor:pointer;margin-bottom:14px;
+    padding:7px 13px;border-radius:4px;background:transparent;
+    color:var(--ink);border:1px solid var(--rule)}
+  .walktoggle:hover{border-color:var(--ink)}
+  .walktoggle[aria-pressed="true"]{background:var(--gold-wash);
+    border-color:var(--gold);color:var(--gold-ink);font-weight:600}
+  .walktoggle:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+
+  .walkbar{position:fixed;left:0;right:0;bottom:0;z-index:20;
+    display:flex;gap:10px;align-items:center;justify-content:space-between;
+    padding:10px 14px;background:var(--card);
+    border-top:1px solid var(--rule)}
+  .walkat{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .walkbtn{font:inherit;font-size:14px;font-weight:600;cursor:pointer;
+    padding:9px 16px;border-radius:4px;background:transparent;
+    color:var(--ink);border:1px solid var(--rule)}
+  .walkbtn.is-next{background:var(--gold);color:var(--card);
+    border-color:var(--gold)}
+  .walkbtn:disabled{opacity:.4;cursor:default}
+  .walkbtn:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+  @media print{.walktoggle,.walkbar{display:none}}
+
+  .startgo{font:inherit;font-size:15px;font-weight:600;cursor:pointer;
+    margin-top:4px;padding:11px 20px;border-radius:5px;
+    background:var(--gold);color:var(--card);border:1px solid var(--gold);
+    width:100%}
+  .startgo:hover{background:var(--gold-ink);border-color:var(--gold-ink)}
+  .startgo:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  .barbtn{font:inherit;font-size:12.5px;cursor:pointer;margin-left:auto;
+    padding:5px 11px;border-radius:4px;background:transparent;
+    color:var(--ink);border:1px solid var(--rule)}
+  .barbtn:hover{border-color:var(--ink)}
+  .barbtn:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+
+  .setup .cleared{font-size:12.5px;color:var(--muted);margin:12px 0 0}
+  .reset{font-family:var(--mono);font-size:11px;letter-spacing:.06em;
+    text-transform:uppercase;cursor:pointer;color:var(--muted);
+    background:none;border:1px solid var(--rule);border-radius:3px;
+    padding:5px 10px;margin-top:10px}
+  .reset:hover{color:var(--ink);border-color:var(--muted)}
+
+  /* A tick per step, so a long install can be put down and picked up. */
+  .tick{display:flex;align-items:center;gap:8px;margin:0 0 10px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--muted);cursor:pointer;
+    background:none;border:0;padding:0}
+  .tick .box{width:15px;height:15px;border:1px solid var(--rule);
+    border-radius:3px;display:grid;place-items:center;flex:none;
+    font-size:11px;line-height:1;color:transparent}
+  .tick[aria-pressed="true"] .box{background:var(--gold-wash);
+    border-color:var(--gold);color:var(--gold-ink)}
+  .tick[aria-pressed="true"]{color:var(--gold-ink)}
+  ol.steps>li.done>div>h3{text-decoration:line-through;
+    text-decoration-color:var(--rule);text-decoration-thickness:1px}
+
+  /* What success looks like. Distinct from a warning on purpose: a reader
+     checking their own output should not have to decide whether a green
+     block is telling them off. */
+  .expect{border-left:3px solid var(--rule);background:var(--rule-soft);
+    padding:11px 14px;border-radius:0 4px 4px 0;margin:0 0 14px}
+  .expect .lab{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px}
+  .expect code{background:var(--card)}
+  .expect p{font-size:14px;margin:0}
+
+  /* Folded away, because a reader following a working install should not
+     have to scroll past everything that could go wrong. */
+  details.wrong{border:1px solid var(--rule);border-radius:5px;
+    padding:0 14px;margin:0 0 14px;background:var(--card)}
+  details.wrong>summary{font-family:var(--cond);font-weight:600;font-size:14.5px;
+    cursor:pointer;padding:11px 0;list-style:none}
+  details.wrong>summary::-webkit-details-marker{display:none}
+  details.wrong>summary::before{content:"▸ ";color:var(--muted)}
+  details.wrong[open]>summary::before{content:"▾ "}
+  details.wrong[open]>summary{border-bottom:1px solid var(--rule-soft);
+    margin-bottom:12px}
+  details.wrong>:last-child{margin-bottom:13px}
+  details.wrong p,details.wrong li{font-size:14px}
+
+  /* Contents, on the left where there is room for it. */
+  .toc{background:var(--card);border:1px solid var(--rule);border-radius:6px;
+    padding:16px 20px;margin-top:26px}
+  .toc ol{margin:0;padding-left:20px;font-size:14.5px}
+  .toc li{margin-bottom:5px}
+  .toc .eyebrow{margin-bottom:8px}
+
+  @media (max-width:430px){
+    .cmd pre{padding-right:16px;padding-top:38px}
+    .copy{top:6px;right:6px}
+    .fields{grid-template-columns:1fr}
+  }
+
+  /* A reader who prints this wants the commands, not the furniture. */
+  @media print{
+    .bar,.copy,.tick,.toc,.setup{display:none}
+    details.wrong{border:0;padding:0}
+    details.wrong>summary{display:none}
+    pre{border:1px solid #999;color:#000;background:#fff}
+    a{color:#000}
+  }
+
+  /* ------------------------------------------------------------------ *
+   * The three questions at the top, and the branching they drive.
+   *
+   * Buttons rather than a <select>: all the options are visible without a
+   * click, which matters when the question is "what are you connecting
+   * from" and the reader is not sure which answer describes them.
+   * ------------------------------------------------------------------ */
+  .choices{display:flex;flex-direction:column;gap:14px;margin-top:4px}
+  .choice-row{display:flex;flex-direction:column;gap:7px}
+  .choice-q{margin:0;font-size:13.5px;font-weight:600}
+  .choice-hint{margin:0 0 2px;font-size:12.5px;color:var(--muted);
+    line-height:1.45}
+  .choice-opts{display:flex;flex-wrap:wrap;gap:8px}
+  .choice-opt{font:inherit;font-size:13.5px;cursor:pointer;
+    padding:7px 13px;border-radius:4px;
+    /* TOKENS, NOT #fff. This said `background:#fff;color:inherit` and that
+       is how the chooser shipped at a 1.21:1 contrast ratio in dark mode:
+       the background stayed white while `inherit` brought down --ink, which
+       is near-white there. White buttons with pale grey labels, on the first
+       thing anybody is asked to touch. The colour is set explicitly rather
+       than inherited so a parent's muted text cannot leak into it either. */
+    border:1px solid var(--rule);background:var(--card);color:var(--ink)}
+  .choice-opt:hover{border-color:var(--muted)}
+  .choice-opt[aria-pressed="true"]{background:var(--gold-wash);
+    border-color:var(--gold);color:var(--gold-ink);font-weight:600}
+  .choice-opt:focus-visible{outline:2px solid var(--gold-ink);outline-offset:2px}
+
+  /* A branch that applies to the reader, flagged so it is obvious the page
+     is showing them one path out of several rather than the whole thing. */
+  .branch{border-left:3px solid var(--rule);padding-left:14px;margin:0 0 14px}
+  .branch > .lab{display:block;font-family:var(--mono);font-size:11px;
+    letter-spacing:.07em;text-transform:uppercase;color:var(--muted);
+    margin-bottom:6px}
+
+  /* Rationale, folded away.
+   *
+   * This project explains why, at length, and that is worth keeping — most
+   * of those paragraphs start with the failure they prevent. But a reader
+   * standing at a terminal wants the command, and seven thousand words of
+   * reasoning between them and it is how a guide stops being followed.
+   * `details.wrong` is for when something broke; this is for why a thing is
+   * the way it is, and it stays shut until somebody asks. */
+  details.why{margin:0 0 14px}
+  details.why > summary{cursor:pointer;font-size:13.5px;color:var(--muted);
+    list-style:none;display:inline-flex;align-items:center;gap:6px}
+  details.why > summary::-webkit-details-marker{display:none}
+  details.why > summary::before{content:"›";display:inline-block;
+    font-size:15px;line-height:1;transition:transform .12s ease}
+  details.why[open] > summary::before{transform:rotate(90deg)}
+  details.why > summary:hover{color:var(--ink)}
+  details.why > summary:focus-visible{outline:2px solid var(--gold-ink);
+    outline-offset:3px;border-radius:2px}
+  details.why > *:not(summary){margin-top:10px;padding-left:14px;
+    border-left:1px solid var(--rule-soft)}
+  @media (prefers-reduced-motion:reduce){
+    details.why > summary::before{transition:none}
+  }
+
+  /* How far through the install you are. Hidden until the script fills it,
+     so a reader with no JavaScript is not shown an empty line. */
+  .progress{font-family:var(--mono);font-size:12.5px;letter-spacing:.04em;
+    color:var(--muted);text-transform:uppercase}
+  .progress b{color:var(--gold-ink);font-weight:600}

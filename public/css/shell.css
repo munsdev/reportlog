@@ -1,0 +1,211 @@
+/* shell.css — The site chrome: the menu, the brand, the progress rule, the corner cluster and edit mode.
+ *
+ * A contiguous slice of what was panels.css, in the order it was in, so the
+ * cascade is unchanged. It decides no colour and no shape of its own: those
+ * are the look’s, in public/tokens.css. See docs/frontend-files.md.
+ */
+/* hamburger nav */
+.menubtn{font-family:var(--cond);font-weight:600;font-size:15px;letter-spacing:.03em;
+  color:var(--on-deep-muted);background:none;border:0;padding:17px 16px;cursor:pointer;display:flex;
+  align-items:center;gap:9px;border-bottom:6px solid transparent;margin-bottom:-6px}
+.menubtn:hover,.menubtn.on{color:var(--color--text-on-deep)}
+.menubtn .bars{display:inline-flex;flex-direction:column;gap:3px;width:16px}
+.menubtn .bars i{display:block;height:2px;background:currentColor;border-radius:2px}
+.navmenu{display:none;background:var(--nav-deeper);border-top:1px solid rgba(255,255,255,.10);
+  max-height:72vh;overflow:auto}
+.navmenu.on{display:block}
+.navmenu .wrap{display:block;padding:4px 16px 12px}
+.navmenu button{display:flex;width:100%;align-items:center;justify-content:space-between;gap:10px;
+  background:none;border:0;color:var(--on-deep-muted);font-family:var(--cond);font-weight:600;font-size:15px;
+  text-align:left;padding:12px 12px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.07)}
+.navmenu button:hover{background:rgba(255,255,255,.07);color:var(--color--text-on-deep)}
+.navmenu button.active{color:var(--color--text-on-deep);box-shadow:inset 3px 0 0 var(--verify)}
+.navmenu .sect{font-family:var(--cond);font-weight:600;font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--on-deep-muted);padding:14px 12px 4px}
+.navmenu .n{font-family:var(--mono);font-size:11px;background:var(--verify);color:var(--on-verify);
+  padding:1px 7px;border-radius:9px}
+
+/* Submit CTA on the right of the bar, and the auth block at the menu's foot */
+.tabs .wrap{justify-content:space-between}
+/* The site's name, and the way home.
+   It replaced a Submit button that lived here: on a phone there is room
+   for the menu and one more thing, and what belongs in the chrome is what
+   the site IS, not one of the things you can do on it. Inside the form the
+   bar previously read "Menu" and nothing else, so there was no longer
+   anything on screen saying where you were. */
+/* On the dark nav, so it takes the palette's on-deep brand colour rather
+   than the one drawn for a light surface. Bureau's action blue measured
+   2.56:1 here before this; the on-deep value is what the palette provides
+   for a dark ground. */
+/* The accent runs of a name, wherever the name is drawn. Before this, only
+   the nav and the lock screen had a rule and every other place the name
+   appears rendered every run in one colour. */
+[data-brand] .a,.namepreview .a{color:var(--brand-mark)}
+[data-brand] .b,.namepreview .b{color:var(--brand-second)}
+/* On the dark navigation bar the accents take the palette's ON-DEEP values
+   rather than the ones drawn for a light surface. Bureau's action blue
+   measured 2.56:1 here before there was a rule at all.
+
+   WRITTEN WITH THE ATTRIBUTE ON PURPOSE, and the pair above is why. Once
+   this button gained `data-brand` — which it needed, or a renamed
+   deployment went on saying ReportLog in the bar at the top of every page —
+   `[data-brand] .a` and a bare `.brand .a` had EQUAL specificity, so the
+   on-light accent won on source order and every light palette failed on the
+   navy bar, as low as 1.65:1. `.brand[data-brand]` outranks it and says
+   which ground it means. Do not simplify this back to `.brand .a`. */
+.brand[data-brand] .a{color:var(--brand-mark-deep)}
+.brand[data-brand] .b{color:var(--brand-second-deep)}
+.brand .tld{color:var(--on-deep-muted)}
+.brand{font-family:var(--cond);font-weight:700;font-size:16px;letter-spacing:.04em;
+  text-transform:uppercase;background:none;color:var(--color--text-on-deep);border:0;padding:17px 2px 17px 10px;
+  margin-left:auto;cursor:pointer;text-align:right;line-height:1.2;
+  /* Never allowed to wrap: a second row would double the height of a bar
+     that is pinned to the top of every screen. It truncates instead, which
+     only ever happens on a display narrower than any current phone. */
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.brand:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:2px}
+/* Small phones: the name keeps its words and the menu gives up its
+   padding, rather than the name giving up its letters. */
+@media(max-width:400px){
+  .brand{font-size:12px;letter-spacing:.01em}
+  .menubtn{padding:14px 10px;gap:7px}
+}
+@media(max-width:340px){
+  .brand{font-size:11px}
+  .menubtn{padding:14px 8px;font-size:13px}
+}
+
+/* How far through the form you are, drawn as the bottom edge of the bar.
+   A separate sticky element would have to be positioned below this one,
+   which means knowing its height — and the bar already ends in a 3px rule
+   that is pinned to the top of the screen for free. On the form that rule
+   becomes the progress track; everywhere else it stays the plain green
+   line it has always been. */
+/* The fill has to be the BRIGHTER of the two against a dark bar. The
+   site's green is dark by design, so on the navy it came out darker than
+   its own track and the filled part read as a gap. A lighter tint of the
+   same green fixes it without introducing a new colour to the palette. */
+/* Six rather than three: at three the progress was legible but easy to
+   miss on a phone. Doubling it means doubling the bar's plain rule too, on
+   every page — otherwise the bar would grow three pixels on entering the
+   form and shove the content down. */
+.navprog{display:none;height:6px;background:rgba(255,255,255,.14)}
+.tabs.progress{border-bottom-width:0}
+.tabs.progress .navprog{display:block}
+.navprog i{display:block;height:100%;width:0;background:var(--act);transition:width .18s ease}
+.navmenu .authblock{border-top:1px solid rgba(255,255,255,.14);margin-top:10px;padding:12px 12px 4px}
+.navmenu .authblock .who{font-family:var(--mono);font-size:12px;color:var(--on-deep-muted);margin-bottom:9px;
+  word-break:break-all}
+.navmenu .authblock button{border:1px solid var(--rule-deep);padding:9px 12px;justify-content:center}
+.navmenu .authblock button:hover{border-color:var(--color--text-on-deep)}
+
+/* Quiet bottom-left cluster: the development notice and the bug-report
+   link. Both sit here rather than as a prominent button so nothing in the
+   corner competes with "Submit a Report" — filing a report and
+   reporting a broken page are unrelated acts and shouldn't look alike. */
+.corner{position:fixed;left:max(14px,env(safe-area-inset-left,0px));
+  bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:90;display:flex;flex-direction:column;
+  align-items:flex-start;gap:7px}
+.devbadge{display:none;font-family:var(--cond);font-weight:600;
+  font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;background:var(--amber-bg);
+  color:var(--amber);border:1px solid var(--amber);padding:8px 12px;cursor:pointer;
+  align-items:center;gap:7px;box-shadow:0 2px 8px rgba(15,27,38,.18)}
+.devbadge.on{display:flex}
+.devbadge:hover{background:var(--amber);color:var(--on-solid)}
+.devbadge .dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex:0 0 auto}
+.bugbtn{display:none;font-family:var(--cond);font-weight:600;font-size:11px;letter-spacing:.05em;
+  text-transform:uppercase;background:var(--card);color:var(--muted);border:1px solid var(--rule);
+  padding:6px 11px;cursor:pointer}
+.bugbtn.on{display:block}
+.bugbtn:hover{color:var(--ink);border-color:var(--ink)}
+.editbtn.is-on{background:var(--act);color:var(--act-fg);border-color:var(--ink)}
+
+/* ---- edit mode -----------------------------------------------------
+   A pencil beside every piece of text an operator owns, and nothing else
+   on the page changes. The outline is what makes it obvious which text is
+   editable and which is the software's own wording — without it an
+   operator clicks hopefully at headings that are not theirs to change. */
+body.editing [data-copy]{outline:2px dashed var(--act);outline-offset:3px;position:relative}
+.editpen{position:absolute;top:-12px;right:-10px;z-index:6;
+  font-family:var(--cond);font-weight:700;font-size:12px;line-height:1;
+  background:var(--act);color:var(--act-fg);border:1px solid var(--ink);
+  border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer}
+.editpen:hover{background:var(--ink);color:var(--card)}
+body:not(.editing) .editpen{display:none}
+@media(max-width:560px){
+  .corner{left:10px;bottom:10px}
+  .devbadge{font-size:10.5px;padding:7px 10px}
+}
+
+/* ---- one editor open at a time, and one bar belonging to it ----------
+   public/js/admin-editors.js has the reasoning. The bar is FIXED to the
+   bottom of the viewport and there is only ever one of it, which is the
+   whole point: several sticky bars stack and move the confusion rather
+   than removing it. */
+/* ONE HEIGHT, NAMED ONCE. The bar, the page's bottom padding, the toast and
+   the corner buttons all have to agree about how tall it is, and four
+   numbers that must match is three chances to be wrong. */
+/* --ed-bar-h is MEASURED and written here by admin-editors.js; this is only
+   what it is before the bar has ever been shown. --toast-gap is how far the
+   notification floats off whatever is under it — the bottom of the screen,
+   or the top of the bar — so it is the same small distance either way. */
+:root{--ed-bar-h:72px;--kb-inset:0px;--toast-gap:12px}
+/* `--kb-inset` is how much of the page the on-screen keyboard is covering,
+   measured in admin-editors.js. Zero everywhere the viewport meta's
+   `interactive-widget=resizes-content` already shrank the layout, which is
+   why adding it twice is safe. */
+.ed-bar{position:fixed;left:0;right:0;bottom:var(--kb-inset);z-index:100;
+  background:var(--color--background-deep);color:#fff;
+  border-top:1px solid rgba(255,255,255,.14);
+  box-shadow:0 -6px 24px rgba(0,0,0,.22)}
+.ed-bar-in{max-width:var(--page-max);margin:0 auto;padding:10px 16px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ed-bar-what{font-weight:600;flex:1 1 auto;min-width:0}
+.ed-bar-acts{display:flex;gap:8px;flex:0 0 auto}
+/* Room to scroll past the bar, so the bar never covers the last field of
+   the thing it belongs to. */
+body.has-editor{padding-bottom:calc(var(--ed-bar-h) + 12px)}
+
+/* THE FLOATING BUTTONS GO ABOVE THE BAR, NOT OVER IT. `.corner` — the
+   development badge, Report a bug, Edit content — is fixed to the bottom
+   left at z-index 90, so it sat ON TOP of the bar and over its Cancel: two
+   things claiming the same corner, and the one you needed was underneath.
+   The bar outranks them while it is open, and they lift clear of it. */
+body.has-editor .corner{bottom:calc(var(--ed-bar-h) + var(--kb-inset) + 14px + env(safe-area-inset-bottom,0px))}
+
+/* ROOM TO SCROLL THE FIELD CLEAR OF THE BAR. The browser scrolls a focused
+   field just into view, by its own reckoning, which knows nothing about a
+   bar fixed over the bottom of the page — so the field it just revealed
+   lands underneath it. This is the half that can be said in CSS; the other
+   half is the keyboard's height, which is only known once it opens. */
+.ed-open input, .ed-open select, .ed-open textarea{
+  scroll-margin-bottom:calc(var(--ed-bar-h) + 16px)}
+
+/* The collapsed state, which is most of the work: a closed panel shows its
+   CURRENT VALUES, not just its name. */
+.ed-sum{margin-top:8px;display:grid;gap:4px}
+.ed-sum-row{display:flex;gap:10px;align-items:baseline;
+  font-size:.92rem;line-height:1.45}
+.ed-sum-lab{flex:0 0 42%;color:var(--color--text-muted)}
+.ed-sum-val{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.panel_component.ed-open{outline:2px solid var(--color--action);
+  outline-offset:2px}
+
+/* The notification for the controls that apply immediately — because part
+   of what was confusing is that some things save when you touch them and
+   some need a button, and nothing on the screen said which. */
+.adm-toast{position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--toast-gap) + var(--kb-inset));z-index:110;pointer-events:none;
+  opacity:0;transition:opacity .18s ease}
+.adm-toast.on{opacity:1}
+/* Just clear of the bar, by the same small gap it keeps from the bottom of
+   the screen when there is no bar. */
+body.has-editor .adm-toast{bottom:calc(var(--ed-bar-h) + var(--kb-inset) + var(--toast-gap))}
+.adm-toast-msg{background:var(--color--background-deep);color:#fff;
+  padding:10px 16px;border-radius:999px;font-weight:600;font-size:.92rem;
+  box-shadow:0 6px 20px rgba(0,0,0,.26);max-width:90vw}
+@media(max-width:560px){
+  .ed-bar-in{padding:8px 12px}
+  .ed-sum-row{flex-direction:column;gap:0}
+  .ed-sum-lab{flex:none}
+}

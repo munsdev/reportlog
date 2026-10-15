@@ -1,0 +1,25 @@
+/* directory.css — The Alliance directory: organizations as a list of participants.
+ *
+ * A contiguous slice of what was panels.css, in the order it was in, so the
+ * cascade is unchanged. It decides no colour and no shape of its own: those
+ * are the look’s, in public/tokens.css. See docs/frontend-files.md.
+ */
+/* The directory reads as a list of participants, not a league table: no
+   rank numbers, no medals, no bars to compare. Ordering carries the
+   ranking and nothing else advertises it. */
+.orgrow{border:1px solid var(--rule);padding:14px;margin:0 0 8px}
+.orgrow .top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.orgrow .nm{font-family:var(--cond);font-weight:700;font-size:18px}
+.orgrow .mc{font-family:var(--mono);font-size:13px;color:var(--muted);white-space:nowrap}
+.orgrow .meta{font-size:13px;color:var(--muted);margin:4px 0 0}
+.orgrow .desc{margin:8px 0 0;font-size:14px}
+ul.plain{margin:6px 0 14px;padding-left:20px;font-size:14px;line-height:1.6}
+ul.plain li{margin:0 0 4px}
+#alliance-disclaimer{border:1px solid var(--rule);border-left:3px solid var(--gold-deep);
+  padding:12px 14px;margin:0 0 16px;font-size:14px;line-height:1.5}
+
+
+/* In front of the password there is one page and nothing else to press.
+   Leaving the menu on would offer a way into panes that cannot load. */
+body.gated-open .menubtn,
+body.gated-open .sitefoot a[data-nav]{display:none}

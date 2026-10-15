@@ -1,0 +1,15 @@
+# Every minute. Frequent because somebody is watching an upload spinner.
+#
+#   sudo systemctl enable --now reportlog-media-worker.timer
+[Unit]
+Description=Run the ReportLog media worker every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+# The worker is a oneshot that exits; without this a slow run and the next
+# tick would overlap and both claim the same upload slot.
+AccuracySec=15s
+
+[Install]
+WantedBy=timers.target

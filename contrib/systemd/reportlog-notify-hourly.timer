@@ -1,0 +1,31 @@
+# On the hour.
+#
+# It was twenty past, on the stated grounds that the hour boundary is when
+# everything else on this box is already busy. That was not checked and is
+# not true: the anchor runs at 04:00, the backup at 03:30, the anchor watch
+# at 09:00, and nothing is scheduled on the hour at all.
+#
+# NOTHING DEPENDS ON THE MINUTE. Each subscriber's window is measured from
+# their own last send (`users.last_notified_at`), not from the clock, so a
+# run at any minute covers exactly the reports since that person was last
+# written to. Moving it is a preference, not a correctness change — which is
+# why it can move.
+#
+# A run with no new reports sends nothing, so an idle archive costs one query
+# an hour and mails nobody.
+#
+#   sudo systemctl enable --now reportlog-notify-hourly.timer
+[Unit]
+Description=Send the ReportLog hourly digest
+
+[Timer]
+OnCalendar=*-*-* *:00:00
+RandomizedDelaySec=2min
+# Deliberately NOT Persistent. A box that was off for six hours should send
+# the next hour's digest, not six of them at once — and the window each
+# subscriber gets is measured from their own last send, so nothing is lost
+# by skipping the runs that did not happen.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

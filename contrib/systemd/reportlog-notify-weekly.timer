@@ -1,0 +1,16 @@
+# Monday mornings. The same digest with a wider window.
+#
+#   sudo systemctl enable --now reportlog-notify-weekly.timer
+[Unit]
+Description=Send the ReportLog weekly digest
+
+[Timer]
+OnCalendar=Mon *-*-* 08:40:00
+RandomizedDelaySec=10min
+# Persistent here, unlike the hourly one: a week's digest missed because the
+# box was down on Monday is worth sending late, and there is only ever one
+# of it to catch up on.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,19 @@
+# Hours after the anchor, not minutes. The anchor runs at 04:00 with up to
+# 20 minutes of jitter and talks to a public timestamp authority over the
+# network, so a check at 04:30 would report a fault every time the TSA was
+# briefly slow. 09:00 is late enough that a failure is a real failure and
+# early enough that somebody is awake to read the mail.
+#
+#   sudo systemctl enable --now reportlog-anchor-watch.timer
+[Unit]
+Description=Check that the ReportLog chain is still being anchored
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+RandomizedDelaySec=10min
+# If the box was off at 09:00, check when it comes back. A missed check is
+# how the gap this unit exists to close opened in the first place.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

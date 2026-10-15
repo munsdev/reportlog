@@ -1,0 +1,14 @@
+{
+  "name": "reportlog-browser-tests",
+  "version": "0.0.31",
+  "description": "The behavioural and accessibility tests that need a real browser and a real database.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run.js"
+  },
+  "dependencies": {
+    "axe-core": "^4.10.0",
+    "playwright": "^1.47.0"
+  }
+}

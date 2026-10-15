@@ -1,0 +1,147 @@
+<!-- Live figures — paste into a Webflow Embed element,
+     or anywhere else that takes HTML. Self-contained: no build step, no
+     library, no external fonts. Every class is prefixed el- so it cannot
+     collide with the styles of the page it lands on. -->
+<div id="reportlog-stats" class="el-w">Loading the latest figures&hellip;</div>
+
+<style>
+.el-w{--el-act:#E9A81C;--el-ink:#0E151C;--el-ink2:#46586A;--el-muted:#566470;
+  --el-rule:#A4B4BE;--el-soft:#B7C4CC;--el-card:#fff;--el-seal:#A81D33;--el-verify:#296B60;
+  max-width:760px;margin:0 auto;padding:0;color:var(--el-ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.el-w *{box-sizing:border-box}
+.el-card{background:var(--el-card);border:2px solid var(--el-rule);
+  border-top:6px solid var(--el-act);padding:20px 20px 16px;margin:0 0 14px}
+.el-eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--el-muted);margin:0 0 6px}
+/* Colour and family are set on the headings themselves, not just on the
+   wrapper: a host page styling its own h2 and h3 beats anything inherited,
+   and the widget then quietly takes on that site's look instead of ours. */
+.el-w h2{font-size:20px;line-height:1.15;letter-spacing:-.01em;margin:0 0 6px;
+  font-weight:700;color:var(--el-ink);font-family:inherit}
+.el-w h3{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--el-muted);margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--el-rule);
+  font-family:inherit}
+.el-w p{margin:0 0 14px;color:var(--el-ink2);font-family:inherit}
+.el-w h3:first-of-type{border-top:0;padding-top:0;margin-top:14px}
+.el-note{color:var(--el-ink2);font-size:13.5px;margin:0 0 4px}
+.el-rows{margin:0;padding:0;list-style:none;font-family:inherit}
+.el-rows li{margin:0}
+.el-row{display:flex;align-items:baseline;gap:12px;justify-content:space-between;
+  padding:7px 0;border-bottom:1px solid var(--el-soft)}
+.el-row:last-child{border-bottom:0}
+.el-row span{min-width:0}
+.el-n{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-weight:600;font-size:15px;flex:none;font-variant-numeric:tabular-nums}
+.el-pub .el-n{color:var(--el-verify)}
+.el-dec .el-n{color:var(--el-seal)}
+.el-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.el-chip{border:1px solid var(--el-rule);padding:7px 9px}
+.el-chip b{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:15px;font-variant-numeric:tabular-nums}
+.el-chip span{font-size:12px;color:var(--el-muted)}
+.el-foot{font-size:12px;color:var(--el-muted);line-height:1.5;margin:14px 0 0;
+  padding-top:12px;border-top:1px solid var(--el-rule)}
+.el-foot a{color:#7D5B10;font-weight:600}
+.el-err{border-left:4px solid var(--el-seal);background:#FBEEF0;padding:11px 13px;
+  font-size:13.5px;color:#5A1420}
+</style>
+
+<script>
+(function () {
+  var API = 'https://reports.example.org/api/v1/stats';
+  var el = document.getElementById('reportlog-stats');
+  var esc = function (s) {
+    return String(s).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  };
+  var n = function (v) { return (v || 0).toLocaleString(); };
+
+  // Rows, biggest first, with a class so published reads teal and declined
+  // reads crimson — the same two colours those states have on the site.
+  function rows(obj, labels, classes) {
+    var keys = Object.keys(obj || {}).sort(function (a, b) { return obj[b] - obj[a]; });
+    if (!keys.length) return '<p class="el-note">Nothing yet.</p>';
+    return '<ul class="el-rows">' + keys.map(function (k) {
+      return '<li class="el-row ' + ((classes || {})[k] || '') + '">'
+        + '<span>' + esc((labels || {})[k] || k.replace(/_/g, ' ')) + '</span>'
+        + '<span class="el-n">' + n(obj[k]) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function chips(obj, labels) {
+    var keys = Object.keys(obj || {}).sort(function (a, b) { return obj[b] - obj[a]; });
+    if (!keys.length) return '<p class="el-note">Nothing yet.</p>';
+    return '<div class="el-grid">' + keys.map(function (k) {
+      return '<div class="el-chip"><b>' + n(obj[k]) + '</b><span>'
+        + esc((labels || {})[k] || k) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  var VERACITY = {
+    pending: 'Not yet assessed', undetermined: 'Undetermined',
+    likely_true: 'Likely true', proven_true: 'Proven true',
+    likely_false: 'Likely false', proven_false: 'Proven false',
+  };
+  var DISPOSITION = {
+    published: 'Published', under_review: 'Still under review',
+    declined: 'Declined', unclear: 'Unclear', withdrawn: 'Withdrawn by the reporter',
+  };
+
+  fetch(API, { cache: 'no-store' })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (d) {
+      var p = d.published_reports || {};
+      var groups = {};
+      Object.keys(p.by_category_group || {}).forEach(function (k) {
+        groups[p.by_category_group[k].label] = p.by_category_group[k].count;
+      });
+
+      el.innerHTML =
+        '<div class="el-card">'
+        + '<p class="el-eyebrow">Your archive &middot; live</p>'
+        + '<h2>The record so far</h2>'
+        + '<p class="el-note">' + esc(d.note || '') + '</p>'
+
+        + '<h3>Every confirmed report</h3>'
+        + rows((d.confirmed_reports || {}).by_disposition, DISPOSITION,
+               { published: 'el-pub', declined: 'el-dec' })
+        + '<p class="el-note">' + esc((d.confirmed_reports || {}).excludes || '') + '</p>'
+
+        + '<h3>Published reports, by what a moderator concluded</h3>'
+        + rows(p.by_veracity, VERACITY)
+
+        + '<h3>Who filed them</h3>'
+        + rows(p.by_reporter_type,
+               { credentialed_observer: 'Credentialed observers', member_of_public: 'Members of the public' })
+        + rows(p.by_account_type,
+               { direct: 'Saw it themselves', secondhand: 'Reported to them by someone else' })
+
+        + '<h3>What they were about</h3>'
+        + rows(groups)
+
+        + '<h3>By state</h3>'
+        + chips(p.by_state)
+
+        + '<h3>Corroboration</h3>'
+        + rows((p.corroboration || {}),
+               { corroborated_accounts: 'Accounts with another account of the same incident',
+                 single_accounts: 'Accounts standing alone',
+                 distinct_incidents_with_multiple_accounts: 'Incidents with more than one account' })
+
+        + '<p class="el-foot">As of ' + esc(new Date(d.as_of).toUTCString())
+        + '. Figures from <a href="https://reports.example.org">reports.example.org</a>'
+        + (d.release ? ' (' + esc(d.release) + ')' : '') + '. '
+        + esc(d.licence || '') + '.</p>'
+        + '</div>';
+    })
+    .catch(function () {
+      el.innerHTML = '<div class="el-card"><p class="el-err">The live figures could not be '
+        + 'loaded just now. They are always available at '
+        + '<a href="https://reports.example.org/api/v1/stats">reports.example.org/api/v1/stats</a>.</p></div>';
+    });
+})();
+</script>

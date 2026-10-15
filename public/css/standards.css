@@ -1,0 +1,19 @@
+/* standards.css — Standards and the volunteer form’s groups.
+ *
+ * A contiguous slice of what was panels.css, in the order it was in, so the
+ * cascade is unchanged. It decides no colour and no shape of its own: those
+ * are the look’s, in public/tokens.css. See docs/frontend-files.md.
+ */
+.stdnote{border-left-color:var(--gold-deep)}
+/* Headings inside the volunteer form's one fieldset. A dozen checkboxes in a
+   flat list is a wall; grouped, it is four short lists. These are markup
+   rather than nested fieldsets on purpose — nested fieldsets are announced
+   as nested groups, which is more structure than this needs. */
+.ivgroup{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin:18px 0 8px;padding-top:12px;
+  border-top:1px solid var(--rule)}
+.ivgroup:first-of-type{margin-top:12px}
+/* The shape of a document that does not exist. Set apart from ordinary
+   prose so it cannot be mistaken for the standard's contents. */
+.stdlist{margin:10px 0 16px;padding-left:20px}
+.stdlist li{font-size:15.5px;color:var(--ink-2);margin:0 0 7px;line-height:1.45}

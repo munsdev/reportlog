@@ -1,0 +1,221 @@
+/* form.css — The reporter's form: one card per question, the tiles and
+ * ticks a question is answered with, the review card, and the receipt.
+ *
+ * One contiguous slice of the <style> block public/index.html used to
+ * carry, in the order it was in, so the cascade is unchanged. It decides
+ * no colour and no shape of its own: those are the look’s, in
+ * public/tokens.css. See docs/frontend-files.md.
+ */
+/* Card form. Only ever applied when the server says the flag is on; with
+   it off none of these classes appear in the document and the linear form
+   renders exactly as it always has. */
+.cards{margin:0 0 18px}
+/* The gap above the card. Only one card is ever displayed, so a top
+   margin here is exactly one gap under the navigation bar rather than a
+   run of them. Without it the first question sits flush against a sticky
+   dark bar and reads as clipped rather than as the top of a page. */
+.card{display:none;margin-top:20px;border:2px solid var(--rule);border-radius:var(--radius);
+  box-shadow:var(--shadow);background:var(--card);padding:20px 22px}
+.card.on{display:block}
+.card h2{margin:0 0 4px}
+.card .cardsub{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 16px}
+.card .form_field-wrapper{margin-bottom:16px}
+.card .form_field-wrapper:last-child{margin-bottom:0}
+/* Room on both sides. Back and Next belong to the card above them, not to
+   whatever the page puts underneath, so the gap below is the larger one. */
+.cardnav{display:flex;align-items:center;gap:12px;margin:16px 0 26px}
+.cardnav .grow{flex:1}
+/* The intro has one action, so its button is sized like the thing you are
+   meant to press. Nothing else belongs on that card's nav — there is no
+   step to count and nowhere to go back to. */
+.cardnav.first{display:block}
+.cardnav.first .grow,.cardnav.first #card-back{display:none}
+/* Gold is the way forward, everywhere: Start, Next on every card, and
+   Submit a Report on the home page. It is the only thing on the site that
+   is gold apart from the rule under the navigation bar, so a gold shape is
+   always something to press. Dark text — white on gold fails at 2.08:1. */
+#card-next{background:var(--act);border-color:var(--ink);color:var(--act-fg)}
+#card-next:hover{background:var(--act-dk);border-color:var(--ink);color:var(--act-fg)}
+.cardnav.first #card-next{width:100%;padding:17px;font-family:var(--cond);font-size:17px;letter-spacing:.02em}
+/* The intro card is the page's own front matter — its header, notice and
+   explainer carry their own spacing, so it drops the card chrome. */
+.card[data-card="intro"]{border:0;background:transparent;padding:0;box-shadow:none;border-radius:0;
+  margin-top:0}
+.card[data-card="intro"] header{margin-bottom:0}
+/* A fork presented as a fork. Two tiles you choose between, rather than one
+   checkbox that silently rearranges the page around it. */
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.pick{grid-template-columns:1fr}}
+/* A tile is a real radio input wearing a tile. The visual is the label;
+   the input keeps the semantics — one named group, announced as "2 of 5",
+   arrow keys moving between options, and a focus ring that follows. A row
+   of <button>s looks identical and has none of that. */
+/* Visually hidden but still focusable and still hit-testable. A zero-size
+   or display:none input drops out of the tab order in some browsers, which
+   would make the whole question unreachable by keyboard. */
+.pick input[type="radio"]{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.picktile{display:block;position:relative;text-align:left;padding:14px 15px 14px 46px;
+  border:2px solid var(--field);border-radius:var(--radius);
+  background:var(--card);font-size:14px;line-height:1.4;
+  cursor:pointer;color:var(--ink);min-height:56px;
+  transition:border-color .12s ease,background .12s ease}
+/* An empty box on every option, ticked on the chosen one. Colour and a
+   border alone carry the state otherwise, and colour alone is not something
+   everyone can see.
+
+   On the LEFT, like every other box on this form and like a native
+   checkbox. It used to sit on the right, which put the same control on
+   either side of the page depending which screen you were on. */
+.picktile::after{content:'';position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  width:22px;height:22px;border:2px solid var(--rule);border-radius:3px;background:var(--card)}
+.pick input[type="radio"]:checked+.picktile::after{content:'✓';border-color:var(--verify);
+  background:var(--verify);color:var(--on-verify);font-size:15px;font-weight:700;line-height:20px;
+  text-align:center}
+/* A group whose options are all one-liners gets full width. Two short
+   answers side by side become two thin boxes that are awkward to hit and
+   read as an afterthought. */
+.pick.plain{grid-template-columns:1fr}
+.picktile:hover{border-color:var(--muted)}
+.pick input[type="radio"]:focus-visible+.picktile{outline:3px solid var(--focus);outline-offset:2px}
+.pick input[type="radio"]:checked+.picktile{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink);
+  background:var(--color--background-alt)}
+.picktile b{display:block;font-family:var(--cond);font-size:15px;margin-bottom:3px;font-weight:600}
+.picktile small{display:block;color:var(--muted);font-size:12.5px;line-height:1.4}
+/* Check your answers. Each row is a control, not a line of text — tapping
+   it goes to the card that set it — so it is a button and reads as one. */
+.review{margin:0 0 18px}
+.rwarn{background:var(--amber-bg);border-left:4px solid var(--amber);padding:11px 13px;
+  font-size:13.5px;line-height:1.45;color:var(--ink-2);margin:0 0 12px}
+.rrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;width:100%;text-align:left;
+  background:var(--card);border:0;border-bottom:1px solid var(--rule-soft);padding:11px 2px;
+  font-family:inherit;font-size:14px;color:var(--ink);cursor:pointer;min-height:48px}
+.rrow:first-of-type{border-top:1px solid var(--rule-soft)}
+.rrow:hover{background:var(--paper)}
+.rrow:focus-visible{outline:3px solid var(--focus);outline-offset:-3px}
+.rk{grid-column:1;font-family:var(--mono);font-size:11px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted)}
+.rv{grid-column:1;grid-row:2;line-height:1.4;overflow-wrap:anywhere}
+.rv.rlong{white-space:pre-wrap;font-size:13.5px}
+.rmissing{color:var(--seal);font-weight:600}
+.redit{grid-column:2;grid-row:1/3;align-self:center;font-size:12.5px;color:var(--verify);
+  text-decoration:underline;white-space:nowrap}
+.rfiles{border-bottom:1px solid var(--rule-soft);padding:11px 2px}
+.rfile{display:block;font-size:13.5px;padding:3px 0;overflow-wrap:anywhere}
+.rfile b{font-family:var(--mono);font-size:11.5px;font-weight:500}
+.rfile.fok b{color:var(--verify)}
+.rfile.fbusy b{color:var(--amber)}
+.rfile.fbad b{color:var(--seal)}
+.rfileedit{border-bottom:0;min-height:0;padding:4px 2px}
+
+/* A group heading inside a tile list — the two halves of "which are you". */
+.pick .pgrp{grid-column:1/-1;font-family:var(--cond);font-size:12px;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);font-weight:700;margin:10px 0 0}
+.pick .pgrp:first-child{margin-top:0}
+
+/* Shortcut tiles that sit under a typed field — "still going on", "not
+   sure when". Always visible, never revealed. */
+.escape{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+@media(max-width:520px){.escape{grid-template-columns:1fr}}
+.esc{text-align:left;padding:11px 13px;border:1px dashed var(--rule);background:transparent;
+  font-family:inherit;font-size:13.5px;color:var(--ink);cursor:pointer;min-height:44px}
+.esc:hover{border-color:var(--muted);border-style:solid}
+.esc:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.esc.on{border-style:solid;border-color:var(--verify);box-shadow:inset 0 0 0 1px var(--verify);
+  background:var(--verify-bg)}
+.esc.on b{font-weight:700}
+/* Left, to match every other option box on the form. */
+.esc::after{content:'';position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:20px;height:20px;border-radius:3px;border:2px solid var(--rule);background:var(--card)}
+.esc.on::after{content:'✓';border-color:var(--verify);
+  background:var(--verify);color:var(--on-verify);
+  font-size:14px;font-weight:700;line-height:20px;text-align:center}
+.esc{position:relative;padding-left:42px}
+
+/* Qualifiers on the answer above them, not alternatives to it. */
+.quals{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.qual{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;
+  border:2px solid var(--field);border-radius:var(--radius-sm);
+  background:var(--card);cursor:pointer;font-size:13.5px;line-height:1.4;min-height:48px}
+.qual:hover{border-color:var(--muted)}
+.qual input{width:22px;height:22px;margin:0;flex:0 0 22px;accent-color:var(--ink)}
+.qual:has(input:checked){border-color:var(--verify);box-shadow:inset 0 0 0 1px var(--verify);
+  background:var(--verify-bg)}
+.qual:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.qual b{display:block;font-family:var(--cond);font-size:14.5px;font-weight:600}
+.qual small{display:block;color:var(--muted);font-size:12.5px}
+.esc b{display:block;font-family:var(--cond);font-size:14px}
+.esc small{display:block;color:var(--muted);font-size:12px}
+/* Top margin because the page header moves onto the intro card, so from
+   the first question onward this is the topmost thing in the form and
+   would otherwise sit tight under the fixed nav. */
+.carderr{background:var(--seal-bg);border-left:4px solid var(--seal);padding:9px 11px;font-size:13px;color:var(--seal);margin:12px 0 0;display:none}
+.carderr.on{display:block}
+
+/* Category as tiles rather than a dropdown: on a phone, at a polling place,
+   scanning a grid beats opening a select with eighteen options in it. */
+.cattiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:560px){.cattiles{grid-template-columns:1fr}}
+.cattiles .grp{grid-column:1/-1;font-family:var(--cond);font-size:12.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink);font-weight:700;margin:16px 0 2px;padding-bottom:5px;border-bottom:2px solid var(--rule)}
+.cattiles .grp:first-child{margin-top:0}
+/* Real checkboxes, and the box is on the left like every other option on
+   this form. More than one may be ticked: an incident is often two of
+   these at once. */
+.cattile{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:11px 12px;
+  border:2px solid var(--field);border-radius:var(--radius-sm);
+  background:var(--card);font-family:inherit;font-size:13.5px;
+  line-height:1.35;cursor:pointer;color:var(--ink);min-height:44px}
+.cattile:hover{border-color:var(--muted)}
+.cattile input{flex:0 0 20px;width:20px;height:20px;margin:0;accent-color:var(--ink);cursor:pointer}
+.cattile:has(input:checked){border-color:var(--verify);box-shadow:inset 0 0 0 1px var(--verify);
+  background:var(--verify-bg);font-weight:600}
+.cattile:has(input:focus-visible){outline:3px solid var(--focus);outline-offset:2px}
+.catcount{font-family:var(--mono);font-size:12px;color:var(--muted);margin:10px 0 0}
+/* press pack */
+.prsnote{font-family:var(--mono);font-size:12px;color:var(--muted);margin:0 0 14px}
+.prsrow{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--rule-soft)}
+.prsrow .k{flex:1;font-family:var(--cond);font-weight:600;font-size:14.5px;word-break:break-word}
+.prsrow .prssz{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.prsrow .prsmiss{font-family:var(--mono);font-size:12px;color:var(--seal)}
+.prsrow .button{flex:0 0 auto;text-decoration:none}
+/* The same list inside the correction dialog, which is a tighter space. */
+.cxcats{display:grid;gap:4px;max-height:190px;overflow:auto;border:1px solid var(--rule-soft);padding:6px}
+.cxcat{display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:1.3;
+  padding:5px 4px;cursor:pointer;min-height:32px}
+.cxcat input{flex:0 0 18px;width:18px;height:18px;margin:0;accent-color:var(--ink);cursor:pointer}
+.cxcat:has(input:checked){background:var(--verify-bg);font-weight:600}
+
+
+.form_help.reason-warn{background:var(--amber-bg);border-left:3px solid var(--amber);padding:7px 9px;color:var(--ink-2)}
+
+.note{background:var(--amber-bg);border-left:4px solid var(--amber);padding:11px 13px;font-size:13.5px;line-height:1.42;color:var(--ink-2);margin:0 0 14px}
+/* The honeypot. Off-screen rather than display:none, because some bots
+   skip anything that is not rendered at all. aria-hidden and tabindex=-1
+   keep it away from anybody using a keyboard or a screen reader. */
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+/* The error line. The layer's .form_error shows on `.is-shown`; the scripts of this
+   app have always said `.on`, and there are a great many of them, so both work. */
+.form_error.on{display:block}
+.form_error{margin:0 0 14px}
+
+.foot{font-size:12.5px;color:var(--muted);text-align:center;margin:10px 0 30px;line-height:1.4}
+
+.receipt{display:none;background:var(--verify-bg);border:2px solid var(--verify);border-left-width:9px;
+  border-radius:var(--radius);padding:22px;margin:20px 0 14px}
+.receipt.on{display:block}
+.receipt .ttl{font-family:var(--cond);font-weight:700;font-size:20px;color:var(--verify);margin:0 0 6px}
+.receipt .rc-to{font-family:var(--mono);font-size:13px;color:var(--muted);margin:0 0 14px;word-break:break-all}
+.receipt .rc-body{margin:0 0 12px;font-size:14.5px;line-height:1.55;color:var(--ink-2)}
+.receipt .rc-acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+/* The form is gone once this is showing, so the whole pane collapses to
+   this one block. Everything the submit pane holds is hidden by a class on
+   the pane rather than by touching each piece, so there is one thing to get
+   right and one thing to undo. */
+#pane-submit.sent .cards,
+#pane-submit.sent .cardnav,
+#pane-submit.sent .carderr,
+#pane-submit.sent .foot,
+#pane-submit.sent #printhead{display:none!important}
+.receipt code{font-family:var(--mono);font-size:12.5px;background:var(--color--surface);padding:2px 6px;border:1px solid var(--verify)}
+
+

@@ -1,0 +1,27 @@
+# Processes the upload queue: strips metadata, transcodes video, renders PDF
+# pages. REQUIRED if attachments are switched on — without it an upload sits
+# at "checking" forever and nothing says why.
+#
+# Paired with reportlog-media-worker.timer; do not enable this unit directly.
+[Unit]
+Description=ReportLog media worker
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=reportlog
+Group=reportlog
+WorkingDirectory=/srv/reportlog
+ExecStart=/usr/bin/node --env-file=/srv/reportlog/.env scripts/media-worker.js
+
+# /var/cache/reportlog, created and chowned by systemd, and shared between
+# this unit and the others. It also sets CACHE_DIRECTORY, which src/mediaCache.js
+# reads. Without it the media cache lands in a PrivateTmp /tmp that is
+# destroyed every invocation and shared with nobody.
+CacheDirectory=reportlog
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/reportlog

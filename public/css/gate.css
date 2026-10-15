@@ -1,0 +1,130 @@
+/* gate.css — The lock screen, and the first-run setup wizard behind it.
+ *
+ * One contiguous slice of the <style> block public/index.html used to
+ * carry, in the order it was in, so the cascade is unchanged. It decides
+ * no colour and no shape of its own: those are the look’s, in
+ * public/tokens.css. See docs/frontend-files.md.
+ */
+/* ---------- the boot gate ----------
+
+   NOTHING ON THIS PAGE IS SHOWN UNTIL THE FIRST STATUS CALL HAS ANSWERED.
+
+   Two faults, one cause. Every pane is in the DOM from the first byte (the
+   invariant the gate is built on), and the page's own name is a literal in
+   the markup — so between first paint and `/api/site-access/status`
+   answering, a visitor saw the whole site's writing even on a locked
+   deployment, and every deployment that had renamed itself flashed
+   "ReportLog" and then corrected itself. The comment on the brand button in
+   index.html used to describe that second one as a fraction of a second and
+   leave it there.
+
+   `visibility` rather than `display`, so the page is laid out while it is
+   hidden and nothing reflows when it appears: a script measuring a box
+   during boot gets the real box.
+
+   THE CLASS IS REMOVED ON EVERY PATH, including a status call that fails or
+   never returns — see the watchdog in gate.js. A boot gate that can stick is
+   a blank site, which is worse than the flash it replaces. The lock screen
+   and the setup wizard are NOT hidden by this: both are switched on by that
+   same answer, so they have nothing to flash, and hiding them would leave a
+   locked deployment blank for the length of the call. */
+html.booting .tabs,
+html.booting > body > .wrap,
+html.booting .sitefoot{visibility:hidden}
+/* The name, wherever it is written. Inside the two containers above this is
+   already covered; the lock screen's own brand line is not, and that one is
+   the first word on a locked deployment. */
+html.booting [data-brand],
+html.booting [data-brand-phrase]{visibility:hidden}
+
+.lockscreen{display:none;position:fixed;inset:0;z-index:500;background:var(--color--background-deep);overflow-y:auto;
+  padding:calc(20px + env(safe-area-inset-top,0px)) 20px calc(20px + env(safe-area-inset-bottom,0px))}
+.lockscreen.on{display:flex}
+/* The same card the rest of the site uses — 2px rule, hard shadow, gold
+   edge along the top where the nav bar's gold rule would be. */
+/* Auto margins, for the reason given at .setupscreen .box: centred when it
+   fits, scrollable from its top when a short landscape phone cannot fit it. */
+.lockscreen .box{margin:auto;max-width:380px;width:100%;background:var(--card);padding:24px;
+  border:2px solid var(--rule);border-top:6px solid var(--act);
+  border-radius:var(--radius);box-shadow:var(--shadow)}
+.lockscreen .lockbrand{font-family:var(--cond);font-weight:700;font-size:15px;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--ink);margin:0 0 14px}
+.lockscreen .lockbrand .a{color:var(--brand-mark)}
+.lockscreen .lockbrand .b{color:var(--brand-second)}
+.lockscreen .lockbrand .tld{color:var(--muted)}
+.lockscreen h1{font-family:var(--cond);font-weight:700;font-size:26px;
+  line-height:1.1;margin:0 0 18px;color:var(--ink)}
+.lockscreen .lockalt,.lockscreen .lockdoors{margin:18px 0 0;padding-top:14px;border-top:1px solid var(--rule);
+  font-size:13.5px;color:var(--muted);line-height:1.45}
+.lockscreen .button.is-full{margin:0}
+/* A password field keeps the browser's default character width unless it is
+   told otherwise, which left it two-thirds the width of the button under
+   it. */
+.lockscreen input{width:100%}
+/* Browser-default blue on a card that has its own palette.
+
+   --brand-mark, not --brand-mark-deep: this link is INSIDE the light card,
+   not on the deep ground behind it. The on-deep gold measured 1.9:1 here,
+   the same mistake and for the same reason as the brand above it. */
+.lockscreen .lockalt a,.lockscreen .lockdoors a{color:var(--brand-mark);text-decoration:underline;
+  text-underline-offset:2px;font-weight:600}
+.lockscreen .lockalt a:hover,.lockscreen .lockdoors a:hover{color:var(--ink)}
+.lockscreen .lockdoors p{margin:0 0 6px}
+.lockscreen .lockdoors ul{margin:0;padding-left:18px}
+.lockscreen .lockdoors li{margin:2px 0}
+
+/* The setup wizard borrows the lock screen's full-viewport treatment: it is
+   the same kind of moment — nothing behind it is reachable yet — and giving
+   it its own look would make the handover feel like a different site. */
+.setupscreen{display:none;position:fixed;inset:0;z-index:501;background:var(--color--background-deep);
+  padding:20px;overflow-y:auto}
+.setupscreen.on{display:flex}
+/* Centred by auto margins, NOT by align-items:center. A flex item centred
+   with align-items that is taller than the screen overflows equally at the
+   top and the bottom, and the top half is cut off where no scrolling can
+   reach it — which is what the starting-point screen did once it listed four
+   templates. Auto margins centre a box that fits and pin one that does not
+   to the top, so it scrolls. */
+.setupscreen .box{max-width:460px;width:100%;background:var(--card);padding:24px;
+  border:1px solid var(--rule);margin:auto}
+.setupscreen h1{font-family:var(--cond);font-weight:700;font-size:24px;margin:0 0 6px}
+.setupscreen .step{display:none}
+.setupscreen .step.on{display:block}
+.setupscreen .stepno{font-family:var(--mono);font-size:11px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.08em;margin:0 0 10px}
+.setupscreen input,.setupscreen select{width:100%}
+/* Progress, and a way back. The bar is the only thing on the screen that
+   says how much is left; without it the wizard is eight identical boxes. */
+.setupbar{height:3px;background:var(--rule-soft);margin:0 0 14px;border-radius:2px;overflow:hidden}
+.setupbar i{display:block;height:100%;background:var(--act);width:0;transition:width .2s ease}
+.setupback{display:block;background:none;border:0;padding:10px 0 0;margin:6px 0 0;
+  font-family:var(--cond);font-weight:600;font-size:14px;color:var(--muted);
+  cursor:pointer;text-align:left}
+.setupback:hover{color:var(--ink)}
+.setupback:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* The name, shown as it will actually be drawn. */
+.namepreview{font-family:var(--cond);font-weight:700;font-size:24px;margin:4px 0 0;
+  min-height:30px;word-break:break-word}
+.setupscreen code{font-family:var(--mono);font-size:12.5px;background:var(--paper);padding:1px 4px}
+/* A radio is not a text field and must not be stretched to the width of
+   one. The rule above is what actually broke this screen: every input in
+   the wizard was 100% wide, radios included, so the control filled the row
+   and the label sat under it. */
+.setupscreen .choice input[type=radio]{width:auto}
+/* Two columns: the radio in its own narrow one, the title and the
+   description stacked in the second. A block-level description after an
+   inline input put the text on its own line and left the radio floating
+   above it; this aligns the description under its own title instead. */
+.setupscreen .choice{display:grid;grid-template-columns:auto 1fr;column-gap:10px;
+  align-items:start;border:1px solid var(--rule);padding:12px;margin:0 0 8px;cursor:pointer}
+.setupscreen .choice.sel{border-color:var(--gold-deep)}
+.setupscreen .choice input[type=radio]{grid-column:1;grid-row:1;margin:3px 0 0}
+.setupscreen .choice .t{grid-column:2;grid-row:1;font-weight:600}
+.setupscreen .choice .d{grid-column:2;grid-row:2;font-size:13px;color:var(--muted);margin:3px 0 0}
+
+
+/* What boot-guard.js shows when the page's scripts could not run even after
+   a fresh fetch. Plain, readable on any palette, never behind the boot gate. */
+.bootfail{max-width:34rem;margin:24px auto;padding:16px 18px;border:2px solid var(--rule);
+  border-radius:var(--radius);background:var(--card);color:var(--ink);font-size:15px;line-height:1.5}
+.bootfail p{margin:0 0 12px}

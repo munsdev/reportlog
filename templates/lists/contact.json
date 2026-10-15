@@ -1,0 +1,25 @@
+{
+  "reportlog_list": 1,
+  "slug": "contact",
+  "title": "Get in touch",
+  "blurb": "A message to whoever runs this archive. Not a report, and not published anywhere.",
+  "email": "required",
+  "ask_email": "always",
+  "aggregates_published": false,
+  "fields": [
+    {
+      "key": "subject",
+      "kind": "short_text",
+      "label": "What is this about",
+      "required": true,
+      "retention": "transient"
+    },
+    {
+      "key": "message",
+      "kind": "long_text",
+      "label": "Your message",
+      "required": true,
+      "retention": "transient"
+    }
+  ]
+}

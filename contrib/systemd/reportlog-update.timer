@@ -1,0 +1,16 @@
+# Looks for a requested update once a minute.
+#
+# A minute is the wait an admin sees between pressing the button and the
+# page saying something is happening. Shorter would mean a unit starting
+# constantly for nothing; longer and the button feels broken.
+[Unit]
+Description=ReportLog — check for a requested update
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=15s
+Unit=reportlog-update.service
+
+[Install]
+WantedBy=timers.target
