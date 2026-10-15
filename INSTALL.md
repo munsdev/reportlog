@@ -236,62 +236,7 @@ front of the commands that change the system — the ones in §3 already say
 
 # 1 · The short version
 
-> **If the repository is private, the clone below asks for a username and
-> password and then fails.** GitHub no longer accepts account passwords for
-> git, so use a **personal access token** — fine-grained, read-only on
-> Contents, for this repository. At the prompt the **username is your GitHub
-> login** (not your email address, which is what most people try first) and
-> the **password is the token**.
->
-> **Do not paste the token into the URL.** `https://TOKEN@github.com/…`
-> clones fine and then breaks updates in a way that is not obvious: the
-> Updates pane fetches through the checkout's remote and so goes on working,
-> but `contrib/update-apply.sh` fetches the **plain** URL written in the
-> systemd unit — never the checkout's — so the token is never used and every
-> update fails with "could not fetch". It also leaves the token in
-> `.git/config`. To avoid retyping it, `git config --global credential.helper
-> store` — which writes the token to `~/.git-credentials` in the clear, so it
-> is for a test box rather than a real deployment.
->
-> **AND THE CREDENTIAL BELONGS TO THE `reportlog` USER, NOT TO YOU AND NOT TO
-> ROOT.** This is the part that bites, because `--global` means *per user*
-> and the obvious thing is to store it as whoever you are logged in as.
-> Every path that touches the remote runs as the service user:
->
-> | What | Runs as |
-> |---|---|
-> | the clone `install.sh` makes — only when run from outside a checkout | `sudo -u reportlog git clone` |
-> | the Updates pane's check | the application process |
-> | applying an update | `runuser -u reportlog`, inside `update-apply.sh` |
-> | `contrib/deploy.sh` | "the user that owns the checkout" |
->
-> **Run the way this guide shows it** — from inside a clone you made — it
-> does not clone at all: it copies that clone to `/srv/reportlog`, `origin`
-> and all. That first clone is the one place you type the credential as
-> yourself, and it is why a token pasted into its URL travels with it.
->
-> So one credential covers the rest, and **root needs none**:
->
-> ```
-> sudo -u reportlog git -C /srv/reportlog config --global credential.helper store
-> sudo -u reportlog git -C /srv/reportlog fetch origin stable
-> ```
->
-> The second command prompts once and stores it: username is your GitHub
-> login, password is the token.
->
-> **The symptom when this is missing** is the Updates pane saying it cannot
-> authenticate to the remote. Nothing else breaks — the site serves, reports
-> file, the timers run. Checking for updates is the only thing that stops,
-> so **you can leave this undone** and deploy by hand with your own
-> credential instead.
->
-> **One thing to know before storing it.** `reportlog`'s home directory *is*
-> the checkout (`adduser --home`), so the token lands in
-> `/srv/reportlog/.git-credentials` — inside the tree the service unit grants
-> the application `ReadWritePaths` to. It is a read-only token for one
-> repository, so there is little to take, but a web vulnerability could read
-> it. That is the real reason this is a test-box arrangement.
+The repository is public, so the clone below needs no login and no token.
 
 ## The scripted path
 
@@ -875,11 +820,7 @@ git clone --branch stable https://github.com/munsdev/reportlog.git .
 npm ci --omit=dev
 ```
 
-**While the repository is private, that clone needs a credential** — a
-read-only personal access token, entered at the prompt and never in the URL.
-The box at the top of [§1](#1--the-short-version) says how, and why it
-belongs to the `reportlog` user. Once the repository is public, it needs
-nothing.
+The repository is public, so this needs no login.
 
 ### Which branch, and why not a tag
 
@@ -906,7 +847,7 @@ branch rather than a tag.
 >
 > A box installed from a tag would therefore upgrade itself onto `main` the
 > first time anybody ran the upgrade, without saying so. Measured on
-> 7 October 2026 against a real clone of `v0.0.3`, not reasoned about.
+> 7 October 2026 against a real clone of a tag, not reasoned about.
 >
 > Cloning a branch gives a checkout that tracks it, so `deploy.sh`
 > fast-forwards along the same branch it was installed from.
@@ -916,9 +857,6 @@ branch rather than a tag.
 > your own hands, because `deploy.sh` will not do the right thing on a
 > detached checkout. `git -C /srv/reportlog fetch --tags && git checkout
 > <tag>` is the manual equivalent.
-
-> `v0.0.2`, an old tag, **predates logbooks** entirely — no operator-built
-> questionnaires. Do not install it expecting any of this.
 
 **`npm ci`, not `npm install`.** `ci` installs exactly what the lockfile says.
 `--omit=dev` skips the test tooling, which a server does not need. Seven
