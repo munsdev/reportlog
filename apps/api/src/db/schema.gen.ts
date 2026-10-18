@@ -87,9 +87,67 @@ export interface Logbooks {
   created_at: Generated<Timestamp>;
   id: Generated<number>;
   launched_at: Timestamp | null;
+  outside_access: Generated<string>;
   slug: string;
   title: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface OrganizationInvites {
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  created_at: Generated<Timestamp>;
+  email: string;
+  expires_at: Timestamp | null;
+  id: Generated<number>;
+  invited_by: string;
+  last_sent_at: Timestamp | null;
+  organization_id: number;
+  role: string;
+  status: string;
+  token_hash: string | null;
+}
+
+export interface OrganizationInviteSends {
+  email: string;
+  id: Generated<number>;
+  sent_at: Generated<Timestamp>;
+}
+
+export interface OrganizationMemberships {
+  id: Generated<number>;
+  joined_at: Generated<Timestamp>;
+  organization_id: number;
+  role: string;
+  user_id: number;
+}
+
+export interface Organizations {
+  created_at: Generated<Timestamp>;
+  details: string | null;
+  id: Generated<number>;
+  name: string;
+  updated_at: Generated<Timestamp>;
+  verified_at: Generated<Timestamp>;
+  verified_by: string;
+}
+
+export interface OtpCodes {
+  attempts: Generated<number>;
+  code_hash: string;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<number>;
+  subject_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface OwnershipTransfers {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  from_email: string;
+  id: Generated<boolean>;
+  to_email: string;
 }
 
 export interface ReportAttachments {
@@ -128,6 +186,46 @@ export interface Reports {
   thread_id: string;
 }
 
+export interface RoleAudit {
+  action: string;
+  actor_email: string;
+  axis: string;
+  created_at: Generated<Timestamp>;
+  detail: string;
+  id: Generated<number>;
+  organization_id: number | null;
+  subject_email: string;
+}
+
+export interface Sessions {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  token_hash: string;
+  user_id: number;
+}
+
+export interface SiteAccess {
+  enabled: Generated<boolean>;
+  id: Generated<boolean>;
+  password_hash: string | null;
+  setup_completed_at: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface SiteAccessTokens {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  token_hash: string;
+}
+
+export interface Users {
+  created_at: Generated<Timestamp>;
+  email: string;
+  id: Generated<number>;
+  role: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface DB {
   attachments: Attachments;
   chain_anchor_heads: ChainAnchorHeads;
@@ -136,7 +234,18 @@ export interface DB {
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  organization_invite_sends: OrganizationInviteSends;
+  organization_invites: OrganizationInvites;
+  organization_memberships: OrganizationMemberships;
+  organizations: Organizations;
+  otp_codes: OtpCodes;
+  ownership_transfers: OwnershipTransfers;
   report_attachments: ReportAttachments;
   report_heads: ReportHeads;
   reports: Reports;
+  role_audit: RoleAudit;
+  sessions: Sessions;
+  site_access: SiteAccess;
+  site_access_tokens: SiteAccessTokens;
+  users: Users;
 }

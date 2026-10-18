@@ -8,19 +8,29 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
+import { stderrMailer } from './email/mailer.ts';
+import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
+import { identity } from './identity/index.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
 
 export interface AppDeps {
-  config: Pick<Config, 'LOG_LEVEL'>;
+  config: Pick<Config, 'LOG_LEVEL'> & Partial<Pick<Config, 'SITE_ORIGIN'>>;
   db: Database;
+  /** How email leaves. Standard error until a provider is wired in. */
+  mailer?: Mailer;
   /** Where log lines go. Standard output unless a test captures them. */
   logStream?: { write: (line: string) => void };
 }
 
-export async function buildApp({ config, db, logStream }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({
+  config,
+  db,
+  logStream,
+  mailer,
+}: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
       level: config.LOG_LEVEL,
@@ -56,6 +66,12 @@ export async function buildApp({ config, db, logStream }: AppDeps): Promise<Fast
   });
 
   installErrorHandling(app);
+  // First: its hooks must see every route registered after it.
+  await identity(app, {
+    db,
+    mailer: mailer ?? stderrMailer(),
+    siteOrigin: config.SITE_ORIGIN ?? 'http://127.0.0.1:5173',
+  });
   healthRoutes(app, db);
   publicationRoutes(app);
   verifyRoutes(app, db);

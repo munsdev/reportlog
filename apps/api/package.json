@@ -16,6 +16,7 @@
     "test:db": "vitest run --project db"
   },
   "dependencies": {
+    "@fastify/cookie": "11.1.2",
     "@fastify/helmet": "13.2.0",
     "@reportlog/access": "workspace:*",
     "@reportlog/contracts": "workspace:*",
