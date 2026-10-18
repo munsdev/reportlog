@@ -13,7 +13,7 @@ export function Checkbox({ className, ...props }: ComponentProps<typeof Checkbox
   return (
     <CheckboxPrimitive.Root
       className={cn(
-        'peer flex size-6 shrink-0 items-center justify-center rounded-[4px] border-2 border-ink-alt bg-surface text-ink disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-serious',
+        'peer flex size-6 shrink-0 items-center justify-center rounded-control border-2 border-ink-alt bg-surface text-ink disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-serious',
         className,
       )}
       {...props}

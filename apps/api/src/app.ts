@@ -12,6 +12,7 @@ import { installErrorHandling } from './http/errors.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
+import { siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'>;
@@ -59,5 +60,6 @@ export async function buildApp({ config, db, logStream }: AppDeps): Promise<Fast
   healthRoutes(app, db);
   publicationRoutes(app);
   verifyRoutes(app, db);
+  siteRoutes(app, db);
   return app;
 }

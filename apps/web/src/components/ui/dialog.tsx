@@ -36,13 +36,13 @@ export function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-card border border-line bg-surface p-6 text-ink shadow-lg',
+          'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-card border border-line bg-surface p-6 text-ink shadow-raised',
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-3 right-3 rounded-card px-2 py-1 text-sm font-semibold text-ink-alt underline-offset-4 hover:underline">
+        <DialogPrimitive.Close className="absolute top-3 right-3 rounded-control px-2 py-1 text-sm font-semibold text-ink-alt underline-offset-4 hover:underline">
           Close
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>

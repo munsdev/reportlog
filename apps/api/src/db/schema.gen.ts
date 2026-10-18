@@ -128,6 +128,23 @@ export interface Reports {
   thread_id: string;
 }
 
+export interface SiteCopy {
+  body: string;
+  key: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface SiteSettings {
+  home_buttons: Json | null;
+  id: Generated<boolean>;
+  impressum_text: string | null;
+  palette: Generated<string>;
+  privacy_text: string | null;
+  site_name: string | null;
+  theme: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface DB {
   attachments: Attachments;
   chain_anchor_heads: ChainAnchorHeads;
@@ -139,4 +156,6 @@ export interface DB {
   report_attachments: ReportAttachments;
   report_heads: ReportHeads;
   reports: Reports;
+  site_copy: SiteCopy;
+  site_settings: SiteSettings;
 }

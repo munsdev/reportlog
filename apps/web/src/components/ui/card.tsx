@@ -9,7 +9,7 @@ export function Card({ className, ...props }: ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex flex-col gap-4 rounded-card border border-line bg-surface p-5 text-ink',
+        'flex flex-col gap-4 rounded-card border-(length:--rl-border-main) border-line bg-surface p-5 text-ink shadow-raised',
         className,
       )}
       {...props}

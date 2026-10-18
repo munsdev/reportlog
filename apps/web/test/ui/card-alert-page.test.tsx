@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Alert } from '../../src/components/ui/alert.tsx';
@@ -70,22 +71,26 @@ describe('an alert', () => {
   });
 });
 
+/** A query client that already knows the site, so nothing is fetched. */
+function withSite(plain: string): QueryClient {
+  const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity } } });
+  client.setQueryData(['site'], { plain_name: plain });
+  return client;
+}
+
 describe('a page', () => {
   it('has one h1, a lede, actions, and names the tab', () => {
     render(
-      <Page
-        title="Settings"
-        lede="How the site looks."
-        actions={<button>Save</button>}
-        siteName="ReportLog"
-      >
-        <p>Body</p>
-      </Page>,
+      <QueryClientProvider client={withSite('Munich Archive')}>
+        <Page title="Settings" lede="How the site looks." actions={<button>Save</button>}>
+          <p>Body</p>
+        </Page>
+      </QueryClientProvider>,
     );
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Settings');
     expect(screen.getByText('How the site looks.')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
-    expect(document.title).toBe('Settings · ReportLog');
+    expect(document.title).toBe('Settings · Munich Archive');
   });
 });

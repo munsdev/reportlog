@@ -1,48 +1,102 @@
+/**
+ * The front page: the operator's headline and lede, the buttons in the
+ * operator's order (the first one is the accent and no other is), what
+ * this archive is for, and checking a report by its reference.
+ */
+import { getHomeButtons } from '@reportlog/contracts';
+import type { HomeButton } from '@reportlog/contracts';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '../components/ui/button.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx';
+import { Field } from '../components/ui/field.tsx';
+import { Input } from '../components/ui/input.tsx';
+import { Label } from '../components/ui/label.tsx';
+import { Page } from '../components/ui/page.tsx';
+import { useSite } from '../components/ui/site.tsx';
+import { call } from '../lib/api.ts';
+
+export const homeButtonsQuery = queryOptions({
+  queryKey: ['home-buttons'],
+  queryFn: ({ signal }) => call(getHomeButtons, { signal }),
+});
 
 export const Route = createFileRoute('/')({
   component: Home,
 });
 
-function Home() {
-  const navigate = useNavigate();
-  const inputId = useId();
-  const [ref, setRef] = useState('');
-
+/**
+ * A button that goes somewhere is a link styled as one. One that acts in
+ * place (the alert sign-up) has nothing to act with until that sign-up is
+ * built, so it is not drawn rather than drawn dead.
+ */
+export function HomeButtons({ buttons }: { buttons: readonly HomeButton[] }) {
+  const drawn = buttons.filter((b) => b.href);
+  if (!drawn.length) return null;
   return (
-    <section className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Check a report</h1>
-      <p className="max-w-prose text-ink-alt">
-        Every report has a reference like <span className="font-mono">RL-…</span>. Enter one to
-        check that it has not been changed since it was filed.
-      </p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          const trimmed = ref.trim();
-          if (trimmed) void navigate({ to: '/verify/$ref', params: { ref: trimmed } });
-        }}
-        className="flex max-w-xl flex-col gap-3 sm:flex-row sm:items-end"
-      >
-        <div className="flex flex-1 flex-col gap-1">
-          <label htmlFor={inputId} className="font-semibold">
-            Report reference
-          </label>
-          <input
-            id={inputId}
-            value={ref}
-            onChange={(e) => {
-              setRef(e.target.value);
-            }}
-            autoComplete="off"
-            spellCheck={false}
-            className="rounded-card border border-line bg-surface px-3 py-2 font-mono"
-          />
-        </div>
-        <Button type="submit">Check it</Button>
-      </form>
-    </section>
+    <ul className="flex flex-col gap-3 sm:flex-row sm:flex-wrap" aria-label="What you can do here">
+      {drawn.map((b) => (
+        <li key={`${b.kind}:${b.ref}`}>
+          <Button asChild variant={b.accent ? 'primary' : 'secondary'}>
+            <a href={b.href ?? undefined}>{b.label}</a>
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function CheckAReport() {
+  const navigate = useNavigate();
+  const [ref, setRef] = useState('');
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Check a report</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="max-w-prose text-ink-alt">
+          Every report has a reference like <span className="font-mono">RL-…</span>. Enter one to
+          check that it has not been changed since it was filed.
+        </p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const trimmed = ref.trim();
+            if (trimmed) void navigate({ to: '/verify/$ref', params: { ref: trimmed } });
+          }}
+          className="flex max-w-xl flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <Field className="flex-1">
+            <Label>Report reference</Label>
+            <Input
+              value={ref}
+              onChange={(e) => {
+                setRef(e.target.value);
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+            />
+          </Field>
+          <Button type="submit" variant="secondary">
+            Check it
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Home() {
+  const site = useSite().data;
+  const buttons = useQuery(homeButtonsQuery).data?.buttons ?? [];
+  return (
+    <Page title={site?.copy.home_headline ?? 'ReportLog'} lede={site?.copy.home_lede}>
+      <HomeButtons buttons={buttons} />
+      {site ? <p className="max-w-prose whitespace-pre-wrap">{site.copy.home_intro}</p> : null}
+      <CheckAReport />
+    </Page>
   );
 }

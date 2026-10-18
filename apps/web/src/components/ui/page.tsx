@@ -1,12 +1,13 @@
 /**
  * A page's own layout, inside the site's header and footer: its one `<h1>`,
  * an optional line under it, optional actions beside it, then the content.
- * It also names the browser tab after the page, because the tab title is
- * the first thing a screen reader says when a page changes.
+ * It also names the browser tab after the page and the site, because the
+ * tab title is the first thing a screen reader says when a page changes.
  */
 import { useEffect } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/utils.ts';
+import { plainSiteName, useSite } from './site.tsx';
 
 export interface PageProps extends Omit<ComponentProps<'section'>, 'title'> {
   title: string;
@@ -15,8 +16,6 @@ export interface PageProps extends Omit<ComponentProps<'section'>, 'title'> {
   actions?: ReactNode;
   /** `prose` keeps lines readable for text; `wide` is for tables and boards. */
   width?: 'prose' | 'wide';
-  /** The site's name, after the page's in the tab title. */
-  siteName?: string;
 }
 
 export function Page({
@@ -24,13 +23,13 @@ export function Page({
   lede,
   actions,
   width = 'wide',
-  siteName,
   className,
   children,
   ...props
 }: PageProps) {
+  const siteName = plainSiteName(useSite().data);
   useEffect(() => {
-    document.title = siteName ? `${title} · ${siteName}` : title;
+    document.title = `${title} · ${siteName}`;
   }, [title, siteName]);
   return (
     <section

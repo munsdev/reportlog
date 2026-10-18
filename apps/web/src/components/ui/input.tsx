@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils.ts';
 import { useFieldControl } from './field.tsx';
 
 export const controlClass =
-  'w-full rounded-card border border-ink-alt bg-surface px-3 py-2 text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-2 aria-invalid:border-serious';
+  'w-full rounded-control border border-ink-alt bg-surface px-3 py-2 text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-2 aria-invalid:border-serious';
 
 export function Input({ className, type = 'text', ...props }: ComponentProps<'input'>) {
   const wired = useFieldControl(props);
