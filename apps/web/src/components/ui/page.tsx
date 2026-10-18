@@ -1,0 +1,50 @@
+/**
+ * A page's own layout, inside the site's header and footer: its one `<h1>`,
+ * an optional line under it, optional actions beside it, then the content.
+ * It also names the browser tab after the page, because the tab title is
+ * the first thing a screen reader says when a page changes.
+ */
+import { useEffect } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '@/lib/utils.ts';
+
+export interface PageProps extends Omit<ComponentProps<'section'>, 'title'> {
+  title: string;
+  lede?: ReactNode;
+  /** Buttons or links that act on the whole page. At most one primary. */
+  actions?: ReactNode;
+  /** `prose` keeps lines readable for text; `wide` is for tables and boards. */
+  width?: 'prose' | 'wide';
+  /** The site's name, after the page's in the tab title. */
+  siteName?: string;
+}
+
+export function Page({
+  title,
+  lede,
+  actions,
+  width = 'wide',
+  siteName,
+  className,
+  children,
+  ...props
+}: PageProps) {
+  useEffect(() => {
+    document.title = siteName ? `${title} · ${siteName}` : title;
+  }, [title, siteName]);
+  return (
+    <section
+      className={cn('flex flex-col gap-6', width === 'prose' && 'max-w-prose', className)}
+      {...props}
+    >
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-display text-3xl font-bold">{title}</h1>
+          {lede ? <p className="max-w-prose text-ink-alt">{lede}</p> : null}
+        </div>
+        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      </header>
+      {children}
+    </section>
+  );
+}
