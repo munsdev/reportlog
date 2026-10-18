@@ -17,7 +17,7 @@ import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
 
 export interface AppDeps {
-  config: Pick<Config, 'LOG_LEVEL'> & Partial<Pick<Config, 'SITE_ORIGIN'>>;
+  config: Pick<Config, 'LOG_LEVEL'> & Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY'>>;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -31,7 +31,11 @@ export async function buildApp({
   logStream,
   mailer,
 }: AppDeps): Promise<FastifyInstance> {
+  const hops = config.TRUST_PROXY ?? 0;
   const app = Fastify({
+    // The client's address is used only by the in-memory limits in identity/,
+    // and never logged. Behind a proxy it must come from X-Forwarded-For.
+    trustProxy: hops > 0 ? (_address: string, hop: number) => hop < hops : false,
     logger: {
       level: config.LOG_LEVEL,
       ...(logStream ? { stream: logStream } : {}),

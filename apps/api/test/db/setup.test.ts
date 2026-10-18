@@ -60,6 +60,27 @@ afterAll(async () => {
   await h.close();
 });
 
+describe('a deployment with no site password at all', () => {
+  it('will not be set up, so a stranger who finds it cannot claim it', async () => {
+    await h.db
+      .updateTable('site_access')
+      .set({ password_hash: null })
+      .where('id', '=', true)
+      .execute();
+    try {
+      const res = await call({
+        method: 'POST',
+        url: '/api/setup/code',
+        payload: { email: address('stranger') },
+      });
+      expect(res.statusCode).toBe(409);
+      expect(res.json()).toMatchObject({ error: { code: 'no_site_password' } });
+    } finally {
+      await writeSiteAccess(h.db, { password: INSTALL_PW });
+    }
+  });
+});
+
 describe('what a stranger installing this walks into', () => {
   it('cannot reach setup from in front of the curtain, nor guess past it', async () => {
     const res = await call({ url: '/api/setup/status' });
@@ -170,7 +191,10 @@ describe('the curtain password decision, which cannot be skipped', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('lets the owner change the password, which ends setup', async () => {
+  it('lets the owner change the password, which ends setup and retires the installer’s cookie', async () => {
+    const installer = cookieFrom(await unlock(INSTALL_PW), 'site_access') ?? '';
+    const before = await call({ url: '/api/site-access/status' }, { site_access: installer });
+    expect(before.json()).toEqual({ locked: false });
     const res = await asOwner({
       method: 'POST',
       url: '/api/setup/curtain',
@@ -178,6 +202,10 @@ describe('the curtain password decision, which cannot be skipped', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true, changed: true });
+    const after = await call({ url: '/api/site-access/status' }, { site_access: installer });
+    expect(after.json()).toEqual({ locked: true });
+    // The owner, mid-wizard, is not thrown out.
+    expect((await behind({ url: '/api/site-access/status' })).json()).toEqual({ locked: false });
   });
 });
 

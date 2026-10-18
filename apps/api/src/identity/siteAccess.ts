@@ -73,6 +73,12 @@ export async function hasSiteAccess(db: Kysely<DB>, request: FastifyRequest): Pr
 export const locked = () =>
   new HttpError(401, 'locked', 'This site needs its password before anything else can be shown.');
 
+/** The caller's own site-access token, to keep through a password change. */
+export function keepCurrentToken(request: FastifyRequest): { keepToken?: string } {
+  const token = request.cookies[SITE_ACCESS_COOKIE];
+  return token ? { keepToken: token } : {};
+}
+
 /** A token for somebody who typed the right password, or null. */
 export async function unlock(db: Kysely<DB>, password: string): Promise<string | null> {
   const settings = await siteAccessSettings(db);
@@ -107,14 +113,23 @@ export function validateCurtainPassword(
 
 /**
  * Set the password (and turn the gate on with it), or turn the gate on or
- * off. Existing tokens stay valid when the password changes: whoever changed
- * it is behind the curtain right now, and evicting them would look exactly
- * like the software breaking.
+ * off.
+ *
+ * A NEW PASSWORD RETIRES EVERY OLD WAY IN. Otherwise the installer's cookie,
+ * or anybody else's, would keep working for up to thirty days after the owner
+ * chose a password precisely so that it would not. The one exception is the
+ * token of whoever is changing it (`keepToken`): they are behind the curtain
+ * right now, and evicting them would look exactly like the software breaking.
  */
 export async function writeSiteAccess(
   db: Kysely<DB>,
-  change: { password?: string; enabled?: boolean; completeSetup?: boolean },
+  change: { password?: string; enabled?: boolean; completeSetup?: boolean; keepToken?: string },
 ): Promise<void> {
+  if (change.password !== undefined) {
+    let retire = db.deleteFrom('site_access_tokens');
+    if (change.keepToken) retire = retire.where('token_hash', '<>', sha256Hex(change.keepToken));
+    await retire.execute();
+  }
   await db
     .updateTable('site_access')
     .set({

@@ -28,6 +28,7 @@ import {
 import { recordRoleChange, setSystemRole } from './roles.ts';
 import { normalizeEmail } from './secrets.ts';
 import {
+  keepCurrentToken,
   MIN_CURTAIN_PASSWORD,
   siteAccessSettings,
   validateCurtainPassword,
@@ -258,6 +259,7 @@ export function accessRoutes(
       await writeSiteAccess(trx, {
         ...(password !== undefined ? { password } : {}),
         ...(body.enabled !== undefined ? { enabled: body.enabled } : {}),
+        ...keepCurrentToken(request),
       });
       await recordRoleChange(trx, {
         actorEmail: user.email,

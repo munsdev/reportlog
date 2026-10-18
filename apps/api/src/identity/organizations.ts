@@ -58,6 +58,9 @@ export async function organizationName(db: Kysely<DB>, id: number): Promise<stri
   return row?.name ?? null;
 }
 
+/** Thrown inside a transaction to roll it back; turned into a refusal. */
+class LastManager extends Error {}
+
 /**
  * The address already has an account: the membership attaches now. It has
  * not: it waits as `joins_on_sign_in` and attaches the first time they sign
@@ -79,13 +82,53 @@ async function attachOrInvite(
     .where('email', '=', args.email)
     .executeTakeFirst();
   if (user) {
-    await trx
-      .insertInto('organization_memberships')
-      .values({ organization_id: args.organizationId, user_id: user.id, role: args.role })
-      .onConflict((oc) =>
-        oc.columns(['organization_id', 'user_id']).doUpdateSet({ role: args.role }),
-      )
-      .execute();
+    const existing = await trx
+      .selectFrom('organization_memberships')
+      .select(['id', 'role'])
+      .where('organization_id', '=', args.organizationId)
+      .where('user_id', '=', user.id)
+      .forUpdate()
+      .executeTakeFirst();
+    if (existing?.role === args.role) return { pending: false };
+    if (existing) {
+      // A change of role, not a new grant. Demoting a manager goes through the
+      // same last-manager rule as removing one, and the trail says both halves.
+      if (existing.role === 'manager') {
+        await trx
+          .selectFrom('organization_memberships')
+          .select('id')
+          .where('organization_id', '=', args.organizationId)
+          .where('role', '=', 'manager')
+          .forUpdate()
+          .execute();
+        const others = await trx
+          .selectFrom('organization_memberships')
+          .select((eb) => eb.fn.countAll<number>().as('n'))
+          .where('organization_id', '=', args.organizationId)
+          .where('role', '=', 'manager')
+          .where('id', '<>', existing.id)
+          .executeTakeFirstOrThrow();
+        if (others.n === 0) throw new LastManager();
+      }
+      await trx
+        .updateTable('organization_memberships')
+        .set({ role: args.role })
+        .where('id', '=', existing.id)
+        .execute();
+      await recordRoleChange(trx, {
+        actorEmail: args.actor.email,
+        subjectEmail: args.email,
+        axis: 'organization',
+        action: 'revoke',
+        detail: `${existing.role} of ${args.organizationName}`,
+        organizationId: args.organizationId,
+      });
+    } else {
+      await trx
+        .insertInto('organization_memberships')
+        .values({ organization_id: args.organizationId, user_id: user.id, role: args.role })
+        .execute();
+    }
     await trx
       .deleteFrom('organization_invites')
       .where('organization_id', '=', args.organizationId)
@@ -185,7 +228,12 @@ export async function addMember(
   | { ok: true; pending: boolean }
   | {
       ok: false;
-      reason: 'unknown-role' | 'manager-cannot-promote' | 'bad-email' | 'no-such-organization';
+      reason:
+        | 'unknown-role'
+        | 'manager-cannot-promote'
+        | 'bad-email'
+        | 'no-such-organization'
+        | 'last-manager';
     }
 > {
   if (!isOrgRole(args.role)) return { ok: false, reason: 'unknown-role' };
@@ -195,18 +243,23 @@ export async function addMember(
   const email = normalizeEmail(args.email);
   if (!looksLikeEmail(email)) return { ok: false, reason: 'bad-email' };
 
-  return db.transaction().execute(async (trx) => {
-    const name = await organizationName(trx, args.organizationId);
-    if (name === null) return { ok: false as const, reason: 'no-such-organization' as const };
-    const out = await attachOrInvite(trx, {
-      actor: args.actor,
-      organizationId: args.organizationId,
-      organizationName: name,
-      email,
-      role,
+  try {
+    return await db.transaction().execute(async (trx) => {
+      const name = await organizationName(trx, args.organizationId);
+      if (name === null) return { ok: false as const, reason: 'no-such-organization' as const };
+      const out = await attachOrInvite(trx, {
+        actor: args.actor,
+        organizationId: args.organizationId,
+        organizationName: name,
+        email,
+        role,
+      });
+      return { ok: true as const, pending: out.pending };
     });
-    return { ok: true as const, pending: out.pending };
-  });
+  } catch (e) {
+    if (e instanceof LastManager) return { ok: false, reason: 'last-manager' };
+    throw e;
+  }
 }
 
 export async function removeMember(
@@ -244,6 +297,15 @@ export async function removeMember(
       return { ok: false as const, reason: 'manager-cannot-remove-manager' as const };
     }
     if (member.role === 'manager') {
+      // Every manager row locked before counting, so two removals of the last
+      // two managers cannot each see the other still there.
+      await trx
+        .selectFrom('organization_memberships')
+        .select('id')
+        .where('organization_id', '=', args.organizationId)
+        .where('role', '=', 'manager')
+        .forUpdate()
+        .execute();
       const others = await trx
         .selectFrom('organization_memberships')
         .select((eb) => eb.fn.countAll<number>().as('n'))

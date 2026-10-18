@@ -37,6 +37,7 @@ export function authRoutes(
   const perAddressAndClient = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
   const perAddress = limiter({ max: 20, windowMs: 60 * 60 * 1000 });
   const perClient = limiter({ max: 60, windowMs: 60 * 60 * 1000 });
+  const guessesPerClient = limiter({ max: 60, windowMs: 60 * 60 * 1000 });
 
   route(app, C.requestSignInCode, async ({ request }) => {
     const email = addressFrom(bodyOf(C.requestSignInCode, request).email);
@@ -53,6 +54,7 @@ export function authRoutes(
   route(app, C.signIn, async ({ request, reply }) => {
     const { email: typed, code } = bodyOf(C.signIn, request);
     const email = addressFrom(typed);
+    guessesPerClient.take(request.ip);
     if (!(await verifyCode(db, subjects.signIn(email), code))) {
       throw refused(401, 'bad_code', 'That code is wrong or has expired. Ask for a new one.');
     }

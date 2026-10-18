@@ -30,6 +30,12 @@ const ConfigSchema = z.object({
    * browser tests only, which need to read what a person would have been sent.
    */
   MAIL_OUTBOX: z.string().min(1).optional(),
+  /**
+   * How many proxies stand in front of the server (Caddy is one). Without it
+   * every visitor has the proxy's address, and a limit meant for one client
+   * becomes one limit for the whole site.
+   */
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

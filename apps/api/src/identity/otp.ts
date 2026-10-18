@@ -49,27 +49,24 @@ export async function createCode(db: Kysely<DB>, subject: string): Promise<strin
  * all the person at the keyboard can act on anyway.
  */
 export async function verifyCode(db: Kysely<DB>, subject: string, code: unknown): Promise<boolean> {
-  if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
-    // Still counts as a try: a malformed guess is a guess.
-    await countWrongAttempt(db, subject);
-    return false;
-  }
-  const subjectHash = sha256Hex(subject);
-  const codeHash = sha256Hex(code.trim());
+  const typed = typeof code === 'string' ? code.trim() : '';
+  // EVERY GUESS SPENDS A TRY BEFORE IT IS COMPARED, in one statement. Reading
+  // the live codes first and counting afterwards let guesses sent in parallel
+  // all be checked before any count landed, which made the limit no limit.
+  // A malformed guess is a guess too.
   const live = await db
-    .selectFrom('otp_codes')
-    .select(['id', 'code_hash'])
-    .where('subject_hash', '=', subjectHash)
+    .updateTable('otp_codes')
+    .set({ attempts: sql`attempts + 1` })
+    .where('subject_hash', '=', sha256Hex(subject))
     .where('used_at', 'is', null)
     .where('expires_at', '>', new Date())
     .where('attempts', '<', MAX_ATTEMPTS)
-    .orderBy('created_at', 'desc')
+    .returning(['id', 'code_hash'])
     .execute();
+  if (!/^\d{6}$/.test(typed)) return false;
+  const codeHash = sha256Hex(typed);
   const match = live.find((row) => sameHex(row.code_hash, codeHash));
-  if (!match) {
-    await countWrongAttempt(db, subject);
-    return false;
-  }
+  if (!match) return false;
   // Spent with a condition, so two requests racing with the same code cannot
   // both succeed.
   const spent = await db
@@ -79,14 +76,4 @@ export async function verifyCode(db: Kysely<DB>, subject: string, code: unknown)
     .where('used_at', 'is', null)
     .executeTakeFirst();
   return spent.numUpdatedRows === 1n;
-}
-
-async function countWrongAttempt(db: Kysely<DB>, subject: string): Promise<void> {
-  await db
-    .updateTable('otp_codes')
-    .set({ attempts: sql`attempts + 1` })
-    .where('subject_hash', '=', sha256Hex(subject))
-    .where('used_at', 'is', null)
-    .where('expires_at', '>', new Date())
-    .execute();
 }

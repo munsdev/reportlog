@@ -204,6 +204,8 @@ export function orgRoutes(
       'bad-email': 'Enter a valid email address.',
       'unknown-role': 'There is no such role in an organization.',
       'no-such-organization': 'There is no such organization.',
+      'last-manager':
+        'That is this organization’s only manager. Appoint another before changing their role.',
     } as const;
     throw refused(
       out.reason === 'no-such-organization' ? 404 : 400,

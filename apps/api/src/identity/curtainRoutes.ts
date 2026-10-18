@@ -24,6 +24,7 @@ import { recordRoleChange } from './roles.ts';
 import { createSession, setSessionCookie, userForSession } from './sessions.ts';
 import { setupState } from './setup.ts';
 import {
+  keepCurrentToken,
   MIN_CURTAIN_PASSWORD,
   SITE_ACCESS_COOKIE,
   SITE_ACCESS_TTL_MS,
@@ -89,7 +90,18 @@ export function curtainRoutes(
   async function onlyWhileOwnerless() {
     const state = await setupState(db);
     if (!state.needed || state.hasOwner) throw alreadySetUp();
+    // THE CURTAIN IS WHAT KEEPS A STRANGER FROM THE WIZARD. With no site
+    // password set, anybody who reached a fresh install could seat
+    // themselves as its owner, so the wizard waits for the installer's one.
+    if (!gateApplies(await siteAccessSettings(db))) {
+      throw new HttpError(
+        409,
+        'no_site_password',
+        'Set a site password on the server first (node apps/api/src/identity/set-site-password.ts). Setting up waits for it, so a stranger cannot claim this deployment.',
+      );
+    }
   }
+  const ownerGuesses = limiter({ max: 15, windowMs: 60 * 60 * 1000 });
 
   route(app, C.requestSetupCode, async ({ request }) => {
     await onlyWhileOwnerless();
@@ -104,6 +116,7 @@ export function curtainRoutes(
     await onlyWhileOwnerless();
     const { email: typed, code } = bodyOf(C.claimOwnership, request);
     const email = addressFrom(typed);
+    ownerGuesses.take(request.ip);
     if (!(await verifyCode(db, subjects.setup(email), code))) {
       throw refused(401, 'bad_code', 'That code is wrong or has expired. Ask for a new one.');
     }
@@ -168,6 +181,7 @@ export function curtainRoutes(
       await writeSiteAccess(trx, {
         ...(password !== undefined ? { password } : {}),
         completeSetup: true,
+        ...keepCurrentToken(request),
       });
       await recordRoleChange(trx, {
         actorEmail: owner.email,

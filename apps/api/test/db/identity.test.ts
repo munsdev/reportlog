@@ -159,6 +159,53 @@ describe('trading the code for a session', () => {
     expect((await signInWith(email, right)).statusCode).toBe(401);
   });
 
+  it('behind a proxy, tells clients apart by the address the proxy forwards', async () => {
+    const { buildApp } = await import('../../src/app.ts');
+    const { capturingMailer } = await import('../../src/email/mailer.ts');
+    const behind = await buildApp({
+      config: { LOG_LEVEL: 'silent', TRUST_PROXY: 1 },
+      db: h.db,
+      mailer: capturingMailer(),
+    });
+    const email = address('proxied');
+    const ask = (client: string) =>
+      behind.inject({
+        method: 'POST',
+        url: '/api/auth/code',
+        payload: { email },
+        headers: { 'x-forwarded-for': client },
+      });
+    for (let i = 0; i < 5; i += 1) expect((await ask('203.0.113.1')).statusCode).toBe(200);
+    expect((await ask('203.0.113.1')).statusCode).toBe(429);
+    expect((await ask('203.0.113.2')).statusCode).toBe(200);
+    await behind.close();
+  });
+
+  it('counts guesses sent at the same time, so racing them gets past nothing', async () => {
+    const email = address('race');
+    await askCode(email);
+    const right = codeFor(h.mailer, email);
+    const wrong = right === '111111' ? '111112' : '111111';
+    const results = await Promise.all(
+      Array.from({ length: 12 }, () =>
+        h.app.inject({
+          method: 'POST',
+          url: '/api/auth/sign-in',
+          payload: { email, code: wrong },
+          remoteAddress: '192.0.2.50',
+        }),
+      ),
+    );
+    expect(results.every((r) => r.statusCode === 401)).toBe(true);
+    const row = await h.db
+      .selectFrom('otp_codes')
+      .select('attempts')
+      .where('subject_hash', '=', sha256Hex(subjects.signIn(email)))
+      .executeTakeFirstOrThrow();
+    expect(row.attempts).toBe(MAX_ATTEMPTS);
+    expect((await signInWith(email, right)).statusCode).toBe(401);
+  });
+
   it('binds a code to what it was asked for: a sign-in code does not set a deployment up', async () => {
     const email = address('bound');
     const code = await createCode(h.db, subjects.signIn(email));

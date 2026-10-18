@@ -248,6 +248,49 @@ describe('organizations', () => {
     });
   });
 
+  it('will not demote the only manager by re-adding them, and records a change of role as both halves', async () => {
+    expect(
+      await addMember(h.db, {
+        actor: am,
+        actorIsManager: false,
+        organizationId: orgId,
+        email: mgrEmail,
+        role: 'coordinator',
+      }),
+    ).toEqual({ ok: false, reason: 'last-manager' });
+    const second = address('second-mgr');
+    await seat(h.db, second, 'user');
+    await addMember(h.db, {
+      actor: am,
+      actorIsManager: false,
+      organizationId: orgId,
+      email: second,
+      role: 'manager',
+    });
+    expect(
+      (
+        await addMember(h.db, {
+          actor: am,
+          actorIsManager: false,
+          organizationId: orgId,
+          email: second,
+          role: 'coordinator',
+        })
+      ).ok,
+    ).toBe(true);
+    const trail = await h.db
+      .selectFrom('role_audit')
+      .select(['action', 'detail'])
+      .where('subject_email', '=', second)
+      .orderBy('id')
+      .execute();
+    expect(trail).toEqual([
+      { action: 'grant', detail: `manager of ${orgName}` },
+      { action: 'revoke', detail: `manager of ${orgName}` },
+      { action: 'grant', detail: `coordinator of ${orgName}` },
+    ]);
+  });
+
   it('lets a manager remove a coordinator, on the record', async () => {
     expect(
       await removeMember(h.db, {
