@@ -3,3 +3,4 @@ export * from './errors.ts';
 export * from './health.ts';
 export * from './publication.ts';
 export * from './verify.ts';
+export * from './logbooks.ts';

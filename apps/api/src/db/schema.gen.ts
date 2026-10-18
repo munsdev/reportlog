@@ -59,6 +59,12 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface HomeButtons {
+  buttons: Json | null;
+  id: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface LogbookFields {
   created_at: Generated<Timestamp>;
   filterable: Generated<boolean>;
@@ -84,9 +90,12 @@ export interface LogbookForms {
 
 export interface Logbooks {
   blurb: string | null;
+  closed_at: Timestamp | null;
+  closes_at: Timestamp | null;
   created_at: Generated<Timestamp>;
   id: Generated<number>;
   launched_at: Timestamp | null;
+  opens_at: Timestamp | null;
   slug: string;
   title: string;
   updated_at: Generated<Timestamp>;
@@ -133,6 +142,7 @@ export interface DB {
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  home_buttons: HomeButtons;
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;

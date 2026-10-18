@@ -1,0 +1,105 @@
+{
+  "reportlog_logbook": 1,
+  "title": "Incident reports",
+  "slug": "incidents",
+  "blurb": "Something happened here that should be on the record.",
+  "accepts_files": true,
+  "editorial_notes": false,
+  "max_files": 3,
+  "questions": [
+    {
+      "key": "kind",
+      "kind": "choice_one",
+      "label": "What kind of incident was it?",
+      "required": true,
+      "filterable": true,
+      "options": [
+        "Injury or ill health",
+        "Near miss",
+        "Damage to equipment or property",
+        "Conduct towards a person",
+        "Something unsafe that has not caused harm yet",
+        "Something else"
+      ]
+    },
+    {
+      "key": "date",
+      "kind": "date",
+      "label": "What day was it?",
+      "required": true,
+      "filterable": true
+    },
+    {
+      "key": "time",
+      "kind": "time",
+      "label": "About what time?",
+      "required": false,
+      "filterable": false
+    },
+    {
+      "key": "where",
+      "kind": "short_text",
+      "label": "Where did it happen?",
+      "help": "The area, the room, the machine — however people here would say it.",
+      "required": false,
+      "filterable": false
+    },
+    {
+      "key": "role",
+      "kind": "choice_one",
+      "label": "What is your part in this?",
+      "required": true,
+      "filterable": true,
+      "options": [
+        "It happened to me",
+        "I saw it happen",
+        "Somebody told me about it",
+        "I found it afterwards"
+      ]
+    },
+    {
+      "key": "harm",
+      "kind": "choice_one",
+      "label": "Did anybody need treatment?",
+      "required": true,
+      "filterable": true,
+      "options": ["No", "First aid here", "They went to a doctor or hospital", "I do not know"]
+    },
+    {
+      "key": "stopped",
+      "kind": "yes_no",
+      "label": "Has it been made safe since?",
+      "help": "If not, say so in your account below — that is the part somebody needs to act on today.",
+      "required": false,
+      "filterable": true
+    },
+    {
+      "key": "account",
+      "kind": "long_text",
+      "label": "Tell us what happened",
+      "help": "In your own words. What led up to it, what happened, and what happened next.",
+      "required": true,
+      "filterable": false
+    },
+    {
+      "key": "has_evidence",
+      "kind": "evidence_declaration",
+      "label": "Do you have photos, video or documents of this?",
+      "help": "Nothing is uploaded by answering this. It only tells us something exists, so we can ask you for it if it turns out to matter.",
+      "required": false,
+      "filterable": true
+    },
+    {
+      "key": "evidence_of",
+      "kind": "short_text",
+      "label": "What is it of?",
+      "help": "One line. 'A photo of the guard rail', or 'the shift sheet for that day'.",
+      "required": false,
+      "filterable": false,
+      "shown_when": {
+        "field": "has_evidence",
+        "in": ["yes"]
+      }
+    }
+  ]
+}
