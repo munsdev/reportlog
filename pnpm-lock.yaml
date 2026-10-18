@@ -96,6 +96,9 @@ importers:
       '@reportlog/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@reportlog/fields':
+        specifier: workspace:*
+        version: link:../../packages/fields
       '@reportlog/seal':
         specifier: workspace:*
         version: link:../../packages/seal

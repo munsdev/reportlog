@@ -11,6 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
+import { Route as staffLogbooksIndexRouteImport } from './routes/(staff)/logbooks/index'
+import { Route as staffLogbooksIdRouteImport } from './routes/(staff)/logbooks/$id'
+import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/logbooks/front-page'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +25,74 @@ const VerifyRefRoute = VerifyRefRouteImport.update({
   path: '/verify/$ref',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffLogbooksIndexRoute = staffLogbooksIndexRouteImport.update({
+  id: '/(staff)/logbooks/',
+  path: '/logbooks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffLogbooksIdRoute = staffLogbooksIdRouteImport.update({
+  id: '/(staff)/logbooks/$id',
+  path: '/logbooks/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffLogbooksFrontPageRoute = staffLogbooksFrontPageRouteImport.update({
+  id: '/(staff)/logbooks/front-page',
+  path: '/logbooks/front-page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/logbooks/$id': typeof staffLogbooksIdRoute
+  '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/logbooks/': typeof staffLogbooksIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/logbooks/$id': typeof staffLogbooksIdRoute
+  '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/logbooks': typeof staffLogbooksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
+  '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/(staff)/logbooks/': typeof staffLogbooksIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/verify/$ref'
+  fullPaths:
+    | '/'
+    | '/verify/$ref'
+    | '/logbooks/$id'
+    | '/logbooks/front-page'
+    | '/logbooks/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/verify/$ref'
-  id: '__root__' | '/' | '/verify/$ref'
+  to:
+    | '/'
+    | '/verify/$ref'
+    | '/logbooks/$id'
+    | '/logbooks/front-page'
+    | '/logbooks'
+  id:
+    | '__root__'
+    | '/'
+    | '/verify/$ref'
+    | '/(staff)/logbooks/$id'
+    | '/(staff)/logbooks/front-page'
+    | '/(staff)/logbooks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   VerifyRefRoute: typeof VerifyRefRoute
+  staffLogbooksIdRoute: typeof staffLogbooksIdRoute
+  staffLogbooksFrontPageRoute: typeof staffLogbooksFrontPageRoute
+  staffLogbooksIndexRoute: typeof staffLogbooksIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +111,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRefRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/logbooks/': {
+      id: '/(staff)/logbooks/'
+      path: '/logbooks'
+      fullPath: '/logbooks/'
+      preLoaderRoute: typeof staffLogbooksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/logbooks/$id': {
+      id: '/(staff)/logbooks/$id'
+      path: '/logbooks/$id'
+      fullPath: '/logbooks/$id'
+      preLoaderRoute: typeof staffLogbooksIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/logbooks/front-page': {
+      id: '/(staff)/logbooks/front-page'
+      path: '/logbooks/front-page'
+      fullPath: '/logbooks/front-page'
+      preLoaderRoute: typeof staffLogbooksFrontPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   VerifyRefRoute: VerifyRefRoute,
+  staffLogbooksIdRoute: staffLogbooksIdRoute,
+  staffLogbooksFrontPageRoute: staffLogbooksFrontPageRoute,
+  staffLogbooksIndexRoute: staffLogbooksIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
