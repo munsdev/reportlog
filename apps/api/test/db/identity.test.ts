@@ -70,6 +70,25 @@ describe('asking for a code', () => {
     expect(statuses.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
     expect(statuses.slice(5)).toEqual([429, 429]);
   });
+
+  it('does not let somebody elsewhere use up an address’s allowance', async () => {
+    const email = address('victim');
+    for (let i = 0; i < 6; i += 1) {
+      await h.app.inject({
+        method: 'POST',
+        url: '/api/auth/code',
+        payload: { email },
+        remoteAddress: '203.0.113.7',
+      });
+    }
+    const own = await h.app.inject({
+      method: 'POST',
+      url: '/api/auth/code',
+      payload: { email },
+      remoteAddress: '198.51.100.4',
+    });
+    expect(own.statusCode).toBe(200);
+  });
 });
 
 describe('trading the code for a session', () => {

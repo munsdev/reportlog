@@ -31,12 +31,17 @@ export function authRoutes(
   app: FastifyInstance,
   { db, mailer }: { db: Kysely<DB>; mailer: Mailer },
 ): void {
-  const perAddress = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
+  // Per address AND client, so a stranger asking for codes to somebody else's
+  // address uses up their own allowance and not the owner's. The looser cap
+  // per address alone still stops one inbox being flooded from many places.
+  const perAddressAndClient = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
+  const perAddress = limiter({ max: 20, windowMs: 60 * 60 * 1000 });
   const perClient = limiter({ max: 60, windowMs: 60 * 60 * 1000 });
 
   route(app, C.requestSignInCode, async ({ request }) => {
     const email = addressFrom(bodyOf(C.requestSignInCode, request).email);
     perClient.take(request.ip);
+    perAddressAndClient.take(`${email} ${request.ip}`);
     perAddress.take(email);
     const code = await createCode(db, subjects.signIn(email));
     // Sent whether or not the address has an account, so neither the answer
