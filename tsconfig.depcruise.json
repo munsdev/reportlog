@@ -1,0 +1,9 @@
+{
+  // Only for dependency-cruiser: the base settings plus the website's `@/`
+  // alias, so imports through it resolve and stay inside the rules.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["apps/web/src/*"] }
+  }
+}

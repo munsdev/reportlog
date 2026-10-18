@@ -1,0 +1,37 @@
+{
+  "name": "@reportlog/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The ReportLog server: Fastify, PostgreSQL through Kysely, run directly by Node with no build step.",
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=../../.env src/server.ts",
+    "start": "node src/server.ts",
+    "db:migrate": "node --env-file-if-exists=../../.env src/db/migrate-cli.ts",
+    "db:types": "node --env-file-if-exists=../../.env src/db/gen-types.ts",
+    "db:types:check": "node --env-file-if-exists=../../.env src/db/gen-types.ts --check",
+    "db:seed": "node --env-file-if-exists=../../.env src/dev/seed.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --project unit",
+    "test:db": "vitest run --project db"
+  },
+  "dependencies": {
+    "@fastify/helmet": "13.2.0",
+    "@reportlog/access": "workspace:*",
+    "@reportlog/contracts": "workspace:*",
+    "@reportlog/fields": "workspace:*",
+    "@reportlog/seal": "workspace:*",
+    "fastify": "5.12.7",
+    "fastify-type-provider-zod": "7.0.0",
+    "kysely": "0.29.7",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/pg": "8.23.1",
+    "kysely-codegen": "0.20.0",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}

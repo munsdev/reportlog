@@ -1,0 +1,67 @@
+@import 'tailwindcss';
+@import './fonts/fonts.css';
+
+/*
+ * THE LOOK, as tokens. Every colour a screen uses is one of these, so an
+ * operator's palette reaches every screen by changing values here at runtime
+ * (the theming workstream sets them on :root from site settings).
+ *
+ * COLOUR IS EXCLUSIVE: every chromatic value has exactly one job.
+ *   action     the thing you came to do — buttons only. Dark text on it.
+ *   confirmed  a moderator confirmed this — status only, never a button.
+ *   serious    serious, and errors — status only, never a button.
+ * A report nobody has assessed gets no colour at all.
+ *
+ * These defaults are the legacy "ReportLog" palette.
+ */
+:root {
+  --rl-background: #e7ecef;
+  --rl-background-alt: #dde4e8;
+  --rl-background-deep: #121a24;
+  --rl-surface: #ffffff;
+  --rl-border: #a4b4be;
+  --rl-text: #0e151c;
+  --rl-text-alt: #46586a;
+  --rl-text-muted: #566470;
+  --rl-text-on-deep: #ffffff;
+  --rl-action: #e9a81c;
+  --rl-on-action: #0e151c;
+  --rl-brand: #7d5b10;
+  --rl-serious: #a81d33;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+  --rl-radius: 6px;
+}
+
+@theme inline {
+  --color-paper: var(--rl-background);
+  --color-paper-alt: var(--rl-background-alt);
+  --color-deep: var(--rl-background-deep);
+  --color-surface: var(--rl-surface);
+  --color-line: var(--rl-border);
+  --color-ink: var(--rl-text);
+  --color-ink-alt: var(--rl-text-alt);
+  --color-muted: var(--rl-text-muted);
+  --color-on-deep: var(--rl-text-on-deep);
+  --color-action: var(--rl-action);
+  --color-on-action: var(--rl-on-action);
+  --color-brand: var(--rl-brand);
+  --color-serious: var(--rl-serious);
+  --color-on-serious: var(--rl-on-serious);
+  --color-confirmed: var(--rl-confirmed);
+  --color-on-confirmed: var(--rl-on-confirmed);
+  --radius-card: var(--rl-radius);
+  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Archivo', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Red Hat Mono', ui-monospace, monospace;
+}
+
+@layer base {
+  html {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ink;
+  }
+}

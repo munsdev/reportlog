@@ -1,0 +1,439 @@
+{
+  "note": "Generated from the legacy JavaScript implementation (legacy/src) on 2026-10-18 by running it, not by hand. Do not edit: a test that disagrees with these is reporting a change in what gets sealed.",
+  "normalize": [
+    {
+      "kind": "short_text",
+      "value": "  hi  ",
+      "settings": {},
+      "out": "hi"
+    },
+    {
+      "kind": "short_text",
+      "value": "   ",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "short_text",
+      "value": "abcdef",
+      "settings": {
+        "maxLength": 3
+      },
+      "out": "abc"
+    },
+    {
+      "kind": "short_text",
+      "value": 42,
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "long_text",
+      "value": "xxxxxxxxxx",
+      "settings": {
+        "maxLength": 4
+      },
+      "out": "xxxx"
+    },
+    {
+      "kind": "date",
+      "value": "2026-02-31",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "date",
+      "value": "2026-02-28",
+      "settings": {},
+      "out": "2026-02-28"
+    },
+    {
+      "kind": "date",
+      "value": " 2026-01-05 ",
+      "settings": {},
+      "out": "2026-01-05"
+    },
+    {
+      "kind": "date",
+      "value": "26-1-5",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "time",
+      "value": "9:30",
+      "settings": {},
+      "out": "09:30:00"
+    },
+    {
+      "kind": "time",
+      "value": "09:30:15",
+      "settings": {},
+      "out": "09:30:15"
+    },
+    {
+      "kind": "time",
+      "value": "",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "time",
+      "value": "noon",
+      "settings": {},
+      "out": "noon"
+    },
+    {
+      "kind": "datetime",
+      "value": "2026-10-18T14:00:00+02:00",
+      "settings": {},
+      "out": "2026-10-18T12:00:00.000Z"
+    },
+    {
+      "kind": "datetime",
+      "value": "nope",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "place",
+      "value": " Berlin ",
+      "settings": {},
+      "out": "Berlin"
+    },
+    {
+      "kind": "place",
+      "value": "Hamburg",
+      "settings": {
+        "options": [
+          "Berlin"
+        ],
+        "allowOther": false
+      },
+      "out": null
+    },
+    {
+      "kind": "place",
+      "value": "Berlin",
+      "settings": {
+        "options": [
+          "Berlin"
+        ],
+        "allowOther": false
+      },
+      "out": "Berlin"
+    },
+    {
+      "kind": "place",
+      "value": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy",
+      "settings": {},
+      "out": "yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+    },
+    {
+      "kind": "location",
+      "value": "us-az",
+      "settings": {
+        "scope": "us"
+      },
+      "out": "US-AZ"
+    },
+    {
+      "kind": "location",
+      "value": "US",
+      "settings": {
+        "scope": "us"
+      },
+      "out": null
+    },
+    {
+      "kind": "location",
+      "value": "de",
+      "settings": {
+        "scope": "world"
+      },
+      "out": "DE"
+    },
+    {
+      "kind": "location",
+      "value": "US-AZ",
+      "settings": {
+        "scope": "world"
+      },
+      "out": null
+    },
+    {
+      "kind": "location",
+      "value": "US-AZ",
+      "settings": {
+        "scope": "both"
+      },
+      "out": "US-AZ"
+    },
+    {
+      "kind": "location",
+      "value": "Arizona",
+      "settings": {
+        "scope": "both"
+      },
+      "out": null
+    },
+    {
+      "kind": "location",
+      "value": "US-AZ",
+      "settings": {},
+      "out": "US-AZ"
+    },
+    {
+      "kind": "choice_one",
+      "value": "b",
+      "settings": {
+        "options": [
+          "a",
+          "b"
+        ]
+      },
+      "out": "b"
+    },
+    {
+      "kind": "choice_one",
+      "value": "c",
+      "settings": {
+        "options": [
+          "a",
+          "b"
+        ]
+      },
+      "out": null
+    },
+    {
+      "kind": "choice_many",
+      "value": [
+        "c",
+        "a",
+        "a",
+        "zz"
+      ],
+      "settings": {
+        "options": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "out": [
+        "a",
+        "c"
+      ]
+    },
+    {
+      "kind": "choice_many",
+      "value": "b",
+      "settings": {
+        "options": [
+          "a",
+          "b",
+          "c"
+        ]
+      },
+      "out": [
+        "b"
+      ]
+    },
+    {
+      "kind": "choice_many",
+      "value": [],
+      "settings": {
+        "options": [
+          "a"
+        ]
+      },
+      "out": null
+    },
+    {
+      "kind": "yes_no",
+      "value": "yes",
+      "settings": {},
+      "out": true
+    },
+    {
+      "kind": "yes_no",
+      "value": "false",
+      "settings": {},
+      "out": false
+    },
+    {
+      "kind": "yes_no",
+      "value": "maybe",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "evidence_declaration",
+      "value": true,
+      "settings": {},
+      "out": true
+    },
+    {
+      "kind": "number",
+      "value": "3.5",
+      "settings": {},
+      "out": 3.5
+    },
+    {
+      "kind": "number",
+      "value": "10",
+      "settings": {
+        "min": 0,
+        "max": 5
+      },
+      "out": null
+    },
+    {
+      "kind": "number",
+      "value": "x",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "number",
+      "value": "",
+      "settings": {},
+      "out": 0
+    },
+    {
+      "kind": "number",
+      "value": 0,
+      "settings": {
+        "min": null,
+        "max": null
+      },
+      "out": 0
+    },
+    {
+      "kind": "email",
+      "value": " A@B.CO ",
+      "settings": {},
+      "out": "a@b.co"
+    },
+    {
+      "kind": "email",
+      "value": "nope",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "url",
+      "value": "https://example.org/a b",
+      "settings": {},
+      "out": "https://example.org/a%20b"
+    },
+    {
+      "kind": "url",
+      "value": "javascript:alert(1)",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "url",
+      "value": "example.org",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "file",
+      "value": "anything",
+      "settings": {},
+      "out": null
+    },
+    {
+      "kind": "nonsense",
+      "value": "x",
+      "settings": {},
+      "out": null
+    }
+  ],
+  "buildAnswers": [
+    {
+      "name": "condition-shown",
+      "body": {
+        "what": "x",
+        "has": "yes",
+        "of": "video",
+        "kind": [
+          "z",
+          "x"
+        ],
+        "extra": "dropped"
+      },
+      "answers": {
+        "what": "x",
+        "has": true,
+        "of": "video",
+        "kind": [
+          "x",
+          "z"
+        ]
+      },
+      "errors": []
+    },
+    {
+      "name": "condition-hidden",
+      "body": {
+        "what": "x",
+        "has": "no",
+        "of": "video"
+      },
+      "answers": {
+        "what": "x",
+        "has": false
+      },
+      "errors": []
+    },
+    {
+      "name": "required-missing",
+      "body": {
+        "has": "yes"
+      },
+      "answers": {
+        "has": true
+      },
+      "errors": [
+        "What happened? is needed"
+      ]
+    },
+    {
+      "name": "nothing",
+      "body": {},
+      "answers": null,
+      "errors": [
+        "What happened? is needed"
+      ]
+    }
+  ],
+  "times": [
+    {
+      "in": "9:30",
+      "out": "09:30:00"
+    },
+    {
+      "in": "09:30",
+      "out": "09:30:00"
+    },
+    {
+      "in": "9:30:05",
+      "out": "09:30:05"
+    },
+    {
+      "in": "",
+      "out": null
+    },
+    {
+      "in": null,
+      "out": null
+    },
+    {
+      "in": "x",
+      "out": "x"
+    }
+  ]
+}

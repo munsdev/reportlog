@@ -1,0 +1,23 @@
+{
+  "name": "@reportlog/seal",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "What a report's fingerprint is made of, and how anybody checks it. Pure: no database, no network. Runs in a browser.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@noble/hashes": "2.4.0",
+    "@reportlog/fields": "workspace:*",
+    "canonicalize": "5.1.0"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}

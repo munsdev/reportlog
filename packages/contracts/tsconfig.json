@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Runs in the browser and on the server alike, so it is checked against
+    // web-standard APIs only. No Node types: `node:crypto` here would not
+    // compile, which is the point.
+    "lib": ["ES2023", "DOM"],
+    "types": []
+  },
+  "include": ["src", "test"]
+}

@@ -1,0 +1,515 @@
+{
+  "note": "Generated from the legacy JavaScript implementation (legacy/src) on 2026-10-18 by running it, not by hand. Do not edit: a test that disagrees with these is reporting a change in what gets sealed.",
+  "seal": [
+    {
+      "name": "minimal",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": false,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "canonical": "{\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":false,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "565c4d92f91f040ebd00a79d807ffb14b41bba1fe87384ed5d77dd2b767d42f2"
+    },
+    {
+      "name": "with-answers",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "answers": {
+            "what": "A thing happened",
+            "when": "2026-10-01",
+            "tags": [
+              "b",
+              "a"
+            ],
+            "count": 3,
+            "ok": true,
+            "where": "US-AZ",
+            "note": "Ünïcödé — “quotes” 😀"
+          }
+        }
+      },
+      "canonical": "{\"answers\":{\"count\":3,\"note\":\"Ünïcödé — “quotes” 😀\",\"ok\":true,\"tags\":[\"b\",\"a\"],\"what\":\"A thing happened\",\"when\":\"2026-10-01\",\"where\":\"US-AZ\"},\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "315eed122630938fc4b77226c622a2642306e768ee06058b6c4423a7abec8c88"
+    },
+    {
+      "name": "empty-answers-dropped",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "answers": {}
+        }
+      },
+      "canonical": "{\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "dacd9366303f1720f145ffa2755e52e95a9958842e7a013affddd66d5cc27d02"
+    },
+    {
+      "name": "correction-string-id",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": "17",
+        "report": {
+          "logbook": "incidents",
+          "may_publish": "true",
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "canonical": "{\"corrects_id\":17,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "72800ac4ce60db59f0cc7bafae1758d7b11363d9034aa477564c20bd33f7ceb1"
+    },
+    {
+      "name": "with-form",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "logbook_form": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "report": {
+          "logbook": "incidents",
+          "may_publish": false,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "answers": {
+            "a": "x"
+          }
+        }
+      },
+      "canonical": "{\"answers\":{\"a\":\"x\"},\"corrects_id\":null,\"logbook\":\"incidents\",\"logbook_form\":\"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\"may_publish\":false,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "feb67baa651f820d8b2f7d1d0a5f70787c209b7dac49d7f5f75023d6db85bde2"
+    },
+    {
+      "name": "third-party",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "third_party": true,
+          "filed_via": "  Helpers e.V. ",
+          "intake_method": "phone",
+          "attested_at": "2026-10-17T09:00:00.000Z",
+          "collected_on": "2026-10-15"
+        }
+      },
+      "canonical": "{\"attested_at\":\"2026-10-17T09:00:00.000Z\",\"collected_on\":\"2026-10-15\",\"corrects_id\":null,\"filed_via\":\"Helpers e.V.\",\"intake_method\":\"phone\",\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"third_party\":true,\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "2f42469b5fcae16005ad93659f0d270893c2fe60795329729b2f28f60e06d0b8"
+    },
+    {
+      "name": "third-party-no-collected",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "third_party": "true",
+          "filed_via": "Helpers",
+          "intake_method": "paper",
+          "attested_at": "2026-10-17T09:00:00.000Z"
+        }
+      },
+      "canonical": "{\"attested_at\":\"2026-10-17T09:00:00.000Z\",\"corrects_id\":null,\"filed_via\":\"Helpers\",\"intake_method\":\"paper\",\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"third_party\":true,\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "c3e9543af960fd7363e67b18e66238ecea58cdf54a9ec538885d18d6f8a15666"
+    },
+    {
+      "name": "third-party-incomplete-dropped",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "third_party": true,
+          "filed_via": "Helpers",
+          "intake_method": "fax",
+          "attested_at": "2026-10-17T09:00:00.000Z"
+        }
+      },
+      "canonical": "{\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "dacd9366303f1720f145ffa2755e52e95a9958842e7a013affddd66d5cc27d02"
+    },
+    {
+      "name": "attachments",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "attachments": [
+          {
+            "ordinal": 1,
+            "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "byte_size": 1234,
+            "media_type": "image/jpeg"
+          },
+          {
+            "ordinal": 2,
+            "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "byte_size": 99,
+            "media_type": "application/pdf"
+          }
+        ],
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "canonical": "{\"attachments\":[{\"byte_size\":1234,\"media_type\":\"image/jpeg\",\"ordinal\":1,\"sha256\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\"},{\"byte_size\":99,\"media_type\":\"application/pdf\",\"ordinal\":2,\"sha256\":\"dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd\"}],\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "82355d636b5584d1cbdc1a3a40f9ef51de0a81f108f28e8a5ac27ebff8889858"
+    },
+    {
+      "name": "empty-attachments-dropped",
+      "input": {
+        "publicRef": "RL-MABC123-7K2Q9Z",
+        "receivedAt": "2026-10-18T12:00:00.000Z",
+        "threadId": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11",
+        "correctsId": null,
+        "attachments": [],
+        "report": {
+          "logbook": "incidents",
+          "may_publish": true,
+          "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      },
+      "canonical": "{\"corrects_id\":null,\"logbook\":\"incidents\",\"may_publish\":true,\"may_publish_digest\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"public_ref\":\"RL-MABC123-7K2Q9Z\",\"received_at\":\"2026-10-18T12:00:00.000Z\",\"thread_id\":\"0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11\"}",
+      "content_hash": "dacd9366303f1720f145ffa2755e52e95a9958842e7a013affddd66d5cc27d02"
+    }
+  ],
+  "genesis": [
+    {
+      "slug": "incidents",
+      "genesis": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a"
+    },
+    {
+      "slug": "a",
+      "genesis": "b753444fc076441bde6080ae4a7bf2132cef6ac3f53a00fa378e3ca6762bcfcc"
+    },
+    {
+      "slug": "tip-line-2026",
+      "genesis": "a1ae891f5e6b9e2fce11220ae579740737403786d06fcea454656c2893279678"
+    },
+    {
+      "slug": "ünï",
+      "genesis": "2aeb9dc706ddad920f5ec9fff5c9915513065912e308f7d963a07c73acf04eff"
+    }
+  ],
+  "chain": [
+    {
+      "content": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "prev": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+      "chain": "4fbeab3313b1a0a0ac1406da1efb38c3f78cf4382a90a45fb401b7e40a748805"
+    }
+  ],
+  "forms": [
+    {
+      "slug": "incidents",
+      "fields": [
+        {
+          "key": "what",
+          "kind": "long_text",
+          "label": "What happened?",
+          "help": "In your own words.",
+          "required": true,
+          "settings": {
+            "maxLength": 5000
+          }
+        },
+        {
+          "key": "has",
+          "kind": "evidence_declaration",
+          "label": "Do you have photos?",
+          "required": false
+        },
+        {
+          "key": "of",
+          "kind": "short_text",
+          "label": "What of?",
+          "required": false,
+          "shown_when": {
+            "field": "has",
+            "in": [
+              "yes"
+            ]
+          },
+          "settings": {
+            "maxLength": 200
+          }
+        },
+        {
+          "key": "kind",
+          "kind": "choice_many",
+          "label": "Which?",
+          "help": "",
+          "required": 0,
+          "settings": {
+            "options": [
+              "x",
+              "y",
+              "z"
+            ]
+          }
+        }
+      ],
+      "definition": "{\"logbook\":\"incidents\",\"questions\":[{\"help\":\"In your own words.\",\"key\":\"what\",\"kind\":\"long_text\",\"label\":\"What happened?\",\"required\":true,\"settings\":{\"maxLength\":5000}},{\"key\":\"has\",\"kind\":\"evidence_declaration\",\"label\":\"Do you have photos?\",\"required\":false,\"settings\":{}},{\"key\":\"of\",\"kind\":\"short_text\",\"label\":\"What of?\",\"required\":false,\"settings\":{\"maxLength\":200},\"shown_when\":{\"field\":\"has\",\"in\":[\"yes\"]}},{\"key\":\"kind\",\"kind\":\"choice_many\",\"label\":\"Which?\",\"required\":false,\"settings\":{\"options\":[\"x\",\"y\",\"z\"]}}],\"reportlog_form\":1}",
+      "hash": "dd1212a02c2fd7ccae1fa567591a0e1b411a998c5f9981d286bbc83d03c196b9"
+    },
+    {
+      "slug": "empty",
+      "fields": [],
+      "definition": "{\"logbook\":\"empty\",\"questions\":[],\"reportlog_form\":1}",
+      "hash": "200424501ce69da35e6e0a9ea7627823ef4e02a60a23c1099e6a07018087217e"
+    }
+  ],
+  "consent": [
+    {
+      "variant": "general",
+      "digest": "c92ca7aa3daa8e6b1d2fdb701c2e31379c633fc2f623272a3db58e3eacc8313a"
+    },
+    {
+      "variant": "coordinator",
+      "digest": "b4a657f6e27157531eb8d50c113b1e0a778f5b37f369744ec8f511a0de097b73"
+    }
+  ],
+  "heads": {
+    "date": "2026-10-18",
+    "heads": [
+      {
+        "logbook": "a",
+        "head": "b753444fc076441bde6080ae4a7bf2132cef6ac3f53a00fa378e3ca6762bcfcc",
+        "reports": 0
+      },
+      {
+        "logbook": "b",
+        "head": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "reports": 3
+      }
+    ],
+    "digest": "8ba752aa27ab4efffad1696e0b46c8a6724784a118caa34a5aa32f6f8e81c48c"
+  },
+  "chainFiles": [
+    {
+      "name": "intact",
+      "file": {
+        "chain_file_format": 1,
+        "kind": "complete",
+        "logbook": "incidents",
+        "genesis": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+        "chain_length": 2,
+        "forms": [
+          {
+            "hash": "dd1212a02c2fd7ccae1fa567591a0e1b411a998c5f9981d286bbc83d03c196b9",
+            "definition": "{\"logbook\":\"incidents\",\"questions\":[{\"help\":\"In your own words.\",\"key\":\"what\",\"kind\":\"long_text\",\"label\":\"What happened?\",\"required\":true,\"settings\":{\"maxLength\":5000}},{\"key\":\"has\",\"kind\":\"evidence_declaration\",\"label\":\"Do you have photos?\",\"required\":false,\"settings\":{}},{\"key\":\"of\",\"kind\":\"short_text\",\"label\":\"What of?\",\"required\":false,\"settings\":{\"maxLength\":200},\"shown_when\":{\"field\":\"has\",\"in\":[\"yes\"]}},{\"key\":\"kind\",\"kind\":\"choice_many\",\"label\":\"Which?\",\"required\":false,\"settings\":{\"options\":[\"x\",\"y\",\"z\"]}}],\"reportlog_form\":1}"
+          }
+        ],
+        "anchors": [
+          {
+            "date": "2026-10-18",
+            "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+            "reports": 2
+          },
+          {
+            "date": "2026-10-17",
+            "head": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "reports": 0
+          }
+        ],
+        "reports": [
+          {
+            "public_ref": "R1",
+            "hashed_fields": {
+              "answers": {
+                "count": 3,
+                "note": "Ünïcödé — “quotes” 😀",
+                "ok": true,
+                "tags": [
+                  "b",
+                  "a"
+                ],
+                "what": "A thing happened",
+                "when": "2026-10-01",
+                "where": "US-AZ"
+              },
+              "corrects_id": null,
+              "logbook": "incidents",
+              "may_publish": true,
+              "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "public_ref": "RL-MABC123-7K2Q9Z",
+              "received_at": "2026-10-18T12:00:00.000Z",
+              "thread_id": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11"
+            },
+            "content_hash": "315eed122630938fc4b77226c622a2642306e768ee06058b6c4423a7abec8c88",
+            "prev_chain_hash": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "chain_hash": "c9b0a9ce34b3e78598275cffe382e4fc4ffb380b6d506d108da0d61225ac2610"
+          },
+          {
+            "public_ref": "R2",
+            "hashed_fields": {
+              "corrects_id": null,
+              "logbook": "incidents",
+              "may_publish": false,
+              "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "public_ref": "RL-MABC123-7K2Q9Z",
+              "received_at": "2026-10-18T12:00:00.000Z",
+              "thread_id": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11"
+            },
+            "content_hash": "565c4d92f91f040ebd00a79d807ffb14b41bba1fe87384ed5d77dd2b767d42f2",
+            "prev_chain_hash": "c9b0a9ce34b3e78598275cffe382e4fc4ffb380b6d506d108da0d61225ac2610",
+            "chain_hash": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4"
+          }
+        ]
+      },
+      "result": {
+        "ok": true,
+        "kind": "complete",
+        "checked": 2,
+        "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+        "problems": [],
+        "anchors": [
+          {
+            "date": "2026-10-18",
+            "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+            "reports": 2,
+            "checked": true,
+            "ok": true
+          },
+          {
+            "date": "2026-10-17",
+            "head": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "reports": 0,
+            "checked": true,
+            "ok": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "tampered",
+      "file": {
+        "chain_file_format": 1,
+        "kind": "complete",
+        "logbook": "incidents",
+        "genesis": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+        "chain_length": 2,
+        "forms": [
+          {
+            "hash": "dd1212a02c2fd7ccae1fa567591a0e1b411a998c5f9981d286bbc83d03c196b9",
+            "definition": "{\"logbook\":\"incidents\",\"questions\":[{\"help\":\"In your own words.\",\"key\":\"what\",\"kind\":\"long_text\",\"label\":\"What happened?\",\"required\":true,\"settings\":{\"maxLength\":5000}},{\"key\":\"has\",\"kind\":\"evidence_declaration\",\"label\":\"Do you have photos?\",\"required\":false,\"settings\":{}},{\"key\":\"of\",\"kind\":\"short_text\",\"label\":\"What of?\",\"required\":false,\"settings\":{\"maxLength\":200},\"shown_when\":{\"field\":\"has\",\"in\":[\"yes\"]}},{\"key\":\"kind\",\"kind\":\"choice_many\",\"label\":\"Which?\",\"required\":false,\"settings\":{\"options\":[\"x\",\"y\",\"z\"]}}],\"reportlog_form\":1}"
+          }
+        ],
+        "anchors": [
+          {
+            "date": "2026-10-18",
+            "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+            "reports": 2
+          },
+          {
+            "date": "2026-10-17",
+            "head": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "reports": 0
+          }
+        ],
+        "reports": [
+          {
+            "public_ref": "R1",
+            "hashed_fields": {
+              "answers": {
+                "count": 3,
+                "note": "Ünïcödé — “quotes” 😀",
+                "ok": true,
+                "tags": [
+                  "b",
+                  "a"
+                ],
+                "what": "edited",
+                "when": "2026-10-01",
+                "where": "US-AZ"
+              },
+              "corrects_id": null,
+              "logbook": "incidents",
+              "may_publish": true,
+              "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "public_ref": "RL-MABC123-7K2Q9Z",
+              "received_at": "2026-10-18T12:00:00.000Z",
+              "thread_id": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11"
+            },
+            "content_hash": "315eed122630938fc4b77226c622a2642306e768ee06058b6c4423a7abec8c88",
+            "prev_chain_hash": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "chain_hash": "c9b0a9ce34b3e78598275cffe382e4fc4ffb380b6d506d108da0d61225ac2610"
+          },
+          {
+            "public_ref": "R2",
+            "hashed_fields": {
+              "corrects_id": null,
+              "logbook": "incidents",
+              "may_publish": false,
+              "may_publish_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "public_ref": "RL-MABC123-7K2Q9Z",
+              "received_at": "2026-10-18T12:00:00.000Z",
+              "thread_id": "0b6f3c2e-6a43-4b8e-9a59-0f1f6f4f2b11"
+            },
+            "content_hash": "565c4d92f91f040ebd00a79d807ffb14b41bba1fe87384ed5d77dd2b767d42f2",
+            "prev_chain_hash": "c9b0a9ce34b3e78598275cffe382e4fc4ffb380b6d506d108da0d61225ac2610",
+            "chain_hash": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4"
+          }
+        ]
+      },
+      "result": {
+        "ok": false,
+        "kind": "complete",
+        "checked": 2,
+        "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+        "problems": [
+          "Report 1 (R1) does not match its own fingerprint: its contents have changed."
+        ],
+        "anchors": [
+          {
+            "date": "2026-10-18",
+            "head": "58e5ba77f5a0119e77745b285eb166cb9050507c38f1f4121c6a4fa4183c2fd4",
+            "reports": 2,
+            "checked": true,
+            "ok": true
+          },
+          {
+            "date": "2026-10-17",
+            "head": "060763ffe6310cf45568e18aa7ccdc1bc67a0472852b182cf50cd9d5124dc35a",
+            "reports": 0,
+            "checked": true,
+            "ok": true
+          }
+        ]
+      }
+    }
+  ]
+}

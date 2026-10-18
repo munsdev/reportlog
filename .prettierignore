@@ -1,0 +1,6 @@
+legacy/
+pnpm-lock.yaml
+**/fixtures/*.json
+**/gazetteer.json
+apps/web/src/routeTree.gen.ts
+apps/api/src/db/schema.gen.ts
