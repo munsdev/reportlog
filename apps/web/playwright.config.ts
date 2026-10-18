@@ -7,8 +7,13 @@
  * already-installed Chromium instead of the build Playwright downloads.
  */
 import { defineConfig, devices } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 
 const chromium = process.env.CHROMIUM_PATH;
+// Where the server writes the email it would have sent, so a test can read a
+// sign-in code or follow an invitation link the way a person would
+// (e2e/identity/mail.ts reads it).
+const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 
 export default defineConfig({
   testDir: 'e2e',
@@ -22,6 +27,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
+      testIgnore: /identity\//,
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -29,8 +35,20 @@ export default defineConfig({
     },
     {
       name: 'phone',
+      testIgnore: /identity\//,
       use: {
         ...devices['Pixel 7'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // Turns the site password on and seats an owner: state the whole site
+      // shares. So it runs alone, after the others, and puts it back after.
+      name: 'identity',
+      testMatch: /identity\/.*\.spec\.ts$/,
+      dependencies: ['chromium', 'phone'],
+      use: {
+        ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
@@ -40,7 +58,12 @@ export default defineConfig({
       command: 'node --env-file-if-exists=../../.env ../api/src/server.ts',
       url: 'http://127.0.0.1:3000/api/health',
       reuseExistingServer: !process.env.CI,
-      env: { PORT: '3000', LOG_LEVEL: 'warn' },
+      env: {
+        PORT: '3000',
+        LOG_LEVEL: 'warn',
+        MAIL_OUTBOX: OUTBOX,
+        SITE_ORIGIN: 'http://127.0.0.1:4173',
+      },
     },
     {
       command: 'pnpm exec vite build && pnpm exec vite preview --strictPort',

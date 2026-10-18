@@ -1,0 +1,229 @@
+/**
+ * The site password, first-run setup, signing in and an invitation, in a
+ * real browser against the real server.
+ *
+ * Every code and link here is read from the email the server wrote, and the
+ * invitation is opened BY FOLLOWING ITS LINK: a path that only runs when
+ * somebody clicks a link in an email is the path nothing reaches by accident.
+ *
+ * Runs alone, after the rest of the suite (the `identity` project), because
+ * it turns the site password on for everybody.
+ */
+import { expect, test } from '@playwright/test';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
+import { codeIn, countTo, identityState, lastMessageTo, linkIn } from './mail.ts';
+
+test.describe.configure({ mode: 'serial' });
+
+const run = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
+const OWNER = `owner-${run}@example.org`;
+const MANAGER = `manager-${run}@example.org`;
+const COORD = `coord-${run}@example.org`;
+const MOD = `mod-${run}@example.org`;
+const ORG = `E2E Org ${run}`;
+const INSTALL_PW = 'installer-pw-1';
+const SITE_PW = 'operator-pw-2';
+
+const lockHeading = (page: Page) =>
+  page.getByRole('heading', { name: 'This site needs a password' });
+
+async function unlock(page: Page, password: string) {
+  await page.getByLabel('Site password').fill(password);
+  await page.getByRole('button', { name: 'Enter' }).click();
+}
+
+/** Sign in on the sign-in form in front of us, reading the code from the email. */
+async function signInHere(page: Page, email: string) {
+  const before = countTo(email);
+  await page.getByLabel('Your email address').fill(email);
+  await page.getByRole('button', { name: 'Send me a code' }).click();
+  const code = codeIn(await lastMessageTo(email, before));
+  await page.getByLabel('The code from the email').fill(code);
+  await page.getByRole('button', { name: /^(Sign in|Become the owner)$/ }).click();
+}
+
+let ownerContext: BrowserContext;
+let owner: Page;
+
+async function freshPage(browser: Browser): Promise<Page> {
+  const context = await browser.newContext();
+  return context.newPage();
+}
+
+test.beforeAll(() => {
+  identityState('fresh-install', INSTALL_PW);
+});
+test.afterAll(async () => {
+  await ownerContext.close();
+  identityState('set-up');
+});
+
+test('while locked, only the password screen renders and the router goes nowhere', async ({
+  page,
+}) => {
+  const outside: string[] = [];
+  page.on('request', (r) => {
+    const host = new URL(r.url()).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+  });
+
+  await page.goto('/verify/RL-ANYTHING');
+  await expect(lockHeading(page)).toBeVisible();
+  // Nothing behind the curtain: not the page asked for, not even the site's header.
+  await expect(page.getByText('Check a report')).toHaveCount(0);
+  await expect(page.locator('header')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Report RL-ANYTHING/ })).toHaveCount(0);
+
+  // History moving under it changes nothing.
+  await page.evaluate(() => {
+    history.pushState({}, '', '/');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(lockHeading(page)).toBeVisible();
+  await expect(page.locator('header')).toHaveCount(0);
+  await page.goBack();
+  await expect(lockHeading(page)).toBeVisible();
+  await expect(page.getByText('Check a report')).toHaveCount(0);
+
+  await unlock(page, 'not-the-password');
+  await expect(page.getByRole('alert')).toHaveText('That is not the password.');
+  await expect(page.locator('header')).toHaveCount(0);
+  expect(outside).toEqual([]);
+});
+
+test('the setup wizard seats the owner, who must decide about the password', async ({
+  browser,
+}) => {
+  ownerContext = await browser.newContext();
+  owner = await ownerContext.newPage();
+  await owner.goto('/');
+  await unlock(owner, INSTALL_PW);
+
+  await expect(owner.getByRole('heading', { name: 'Who will own this deployment?' })).toBeVisible();
+  await signInHere(owner, OWNER);
+
+  await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
+  const finish = owner.getByRole('button', { name: 'Finish setting up' });
+  // No default and no skip.
+  await expect(finish).toBeDisabled();
+  await owner.getByLabel(/Change it/).check();
+  // Choosing moves nothing: the same screen, waiting for the button.
+  await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
+  await owner.getByLabel('New site password').fill(SITE_PW);
+  await owner.getByLabel('The same password again').fill(SITE_PW);
+  await finish.click();
+
+  await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
+  await expect(owner.getByRole('link', { name: 'Access' })).toBeVisible();
+});
+
+test("the installer's password is retired and the owner's opens the site", async ({ browser }) => {
+  const page = await freshPage(browser);
+  await page.goto('/');
+  await unlock(page, INSTALL_PW);
+  await expect(page.getByRole('alert')).toHaveText('That is not the password.');
+  await unlock(page, SITE_PW);
+  await expect(page.getByRole('heading', { name: 'Check a report' })).toBeVisible();
+  await page.context().close();
+});
+
+test('a door: a logbook opened outside is offered, and only that page opens', async ({
+  browser,
+}) => {
+  const setDoor = (access: string) =>
+    owner.evaluate(async (outside_access) => {
+      const res = await fetch('/api/access/doors/logbooks/demo', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ outside_access }),
+      });
+      return res.status;
+    }, access);
+  expect(await setDoor('door')).toBe(200);
+
+  const page = await freshPage(browser);
+  await page.goto('/');
+  await expect(lockHeading(page)).toBeVisible();
+  await page.getByRole('link', { name: 'Demo logbook' }).click();
+  await expect(page).toHaveURL(/\/file\/demo$/);
+  await expect(lockHeading(page)).toHaveCount(0);
+
+  // Nowhere else from here: the router is blocked on a door.
+  await page.getByRole('link', { name: 'ReportLog' }).click();
+  await expect(page).toHaveURL(/\/file\/demo$/);
+  await expect(page.getByText('Check a report')).toHaveCount(0);
+
+  // And Back is a fresh page load, through the gate.
+  await page.goBack();
+  await expect(lockHeading(page)).toBeVisible();
+  await page.context().close();
+
+  expect(await setDoor('closed')).toBe(200);
+});
+
+test('an invitation, followed from its email, joins the invited address', async ({ browser }) => {
+  await owner.goto('/access/orgs');
+  await owner.getByLabel('Its name').fill(ORG);
+  await owner.getByLabel('Its first manager’s email address').fill(MANAGER);
+  await owner.getByRole('button', { name: 'Make it' }).click();
+  await expect(owner.getByRole('status')).toHaveText(`Made ${ORG}.`);
+  await owner.getByRole('link', { name: ORG }).click();
+
+  const before = countTo(COORD);
+  await owner.getByLabel('Their email address').fill(COORD);
+  await owner.getByRole('button', { name: 'Send the invitation' }).click();
+  await expect(owner.getByRole('status')).toHaveText(`An invitation is on its way to ${COORD}.`);
+
+  const mail = await lastMessageTo(COORD, before);
+  expect(mail.subject).toBe(`You have been invited to ${ORG}`);
+  const link = linkIn(mail);
+  expect(link).toMatch(/^http:\/\/127\.0\.0\.1:4173\/access\/invitation\/[a-f0-9]{64}$/);
+
+  // The invitee: a different browser, no password, no account.
+  const page = await freshPage(browser);
+  await page.goto(link);
+  await expect(lockHeading(page)).toBeVisible();
+  await unlock(page, SITE_PW);
+
+  await expect(page.getByRole('heading', { name: `Join ${ORG} as coordinator` })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A coordinator can', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A coordinator cannot' })).toBeVisible();
+  await expect(page.getByText(OWNER)).toBeVisible();
+
+  await page.getByRole('link', { name: `sign in as ${COORD}` }).click();
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await signInHere(page, COORD);
+
+  // Straight back to the invitation, which still needs a deliberate press.
+  await expect(page).toHaveURL(link);
+  await page.getByRole('button', { name: 'Accept the invitation' }).click();
+  await expect(page.getByRole('status')).toHaveText(`You are now a coordinator of ${ORG}.`);
+
+  // The link works once.
+  await page.goto(link);
+  await expect(page.getByRole('heading', { name: 'This invitation is not open' })).toBeVisible();
+  await page.context().close();
+
+  await owner.reload();
+  await expect(owner.getByText(COORD)).toBeVisible();
+});
+
+test('the owner gives somebody a role, and it is on the record', async () => {
+  await owner.goto('/access');
+  await owner.getByLabel('Their email address').fill(MOD);
+  await owner.getByLabel('Role').selectOption('moderator');
+  await owner.getByRole('button', { name: 'Save' }).click();
+  await expect(owner.getByRole('status')).toHaveText(`${MOD} is now: Moderator.`);
+  await expect(owner.getByRole('row', { name: new RegExp(MOD) })).toContainText('Moderator');
+
+  await owner.getByRole('link', { name: 'Who changed what' }).click();
+  await expect(owner.getByText(`${OWNER} gave ${MOD}: moderator`)).toBeVisible();
+});
+
+test('signing out', async () => {
+  await owner.goto('/');
+  await owner.getByRole('button', { name: 'Sign out' }).click();
+  await expect(owner.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await owner.goto('/access');
+  await expect(owner.getByRole('heading', { name: 'Sign in first' })).toBeVisible();
+});

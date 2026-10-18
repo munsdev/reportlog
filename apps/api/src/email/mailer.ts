@@ -49,11 +49,12 @@ export function capturingMailer(): CapturingMailer {
  * follow the link a person would have been sent. Never for a deployment.
  */
 export function outboxMailer(dir: string): Mailer {
-  mkdirSync(dir, { recursive: true });
   let n = 0;
   return {
     send(message) {
       n += 1;
+      // Each time, since a test run may empty the directory under a running server.
+      mkdirSync(dir, { recursive: true });
       const name = `${String(Date.now())}-${String(process.pid)}-${String(n).padStart(4, '0')}.json`;
       writeFileSync(join(dir, name), JSON.stringify(message));
       return Promise.resolve();

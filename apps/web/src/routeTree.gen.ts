@@ -11,6 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
+import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
+import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
+import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
+import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
+import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
+import { Route as staffAccessOrgsIdRouteImport } from './routes/(staff)/access/orgs.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +28,111 @@ const VerifyRefRoute = VerifyRefRouteImport.update({
   path: '/verify/$ref',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffAccessIndexRoute = staffAccessIndexRouteImport.update({
+  id: '/(staff)/access/',
+  path: '/access/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessAuditRoute = staffAccessAuditRouteImport.update({
+  id: '/(staff)/access/audit',
+  path: '/access/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
+  id: '/(staff)/access/sign-in',
+  path: '/access/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessInvitationTokenRoute =
+  staffAccessInvitationTokenRouteImport.update({
+    id: '/(staff)/access/invitation/$token',
+    path: '/access/invitation/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const staffAccessOrgsIndexRoute = staffAccessOrgsIndexRouteImport.update({
+  id: '/(staff)/access/orgs/',
+  path: '/access/orgs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessOrgsIdRoute = staffAccessOrgsIdRouteImport.update({
+  id: '/(staff)/access/orgs/$id',
+  path: '/access/orgs/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/access/audit': typeof staffAccessAuditRoute
+  '/access/sign-in': typeof staffAccessSignInRoute
+  '/access/': typeof staffAccessIndexRoute
+  '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/access/orgs/': typeof staffAccessOrgsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/access/audit': typeof staffAccessAuditRoute
+  '/access/sign-in': typeof staffAccessSignInRoute
+  '/access': typeof staffAccessIndexRoute
+  '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/access/orgs': typeof staffAccessOrgsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/(staff)/access/audit': typeof staffAccessAuditRoute
+  '/(staff)/access/sign-in': typeof staffAccessSignInRoute
+  '/(staff)/access/': typeof staffAccessIndexRoute
+  '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/(staff)/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/(staff)/access/orgs/': typeof staffAccessOrgsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/verify/$ref'
+  fullPaths:
+    | '/'
+    | '/verify/$ref'
+    | '/access/audit'
+    | '/access/sign-in'
+    | '/access/'
+    | '/access/invitation/$token'
+    | '/access/orgs/$id'
+    | '/access/orgs/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/verify/$ref'
-  id: '__root__' | '/' | '/verify/$ref'
+  to:
+    | '/'
+    | '/verify/$ref'
+    | '/access/audit'
+    | '/access/sign-in'
+    | '/access'
+    | '/access/invitation/$token'
+    | '/access/orgs/$id'
+    | '/access/orgs'
+  id:
+    | '__root__'
+    | '/'
+    | '/verify/$ref'
+    | '/(staff)/access/audit'
+    | '/(staff)/access/sign-in'
+    | '/(staff)/access/'
+    | '/(staff)/access/invitation/$token'
+    | '/(staff)/access/orgs/$id'
+    | '/(staff)/access/orgs/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   VerifyRefRoute: typeof VerifyRefRoute
+  staffAccessAuditRoute: typeof staffAccessAuditRoute
+  staffAccessSignInRoute: typeof staffAccessSignInRoute
+  staffAccessIndexRoute: typeof staffAccessIndexRoute
+  staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
+  staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
+  staffAccessOrgsIndexRoute: typeof staffAccessOrgsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +151,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRefRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/access/': {
+      id: '/(staff)/access/'
+      path: '/access'
+      fullPath: '/access/'
+      preLoaderRoute: typeof staffAccessIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/audit': {
+      id: '/(staff)/access/audit'
+      path: '/access/audit'
+      fullPath: '/access/audit'
+      preLoaderRoute: typeof staffAccessAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/sign-in': {
+      id: '/(staff)/access/sign-in'
+      path: '/access/sign-in'
+      fullPath: '/access/sign-in'
+      preLoaderRoute: typeof staffAccessSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/invitation/$token': {
+      id: '/(staff)/access/invitation/$token'
+      path: '/access/invitation/$token'
+      fullPath: '/access/invitation/$token'
+      preLoaderRoute: typeof staffAccessInvitationTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/orgs/': {
+      id: '/(staff)/access/orgs/'
+      path: '/access/orgs'
+      fullPath: '/access/orgs/'
+      preLoaderRoute: typeof staffAccessOrgsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/orgs/$id': {
+      id: '/(staff)/access/orgs/$id'
+      path: '/access/orgs/$id'
+      fullPath: '/access/orgs/$id'
+      preLoaderRoute: typeof staffAccessOrgsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   VerifyRefRoute: VerifyRefRoute,
+  staffAccessAuditRoute: staffAccessAuditRoute,
+  staffAccessSignInRoute: staffAccessSignInRoute,
+  staffAccessIndexRoute: staffAccessIndexRoute,
+  staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
+  staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,
+  staffAccessOrgsIndexRoute: staffAccessOrgsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

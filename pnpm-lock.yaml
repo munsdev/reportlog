@@ -96,6 +96,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@reportlog/access':
+        specifier: workspace:*
+        version: link:../../packages/access
       '@reportlog/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts

@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
+import { SessionNav } from '../features/identity/SessionNav.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -24,6 +25,7 @@ function RootLayout() {
           <Link to="/" className="font-display text-xl font-bold">
             ReportLog
           </Link>
+          <SessionNav />
         </div>
       </header>
       <main id="main" className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
