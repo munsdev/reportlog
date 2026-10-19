@@ -40,6 +40,7 @@ export async function listOrganizations(db: Kysely<DB>) {
       'o.id',
       'o.name',
       'o.details',
+      'o.logo_key',
       'o.created_at',
       eb.fn.count<number>('m.id').filterWhere('m.role', '=', 'manager').as('manager_count'),
       eb.fn.count<number>('m.id').filterWhere('m.role', '=', 'coordinator').as('coordinator_count'),

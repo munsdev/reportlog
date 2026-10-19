@@ -146,7 +146,7 @@ export async function feedbackRoutes(app: FastifyInstance, deps: FeedbackDeps): 
     route(scoped, setTester, async ({ request }) => {
       const user = requireUser(request);
       const { email, tester } = bodyOf(setTester, request);
-      const { unchanged } = await setTesterFlag(db, { actorEmail: user.email, email, tester });
+      const { unchanged } = await setTesterFlag(db, { actor: user, email, tester });
       return { ok: true as const, unchanged };
     });
 

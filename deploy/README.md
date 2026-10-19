@@ -25,7 +25,8 @@ and off-site backups go to S3-compatible storage in the EU.
 
 Services: `reportlog-api` (the API, on 127.0.0.1:3000), `reportlog-job@<name>`
 (one per scheduled job, started by `reportlog-<name>.timer`),
-`reportlog-alert@` (emails `OPS_ALERT_EMAIL` when a job fails), `caddy` and
+`reportlog-alert@` (emails `OPS_ALERT_EMAIL` when a job fails),
+`reportlog-update-check` (root, daily: is there an update?), `caddy` and
 `postgresql`.
 
 ## Setting up a server
@@ -124,6 +125,44 @@ project. Mail from a domain without those records is usually accepted and
 then filed as junk, so `mail-test` succeeding is not the end of it: check the
 message arrives.
 
+### Error tracking (Bugsink)
+
+Optional, and off until you set it up. With it on, the API's unexpected
+errors, a scheduled job that crashes, and errors in visitors' browsers
+arrive in a [Bugsink](https://www.bugsink.com/) project you run yourself.
+
+1. **Run Bugsink somewhere that is not this server**, in the EU: a small
+   Hetzner server of its own is enough (Bugsink's own guide installs it with
+   Docker or as a Python application). Not on this server: the archive's
+   server should not also hold a second application with its own database
+   and its own login.
+2. **Make a project** in Bugsink and copy its DSN
+   (`https://<key>@bugsink.example.org/<number>`).
+3. Put it in `ERROR_TRACKING_DSN=` in `/etc/reportlog/reportlog.env`. Set
+   `ERROR_TRACKING_ENVIRONMENT=staging` on a server that is not the real one.
+4. `sudo systemctl restart reportlog-api`. Jobs pick it up the next time
+   they run.
+
+What an event carries is an allowlist (`packages/contracts/src/telemetry.ts`):
+the error's type and message, its stack, the route's **pattern**
+(`/api/reports/:ref`, never the address) and the release. **Never** an IP
+address, a page's address (an address can carry a token), a request body,
+headers, cookies, who was signed in or what they did before. URLs, email and
+IP addresses and anything that looks like a token are cut out of the message
+too. Refusals (a 404, a wrong password, a bad form) are not errors and are
+not sent.
+
+**Visitors' browsers never talk to Bugsink.** The website loads nothing for
+this until an error happens; then it asks this site whether tracking is on,
+and if so posts the error to this site (`/api/telemetry/errors`). The server
+cleans it again, because a browser is not trusted to have, and passes it on
+with its own DSN. At most 30 website errors a minute are passed on, so a
+stranger cannot flood your Bugsink through the site. The site's content
+security policy still allows no other host.
+
+With `ERROR_TRACKING_DSN` empty, nothing is sent anywhere and the relay
+answers that error tracking is off.
+
 ### Off-site backups
 
 1. **An encryption key, made somewhere that is not the server:**
@@ -173,6 +212,38 @@ running release is touched:
 | the new release's start | It is switched back automatically. Its migrations stay applied.                                                                                                                  |
 
 The deploy ends by running the doctor.
+
+## Updates
+
+```sh
+sudo reportlog updates           # is there an update, and what would it change?
+sudo reportlog deploy <commit>   # the only way one is installed
+```
+
+`reportlog updates` fetches the repository (`REPO_URL` and `DEPLOY_REF` in
+`/etc/reportlog/deploy.env`) and says how far the running release is behind
+the branch, which releases lie between them, with their notes from the
+newest `CHANGELOG.md`, the commits, and the exact deploy command. It
+installs nothing.
+
+The same check runs **every morning around 06:00** as root
+(`reportlog-update-check.timer`). When it finds a commit it has not told you
+about, it emails `OPS_ALERT_EMAIL` once. The doctor warns while the server
+is behind, when the repository could not be fetched (and says why: a
+credential, DNS, the network), and when the daily check has stopped. To turn
+the check off: `sudo systemctl disable --now reportlog-update-check.timer`
+(a deploy turns it back on).
+
+**Why there is no update button on the website.** The old application had
+one: the website wrote a request and a root process applied it. That is a
+path from a web request to code running as root, on a server holding
+people's reports, and it needed a great deal of care to be safe. Here the
+path does not exist. An update migrates the database and can stop half-way
+with something to read, so a person runs it, at a terminal. The check runs as
+root only because the repository's address and credentials are root's, as
+they are for a deploy; it runs root's own copy of these scripts, never code
+from a release, and writes only what it found (`/var/lib/reportlog/updates/`),
+which nothing reads to decide what to install.
 
 ## Rolling back
 
@@ -230,6 +301,7 @@ differ). All times are UTC.
 | `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                          |
 | `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`)          |
 | `anchor`          | daily 04:00   | Timestamp the chain heads (DFN) and publish them to the transparency log (workstream D2's `runAnchorJob`) |
+| `anchor-watch`    | daily 09:00   | Check from outside the anchor that it ran; fails (and alerts) when the archive has not been anchored      |
 | `digest-hourly`   | hourly        | Email hourly subscribers what the board published since their last email                                  |
 | `digest-weekly`   | Mondays 07:00 | The same, for weekly subscribers                                                                          |
 | `feedback-digest` | Mondays 08:00 | Email `ADMIN_EMAIL` every open feedback issue, longest-untouched first                                    |
@@ -241,6 +313,15 @@ access. Without a remote it still timestamps, keeps the day on the server and
 fails the unit. A run that **refuses** (a logbook gone from the list, or a
 chain shorter than published) exits 2 and keeps refusing every day: that is
 what deleting reports looks like, and the doctor puts it first.
+
+`anchor-watch` exists because the alert below fires only when a job runs
+and fails. An anchor that never runs (its timer disabled, its unit lost)
+fails nothing, and the doctor notices only when somebody runs it. So every
+morning this job asks the doctor's own anchor question from outside the
+anchor, and fails, which sends the alert, when the newest anchor is over
+`ANCHOR_MAX_AGE_HOURS` old, when the last run refused or published nothing,
+or when the log has nowhere to go. On a day the anchor itself failed you get
+two emails: the anchor's at about 04:00 and this one at about 09:00.
 
 The two sweeps are different jobs on purpose. The first deletes rows; the
 second erases columns and must never delete a row. A list table in the
@@ -320,6 +401,7 @@ the Node version. Each line says what to do.
 | No certificate    | `journalctl -u caddy`: DNS not pointing here, or 80/443 closed              |
 | Mail not arriving | `sudo reportlog mail-test you@example.org`                                  |
 | A job failed      | `journalctl -u reportlog-job@<name> -n 50`                                  |
+| An error, in code | Bugsink, if `ERROR_TRACKING_DSN` is set; otherwise the journal              |
 | Disk filling      | `du -sh /srv/reportlog/releases/* /var/backups/reportlog`                   |
 
 Logs never contain an IP address or a full URL: Caddy keeps no access log,

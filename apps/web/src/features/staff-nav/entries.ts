@@ -8,7 +8,7 @@
  *   { to: '/moderate', label: 'Moderation', for: ['moderator'] },
  *
  * `for` names roles from @reportlog/access, plus `tester` for the tester
- * flag, and `organization` for anybody who coordinates or manages an
+ * flag, `team` for the team-member flag, and `organization` for anybody who coordinates or manages an
  * organization (by membership; no system role stands in for it, as on the
  * server's coordinatorOrgs). Rank is the package's: `admin` admits the owner, and admin does NOT
  * imply moderator, so a screen for both names both.
@@ -21,7 +21,7 @@ import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
 import type { LinkProps } from '@tanstack/react-router';
 
-export type Audience = SystemRole | 'tester' | 'organization';
+export type Audience = SystemRole | 'tester' | 'team' | 'organization';
 
 export interface StaffEntry {
   to: NonNullable<LinkProps['to']>;
@@ -42,13 +42,14 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/files/settings', label: 'File settings', for: ['admin'] },
   { to: '/settings', label: 'Settings', for: ['admin'] },
   { to: '/feedback', label: 'Feedback', for: ['tester', 'admin', 'access_manager'] },
-  { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin'] },
+  { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin', 'team'] },
   { to: '/intake', label: 'Intake', for: ['organization'] },
 ];
 
 export interface Viewer {
   role: SystemRole;
   tester: boolean;
+  teamMember?: boolean;
   memberships?: readonly { role: string }[];
 }
 
@@ -58,9 +59,11 @@ export function mayOpen(entry: StaffEntry, viewer: Viewer): boolean {
   return entry.for.some((a) =>
     a === 'tester'
       ? viewer.tester
-      : a === 'organization'
-        ? (viewer.memberships ?? []).some((m) => ORGANIZATION_ROLES.includes(m.role))
-        : roleSatisfies(viewer.role, a),
+      : a === 'team'
+        ? viewer.teamMember === true
+        : a === 'organization'
+          ? (viewer.memberships ?? []).some((m) => ORGANIZATION_ROLES.includes(m.role))
+          : roleSatisfies(viewer.role, a),
   );
 }
 

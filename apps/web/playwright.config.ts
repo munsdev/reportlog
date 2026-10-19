@@ -9,6 +9,7 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
+import { BUGSINK_PORT, BUGSINK_RECEIVED } from './e2e/bugsink.ts';
 
 const chromium = process.env.CHROMIUM_PATH;
 // Where the server writes the email it would have sent, so a test can read a
@@ -17,6 +18,8 @@ const chromium = process.env.CHROMIUM_PATH;
 const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 // Where the test server keeps files (files workstream).
 const FILES = fileURLToPath(new URL('./e2e/.files/', import.meta.url));
+// Error tracking is ON for the whole run, against a stand-in for Bugsink
+// (e2e/telemetry.spec.ts), so every page's no-third-party check runs with it on.
 
 export default defineConfig({
   testDir: 'e2e',
@@ -35,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|board-locked)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -44,7 +47,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|board-locked)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -86,13 +89,24 @@ export default defineConfig({
       },
     },
     {
+      // The list and logbook doors with the password on (C3). Last, alone,
+      // for the same reason: the password is the whole site's.
+      name: 'doors-behind-password',
+      testMatch: /doors\/.*\.spec\.ts$/,
+      dependencies: ['files-behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // D3: severity on reports the other projects filed (so it files none,
       // and spends nothing of the per-address filing limit), then the board
       // with the site password on. Last, because the password is the whole
       // site's.
       name: 'board-behind-password',
       testMatch: /board-locked\/.*\.spec\.ts$/,
-      dependencies: ['files-behind-password'],
+      dependencies: ['doors-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -100,6 +114,12 @@ export default defineConfig({
     },
   ],
   webServer: [
+    {
+      // A stand-in for Bugsink (apps/api/test/stand-in-bugsink.ts).
+      command: `node ../api/test/stand-in-bugsink.ts ${BUGSINK_PORT} ${BUGSINK_RECEIVED}`,
+      url: `http://127.0.0.1:${BUGSINK_PORT}/`,
+      reuseExistingServer: !process.env.CI,
+    },
     {
       command: 'node --env-file-if-exists=../../.env ../api/src/server.ts',
       url: 'http://127.0.0.1:3000/api/health',
@@ -117,6 +137,8 @@ export default defineConfig({
         FILES_STORAGE: 'disk',
         FILES_DIR: FILES,
         FILES_INLINE_WORKER: 'true',
+        ERROR_TRACKING_DSN: `http://e2e@127.0.0.1:${BUGSINK_PORT}/1`,
+        ERROR_TRACKING_ENVIRONMENT: 'e2e',
       },
     },
     {

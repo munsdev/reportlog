@@ -144,6 +144,14 @@ export interface CoordinatorActions {
   thread_id: string;
 }
 
+export interface DigestStopLinks {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  token_hash: string;
+  used_at: Timestamp | null;
+  user_id: number;
+}
+
 export interface DigestSubscriptions {
   frequency: string;
   last_sent_at: Timestamp | null;
@@ -516,6 +524,7 @@ export interface Organizations {
   id: Generated<number>;
   listed: Generated<boolean>;
   listed_at: Timestamp | null;
+  logo_key: string | null;
   name: string;
   updated_at: Generated<Timestamp>;
   verified_at: Generated<Timestamp>;
@@ -724,8 +733,10 @@ export interface UploadSlots {
 
 export interface Users {
   created_at: Generated<Timestamp>;
+  desks: Generated<string[]>;
   email: string;
   id: Generated<number>;
+  is_team_member: Generated<boolean>;
   is_tester: Generated<boolean>;
   role: Generated<string>;
   updated_at: Generated<Timestamp>;
@@ -743,6 +754,7 @@ export interface DB {
   contact_key_rotations: ContactKeyRotations;
   contact_keys: ContactKeys;
   coordinator_actions: CoordinatorActions;
+  digest_stop_links: DigestStopLinks;
   digest_subscriptions: DigestSubscriptions;
   editorial_note_links: EditorialNoteLinks;
   editorial_note_versions: EditorialNoteVersions;

@@ -32,6 +32,10 @@ import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
 import type { DB } from '../db/schema.gen.ts';
+import type { Files } from '../files/context.ts';
+import { filesOn } from '../files/context.ts';
+import { sealFiles } from '../files/filing.ts';
+import { discardSlot, slotStatuses } from '../files/slots.ts';
 import { notFound } from '../http/errors.ts';
 import { notAllowed } from '../identity/guards.ts';
 import type { SignedIn } from '../identity/sessions.ts';
@@ -40,6 +44,7 @@ import type { LogbookSummary } from '@reportlog/contracts';
 import { sealContact } from './contactKeys.ts';
 import type { ContactKeyring } from './contactKeys.ts';
 import { intakeClosed, notConfigured, refused, startThread } from './filing.ts';
+import { accountDraft, fileProblems } from './intakeFiles.ts';
 import { intakeIsOpen } from './intakeSwitch.ts';
 
 /**
@@ -122,11 +127,18 @@ export class Intake {
   private readonly db: Kysely<DB>;
   private readonly ring: ContactKeyring | null;
   private readonly publicRefPrefix: string;
+  private readonly files: Files | null;
 
-  constructor(db: Kysely<DB>, ring: ContactKeyring | null, publicRefPrefix: string) {
+  constructor(
+    db: Kysely<DB>,
+    ring: ContactKeyring | null,
+    publicRefPrefix: string,
+    files: Files | null = null,
+  ) {
     this.db = db;
     this.ring = ring;
     this.publicRefPrefix = publicRefPrefix;
+    this.files = files;
   }
 
   async createBatch(user: SignedIn, organizationId: number | undefined): Promise<IntakeBatch> {
@@ -196,13 +208,26 @@ export class Intake {
     const row = await this.db
       .selectFrom('intake_drafts as d')
       .innerJoin('intake_batches as b', 'b.id', 'd.batch_id')
-      .select(['d.id', 'd.report_id'])
+      .select(['d.id', 'd.report_id', 'b.organization_id'])
       .where('d.id', '=', draftId)
       .where('b.coordinator_id', '=', user.id)
       .executeTakeFirst();
     if (!row) throw notFound('There is no account of yours with that number.');
     if (row.report_id !== null) {
       throw refused(409, 'already_filed', 'That account has been filed and can no longer change.');
+    }
+    return row;
+  }
+
+  /**
+   * An account this person may still change: theirs, not filed, and (for
+   * attaching files, which hands something over in the organization's name)
+   * while they still file for its organization.
+   */
+  async stagedAccount(user: SignedIn, draftId: number, opts: { forFiles?: boolean } = {}) {
+    const row = await this.ownedDraft(user, draftId);
+    if (opts.forFiles && !mayFileFor(user, row.organization_id)) {
+      throw notAllowed('You no longer file for this organization.');
     }
     return row;
   }
@@ -220,6 +245,11 @@ export class Intake {
 
   async removeDraft(user: SignedIn, draftId: number): Promise<void> {
     await this.ownedDraft(user, draftId);
+    // Its files go with it: nothing would ever file them.
+    const owner = { draft: accountDraft(draftId) };
+    for (const s of await slotStatuses(this.db, owner)) {
+      await discardSlot(this.db, owner, s.slot_token);
+    }
     await this.db.deleteFrom('intake_drafts').where('id', '=', draftId).execute();
   }
 
@@ -230,7 +260,12 @@ export class Intake {
    * The publication answer is required, on the wording coordinators are
    * shown: the coordinator records what the person they spoke to said.
    */
-  async problemsOf(payload: DraftPayload, cache: LogbookCache, db: Kysely<DB> = this.db) {
+  async problemsOf(
+    payload: DraftPayload,
+    cache: LogbookCache,
+    db: Kysely<DB> = this.db,
+    draftId?: number,
+  ) {
     const problems: string[] = [];
     const slug = typeof payload.logbook === 'string' ? payload.logbook.trim() : '';
     if (!slug) {
@@ -243,7 +278,19 @@ export class Intake {
       const hit = cache.get(slug);
       if (!hit || hit.lb.state === 'draft') problems.push('names a logbook that does not exist');
       else if (hit.lb.state !== 'open') problems.push('names a logbook that is not taking reports');
-      else problems.push(...buildAnswers(hit.questions, payload.answers ?? {}).errors);
+      else {
+        problems.push(...buildAnswers(hit.questions, payload.answers ?? {}).errors);
+        if (draftId !== undefined) {
+          problems.push(
+            ...(await fileProblems(
+              db,
+              draftId,
+              { id: hit.lb.id, questions: hit.questions },
+              hit.lb.asks_for_files && (await filesOn(this.files)),
+            )),
+          );
+        }
+      }
     }
     if (!INTAKE_METHODS.some((m) => m === payload.intake_method)) {
       problems.push('needs to say how the account was collected');
@@ -269,7 +316,7 @@ export class Intake {
         id: d.id,
         ordinal: d.ordinal,
         filed,
-        problems: filed ? [] : await this.problemsOf(d.payload, cache),
+        problems: filed ? [] : await this.problemsOf(d.payload, cache, this.db, d.id),
       });
     }
     return {
@@ -335,7 +382,7 @@ export class Intake {
       const filed: { ordinal: number; public_ref: string }[] = [];
       for (const draft of drafts) {
         const payload = (draft.payload ?? {}) as DraftPayload;
-        if ((await this.problemsOf(payload, cache, trx)).length) continue;
+        if ((await this.problemsOf(payload, cache, trx, draft.id)).length) continue;
         const hit = cache.get(String(payload.logbook).trim());
         if (!hit) continue;
         const { lb, questions } = hit;
@@ -346,6 +393,9 @@ export class Intake {
           forms.set(lb.slug, formId);
         }
         const threadId = randomUUID();
+        // The account's finished files, sealed into this version and linked
+        // to exactly it (the review above held back any not finished).
+        const sealed = await sealFiles(trx, { draft: accountDraft(draft.id) }, threadId);
         const { row } = await appendReportVersion(trx, {
           logbookId: lb.id,
           threadId,
@@ -360,9 +410,11 @@ export class Intake {
             attested_at: attestedAt,
             ...(payload.collected_on ? { collected_on: payload.collected_on } : {}),
           }),
+          attachments: sealed.manifest,
           formId,
           publicRefPrefix: this.publicRefPrefix,
         });
+        await sealed.link(row.id);
         await startThread(trx, threadId, row);
         // One accountable, reachable person per record: the coordinator. The
         // source's own contact details are deliberately not collected.

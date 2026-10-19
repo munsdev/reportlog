@@ -13,10 +13,13 @@
  *   contact-key rotate   move every row from CONTACT_KEY_PREVIOUS to CONTACT_KEY
  *   timers --write       regenerate deploy/systemd/*.timer from the registry
  *   timers --check       fail if they differ (also a unit test)
+ *   updates [--notify]   what the last update check found; email a new one
  *
  * Exit codes: 0 fine, 1 something failed, 2 used wrongly.
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { loadConfig } from '../config.ts';
 import type { Config } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
@@ -28,6 +31,8 @@ import { CHANGED_MESSAGE, checkAndRecord, recordRotated } from './contact-key.ts
 import { diagnose, render, SERVER_MARKER } from './doctor.ts';
 import { exitCode } from './doctor-checks.ts';
 import { findJob, JOBS, timerUnit } from './registry.ts';
+import { NOTIFIED_FILE, readUpdateFacts, renderUpdates, updateEmail } from './updates.ts';
+import { createErrorTracker, releaseOf } from '../telemetry/tracker.ts';
 
 const [command = 'help', ...rest] = process.argv.slice(2);
 
@@ -64,11 +69,13 @@ async function main(): Promise<number> {
       return rest[0] === 'rotate' ? rotateKey() : contactKey();
     case 'timers':
       return timers(rest.includes('--write'));
+    case 'updates':
+      return updates(rest.includes('--notify'));
     default:
       console.log(
         readFileSync(new URL(import.meta.url), 'utf8')
           .split('\n')
-          .slice(1, 17)
+          .slice(1, 18)
           .map((l) => l.replace(/^ \*\/? ?/, ''))
           .join('\n'),
       );
@@ -110,6 +117,12 @@ async function runJob(name: string | undefined, args: string[]): Promise<number>
     console.error(
       `${job.name} stopped: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
     );
+    // A job that THREW is a bug, unlike one that reported `ok: false` (a
+    // refusal, an unreachable provider), which the alert already covers.
+    // Off unless ERROR_TRACKING_DSN is set.
+    const errors = createErrorTracker({ config: c, release: releaseOf() });
+    errors.capture(err, { side: 'job', job: job.name });
+    await errors.flush();
     return 1;
   } finally {
     await db.destroy();
@@ -149,6 +162,14 @@ async function alert(unit: string | undefined): Promise<number> {
       text: [
         `A scheduled job on ${host} failed: ${unit ?? '(unit not named)'}.`,
         '',
+        ...(unit?.startsWith('reportlog-job@anchor-watch')
+          ? [
+              'That job checks the daily anchor from outside it. It failing means the archive',
+              'has not been anchored lately, or the last anchor run refused or published nothing.',
+              'Until that is fixed, nothing published since can be shown to be unaltered.',
+              '',
+            ]
+          : []),
         'What it said is in the journal on the server:',
         `  sudo journalctl -u ${unit ?? 'reportlog-job@*'} -n 50`,
         '',
@@ -161,6 +182,37 @@ async function alert(unit: string | undefined): Promise<number> {
     // MailNotSent carries the provider's answer and never the address.
     console.error(
       `The alert could not be sent: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 1;
+  }
+}
+
+/**
+ * What the last update check found (`sudo reportlog updates` fetches as root
+ * first, then runs this as the service user). With --notify, from the daily
+ * timer: email OPS_ALERT_EMAIL once for each new upstream commit.
+ */
+async function updates(notify: boolean): Promise<number> {
+  const c = config();
+  const facts = await readUpdateFacts(c.STATE_DIR);
+  console.log(renderUpdates(facts, new Date()));
+  if (!notify) return 0;
+  const notified = join(c.STATE_DIR, NOTIFIED_FILE);
+  const last = (await readFile(notified, 'utf8').catch(() => '')).trim() || null;
+  const mail = updateEmail(facts, last, new URL(c.SITE_ORIGIN).host);
+  if (!mail || !facts?.tip) return 0;
+  if (!c.OPS_ALERT_EMAIL) {
+    console.log('An update is available; OPS_ALERT_EMAIL is not set, so nobody was emailed.');
+    return 0;
+  }
+  try {
+    await createMailer(c).send({ to: c.OPS_ALERT_EMAIL, ...mail });
+    await writeFile(notified, `${facts.tip}\n`);
+    console.log('An update is available; OPS_ALERT_EMAIL was told.');
+    return 0;
+  } catch (err) {
+    console.error(
+      `The update email could not be sent: ${err instanceof Error ? err.message : String(err)}`,
     );
     return 1;
   }

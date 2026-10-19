@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D3 builds what D1 (`D1-board.md`) and D2 (`D2-anchor.md`) left.
 
-- **Branch:** `claude/d3-moderation-extras`, based on `ccr-c9c93698-ev856l` (F2 and its follow-up merged in at `3c4c865`)
+- **Branch:** `claude/d3-moderation-extras`, based on `ccr-c9c93698-ev856l` (F2, H2, the parity audit, C3 and A2 merged in at `9771872`)
 - **Pull request:** [#18](https://github.com/munsdev/reportlog/pull/18), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
@@ -30,7 +30,12 @@ The legacy vector tests in `packages/seal` are untouched and green.
 
 ## What was built, in the order asked
 
-1. **Severity, incidents and corroboration** (`apps/api/src/moderation/assessment.ts`).
+1. **Severity, incidents and corroboration** (`apps/api/src/moderation/assessment.ts`). **This
+   overrules an earlier drop:** D1 left severity and incidents out on purpose (`D1-board.md`, "Not
+   ported"), and `docs/parity.md` §8 records that drop; the coordinator assigned them to D3, so the
+   drop no longer stands. Built for moderators only: in legacy both also fed the public board's
+   filter and the maps (A2's note), and **none of that is public here**. Whether any of it becomes
+   public is the owner's decision, not made yet.
    - **Severity**: procedural note, irregularity, serious, systemic, or not rated. Set and changed
      by a moderator with a reason; cleared only by saying so (`"none"`); a request that forgot the
      field is refused rather than read as "clear it".
@@ -49,7 +54,8 @@ The legacy vector tests in `packages/seal` are untouched and green.
    - The queue filters by severity; `none` finds the reports nobody rated. Below the queue, a
      staff panel breaks corroboration and severity out across published reports (legacy's "By the
      numbers" panels), never as one headline figure.
-   - The board serves neither (a test says so). See "Decisions for the owner".
+   - The board, the public stats and the maps serve neither (a test checks the board). Staff
+     only until the owner decides; see "Decisions for the owner".
 2. **The access log, wherever protected data is opened.** D1 had built the contact log and the
    reporter's view in "My reports"; F records a file's original. D3 adds the rest of legacy's
    `accessLog.js`:
@@ -111,7 +117,8 @@ kind; the tests above are written from the legacy code.
 ## Decisions for the owner
 
 - **Should severity or corroboration be public?** Legacy showed both on the board, filtered the
-  board by severity, and published `by_severity` and corroboration in `/api/v1/stats`. D3 shows
+  board by severity, fed severity to the heat maps, and published `by_severity` and corroboration
+  in `/api/v1/stats`. D3 shows
   them to staff only, as asked. Publishing a moderator's severity is the archive making a
   judgement in public, which legacy withdrew for veracity for the same reason; corroboration is
   safer (it counts published accounts a reader can check). Not changed without a decision.
@@ -132,8 +139,9 @@ kind; the tests above are written from the legacy code.
 - `apps/api/src/config.ts`: `PRESS_DIR`. `.env.example`: its line.
 - `apps/api/src/app.ts`: one registration (`pressRoutes`) and `PRESS_DIR` in `AppDeps`.
 - `apps/web/src/features/staff-nav/entries.ts` (G2): one line; its test.
-- `apps/web/playwright.config.ts`: the `board-behind-password` project, and the other projects
-  ignore its folder.
+- `apps/web/playwright.config.ts`: the `board-behind-password` project, after C3's
+  `doors-behind-password` (two projects that turn the password on must not run side by side), and
+  the other projects ignore its folder.
 - Migration `20261019200151_moderation_extras.sql`: the new `report_assessments` table; the
   `moderation_log` action CHECK gains `severity` and `incident`; `contact_access_log` gains
   `attachment_id` and two kinds, with its CHECKs restated (every look names its report, a preview

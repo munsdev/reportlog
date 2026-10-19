@@ -46,6 +46,40 @@ const AGGREGATABLE = new Set([
 ]);
 const WITH_OPTIONS = new Set(['choice_one', 'choice_many', 'place']);
 
+/** A stored time as a date-and-time box shows it: in the operator's own clock. */
+function localBox(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** What the box holds, sent as UTC so it means the same moment read anywhere. Empty is "no time". */
+function fromBox(box: string): string | null {
+  if (!box) return null;
+  const d = new Date(box);
+  return Number.isNaN(d.getTime()) ? box : d.toISOString();
+}
+
+/** Whether the form is taking entries, and when that changes, in a sentence. */
+function scheduleSentence(list: ListAdminDetail): string {
+  const now = new Date();
+  const opens = list.opens_at ? new Date(list.opens_at) : null;
+  const closes = list.closes_at ? new Date(list.closes_at) : null;
+  if (list.accepting) {
+    return closes
+      ? `It is taking entries until ${closes.toLocaleString()}.`
+      : 'It is taking entries.';
+  }
+  if (list.closed_at) return 'It is not taking entries: it was closed by hand.';
+  if (opens && opens > now)
+    return `It is not taking entries yet. It opens on ${opens.toLocaleString()}.`;
+  if (closes && closes <= now)
+    return `It is not taking entries. It closed on ${closes.toLocaleString()}.`;
+  return 'It is not taking entries.';
+}
+
 export function ListEditor({ id }: { id: number }) {
   const query = useQuery(listQuery(id));
   if (query.isPending) return <p role="status">Opening the list…</p>;
@@ -77,7 +111,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
           <a href={`/list/${list.slug}`} className="font-mono underline">
             /list/{list.slug}
           </a>
-          . {list.accepting ? 'It is taking entries.' : 'It is not taking entries.'}{' '}
+          . {scheduleSentence(list)}{' '}
           {list.requires_email
             ? 'It can collect something personal, so it asks for an email address from anybody who writes something.'
             : 'Nothing it asks is personal, so it asks nobody for an email address.'}
@@ -105,6 +139,12 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
   const [emailMode, setEmailMode] = useState<ListEmailMode>(list.email_mode);
   const [published, setPublished] = useState(list.aggregates_published);
   const [taking, setTaking] = useState(list.closed_at === null);
+  // Only a box that differs from what is saved is sent, so saving the other
+  // settings never moves a time (a box holds minutes, a saved time may not).
+  const savedOpens = localBox(list.opens_at);
+  const savedCloses = localBox(list.closes_at);
+  const [opens, setOpens] = useState(savedOpens);
+  const [closes, setCloses] = useState(savedCloses);
   const [notify, setNotify] = useState(list.notify);
   const [notifyEmail, setNotifyEmail] = useState(
     list.notify_pending_email ?? list.notify_email ?? '',
@@ -122,6 +162,8 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
           email_mode: emailMode,
           aggregates_published: published,
           closed: !taking,
+          ...(opens !== savedOpens ? { opens_at: fromBox(opens) } : {}),
+          ...(closes !== savedCloses ? { closes_at: fromBox(closes) } : {}),
           notify,
           ...(notifyEmail.trim() !== named ? { notify_email: notifyEmail.trim() || null } : {}),
         },
@@ -188,6 +230,34 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
             checked={taking}
             onChange={setTaking}
           />
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-semibold">Opening times</legend>
+            <p className="text-sm text-ink-alt">
+              Both optional. Before it opens and after it closes, the form says so and takes
+              nothing. Times are in your own clock. “Taking entries” above still closes it at any
+              time.
+            </p>
+            <Field>
+              <Label optional>Opens</Label>
+              <Input
+                type="datetime-local"
+                value={opens}
+                onChange={(e) => {
+                  setOpens(e.target.value);
+                }}
+              />
+            </Field>
+            <Field>
+              <Label optional>Closes</Label>
+              <Input
+                type="datetime-local"
+                value={closes}
+                onChange={(e) => {
+                  setCloses(e.target.value);
+                }}
+              />
+            </Field>
+          </fieldset>
           <Tick
             id="list-published"
             label="Publish the counts"

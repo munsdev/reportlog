@@ -21,6 +21,7 @@ import type { FilesConfig } from './files/context.ts';
 import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
+import { logoRoutes } from './identity/logoRoutes.ts';
 import { listButtons } from './lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
@@ -34,6 +35,9 @@ import { verifyRoutes } from './routes/verify.ts';
 import { feedbackRoutes } from './feedback/routes.ts';
 import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
+import { telemetryRoutes } from './telemetry/routes.ts';
+import { offTracker } from './telemetry/tracker.ts';
+import type { ErrorTracker } from './telemetry/tracker.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'> &
@@ -55,6 +59,8 @@ export interface AppDeps {
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
+  /** Where unexpected errors are reported (Bugsink). Off unless a DSN is set. */
+  errors?: ErrorTracker;
   /** Where log lines go. Standard output unless a test captures them. */
   logStream?: { write: (line: string) => void };
   /** How long a list keeps what is personal, and who hears of new entries. */
@@ -70,6 +76,7 @@ export async function buildApp({
   db,
   logStream,
   mailer,
+  errors,
   lists,
   statsTtlMs,
   mapCacheMs,
@@ -117,6 +124,7 @@ export async function buildApp({
   const siteOrigin = config.SITE_ORIGIN ?? 'http://127.0.0.1:5173';
   // First: its hooks must see every route registered after it.
   await identity(app, { db, mailer: mail, siteOrigin });
+  telemetryRoutes(app, { tracker: errors ?? offTracker });
   healthRoutes(app, db);
   publicationRoutes(app);
   verifyRoutes(app, db);
@@ -139,6 +147,7 @@ export async function buildApp({
     files: typeof files === 'string' ? null : files,
   });
   await fileRoutes(app, { db, files });
+  await logoRoutes(app, { db, files });
   await evidenceRoutes(app, {
     db,
     files,

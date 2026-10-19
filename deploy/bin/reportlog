@@ -10,6 +10,7 @@
 #   reportlog mail-test <addr>   send one real message
 #   reportlog jobs               list scheduled jobs and their schedules
 #   reportlog job <name>         run one scheduled job now
+#   reportlog updates            is there an update, and what would it change?
 #
 # Everything that runs the application's code runs as the `reportlog` user
 # with the application's settings, never as root.
@@ -48,6 +49,17 @@ case "$cmd" in
   mail-test) cli mail-test "$@" ;;
   jobs) cli jobs ;;
   job) cli run "$@" ;;
-  help | -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+  updates)
+    # Root fetches (it holds the repository's credentials, as a deploy
+    # does); the service user reads what was found. Installs nothing.
+    exec 9>/run/reportlog-deploy.lock
+    if ! flock -n 9; then
+      note "A deploy is running; the update check will run next time."
+      exit 0
+    fi
+    update_check
+    cli updates "$@"
+    ;;
+  help | -h | --help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "unknown command: $cmd (try: reportlog help)" ;;
 esac
