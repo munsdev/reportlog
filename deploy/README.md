@@ -82,14 +82,38 @@ settings file. Nobody chooses or types it.
   together. Keep a copy off the server and away from the backups, in a
   password manager the operators share, for instance:
   `sudo grep ^CONTACT_KEY= /etc/reportlog/reportlog.env`.
-- **Never rotate it.** A different key makes every stored address
-  unreadable. The first deploy records the key's fingerprint
+- **Never change it by accident.** A different key makes every stored
+  address unreadable. The first deploy records the key's fingerprint
   (`/var/lib/reportlog/contact-key.sha256`). From then on, a deploy with a
   different key stops before switching, and the doctor fails. If that
   happens, put the original key back. `install.sh` never makes a new key on
-  a server that has recorded one.
+  a server that has recorded one. To change it on purpose, rotate it (below).
 - **Lose it and you lose the addresses.** The reports themselves are
   unaffected: they never contain an address.
+
+#### Rotating the contact key
+
+For when the key may have been seen by somebody it should not have been, or
+an operator who held it leaves. The site keeps running throughout.
+
+1. Make a new key (`openssl rand -base64 32`) and keep a copy off the server.
+2. In `/etc/reportlog/reportlog.env`, move the current key to
+   `CONTACT_KEY_PREVIOUS=` and put the new one in `CONTACT_KEY=`. Deploy (or
+   restart the API). The deploy's check lets this through because the key
+   in `CONTACT_KEY_PREVIOUS` is the recorded one; any other change is still
+   refused. With both keys the site writes everything new under the new key
+   and still reads the old.
+3. `sudo reportlog contact-key rotate`. In one transaction it re-wraps every
+   report's key under the new key and re-computes the digests that find a
+   reporter's reports; then it records the new key's fingerprint. If
+   `CONTACT_KEY_PREVIOUS` is not the key the rows are under, it stops and
+   changes nothing. It is safe to run again. Erased reports stay erased: their
+   keys are gone and nothing brings them back.
+4. Remove `CONTACT_KEY_PREVIOUS=` and restart the API. The doctor warns until
+   you do. Destroy the old key's copies.
+
+Every rotation is recorded in the database (`contact_key_rotations`, by
+fingerprint, never the key). The code is `apps/api/src/filing/rotateContactKey.ts`.
 
 ### Email (Scaleway)
 

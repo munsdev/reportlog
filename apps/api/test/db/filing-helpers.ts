@@ -28,7 +28,7 @@ export interface FilingHarness {
 }
 
 export async function filingHarness(
-  opts: { contactKey?: string | null } = {},
+  opts: { contactKey?: string | null; previousContactKey?: string } = {},
 ): Promise<FilingHarness> {
   const db = testDatabase();
   const mailer = capturingMailer();
@@ -38,6 +38,7 @@ export async function filingHarness(
       LOG_LEVEL: 'info',
       SITE_ORIGIN: SITE,
       ...(opts.contactKey === null ? {} : { CONTACT_KEY: opts.contactKey ?? CONTACT_KEY }),
+      ...(opts.previousContactKey ? { CONTACT_KEY_PREVIOUS: opts.previousContactKey } : {}),
     },
     db,
     mailer,

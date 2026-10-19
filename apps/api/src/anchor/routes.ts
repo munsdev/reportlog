@@ -16,6 +16,8 @@ import {
   getPublishedChainFile,
 } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { PUBLICATION_OFF, publicArchiveAvailable } from '../board/publication.ts';
+import { publishedReportIds } from '../board/published.ts';
 import { buildChainFile } from '../chain/chainFile.ts';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
@@ -39,7 +41,9 @@ async function chainFile(db: Database, slug: string, publishedOnly: boolean) {
     .where('slug', '=', slug)
     .where('launched_at', 'is not', null)
     .executeTakeFirst();
-  const file = lb ? await buildChainFile(db, lb.id, { publishedOnly }) : null;
+  const file = lb
+    ? await buildChainFile(db, lb.id, publishedOnly ? { published: publishedReportIds(db) } : {})
+    : null;
   if (!file) throw notFound(`There is no logbook "${slug}" with a chain to download.`);
   // The sealed object goes out exactly as it is; the contract only says it is
   // an object, so that a key a later report carries is never stripped.
@@ -66,6 +70,9 @@ export function anchorRoutes(app: FastifyInstance, deps: AnchorRouteDeps): void 
   const { db } = deps;
 
   route(app, getPublishedChainFile, async ({ params, reply }) => {
+    // A public read of the archive, so it asks the operator's switch first,
+    // as the board and the maps do (board/publication.ts).
+    if (!(await publicArchiveAvailable(db))) throw notFound(PUBLICATION_OFF.reason);
     const file = await chainFile(db, params.slug, true);
     asDownload(reply, params.slug, 'published');
     return file;

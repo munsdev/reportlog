@@ -21,8 +21,8 @@ describe('who sees which staff screen', () => {
     expect(labels(as('user'))).toEqual([]);
   });
 
-  it('a moderator sees list review, files and the guides, and nothing an administrator runs', () => {
-    expect(labels(as('moderator'))).toEqual(['List review', 'Files', 'Guides']);
+  it('a moderator sees list review, moderation, files and the guides, and nothing an administrator runs', () => {
+    expect(labels(as('moderator'))).toEqual(['List review', 'Moderation', 'Files', 'Guides']);
   });
 
   it('an administrator does not become a moderator, but list review names both', () => {
@@ -33,6 +33,8 @@ describe('who sees which staff screen', () => {
       'Front page',
       'Lists',
       'List review',
+      'Moderation',
+      'Moderation settings',
       'File settings',
       'Settings',
       'Feedback',
@@ -55,7 +57,13 @@ describe('who sees which staff screen', () => {
 
   it('the tester flag shows feedback, whatever the role', () => {
     expect(labels(as('user', true))).toEqual(['Feedback']);
-    expect(labels(as('moderator', true))).toEqual(['List review', 'Files', 'Feedback', 'Guides']);
+    expect(labels(as('moderator', true))).toEqual([
+      'List review',
+      'Moderation',
+      'Files',
+      'Feedback',
+      'Guides',
+    ]);
   });
 
   it('lists every screen that exists now, each once', () => {
@@ -68,6 +76,8 @@ describe('who sees which staff screen', () => {
       '/settings',
       '/lists',
       '/lists/review',
+      '/moderate',
+      '/moderate/settings',
       '/files',
       '/files/settings',
     ]) {

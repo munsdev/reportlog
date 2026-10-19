@@ -2,14 +2,14 @@
 
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
-- **Branch:** `claude/f2-files-staff`, based on `ccr-c9c93698-ev856l` at `c93ae88` (F merged)
+- **Branch:** `claude/f2-files-staff`, based on `ccr-c9c93698-ev856l`, merged up to `81a4c77` (C2 and D1 included)
 - **Pull request:** [#13](https://github.com/munsdev/reportlog/pull/13), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-The base had not moved since `c93ae88`, so there was nothing to merge.
+After merging the base at `81a4c77` (C2 and D1).
 
 | Suite                                   | Result                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
@@ -58,21 +58,31 @@ the moderator's file view; `/files` tells them it is for moderators.
   number out of range is caught in the box's own unit (the bounds mirror `LIMIT_RANGES`; the server
   decides).
 
-## For D1 (moderation)
+## On D1's moderation page (merged in after D1 landed)
 
-I did not touch `routes/(staff)/moderate/`. Two components are built to drop into your report view:
+D1 had built its own `FilesPanel` and `EvidencePanel` on the report view before these existed. They
+asked for the description, the reason and the original's reason on one card, and showed "Publish"
+disabled rather than absent. **As a small, stated change in D1's folder**,
+`features/moderation/Item.tsx` now renders F2's components in their place, and the two D1 files are
+deleted (nothing else imported them, and no test named their words):
 
 ```tsx
-import { ReportFiles } from '@/features/files/staff/ReportFiles.tsx';
-import { EvidenceRequests } from '@/features/files/staff/EvidenceRequests.tsx';
-
-<ReportFiles threadId={thread} />
-<EvidenceRequests threadId={thread} />
+{
+  r.file_count > 0 ? <ReportFiles threadId={r.thread_id} reportPublic={r.public} /> : null;
+}
+<EvidenceRequests threadId={r.thread_id} />;
 ```
 
-Each fetches its own data and invalidates the `['files-staff']` query keys after acting. Once your
-report view has them, `/files/:ref` can link to it, or stay as the files-only view.
-`GET /api/moderate/files` (below) is a queue you could also show as a count on your queue.
+`reportPublic` keeps D1's note that a published file is shown only while the report's text is
+public. After acting, the components refresh the `files-staff`, `moderation` and `board` queries.
+
+**Open question for the coordinator:** D1's moderation routes admit `['moderator', 'admin']`;
+F's file and evidence routes admit `['moderator']` only (as the access rule "admin does not imply
+moderator" reads). So an administrator on the moderation page sees the server's refusal in the
+files and evidence sections. It was the same with D1's panels. Widening F's guard is a policy
+choice I have not made.
+
+C3 will reuse the upload components (`FilesCard.tsx`, `uploader.ts`); F2 did not change them.
 
 ## API changes (small and missing; named in the commit message)
 
@@ -111,7 +121,9 @@ it seats a moderator the way `files/evidence.spec.ts` does.
 
 ## Changes outside F2's folders
 
-- `apps/web/src/features/staff-nav/entries.ts` (G2): two menu lines.
+- `apps/web/src/features/staff-nav/entries.ts` (G2): two menu lines, after D1's.
+- `apps/web/src/features/moderation/Item.tsx` (D1): F2's components in place of D1's panels;
+  `FilesPanel.tsx` and `EvidencePanel.tsx` deleted.
 - `apps/web/test/staff-nav.test.tsx` (G2): its lists of who sees what now include the two lines.
 - `apps/api/src/files/routes.ts`, `publication.ts`, `packages/contracts/src/files.ts` (F): above.
 - `apps/web/src/routeTree.gen.ts`: regenerated.
@@ -123,7 +135,6 @@ suite.
 
 ## Not done
 
-- The moderation screen's own use of the two components (D1's).
 - A per-logbook limits panel inside the builder (B's screen). `/files/logbooks/:id` does the job; B
   could link to it.
 - An access log entry for `viewed_original` on an administrator's screen (D's access log, when it

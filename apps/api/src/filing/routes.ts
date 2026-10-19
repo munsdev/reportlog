@@ -28,6 +28,7 @@ import { keyringFrom } from './contactKeys.ts';
 import { confirmSubmission, confirmationState, refused, stageSubmission } from './filing.ts';
 import type { FilingDeps } from './filing.ts';
 import { Intake, coordinatorOrgs } from './intake.ts';
+import { IntakeCorrection } from './intakeCorrection.ts';
 import { intakeIsOpen, setIntakeSwitch, storedIntakeSwitch } from './intakeSwitch.ts';
 import { Mine } from './mine.ts';
 
@@ -37,6 +38,8 @@ export interface FilingRouteDeps {
   siteOrigin: string;
   /** The deployment's CONTACT_KEY. Without it, nothing is filed and the refusal says why. */
   contactKey?: string | undefined;
+  /** Only while CONTACT_KEY is being rotated: the key being rotated from (contactKeys.ts). */
+  previousContactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
   /** The files workstream's context, for taking published files down. */
   files?: Files | null;
@@ -47,7 +50,7 @@ export interface FilingRouteDeps {
 const bodyOf = <B>(_contract: { body?: unknown }, request: FastifyRequest) => request.body as B;
 
 export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps): Promise<void> {
-  const ring = deps.contactKey ? keyringFrom(deps.contactKey) : null;
+  const ring = deps.contactKey ? keyringFrom(deps.contactKey, deps.previousContactKey) : null;
   if (!ring) {
     app.log.warn('CONTACT_KEY is not set: this site will refuse every report until it is.');
   }
@@ -61,6 +64,7 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
   };
   const mine = new Mine(deps.db, ring, prefix);
   const intake = new Intake(deps.db, ring, prefix);
+  const intakeCorrection = new IntakeCorrection(deps.db, prefix);
 
   // Anyone can make this site email any address they type, as with sign-in
   // codes, and the same kind of limit answers it. In memory, never logged.
@@ -222,6 +226,15 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     route(scope, C.submitIntakeBatch, ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.submitIntakeBatch>>(C.submitIntakeBatch, request);
       return intake.submit(who(request), Number(params.id), b.attested);
+    });
+    // The coordinator's own correction of an account they filed. Never the
+    // reporter's "My reports": nothing here writes what a reporter owns.
+    route(scope, C.getIntakeFiling, ({ params, request }) =>
+      intakeCorrection.detail(who(request), params.threadId),
+    );
+    route(scope, C.correctIntakeFiling, async ({ params, request }) => {
+      const b = bodyOf<C.BodyOf<typeof C.correctIntakeFiling>>(C.correctIntakeFiling, request);
+      return { public_ref: await intakeCorrection.correct(who(request), params.threadId, b) };
     });
     return Promise.resolve();
   });

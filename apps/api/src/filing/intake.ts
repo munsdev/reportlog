@@ -104,12 +104,14 @@ function presentDraft(d: {
   ordinal: number;
   payload: unknown;
   public_ref: string | null;
+  thread_id: string | null;
 }) {
   return {
     id: d.id,
     ordinal: d.ordinal,
     payload: (d.payload ?? {}) as DraftPayload,
     public_ref: d.public_ref,
+    thread_id: d.thread_id,
   };
 }
 
@@ -165,7 +167,7 @@ export class Intake {
     const rows = await this.db
       .selectFrom('intake_drafts as d')
       .leftJoin('reports as r', 'r.id', 'd.report_id')
-      .select(['d.id', 'd.ordinal', 'd.payload', 'r.public_ref'])
+      .select(['d.id', 'd.ordinal', 'd.payload', 'r.public_ref', 'r.thread_id'])
       .where('d.batch_id', '=', batchId)
       .orderBy('d.ordinal')
       .execute();
@@ -187,7 +189,7 @@ export class Intake {
       })
       .returning(['id', 'ordinal', 'payload'])
       .executeTakeFirstOrThrow();
-    return presentDraft({ ...row, public_ref: null });
+    return presentDraft({ ...row, public_ref: null, thread_id: null });
   }
 
   private async ownedDraft(user: SignedIn, draftId: number) {
@@ -213,7 +215,7 @@ export class Intake {
       .where('id', '=', draftId)
       .returning(['id', 'ordinal', 'payload'])
       .executeTakeFirstOrThrow();
-    return presentDraft({ ...row, public_ref: null });
+    return presentDraft({ ...row, public_ref: null, thread_id: null });
   }
 
   async removeDraft(user: SignedIn, draftId: number): Promise<void> {
@@ -361,7 +363,7 @@ export class Intake {
           formId,
           publicRefPrefix: this.publicRefPrefix,
         });
-        await startThread(trx, threadId, row.id);
+        await startThread(trx, threadId, row);
         // One accountable, reachable person per record: the coordinator. The
         // source's own contact details are deliberately not collected.
         await sealContact(trx, ring, {

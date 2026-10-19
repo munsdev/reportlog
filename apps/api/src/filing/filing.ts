@@ -30,6 +30,7 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
+import { isPublic } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { fileOutcome, releaseForSubmission, sealFiles, stillPreparing } from '../files/filing.ts';
@@ -37,6 +38,7 @@ import { draftFrom } from '../files/slots.ts';
 import { HttpError } from '../http/errors.ts';
 import { looksLikeEmail, normalizeEmail, randomToken, sha256Hex } from '../identity/secrets.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
+import { flagReport } from '../moderation/flags.ts';
 import { sealContact } from './contactKeys.ts';
 import type { ContactKeyring } from './contactKeys.ts';
 import { intakeIsOpen } from './intakeSwitch.ts';
@@ -217,10 +219,10 @@ async function threadState(
     .select(['r.public_ref', 'r.may_publish', 'h.withdrawn', 'h.moderation_status'])
     .where('h.thread_id', '=', threadId)
     .executeTakeFirstOrThrow();
-  const isPublic = head.moderation_status === 'valid' && !head.withdrawn && head.may_publish;
   const files = submissionId === undefined ? null : await fileOutcome(db, submissionId);
   return {
-    state: isPublic ? 'public' : 'received',
+    // The board's own rule (board/published.ts), so the two cannot disagree.
+    state: isPublic(head) ? 'public' : 'received',
     logbook_title: logbookTitle,
     public_ref: head.public_ref,
     ...(files ? { files } : {}),
@@ -323,7 +325,7 @@ async function fileFromSubmission(
     publicRefPrefix,
   });
   await files.link(report.id);
-  await startThread(trx, threadId, report.id);
+  await startThread(trx, threadId, report);
   // Under a key of its own, so the reporter can have it erased later
   // without anything append-only being touched. See contactKeys.ts.
   await sealContact(trx, ring, { threadId, email: row.email, filedBy: 'reporter' });
@@ -336,14 +338,24 @@ async function fileFromSubmission(
   return threadId;
 }
 
-/** A new thread's head: where moderation will find it. Pending, never public. */
+/**
+ * A new thread's head: where moderation will find it. Pending, never public.
+ * Its words are read for the review flag in the same transaction, so a flag
+ * and its report can never disagree (moderation/flags.ts never throws here).
+ */
 export async function startThread(
   trx: Transaction<DB>,
   threadId: string,
-  reportId: number,
+  report: { id: number; logbook_id: number; answers: unknown },
 ): Promise<void> {
   await trx
     .insertInto('report_heads')
-    .values({ thread_id: threadId, current_report_id: reportId })
+    .values({ thread_id: threadId, current_report_id: report.id })
     .execute();
+  await flagReport(trx, {
+    reportId: report.id,
+    threadId,
+    logbookId: report.logbook_id,
+    answers: report.answers,
+  });
 }

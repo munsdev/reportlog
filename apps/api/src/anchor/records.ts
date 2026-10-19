@@ -16,6 +16,7 @@ import {
   sha256Hex,
 } from '@reportlog/seal';
 import type { ChainHead, SealedReport } from '@reportlog/seal';
+import { publishedReportIds } from '../board/published.ts';
 import type { Database } from '../db/database.ts';
 import { manifestFor, sealedReportRows, toStoredRecord } from '../chain/record.ts';
 import type { snapshotDocument } from '../lists/aggregates.ts';
@@ -66,11 +67,9 @@ export const prettyFile = (value: unknown): string => `${JSON.stringify(value, n
  * gain it in the same change.
  */
 export function publishedReportRows(db: Database) {
-  return sealedReportRows(db)
-    .innerJoin('report_heads as h', 'h.current_report_id', 'r.id')
-    .where('h.withdrawn', '=', false)
-    .where('h.moderation_status', '=', 'valid')
-    .where('r.may_publish', '=', true);
+  // The rule itself lives in board/published.ts, shared with the board, the
+  // published chain file and the maps.
+  return sealedReportRows(db).where('r.id', 'in', publishedReportIds(db));
 }
 
 export interface SnapshotReport {

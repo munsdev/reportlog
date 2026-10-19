@@ -6,6 +6,7 @@ import helmet from '@fastify/helmet';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import { boardRoutes } from './board/routes.ts';
 import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
@@ -24,6 +25,7 @@ import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
 import { listRoutes } from './lists/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
+import { moderationRoutes } from './moderation/routes.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
@@ -40,6 +42,7 @@ export interface AppDeps {
         | 'SITE_ORIGIN'
         | 'TRUST_PROXY'
         | 'CONTACT_KEY'
+        | 'CONTACT_KEY_PREVIOUS'
         | 'PUBLIC_REF_PREFIX'
         | 'ADMIN_EMAIL'
         | 'TRANSPARENCY_LOG_REMOTES'
@@ -54,6 +57,8 @@ export interface AppDeps {
   logStream?: { write: (line: string) => void };
   /** How long a list keeps what is personal, and who hears of new entries. */
   lists?: ListSettings;
+  /** How long the board's counts are reused. Tests pass 0. */
+  statsTtlMs?: number;
   /** How long one heat map computation serves every reader. Tests pass 0. */
   mapCacheMs?: number;
 }
@@ -64,6 +69,7 @@ export async function buildApp({
   logStream,
   mailer,
   lists,
+  statsTtlMs,
   mapCacheMs,
 }: AppDeps): Promise<FastifyInstance> {
   const hops = config.TRUST_PROXY ?? 0;
@@ -126,6 +132,7 @@ export async function buildApp({
     mailer: mail,
     siteOrigin,
     contactKey: config.CONTACT_KEY,
+    previousContactKey: config.CONTACT_KEY_PREVIOUS,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     files: typeof files === 'string' ? null : files,
   });
@@ -138,6 +145,12 @@ export async function buildApp({
     contactKey: config.CONTACT_KEY,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
   });
+  await moderationRoutes(app, {
+    db,
+    contactKey: config.CONTACT_KEY,
+    publicRefPrefix: config.PUBLIC_REF_PREFIX,
+  });
+  boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
   anchorRoutes(app, {
     db,
     remotes: config.TRANSPARENCY_LOG_REMOTES?.length ?? 0,

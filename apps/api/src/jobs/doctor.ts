@@ -85,7 +85,11 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
       ),
     );
   }
-  const key = compare(config.CONTACT_KEY, await recordedFingerprint(config.STATE_DIR));
+  const key = compare(
+    config.CONTACT_KEY,
+    await recordedFingerprint(config.STATE_DIR),
+    config.CONTACT_KEY_PREVIOUS,
+  );
   if (key.state === 'unset') {
     out.push(
       finding(
@@ -96,6 +100,22 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
     );
   } else if (key.state === 'changed') {
     out.push(finding('fail', 'contact key', CHANGED_MESSAGE));
+  } else if (key.state === 'rotating') {
+    out.push(
+      finding(
+        'warn',
+        'contact key',
+        'being rotated: run `reportlog contact-key rotate` to finish, then remove CONTACT_KEY_PREVIOUS.',
+      ),
+    );
+  } else if (key.state === 'same' && key.previousLeftOver) {
+    out.push(
+      finding(
+        'warn',
+        'contact key',
+        'the rotation is finished but CONTACT_KEY_PREVIOUS is still set. Remove it from the settings.',
+      ),
+    );
   } else if (server) {
     out.push(
       finding(

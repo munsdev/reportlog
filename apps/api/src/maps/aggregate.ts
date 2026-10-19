@@ -18,6 +18,7 @@ import type { AreaCount, MapAggregate, MapPlane, MapView, Stance } from '@report
 import { MIN_AREA_FLOOR } from '@reportlog/contracts';
 import { LOCATION_TYPE } from '@reportlog/fields';
 import { sql } from 'kysely';
+import { publishedReportIds } from '../board/published.ts';
 import type { Database } from '../db/database.ts';
 import type { HeatMapRow } from './rows.ts';
 
@@ -39,12 +40,14 @@ import type { HeatMapRow } from './rows.ts';
  * change, and the pull request that brought this file in says so.
  */
 function publishedHeads(db: Database) {
-  return db
-    .selectFrom('report_heads as h')
-    .innerJoin('reports as r', 'r.id', 'h.current_report_id')
-    .where('h.withdrawn', '=', false)
-    .where('h.moderation_status', '=', 'valid')
-    .where('r.may_publish', '=', true);
+  return (
+    db
+      .selectFrom('report_heads as h')
+      .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+      // The rule itself lives in board/published.ts, shared with the board and
+      // the published chain file.
+      .where('r.id', 'in', publishedReportIds(db))
+  );
 }
 
 /**

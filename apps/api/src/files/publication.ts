@@ -19,6 +19,8 @@
  * worker until it succeeds.
  */
 import type { Kysely, Transaction } from 'kysely';
+import { publicArchiveAvailable } from '../board/publication.ts';
+import { isPublic, publishedReportIds } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 import { permissionsFor } from '../permissions/log.ts';
@@ -333,6 +335,9 @@ export async function erase(
  * part of the CURRENT version, and the report itself is public.
  */
 export async function servable(db: Kysely<DB>, renditionKey: string) {
+  // A published file is part of the published record: the operator's archive
+  // switch and the one rule for what is public (board/) decide it first.
+  if (!(await publicArchiveAvailable(db))) return null;
   const row = await db
     .selectFrom('attachment_heads as fh')
     .innerJoin('report_heads as h', 'h.thread_id', 'fh.thread_id')
@@ -349,9 +354,7 @@ export async function servable(db: Kysely<DB>, renditionKey: string) {
     ])
     .where('fh.rendition_key', '=', renditionKey)
     .where('fh.publication', '=', 'published')
-    .where('h.moderation_status', '=', 'valid')
-    .where('h.withdrawn', '=', false)
-    .where('r.may_publish', '=', true)
+    .where('r.id', 'in', publishedReportIds(db))
     .executeTakeFirst();
   if (!row) return null;
   const perms = await permissionsFor(db, row.thread_id);
@@ -360,14 +363,14 @@ export async function servable(db: Kysely<DB>, renditionKey: string) {
 
 /** The files of a public report, published or not, for its page on the board. */
 export async function publicFilesOf(db: Kysely<DB>, publicRef: string) {
+  if (!(await publicArchiveAvailable(db))) return null;
   const report = await db
     .selectFrom('reports as r')
     .innerJoin('report_heads as h', 'h.current_report_id', 'r.id')
     .select(['r.id', 'r.thread_id', 'r.may_publish', 'h.moderation_status', 'h.withdrawn'])
     .where('r.public_ref', '=', publicRef)
     .executeTakeFirst();
-  if (!report || !report.may_publish || report.withdrawn || report.moderation_status !== 'valid')
-    return null;
+  if (!report || !isPublic(report)) return null;
   const perms = await permissionsFor(db, report.thread_id);
   const rows = await db
     .selectFrom('report_attachments as ra')

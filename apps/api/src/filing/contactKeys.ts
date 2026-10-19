@@ -16,19 +16,30 @@
  *
  * Both keys are derived from the one CONTACT_KEY with HKDF, under different
  * labels, so an operator keeps one secret and the two uses never share a key.
+ *
+ * ROTATING IT (rotateContactKey.ts) has a window with two keys: the new one
+ * in CONTACT_KEY and the old in CONTACT_KEY_PREVIOUS. In it, everything new
+ * is written under the new key, a thread key is read under whichever of the
+ * two opens it (AES-GCM's tag says which), and an address is looked up under
+ * both digests. The rotation then moves every row to the new key.
  */
 import { createCipheriv, createDecipheriv, createHmac, hkdfSync, randomBytes } from 'node:crypto';
 import type { Kysely, Transaction } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 
-export interface ContactKeyring {
+interface Keys {
   wrapKey: Buffer;
   hmacKey: Buffer;
 }
 
-export function keyringFrom(contactKey: string): ContactKeyring {
+export interface ContactKeyring extends Keys {
+  /** Only during a rotation: the key being rotated away from. Read with, never written with. */
+  previous?: Keys;
+}
+
+function keysFrom(contactKey: string, name: string): Keys {
   const secret = Buffer.from(contactKey, 'base64');
-  if (secret.length !== 32) throw new Error('CONTACT_KEY must be 32 bytes, base64');
+  if (secret.length !== 32) throw new Error(`${name} must be 32 bytes, base64`);
   const derive = (label: string) =>
     Buffer.from(hkdfSync('sha256', secret, Buffer.alloc(0), label, 32));
   return {
@@ -37,11 +48,26 @@ export function keyringFrom(contactKey: string): ContactKeyring {
   };
 }
 
+export function keyringFrom(contactKey: string, previousKey?: string): ContactKeyring {
+  const ring: ContactKeyring = keysFrom(contactKey, 'CONTACT_KEY');
+  if (previousKey && previousKey !== contactKey) {
+    ring.previous = keysFrom(previousKey, 'CONTACT_KEY_PREVIOUS');
+  }
+  return ring;
+}
+
 /** The one digest of an address. Normalized first, so case never splits a person in two. */
-export function emailDigest(ring: ContactKeyring, email: string): string {
+export function emailDigest(ring: Keys, email: string): string {
   return createHmac('sha256', ring.hmacKey)
     .update(email.trim().toLowerCase(), 'utf8')
     .digest('hex');
+}
+
+/** Every digest this address may be stored under: two only during a rotation. */
+export function emailDigests(ring: ContactKeyring, email: string): string[] {
+  return ring.previous
+    ? [emailDigest(ring, email), emailDigest(ring.previous, email)]
+    : [emailDigest(ring, email)];
 }
 
 // iv (12) | tag (16) | ciphertext
@@ -57,6 +83,31 @@ function decrypt(key: Buffer, sealed: Buffer): Buffer {
   decipher.setAuthTag(sealed.subarray(12, 28));
   return Buffer.concat([decipher.update(sealed.subarray(28)), decipher.final()]);
 }
+
+/** Wrap a thread key under a wrapping key. For the rotation, which re-wraps. */
+export const wrapDek = (wrapKey: Buffer, dek: Buffer): Buffer => encrypt(wrapKey, dek);
+
+/** Open a thread key with one wrapping key, or null if that key is not the one. */
+export function tryUnwrap(wrapKey: Buffer, wrapped: Buffer): Buffer | null {
+  try {
+    return decrypt(wrapKey, wrapped);
+  } catch {
+    return null;
+  }
+}
+
+/** Open a thread key under the current key, or during a rotation the previous one. */
+function unwrapDek(ring: ContactKeyring, wrapped: Buffer): Buffer {
+  if (ring.previous) {
+    const opened = tryUnwrap(ring.wrapKey, wrapped) ?? tryUnwrap(ring.previous.wrapKey, wrapped);
+    if (opened) return opened;
+  }
+  return decrypt(ring.wrapKey, wrapped);
+}
+
+/** A thread's address, decrypted with its own key. For the rotation, which re-computes digests. */
+export const openWithDek = (dek: Buffer, sealed: Buffer): string =>
+  decrypt(dek, sealed).toString('utf8');
 
 /**
  * Write a thread's contact details. Inside the transaction that files the
@@ -126,7 +177,7 @@ export async function openContact(
   if (!row) return null;
   const filedBy = row.filed_by === 'coordinator' ? 'coordinator' : 'reporter';
   if (!row.dek_wrapped) return { filed_by: filedBy, email: null, organization: null, erased: true };
-  const dek = decrypt(ring.wrapKey, row.dek_wrapped);
+  const dek = unwrapDek(ring, row.dek_wrapped);
   return {
     filed_by: filedBy,
     email: decrypt(dek, row.contact_enc).toString('utf8'),

@@ -16,17 +16,15 @@ import type { MyReport, MyReportDetail } from '@reportlog/contracts';
 import { buildAnswers } from '@reportlog/fields';
 import { normalizeReportFields } from '@reportlog/seal';
 import type { Kysely } from 'kysely';
-import { appendReportVersion } from '../chain/append.ts';
-import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
-import { manifestFor } from '../chain/record.ts';
 import { takeDownForReporter } from '../files/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { notFound } from '../http/errors.ts';
 import { fieldsFor } from '../logbooks/logbooks.ts';
 import { forForm } from '../logbooks/routes.ts';
 import { NONE_GRANTED, permissionHistory, permissionsForMany } from '../permissions/log.ts';
-import { emailDigest, eraseContact } from './contactKeys.ts';
+import { emailDigests, eraseContact } from './contactKeys.ts';
+import { appendCorrection, lockHead } from './correction.ts';
 import type { ContactKeyring } from './contactKeys.ts';
 import { notConfigured, refused } from './filing.ts';
 
@@ -48,6 +46,8 @@ function reportsOf(db: Kysely<DB>) {
       'r.answers',
       'r.may_publish',
       'r.may_publish_digest',
+      'r.content_hash',
+      'r.chain_hash',
       'r.logbook_id',
       'l.slug as logbook_slug',
       'l.title as logbook_title',
@@ -94,14 +94,15 @@ export class Mine {
     this.publicRefPrefix = publicRefPrefix;
   }
 
-  private digest(email: string): string {
+  /** Two digests only while CONTACT_KEY is being rotated (contactKeys.ts). */
+  private digests(email: string): string[] {
     if (!this.ring) throw notConfigured();
-    return emailDigest(this.ring, email);
+    return emailDigests(this.ring, email);
   }
 
   async list(email: string): Promise<MyReport[]> {
     const rows = await reportsOf(this.db)
-      .where('k.email_hmac', '=', this.digest(email))
+      .where('k.email_hmac', 'in', this.digests(email))
       .orderBy('r.received_at', 'desc')
       .execute();
     // One query for every card's permissions rather than one per card.
@@ -115,7 +116,7 @@ export class Mine {
   /** A thread this address owns, or a 404 that does not say whether it exists. */
   async owned(email: string, threadId: string): Promise<Row> {
     const row = await reportsOf(this.db)
-      .where('k.email_hmac', '=', this.digest(email))
+      .where('k.email_hmac', 'in', this.digests(email))
       .where('h.thread_id', '=', threadId)
       .executeTakeFirst();
     if (!row) throw notYours();
@@ -133,6 +134,8 @@ export class Mine {
       .execute();
     return {
       ...present(row, perms.get(threadId) ?? { ...NONE_GRANTED }),
+      content_hash: row.content_hash,
+      chain_hash: row.chain_hash,
       questions: (await fieldsFor(this.db, row.logbook_id)).map(forForm),
       permission_history: await permissionHistory(this.db, threadId),
       actions: actions.map((a) => ({
@@ -184,53 +187,15 @@ export class Mine {
     });
 
     return this.db.transaction().execute(async (trx) => {
-      // Two corrections at once must not both correct the same version.
-      const head = await trx
-        .selectFrom('report_heads')
-        .select('current_report_id')
-        .where('thread_id', '=', threadId)
-        .forUpdate()
-        .executeTakeFirstOrThrow();
-      const lb = await trx
-        .selectFrom('logbooks')
-        .select(['id', 'slug', 'launched_at'])
-        .where('id', '=', owned.logbook_id)
-        .executeTakeFirstOrThrow();
-      const form = await ensureFormVersion(trx, lb, questions);
-
-      // THE FILES COME WITH IT. A correction is a new version of the same
-      // report, so it commits to the same files, in the same order, read
-      // from the archive and never from the request. Without this a reporter
-      // fixing a typo loses their photographs, and the new version VERIFIES
-      // CLEANLY, because its manifest is simply absent.
-      const manifest = await manifestFor(trx, head.current_report_id);
-      const inherited = await trx
-        .selectFrom('report_attachments')
-        .select('attachment_id')
-        .where('report_id', '=', head.current_report_id)
-        .execute();
-
-      const { row } = await appendReportVersion(trx, {
-        logbookId: lb.id,
+      const headId = await lockHead(trx, threadId);
+      const row = await appendCorrection(trx, {
         threadId,
-        correctsId: head.current_report_id,
+        headId,
+        logbookId: owned.logbook_id,
+        questions,
         fields,
-        attachments: manifest,
-        formId: form.id,
         publicRefPrefix: this.publicRefPrefix,
       });
-      if (inherited.length) {
-        await trx
-          .insertInto('report_attachments')
-          .values(inherited.map((a) => ({ report_id: row.id, attachment_id: a.attachment_id })))
-          .execute();
-      }
-      // Changed words need a fresh look, even on a report that was approved.
-      await trx
-        .updateTable('report_heads')
-        .set({ current_report_id: row.id, moderation_status: 'pending', updated_at: new Date() })
-        .where('thread_id', '=', threadId)
-        .execute();
       await trx
         .insertInto('reporter_actions')
         .values({ thread_id: threadId, action: 'correct', report_id: row.id, comment })
