@@ -21,6 +21,13 @@ const Ok = z.object({ ok: z.literal(true) });
 
 export const ModerationStatus = z.enum(['pending', 'valid', 'invalid', 'unknown']);
 export type ModerationStatus = z.infer<typeof ModerationStatus>;
+/**
+ * How serious a moderator judges a report to be. A judgement by the people
+ * handling it, never inside its seal. No rating is its own answer (null).
+ */
+export const Severity = z.enum(['note', 'irregularity', 'serious', 'systemic']);
+export type Severity = z.infer<typeof Severity>;
+
 export const QueueStatusFilter = z.enum([
   'all',
   'pending',
@@ -60,6 +67,16 @@ export const QueueItem = z.object({
   files_permitted: z.boolean(),
   /** True only when the board shows it right now. */
   public: z.boolean(),
+  /** A moderator's rating, or null when nobody has rated it. */
+  severity: Severity.nullable(),
+  /**
+   * Published accounts of the same incident, this one included when it is
+   * public. 0 when it is linked to no incident. Counted by the board's own
+   * rule, so it is a number a reader could check.
+   */
+  corroboration: z.number().int(),
+  /** Every report linked to its incident, public or not, itself included. 0 when none. */
+  incident_size: z.number().int(),
 });
 export type QueueItem = z.infer<typeof QueueItem>;
 
@@ -72,6 +89,8 @@ export const listQueue = defineRoute({
     q: z.string().max(200).optional(),
     flagged: z.enum(['true', 'false']).optional(),
     logbook: z.string().max(63).optional(),
+    /** A rating, or `none` for the reports nobody has rated: the real backlog. */
+    severity: z.union([Severity, z.literal('none')]).optional(),
     sort: z.enum(['newest', 'oldest']).optional(),
   }),
   response: z.object({
@@ -91,12 +110,69 @@ export const HistoryEntry = z.object({
   created_at: Timestamp,
 });
 
+/** The other reports a moderator linked as the same incident. */
+export const LinkedReport = z.object({
+  thread_id: z.string(),
+  public_ref: z.string(),
+  moderation_status: ModerationStatus,
+  withdrawn: z.boolean(),
+  /** On the board now, by the board's own rule. */
+  published: z.boolean(),
+});
+
+export const Assessment = z.object({
+  severity: Severity.nullable(),
+  incident_id: z.string().nullable(),
+  linked: z.array(LinkedReport),
+  /** Published accounts of the incident, this one included when it is public. */
+  published_accounts: z.number().int(),
+});
+
 export const getQueueItem = defineRoute({
   method: 'GET',
   path: '/api/moderation/reports/:threadId',
   summary: 'One report in the queue, with what moderators and the reporter did to it.',
   params: ThreadParams,
-  response: z.object({ report: QueueItem, history: z.array(HistoryEntry) }),
+  response: z.object({
+    report: QueueItem,
+    history: z.array(HistoryEntry),
+    assessment: Assessment,
+  }),
+});
+
+export const setReportSeverity = defineRoute({
+  method: 'POST',
+  path: '/api/moderation/reports/:threadId/severity',
+  summary:
+    'Rate how serious a report is, or clear the rating (null), with a reason. Never part of its seal.',
+  params: ThreadParams,
+  body: z.object({ severity: z.string().nullable().optional(), comment: z.string().optional() }),
+  response: z.object({ ok: z.literal(true), severity: Severity.nullable() }),
+});
+
+export const linkReportIncident = defineRoute({
+  method: 'POST',
+  path: '/api/moderation/reports/:threadId/incident',
+  summary:
+    'Link a report to another (by reference) as the same incident, or unlink it (no reference), with a reason.',
+  params: ThreadParams,
+  body: z.object({ link_to: z.string().max(80).optional(), comment: z.string().optional() }),
+  response: z.object({ ok: z.literal(true), incident_id: z.string().nullable() }),
+});
+
+export const getCorroboration = defineRoute({
+  method: 'GET',
+  path: '/api/moderation/corroboration',
+  summary:
+    'Across published reports: how many are corroborated by another, how many stand alone, and how many of each severity.',
+  response: z.object({
+    published: z.number().int(),
+    corroborated_accounts: z.number().int(),
+    single_accounts: z.number().int(),
+    incidents_with_several_accounts: z.number().int(),
+    /** Every rating, plus `none` for published reports nobody rated. */
+    by_severity: z.record(z.string(), z.number().int()),
+  }),
 });
 
 export const decideReport = defineRoute({
@@ -240,7 +316,8 @@ export const setNoteState = defineRoute({
 export const getAccessLog = defineRoute({
   method: 'GET',
   path: '/api/admin/moderation/access-log',
-  summary: "Who opened a reporter's contact details, and why. Reading it is recorded too.",
+  summary:
+    "Who opened a reporter's contact details, a file's original or a file's copy, and why. Reading it is recorded too.",
   query: z.object({
     months: z.coerce.number().int().min(1).max(120).default(12),
     thread: z.uuid().optional(),
@@ -249,13 +326,16 @@ export const getAccessLog = defineRoute({
     months: z.number().int(),
     entries: z.array(
       z.object({
-        id: z.number().int(),
+        /** Unique across both logs this reads (contact_access_log and F's file events). */
+        id: z.string(),
         staff_email: z.string(),
+        /** contact, contact_used, file_preview, file_original, or audit_log. */
         kind: z.string(),
         reason: z.string().nullable(),
         accessed_at: Timestamp,
         thread_id: z.string().nullable(),
         public_ref: z.string().nullable(),
+        attachment_id: z.number().int().nullable(),
       }),
     ),
   }),
@@ -336,12 +416,12 @@ export const getMyReportAccesses = defineRoute({
   method: 'GET',
   path: '/api/mine/reports/:threadId/accesses',
   summary:
-    'When somebody on staff opened your contact details or a file’s original, and the reason they gave. Never who.',
+    'When somebody on staff opened your contact details or a file’s original, or had your address used to ask you for files, and the reason they gave. Never who.',
   params: ThreadParams,
   response: z.object({
     accesses: z.array(
       z.object({
-        what: z.enum(['contact', 'file_original']),
+        what: z.enum(['contact', 'contact_used', 'file_original']),
         reason: z.string().nullable(),
         accessed_at: Timestamp,
       }),

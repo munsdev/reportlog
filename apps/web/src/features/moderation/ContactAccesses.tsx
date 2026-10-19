@@ -1,6 +1,7 @@
 /**
  * For "My reports": every time somebody on staff opened this report's
- * contact details or a file's unstripped original, and the reason they gave. Never who: naming a volunteer to
+ * contact details or a file's unstripped original, or had the site open your
+ * address to ask you for files, and the reason they gave. Never who: naming a volunteer to
  * a reporter unhappy with a decision is a risk to that volunteer, and the
  * server does not send it.
  */
@@ -8,6 +9,12 @@ import { getMyReportAccesses } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useId } from 'react';
 import { call } from '../../lib/api.ts';
+
+const WHAT: Record<string, string> = {
+  contact: 'Your contact details were opened',
+  contact_used: 'Your address was opened to email you a request for files',
+  file_original: 'The original of a file you sent was opened',
+};
 
 const accessesQuery = (threadId: string) =>
   queryOptions({
@@ -34,14 +41,15 @@ export function ContactAccesses({ threadId }: { threadId: string }) {
           <>
             <p className="text-sm text-ink-alt">
               Each time somebody on staff opened your contact details or the original of a file you
-              sent, and the reason they had to give. Their name is kept for the site’s
-              administrators.
+              sent, or had the site open your address to ask you for files, and the reason they
+              gave. Their name is kept for the site’s administrators.
             </p>
             <ul className="flex flex-col gap-2">
               {query.data.accesses.map((a, i) => (
                 <li key={`${a.what}-${a.accessed_at}-${String(i)}`}>
                   <span className="font-semibold">{new Date(a.accessed_at).toLocaleString()}</span>:{' '}
-                  {a.reason}
+                  {WHAT[a.what] ?? 'Opened'}
+                  {a.reason ? `. The reason given: ${a.reason}` : '.'}
                 </li>
               ))}
             </ul>

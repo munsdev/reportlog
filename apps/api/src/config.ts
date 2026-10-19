@@ -190,6 +190,11 @@ const ConfigSchema = z.object({
       )
       .default('https://zeitstempel.dfn.de'),
   ),
+  /**
+   * The press pack: a folder holding manifest.json and the files it lists,
+   * built ahead of time (board/press.ts). Unset is no pack.
+   */
+  PRESS_DIR: optional(z.string().refine((s) => s.startsWith('/'), 'PRESS_DIR is an absolute path')),
   /** The checkout of the public transparency log on this server: an absolute path. */
   TRANSPARENCY_LOG_DIR: optional(
     z.string().refine((s) => s.startsWith('/'), 'TRANSPARENCY_LOG_DIR is an absolute path'),
@@ -225,6 +230,13 @@ const ConfigSchema = z.object({
   /** Who the log's commits are by. */
   TRANSPARENCY_LOG_AUTHOR_NAME: z.string().min(1).default('ReportLog anchor'),
   TRANSPARENCY_LOG_AUTHOR_EMAIL: z.email().default('anchor@reportlog.invalid'),
+  /**
+   * Reports one client may send for confirmation in 15 minutes. Anybody can
+   * make the site email any address they type, so this stays low on a real
+   * site. The browser suite raises it: every test files from 127.0.0.1.
+   */
+  FILING_SENDS_PER_CLIENT: z.coerce.number().int().min(1).max(1000).default(20),
+
   /** Hours after which the newest anchor counts as stale (the job runs daily). */
   ANCHOR_MAX_AGE_HOURS: z.coerce
     .number()

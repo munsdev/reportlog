@@ -14,15 +14,17 @@ import { roleSatisfies } from '@reportlog/access';
 import {
   addNoteLink,
   decideReport,
+  linkReportIncident,
   markReportRead,
   openReportContact,
   removeNoteLink,
   restoreReport,
   setNoteState,
+  setReportSeverity,
   withdrawReport,
   writeReportNote,
 } from '@reportlog/contracts';
-import type { QueueItem, ResponseOf, getReportNote } from '@reportlog/contracts';
+import type { QueueItem, ResponseOf, getQueueItem, getReportNote } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -41,7 +43,9 @@ import { EvidenceRequests } from '../files/staff/EvidenceRequests.tsx';
 import { ReportFiles } from '../files/staff/ReportFiles.tsx';
 import { useMe } from '../identity/session.ts';
 import { noteQuery, queueItemQuery } from './queries.ts';
-import { ACTION_WORDS, STATUS_WORDS } from './words.ts';
+import { ACTION_WORDS, SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
+
+type Assessment = ResponseOf<typeof getQueueItem>['assessment'];
 
 /** A mutation that refreshes the queue and the board when it lands. */
 function useAct<T>(fn: (input: T) => Promise<unknown>, onDone?: () => void) {
@@ -88,7 +92,7 @@ export function ItemPage({ threadId }: { threadId: string }) {
       </Page>
     );
   }
-  const { report: r, history } = query.data;
+  const { report: r, history, assessment } = query.data;
   const state = r.withdrawn ? STATUS_WORDS.withdrawn : STATUS_WORDS[r.moderation_status];
   return (
     <Page
@@ -112,6 +116,8 @@ export function ItemPage({ threadId }: { threadId: string }) {
       </Section>
       {r.needs_review ? <SecondRead r={r} /> : null}
       {r.withdrawn ? null : <Decide r={r} />}
+      <Severity r={r} a={assessment} />
+      <Incident r={r} a={assessment} />
       {/* Workstream F2's components: one question per card, publishing offered
           only while the reporter's consent allows it. */}
       {r.file_count > 0 ? <ReportFiles threadId={r.thread_id} reportPublic={r.public} /> : null}
@@ -217,6 +223,203 @@ function Decide({ r }: { r: QueueItem }) {
         <Button type="submit" className="self-start" disabled={decide.isPending}>
           Record the decision
         </Button>
+      </form>
+    </Section>
+  );
+}
+
+/**
+ * How serious it is. A moderator's judgement, never part of the report's
+ * seal. An unrated report opens with nothing chosen, so saving is a
+ * deliberate act rather than a default sliding through.
+ */
+function Severity({ r, a }: { r: QueueItem; a: Assessment }) {
+  const [severity, setSeverity] = useState('');
+  const [comment, setComment] = useState('');
+  const save = useAct(
+    () =>
+      call(setReportSeverity, {
+        params: { threadId: r.thread_id },
+        body: { severity, comment },
+      }),
+    () => {
+      setComment('');
+      setSeverity('');
+    },
+  );
+  const current = a.severity ? SEVERITY_WORDS[a.severity] : null;
+  return (
+    <Section title="Severity">
+      <p>
+        {current ? (
+          <>
+            Rated <span className="font-semibold">{current.label}</span>: {current.hint}.
+          </>
+        ) : (
+          'Nobody has rated it yet.'
+        )}{' '}
+        A moderator’s judgement, kept beside the report and never part of what was sealed.
+      </p>
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save.mutate(undefined);
+        }}
+      >
+        <Field>
+          <Label>{a.severity ? 'Change it to' : 'Rate it'}</Label>
+          <Select
+            value={severity}
+            onChange={(e) => {
+              setSeverity(e.target.value);
+            }}
+          >
+            <option value="">Choose…</option>
+            {SEVERITIES.map((k) => (
+              <option key={k} value={k}>
+                {SEVERITY_WORDS[k]?.label} ({SEVERITY_WORDS[k]?.hint})
+              </option>
+            ))}
+            {a.severity ? <option value="none">Clear the rating</option> : null}
+          </Select>
+        </Field>
+        <Field>
+          <Label>Why this rating</Label>
+          <Textarea
+            rows={2}
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value);
+            }}
+          />
+          <FieldDescription>
+            Kept on the record with your name. Not shown publicly.
+          </FieldDescription>
+        </Field>
+        <Problem error={save.error} />
+        {save.isSuccess ? <Alert tone="confirmed">Recorded.</Alert> : null}
+        <Button
+          type="submit"
+          variant="secondary"
+          className="self-start"
+          disabled={save.isPending || !severity}
+        >
+          Record the rating
+        </Button>
+      </form>
+    </Section>
+  );
+}
+
+/**
+ * Reports describing the same real-world incident, linked by hand. Never
+ * inferred: a clustering mistake would overstate corroboration, the number
+ * most likely to be quoted.
+ */
+function Incident({ r, a }: { r: QueueItem; a: Assessment }) {
+  const [ref, setRef] = useState('');
+  const [comment, setComment] = useState('');
+  const [unlinking, setUnlinking] = useState(false);
+  const link = useAct(
+    () =>
+      call(linkReportIncident, {
+        params: { threadId: r.thread_id },
+        body: { ...(unlinking ? {} : { link_to: ref.trim() }), comment },
+      }),
+    () => {
+      setRef('');
+      setComment('');
+    },
+  );
+  const total = a.linked.length + 1;
+  return (
+    <Section title="Same incident">
+      {a.incident_id ? (
+        <>
+          <p>
+            Linked with {String(a.linked.length)} other report{a.linked.length === 1 ? '' : 's'}.{' '}
+            {String(a.published_accounts)} of the {String(total)} accounts are published, and only
+            those count as corroboration a reader can check.
+          </p>
+          <ul className="flex flex-col gap-1 text-sm" aria-label="Linked reports">
+            {a.linked.map((l) => (
+              <li key={l.thread_id}>
+                <Link
+                  to="/moderate/$threadId"
+                  params={{ threadId: l.thread_id }}
+                  className="font-mono underline"
+                >
+                  {l.public_ref}
+                </Link>{' '}
+                · {l.withdrawn ? STATUS_WORDS.withdrawn : STATUS_WORDS[l.moderation_status]}
+                {l.published ? ' · published' : ' · not published'}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p>Not linked to any other report.</p>
+      )}
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          link.mutate(undefined);
+        }}
+      >
+        <Field>
+          <Label>{a.incident_id ? 'Move it to the incident of' : 'Link it to'}</Label>
+          <Input
+            value={ref}
+            placeholder="A report’s reference"
+            onChange={(e) => {
+              setRef(e.target.value);
+            }}
+          />
+          <FieldDescription>
+            The other report’s reference. If it is already linked to others, this one joins them.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <Label>Why they are the same incident</Label>
+          <Textarea
+            rows={2}
+            value={comment}
+            onChange={(e) => {
+              setComment(e.target.value);
+            }}
+          />
+          <FieldDescription>
+            Kept on the record with your name. Not shown publicly.
+          </FieldDescription>
+        </Field>
+        <Problem error={link.error} />
+        {link.isSuccess ? <Alert tone="confirmed">Recorded.</Alert> : null}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            type="submit"
+            variant="secondary"
+            disabled={link.isPending || !ref.trim()}
+            onClick={() => {
+              setUnlinking(false);
+            }}
+          >
+            Link them
+          </Button>
+          {a.incident_id ? (
+            <Button
+              type="submit"
+              variant="secondary"
+              disabled={link.isPending}
+              onClick={() => {
+                setUnlinking(true);
+              }}
+            >
+              Unlink this report
+            </Button>
+          ) : null}
+        </div>
       </form>
     </Section>
   );

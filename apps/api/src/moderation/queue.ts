@@ -21,10 +21,12 @@
  */
 import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
+import { publishedReportIds } from '../board/published.ts';
 import { normalizeSearch, searchMatches, sortDirection } from '../board/search.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { permissionsForMany } from '../permissions/log.ts';
+import type { Severity } from './assessment.ts';
 import { clearFlag } from './flags.ts';
 
 export const DECISIONS = ['valid', 'invalid', 'unknown'] as const;
@@ -57,6 +59,8 @@ export interface QueueFilter {
   q?: string | undefined;
   flagged?: boolean | undefined;
   logbook?: string | undefined;
+  /** A rating, or `none` for the reports nobody has rated yet. */
+  severity?: Severity | 'none' | undefined;
   sort?: 'newest' | 'oldest' | undefined;
   /** One thread, for its detail page. */
   threadId?: string | undefined;
@@ -74,6 +78,7 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
     .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
     .leftJoin('report_review_flags as f', 'f.report_id', 'h.current_report_id')
     .leftJoin('logbook_editorial_notes as en', 'en.logbook_id', 'l.id')
+    .leftJoin('report_assessments as sev', 'sev.thread_id', 'h.thread_id')
     .select((eb) => [
       'h.thread_id',
       'h.moderation_status',
@@ -93,6 +98,23 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
       'f.terms as flag_terms',
       'f.cleared_at as flag_cleared_at',
       sql<boolean>`coalesce(en.enabled, false)`.as('notes_enabled'),
+      'sev.severity',
+      'sev.incident_id',
+      // Published accounts in its incident, itself included when public:
+      // the one rule in board/published.ts, so it is the number a reader
+      // could count on the board.
+      eb
+        .selectFrom('report_assessments as inc')
+        .innerJoin('report_heads as ih', 'ih.thread_id', 'inc.thread_id')
+        .whereRef('inc.incident_id', '=', 'sev.incident_id')
+        .where('ih.current_report_id', 'in', publishedReportIds(db))
+        .select((e) => e.fn.countAll<string>().as('n'))
+        .as('corroboration'),
+      eb
+        .selectFrom('report_assessments as inc2')
+        .whereRef('inc2.incident_id', '=', 'sev.incident_id')
+        .select((e) => e.fn.countAll<string>().as('n'))
+        .as('incident_size'),
       eb
         .exists(eb.selectFrom('editorial_notes as n').whereRef('n.thread_id', '=', 'h.thread_id'))
         .as('has_note'),
@@ -135,6 +157,8 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
   if (search) q = q.where(searchMatches(search));
   if (filter.flagged) q = q.where('f.id', 'is not', null).where('f.cleared_at', 'is', null);
   if (filter.logbook) q = q.where('l.slug', '=', filter.logbook);
+  if (filter.severity === 'none') q = q.where('sev.severity', 'is', null);
+  else if (filter.severity) q = q.where('sev.severity', '=', filter.severity);
   if (filter.threadId) q = q.where('h.thread_id', '=', filter.threadId);
 
   const rows = await q
@@ -151,6 +175,9 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
     versions: Number(r.versions ?? 1),
     file_count: Number(r.file_count ?? 0),
     published_files: Number(r.published_files ?? 0),
+    severity: (r.severity ?? null) as Severity | null,
+    corroboration: Number(r.corroboration ?? 0),
+    incident_size: Number(r.incident_size ?? 0),
     files_permitted: perms.get(r.thread_id)?.attachment_publication === true,
     needs_review: r.flag_terms !== null && r.flag_cleared_at === null,
     has_note: Boolean(r.has_note),

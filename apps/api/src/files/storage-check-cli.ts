@@ -14,6 +14,16 @@ import { loadConfig } from '../config.ts';
 import { storageFrom } from './context.ts';
 import { BUCKETS, randomKey, readAll } from './storage.ts';
 
+/**
+ * fetch says only "fetch failed"; why (refused, no such host, a certificate)
+ * is in its cause, and is the part an owner checking a new provider needs.
+ */
+function why(e: unknown): string {
+  const err = e as Error & { cause?: { code?: string; message?: string } };
+  const cause = err.cause?.code ?? err.cause?.message;
+  return cause ? `${err.message} (${cause})` : err.message;
+}
+
 const storage = storageFrom(loadConfig());
 if (typeof storage === 'string') {
   console.error(`Storage is not configured: ${storage}.`);
@@ -36,7 +46,7 @@ for (const bucket of BUCKETS) {
     console.log(`ok    ${bucket}: write, read, range, delete`);
   } catch (e) {
     failed = true;
-    console.log(`FAIL  ${bucket}: ${(e as Error).message}`);
+    console.log(`FAIL  ${bucket}: ${why(e)}`);
   }
 }
 process.exit(failed ? 1 : 0);

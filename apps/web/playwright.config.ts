@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|doors)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -47,7 +47,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|doors)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -89,11 +89,24 @@ export default defineConfig({
       },
     },
     {
-      // The list and logbook doors with the password on (C3). Last, alone,
-      // for the same reason: the password is the whole site's.
+      // The list and logbook doors with the password on (C3). Alone, for
+      // the same reason: the password is the whole site's.
       name: 'doors-behind-password',
       testMatch: /doors\/.*\.spec\.ts$/,
       dependencies: ['files-behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // D3: severity on reports the other projects filed (so it files none,
+      // and spends nothing of the per-address filing limit), then the board
+      // with the site password on. After C3's doors, never beside them: two
+      // projects turning the one password on and off would collide.
+      name: 'board-behind-password',
+      testMatch: /board-locked\/.*\.spec\.ts$/,
+      dependencies: ['doors-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -118,6 +131,9 @@ export default defineConfig({
         SITE_ORIGIN: 'http://127.0.0.1:4173',
         // A fixed key for the test server only, so it can take reports.
         CONTACT_KEY: Buffer.alloc(32, 9).toString('base64'),
+        // Every test files from 127.0.0.1, and the suite already sends about
+        // as many reports as one client may in 15 minutes on a real site.
+        FILING_SENDS_PER_CLIENT: '200',
         // Files: a fixed key, a directory of its own, and the media worker
         // inside the server, so an attached photo is really re-encoded.
         FILES_KEY: Buffer.alloc(32, 8).toString('base64'),

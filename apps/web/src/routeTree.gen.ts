@@ -23,9 +23,11 @@ import { Route as staffListsRouteRouteImport } from './routes/(staff)/lists/rout
 import { Route as staffLogbooksRouteRouteImport } from './routes/(staff)/logbooks/route'
 import { Route as staffModerateRouteRouteImport } from './routes/(staff)/moderate/route'
 import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/settings/route'
+import { Route as staffTransparencyLogRouteImport } from './routes/(staff)/transparency-log'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
+import { Route as BoardPressRouteImport } from './routes/board/press'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
 import { Route as DocsFirstLogbookRouteImport } from './routes/docs/first-logbook'
@@ -148,6 +150,11 @@ const staffSettingsRouteRoute = staffSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffTransparencyLogRoute = staffTransparencyLogRouteImport.update({
+  id: '/(staff)/transparency-log',
+  path: '/transparency-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardIndexRoute = BoardIndexRouteImport.update({
   id: '/board/',
   path: '/board/',
@@ -161,6 +168,11 @@ const BoardRefRoute = BoardRefRouteImport.update({
 const BoardNumbersRoute = BoardNumbersRouteImport.update({
   id: '/board/numbers',
   path: '/board/numbers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardPressRoute = BoardPressRouteImport.update({
+  id: '/board/press',
+  path: '/board/press',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -437,8 +449,10 @@ export interface FileRoutesByFullPath {
   '/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/moderate': typeof staffModerateRouteRouteWithChildren
   '/settings': typeof staffSettingsRouteRouteWithChildren
+  '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/numbers': typeof BoardNumbersRoute
+  '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -501,8 +515,10 @@ export interface FileRoutesByTo {
   '/public-api': typeof PublicApiRoute
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
+  '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/numbers': typeof BoardNumbersRoute
+  '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -572,8 +588,10 @@ export interface FileRoutesById {
   '/(staff)/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/(staff)/moderate': typeof staffModerateRouteRouteWithChildren
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
+  '/(staff)/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/numbers': typeof BoardNumbersRoute
+  '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -644,8 +662,10 @@ export interface FileRouteTypes {
     | '/logbooks'
     | '/moderate'
     | '/settings'
+    | '/transparency-log'
     | '/board/$ref'
     | '/board/numbers'
+    | '/board/press'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -708,8 +728,10 @@ export interface FileRouteTypes {
     | '/public-api'
     | '/standards'
     | '/submit'
+    | '/transparency-log'
     | '/board/$ref'
     | '/board/numbers'
+    | '/board/press'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -778,8 +800,10 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks'
     | '/(staff)/moderate'
     | '/(staff)/settings'
+    | '/(staff)/transparency-log'
     | '/board/$ref'
     | '/board/numbers'
+    | '/board/press'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -849,8 +873,10 @@ export interface RootRouteChildren {
   staffLogbooksRouteRoute: typeof staffLogbooksRouteRouteWithChildren
   staffModerateRouteRoute: typeof staffModerateRouteRouteWithChildren
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
+  staffTransparencyLogRoute: typeof staffTransparencyLogRoute
   BoardRefRoute: typeof BoardRefRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
+  BoardPressRoute: typeof BoardPressRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
   EvidenceTokenRoute: typeof EvidenceTokenRoute
@@ -979,6 +1005,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/transparency-log': {
+      id: '/(staff)/transparency-log'
+      path: '/transparency-log'
+      fullPath: '/transparency-log'
+      preLoaderRoute: typeof staffTransparencyLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/board/': {
       id: '/board/'
       path: '/board'
@@ -998,6 +1031,13 @@ declare module '@tanstack/react-router' {
       path: '/board/numbers'
       fullPath: '/board/numbers'
       preLoaderRoute: typeof BoardNumbersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/board/press': {
+      id: '/board/press'
+      path: '/board/press'
+      fullPath: '/board/press'
+      preLoaderRoute: typeof BoardPressRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -1483,8 +1523,10 @@ const rootRouteChildren: RootRouteChildren = {
   staffLogbooksRouteRoute: staffLogbooksRouteRouteWithChildren,
   staffModerateRouteRoute: staffModerateRouteRouteWithChildren,
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
+  staffTransparencyLogRoute: staffTransparencyLogRoute,
   BoardRefRoute: BoardRefRoute,
   BoardNumbersRoute: BoardNumbersRoute,
+  BoardPressRoute: BoardPressRoute,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,
   EvidenceTokenRoute: EvidenceTokenRoute,

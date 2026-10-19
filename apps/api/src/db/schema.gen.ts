@@ -108,6 +108,7 @@ export interface ConsentTexts {
 
 export interface ContactAccessLog {
   accessed_at: Generated<Timestamp>;
+  attachment_id: number | null;
   id: Generated<number>;
   kind: string;
   reason: string | null;
@@ -548,6 +549,13 @@ export interface OwnershipTransfers {
   to_email: string;
 }
 
+export interface ReportAssessments {
+  incident_id: string | null;
+  severity: string | null;
+  thread_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface ReportAttachments {
   attachment_id: number;
   created_at: Generated<Timestamp>;
@@ -786,6 +794,7 @@ export interface DB {
   organizations: Organizations;
   otp_codes: OtpCodes;
   ownership_transfers: OwnershipTransfers;
+  report_assessments: ReportAssessments;
   report_attachments: ReportAttachments;
   report_contacts: ReportContacts;
   report_heads: ReportHeads;

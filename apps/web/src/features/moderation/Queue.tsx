@@ -19,9 +19,9 @@ import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
-import { queueQuery } from './queries.ts';
-import type { QueueSearch, QueueStatus } from './queries.ts';
-import { STATUS_WORDS } from './words.ts';
+import { corroborationQuery, queueQuery } from './queries.ts';
+import type { QueueSearch, QueueSeverity, QueueStatus } from './queries.ts';
+import { SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
 
 const STATUSES: QueueStatus[] = ['pending', 'valid', 'unknown', 'invalid', 'withdrawn', 'all'];
 
@@ -60,7 +60,51 @@ export function QueuePage({ search }: { search: QueueSearch }) {
           </ul>
         </>
       ) : null}
+      <Corroboration />
     </Page>
+  );
+}
+
+/**
+ * Legacy's "By the numbers" panels for staff: corroboration and severity
+ * across PUBLISHED reports, each broken out. No single headline figure: a
+ * bare "N incidents" is the number that gets quoted without the caveat that
+ * these are reviewed accounts, not verified facts.
+ */
+function Corroboration() {
+  const query = useQuery(corroborationQuery);
+  if (!query.data) return null;
+  const d = query.data;
+  const rows: [string, number][] = [
+    ['Accounts corroborated by at least one other', d.corroborated_accounts],
+    ['Single accounts', d.single_accounts],
+    ['Incidents with more than one account', d.incidents_with_several_accounts],
+  ];
+  return (
+    <section
+      aria-label="Corroboration"
+      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
+    >
+      <h2 className="font-display text-xl font-bold">Across the published reports</h2>
+      <p className="text-sm text-ink-alt">
+        {String(d.published)} published. Reports count as corroborated only when a moderator linked
+        them as the same incident, and only published ones are counted.
+      </p>
+      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+        {rows.map(([k, v]) => (
+          <div key={k} className="contents">
+            <dt>{k}</dt>
+            <dd className="text-right font-semibold">{String(v)}</dd>
+          </div>
+        ))}
+        {[...SEVERITIES, 'none' as const].map((k) => (
+          <div key={k} className="contents">
+            <dt>Rated: {SEVERITY_WORDS[k]?.label}</dt>
+            <dd className="text-right font-semibold">{String(d.by_severity[k] ?? 0)}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }
 
@@ -69,6 +113,7 @@ function QueueFilters({ search }: { search: QueueSearch }) {
   const [status, setStatus] = useState<QueueStatus>(search.status ?? 'pending');
   const [q, setQ] = useState(search.q ?? '');
   const [flagged, setFlagged] = useState(Boolean(search.flagged));
+  const [severity, setSeverity] = useState<QueueSeverity | ''>(search.severity ?? '');
   return (
     <form
       aria-label="Narrow the queue"
@@ -81,6 +126,7 @@ function QueueFilters({ search }: { search: QueueSearch }) {
             status,
             ...(q.trim() ? { q: q.trim() } : {}),
             ...(flagged ? { flagged: true } : {}),
+            ...(severity ? { severity } : {}),
           },
         });
       }}
@@ -96,6 +142,22 @@ function QueueFilters({ search }: { search: QueueSearch }) {
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {STATUS_WORDS[s]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field>
+        <Label>Severity</Label>
+        <Select
+          value={severity}
+          onChange={(e) => {
+            setSeverity(e.target.value as QueueSeverity | '');
+          }}
+        >
+          <option value="">Any</option>
+          {[...SEVERITIES, 'none' as const].map((k) => (
+            <option key={k} value={k}>
+              {SEVERITY_WORDS[k]?.label}
             </option>
           ))}
         </Select>
@@ -146,6 +208,19 @@ function Row({ r }: { r: QueueItem }) {
         {!r.may_publish ? ' · its reporter did not permit publishing' : ''}
         {r.needs_review ? ` · second read asked for: ${r.review_terms.join(', ')}` : ''}
       </span>
+      {r.severity || r.incident_size > 1 ? (
+        <span className="text-sm">
+          {r.severity ? `Severity: ${SEVERITY_WORDS[r.severity]?.label ?? r.severity}` : ''}
+          {r.severity && r.incident_size > 1 ? ' · ' : ''}
+          {r.incident_size > 1 ? corroborationWords(r) : ''}
+        </span>
+      ) : null}
     </Link>
   );
+}
+
+/** "Linked with 2 other reports, 2 accounts published": never one bare number. */
+export function corroborationWords(r: Pick<QueueItem, 'incident_size' | 'corroboration'>) {
+  const others = r.incident_size - 1;
+  return `Linked with ${String(others)} other report${others === 1 ? '' : 's'} · ${String(r.corroboration)} of the ${String(r.incident_size)} published`;
 }

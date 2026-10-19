@@ -37,9 +37,14 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       title="Report board"
       lede="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
       actions={
-        <Button asChild variant="secondary">
-          <Link to="/board/numbers">By the numbers</Link>
-        </Button>
+        <>
+          <Button asChild variant="secondary">
+            <Link to="/board/numbers">By the numbers</Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link to="/board/press">Press pack</Link>
+          </Button>
+        </>
       }
     >
       <CopyText slot="board_intro" />

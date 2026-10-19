@@ -2,7 +2,7 @@
 
 For the coordinating session and the other workstreams. Brief: `docs/parity.md` §7, P2.
 
-- **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l` at `9771872` (A2 merged)
+- **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `faa4b68` (D3 and P7 merged)
 - **Pull request:** see below, into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
@@ -129,8 +129,6 @@ guide; it is not nearly free.
   `features/` and recognises `<CopyText slot="…">`.
 - `apps/web/e2e/identity/access.spec.ts` (A's): the door test clicks the **header's** "ReportLog"
   link (`getByRole('banner')`). The footer's attribution is now a second link with that name.
-- `apps/web/e2e/filing/declaration.spec.ts` (C's): waits for the report's heading before reading
-  it. It read "My reports" once in a full run (a race in the test; 8 of 8 passed on repeat).
 - `schema.gen.ts` and `routeTree.gen.ts` regenerated.
 
 ## Not done

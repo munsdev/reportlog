@@ -196,13 +196,17 @@ api_healthy() {
   return 1
 }
 
-# Make `release` the running one: units, Caddyfile, symlinks, restart.
+# Make `release` the running one: Caddyfile, units, symlinks, restart.
 # Returns non-zero if the API does not come up healthy on it.
+#
+# The Caddyfile first: it is the step that can refuse ("does not validate.
+# Nothing was switched"), and it must refuse before this release's units are
+# installed, or the running release is left under the new release's timers.
 activate() {
   local release=$1 was
   was=$(release_of "$CURRENT")
-  install_units "$release"
   install_caddyfile "$release"
+  install_units "$release"
   point "$CURRENT" "$release"
   if [ -n "$was" ] && [ "$was" != "$release" ]; then point "$PREVIOUS" "$was"; fi
   systemctl restart reportlog-api.service
