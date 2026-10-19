@@ -5,6 +5,14 @@
 
 import type { ColumnType } from "kysely";
 
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
+  ? U[]
+  : ArrayTypeImpl<T>;
+
+export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S[], I[], U[]>
+  : T[];
+
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
@@ -24,6 +32,15 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
+
+export interface AnchorRuns {
+  anchor_date: string | null;
+  detail: string;
+  finished_at: Generated<Timestamp>;
+  id: Generated<number>;
+  outcome: string;
+  started_at: Timestamp;
+}
 
 export interface AttachmentEvents {
   action: string;
@@ -96,6 +113,14 @@ export interface ContactKeys {
   thread_id: string;
 }
 
+export interface DigestSubscriptions {
+  frequency: string;
+  last_sent_at: Timestamp | null;
+  logbooks: string[] | null;
+  updated_at: Generated<Timestamp>;
+  user_id: number;
+}
+
 export interface EvidenceRequests {
   asked_at: Generated<Timestamp>;
   asked_by: string;
@@ -109,6 +134,38 @@ export interface EvidenceRequests {
   token_hash: string;
   used_at: Timestamp | null;
   used_report_id: number | null;
+}
+
+export interface Feedback {
+  body: string;
+  context: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  related_ref: string | null;
+  severity: string;
+  status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
+  submitter_id: number;
+  title: string;
+  type: string;
+}
+
+export interface FeedbackComments {
+  author_id: number;
+  body: string;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+}
+
+export interface FeedbackEvents {
+  action: string;
+  actor_id: number;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+  new_status: string | null;
+  note: string | null;
 }
 
 export interface FileSettings {
@@ -125,6 +182,26 @@ export interface FileSettings {
   max_video_seconds: number | null;
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
+}
+
+export interface HeatMaps {
+  blurb: string | null;
+  created_at: Generated<Timestamp>;
+  enabled: Generated<boolean>;
+  id: Generated<number>;
+  list_ids: Generated<ArrayType<number>>;
+  logbook_ids: Generated<ArrayType<number>>;
+  min_area: Generated<number>;
+  outcome_key: string | null;
+  outcome_logbook_id: number | null;
+  outcome_stances: Generated<Json>;
+  planes: Generated<string[]>;
+  position: Generated<number>;
+  slot: Generated<string>;
+  slug: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  views: Generated<string[]>;
 }
 
 export interface HomeButtons {
@@ -304,6 +381,18 @@ export interface Logbooks {
   updated_at: Generated<Timestamp>;
 }
 
+export interface MapListPlaceQuestions {
+  field_key: string;
+  list_id: number;
+  marked_at: Generated<Timestamp>;
+}
+
+export interface MapPlaceQuestions {
+  field_key: string;
+  logbook_id: number;
+  marked_at: Generated<Timestamp>;
+}
+
 export interface OrganizationInvites {
   approved_at: Timestamp | null;
   approved_by: string | null;
@@ -337,6 +426,8 @@ export interface Organizations {
   created_at: Generated<Timestamp>;
   details: string | null;
   id: Generated<number>;
+  listed: Generated<boolean>;
+  listed_at: Timestamp | null;
   name: string;
   updated_at: Generated<Timestamp>;
   verified_at: Generated<Timestamp>;
@@ -530,11 +621,13 @@ export interface Users {
   created_at: Generated<Timestamp>;
   email: string;
   id: Generated<number>;
+  is_tester: Generated<boolean>;
   role: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
 
 export interface DB {
+  anchor_runs: AnchorRuns;
   attachment_events: AttachmentEvents;
   attachment_heads: AttachmentHeads;
   attachments: Attachments;
@@ -542,8 +635,13 @@ export interface DB {
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
   contact_keys: ContactKeys;
+  digest_subscriptions: DigestSubscriptions;
   evidence_requests: EvidenceRequests;
+  feedback: Feedback;
+  feedback_comments: FeedbackComments;
+  feedback_events: FeedbackEvents;
   file_settings: FileSettings;
+  heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
@@ -560,6 +658,8 @@ export interface DB {
   logbook_file_limits: LogbookFileLimits;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  map_list_place_questions: MapListPlaceQuestions;
+  map_place_questions: MapPlaceQuestions;
   organization_invite_sends: OrganizationInviteSends;
   organization_invites: OrganizationInvites;
   organization_memberships: OrganizationMemberships;

@@ -1,0 +1,62 @@
+# The API. Listens on 127.0.0.1 only; Caddy is the only thing in front of it.
+#
+# Installed and enabled by deploy/lib.sh on every deploy, from the release
+# being deployed. Edit this file in the repository, never in /etc.
+[Unit]
+Description=ReportLog API
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=reportlog
+Group=reportlog
+# A symlink, resolved when the service starts: a deploy switches it and then
+# restarts this unit, and a rollback does the same.
+WorkingDirectory=/srv/reportlog/current
+# Refuse to start on a CONTACT_KEY other than the one this archive started
+# with: under a different key every stored reporter address is unreadable,
+# and a running site would go on storing new ones under the wrong key. A
+# deploy checks the same thing before it switches; this covers somebody
+# editing the settings and restarting by hand. apps/api/src/jobs/contact-key.ts
+ExecStartPre=/usr/local/bin/node --env-file=/etc/reportlog/reportlog.env apps/api/src/jobs/cli.ts contact-key
+ExecStart=/usr/local/bin/node --env-file=/etc/reportlog/reportlog.env apps/api/src/server.ts
+Restart=on-failure
+RestartSec=5
+StateDirectory=reportlog
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/reportlog
+
+# --- confinement ------------------------------------------------------
+# The whole file system is read-only to this process except the paths in
+# ReadWritePaths. The code in /srv/reportlog is owned by root, so even
+# without this the service could not rewrite itself.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+# AF_UNIX for the PostgreSQL socket, INET for outbound mail and storage.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+UMask=0077
+# MemoryDenyWriteExecute is deliberately absent: V8 compiles JavaScript to
+# machine code at run time and needs writable, executable memory to do it.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,18 @@
+{
+  "name": "@reportlog/geo-tools",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Builds the map outlines and the place gazetteer derived from them. Run by hand; the outputs are committed.",
+  "scripts": {
+    "build:geo": "node build-geo.js",
+    "build:gazetteer": "node build-gazetteer.js",
+    "outlines": "node build-geo.js && node build-gazetteer.js"
+  },
+  "devDependencies": {
+    "d3-geo": "3.1.1",
+    "i18n-iso-countries": "7.14.0",
+    "topojson-client": "3.1.0",
+    "topojson-simplify": "3.0.3"
+  }
+}

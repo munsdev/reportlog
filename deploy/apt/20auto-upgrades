@@ -1,0 +1,5 @@
+// Installed by deploy/install.sh. Refresh the package lists and apply
+// unattended upgrades once a day.
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";

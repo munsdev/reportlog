@@ -1,7 +1,9 @@
+import { DIRECTORY_NAME } from '@reportlog/contracts';
 import type { QueryClient } from '@tanstack/react-query';
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
 import { SessionNav } from '../features/identity/SessionNav.tsx';
+import { StaffNav } from '../features/staff-nav/StaffNav.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -31,6 +33,7 @@ function RootLayout() {
           <SessionNav />
         </div>
       </header>
+      <StaffNav />
       <main id="main" className="mx-auto w-full max-w-page flex-1 px-4 py-8">
         <Outlet />
       </main>
@@ -39,6 +42,9 @@ function RootLayout() {
         <p className="mt-2 flex flex-wrap justify-center gap-x-4">
           <Link to="/legal" className="underline">
             Imprint, privacy and moderation
+          </Link>
+          <Link to="/organizations" className="underline">
+            {DIRECTORY_NAME}
           </Link>
           {/* A deployment naming itself is not a deployment claiming to have written this. */}
           {site && site.plain_name !== site.software_name ? (

@@ -2,8 +2,9 @@
  * The browser suite: the real server against a real database, and the built
  * website in front of it. `e2e/global-setup.ts` files demo reports first.
  *
- * Expects DATABASE_URL to name a migrated database (CI creates one; locally,
- * `pnpm --filter @reportlog/api db:migrate`). Set CHROMIUM_PATH to use an
+ * `pnpm --filter @reportlog/web e2e` runs it against a database made for the
+ * run and dropped after (apps/api/src/dev/with-fresh-db.ts). Run
+ * `playwright test` directly only against a database you mean to fill. Set CHROMIUM_PATH to use an
  * already-installed Chromium instead of the build Playwright downloads.
  */
 import { defineConfig, devices } from '@playwright/test';

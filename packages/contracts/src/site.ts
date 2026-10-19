@@ -477,3 +477,331 @@ export const setLegalText = defineRoute({
   body: z.object({ text: z.string() }),
   response: SiteEditor,
 });
+
+// ── feedback ────────────────────────────────────────────────────────────
+//
+// The in-app issue tracker. Not reports: nothing here is evidence, and
+// nothing here is sealed. Open to testers (a flag, not a role), and to
+// administrators and Access Managers. A tester sees issues and never a
+// report.
+
+export const FEEDBACK_TYPES = ['bug', 'question', 'suggestion'] as const;
+export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
+
+/** Blocker, major, minor rather than a number: a tester picks these right without being told what P1 means. */
+export const FEEDBACK_SEVERITIES = ['blocker', 'major', 'minor'] as const;
+export type FeedbackSeverity = (typeof FEEDBACK_SEVERITIES)[number];
+
+export const FEEDBACK_STATUSES = [
+  'new', // filed, not looked at yet
+  'investigating', // acknowledged, being reproduced
+  'in_progress', // being fixed
+  'need_info', // waiting on the tester
+  'acknowledged', // noted, nothing to fix: closes a question or a suggestion
+  'fixed',
+  'wont_fix',
+  'duplicate',
+] as const;
+export type FeedbackStatus = (typeof FEEDBACK_STATUSES)[number];
+
+/** Everything still waiting on somebody. The weekly digest lists every one of these. */
+export const OPEN_FEEDBACK_STATUSES = [
+  'new',
+  'investigating',
+  'in_progress',
+  'need_info',
+] as const satisfies readonly FeedbackStatus[];
+
+export const FEEDBACK_TYPE_LABELS: Record<FeedbackType, string> = {
+  bug: 'Something is broken',
+  question: 'A question',
+  suggestion: 'A suggestion',
+};
+
+export const FEEDBACK_SEVERITY_LABELS: Record<FeedbackSeverity, string> = {
+  blocker: 'It stops me doing something',
+  major: 'It gets in the way',
+  minor: 'Small, or cosmetic',
+};
+
+export const FEEDBACK_STATUS_LABELS: Record<FeedbackStatus, string> = {
+  new: 'New',
+  investigating: 'Being looked into',
+  in_progress: 'Being fixed',
+  need_info: 'Needs more from you',
+  acknowledged: 'Noted',
+  fixed: 'Fixed',
+  wont_fix: 'Will not be fixed',
+  duplicate: 'Already reported',
+};
+
+export const MAX_FEEDBACK_TITLE = 200;
+export const MAX_FEEDBACK_BODY = 5000;
+
+const FeedbackTypeSchema = z.enum(FEEDBACK_TYPES);
+const FeedbackSeveritySchema = z.enum(FEEDBACK_SEVERITIES);
+const FeedbackStatusSchema = z.enum(FEEDBACK_STATUSES);
+
+/** Where the tester was and what they were using. The server keeps only these, shortened. */
+export const FeedbackContext = z.object({
+  /** The screen, as the router names it (never the address, which can carry a token). */
+  page: z.string().max(200).optional(),
+  viewport: z.string().max(40).optional(),
+  browser: z.string().max(400).optional(),
+});
+export type FeedbackContext = z.infer<typeof FeedbackContext>;
+
+/** One issue as a tester sees it. Authors are shown as a masked handle, never an address. */
+export const FeedbackIssue = z.object({
+  id: z.number().int(),
+  type: FeedbackTypeSchema,
+  severity: FeedbackSeveritySchema,
+  title: z.string(),
+  body: z.string(),
+  related_ref: z.string().nullable(),
+  status: FeedbackStatusSchema,
+  created_at: z.string(),
+  status_changed_at: z.string(),
+  author: z.string(),
+  mine: z.boolean(),
+  comment_count: z.number().int(),
+});
+export type FeedbackIssue = z.infer<typeof FeedbackIssue>;
+
+export const FeedbackStatusChange = z.object({
+  status: FeedbackStatusSchema,
+  note: z.string(),
+  created_at: z.string(),
+});
+
+export const FeedbackComment = z.object({
+  author: z.string(),
+  mine: z.boolean(),
+  body: z.string(),
+  created_at: z.string(),
+});
+
+export const FeedbackDetail = FeedbackIssue.extend({
+  context: FeedbackContext,
+  /** Each change of status with the note the tester was sent, oldest first. */
+  changes: z.array(FeedbackStatusChange),
+  comments: z.array(FeedbackComment),
+});
+export type FeedbackDetail = z.infer<typeof FeedbackDetail>;
+
+/**
+ * Strings rather than enums for what a person chooses or types, so a refusal
+ * is a sentence and not a schema error.
+ */
+export const fileFeedback = defineRoute({
+  method: 'POST',
+  path: '/api/feedback',
+  summary: 'File an issue about the site itself. Testers, administrators and Access Managers.',
+  body: z.object({
+    type: z.string().max(40),
+    severity: z.string().max(40),
+    title: z.string().max(1000),
+    body: z.string().max(20000),
+    related_ref: z.string().max(200).optional(),
+    context: FeedbackContext.optional(),
+  }),
+  response: z.object({ id: z.number().int() }),
+});
+
+export const listFeedback = defineRoute({
+  method: 'GET',
+  path: '/api/feedback',
+  summary: "Every tester's issues, newest first, so a duplicate is seen before it is filed.",
+  response: z.object({ issues: z.array(FeedbackIssue) }),
+});
+
+export const getFeedback = defineRoute({
+  method: 'GET',
+  path: '/api/feedback/:id',
+  summary: 'One issue, with its changes of status and its comments.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  response: FeedbackDetail,
+});
+
+export const commentOnFeedback = defineRoute({
+  method: 'POST',
+  path: '/api/feedback/:id/comments',
+  summary: 'Add a comment to an issue. Comments are never edited.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  body: z.object({ body: z.string().max(20000) }),
+  response: FeedbackDetail,
+});
+
+/** An issue as an administrator sees it: the same, with the addresses. */
+export const FeedbackQueueItem = FeedbackIssue.extend({ submitter_email: z.string() });
+
+export const getFeedbackQueue = defineRoute({
+  method: 'GET',
+  path: '/api/admin/feedback',
+  summary: 'Every issue, newest first, optionally of one status or every open one.',
+  query: z.object({ status: z.string().max(40).optional() }),
+  response: z.object({
+    counts: z.record(z.string(), z.number().int()),
+    open: z.number().int(),
+    issues: z.array(FeedbackQueueItem),
+  }),
+});
+
+export const AdminFeedbackDetail = FeedbackDetail.extend({
+  submitter_email: z.string(),
+  changes: z.array(FeedbackStatusChange.extend({ by: z.string() })),
+  comments: z.array(FeedbackComment.extend({ author_email: z.string() })),
+});
+export type AdminFeedbackDetail = z.infer<typeof AdminFeedbackDetail>;
+
+export const getFeedbackAdmin = defineRoute({
+  method: 'GET',
+  path: '/api/admin/feedback/:id',
+  summary: 'One issue, with who filed it and who changed it.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  response: AdminFeedbackDetail,
+});
+
+export const setFeedbackStatus = defineRoute({
+  method: 'POST',
+  path: '/api/admin/feedback/:id/status',
+  summary:
+    'Move an issue. The note is required: it is emailed to the tester and shown on the issue.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  body: z.object({ status: z.string().max(40), note: z.string().max(20000) }),
+  response: AdminFeedbackDetail,
+});
+
+export const Tester = z.object({ email: z.string(), role: z.string() });
+
+export const listTesters = defineRoute({
+  method: 'GET',
+  path: '/api/admin/testers',
+  summary: 'Everybody with the tester flag. Administrators and Access Managers.',
+  response: z.object({ testers: z.array(Tester) }),
+});
+
+export const setTester = defineRoute({
+  method: 'POST',
+  path: '/api/admin/testers',
+  summary: 'Give or take the tester flag. It opens the feedback tracker and nothing else.',
+  body: z.object({ email: z.string().max(320), tester: z.boolean() }),
+  response: z.object({ ok: z.literal(true), unchanged: z.boolean() }),
+});
+
+// ── email updates about published reports ───────────────────────────────
+
+export const DIGEST_FREQUENCIES = ['none', 'hourly', 'weekly'] as const;
+export type DigestFrequency = (typeof DIGEST_FREQUENCIES)[number];
+
+export const Notifications = z.object({
+  frequency: z.enum(DIGEST_FREQUENCIES),
+  /** Slugs followed, or null for every logbook. */
+  logbooks: z.array(z.string()).nullable(),
+  /** The logbooks that can be followed: every launched one. */
+  choices: z.array(z.object({ slug: z.string(), title: z.string() })),
+});
+export type Notifications = z.infer<typeof Notifications>;
+
+export const getNotifications = defineRoute({
+  method: 'GET',
+  path: '/api/notifications',
+  summary:
+    'How often the signed-in person hears about newly published reports, and from which logbooks.',
+  response: Notifications,
+});
+
+export const setNotifications = defineRoute({
+  method: 'PUT',
+  path: '/api/notifications',
+  summary:
+    'Choose how often to hear about newly published reports. An empty list is every logbook.',
+  body: z.object({
+    frequency: z.string().max(20),
+    logbooks: z.array(z.string().max(80)).max(200).nullable(),
+  }),
+  response: Notifications,
+});
+
+// ── the directory of organizations ──────────────────────────────────────
+//
+// Organizations that asked to be listed. NOT CHAINED: who is currently
+// willing to stand beside the project is not archive material.
+
+export const DIRECTORY_NAME = 'Participating organizations';
+
+/**
+ * Served WITH the rows, so a page cannot show the directory without the
+ * sentence that says what it is not. Any directory of organizations reads
+ * as a membership body with a bar to clear, and no such bar exists.
+ */
+export const DIRECTORY_DISCLAIMER =
+  'Listing here is not verification. These organizations asked to be listed; nobody has ' +
+  'checked them against a standard, because no standard for verifying an organization has ' +
+  'been published yet. Treat this as a list of who is taking part, not as an endorsement ' +
+  'of any of them.';
+
+/**
+ * What appears publicly when an organization is listed. "List us publicly"
+ * is not an adequate question: the member count is a number about them that
+ * did not exist before they were asked.
+ */
+export const DIRECTORY_WHAT_APPEARS = [
+  'The organization’s name and its description.',
+  'The date it joined the directory.',
+  'How many people have accepted an invitation to it: an exact number, not a range.',
+] as const;
+
+/** Said where the decision is made, so leaving does not do less than somebody expected. */
+export const DIRECTORY_LEAVING =
+  'Leaving the directory does not remove this organization from the reports it has already ' +
+  'filed. That is part of each report and cannot be changed.';
+
+export const DirectoryEntry = z.object({
+  name: z.string(),
+  details: z.string().nullable(),
+  joined: z.string(),
+  member_count: z.number().int(),
+});
+
+export const getDirectory = defineRoute({
+  method: 'GET',
+  path: '/api/directory',
+  summary:
+    'The organizations that asked to be listed, largest first, with what listing does not mean.',
+  response: z.object({
+    name: z.string(),
+    disclaimer: z.string(),
+    organizations: z.array(DirectoryEntry),
+  }),
+});
+
+export const Listing = z.object({
+  organization: z.string(),
+  listed: z.boolean(),
+  joined: z.string().nullable(),
+  member_count: z.number().int(),
+  directory_name: z.string(),
+  what_appears: z.array(z.string()),
+  disclaimer: z.string(),
+  leaving: z.string(),
+});
+export type Listing = z.infer<typeof Listing>;
+
+export const getListing = defineRoute({
+  method: 'GET',
+  path: '/api/directory/listing/:id',
+  summary: 'Whether an organization is listed. Its managers and administrators.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  response: Listing,
+});
+
+export const setListing = defineRoute({
+  method: 'PUT',
+  path: '/api/directory/listing/:id',
+  summary:
+    'List an organization in the directory, or take it out. Its managers and administrators.',
+  params: z.object({ id: z.coerce.number().int().positive() }),
+  body: z.object({ listed: z.boolean() }),
+  response: Listing,
+});

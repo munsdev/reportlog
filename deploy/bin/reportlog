@@ -1,0 +1,53 @@
+#!/bin/bash
+# One command for running a ReportLog server. Installed as
+# /usr/local/bin/reportlog; run it with sudo.
+#
+#   reportlog deploy [ref]       deploy a branch, tag or commit
+#   reportlog rollback [id]      go back to the previous release
+#   reportlog releases           list releases, marking current and previous
+#   reportlog doctor             check this deployment
+#   reportlog backup [--check]   take a backup now (or report on them)
+#   reportlog mail-test <addr>   send one real message
+#   reportlog jobs               list scheduled jobs and their schedules
+#   reportlog job <name>         run one scheduled job now
+#
+# Everything that runs the application's code runs as the `reportlog` user
+# with the application's settings, never as root.
+set -euo pipefail
+# shellcheck source=../lib.sh
+. /usr/local/lib/reportlog/lib.sh
+
+[ "$(id -u)" -eq 0 ] || die "run it with sudo: sudo reportlog ${*:-help}"
+cmd=${1:-help}
+[ $# -gt 0 ] && shift
+
+cli() {
+  [ -e "$CURRENT" ] || die "nothing is deployed yet. Run: sudo reportlog deploy"
+  [ -r "$ENV_FILE" ] || die "$ENV_FILE is missing."
+  cd "$CURRENT"
+  app_node apps/api/src/jobs/cli.ts "$@"
+}
+
+case "$cmd" in
+  deploy) exec "$LIB/deploy.sh" "$@" ;;
+  rollback) exec "$LIB/rollback.sh" "$@" ;;
+  releases)
+    cur=$(release_of "$CURRENT")
+    prev=$(release_of "$PREVIOUS")
+    for d in $(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d | sort -r); do
+      mark="  "
+      [ "$d" = "$cur" ] && mark="* "
+      [ "$d" = "$prev" ] && mark="< "
+      printf '%s%s\n' "$mark" "$(basename "$d")"
+    done
+    echo
+    echo "* running   < previous (where 'reportlog rollback' goes)"
+    ;;
+  doctor) cli doctor "$@" ;;
+  backup) cli run backup "$@" ;;
+  mail-test) cli mail-test "$@" ;;
+  jobs) cli jobs ;;
+  job) cli run "$@" ;;
+  help | -h | --help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+  *) die "unknown command: $cmd (try: reportlog help)" ;;
+esac
