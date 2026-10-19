@@ -58,14 +58,38 @@ Email, and an EU object storage bucket.
 4. **Settings.** Fill in `/etc/reportlog/reportlog.env`. Every setting is
    explained in the file. At least: `SITE_ORIGIN`, `EMAIL_TRANSPORT=scaleway`
    with `EMAIL_FROM_ADDRESS` and the two `SCALEWAY_` values,
-   `OPS_ALERT_EMAIL`, and the off-site backup settings (below).
+   `OPS_ALERT_EMAIL`, `ADMIN_EMAIL`, and the off-site backup settings
+   (below). `install.sh` has already set `TRUST_PROXY=1` (Caddy is one proxy
+   in front) and made `CONTACT_KEY`.
 5. **Deploy.** `sudo reportlog deploy`
 6. **Check.** `sudo reportlog doctor`, then
    `sudo reportlog mail-test you@example.org` and look for the message,
    including in the spam folder.
 7. **Copy the settings file off the server**, once, to wherever you keep
    secrets. Backups deliberately do not include it (it holds keys, and a
-   backup that carries its own keys protects nothing).
+   backup that carries its own keys protects nothing). Above all
+   `CONTACT_KEY`: see below.
+
+### The contact key
+
+Every reporter's address is encrypted under a per-report key, and those
+keys are wrapped by `CONTACT_KEY` (`apps/api/src/filing/contactKeys.ts`).
+`install.sh` makes it, from 32 random bytes, the first time it writes the
+settings file. Nobody chooses or types it.
+
+- **Back it up separately.** It is not in the database backups, on purpose:
+  a dump and the key that opens the addresses in it must not travel
+  together. Keep a copy off the server and away from the backups, in a
+  password manager the operators share, for instance:
+  `sudo grep ^CONTACT_KEY= /etc/reportlog/reportlog.env`.
+- **Never rotate it.** A different key makes every stored address
+  unreadable. The first deploy records the key's fingerprint
+  (`/var/lib/reportlog/contact-key.sha256`). From then on, a deploy with a
+  different key stops before switching, and the doctor fails. If that
+  happens, put the original key back. `install.sh` never makes a new key on
+  a server that has recorded one.
+- **Lose it and you lose the addresses.** The reports themselves are
+  unaffected: they never contain an address.
 
 ### Email (Scaleway)
 
@@ -176,19 +200,37 @@ in `deploy/systemd/` are generated from it
 (`pnpm --filter @reportlog/api ops timers --write`; a test fails if they
 differ). All times are UTC.
 
-| Job               | When          | What                                                                                              |
-| ----------------- | ------------- | ------------------------------------------------------------------------------------------------- |
-| `backup`          | daily 03:00   | Dump, check, encrypt and send off-site                                                            |
-| `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                  |
-| `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay. Not built yet (workstream E). |
-| `anchor`          | daily 04:00   | Timestamp the chain heads. Not built yet (workstream D)                                           |
-| `digest-hourly`   | hourly        | Not built yet (workstream G)                                                                      |
-| `digest-weekly`   | Mondays 07:00 | Not built yet (workstream G)                                                                      |
-| `feedback-digest` | Mondays 08:00 | Not built yet (workstream G)                                                                      |
+| Job               | When          | What                                                                                             |
+| ----------------- | ------------- | ------------------------------------------------------------------------------------------------ |
+| `backup`          | daily 03:00   | Dump, check, encrypt and send off-site                                                           |
+| `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                 |
+| `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`) |
+| `anchor`          | daily 04:00   | Timestamp the chain heads. Not built yet (workstream D)                                          |
+| `digest-hourly`   | hourly        | Not built yet (workstream G)                                                                     |
+| `digest-weekly`   | Mondays 07:00 | Not built yet (workstream G)                                                                     |
+| `feedback-digest` | Mondays 08:00 | Not built yet (workstream G)                                                                     |
 
 The two sweeps are different jobs on purpose. The first deletes rows; the
 second erases columns and must never delete a row. A list table in the
 first one's list would delete links that are meant to stay.
+
+What the credential sweep deletes, each under the condition its owner's
+code already treats as dead (`SWEPT` in `apps/api/src/jobs/sweep.ts`):
+
+| Table                       | Deleted when                              |
+| --------------------------- | ----------------------------------------- |
+| `otp_codes`                 | past `expires_at`                         |
+| `sessions`                  | past `expires_at`                         |
+| `site_access_tokens`        | past `expires_at`                         |
+| `ownership_transfers`       | past `expires_at`                         |
+| `organization_invites`      | still pending and past `expires_at`       |
+| `organization_invite_sends` | older than 14 days                        |
+| `report_submissions`        | **never confirmed** and past `expires_at` |
+
+It never touches `contact_keys` or `report_contacts` (deleting a contact
+key is a reporter's erasure, and the addresses are append-only), and never
+a list table. A database test fails on any table with an `expires_at`
+column that is in neither `SWEPT` nor `NOT_SWEPT`.
 
 A job that is not built yet runs, says so and exits successfully; the
 doctor lists it. A job that fails starts `reportlog-alert@`, which emails
@@ -222,9 +264,11 @@ sudo systemctl start reportlog-api
 sudo reportlog doctor
 ```
 
-**Into a new server**: run `install.sh`, put back the settings file you
-copied off the first server, restore as above, then `sudo reportlog deploy`
-at a commit that includes every migration in the dump.
+**Into a new server**: run `install.sh` **after** putting back the settings
+file you copied off the first server, so it does not make a new contact key
+(with a new key every restored address would be unreadable). Then restore as
+above, and `sudo reportlog deploy` at a commit that includes every migration
+in the dump.
 
 An untested backup is a belief. Restore one somewhere that is not
 production now and then. The database tests do exactly this on every run:

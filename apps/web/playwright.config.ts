@@ -7,8 +7,13 @@
  * already-installed Chromium instead of the build Playwright downloads.
  */
 import { defineConfig, devices } from '@playwright/test';
+import { fileURLToPath } from 'node:url';
 
 const chromium = process.env.CHROMIUM_PATH;
+// Where the server writes the email it would have sent, so a test can read a
+// sign-in code or follow an invitation link the way a person would
+// (e2e/identity/mail.ts reads it).
+const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 
 export default defineConfig({
   testDir: 'e2e',
@@ -21,7 +26,14 @@ export default defineConfig({
   },
   projects: [
     {
+      // Signs an administrator in for the staff screens' tests.
+      name: 'staff-setup',
+      testMatch: /staff\.setup\.ts$/,
+    },
+    {
       name: 'chromium',
+      testIgnore: /(identity|behind-password)\//,
+      dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -29,8 +41,32 @@ export default defineConfig({
     },
     {
       name: 'phone',
+      testIgnore: /(identity|behind-password)\//,
+      dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // Turns the site password on and seats an owner: state the whole site
+      // shares. So it runs alone, after the others, and puts it back after.
+      name: 'identity',
+      testMatch: /identity\/.*\.spec\.ts$/,
+      dependencies: ['chromium', 'phone'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // Filing behind the site password: it turns the password on too, so it
+      // runs alone, after the identity tests have put the site back.
+      name: 'behind-password',
+      testMatch: /behind-password\/.*\.spec\.ts$/,
+      dependencies: ['identity'],
+      use: {
+        ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
@@ -40,10 +76,20 @@ export default defineConfig({
       command: 'node --env-file-if-exists=../../.env ../api/src/server.ts',
       url: 'http://127.0.0.1:3000/api/health',
       reuseExistingServer: !process.env.CI,
-      env: { PORT: '3000', LOG_LEVEL: 'warn' },
+      env: {
+        PORT: '3000',
+        LOG_LEVEL: 'warn',
+        MAIL_OUTBOX: OUTBOX,
+        SITE_ORIGIN: 'http://127.0.0.1:4173',
+        // A fixed key for the test server only, so it can take reports.
+        CONTACT_KEY: Buffer.alloc(32, 9).toString('base64'),
+      },
     },
     {
-      command: 'pnpm exec vite build && pnpm exec vite preview --strictPort',
+      // The address the url below waits on. Left to itself, vite preview binds
+      // "localhost", which resolves to ::1 alone on some machines (GitHub's
+      // runners), and the wait on 127.0.0.1 then times out.
+      command: 'pnpm exec vite build && pnpm exec vite preview --strictPort --host 127.0.0.1',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },

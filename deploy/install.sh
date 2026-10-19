@@ -120,12 +120,30 @@ note "database '$APP_USER' owned by role '$APP_USER' (peer authentication)"
 say "6. Settings"
 if [ ! -e "$ENV_FILE" ]; then
   # The documented template, with the one value this script knows.
+  # Behind Caddy, so one proxy hop: without it every visitor has Caddy's
+  # address and the sign-in limits count the whole site as one person.
   sed -e "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://$APP_USER@/$APP_USER?host=/var/run/postgresql|" \
     -e 's|^TEST_DATABASE_URL=|# TEST_DATABASE_URL=|' \
+    -e 's|^TRUST_PROXY=.*|TRUST_PROXY=1|' \
     "$CHECKOUT/.env.example" >"$ENV_FILE"
   note "wrote $ENV_FILE — fill it in before deploying"
 else
   note "$ENV_FILE exists; left as it is"
+fi
+
+# The reporters' contact key: made here, once, by the machine, and never
+# typed, chosen or changed by a person. Only when the file has none AND no
+# deploy has recorded one: a server that lost its key must get the original
+# back, not a new one (a deploy refuses a key that differs from the first).
+NEW_KEY=""
+if [ -z "$(env_value CONTACT_KEY)" ] && [ ! -e "$STATE_DIR/contact-key.sha256" ]; then
+  NEW_KEY=$(head -c 32 /dev/urandom | base64)
+  if grep -q '^CONTACT_KEY=' "$ENV_FILE"; then
+    sed -i "s|^CONTACT_KEY=.*|CONTACT_KEY=$NEW_KEY|" "$ENV_FILE"
+  else
+    printf 'CONTACT_KEY=%s\n' "$NEW_KEY" >>"$ENV_FILE"
+  fi
+  note "made CONTACT_KEY (see below: copy it off this server)"
 fi
 chown root:"$APP_USER" "$ENV_FILE"
 chmod 0640 "$ENV_FILE"
@@ -137,6 +155,21 @@ fi
 say "7. The reportlog command"
 install_tooling "$CHECKOUT"
 note "/usr/local/bin/reportlog"
+
+if [ -n "$NEW_KEY" ]; then
+  say "COPY THE CONTACT KEY OFF THIS SERVER NOW"
+  cat <<EOF
+  Every reporter's address is encrypted under CONTACT_KEY in $ENV_FILE.
+  It is not in the database backups, on purpose. If this server is lost
+  and the key with it, every stored address is unreadable for good.
+  Keep a copy somewhere that is not this server and not beside the
+  backups (a password manager the operators share, for instance):
+
+      sudo grep ^CONTACT_KEY= $ENV_FILE
+
+  It is never changed: a deploy refuses to run with a different one.
+EOF
+fi
 
 say "Done. Next:"
 cat <<EOF

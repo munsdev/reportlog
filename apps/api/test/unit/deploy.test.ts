@@ -36,8 +36,9 @@ describe('deploy/caddy/Caddyfile', () => {
     expect(directives.filter((l) => /^log\b/.test(l))).toEqual([]);
   });
 
-  it('does not hand the API the client address', () => {
-    expect(directives).toContain('header_up -X-Forwarded-For');
+  it("gives the API the visitor's address for its limits, and trusts no proxy in front", () => {
+    // Stripping it once made every visitor 127.0.0.1 to the sign-in limits.
+    expect(directives.filter((l) => /X-Forwarded-For|trusted_proxies/.test(l))).toEqual([]);
   });
 
   it('allows nothing from another host on the website', () => {

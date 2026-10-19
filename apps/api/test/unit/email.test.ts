@@ -1,17 +1,10 @@
-import { mkdtempSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config.ts';
-import {
-  createCaptureSender,
-  createEmailSender,
-  createScalewaySender,
-  emailReadiness,
-  linkIn,
-  readCaptured,
-} from '../../src/email/index.ts';
+import { createMailer, emailReadiness } from '../../src/email/index.ts';
 import { mailTest } from '../../src/email/mail-test.ts';
+import { capturingMailer } from '../../src/email/mailer.ts';
+import { MailNotSent, scalewayMailer } from '../../src/email/scaleway.ts';
+import type { ScalewayMailer } from '../../src/email/scaleway.ts';
 
 const MESSAGE = {
   to: 'reporter@example.org',
@@ -34,7 +27,7 @@ function fakeFetch(answer: () => Response | Promise<Response>) {
 }
 
 const scaleway = (f: typeof fetch) =>
-  createScalewaySender({
+  scalewayMailer({
     secretKey: 'secret-key',
     projectId: PROJECT,
     region: 'fr-par',
@@ -42,12 +35,11 @@ const scaleway = (f: typeof fetch) =>
     fetch: f,
   });
 
-describe('the Scaleway sender', () => {
-  it('sends one message to the regional API, with the key in a header and nowhere else', async () => {
+describe('the Scaleway mailer', () => {
+  it('sends one plain-text message to the regional API, with the key in a header and nowhere else', async () => {
     const f = fakeFetch(() => Response.json({ emails: [{ id: 'em-1' }] }));
-    const result = await scaleway(f.fn).send({ ...MESSAGE, html: '<p>Confirm</p>' });
+    expect(await scaleway(f.fn).trySend(MESSAGE)).toEqual({ sent: true, id: 'em-1' });
 
-    expect(result).toEqual({ sent: true, transport: 'scaleway', id: 'em-1' });
     expect(f.calls).toHaveLength(1);
     const call = f.calls[0];
     expect(call?.url).toBe(
@@ -55,41 +47,53 @@ describe('the Scaleway sender', () => {
     );
     expect(call?.init.method).toBe('POST');
     expect((call?.init.headers as Record<string, string>)['x-auth-token']).toBe('secret-key');
-    const body: unknown = JSON.parse(call?.body ?? '');
-    expect(body).toEqual({
+    expect(JSON.parse(call?.body ?? '')).toEqual({
       from: { email: 'reports@example.org', name: 'Example Reports' },
       to: [{ email: 'reporter@example.org' }],
       subject: 'Confirm your report',
       text: MESSAGE.text,
-      html: '<p>Confirm</p>',
       project_id: PROJECT,
     });
-    expect(call?.body ?? '').not.toContain('secret-key');
+    expect(call?.body).not.toContain('secret-key');
   });
 
-  it('leaves html out entirely when there is none', async () => {
+  it('as a Mailer, resolves when sent', async () => {
     const f = fakeFetch(() => Response.json({ emails: [] }));
-    await scaleway(f.fn).send(MESSAGE);
-    expect(JSON.parse(f.calls[0]?.body ?? '')).not.toHaveProperty('html');
+    await expect(scaleway(f.fn).send(MESSAGE)).resolves.toBeUndefined();
   });
 
   it('calls a 4xx a rejection and a 5xx or 429 unreachable, never naming the recipient', async () => {
     const refused = await scaleway(
       fakeFetch(() => new Response('{"message":"domain not verified"}', { status: 400 })).fn,
-    ).send(MESSAGE);
+    ).trySend(MESSAGE);
     expect(refused).toMatchObject({ sent: false, reason: 'rejected' });
-    expect(refused.sent || refused.detail).toContain('domain not verified');
+    expect(JSON.stringify(refused)).toContain('domain not verified');
+    expect(JSON.stringify(refused)).not.toContain(MESSAGE.to);
 
     for (const status of [429, 500, 503]) {
-      const r = await scaleway(fakeFetch(() => new Response('busy', { status })).fn).send(MESSAGE);
+      const r = await scaleway(fakeFetch(() => new Response('busy', { status })).fn).trySend(
+        MESSAGE,
+      );
       expect(r).toMatchObject({ sent: false, reason: 'unreachable' });
     }
-    for (const r of [refused]) expect(JSON.stringify(r)).not.toContain(MESSAGE.to);
   });
 
-  it('turns a network failure into a result rather than a throw', async () => {
+  it('as a Mailer, throws MailNotSent with the reason and without the address or body', async () => {
+    const m = scaleway(fakeFetch(() => new Response('quota exceeded', { status: 403 })).fn);
+    const err: unknown = await m.send(MESSAGE).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(MailNotSent);
+    expect((err as MailNotSent).reason).toBe('rejected');
+    expect((err as MailNotSent).message).toContain('quota exceeded');
+    expect((err as MailNotSent).message).not.toContain(MESSAGE.to);
+    expect((err as MailNotSent).message).not.toContain('abc123');
+  });
+
+  it('turns a network failure into a result rather than a crash', async () => {
     const f = (() => Promise.reject(new TypeError('fetch failed'))) as typeof fetch;
-    expect(await scaleway(f).send(MESSAGE)).toMatchObject({ sent: false, reason: 'unreachable' });
+    expect(await scaleway(f).trySend(MESSAGE)).toMatchObject({
+      sent: false,
+      reason: 'unreachable',
+    });
   });
 
   it('refuses an address no provider would take without asking the provider', async () => {
@@ -101,80 +105,38 @@ describe('the Scaleway sender', () => {
       'two@example.org, three@example.org',
       'x@y.z\nBcc: v@w.org',
     ]) {
-      expect(await scaleway(f.fn).send({ ...MESSAGE, to })).toMatchObject({ reason: 'invalid' });
+      expect(await scaleway(f.fn).trySend({ ...MESSAGE, to })).toMatchObject({ reason: 'invalid' });
     }
     expect(f.calls).toHaveLength(0);
   });
 
-  it('throws on a programming error: no subject, a two-line subject, no text', async () => {
+  it('throws on a programming error: no subject, a two-line subject, no body', async () => {
     const s = scaleway(fakeFetch(() => Response.json({})).fn);
-    await expect(s.send({ ...MESSAGE, subject: ' ' })).rejects.toThrow(/subject/);
-    await expect(s.send({ ...MESSAGE, subject: 'a\nBcc: x@y.org' })).rejects.toThrow(/one line/);
-    await expect(s.send({ ...MESSAGE, text: '' })).rejects.toThrow(/plain-text/);
+    await expect(s.trySend({ ...MESSAGE, subject: ' ' })).rejects.toThrow(/subject/);
+    await expect(s.trySend({ ...MESSAGE, subject: 'a\nBcc: x@y.org' })).rejects.toThrow(/one line/);
+    await expect(s.trySend({ ...MESSAGE, text: '' })).rejects.toThrow(/body/);
   });
 });
 
-describe('the capture sender (the test double)', () => {
-  it('keeps every message and finds the newest to an address', async () => {
-    const mail = createCaptureSender();
-    await mail.send(MESSAGE);
-    await mail.send({ ...MESSAGE, subject: 'Second' });
-    await mail.send({ ...MESSAGE, to: 'other@example.org' });
-    expect(mail.outbox).toHaveLength(3);
-    expect(mail.lastTo('reporter@example.org')?.subject).toBe('Second');
-    expect(linkIn(mail.lastTo('reporter@example.org'))).toBe(
-      'https://reports.example.org/confirm/abc123',
-    );
-    mail.clear();
-    expect(mail.outbox).toHaveLength(0);
-  });
-
-  it('fails the next send on request, as a provider would, then recovers', async () => {
-    const mail = createCaptureSender();
-    mail.failNext('unreachable');
-    expect(await mail.send(MESSAGE)).toMatchObject({ sent: false, reason: 'unreachable' });
-    expect(await mail.send(MESSAGE)).toMatchObject({ sent: true });
-    expect(mail.outbox).toHaveLength(1);
-  });
-
-  it('writes each message to a directory a browser test can read', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rl-capture-'));
-    const mail = createCaptureSender({ dir });
-    await mail.send({ ...MESSAGE, subject: 'First' });
-    await mail.send({ ...MESSAGE, subject: 'Newest' });
-    await mail.send({ ...MESSAGE, to: 'other@example.org' });
-    expect(readdirSync(dir)).toHaveLength(3);
-    expect(readCaptured(dir, 'reporter@example.org')?.subject).toBe('Newest');
-    expect(readCaptured(dir, 'nobody@example.org')).toBeUndefined();
-    expect(readCaptured(join(dir, 'missing'), 'reporter@example.org')).toBeUndefined();
-  });
-});
-
-describe('choosing a sender', () => {
+describe('choosing a mailer', () => {
   const base = { DATABASE_URL: 'postgres://x/y' };
+  const scalewayConfig = {
+    ...base,
+    EMAIL_TRANSPORT: 'scaleway',
+    SCALEWAY_SECRET_KEY: 'k',
+    SCALEWAY_PROJECT_ID: PROJECT,
+    EMAIL_FROM_ADDRESS: 'reports@example.org',
+  };
 
-  it('is off unless told otherwise, and off logs the subject and nothing else', async () => {
-    const lines: string[] = [];
-    const sender = createEmailSender(loadConfig(base), (l) => lines.push(l));
-    expect(sender.transport).toBe('off');
-    expect(await sender.send(MESSAGE)).toMatchObject({ sent: false, reason: 'not-configured' });
-    expect(lines.join('\n')).toContain('Confirm your report');
-    expect(lines.join('\n')).not.toContain(MESSAGE.to);
-    expect(lines.join('\n')).not.toContain('abc123');
+  it('is the standard-error fallback unless told otherwise', () => {
+    expect('trySend' in createMailer(loadConfig(base))).toBe(false);
   });
 
-  it('builds the sender the configuration names', () => {
-    expect(createEmailSender(loadConfig({ ...base, EMAIL_TRANSPORT: 'capture' })).transport).toBe(
-      'capture',
-    );
-    const c = loadConfig({
-      ...base,
-      EMAIL_TRANSPORT: 'scaleway',
-      SCALEWAY_SECRET_KEY: 'k',
-      SCALEWAY_PROJECT_ID: PROJECT,
-      EMAIL_FROM_ADDRESS: 'reports@example.org',
-    });
-    expect(createEmailSender(c).transport).toBe('scaleway');
+  it('is Scaleway when configured, and the outbox whenever MAIL_OUTBOX is set', () => {
+    expect('trySend' in createMailer(loadConfig(scalewayConfig))).toBe(true);
+    expect(
+      'trySend' in createMailer(loadConfig({ ...scalewayConfig, MAIL_OUTBOX: '/tmp/x' })),
+    ).toBe(false);
   });
 
   it('refuses a half-configured Scaleway transport at start, naming what is missing', () => {
@@ -183,33 +145,45 @@ describe('choosing a sender', () => {
     );
   });
 
-  it('says a server on off or capture cannot deliver mail', () => {
+  it('says mail on off, or into an outbox, is not delivered', () => {
     expect(emailReadiness(loadConfig(base)).ok).toBe(false);
-    expect(emailReadiness(loadConfig({ ...base, EMAIL_TRANSPORT: 'capture' })).ok).toBe(false);
+    expect(emailReadiness(loadConfig({ ...scalewayConfig, MAIL_OUTBOX: '/tmp/x' })).ok).toBe(false);
+    expect(emailReadiness(loadConfig(scalewayConfig)).ok).toBe(true);
   });
 });
 
 describe('mail-test', () => {
-  const config = loadConfig({ DATABASE_URL: 'postgres://x/y', EMAIL_TRANSPORT: 'capture' });
+  const config = loadConfig({ DATABASE_URL: 'postgres://x/y' });
+  const fakeScaleway = (result: Awaited<ReturnType<ScalewayMailer['trySend']>>) => {
+    const sent: string[] = [];
+    const m: ScalewayMailer = {
+      trySend: (msg) => {
+        sent.push(msg.to);
+        return Promise.resolve(result);
+      },
+      send: () => Promise.resolve(),
+    };
+    return { m, sent };
+  };
 
   it('sends one message to the address given and says accepted is not delivered', async () => {
-    const mail = createCaptureSender();
+    const { m, sent } = fakeScaleway({ sent: true, id: 'x' });
     const lines: string[] = [];
-    expect(await mailTest(config, mail, 'me@example.org', (l) => lines.push(l))).toBe(0);
-    expect(mail.outbox).toHaveLength(1);
+    expect(await mailTest(config, m, 'me@example.org', (l) => lines.push(l))).toBe(0);
+    expect(sent).toEqual(['me@example.org']);
     expect(lines.join('\n')).toMatch(/spam/);
   });
 
   it('sends nothing without a usable address', async () => {
-    const mail = createCaptureSender();
-    expect(await mailTest(config, mail, undefined, () => undefined)).toBe(2);
-    expect(await mailTest(config, mail, 'nobody', () => undefined)).toBe(2);
-    expect(mail.outbox).toHaveLength(0);
+    const { m, sent } = fakeScaleway({ sent: true });
+    expect(await mailTest(config, m, undefined, () => undefined)).toBe(2);
+    expect(await mailTest(config, m, 'nobody', () => undefined)).toBe(2);
+    expect(sent).toEqual([]);
   });
 
-  it('fails when the provider refuses', async () => {
-    const mail = createCaptureSender();
-    mail.failNext('rejected');
-    expect(await mailTest(config, mail, 'me@example.org', () => undefined)).toBe(1);
+  it('fails when the provider refuses, and when there is no provider at all', async () => {
+    const { m } = fakeScaleway({ sent: false, reason: 'rejected', detail: 'no' });
+    expect(await mailTest(config, m, 'me@example.org', () => undefined)).toBe(1);
+    expect(await mailTest(config, capturingMailer(), 'me@example.org', () => undefined)).toBe(1);
   });
 });

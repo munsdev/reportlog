@@ -87,6 +87,15 @@ main() {
   works with them. Kept for inspection: $dir.failed"
   fi
 
+  # The reporters' contact key is never rotated. The first deploy records
+  # its fingerprint; a later deploy with a different key stops here, before
+  # anything is switched (apps/api/src/jobs/contact-key.ts).
+  if ! app_node "$dir/apps/api/src/jobs/cli.ts" contact-key 2>&1 | sed 's/^/  /'; then
+    mv "$dir" "$dir.failed"
+    die "CONTACT_KEY differs from the key this archive started with. Nothing was switched;
+  still running: $(running_name "$was"). Put the original key back in $ENV_FILE."
+  fi
+
   say "Switching to $id"
   was_previous=$(release_of "$PREVIOUS")
   if ! activate "$dir"; then

@@ -30,20 +30,82 @@ import { sql } from 'kysely';
 import type { Database } from '../db/database.ts';
 import type { JobContext, JobOutcome } from './context.ts';
 
-/** Expired credentials: deleted whole once past `expires_at`. */
-export const SWEPT: readonly { table: string; what: string; owner: string }[] = [
-  { table: 'otp_codes', what: 'one-time sign-in codes', owner: 'A' },
-  { table: 'sessions', what: 'sessions', owner: 'A' },
-  { table: 'report_submission_tokens', what: 'report confirmation links', owner: 'C' },
-  { table: 'site_access_tokens', what: 'site password tokens', owner: 'A' },
+/**
+ * Expired credentials: deleted whole, each table under its own condition.
+ * The conditions are fixed SQL written here, never built from input.
+ */
+export interface SweptTable {
+  table: string;
+  what: string;
+  owner: string;
+  /** Which rows are expired. Mirrors what the owning module already treats as dead. */
+  expired: string;
+}
+
+export const SWEPT: readonly SweptTable[] = [
+  { table: 'otp_codes', what: 'one-time codes', owner: 'A', expired: 'expires_at < now()' },
+  { table: 'sessions', what: 'sessions', owner: 'A', expired: 'expires_at < now()' },
+  {
+    table: 'site_access_tokens',
+    what: 'site password tokens',
+    owner: 'A',
+    expired: 'expires_at < now()',
+  },
+  {
+    // At most one row; an expired proposal is refused when used and deleted
+    // when replaced (identity/ownership.ts). This deletes it sooner.
+    table: 'ownership_transfers',
+    what: 'expired owner handovers',
+    owner: 'A',
+    expired: 'expires_at < now()',
+  },
+  {
+    // A link that was never used, past its time. identity/invitations.ts
+    // deletes exactly these before counting outstanding invitations; this
+    // does it on a schedule. An accepted or held invitation has no link and
+    // no expiry, and is never touched.
+    table: 'organization_invites',
+    what: 'expired invitation links',
+    owner: 'A',
+    expired: "status = 'pending' AND expires_at < now()",
+  },
+  {
+    // Kept only to count invitations to an address per day; the module
+    // itself drops rows older than 14 days (SEND_LOG_TTL_MS).
+    table: 'organization_invite_sends',
+    what: 'invitation send records older than 14 days',
+    owner: 'A',
+    expired: "sent_at < now() - interval '14 days'",
+  },
+  {
+    // UNCONFIRMED only. Until confirmation the row holds the reporter's
+    // address in the clear (docs/status/C-filing.md), so an unconfirmed one
+    // past its link's expiry is exactly what should not be kept. A confirmed
+    // row has no address and links a thread; erasure deletes it, not this.
+    table: 'report_submissions',
+    what: 'unconfirmed reports whose confirmation link expired',
+    owner: 'C',
+    expired: 'confirmed_at IS NULL AND expires_at < now()',
+  },
 ];
 
 /**
- * Tables that have an `expires_at` column and are deliberately NOT swept,
- * each with the reason. The database test fails on a table with that column
- * that is in neither list.
+ * Tables that have an `expires_at` column and are deliberately NOT swept
+ * here, each with the reason. The database test fails on a table with that
+ * column that is in neither list. contact_keys and report_contacts have no
+ * such column and are never touched by any sweep: deleting a contact key is
+ * a reporter's erasure, and report_contacts is append-only.
  */
-export const NOT_SWEPT: readonly { table: string; why: string }[] = [];
+export const NOT_SWEPT: readonly { table: string; why: string }[] = [
+  {
+    table: 'list_erasures',
+    why: 'a list table: the lists sweep (workstream E) removes spent and expired erasure links',
+  },
+  {
+    table: 'list_notify_confirmations',
+    why: 'a list table: the lists sweep (workstream E) removes spent and expired links',
+  },
+];
 
 export type SweepResult = Record<string, number | 'absent' | { error: string }>;
 
@@ -54,10 +116,10 @@ export type SweepResult = Record<string, number | 'absent' | { error: string }>;
  */
 export async function sweepExpired(
   db: Database,
-  tables: readonly { table: string }[] = SWEPT,
+  tables: readonly Pick<SweptTable, 'table' | 'expired'>[] = SWEPT,
 ): Promise<SweepResult> {
   const result: SweepResult = {};
-  for (const { table } of tables) {
+  for (const { table, expired } of tables) {
     try {
       const exists = await sql<{
         r: string | null;
@@ -68,7 +130,7 @@ export async function sweepExpired(
         result[table] = 'absent';
         continue;
       }
-      const deleted = await sql`DELETE FROM ${sql.table(table)} WHERE expires_at < now()`.execute(
+      const deleted = await sql`DELETE FROM ${sql.table(table)} WHERE ${sql.raw(expired)}`.execute(
         db,
       );
       result[table] = Number(deleted.numAffectedRows ?? 0);

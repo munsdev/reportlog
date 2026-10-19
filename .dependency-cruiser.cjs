@@ -63,6 +63,15 @@ module.exports = {
       to: { path: '^apps/api/src/permissions/', reachable: true },
     },
     {
+      name: 'presentation-stays-out-of-the-seal',
+      comment:
+        "The site's name, look, wording and legal text are presentation. A report must " +
+        'never verify differently because somebody renamed the site or corrected a policy.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/site/', reachable: true },
+    },
+    {
       name: 'packages-do-not-import-apps',
       severity: 'error',
       from: { path: '^packages/' },
@@ -87,6 +96,8 @@ module.exports = {
           '/(test|e2e)/',
           '^apps/api/src/(server|dev/seed|db/migrate-cli|db/gen-types)\\.ts$',
           '^apps/web/src/main\\.tsx$',
+          // Found by the router plugin from the file name, not by an import.
+          '^apps/web/src/routes/',
         ],
       },
       to: {},

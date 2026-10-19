@@ -28,12 +28,13 @@
 	}
 
 	# The API sets its own security headers (helmet, apps/api/src/app.ts).
+	#
+	# Caddy passes the visitor's address in X-Forwarded-For, replacing any the
+	# visitor sent (no proxy in front of Caddy is trusted). The API reads it
+	# with TRUST_PROXY=1 for its sign-in limits, which must count each visitor
+	# and not the whole site as one, and never logs it.
 	handle /api/* {
-		reverse_proxy 127.0.0.1:3000 {
-			# The API never logs an address, so it is not handed one either.
-			header_up -X-Forwarded-For
-			header_up -X-Real-IP
-		}
+		reverse_proxy 127.0.0.1:3000
 	}
 
 	# The website: static files from the release `current` points at. A

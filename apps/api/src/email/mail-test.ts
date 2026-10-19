@@ -8,21 +8,25 @@
  * broken". So: one command, one message, a plain answer.
  */
 import type { Config } from '../config.ts';
-import type { EmailSender } from './types.ts';
-import { isSendableAddress } from './types.ts';
+import type { Mailer } from './mailer.ts';
+import type { ScalewayMailer, SendResult } from './scaleway.ts';
+import { isSendableAddress } from './scaleway.ts';
 
 export async function mailTest(
   config: Pick<
     Config,
-    'EMAIL_TRANSPORT' | 'EMAIL_FROM_ADDRESS' | 'SCALEWAY_REGION' | 'SITE_ORIGIN'
+    'EMAIL_TRANSPORT' | 'EMAIL_FROM_ADDRESS' | 'SCALEWAY_REGION' | 'SITE_ORIGIN' | 'MAIL_OUTBOX'
   >,
-  sender: EmailSender,
+  mailer: Mailer | ScalewayMailer,
   to: string | undefined,
   say: (line: string) => void,
 ): Promise<number> {
-  say(
-    `transport  ${config.EMAIL_TRANSPORT}${config.EMAIL_TRANSPORT === 'scaleway' ? ` (${config.SCALEWAY_REGION})` : ''}`,
-  );
+  const transport = config.MAIL_OUTBOX
+    ? `outbox (${config.MAIL_OUTBOX})`
+    : config.EMAIL_TRANSPORT === 'scaleway'
+      ? `scaleway (${config.SCALEWAY_REGION})`
+      : 'off (standard error)';
+  say(`transport  ${transport}`);
   say(`from       ${config.EMAIL_FROM_ADDRESS ?? '(not set)'}`);
 
   if (!to || !isSendableAddress(to)) {
@@ -30,17 +34,24 @@ export async function mailTest(
     say('The point is to see it ARRIVE, not only that the provider accepted it.');
     return 2;
   }
-  const stamp = new Date().toISOString();
-  const result = await sender.send({
+  const message = {
     to,
-    subject: `Mail test from ${config.SITE_ORIGIN ?? 'ReportLog'}`,
+    subject: `Mail test from ${config.SITE_ORIGIN}`,
     text: [
-      `This is a test message from the ReportLog site at ${config.SITE_ORIGIN ?? '(SITE_ORIGIN not set)'}.`,
-      `It was sent at ${stamp}.`,
+      `This is a test message from the ReportLog site at ${config.SITE_ORIGIN}.`,
+      `It was sent at ${new Date().toISOString()}.`,
       '',
       'If it arrived, report confirmation links and sign-in codes will arrive too.',
     ].join('\n'),
-  });
+  };
+  let result: SendResult;
+  if ('trySend' in mailer) {
+    result = await mailer.trySend(message);
+  } else {
+    await mailer.send(message);
+    say('Nothing was sent to a provider: this deployment has no mail transport.');
+    return 1;
+  }
 
   if (result.sent) {
     say(`Accepted for delivery${result.id ? ` (id ${result.id})` : ''}.`);

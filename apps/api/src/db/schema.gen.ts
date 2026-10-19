@@ -59,6 +59,139 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface ContactKeys {
+  created_at: Generated<Timestamp>;
+  dek_wrapped: Buffer;
+  email_hmac: string | null;
+  thread_id: string;
+}
+
+export interface HomeButtons {
+  buttons: Json | null;
+  id: Generated<boolean>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeBatches {
+  coordinator_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  organization_id: number;
+  status: Generated<string>;
+  submitted_at: Timestamp | null;
+}
+
+export interface IntakeDrafts {
+  batch_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  ordinal: number;
+  payload: Generated<Json>;
+  report_id: number | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeSettings {
+  id: Generated<boolean>;
+  intake_enabled: boolean | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+}
+
+export interface LinkIndex {
+  first_seen: Generated<Timestamp>;
+  host: string;
+  last_seen: Generated<Timestamp>;
+  submission_count: Generated<number>;
+  url_key: string;
+}
+
+export interface ListEntries {
+  answers: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  email_consent: Generated<boolean>;
+  erasable_answers: Json | null;
+  erased_at: Timestamp | null;
+  id: Generated<number>;
+  ip_hash: string | null;
+  list_id: number;
+  personal_expires_at: Timestamp | null;
+  review_state: Generated<string>;
+  reviewed_at: Timestamp | null;
+  reviewed_by: number | null;
+  triage_state: Generated<string>;
+}
+
+export interface ListEntryLinks {
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  field_key: string;
+  host: string;
+  id: Generated<number>;
+  url_key: string;
+  url_raw: string;
+}
+
+export interface ListErasures {
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  expires_at: Timestamp;
+  token_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface ListFields {
+  aggregatable: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  help: string | null;
+  id: Generated<number>;
+  key: string;
+  kind: string;
+  label: string;
+  list_id: number;
+  max_values: Generated<number>;
+  position: Generated<number>;
+  required: Generated<boolean>;
+  retention: string;
+  settings: Generated<Json>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ListNotifyConfirmations {
+  created_at: Generated<Timestamp>;
+  email: string;
+  expires_at: Timestamp;
+  list_id: number;
+  token_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface Lists {
+  aggregates_published: Generated<boolean>;
+  blurb: string | null;
+  closed_at: Timestamp | null;
+  closes_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  email_mode: Generated<string>;
+  id: Generated<number>;
+  notify: Generated<boolean>;
+  notify_email: string | null;
+  notify_pending_email: string | null;
+  opens_at: Timestamp | null;
+  outside_access: Generated<string>;
+  slug: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  visibility: Generated<string>;
+}
+
+export interface ListSalts {
+  created_at: Generated<Timestamp>;
+  day: string;
+  salt: Buffer;
+}
+
 export interface LogbookFields {
   created_at: Generated<Timestamp>;
   filterable: Generated<boolean>;
@@ -84,12 +217,73 @@ export interface LogbookForms {
 
 export interface Logbooks {
   blurb: string | null;
+  closed_at: Timestamp | null;
+  closes_at: Timestamp | null;
   created_at: Generated<Timestamp>;
   id: Generated<number>;
   launched_at: Timestamp | null;
+  opens_at: Timestamp | null;
+  outside_access: Generated<string>;
   slug: string;
   title: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface OrganizationInvites {
+  approved_at: Timestamp | null;
+  approved_by: string | null;
+  created_at: Generated<Timestamp>;
+  email: string;
+  expires_at: Timestamp | null;
+  id: Generated<number>;
+  invited_by: string;
+  last_sent_at: Timestamp | null;
+  organization_id: number;
+  role: string;
+  status: string;
+  token_hash: string | null;
+}
+
+export interface OrganizationInviteSends {
+  email: string;
+  id: Generated<number>;
+  sent_at: Generated<Timestamp>;
+}
+
+export interface OrganizationMemberships {
+  id: Generated<number>;
+  joined_at: Generated<Timestamp>;
+  organization_id: number;
+  role: string;
+  user_id: number;
+}
+
+export interface Organizations {
+  created_at: Generated<Timestamp>;
+  details: string | null;
+  id: Generated<number>;
+  name: string;
+  updated_at: Generated<Timestamp>;
+  verified_at: Generated<Timestamp>;
+  verified_by: string;
+}
+
+export interface OtpCodes {
+  attempts: Generated<number>;
+  code_hash: string;
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  id: Generated<number>;
+  subject_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface OwnershipTransfers {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  from_email: string;
+  id: Generated<boolean>;
+  to_email: string;
 }
 
 export interface ReportAttachments {
@@ -98,12 +292,39 @@ export interface ReportAttachments {
   report_id: number;
 }
 
+export interface ReportContacts {
+  contact_enc: Buffer;
+  created_at: Generated<Timestamp>;
+  filed_by: string;
+  organization_enc: Buffer | null;
+  thread_id: string;
+}
+
+export interface ReporterActions {
+  action: string;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  report_id: number | null;
+  thread_id: string;
+}
+
 export interface ReportHeads {
   current_report_id: number;
   moderation_status: Generated<string>;
   thread_id: string;
   updated_at: Generated<Timestamp>;
   withdrawn: Generated<boolean>;
+}
+
+export interface ReportPermissionsLog {
+  actor: Generated<string>;
+  created_at: Generated<Timestamp>;
+  granted: boolean;
+  id: Generated<number>;
+  permission: string;
+  reason: string | null;
+  thread_id: string;
 }
 
 export interface Reports {
@@ -128,15 +349,115 @@ export interface Reports {
   thread_id: string;
 }
 
+export interface ReportSubmissions {
+  confirmed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  expires_at: Timestamp;
+  form_id: number;
+  id: Generated<number>;
+  logbook_id: number;
+  payload: Json;
+  thread_id: string | null;
+  token_hash: string;
+}
+
+export interface RoleAudit {
+  action: string;
+  actor_email: string;
+  axis: string;
+  created_at: Generated<Timestamp>;
+  detail: string;
+  id: Generated<number>;
+  organization_id: number | null;
+  subject_email: string;
+}
+
+export interface Sessions {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  token_hash: string;
+  user_id: number;
+}
+
+export interface SiteAccess {
+  enabled: Generated<boolean>;
+  id: Generated<boolean>;
+  password_hash: string | null;
+  setup_completed_at: Timestamp | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface SiteAccessTokens {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  token_hash: string;
+}
+
+export interface SiteCopy {
+  body: string;
+  key: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface SiteSettings {
+  home_buttons: Json | null;
+  id: Generated<boolean>;
+  impressum_text: string | null;
+  palette: Generated<string>;
+  privacy_text: string | null;
+  site_name: string | null;
+  theme: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface Users {
+  created_at: Generated<Timestamp>;
+  email: string;
+  id: Generated<number>;
+  role: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface DB {
   attachments: Attachments;
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  contact_keys: ContactKeys;
+  home_buttons: HomeButtons;
+  intake_batches: IntakeBatches;
+  intake_drafts: IntakeDrafts;
+  intake_settings: IntakeSettings;
+  link_index: LinkIndex;
+  list_entries: ListEntries;
+  list_entry_links: ListEntryLinks;
+  list_erasures: ListErasures;
+  list_fields: ListFields;
+  list_notify_confirmations: ListNotifyConfirmations;
+  list_salts: ListSalts;
+  lists: Lists;
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  organization_invite_sends: OrganizationInviteSends;
+  organization_invites: OrganizationInvites;
+  organization_memberships: OrganizationMemberships;
+  organizations: Organizations;
+  otp_codes: OtpCodes;
+  ownership_transfers: OwnershipTransfers;
   report_attachments: ReportAttachments;
+  report_contacts: ReportContacts;
   report_heads: ReportHeads;
+  report_permissions_log: ReportPermissionsLog;
+  report_submissions: ReportSubmissions;
+  reporter_actions: ReporterActions;
   reports: Reports;
+  role_audit: RoleAudit;
+  sessions: Sessions;
+  site_access: SiteAccess;
+  site_access_tokens: SiteAccessTokens;
+  site_copy: SiteCopy;
+  site_settings: SiteSettings;
+  users: Users;
 }

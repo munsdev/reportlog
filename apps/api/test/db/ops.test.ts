@@ -18,13 +18,15 @@ import type { Config } from '../../src/config.ts';
 import { createDatabase } from '../../src/db/database.ts';
 import type { Database } from '../../src/db/database.ts';
 import { createThrowawayDatabase } from '../../src/db/throwaway.ts';
-import { createCaptureSender } from '../../src/email/index.ts';
+import { capturingMailer } from '../../src/email/mailer.ts';
 import { readState, runBackup } from '../../src/jobs/backup.ts';
 import type { JobContext } from '../../src/jobs/context.ts';
 import { diagnose } from '../../src/jobs/doctor.ts';
+import { runListsSweep } from '../../src/jobs/lists-sweep.ts';
 import type { Uploader } from '../../src/jobs/offsite.ts';
 import { NOT_SWEPT, runSweep, sweepExpired, SWEPT } from '../../src/jobs/sweep.ts';
-import { fileReport, launchedLogbook, testDatabase } from './helpers.ts';
+import { ensureFormVersion } from '../../src/chain/forms.ts';
+import { fileReport, launchedLogbook, QUESTIONS, testDatabase } from './helpers.ts';
 
 const run = promisify(execFile);
 
@@ -45,7 +47,7 @@ function context(
   return {
     config,
     db,
-    email: createCaptureSender(),
+    mailer: capturingMailer(),
     log: (l) => lines.push(l),
     args,
     now: () => now,
@@ -65,10 +67,11 @@ describe('the credential sweep', () => {
         db,
       );
 
+      const expired = 'expires_at < now()';
       const result = await sweepExpired(db, [
-        { table: 'sweep_test_broken' },
-        { table: 'sweep_test_missing' },
-        { table: 'sweep_test_tokens' },
+        { table: 'sweep_test_broken', expired },
+        { table: 'sweep_test_missing', expired },
+        { table: 'sweep_test_tokens', expired },
       ]);
       // A broken table and a missing one do not stop the next being swept.
       expect(result.sweep_test_broken).toMatchObject({
@@ -82,23 +85,70 @@ describe('the credential sweep', () => {
       expect(Number(left.rows[0]?.n)).toBe(1);
 
       // Safe to run twice.
-      expect((await sweepExpired(db, [{ table: 'sweep_test_tokens' }])).sweep_test_tokens).toBe(0);
+      expect(
+        (await sweepExpired(db, [{ table: 'sweep_test_tokens', expired }])).sweep_test_tokens,
+      ).toBe(0);
     } finally {
       await sql`DROP TABLE sweep_test_tokens, sweep_test_broken`.execute(db);
     }
   });
 
   it('cannot delete from an append-only table even if one were listed', async () => {
-    // The database refuses, whatever this list says. Belt and braces.
-    const result = await sweepExpired(db, [{ table: 'reports' }]);
+    // The database refuses, whatever this list says. Belt and braces. A
+    // report first: a row trigger has nothing to refuse on an empty table.
+    await fileReport(db, await launchedLogbook(db), { what: 'Kept forever.' });
+    const result = await sweepExpired(db, [{ table: 'reports', expired: 'true' }]);
     expect(result.reports).toMatchObject({ error: expect.any(String) as string });
   });
 
-  it('as a job, succeeds while the credential tables do not exist yet', async () => {
+  it('as a job, sweeps every named table without an error', async () => {
     const ctx = context(loadConfig({ DATABASE_URL: inject('databaseUrl') }));
     const outcome = await runSweep(ctx);
-    expect(outcome.ok).toBe(true);
-    expect(ctx.lines.join('\n')).toMatch(/does not exist yet/);
+    expect(outcome).toMatchObject({ ok: true });
+    expect(ctx.lines.join('\n')).not.toMatch(/FAILED|does not exist/);
+  });
+
+  it('deletes an unconfirmed report past its link, and never a live one or a confirmed one', async () => {
+    const lb = await launchedLogbook(db);
+    const form = await ensureFormVersion(db, { ...lb, launched_at: new Date() }, QUESTIONS);
+    const past = new Date(Date.now() - 86_400_000);
+    const future = new Date(Date.now() + 86_400_000);
+    const common = { logbook_id: lb.id, form_id: form.id, payload: JSON.stringify({}) };
+    await db
+      .insertInto('report_submissions')
+      .values([
+        { ...common, token_hash: '1'.repeat(64), email: 'a@example.org', expires_at: past },
+        { ...common, token_hash: '2'.repeat(64), email: 'b@example.org', expires_at: future },
+        {
+          ...common,
+          token_hash: '3'.repeat(64),
+          email: null,
+          expires_at: past,
+          confirmed_at: past,
+          thread_id: '7f9c2c1e-3b4a-4d5e-8f60-1a2b3c4d5e6f',
+        },
+      ])
+      .execute();
+    await runSweep(context(loadConfig({ DATABASE_URL: inject('databaseUrl') })));
+    const left = await db
+      .selectFrom('report_submissions')
+      .select(['email', 'confirmed_at'])
+      .where('logbook_id', '=', lb.id)
+      .orderBy('id')
+      .execute();
+    expect(left.map((r) => r.email ?? 'confirmed')).toEqual(['b@example.org', 'confirmed']);
+  });
+
+  it("never names the reporters' contact keys, their addresses, or a list table", async () => {
+    const swept = SWEPT.map((t) => t.table);
+    for (const never of ['contact_keys', 'report_contacts']) expect(swept).not.toContain(never);
+    const { rows } = await sql<{ table_name: string }>`
+      SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND (table_name LIKE 'list%' OR table_name = 'link_index')`.execute(
+      db,
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    for (const { table_name } of rows) expect(swept).not.toContain(table_name);
   });
 
   it('has decided about every table with an expires_at column', async () => {
@@ -277,6 +327,15 @@ describe('the backup', () => {
     expect(outcome.summary).toMatch(/pg_dump/);
     expect(await readdir(broken.BACKUP_DIR)).toEqual([]);
     expect((await readState(broken.STATE_DIR)).failure?.step).toBe('pg_dump');
+  });
+});
+
+describe('the lists sweep, as a job', () => {
+  it("runs E's sweep and reports each step", async () => {
+    const ctx = context(loadConfig({ DATABASE_URL: inject('databaseUrl') }));
+    const outcome = await runListsSweep(ctx);
+    expect(outcome).toMatchObject({ ok: true });
+    expect(ctx.lines.join('\n')).not.toMatch(/FAILED/);
   });
 });
 

@@ -28,29 +28,70 @@ const ConfigSchema = z.object({
     .string()
     .regex(/^[A-Z][A-Z0-9]{0,7}-$/, 'PUBLIC_REF_PREFIX looks like "RL-"')
     .default('RL-'),
-
+  /** Where the website is, for the links in emails (an invitation, say). */
+  SITE_ORIGIN: z
+    .url('SITE_ORIGIN looks like "https://reports.example.org"')
+    .transform((s) => s.replace(/\/+$/, ''))
+    .default('http://127.0.0.1:5173'),
   /**
-   * The address people reach the site at, e.g. https://reports.example.org.
-   * Every link in every email is built from it, and the doctor checks the
-   * certificate it serves.
+   * A directory to write outgoing email into instead of sending it. For the
+   * browser tests only, which need to read what a person would have been sent.
    */
-  SITE_ORIGIN: optional(
-    z
-      .url({ protocol: /^https?$/, error: 'SITE_ORIGIN looks like "https://reports.example.org"' })
-      .transform((v) => v.replace(/\/+$/, '')),
+  MAIL_OUTBOX: z.string().min(1).optional(),
+  /**
+   * How many proxies stand in front of the server (Caddy is one). Without it
+   * every visitor has the proxy's address, and a limit meant for one client
+   * becomes one limit for the whole site.
+   */
+  TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+  /**
+   * Lists (apps/api/src/lists/). How many days the personal half of a list
+   * entry is kept before the sweep erases it, or "never" (then only the
+   * person's own erasure link removes it). A typo stops the server here
+   * rather than quietly turning retention off.
+   */
+  LIST_PERSONAL_DAYS: z
+    .string()
+    .trim()
+    .regex(/^(never|[1-9]\d{0,4})$/i, 'LIST_PERSONAL_DAYS is a number of days, like 90, or "never"')
+    .optional(),
+  /** Days a day's address-hashing secret is kept before it is destroyed. */
+  LIST_SALT_DAYS: z.coerce.number().int().min(1).max(30).default(2),
+  /** Days an erasure link lasts where nothing is erased on its own ("never" above). */
+  LIST_ERASURE_LINK_DAYS: z.coerce.number().int().min(1).max(3650).default(365),
+  /** Link hosts a moderator knows, comma-separated. Others are marked for their eye. */
+  LIST_KNOWN_HOSTS: z.string().default(''),
+  /** Where a list's new entries go when it names no address of its own. */
+  ADMIN_EMAIL: z.preprocess(
+    (v) => (typeof v === 'string' && !v.trim() ? undefined : v),
+    z.email('ADMIN_EMAIL looks like "office@example.org"').optional(),
   ),
+  /**
+   * The key every report's contact key is wrapped under, and the address
+   * digest is keyed with: 32 random bytes, base64 (`openssl rand -base64 32`).
+   * Losing it makes every reporter's address unreadable; it is never sealed.
+   * Without it the site runs but takes no reports, and says so.
+   */
+  CONTACT_KEY: z
+    .string()
+    .refine(
+      (s) => Buffer.from(s, 'base64').length === 32,
+      'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+    )
+    .optional(),
 
   // --- email (apps/api/src/email/) -------------------------------------
   /**
-   * `scaleway` sends. `capture` keeps messages in memory (and in
-   * EMAIL_CAPTURE_DIR if set) for tests. `off` sends nothing and says so.
-   * Never inferred from which keys happen to be present: a staging box
-   * must be able to hold real keys and still be told not to send.
+   * `scaleway` sends. `off` sends nothing and writes each message to
+   * standard error instead (workstream A's fallback, so a fresh install can
+   * still sign its operator in); the doctor fails a server left on it.
+   * MAIL_OUTBOX, for the browser tests, wins over both. Never inferred from
+   * which keys happen to be present: a staging box must be able to hold
+   * real keys and still be told not to send.
    */
-  EMAIL_TRANSPORT: z.enum(['off', 'capture', 'scaleway']).default('off'),
+  EMAIL_TRANSPORT: z.enum(['off', 'scaleway']).default('off'),
   EMAIL_FROM_ADDRESS: optional(z.email('EMAIL_FROM_ADDRESS must be an email address')),
   EMAIL_FROM_NAME: optional(z.string().max(100)),
-  EMAIL_CAPTURE_DIR: optional(z.string()),
   SCALEWAY_SECRET_KEY: optional(z.string()),
   SCALEWAY_PROJECT_ID: optional(z.uuid('SCALEWAY_PROJECT_ID is a UUID')),
   /** Transactional email is served from Paris. */

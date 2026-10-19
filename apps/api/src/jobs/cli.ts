@@ -9,6 +9,7 @@
  *   doctor [--server]    check this deployment
  *   mail-test <address>  send one real message
  *   alert <unit>         email OPS_ALERT_EMAIL that a unit failed
+ *   contact-key          record CONTACT_KEY's fingerprint, or refuse if it changed
  *   timers --write       regenerate deploy/systemd/*.timer from the registry
  *   timers --check       fail if they differ (also a unit test)
  *
@@ -18,9 +19,10 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadConfig } from '../config.ts';
 import type { Config } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
-import { createEmailSender } from '../email/index.ts';
+import { createMailer } from '../email/index.ts';
 import { mailTest } from '../email/mail-test.ts';
 import { CODE_ROOT } from './backup.ts';
+import { CHANGED_MESSAGE, checkAndRecord } from './contact-key.ts';
 import { diagnose, render, SERVER_MARKER } from './doctor.ts';
 import { exitCode } from './doctor-checks.ts';
 import { findJob, JOBS, timerUnit } from './registry.ts';
@@ -50,19 +52,14 @@ async function main(): Promise<number> {
       return doctor();
     case 'mail-test': {
       const c = config();
-      return mailTest(
-        c,
-        createEmailSender(c, (l) => {
-          console.warn(l);
-        }),
-        rest[0],
-        (l) => {
-          console.log(l);
-        },
-      );
+      return mailTest(c, createMailer(c), rest[0], (l) => {
+        console.log(l);
+      });
     }
     case 'alert':
       return alert(rest[0]);
+    case 'contact-key':
+      return contactKey();
     case 'timers':
       return timers(rest.includes('--write'));
     default:
@@ -98,9 +95,7 @@ async function runJob(name: string | undefined, args: string[]): Promise<number>
     const outcome = await job.run({
       config: c,
       db,
-      email: createEmailSender(c, (l) => {
-        console.warn(l);
-      }),
+      mailer: createMailer(c),
       log: (l) => {
         console.log(l);
       },
@@ -144,24 +139,49 @@ async function alert(unit: string | undefined): Promise<number> {
     console.log(`${unit ?? 'a unit'} failed; OPS_ALERT_EMAIL is not set, so nobody was emailed.`);
     return 0;
   }
-  const host = c.SITE_ORIGIN ? new URL(c.SITE_ORIGIN).host : 'a ReportLog server';
-  const result = await createEmailSender(c, (l) => {
-    console.warn(l);
-  }).send({
-    to: c.OPS_ALERT_EMAIL,
-    subject: `${host}: ${unit ?? 'a scheduled job'} failed`,
-    text: [
-      `A scheduled job on ${host} failed: ${unit ?? '(unit not named)'}.`,
-      '',
-      'What it said is in the journal on the server:',
-      `  sudo journalctl -u ${unit ?? 'reportlog-job@*'} -n 50`,
-      '',
-      'And the state of everything else:',
-      '  sudo reportlog doctor',
-    ].join('\n'),
-  });
-  if (!result.sent) console.error(`The alert could not be sent: ${result.detail}`);
-  return result.sent ? 0 : 1;
+  const host = new URL(c.SITE_ORIGIN).host;
+  try {
+    await createMailer(c).send({
+      to: c.OPS_ALERT_EMAIL,
+      subject: `${host}: ${unit ?? 'a scheduled job'} failed`,
+      text: [
+        `A scheduled job on ${host} failed: ${unit ?? '(unit not named)'}.`,
+        '',
+        'What it said is in the journal on the server:',
+        `  sudo journalctl -u ${unit ?? 'reportlog-job@*'} -n 50`,
+        '',
+        'And the state of everything else:',
+        '  sudo reportlog doctor',
+      ].join('\n'),
+    });
+    return 0;
+  } catch (err) {
+    // MailNotSent carries the provider's answer and never the address.
+    console.error(
+      `The alert could not be sent: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return 1;
+  }
+}
+
+/** Run by deploy.sh before it switches: a changed key stops the deploy. */
+async function contactKey(): Promise<number> {
+  const c = config();
+  const result = await checkAndRecord(c.CONTACT_KEY, c.STATE_DIR);
+  switch (result.state) {
+    case 'unset':
+      console.log('CONTACT_KEY is not set: the site will take no reports until it is.');
+      return 0;
+    case 'first':
+      console.log('CONTACT_KEY fingerprint recorded. From now on a changed key stops a deploy.');
+      return 0;
+    case 'same':
+      console.log('CONTACT_KEY is the key this archive was started with.');
+      return 0;
+    case 'changed':
+      console.error(CHANGED_MESSAGE);
+      return 1;
+  }
 }
 
 function timers(write: boolean): number {

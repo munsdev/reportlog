@@ -67,7 +67,7 @@ export const JOBS: readonly JobDefinition[] = [
     onCalendar: '*-*-* 03:40:00',
     randomizedDelaySec: 600,
     persistent: true,
-    run: undefined,
+    run: (ctx) => import('./lists-sweep.ts').then((m) => m.runListsSweep(ctx)),
   },
   {
     name: 'anchor',

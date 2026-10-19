@@ -13,7 +13,9 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@reportlog/access": "workspace:*",
     "@reportlog/contracts": "workspace:*",
+    "@reportlog/fields": "workspace:*",
     "@reportlog/seal": "workspace:*",
     "@tanstack/react-query": "5.104.4",
     "@tanstack/react-router": "1.170.45",

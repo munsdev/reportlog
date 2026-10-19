@@ -22,6 +22,7 @@ import { MIGRATIONS_DIR } from '../db/migrate.ts';
 import { emailReadiness } from '../email/index.ts';
 import { backupHealth } from './backup-files.ts';
 import { CODE_ROOT, readState } from './backup.ts';
+import { CHANGED_MESSAGE, compare, recordedFingerprint } from './contact-key.ts';
 import type { Finding, UnitFacts } from './doctor-checks.ts';
 import {
   assessBackups,
@@ -59,24 +60,50 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
   const out: Finding[] = [];
 
   // --- settings ----------------------------------------------------------
-  if (!config.SITE_ORIGIN) {
-    out.push(
-      finding(
-        server ? 'fail' : 'warn',
-        'settings',
-        'SITE_ORIGIN is not set: every link in every email is built from it.',
-      ),
-    );
-  } else if (!config.SITE_ORIGIN.startsWith('https://') && server) {
+  // SITE_ORIGIN always has a value: unset, it is the development website.
+  // On a server that is as wrong as a missing one: every link in every
+  // email would point at somebody's laptop.
+  if (server && !config.SITE_ORIGIN.startsWith('https://')) {
     out.push(
       finding(
         'fail',
         'settings',
-        `SITE_ORIGIN is ${config.SITE_ORIGIN}; a server is reached over https.`,
+        `SITE_ORIGIN is ${config.SITE_ORIGIN}; a server is reached over https, and every link in every email is built from it.`,
       ),
     );
   } else {
     out.push(finding('ok', 'settings', `SITE_ORIGIN is ${config.SITE_ORIGIN}`));
+  }
+  if (server && config.TRUST_PROXY < 1) {
+    out.push(
+      finding(
+        'fail',
+        'settings',
+        'TRUST_PROXY is 0 behind Caddy: every visitor looks like 127.0.0.1, so one person can use up the sign-in limits for everybody. Set it to 1.',
+      ),
+    );
+  }
+  const key = compare(config.CONTACT_KEY, await recordedFingerprint(config.STATE_DIR));
+  if (key.state === 'unset') {
+    out.push(
+      finding(
+        server ? 'fail' : 'warn',
+        'contact key',
+        'CONTACT_KEY is not set: the site takes no reports. deploy/install.sh makes one.',
+      ),
+    );
+  } else if (key.state === 'changed') {
+    out.push(finding('fail', 'contact key', CHANGED_MESSAGE));
+  } else if (server) {
+    out.push(
+      finding(
+        key.state === 'same' ? 'ok' : 'warn',
+        'contact key',
+        key.state === 'same'
+          ? 'set, and the key this archive was started with. Keep a copy off the server.'
+          : 'set, not yet recorded: the next deploy records its fingerprint.',
+      ),
+    );
   }
   const mail = emailReadiness(config);
   out.push(
@@ -137,7 +164,7 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
       ),
     );
   }
-  if (server && config.SITE_ORIGIN?.startsWith('https://')) {
+  if (server && config.SITE_ORIGIN.startsWith('https://')) {
     const host = new URL(config.SITE_ORIGIN).hostname;
     try {
       out.push(assessCertificate(host, await certificateDaysLeft(host)));
