@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 D was split in two; D2 (the anchor, the transparency log, exports) has its own report.
 
 - **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
-- **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
+- **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
