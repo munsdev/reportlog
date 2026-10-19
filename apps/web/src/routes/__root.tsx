@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
+import { SessionNav } from '../features/identity/SessionNav.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -27,6 +28,7 @@ function RootLayout() {
           <Link to="/" className="font-display text-xl font-bold">
             {site ? <BrandName parts={site.name_parts} onDeep /> : 'ReportLog'}
           </Link>
+          <SessionNav />
         </div>
       </header>
       <main id="main" className="mx-auto w-full max-w-page flex-1 px-4 py-8">
