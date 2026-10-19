@@ -8,7 +8,9 @@
  * exactly what the public board carries and nothing more.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { loadConfig } from '../../src/config.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
+import { findJob } from '../../src/jobs/registry.ts';
 import { SETTLE_MS, answerText, runDigest } from '../../src/site/digest.ts';
 import { fileReport, launchedLogbook } from './helpers.ts';
 import { address, as, harness, seat, signIn } from './identity-helpers.ts';
@@ -269,5 +271,27 @@ describe('choosing email updates', () => {
 
   it('is only for somebody signed in', async () => {
     expect((await h.app.inject({ method: 'GET', url: '/api/notifications' })).statusCode).toBe(401);
+  });
+});
+
+describe('the job runner', () => {
+  it('runs all three email jobs from the registry, through the mailer it is given', async () => {
+    const config = loadConfig({
+      DATABASE_URL: 'postgres://unused',
+      SITE_ORIGIN: 'https://reports.example.test',
+    });
+    for (const name of ['digest-hourly', 'digest-weekly', 'feedback-digest']) {
+      const job = findJob(name);
+      expect(job?.run, name).toBeDefined();
+      const out = await job?.run?.({
+        config,
+        db: h.db,
+        mailer: capturingMailer(),
+        log: () => undefined,
+        args: [],
+        now: () => new Date(),
+      });
+      expect(out?.ok, `${name}: ${out?.summary ?? ''}`).toBe(true);
+    }
   });
 });

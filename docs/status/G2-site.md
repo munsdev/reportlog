@@ -2,19 +2,19 @@
 
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
-- **Branch:** `claude/g2-site-nav-feedback-digests`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
+- **Branch:** `claude/g2-site-nav-feedback-digests`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, and H merged in at `09b08ce`)
 - **Pull request:** [#7](https://github.com/munsdev/reportlog/pull/7), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                     |
-| --------------------------------------- | -------------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: api 127, web 376)     |
-| `pnpm test:db`                          | 27 files, 449 passed (393 before this branch; 56 are G2's, in 3 new files) |
-| `db:types:check`                        | generated types up to date                                                 |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 70 passed, 10 of them G2's (5 tests, each on desktop and phone)            |
+| Suite                                   | Result                                                                 |
+| --------------------------------------- | ---------------------------------------------------------------------- |
+| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: api 185, web 376) |
+| `pnpm test:db`                          | 28 files, 465 passed after merging H (57 are G2's, in 3 new files)     |
+| `db:types:check`                        | generated types up to date                                             |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 70 passed, 10 of them G2's (5 tests, each on desktop and phone)        |
 
 ## What was built, in the order asked
 
@@ -59,7 +59,10 @@ For the coordinating session and the other workstreams. One file per workstream 
      the same reports are tried next time. The clock never moves backwards.
    - `runFeedbackDigest` emails `ADMIN_EMAIL` every open issue, longest-untouched first, and
      marks the ones untouched for 7 days as stale.
-   - Commands: `pnpm --filter @reportlog/api digest hourly|weekly|feedback`.
+   - **Registered in H's job runner** (`apps/api/src/jobs/registry.ts`, through
+     `apps/api/src/site/jobs.ts`), so the timers `reportlog-digest-hourly`, `-weekly` and
+     `reportlog-feedback-digest` run them. By hand: `pnpm --filter @reportlog/api ops run digest-hourly`.
+     The digests read the database's clock, not the runner's.
 4. **The directory of organizations** ("Alliance" in legacy; `apps/api/src/site/directory.ts`).
    - `/organizations`: listed organizations, ranked by accepted members only, with the
      disclaimer served by the API alongside the rows. There is a link to it in the footer.
@@ -103,7 +106,8 @@ during the work (a digest timing bug was found that way, see below).
   `AuditAxis` gains `'flag'`.
 - `packages/contracts/src/identity.ts` (A's): `Me` gains `tester`.
 - `apps/api/src/app.ts`: two registration lines, and `ADMIN_EMAIL` added to the config it accepts.
-- `apps/api/package.json`: the `digest` script.
+- `apps/api/src/jobs/registry.ts` (H): the three digest jobs' `run` lines.
+- `deploy/README.md` (H): the three digest rows describe the jobs.
 - `.dependency-cruiser.cjs`: the seal and chain code may not reach `apps/api/src/feedback/`
   either.
 - `apps/web/src/routes/__root.tsx`: the staff menu, and the directory link in the footer.
@@ -137,19 +141,7 @@ during the work (a digest timing bug was found that way, see below).
 - **F (files):** add your screens to `entries.ts`. Organization logos for the directory need
   your storage; nothing is built for them.
 - **I (maps):** add your screens to `entries.ts`.
-- **H (operations):** the three timer slots can be filled now. In `apps/api/src/jobs/registry.ts`
-  on your branch:
-  - `digest-hourly`: `run: (ctx) => import('../site/digest.ts').then((m) => m.runDigest({ ...deps(ctx), frequency: 'hourly' }))`
-  - `digest-weekly`: the same with `frequency: 'weekly'`
-  - `feedback-digest`: `import('../feedback/digest.ts').then((m) => m.runFeedbackDigest({ ...deps(ctx), adminEmail: ctx.config.ADMIN_EMAIL }))`
-
-  where `deps(ctx)` is `{ db: ctx.db, mailer, siteOrigin: ctx.config.SITE_ORIGIN, log: ctx.log, now: ctx.now }`.
-  They take A's `Mailer` (`send({ to, subject, text })`); your `JobContext` carries an
-  `EmailSender`, so an adapter is needed, or they can take yours once it is merged. Both return
-  `{ ok, summary }`, your `JobOutcome`. Until then, `pnpm --filter @reportlog/api digest
-hourly|weekly|feedback` runs each one as a command. Your doctor's legacy rule (digest timers
-  required once anybody has subscribed) can count `digest_subscriptions`.
-
+- **H (operations):** the three digest slots in `registry.ts` now point at `apps/api/src/site/jobs.ts` (three lines changed in your file), and the three rows in `deploy/README.md` no longer say "Not built yet". Your doctor's legacy rule (digest timers required once anybody has subscribed) can count `digest_subscriptions`.
 - **A (identity):** see the changes to your files above. The tester flag has no control on the
   Access screens; it lives at `/feedback/testers`.
 

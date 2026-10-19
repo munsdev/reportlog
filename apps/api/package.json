@@ -11,7 +11,6 @@
     "db:types": "node --env-file-if-exists=../../.env src/db/gen-types.ts",
     "db:types:check": "node --env-file-if-exists=../../.env src/db/gen-types.ts --check",
     "db:seed": "node --env-file-if-exists=../../.env src/dev/seed.ts",
-    "digest": "node --env-file-if-exists=../../.env src/site/digest-cli.ts",
     "lists:sweep": "node --env-file-if-exists=../../.env src/lists/sweep-cli.ts",
     "ops": "node --env-file-if-exists=../../.env src/jobs/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
