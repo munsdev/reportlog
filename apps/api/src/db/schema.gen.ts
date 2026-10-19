@@ -693,6 +693,8 @@ export interface SiteSettings {
   palette: Generated<string>;
   privacy_text: string | null;
   site_name: string | null;
+  template_applied: string | null;
+  template_applied_at: Timestamp | null;
   theme: Generated<string>;
   updated_at: Generated<Timestamp>;
 }

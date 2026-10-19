@@ -35,6 +35,7 @@ import { verifyRoutes } from './routes/verify.ts';
 import { feedbackRoutes } from './feedback/routes.ts';
 import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
+import { templateRoutes } from './site/templates.ts';
 import { telemetryRoutes } from './telemetry/routes.ts';
 import { offTracker } from './telemetry/tracker.ts';
 import type { ErrorTracker } from './telemetry/tracker.ts';
@@ -131,6 +132,7 @@ export async function buildApp({
   verifyRoutes(app, db);
   siteRoutes(app, db);
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
+  await templateRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   sitePeopleRoutes(app, db);
   await feedbackRoutes(app, { db, mailer: mail, siteOrigin, adminEmail: config.ADMIN_EMAIL });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
