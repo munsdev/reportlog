@@ -261,7 +261,11 @@ export async function updateSettings(
   if (patch.aggregates_published !== undefined) {
     set.aggregates_published = patch.aggregates_published;
   }
-  if (patch.closed !== undefined) set.closed_at = patch.closed ? new Date() : null;
+  // Only when the switch actually moves: saving a closed list's other
+  // settings must not move the moment it was closed.
+  if (patch.closed !== undefined && patch.closed !== (list.closed_at !== null)) {
+    set.closed_at = patch.closed ? new Date() : null;
+  }
   const opens = patch.opens_at !== undefined ? when(patch.opens_at) : list.opens_at;
   const closes = patch.closes_at !== undefined ? when(patch.closes_at) : list.closes_at;
   if (opens && closes && new Date(opens) >= new Date(closes)) refuse('schedule-order');

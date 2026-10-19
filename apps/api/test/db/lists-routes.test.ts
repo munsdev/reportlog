@@ -686,7 +686,12 @@ describe('the site password, decided per list', () => {
 
 describe('closing and deleting', () => {
   it('a closed list takes nothing, and the front page stops offering it', async () => {
-    await patch({ closed: true });
+    const closed = json<ListDetail>(await patch({ closed: true }));
+    expect(closed.closed_at).not.toBe(null);
+    // Saving it closed again does not move the moment it closed.
+    expect(json<ListDetail>(await patch({ closed: true, title: closed.title })).closed_at).toBe(
+      closed.closed_at,
+    );
     const r = await send({
       answers: { links: ['https://example.org/f'], state: 'Ohio', category: 'Not sure' },
     });
