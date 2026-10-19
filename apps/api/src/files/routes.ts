@@ -371,8 +371,10 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
   });
 
   // ── moderators ────────────────────────────────────────────────────────
+  // Administrators too, as on the moderation routes these sit beside and as
+  // in legacy (routes/moderators.js): the moderation page shows them.
   await app.register((scope) => {
-    scope.addHook('preHandler', roleGuard(['moderator']));
+    scope.addHook('preHandler', roleGuard(['moderator', 'admin']));
 
     // The queue, or one report by its reference. The reference may be any
     // version's; what is shown is always the current version, because that is

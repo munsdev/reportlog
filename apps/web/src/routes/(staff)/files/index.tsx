@@ -4,7 +4,7 @@ import { OnlyFor } from '../../../features/staff-nav/OnlyFor.tsx';
 
 export const Route = createFileRoute('/(staff)/files/')({
   component: () => (
-    <OnlyFor audience={['moderator']} who="moderators">
+    <OnlyFor audience={['moderator', 'admin']} who="moderators and administrators">
       <FilesQueue />
     </OnlyFor>
   ),

@@ -118,9 +118,9 @@ export function ItemPage({ threadId }: { threadId: string }) {
       {r.withdrawn ? null : <Decide r={r} />}
       <Severity r={r} a={assessment} />
       <Incident r={r} a={assessment} />
-      {/* Workstream F's own screens for a report's files and for asking for
-          more, the same ones /files/:ref shows. */}
-      {r.file_count > 0 ? <ReportFiles threadId={r.thread_id} /> : null}
+      {/* Workstream F2's components: one question per card, publishing offered
+          only while the reporter's consent allows it. */}
+      {r.file_count > 0 ? <ReportFiles threadId={r.thread_id} reportPublic={r.public} /> : null}
       <EvidenceRequests threadId={r.thread_id} />
       <OffTheBoard r={r} />
       {r.has_contact ? <Contact r={r} /> : null}

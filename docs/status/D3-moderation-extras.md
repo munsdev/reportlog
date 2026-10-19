@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D3 builds what D1 (`D1-board.md`) and D2 (`D2-anchor.md`) left.
 
-- **Branch:** `claude/d3-moderation-extras`, based on `ccr-c9c93698-ev856l` (F2 merged in at `221cb83`)
+- **Branch:** `claude/d3-moderation-extras`, based on `ccr-c9c93698-ev856l` (F2 and its follow-up merged in at `3c4c865`)
 - **Pull request:** see the message to the coordinating session
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
@@ -74,9 +74,9 @@ The legacy vector tests in `packages/seal` are untouched and green.
    outside for filing; then the same visitor enters the password and walks the board, a report,
    the numbers and the press pack. No page asks another host.
 
-Also, at the coordinator's request: **F2's `ReportFiles` and `EvidenceRequests` are now the files
-and evidence sections of the moderation report view**, replacing D1's older `FilesPanel` and
-`EvidencePanel` (removed), so the two screens cannot drift.
+F2's `ReportFiles` and `EvidenceRequests` are the files and evidence sections of the moderation
+report view (F2 put them there; D3's merge keeps them beside the new severity and incident
+sections).
 
 ## Legacy and its equivalents
 
@@ -129,8 +129,7 @@ kind; the tests above are written from the legacy code.
 
 - **F (files):** your view route and the evidence ask now each call one function from
   `moderation/accessLog.ts`. If you add another way to see a file's bytes or a reporter's address,
-  call the same. The moderation report view now renders your `ReportFiles` and
-  `EvidenceRequests`; `/files/:ref` could link to `/moderate/<thread>` for the rest of the report.
+  call the same. Administrators viewing a file are recorded like moderators.
 - **D2 / H:** the archive export should carry `report_assessments` (it finds tables in the
   catalogue, so it will, unless it is excluded). It must never be sealed.
 - **C (filing):** nothing changed in your folders.

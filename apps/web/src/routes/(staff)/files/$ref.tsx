@@ -9,7 +9,7 @@ export const Route = createFileRoute('/(staff)/files/$ref')({
 function Report() {
   const { ref } = Route.useParams();
   return (
-    <OnlyFor audience={['moderator']} who="moderators">
+    <OnlyFor audience={['moderator', 'admin']} who="moderators and administrators">
       <ReportFilesPage key={ref} reference={ref} />
     </OnlyFor>
   );

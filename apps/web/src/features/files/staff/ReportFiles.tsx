@@ -5,7 +5,10 @@
  * BUILT TO BE DROPPED INTO THE MODERATION SCREEN (workstream D1) as well as
  * standing on its own at /files/:ref:
  *
- *   <ReportFiles threadId={thread} />
+ *   <ReportFiles threadId={thread} reportPublic={isPublic} />
+ *
+ * `reportPublic`, when given, says whether the report's text is on the board:
+ * a published file is shown only while it is, so the screen says so.
  *
  * CONSENT IS THE CEILING, MODERATION IS THE FLOOR. A moderator may always
  * withhold or refuse a file. Publishing is offered only while the report's
@@ -26,13 +29,19 @@ import { Button } from '../../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
-import { threadFilesQuery } from './queries.ts';
+import { threadFilesQuery, refreshStaffViews } from './queries.ts';
 import { ACTOR, PUBLICATION, describeFile, eventLabel, whyNotPublishable } from './words.ts';
 import type { Consent } from './words.ts';
 
 type Events = ResponseOf<typeof getThreadFiles>['events'];
 
-export function ReportFiles({ threadId }: { threadId: string }) {
+export function ReportFiles({
+  threadId,
+  reportPublic,
+}: {
+  threadId: string;
+  reportPublic?: boolean;
+}) {
   const query = useQuery(threadFilesQuery(threadId));
   if (query.isPending) return <p role="status">Reading the files…</p>;
   if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
@@ -44,6 +53,11 @@ export function ReportFiles({ threadId }: { threadId: string }) {
         Files
       </h2>
       <ConsentSummary {...consent} />
+      {reportPublic === false && !withdrawn ? (
+        <p className="text-sm text-ink-alt">
+          The report’s text is not on the board, so nothing published here is shown until it is.
+        </p>
+      ) : null}
       {files.length === 0 ? (
         <p>This report has no files.</p>
       ) : (
@@ -99,7 +113,7 @@ function FileCard({
 }) {
   const qc = useQueryClient();
   const [showing, setShowing] = useState(false);
-  const refresh = () => qc.invalidateQueries({ queryKey: ['files-staff'] });
+  const refresh = () => refreshStaffViews(qc);
   const decide = async (body: {
     publication: ThreadFile['publication'];
     alt_text?: string;
