@@ -15,7 +15,7 @@ import { DEFAULT_LOOK, Look, getSite } from '@reportlog/contracts';
 import type { BrandPart, Site } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import { useGateMode } from '@/features/identity/gate.tsx';
+import { useGateMode } from '@/features/identity/gateMode.ts';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 

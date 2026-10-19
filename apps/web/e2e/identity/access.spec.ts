@@ -33,6 +33,7 @@ const READER = `reader-${run}@example.org`;
 const ORG = `E2E Org ${run}`;
 const INSTALL_PW = 'installer-pw-1';
 const SITE_PW = 'operator-pw-2';
+const SITE_NAME = 'Polling "Watch"';
 
 const lockHeading = (page: Page) =>
   page.getByRole('heading', { name: 'This site needs a password' });
@@ -101,16 +102,69 @@ test('while locked, only the password screen renders and the router goes nowhere
   expect(outside).toEqual([]);
 });
 
-test('the setup wizard seats the owner, who must decide about the password', async ({
+test('the setup wizard seats the owner, asks every question, and ends on the password', async ({
   browser,
 }) => {
   ownerContext = await browser.newContext();
   owner = await ownerContext.newPage();
+  // The wizard is a page like any other: nothing it loads comes from elsewhere.
+  const outside: string[] = [];
+  owner.on('request', (r) => {
+    const host = new URL(r.url()).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+  });
   await owner.goto('/');
+  // In front of the password there is no wizard, only the lock.
+  await expect(lockHeading(owner)).toBeVisible();
+  await expect(owner.getByRole('heading', { name: 'Who will own this deployment?' })).toHaveCount(
+    0,
+  );
+  expect(await owner.evaluate(async () => (await fetch('/api/setup/status')).status)).toBe(401);
   await unlock(owner, INSTALL_PW);
 
   await expect(owner.getByRole('heading', { name: 'Who will own this deployment?' })).toBeVisible();
+  await expect(owner.getByText('Setting up · step 1 of 7')).toBeVisible();
   await signInHere(owner, OWNER);
+
+  // The name, required here.
+  await expect(owner.getByRole('heading', { name: 'What is this archive called?' })).toBeVisible();
+  await owner.getByRole('button', { name: 'Continue' }).click();
+  await expect(owner.getByRole('alert')).toHaveText('Give this archive a name.');
+  await owner.getByLabel('Its name').fill(SITE_NAME);
+  await owner.getByRole('button', { name: 'Continue' }).click();
+
+  // The starting point, which says what it will change before it is chosen.
+  await expect(owner.getByRole('heading', { name: 'What kind of archive is this?' })).toBeVisible();
+  const elections = owner.getByRole('radio', { name: /^Election incidents\b/ });
+  await expect(owner.getByText(/Makes a draft logbook, “Election incidents”/)).toBeVisible();
+  await elections.check();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
+
+  // Publishing, arriving at what the starting point set.
+  await expect(
+    owner.getByRole('heading', { name: 'Does this deployment publish an archive?' }),
+  ).toBeVisible();
+  await expect(owner.getByRole('radio', { name: /Yes, publish approved reports/ })).toBeChecked();
+  await owner.getByRole('button', { name: 'Continue' }).click();
+
+  // Files, likewise.
+  await expect(
+    owner.getByRole('heading', { name: 'Can people attach files to a report?' }),
+  ).toBeVisible();
+  await expect(owner.getByRole('radio', { name: /Yes, take files/ })).toBeChecked();
+  await owner.getByRole('button', { name: 'Continue' }).click();
+
+  // The look, with the name just given in its preview.
+  await expect(owner.getByRole('heading', { name: 'How should it look?' })).toBeVisible();
+  await owner.getByRole('radio', { name: /^Harbour/ }).click();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
+  await expect(owner.locator('html')).toHaveAttribute('data-palette', 'harbour');
+
+  // Back shows what was saved.
+  await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
+  await owner.getByRole('button', { name: 'Back' }).click();
+  await expect(owner.getByRole('radio', { name: /^Harbour/ })).toBeChecked();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
   const finish = owner.getByRole('button', { name: 'Finish setting up' });
@@ -125,6 +179,47 @@ test('the setup wizard seats the owner, who must decide about the password', asy
 
   await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
   await expect(owner.getByRole('link', { name: 'Access' })).toBeVisible();
+  await expect(owner.getByRole('banner')).toContainText('Polling Watch');
+
+  // Done means done: a reload shows the site, and setup refuses to run again.
+  await owner.reload();
+  await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
+  await expect(owner.getByText(/Setting up · step/)).toHaveCount(0);
+  const again = await owner.evaluate(async () => {
+    const res = await fetch('/api/setup/code', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email: 'somebody-else@example.org' }),
+    });
+    return res.status;
+  });
+  expect(again).toBe(409);
+
+  // The draft the starting point made is a draft: nothing is launched for anybody.
+  const newest = await owner.evaluate(async () => {
+    const res = await fetch('/api/admin/logbooks');
+    const body = (await res.json()) as { logbooks: { title: string; state: string }[] };
+    return body.logbooks[0];
+  });
+  expect(newest).toMatchObject({ title: 'Election incidents', state: 'draft' });
+  expect(outside).toEqual([]);
+
+  // Put the name and look back, so the tests after this one (and the
+  // projects after this one) find the site as they expect it.
+  expect(
+    await owner.evaluate(async () => {
+      const put = (url: string, body: object) =>
+        fetch(url, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then((r) => r.status);
+      return [
+        await put('/api/admin/site/name', { name: null }),
+        await put('/api/admin/site/look', { palette: 'flint', theme: 'signal' }),
+      ];
+    }),
+  ).toEqual([200, 200]);
 });
 
 test("the installer's password is retired and the owner's opens the site", async ({ browser }) => {

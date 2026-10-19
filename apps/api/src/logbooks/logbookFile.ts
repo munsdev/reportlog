@@ -183,7 +183,11 @@ export async function createFromFile(
   }
   const file = parsed.data;
 
-  const id = await db.transaction().execute(async (trx) => {
+  // A caller already inside a transaction (a deployment template) keeps it,
+  // so the logbook lands with everything else the caller writes, or not at all.
+  const inTransaction = <T>(fn: (trx: Kysely<DB>) => Promise<T>): Promise<T> =>
+    db.isTransaction ? fn(db) : db.transaction().execute(fn);
+  const id = await inTransaction(async (trx) => {
     const ownTitle = overrides.title?.trim();
     const title = ownTitle === undefined || ownTitle === '' ? file.title : ownTitle;
     // An operator who named it gets an address from their name, not the file's.

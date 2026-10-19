@@ -22,9 +22,10 @@ import { getSetupStatus, getSiteAccessStatus } from '@reportlog/contracts';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiRequestError, call } from '../../lib/api.ts';
+import { GateContext } from './gateMode.ts';
 import { LockScreen } from './LockScreen.tsx';
 import { SetupWizard } from './SetupWizard.tsx';
 
@@ -57,10 +58,9 @@ export const setupStatusQuery = queryOptions({
   staleTime: Infinity,
 });
 
-/** 'open' past the password; 'door' on one page in front of it. */
-export type GateMode = 'open' | 'door';
-const GateContext = createContext<GateMode>('open');
-export const useGateMode = () => useContext(GateContext);
+// The context lives in gateMode.ts; re-exported for the pages that ask.
+export { useGateMode } from './gateMode.ts';
+export type { GateMode } from './gateMode.ts';
 
 export const isLockedError = (e: unknown) => e instanceof ApiRequestError && e.code === 'locked';
 
