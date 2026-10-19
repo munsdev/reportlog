@@ -33,6 +33,9 @@ test('a reporter prints a signed declaration of their report', async ({ page, re
 
   await page.goto('/mine');
   await page.getByRole('link', { name: /^Open RL-/ }).click();
+  // Wait for the report's page: reading the heading straight after the click
+  // can still find "My reports" (seen once in a full run).
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(/^Report RL-/);
   const ref = (await page.getByRole('heading', { level: 1 }).textContent())?.replace('Report ', '');
   expect(ref).toMatch(/^RL-/);
   await page.getByRole('link', { name: 'Print a signed declaration' }).click();

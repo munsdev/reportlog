@@ -8,6 +8,7 @@
  */
 import type { Site } from '@reportlog/contracts';
 import { sql } from 'kysely';
+import type { InjectOptions, LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { figureValues } from '../../src/board/figures.ts';
 import { setPublicArchive } from '../../src/board/publication.ts';
@@ -46,7 +47,11 @@ afterAll(async () => {
 });
 
 const site = async () => (await app.inject({ method: 'GET', url: '/api/site' })).json<Site>();
-const admin = (method: 'GET' | 'PUT', url: string, payload?: unknown) =>
+const admin = (
+  method: 'GET' | 'PUT',
+  url: string,
+  payload?: InjectOptions['payload'],
+): Promise<LightMyRequestResponse> =>
   app.inject({
     method,
     url,

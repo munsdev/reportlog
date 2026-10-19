@@ -114,7 +114,7 @@ export async function siteAdminRoutes(
       // showing "?" on a page the operator may never look at. Checked
       // against every figure, public archive or not: whether a name exists
       // does not depend on whether it is shown today.
-      if (body !== null && body.includes('{{')) {
+      if (body?.includes('{{')) {
         const problems = checkText(body, await figureValues(db));
         if (problems.length) throw new HttpError(400, 'refused', problems.join(' · '));
       }

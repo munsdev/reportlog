@@ -88,10 +88,13 @@ describe('the page wording', () => {
         else if (path.endsWith('.tsx')) files.push(readFileSync(path, 'utf8'));
       }
     };
+    // Routes and features: some slots sit in a feature's page (the board,
+    // the directory). Read either as `copy.key` or through <CopyText>.
     walk(`${import.meta.dirname}/../../src/routes`);
+    walk(`${import.meta.dirname}/../../src/features`);
     for (const key of COPY_KEYS) {
       expect(
-        files.some((f) => f.includes(`copy.${key}`)),
+        files.some((f) => f.includes(`copy.${key}`) || f.includes(`<CopyText slot="${key}"`)),
         key,
       ).toBe(true);
     }

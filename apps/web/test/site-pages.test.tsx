@@ -71,7 +71,7 @@ async function inRouter(ui: () => ReactNode, served: Site = site()) {
   const home = createRoute({ getParentRoute: () => root, path: '/', component: ui });
   const other = createRoute({
     getParentRoute: () => root,
-    path: '/elsewhere',
+    path: '/about',
     component: () => <h1>Elsewhere</h1>,
   });
   const router = createRouter({
@@ -258,7 +258,7 @@ describe('unsaved changes', () => {
     return () => (
       <UnsavedChangesGuard ask={ask}>
         <LookForm state={editorState()} />
-        <Link to="/elsewhere">Leave</Link>
+        <Link to="/about">Leave</Link>
       </UnsavedChangesGuard>
     );
   }
@@ -270,7 +270,7 @@ describe('unsaved changes', () => {
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(await screen.findByRole('heading', { name: 'Elsewhere' })).toBeVisible();
     expect(ask).not.toHaveBeenCalled();
-    expect(router.state.location.pathname).toBe('/elsewhere');
+    expect(router.state.location.pathname).toBe('/about');
   });
 
   it('leaving with a change asks once, and staying keeps the change', async () => {
