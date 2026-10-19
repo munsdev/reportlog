@@ -37,6 +37,12 @@ fi
 if [ -f .env ] && ! grep -q '^CONTACT_KEY=.' .env; then
   printf 'CONTACT_KEY=%s\n' "$(openssl rand -base64 32)" >> .env
 fi
+# And for files: a key, a directory to keep them in, and the worker inside the
+# server, so attaching a photo works locally.
+if [ -f .env ] && ! grep -q '^FILES_KEY=.' .env; then
+  printf 'FILES_KEY=%s\nFILES_STORAGE=disk\nFILES_DIR=%s\nFILES_INLINE_WORKER=true\n' \
+    "$(openssl rand -base64 32)" "$PWD/.files" >> .env
+fi
 
 # --- the briefing -------------------------------------------------------------
 echo "=== ReportLog · session briefing ==="
