@@ -68,6 +68,16 @@ export const LogbookSummary = z.object({
   question_count: z.number().int(),
   /** Whether it has an upload question. Derived, never stored. */
   asks_for_files: z.boolean(),
+  /**
+   * When somebody froze its uploads, or null. A protective handle beside
+   * the upload question, not instead of it, and never sealed.
+   */
+  files_frozen_at: Timestamp.nullable(),
+  /**
+   * Whether it can be filed to without the site password. Set through the
+   * identity workstream's door route; read here so the builder can show it.
+   */
+  outside_access: z.enum(['closed', 'link', 'door']),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -110,6 +120,8 @@ export const LogbookFile = z.looseObject({
   /** The logbook's own upload caps (files workstream), only when it set them. */
   max_files: z.number().optional(),
   max_total_bytes: z.number().optional(),
+  /** Whether moderators may attach editorial notes. Present only when true. */
+  editorial_notes: z.boolean().optional(),
   questions: z.array(LogbookFileQuestion),
 });
 export type LogbookFile = z.infer<typeof LogbookFile>;
@@ -256,6 +268,16 @@ export const setLogbookSchedule = defineRoute({
   summary: 'When a launched logbook opens and closes. Null for no limit.',
   params: LogbookParams,
   body: z.object({ opens_at: z.string().nullable(), closes_at: z.string().nullable() }),
+  response: LogbookDetail,
+});
+
+export const setLogbookFilesFrozen = defineRoute({
+  method: 'POST',
+  path: '/api/admin/logbooks/:id/files/freeze',
+  summary:
+    'Freeze or unfreeze uploads to a logbook. Allowed before and after launch; nothing sealed changes.',
+  params: LogbookParams,
+  body: z.object({ frozen: z.boolean() }),
   response: LogbookDetail,
 });
 

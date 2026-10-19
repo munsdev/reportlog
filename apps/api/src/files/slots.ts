@@ -73,6 +73,17 @@ const ownedBy = (owner: Owner) =>
     ? sql<boolean>`draft_hash = ${owner.draft}`
     : sql<boolean>`evidence_request_id = ${owner.evidenceRequestId}`;
 
+/** Whether somebody froze this logbook's uploads (B2's freeze). */
+export async function filesFrozen(db: Kysely<DB>, logbookId: number): Promise<boolean> {
+  const row = await db
+    .selectFrom('logbooks')
+    .select('id')
+    .where('id', '=', logbookId)
+    .where('files_frozen_at', 'is not', null)
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 export interface SlotRequest {
   name: string;
   type: string;
@@ -128,6 +139,18 @@ export async function createUploadSlot(
       409,
       'other_logbook',
       'These files are already being attached to a report in a different logbook.',
+    );
+  }
+  // A FROZEN LOGBOOK TAKES NO NEW SLOT (B2's freeze, logbooks.files_frozen_at).
+  // A trigger on upload_slots refuses too; this says why first. Slots already
+  // made are left alone, and a report without files is still taken.
+  if (await filesFrozen(db, fixed ?? req.logbookId)) {
+    throw refuse(
+      409,
+      'files_frozen',
+      filing
+        ? 'This logbook is not taking files at the moment. You can still send your report without them.'
+        : 'This logbook is not taking files at the moment, so nothing can be sent here for now.',
     );
   }
   const limits = await limitsFor(db, fixed ?? req.logbookId);

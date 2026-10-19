@@ -47,6 +47,7 @@ import {
   createUploadSlot,
   discardSlot,
   draftFrom,
+  filesFrozen,
   newDraftToken,
   receiveUpload,
   slotStatuses,
@@ -133,7 +134,11 @@ export async function uploadConfig(
   asksForFiles: boolean,
 ): Promise<C.UploadConfig> {
   const db = files?.db;
-  const on = asksForFiles && (await filesOn(files));
+  // A frozen logbook (B2) offers no upload card: its slots would be refused.
+  const on =
+    asksForFiles &&
+    (await filesOn(files)) &&
+    !(db && logbookId !== null && (await filesFrozen(db, logbookId)));
   if (!on || !db) {
     return {
       enabled: false,

@@ -98,6 +98,8 @@ function summaries(db: Db) {
     'logbooks.closed_at',
     'logbooks.created_at',
     'logbooks.updated_at',
+    'logbooks.files_frozen_at',
+    'logbooks.outside_access',
     eb
       .selectFrom('logbook_fields as f')
       .whereRef('f.logbook_id', '=', 'logbooks.id')
@@ -132,7 +134,14 @@ function present(row: SummaryRow): LogbookSummary {
     updated_at: iso(row.updated_at) ?? '',
     question_count: row.question_count ?? 0,
     asks_for_files: Boolean(row.asks_for_files),
+    files_frozen_at: iso(row.files_frozen_at),
+    outside_access: outsideAccess(row.outside_access),
   };
+}
+
+/** The column's CHECK allows exactly these three; anything else reads as shut. */
+function outsideAccess(v: string): LogbookSummary['outside_access'] {
+  return v === 'link' || v === 'door' ? v : 'closed';
 }
 
 export async function listLogbooks(db: Db): Promise<LogbookSummary[]> {
@@ -441,6 +450,36 @@ export async function setClosed(db: Db, id: number, closed: boolean): Promise<Lo
     await trx
       .updateTable('logbooks')
       .set({ closed_at: closed ? now : null, updated_at: now })
+      .where('id', '=', id)
+      .execute();
+  });
+  return (await logbookById(db, id)) ?? refuse('no-logbook');
+}
+
+/**
+ * Freeze or unfreeze this logbook's uploads. A PROTECTIVE HANDLE, not the
+ * everyday control: whether a logbook asks for files is whether it has an
+ * upload question, and after launch that question cannot be removed. This
+ * is for a running logbook that must stop taking files now, without
+ * touching the form anybody is halfway through.
+ *
+ * NOT BEHIND assertDraft. It is not a question and nothing sealed reads it,
+ * so it is allowed before and after launch, both ways. It stops NEW upload
+ * slots (files/slots.ts, and a trigger on upload_slots) and hides nothing
+ * already filed or published. A report without files is still taken.
+ *
+ * Freezing a frozen logbook keeps the first time: when somebody first pulled
+ * the handle is the fact worth keeping.
+ */
+export async function setFilesFrozen(db: Db, id: number, frozen: boolean): Promise<LogbookSummary> {
+  await inTransaction(db, async (trx) => {
+    await lock(trx, id);
+    await trx
+      .updateTable('logbooks')
+      .set({
+        files_frozen_at: frozen ? sql<Date>`coalesce(files_frozen_at, now())` : null,
+        updated_at: new Date(),
+      })
       .where('id', '=', id)
       .execute();
   });
