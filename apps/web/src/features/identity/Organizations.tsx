@@ -7,6 +7,9 @@
  * resend and withdraw, and a typo is recoverable from here alone.
  */
 import {
+  ApiError,
+  LOGO_MAX_BYTES,
+  LOGO_TYPES,
   addMember,
   approveInvitation,
   createInvitation,
@@ -15,7 +18,9 @@ import {
   listInvitations,
   listOrganizations,
   removeMember,
+  removeOrganizationLogo,
   resendInvitation,
+  uploadOrganizationLogo,
   withdrawInvitation,
 } from '@reportlog/contracts';
 import type { OrgRoleName } from '@reportlog/contracts';
@@ -23,7 +28,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { call } from '../../lib/api.ts';
+import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 import { Done, ErrorText, Panel, TextField } from './ui.tsx';
@@ -200,8 +205,118 @@ export function OrganizationPage({ id }: { id: number }) {
       )}
 
       {youGrantAccess && <AddDirectly id={id} onChange={refresh} />}
+
+      {(org.data.youManageIt || youGrantAccess) && (
+        <LogoPanel id={id} logo={organization.logo} onChange={refresh} />
+      )}
     </div>
   );
+}
+
+/**
+ * The organization's logo. It is re-encoded on the server, so what is kept
+ * is the picture alone, and the public sees it only while the organization
+ * is listed in the directory.
+ */
+function LogoPanel({
+  id,
+  logo,
+  onChange,
+}: {
+  id: number;
+  logo: string | null;
+  onChange: () => Promise<void>;
+}) {
+  const inputId = useId();
+  const [file, setFile] = useState<File | null>(null);
+  const save = useMutation({
+    mutationFn: (chosen: File) => uploadLogo(id, chosen),
+    onSuccess: async () => {
+      setFile(null);
+      await onChange();
+    },
+  });
+  const remove = useMutation({
+    mutationFn: () => call(removeOrganizationLogo, { params: { id } }),
+    onSuccess: onChange,
+  });
+  return (
+    <Panel title="Logo">
+      <p className="text-ink-alt">
+        Shown beside the organization’s name in the public directory, while it is listed. Until then
+        only its managers and the people who grant access see it. A PNG, JPEG or WebP image of at
+        most {String(LOGO_MAX_BYTES / 1024 / 1024)} MB. It is copied without anything but the
+        picture: no location, camera or author.
+      </p>
+      {logo ? (
+        <img
+          src={logo}
+          alt="The organization’s logo as it is now"
+          className="h-24 w-24 rounded-card border border-line object-contain"
+        />
+      ) : (
+        <p>There is no logo yet.</p>
+      )}
+      <form
+        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (file) save.mutate(file);
+        }}
+      >
+        <div className="flex flex-col gap-1">
+          <label htmlFor={inputId} className="font-semibold">
+            {logo ? 'A new logo' : 'A logo'}
+          </label>
+          <input
+            id={inputId}
+            type="file"
+            accept={LOGO_TYPES.join(',')}
+            onChange={(e) => {
+              setFile(e.target.files?.[0] ?? null);
+              save.reset();
+            }}
+          />
+        </div>
+        <Button type="submit" disabled={!file || save.isPending}>
+          {save.isPending ? 'Saving…' : 'Use this image'}
+        </Button>
+        {logo && (
+          <Button
+            type="button"
+            variant="quiet"
+            disabled={remove.isPending}
+            onClick={() => {
+              remove.mutate();
+            }}
+          >
+            Remove the logo
+          </Button>
+        )}
+      </form>
+      <ErrorText error={save.error ?? remove.error} />
+      {save.isSuccess && <Done>Saved.</Done>}
+      {remove.isSuccess && <Done>Removed.</Done>}
+    </Panel>
+  );
+}
+
+/** The body is the image itself, not JSON, so this is the one call that does not go through `call`. */
+async function uploadLogo(id: number, file: File) {
+  const res = await fetch(pathFor(uploadOrganizationLogo.path, { id }), {
+    method: uploadOrganizationLogo.method,
+    headers: { 'content-type': file.type || 'application/octet-stream' },
+    body: file,
+    credentials: 'same-origin',
+  });
+  const json: unknown = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = ApiError.safeParse(json);
+    throw err.success
+      ? new ApiRequestError(res.status, err.data.error.code, err.data.error.message)
+      : new ApiRequestError(res.status, 'unknown', `The server answered ${String(res.status)}.`);
+  }
+  return uploadOrganizationLogo.response.parse(json);
 }
 
 function InvitePanel({

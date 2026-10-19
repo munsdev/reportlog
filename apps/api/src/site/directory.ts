@@ -12,8 +12,9 @@
  * served with the rows (see the contract), and the page cannot show one
  * without the other.
  *
- * LOGOS ARE NOT HERE YET. They need file storage, which the files
- * workstream is building.
+ * LOGOS are kept by identity (identity/logos.ts) through the files
+ * workstream's storage. A listed organization's logo is public; the address
+ * is all this file adds.
  */
 import {
   DIRECTORY_DISCLAIMER,
@@ -25,6 +26,7 @@ import type { Listing } from '@reportlog/contracts';
 import { sql } from 'kysely';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
+import { logoUrl } from '../identity/logos.ts';
 
 /** A member is somebody who ACCEPTED: a pending invitation is a row in another table. */
 const memberCount = sql<number>`(SELECT count(*) FROM organization_memberships m WHERE m.organization_id = o.id)::int`;
@@ -42,7 +44,7 @@ const memberCount = sql<number>`(SELECT count(*) FROM organization_memberships m
 export async function directory(db: Database) {
   const rows = await db
     .selectFrom('organizations as o')
-    .select(['o.name', 'o.details', 'o.listed_at', memberCount.as('member_count')])
+    .select(['o.name', 'o.details', 'o.listed_at', 'o.logo_key', memberCount.as('member_count')])
     .where('o.listed', '=', true)
     .orderBy('member_count', 'desc')
     .orderBy('o.name', 'asc')
@@ -53,6 +55,7 @@ export async function directory(db: Database) {
     // The table's CHECK: a listed organization has a date.
     joined: (r.listed_at ?? new Date(0)).toISOString(),
     member_count: r.member_count,
+    logo: logoUrl(r.logo_key),
   }));
 }
 

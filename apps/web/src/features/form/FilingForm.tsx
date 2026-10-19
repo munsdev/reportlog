@@ -6,6 +6,8 @@
  * never moves anybody on, Next does. Which cards come next is worked out
  * when Next is pressed, from the answers given so far (walk.ts), so a
  * question an answer turns on appears as the NEXT card, never on this one.
+ * Each card is an entry in the browser's history (cardHistory.ts), so the
+ * browser's Back goes back one question, as it did in the old form.
  *
  * The cards, in order:
  *   the opening card       what this logbook is, and that it is a few questions
@@ -32,6 +34,7 @@ import {
 } from '@reportlog/contracts';
 import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
+import type { RouterHistory } from '@tanstack/react-router';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
@@ -45,6 +48,8 @@ import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { useCardHistory } from './cardHistory.ts';
+import type { CardEntry } from './cardHistory.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { askedQuestions, cardProblem, shownAnswer, stillPossible, toSubmission } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
@@ -75,7 +80,7 @@ const looksLikeEmail = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim()
 
 type Step = 'intro' | 'publish' | 'contact' | 'files' | 'review' | `q:${string}`;
 
-export function FilingForm({ slug }: { slug: string }) {
+export function FilingForm({ slug, history }: { slug: string; history?: RouterHistory }) {
   const logbook = useQuery(publicLogbookQuery(slug));
   const card = useQuery(publicationCardQuery);
   // Asked on a door too: the door lets this one call through, so the form
@@ -131,6 +136,7 @@ export function FilingForm({ slug }: { slug: string }) {
       questions={lb.fields}
       card={card.data}
       cardError={card.isError}
+      history={history}
     />
   );
 }
@@ -142,6 +148,7 @@ function Cards({
   questions,
   card,
   cardError,
+  history,
 }: {
   slug: string;
   title: string;
@@ -149,6 +156,7 @@ function Cards({
   questions: FormQuestion[];
   card: PublicationCard | undefined;
   cardError: boolean;
+  history: RouterHistory | undefined;
 }) {
   const [raw, setRaw] = useState<RawAnswers>({});
   const [publish, setPublish] = useState('');
@@ -208,6 +216,33 @@ function Cards({
     };
   }, [dirty, send.isSuccess]);
 
+  // Every card there could be, in order: where to fall back to when the
+  // browser returns to a card the answers since have stopped asking.
+  const everyStep: Step[] = [
+    'intro',
+    ...questions.map((q): Step => `q:${q.key}`),
+    'publish',
+    'contact',
+    'files',
+    'review',
+  ];
+  const cards = useCardHistory(history, 'intro', (entry: CardEntry | null) => {
+    setProblem(null);
+    const wanted = (entry?.card ?? 'intro') as Step;
+    if (entry && steps.includes(wanted)) {
+      setStep(wanted);
+      setBackToReview(entry.toReview);
+      return null;
+    }
+    // An entry from before a reload has no answers behind it, so the form
+    // starts again; a card no longer asked gives way to the one before it.
+    const before = everyStep.slice(0, Math.max(0, everyStep.indexOf(wanted)));
+    const instead = entry ? (before.reverse().find((s) => steps.includes(s)) ?? 'intro') : 'intro';
+    setStep(instead);
+    setBackToReview(false);
+    return { card: instead, toReview: false };
+  });
+
   if (send.isSuccess) return <SentReceipt email={email.trim()} title={title} />;
 
   const question = step.startsWith('q:') ? questions.find((q) => `q:${q.key}` === step) : undefined;
@@ -223,9 +258,11 @@ function Cards({
       return 'Attach at least one file.';
     return null;
   };
-  const go = (to: Step) => {
+  const go = (to: Step, toReview = false) => {
     setProblem(null);
+    setBackToReview(toReview);
     setStep(to);
+    cards.push({ card: to, toReview });
   };
   const next = () => {
     const p = problemHere();
@@ -234,7 +271,6 @@ function Cards({
       return;
     }
     if (backToReview) {
-      setBackToReview(false);
       go('review');
       return;
     }
@@ -250,9 +286,10 @@ function Cards({
     ] as Step[];
     go(now[now.indexOf(step) + 1] ?? 'review');
   };
+  // Where the browser's Back would go: after "Change", that is the review.
   const back = () => {
-    setBackToReview(false);
-    go(steps[at - 1] ?? 'intro');
+    if (cards.back) cards.back();
+    else go(steps[at - 1] ?? 'intro');
   };
 
   // Measured against every question that could STILL be asked, so on the
@@ -365,8 +402,7 @@ function Cards({
                 label={q.label}
                 value={shownAnswer(q, raw) ?? (q.required ? null : '—')}
                 onChange={() => {
-                  setBackToReview(true);
-                  go(`q:${q.key}`);
+                  go(`q:${q.key}`, true);
                 }}
               />
             ))}
@@ -374,8 +410,7 @@ function Cards({
               label="Published if approved"
               value={publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')}
               onChange={() => {
-                setBackToReview(true);
-                go('publish');
+                go('publish', true);
               }}
             />
             {takesFiles && fileQuestion ? (
@@ -389,8 +424,7 @@ function Cards({
                       : '—'
                 }
                 onChange={() => {
-                  setBackToReview(true);
-                  go('files');
+                  go('files', true);
                 }}
               />
             ) : null}
@@ -398,8 +432,7 @@ function Cards({
               label="Your email address"
               value={email.trim() || null}
               onChange={() => {
-                setBackToReview(true);
-                go('contact');
+                go('contact', true);
               }}
             />
           </dl>
