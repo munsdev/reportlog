@@ -19,7 +19,7 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import type { RouterHistory } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DOOR_PATHS, SiteGate, isDoorPath } from '../src/features/identity/gate.tsx';
 import { Route as RootRoute } from '../src/routes/__root.tsx';
@@ -121,9 +121,12 @@ describe('the frame around every page, on a door', () => {
       page(door);
       // The frame really rendered: the page, the header's name and the footer.
       expect(await screen.findByText('the page behind the door')).toBeInTheDocument();
-      // The header's name; the footer's attribution is a second link so named.
-      expect(screen.getAllByRole('link', { name: 'ReportLog' })[0]).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Imprint and privacy' })).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('banner')).getByRole('link', { name: 'ReportLog' }),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Imprint and privacy' }),
+      ).toBeInTheDocument();
       await settle();
       expect(asked()).toEqual(['/api/site-access/status']);
       // And nothing was refused, which is what would have shut the door.
