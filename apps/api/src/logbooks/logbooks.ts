@@ -432,6 +432,11 @@ export async function deleteDraft(db: Db, id: number): Promise<string> {
     if (reports.length) refuse('has-reports');
     // Its questions cascade. A draft has no form versions: only a launched
     // logbook gets one, and they are append-only.
+    //
+    // Its editorial-notes switch does not cascade (the moderation workstream's
+    // table), and a draft made from a file or a starting point can have one.
+    // It is a setting, not a record: a draft has no reports, so no notes.
+    await trx.deleteFrom('logbook_editorial_notes').where('logbook_id', '=', id).execute();
     await trx
       .deleteFrom('logbooks')
       .where('id', '=', id)

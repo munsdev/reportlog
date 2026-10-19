@@ -106,6 +106,21 @@ describe('the logbook file carries the editorial-notes switch, both ways', () =>
     expect(await N.notesEnabled(db, off.id)).toBe(false);
   });
 
+  it('a draft made with notes on can still be deleted, and its switch goes with it', async () => {
+    // Found by the browser suite: the switch's table has no cascade, so a
+    // draft from a starting point with notes on could not be deleted.
+    const lb = await createFromStartingPoint(db, {
+      starting_point: 'elections',
+      title: 'Deleted draft',
+      slug: uniqueSlug('sp-del'),
+      by: EDITOR,
+    });
+    expect(await N.notesEnabled(db, lb.id)).toBe(true);
+    await expect(L.deleteDraft(db, lb.id)).resolves.toBe(lb.slug);
+    expect(await L.logbookById(db, lb.id)).toBeNull();
+    expect(await N.notesEnabled(db, lb.id)).toBe(false);
+  });
+
   it('a file from a plain logbook looks exactly as it did before the switch existed', async () => {
     const lb = await launchedLogbook(db, Q);
     const f = await toFile(db, lb.id);
@@ -116,17 +131,29 @@ describe('the logbook file carries the editorial-notes switch, both ways', () =>
 });
 
 describe('what the builder reads beside the questions', () => {
+  // DRAFTS, ON PURPOSE. The test database is shared by every file, and a
+  // LAUNCHED logbook open outside the password opens the filing calls for
+  // the whole site (identity/doors.ts), which filing-doors.test.ts checks
+  // is not the case. The doors never count a draft; the builder shows the
+  // setting either way.
+  const draft = async (questions: { key: string; kind: string; label: string }[] = Q) => {
+    const lb = await L.createLogbook(db, { title: 'Switches', slug: uniqueSlug('sw') });
+    for (const q of questions) await L.addField(db, lb.id, q);
+    return lb;
+  };
+
   it('shows who can file without the password, as the door route set it', async () => {
-    const lb = await launchedLogbook(db, Q);
+    const lb = await draft();
     expect((await L.logbookById(db, lb.id))?.outside_access).toBe('closed');
     await setOutsideAccess(db, lb.slug, 'door');
     expect((await L.logbookById(db, lb.id))?.outside_access).toBe('door');
     await setOutsideAccess(db, lb.slug, 'link');
     expect((await L.listLogbooks(db)).find((l) => l.id === lb.id)?.outside_access).toBe('link');
+    await setOutsideAccess(db, lb.slug, 'closed');
   });
 
   it('shows the freeze, and never puts either in the logbook file', async () => {
-    const lb = await launchedLogbook(db, [...Q, { key: 'photos', kind: 'file', label: 'Photos' }]);
+    const lb = await draft([...Q, { key: 'photos', kind: 'file', label: 'Photos' }]);
     await L.setFilesFrozen(db, lb.id, true);
     await setOutsideAccess(db, lb.slug, 'link');
     expect((await L.logbookById(db, lb.id))?.files_frozen_at).not.toBeNull();
@@ -134,5 +161,6 @@ describe('what the builder reads beside the questions', () => {
     // elsewhere starts unfrozen and behind the password.
     const f = await toFile(db, lb.id);
     expect(JSON.stringify(f)).not.toMatch(/frozen|outside/);
+    await setOutsideAccess(db, lb.slug, 'closed');
   });
 });

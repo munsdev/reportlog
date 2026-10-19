@@ -32,6 +32,11 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
   await questions.getByLabel('Kind of question').selectOption({ label: 'Long text' });
   await questions.getByLabel('The question, as the reporter will read it').fill('What happened?');
   await questions.getByRole('button', { name: 'Add the question' }).click();
+  // Wait for each question to land: the form resets after an add, and a
+  // kind chosen before then is chosen on the form that is about to go.
+  await expect(questions.getByRole('list', { name: 'The questions, in order' })).toContainText(
+    'What happened?',
+  );
   await questions
     .getByLabel('Kind of question')
     .selectOption({ label: 'Photos, video or documents' });
@@ -75,6 +80,18 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
       .getByRole('region', { name: 'Without the site password' })
       .getByLabel('Who can file without the password'),
   ).toHaveValue('link');
+
+  // Put back: a launched logbook open outside opens the filing calls for the
+  // whole site, and the password tests that run after this one expect none.
+  await page
+    .getByRole('region', { name: 'Without the site password' })
+    .getByLabel('Who can file without the password')
+    .selectOption('closed');
+  await expect(
+    page
+      .getByRole('region', { name: 'Without the site password' })
+      .getByText(/Filing needs the site password/),
+  ).toBeVisible();
 });
 
 test('the logbook list says whether the site is taking reports at all', async ({ page }) => {
