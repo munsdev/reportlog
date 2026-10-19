@@ -2,19 +2,19 @@
 
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
-- **Branch:** `claude/workstream-i-maps`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
+- **Branch:** `claude/workstream-i-maps`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, H at `09b08ce`)
 - **Pull request:** [#9](https://github.com/munsdev/reportlog/pull/9), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: web 16 files, api 5) |
-| `pnpm test:db`                          | 25 files, 427 tests, all passed (34 are I's, in `maps.test.ts`)           |
-| `db:types:check`                        | up to date                                                                |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 64 passed (I adds 2 tests, run on desktop and phone)                      |
+| Suite                                                   | Result                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `pnpm check`                                            | passes (format, lint, types, boundaries; unit tests: web 16 files, api 5) |
+| `pnpm test:db`                                          | 442 tests, all passed (34 are I's, in `maps.test.ts`)                     |
+| `db:types:check`                                        | up to date                                                                |
+| Browser suite (`CI=1 pnpm --filter @reportlog/web e2e`) | 64 passed (I adds 2 tests, run on desktop and phone)                      |
 
 ## What was ported, in the order asked
 
@@ -167,8 +167,7 @@ started from `legacy/`), and must be stopped first. Then:
 
 ```
 export CHROMIUM_PATH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome | head -1)
-pnpm --filter @reportlog/api db:migrate
-CI=1 pnpm --filter @reportlog/web e2e
+CI=1 pnpm --filter @reportlog/web e2e   # a fresh database per run, since H
 ```
 
 To rebuild the outlines and the gazetteer: `pnpm --filter @reportlog/geo-tools outlines`.
