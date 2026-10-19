@@ -141,7 +141,7 @@ Several sessions build this at once. To keep that working:
 pnpm install
 pnpm check                                   # format, lint, types, boundaries, unit tests
 pnpm test:db                                 # database tests, on a throwaway database
-pnpm --filter @reportlog/web e2e             # browser tests (needs a migrated DATABASE_URL)
+pnpm --filter @reportlog/web e2e             # browser tests, on a database made for the run
 pnpm --filter @reportlog/api db:migrate      # migrate the database in DATABASE_URL
 pnpm --filter @reportlog/api db:seed         # a demo logbook and two reports
 pnpm dev                                     # API on :3000, website on :5173
