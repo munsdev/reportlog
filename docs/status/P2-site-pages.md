@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. Brief: `docs/parity.md` §7, P2.
 
 - **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `faa4b68` (D3 and P7 merged)
-- **Pull request:** see below, into `ccr-c9c93698-ev856l`
+- **Pull request:** [#23](https://github.com/munsdev/reportlog/pull/23), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
@@ -13,7 +13,7 @@ For the coordinating session and the other workstreams. Brief: `docs/parity.md` 
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 332 (11 skipped, not P2's), web 440 (P2's: api 5, web 17)                                       |
 | `pnpm test:db`                          | 57 files, 849 passed (P2's: 18, in `site-pages.test.ts`)                                                                                                |
-| `db:types:check`                        | generated types up to date (part of `pnpm check`'s typecheck run)                                                                                       |
+| `db:types:check`                        | generated types up to date (run on its own)                                                                                                             |
 | Browser suite (`CHROMIUM_PATH`, `CI=1`) | 141 passed, 3 skipped (P2's: 9 passed; its 3 settings tests run on desktop only, as they change site-wide settings, and are the 3 skipped on the phone) |
 
 ## What was built, in the order asked
