@@ -36,7 +36,6 @@ import { HttpError, notFound } from '../http/errors.ts';
 import { sha256Hex } from '../identity/secrets.ts';
 import type { SignedIn } from '../identity/sessions.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
-import type { Intake } from './intake.ts';
 
 export const INTAKE_FILE_DAYS = 30;
 
@@ -44,14 +43,19 @@ export const INTAKE_FILE_DAYS = 30;
 export const accountDraft = (draftId: number): string =>
   sha256Hex(`reportlog-intake-account:${String(draftId)}`);
 
+/** What this needs from Intake, named here so the two files do not import each other. */
+interface StagedAccounts {
+  stagedAccount(user: SignedIn, draftId: number, opts: { forFiles?: boolean }): Promise<unknown>;
+}
+
 const off = () => new HttpError(404, 'files_off', 'This site is not taking files at the moment.');
 
 export class IntakeFiles {
   private readonly db: Kysely<DB>;
-  private readonly intake: Intake;
+  private readonly intake: StagedAccounts;
   private readonly files: Files | null;
 
-  constructor(db: Kysely<DB>, intake: Intake, files: Files | null) {
+  constructor(db: Kysely<DB>, intake: StagedAccounts, files: Files | null) {
     this.db = db;
     this.intake = intake;
     this.files = files;
