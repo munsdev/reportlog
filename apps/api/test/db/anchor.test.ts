@@ -90,13 +90,13 @@ async function publish(threadId: string, reportId: number, status = 'valid') {
     .execute();
 }
 
-async function bareRemote(name: string): Promise<string> {
+async function bareRemote(name: string, readme = '# transparency log\n'): Promise<string> {
   // Like the real log: a main branch that already has a README.
   const bare = join(tmp, `${name}.git`);
   await git(tmp, 'init', '--quiet', '--bare', '--initial-branch', 'main', bare);
   const seed = join(tmp, `${name}-seed`);
   await git(tmp, 'clone', '--quiet', bare, seed);
-  writeFileSync(join(seed, 'README.md'), '# transparency log\n');
+  writeFileSync(join(seed, 'README.md'), readme);
   await git(seed, 'add', 'README.md');
   await git(seed, 'commit', '--quiet', '-m', 'README');
   await git(seed, 'push', '--quiet', 'origin', 'HEAD:main');
@@ -327,7 +327,9 @@ describe('mirrors, each on its own', () => {
   });
 
   it('a mirror whose history has gone elsewhere is refused and reported, never forced', async () => {
-    const stranger = await bareRemote('stranger');
+    // Different text on purpose: the same README committed in the same second
+    // as remote1's seed is the same commit, and the push then succeeds.
+    const stranger = await bareRemote('stranger', '# some other log\n');
     const before = await git(tmp, '--git-dir', stranger, 'rev-parse', 'main');
     const out = await runAnchor(deps({ now: day('2026-11-06'), remotes: [remote1, stranger] }));
     expect(out.outcome).toBe('partly_published');

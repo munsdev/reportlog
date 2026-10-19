@@ -12,6 +12,7 @@ import { useId } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
 import { ReportAnswers } from './ReportAnswers.tsx';
 
@@ -75,12 +76,7 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
             them on the reporter’s behalf.
           </p>
         ) : null}
-        {r.files > 0 ? (
-          <p className="text-sm">
-            {r.files === 1 ? 'One file is' : `${String(r.files)} files are`} published with this
-            report.
-          </p>
-        ) : null}
+        <PublishedFiles publicRef={r.public_ref} />
       </Section>
       {r.editorial_note ? <Note note={r.editorial_note} links={links} /> : null}
     </Page>

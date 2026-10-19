@@ -18,7 +18,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { json } from '../moderation/json.ts';
-import { boardCsv, boardFiles, boardLogbooks, boardPage, boardReport } from './board.ts';
+import { boardCsv, boardLogbooks, boardPage, boardReport } from './board.ts';
 import type { BoardQuery } from './board.ts';
 import { catalogue } from './figures.ts';
 import { PUBLICATION_OFF, publicArchiveAvailable } from './publication.ts';
@@ -76,13 +76,6 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
         published_on: l.published_on,
       })),
     });
-  });
-
-  route(app, C.getBoardReportFiles, async ({ params }) => {
-    if (!(await publicArchiveAvailable(db))) return off();
-    const files = await boardFiles(db, params.ref);
-    if (!files) throw noReport();
-    return { published: true as const, files };
   });
 
   // Not through `route()`: the response is CSV, and the contract serializer

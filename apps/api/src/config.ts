@@ -79,6 +79,46 @@ const ConfigSchema = z.object({
       'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
     )
     .optional(),
+  /**
+   * Files (apps/api/src/files/). The key every file's own key is wrapped
+   * under: 32 random bytes, base64. NOT the same as CONTACT_KEY: the media
+   * worker holds this one and parses hostile files. Losing it makes every
+   * stored file unreadable. Without it, or without storage, no file is taken
+   * and the form does not offer the upload question.
+   */
+  FILES_KEY: z
+    .string()
+    .refine(
+      (s) => Buffer.from(s, 'base64').length === 32,
+      'FILES_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+    )
+    .optional(),
+  /** Where file bytes live: a directory (development, tests) or S3-compatible storage. */
+  FILES_STORAGE: z.enum(['disk', 's3']).optional(),
+  /** The directory, for FILES_STORAGE=disk. */
+  FILES_DIR: z.string().min(1).default('.files'),
+  S3_ENDPOINT: z.url('S3_ENDPOINT looks like "https://fsn1.your-objectstorage.com"').optional(),
+  S3_REGION: z.string().min(1).default('eu-central-1'),
+  S3_ACCESS_KEY: z.string().min(1).optional(),
+  S3_SECRET_KEY: z.string().min(1).optional(),
+  S3_BUCKET_STAGING: z.string().min(1).optional(),
+  S3_BUCKET_EVIDENCE: z.string().min(1).optional(),
+  S3_BUCKET_RENDITIONS: z.string().min(1).optional(),
+  S3_ADDRESSING: z.enum(['path', 'virtual']).default('path'),
+  /**
+   * Whether files are taken when an administrator has not said. Their own
+   * switch (file_settings) wins either way.
+   */
+  ATTACHMENTS_ENABLED: z.enum(['true', 'false']).optional(),
+  /**
+   * Run the media worker inside the server process, polling. For development
+   * and the browser tests only; a deployment runs `files:worker` on its own.
+   */
+  FILES_INLINE_WORKER: z.enum(['true', 'false']).default('false'),
+  /** Scan with clamdscan before anything else touches a file. */
+  CLAMAV_ENABLED: z.enum(['true', 'false']).default('false'),
+  /** How many reports' worth of files one address may have staged at once. 0 is no limit. */
+  FILES_STAGING_QUOTA_REPORTS: z.coerce.number().int().min(0).max(100).default(3),
 
   // --- email (apps/api/src/email/) -------------------------------------
   /**

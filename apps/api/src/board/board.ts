@@ -27,7 +27,6 @@ import { filterableFields, launchedLogbooks, logbookBySlug } from '../logbooks/l
 import { forForm } from '../logbooks/routes.ts';
 import { publicLinksFor, publicNoteFor, publicNotesForMany } from '../moderation/notes.ts';
 import type { PublicNote } from '../moderation/notes.ts';
-import { permissionsForMany } from '../permissions/log.ts';
 import { publicArchiveAvailable } from './publication.ts';
 import { isPublic, publishedReportIds } from './published.ts';
 import {
@@ -53,7 +52,7 @@ export function published(db: Kysely<DB>) {
 type Published = ReturnType<typeof published>;
 
 function columns(q: Published) {
-  return q.select((eb) => [
+  return q.select([
     'h.thread_id',
     'h.current_report_id',
     'r.public_ref',
@@ -67,21 +66,6 @@ function columns(q: Published) {
     'r.corrects_id',
     'l.slug as logbook_slug',
     'l.title as logbook_title',
-    // Whether a moderator published this version's files. The reporter's
-    // permission is checked beside it, freshly, in `withFiles`.
-    eb
-      .selectFrom('file_publication_log as fp')
-      .whereRef('fp.thread_id', '=', 'h.thread_id')
-      .whereRef('fp.report_id', '=', 'h.current_report_id')
-      .select('fp.published')
-      .orderBy('fp.id', 'desc')
-      .limit(1)
-      .as('files_published'),
-    eb
-      .selectFrom('report_attachments as ra')
-      .whereRef('ra.report_id', '=', 'h.current_report_id')
-      .select((e) => e.fn.countAll<string>().as('n'))
-      .as('file_count'),
   ]);
 }
 
@@ -96,31 +80,12 @@ export interface PublicReport {
   corrected: boolean;
   chain_hash: string;
   third_party?: { filed_via: string; intake_method: string; collected_on?: string };
-  /** How many files are public on it: published by a moderator AND permitted now. */
-  files: number;
   editorial_note?: PublicNote;
 }
 
 const iso = (d: Date) => d.toISOString();
 
-/**
- * Files count only while both layers say yes: the moderator published them
- * on this version, and the reporter's permission stands right now. Taking
- * the permission back takes them down on the next read, with nobody having
- * to remember to.
- */
-async function withFiles(db: Kysely<DB>, rows: Row[]) {
-  const perms = await permissionsForMany(
-    db,
-    rows.map((r) => r.thread_id),
-  );
-  return (r: Row) =>
-    r.files_published === true && perms.get(r.thread_id)?.attachment_publication === true
-      ? Number(r.file_count ?? 0)
-      : 0;
-}
-
-function present(r: Row, files: number, note: PublicNote | undefined): PublicReport {
+function present(r: Row, note: PublicNote | undefined): PublicReport {
   return {
     public_ref: r.public_ref,
     received_at: iso(r.received_at),
@@ -140,7 +105,6 @@ function present(r: Row, files: number, note: PublicNote | undefined): PublicRep
           },
         }
       : {}),
-    files,
     ...(note ? { editorial_note: note } : {}),
   };
 }
@@ -205,14 +169,13 @@ export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<Boar
     .where(narrowing(query, answers))
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .executeTakeFirst();
-  const files = await withFiles(db, rows);
   const notes = await publicNotesForMany(
     db,
     rows.map((r) => r.thread_id),
   );
   return {
     published: true,
-    reports: rows.map((r) => present(r, files(r), notes.get(r.thread_id))),
+    reports: rows.map((r) => present(r, notes.get(r.thread_id))),
     total: Number(counted?.n ?? 0),
     page,
     page_size: PAGE_SIZE,
@@ -230,31 +193,12 @@ export async function boardReport(db: Kysely<DB>, publicRef: string): Promise<On
   if (!(await publicArchiveAvailable(db))) return { ...OFF };
   const row = await columns(published(db)).where('r.public_ref', '=', publicRef).executeTakeFirst();
   if (!row) return null;
-  const files = await withFiles(db, [row]);
   const note = (await publicNoteFor(db, row.thread_id)) ?? undefined;
   return {
     published: true,
-    report: present(row, files(row), note),
+    report: present(row, note),
     links: note ? await publicLinksFor(db, row.thread_id) : [],
   };
-}
-
-/**
- * The published files on one report: metadata only. Serving the bytes is
- * workstream F's (renditions, never originals), and it must ask this first.
- */
-export async function boardFiles(db: Kysely<DB>, publicRef: string) {
-  if (!(await publicArchiveAvailable(db))) return null;
-  const row = await columns(published(db)).where('r.public_ref', '=', publicRef).executeTakeFirst();
-  if (!row) return null;
-  if ((await withFiles(db, [row]))(row) === 0) return [];
-  return db
-    .selectFrom('report_attachments as ra')
-    .innerJoin('attachments as a', 'a.id', 'ra.attachment_id')
-    .select(['a.id', 'a.ordinal', 'a.media_type', 'a.byte_size', 'a.sha256'])
-    .where('ra.report_id', '=', row.current_report_id)
-    .orderBy('a.ordinal')
-    .execute();
 }
 
 /** Every logbook a report could have been filed to, with ONLY its operator's filters. */

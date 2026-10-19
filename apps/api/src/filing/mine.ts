@@ -20,6 +20,7 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { manifestFor } from '../chain/record.ts';
+import { takeDownForReporter } from '../files/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { notFound } from '../http/errors.ts';
 import { fieldsFor } from '../logbooks/logbooks.ts';
@@ -260,6 +261,9 @@ export class Mine {
         .insertInto('reporter_actions')
         .values({ thread_id: threadId, action: 'withdraw', comment: why })
         .execute();
+      // A withdrawn report's published files come down with it (files
+      // workstream). Serving already refuses them; this removes the copies.
+      await takeDownForReporter(trx, threadId, 'the reporter withdrew the report');
     });
   }
 
@@ -281,6 +285,7 @@ export class Mine {
         .where('thread_id', '=', threadId)
         .execute();
       await eraseContact(trx, threadId);
+      await takeDownForReporter(trx, threadId, 'the reporter withdrew the report');
       await trx
         .insertInto('reporter_actions')
         .values({

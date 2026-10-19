@@ -14,6 +14,10 @@ import type { Mailer } from './email/mailer.ts';
 import { anchorRoutes } from './anchor/routes.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
+import { evidenceRoutes } from './evidence/routes.ts';
+import { filesFrom } from './files/context.ts';
+import type { FilesConfig } from './files/context.ts';
+import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
 import { listButtons } from './lists/manage.ts';
@@ -43,7 +47,8 @@ export interface AppDeps {
         | 'TRANSPARENCY_LOG_REMOTES'
         | 'ANCHOR_MAX_AGE_HOURS'
       >
-    >;
+    > &
+    FilesConfig;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -118,9 +123,21 @@ export async function buildApp({
   await feedbackRoutes(app, { db, mailer: mail, siteOrigin, adminEmail: config.ADMIN_EMAIL });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
   listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
+  // Files: storage and FILES_KEY, or the sentence saying why files are not taken.
+  const files = filesFrom(db, config);
   mapRoutes(app, { db, ...(mapCacheMs === undefined ? {} : { cacheMs: mapCacheMs }) });
   await filingRoutes(app, {
     db,
+    mailer: mail,
+    siteOrigin,
+    contactKey: config.CONTACT_KEY,
+    publicRefPrefix: config.PUBLIC_REF_PREFIX,
+    files: typeof files === 'string' ? null : files,
+  });
+  await fileRoutes(app, { db, files });
+  await evidenceRoutes(app, {
+    db,
+    files,
     mailer: mail,
     siteOrigin,
     contactKey: config.CONTACT_KEY,

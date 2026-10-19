@@ -3,19 +3,26 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D was split in two; D2 (the anchor, the transparency log, exports) has its own report.
 
-- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2, I and D2 merged in at `7898de3`)
+- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2, I, D2 and F merged in at `c93ae88`)
 - **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                                      | Result                                                                                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 231, web 392, fields 69, seal 31, access 4) |
-| `pnpm test:db`                                             | 38 files, 626 tests, all passed, after merging H, G2, I and D2 (before this branch: 24 files, 393)   |
-| `db:types:check`                                           | generated types up to date                                                                           |
-| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 91 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
+| Suite                                                      | Result                                                                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 247, web 396, fields 69, seal 31, access 4)  |
+| `pnpm test:db`                                             | 44 files, 717 tests, all passed, after merging H, G2, I, D2 and F (before this branch: 24 files, 393) |
+| `db:types:check`                                           | generated types up to date                                                                            |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 96 passed on the second run (16 of them D1's); see the note below the table                           |
+
+**The first browser run after merging F had one failure, in E's `lists.spec.ts` on the phone
+project** ("a visitor sends a tip…"): the page was still the list editor when the test looked for
+the entry. The test clicks "Review entries" and then looks for the list's link without waiting for
+the page to change, so it can find the same-named link on the page it is leaving. Nothing in D1
+touches lists. A second full run passed 96 of 96. Waiting for the review page's address after the
+click would make it robust; it is E's file, so I did not change it.
 
 The legacy vector tests in `packages/seal` are untouched and green. CI on GitHub had not reported
 when this was written; check the pull request.
@@ -52,10 +59,12 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 2. **Publication.**
    - Public means approved, permitted by the reporter (`may_publish`), not withdrawn, and the
      archive switched on. One query builder (`published` in `board/board.ts`) says so.
-   - **Files are a second decision** (`setFilesPublished`, `file_publication_log`): only after the
-     text, only on the current version, only while the reporter's `attachment_publication` stands.
-     The database holds the same ceiling (`file_publication_ceiling` trigger). The board re-reads
-     the permission on every read, so taking it back takes the files down immediately.
+   - **Files are a second decision, made per file by F** (`attachment_heads.publication`, F's
+     `files/publication.ts`), under the reporter's `attachment_publication` permission. A published
+     file is served only while its report's text is public (F's `servable` and `publicFilesOf` now
+     use the shared rule and the archive switch). D1 first built a per-version decision of its own
+     (`file_publication_log`) before F existed; it was retired when F merged
+     (`20261019192523_moderation_files_to_f.sql`), so the two can never disagree.
    - **The public-archive switch** (`board/publication.ts`, `moderation_settings`): NULL is on.
      Not cached, so it takes effect at once.
 3. **The board** (`apps/api/src/board/`, `/board`): published reports only, newest first, 100 per
@@ -67,7 +76,7 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
    review, declined, unclear, withdrawn) and by logbook question an operator marked; no bare total.
    `GET /api/board/figures` is the figures catalogue (reports and logbooks, by window) with the
    parsed-never-evaluated expression language. `GET /api/board/reports.csv` (formula-looking cells
-   defused). `GET /api/board/reports/:ref/files` lists published files' metadata only.
+   defused). A report's files are F's `GET /api/files/report/:ref`.
 5. **The website.** `/moderate` (the queue), `/moderate/:threadId` (every decision), and
    `/moderate/settings` (administrators). `/board`, `/board/:ref`, `/board/numbers`. Filters apply
    when the button is pressed and live in the address. The front page's built-in "View Live Report
@@ -116,12 +125,9 @@ reports while the site is not publishing is D2's call.
   own withdrawal can be undone.
 - **Answer filters are refused, not ignored,** unless the operator marked the question (legacy
   accepted any `a.<key>`, which made every question filterable by URL).
-- **Files are decided per report version, not per file.** Per-file publication and serving the
-  bytes are F's (see below).
 - **Search uses `'simple'`, not `'english'`.** No stemming, because nothing says a deployment writes
   in English. "threat" does not find "threatened".
-- **Not ported from legacy moderation:** severity, incidents/corroboration, evidence requests (F's),
-  the press pack (legacy shipped it empty), list figures (see E below), and the veracity field.
+- **Not ported from legacy moderation:** severity, incidents/corroboration, the press pack (legacy shipped it empty), list figures (see E below), and the veracity field.
 - **The note's switch is in its own table** (`logbook_editorial_notes`) rather than a column on B's
   `logbooks`, so B's table is untouched.
 
@@ -152,6 +158,10 @@ reports while the site is not publishing is D2's call.
 
 ## Changes outside D1's folders (all named in the commit messages)
 
+- `apps/api/src/files/publication.ts`, `files/routes.ts` (F): the public file reads use the shared
+  rule and the archive switch; `GET /api/files/report/:ref` says the archive notice when it is off.
+- `apps/api/test/db/files-publication.test.ts` (F): one `where` so it reads its own report's
+  `viewed_original` row, not the first one in the shared test database.
 - `apps/api/src/chain/chainFile.ts` (foundation): `buildChainFile` takes the published ids as an
   argument (`{ published }`) instead of its own copy of the rule.
 - `apps/api/src/anchor/records.ts`, `anchor/routes.ts` (D2): the snapshot and the published chain
@@ -185,13 +195,16 @@ reports while the site is not publishing is D2's call.
   the snapshot and the published chain file; the chain file also asks the archive switch. Decide
   whether the snapshot should too.
   Legacy's distribution switch was not ported; it belongs with the exports. The archive export
-  should carry `moderation_log`, `report_review_flags`, the editorial note tables,
-  `contact_access_log` and `file_publication_log`, and must never seal any of them.
-- **F (files):** files are published only when `file_publication_log`'s newest row for the thread's
-  current version says so AND the reporter's `attachment_publication` stands; `boardFiles` and
-  `withFiles` in `board/board.ts` encode it. Serve renditions only after asking `boardFiles`.
-  Opening an unstripped original should go through the access log: widen `contact_access_log.kind`
-  with a new migration (legacy's `attachment_original`) and show it in `ContactAccesses`.
+  should carry `moderation_log`, `report_review_flags`, the editorial note tables and
+  `contact_access_log`, and must never seal any of them.
+- **F (files):** the moderation page now has your files and evidence screens (`FilesPanel.tsx`,
+  `EvidencePanel.tsx` in `features/moderation/`), on your API: per-file publish, withhold and
+  refuse, the cleaned copy, the original with a reason, and asking for evidence. The board report
+  page shows your `PublishedFiles`. `servable`, `publicFilesOf` and `GET /api/files/report/:ref`
+  ask the archive switch and the shared rule. The reporter's access log in "My reports" now
+  includes your `viewed_original` events, with the reason and without who. One thing to weigh: the
+  original's reason travels in the URL (`/original?reason=`), so it can end up in browser history;
+  legacy used a POST for the same reason.
 - **C (filing):** see the two notes above (the confirmation page and the archive switch). The flag
   call in `startThread` must stay inside the filing transaction.
 - **B (logbooks):** the logbook file could carry the editorial-notes switch (legacy's
@@ -212,7 +225,6 @@ figureValues(db))` from `board/figures.ts`, and `checkText` for the editor. Not 
 ## Not done
 
 - Severity, incidents and corroboration counts (legacy moderation extras).
-- Evidence requests from the queue (F's `evidence_request` permission exists; the asking is F's).
 - List figures (E) and figures in the front page's wording (G).
 - A browser walk of `/board` with the site password on (the server side is tested:
   every board read answers `locked`, even with a logbook open outside).

@@ -33,6 +33,8 @@ import { isKnownDigest } from '../consent/cards.ts';
 import { isPublic } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
+import { fileOutcome, releaseForSubmission, sealFiles, stillPreparing } from '../files/filing.ts';
+import { draftFrom } from '../files/slots.ts';
 import { HttpError } from '../http/errors.ts';
 import { looksLikeEmail, normalizeEmail, randomToken, sha256Hex } from '../identity/secrets.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
@@ -75,6 +77,8 @@ export interface Submission {
   answers?: Record<string, unknown> | undefined;
   may_publish?: boolean | undefined;
   may_publish_digest?: string | undefined;
+  /** The files workstream's draft: the files staged while this was written. */
+  draft_token?: string | undefined;
 }
 
 export interface FilingDeps {
@@ -155,18 +159,32 @@ export async function stageSubmission(deps: FilingDeps, b: Submission): Promise<
   // sealed is refused while the reporter is still here to hear it.
   normalizeReportFields({ logbook: lb.slug, ...payload });
 
+  if (b.draft_token !== undefined && b.draft_token !== '') draftFrom(b.draft_token);
+
   const token = randomToken();
-  await db
-    .insertInto('report_submissions')
-    .values({
-      token_hash: sha256Hex(token),
-      logbook_id: lb.id,
-      form_id: form.id,
-      payload: JSON.stringify(payload),
-      email,
-      expires_at: new Date(Date.now() + LINK_TTL_MS),
-    })
-    .execute();
+  const expiresAt = new Date(Date.now() + LINK_TTL_MS);
+  await db.transaction().execute(async (trx) => {
+    const sub = await trx
+      .insertInto('report_submissions')
+      .values({
+        token_hash: sha256Hex(token),
+        logbook_id: lb.id,
+        form_id: form.id,
+        payload: JSON.stringify(payload),
+        email,
+        expires_at: expiresAt,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    // Files staged while the report was written now belong to it, and the
+    // worker may start on them: nothing is worked on before Send.
+    await releaseForSubmission(trx, {
+      draftToken: b.draft_token,
+      submissionId: sub.id,
+      logbookId: lb.id,
+      expiresAt,
+    });
+  });
   await deps.mailer.send({
     to: email,
     ...confirmEmail(lb.title, `${deps.siteOrigin}/file/confirm/${token}`),
@@ -193,6 +211,7 @@ async function threadState(
   db: Kysely<DB>,
   threadId: string,
   logbookTitle: string,
+  submissionId?: number,
 ): Promise<Confirmation> {
   const head = await db
     .selectFrom('report_heads as h')
@@ -200,18 +219,20 @@ async function threadState(
     .select(['r.public_ref', 'r.may_publish', 'h.withdrawn', 'h.moderation_status'])
     .where('h.thread_id', '=', threadId)
     .executeTakeFirstOrThrow();
+  const files = submissionId === undefined ? null : await fileOutcome(db, submissionId);
   return {
     // The board's own rule (board/published.ts), so the two cannot disagree.
     state: isPublic(head) ? 'public' : 'received',
     logbook_title: logbookTitle,
     public_ref: head.public_ref,
+    ...(files ? { files } : {}),
   };
 }
 
 export async function confirmationState(db: Kysely<DB>, token: string): Promise<Confirmation> {
   const row = await submissionFor(db, token);
   if (!row) throw linkNotFound();
-  if (row.thread_id) return threadState(db, row.thread_id, row.logbook_title);
+  if (row.thread_id) return threadState(db, row.thread_id, row.logbook_title, row.id);
   if (row.expires_at < new Date()) return { state: 'expired', logbook_title: row.logbook_title };
   return {
     state: 'unconfirmed',
@@ -234,6 +255,20 @@ export async function confirmSubmission(
   if (!found) throw linkNotFound();
   if (!deps.ring) throw notConfigured();
   const ring = deps.ring;
+
+  // Files still being prepared: this is not the moment to seal, because
+  // confirming is the last moment the manifest can change. Nothing is
+  // written and the link is not spent; pressing again later is how the
+  // reporter comes back.
+  if (!found.thread_id && found.expires_at >= new Date()) {
+    const waiting = await stillPreparing(db, found.id);
+    if (waiting.length) {
+      return {
+        confirmation: { state: 'preparing', logbook_title: found.logbook_title, files: waiting },
+        just_confirmed: false,
+      };
+    }
+  }
 
   const threadId = await db.transaction().execute(async (trx) => {
     const row = await trx
@@ -279,13 +314,17 @@ async function fileFromSubmission(
 ): Promise<string> {
   const payload = row.payload as StagedPayload;
   const threadId = randomUUID();
+  // The finished files, sealed into this version and linked to exactly it.
+  const files = await sealFiles(trx, { submissionId: row.id }, threadId);
   const { row: report } = await appendReportVersion(trx, {
     logbookId: row.logbook_id,
     threadId,
     fields: normalizeReportFields({ logbook: row.slug, ...payload }),
+    attachments: files.manifest,
     formId: row.form_id,
     publicRefPrefix,
   });
+  await files.link(report.id);
   await startThread(trx, threadId, report);
   // Under a key of its own, so the reporter can have it erased later
   // without anything append-only being touched. See contactKeys.ts.

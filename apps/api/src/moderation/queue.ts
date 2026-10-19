@@ -11,10 +11,10 @@
  * the reporter's sealed `may_publish` is the ceiling; the operator's archive
  * switch sits beside both (board/publication.ts).
  *
- * FILES ARE A SECOND DECISION. Approving a report publishes its text. Its
- * files are published only when a moderator also says so, on that version,
- * and only while the reporter permits it (`setFilesPublished`; the database
- * holds the same ceiling in file_publication_ceiling). Never the reverse.
+ * FILES ARE A SECOND DECISION, made per file in workstream F's
+ * files/publication.ts, under the same ceiling (the reporter's permission).
+ * A published file is shown only while its report's text is public, so the
+ * text can be public without its files and never the reverse.
  *
  * Every decision is written to moderation_log in the same transaction as the
  * change, with the version it was about.
@@ -24,7 +24,7 @@ import { sql } from 'kysely';
 import { normalizeSearch, searchMatches, sortDirection } from '../board/search.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
-import { permissionsFor, permissionsForMany } from '../permissions/log.ts';
+import { permissionsForMany } from '../permissions/log.ts';
 import { clearFlag } from './flags.ts';
 
 export const DECISIONS = ['valid', 'invalid', 'unknown'] as const;
@@ -113,13 +113,12 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
         .select((e) => e.fn.countAll<string>().as('n'))
         .as('file_count'),
       eb
-        .selectFrom('file_publication_log as fp')
-        .whereRef('fp.thread_id', '=', 'h.thread_id')
-        .whereRef('fp.report_id', '=', 'h.current_report_id')
-        .select('fp.published')
-        .orderBy('fp.id', 'desc')
-        .limit(1)
-        .as('files_published'),
+        .selectFrom('report_attachments as ra3')
+        .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'ra3.attachment_id')
+        .whereRef('ra3.report_id', '=', 'h.current_report_id')
+        .where('fh.publication', '=', 'published')
+        .select((e) => e.fn.countAll<string>().as('n'))
+        .as('published_files'),
       eb
         .selectFrom('reports as v')
         .whereRef('v.thread_id', '=', 'h.thread_id')
@@ -151,7 +150,7 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
     ...r,
     versions: Number(r.versions ?? 1),
     file_count: Number(r.file_count ?? 0),
-    files_published: r.files_published === true,
+    published_files: Number(r.published_files ?? 0),
     files_permitted: perms.get(r.thread_id)?.attachment_publication === true,
     needs_review: r.flag_terms !== null && r.flag_cleared_at === null,
     has_note: Boolean(r.has_note),
@@ -335,55 +334,6 @@ export async function markRead(db: Kysely<DB>, threadId: string, actor: string) 
       .execute();
   }
   return out.cleared;
-}
-
-/**
- * Publish or withhold a report's files, on its current version. CONSENT IS
- * THE CEILING: the reporter's attachment permission is read now, at the
- * moment of publishing, never trusted from earlier. MODERATION IS THE FLOOR:
- * the text must already be public. Withholding is always allowed.
- */
-export async function setFilesPublished(
-  db: Kysely<DB>,
-  threadId: string,
-  publish: boolean,
-  actor: string,
-) {
-  await db.transaction().execute(async (trx) => {
-    const head = await lockedHead(trx, threadId);
-    if (publish) {
-      if (head.withdrawn || head.moderation_status !== 'valid' || !head.may_publish) {
-        throw refuse(
-          409,
-          'text_first',
-          'A report’s files are published only once its text is: approve the report first.',
-        );
-      }
-      if (!(await permissionsFor(trx, threadId)).attachment_publication) {
-        throw refuse(
-          409,
-          'not_permitted',
-          'The reporter has not permitted publishing the files on this report. Only they can give that permission.',
-        );
-      }
-    }
-    await trx
-      .insertInto('file_publication_log')
-      .values({
-        thread_id: threadId,
-        report_id: head.current_report_id,
-        published: publish,
-        actor_email: actor,
-      })
-      .execute();
-    await log(trx, {
-      thread_id: threadId,
-      report_id: head.current_report_id,
-      action: 'files',
-      new_status: publish ? 'published' : 'withheld',
-      actor_email: actor,
-    });
-  });
 }
 
 /** What moderators and the reporter did to one thread, oldest first, for staff. */

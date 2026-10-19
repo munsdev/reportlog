@@ -67,7 +67,7 @@ beforeAll(async () => {
     '/api/board/reports',
     `/api/board/reports?logbook=${lb.slug}`,
     `/api/board/reports/${ref}`,
-    `/api/board/reports/${ref}/files`,
+    `/api/files/report/${ref}`,
     '/api/board/reports.csv',
     '/api/board/stats',
     '/api/board/figures',
@@ -256,7 +256,7 @@ describe('no door is forgotten', () => {
         paths.push(path);
       }
     }
-    expect(paths.length).toBeGreaterThanOrEqual(8);
+    expect(paths.length).toBeGreaterThanOrEqual(7);
     for (const p of paths) {
       expect(h.app.hasRoute({ method: 'GET', url: p })).toBe(true);
       const covered = doors.some((d) => d.split('?')[0] === p.replace(':ref', ref));

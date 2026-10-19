@@ -56,8 +56,6 @@ export const PublicReport = z.object({
       collected_on: z.string().optional(),
     })
     .optional(),
-  /** How many of its files are public: published by a moderator and permitted now. */
-  files: z.number().int(),
   editorial_note: PublicNote.optional(),
 });
 export type PublicReport = z.infer<typeof PublicReport>;
@@ -128,28 +126,6 @@ export const getBoardReport = defineRoute({
   params: RefParams,
   response: z.union([
     z.object({ published: z.literal(true), report: PublicReport, links: z.array(PublicLink) }),
-    PublicationOff,
-  ]),
-});
-
-export const getBoardReportFiles = defineRoute({
-  method: 'GET',
-  path: '/api/board/reports/:ref/files',
-  summary: 'The published files on one report: what they are, never the originals.',
-  params: RefParams,
-  response: z.union([
-    z.object({
-      published: z.literal(true),
-      files: z.array(
-        z.object({
-          id: z.number().int(),
-          ordinal: z.number().int(),
-          media_type: z.string(),
-          byte_size: z.number().int(),
-          sha256: z.string(),
-        }),
-      ),
-    }),
     PublicationOff,
   ]),
 });

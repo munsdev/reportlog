@@ -19,7 +19,6 @@ import {
   removeNoteLink,
   restoreReport,
   setNoteState,
-  setReportFiles,
   withdrawReport,
   writeReportNote,
 } from '@reportlog/contracts';
@@ -39,6 +38,8 @@ import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
 import { ReportAnswers } from '../board/ReportAnswers.tsx';
 import { useMe } from '../identity/session.ts';
+import { EvidencePanel } from './EvidencePanel.tsx';
+import { FilesPanel } from './FilesPanel.tsx';
 import { noteQuery, queueItemQuery } from './queries.ts';
 import { ACTION_WORDS, STATUS_WORDS } from './words.ts';
 
@@ -111,7 +112,8 @@ export function ItemPage({ threadId }: { threadId: string }) {
       </Section>
       {r.needs_review ? <SecondRead r={r} /> : null}
       {r.withdrawn ? null : <Decide r={r} />}
-      {r.file_count > 0 ? <Files r={r} /> : null}
+      {r.file_count > 0 ? <FilesPanel threadId={r.thread_id} isPublic={r.public} /> : null}
+      <EvidencePanel threadId={r.thread_id} />
       <OffTheBoard r={r} />
       {r.has_contact ? <Contact r={r} /> : null}
       {r.notes_enabled ? <Note r={r} /> : null}
@@ -214,48 +216,6 @@ function Decide({ r }: { r: QueueItem }) {
           Record the decision
         </Button>
       </form>
-    </Section>
-  );
-}
-
-function Files({ r }: { r: QueueItem }) {
-  const files = useAct((publish: boolean) =>
-    call(setReportFiles, { params: { threadId: r.thread_id }, body: { publish } }),
-  );
-  const shown = r.public && r.files_published && r.files_permitted;
-  return (
-    <Section title="Files">
-      <p>
-        {String(r.file_count)} file{r.file_count === 1 ? '' : 's'} came with this version.{' '}
-        {r.files_permitted
-          ? 'Its reporter permits publishing them.'
-          : 'Its reporter has not permitted publishing them, so they stay private whatever is decided here.'}{' '}
-        {shown ? 'They are published.' : 'They are not published.'}
-      </p>
-      <p className="text-sm text-ink-alt">
-        A report’s words can be published without its files, never the files without the words.
-      </p>
-      <Problem error={files.error} />
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="secondary"
-          disabled={files.isPending || !r.public || !r.files_permitted}
-          onClick={() => {
-            files.mutate(true);
-          }}
-        >
-          Publish the files
-        </Button>
-        <Button
-          variant="secondary"
-          disabled={files.isPending || !r.files_published}
-          onClick={() => {
-            files.mutate(false);
-          }}
-        >
-          Withhold the files
-        </Button>
-      </div>
     </Section>
   );
 }

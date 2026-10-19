@@ -111,7 +111,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   await tab.getByLabel('The code from the email').fill(codeIn(await lastMessageTo(email, before)));
   await tab.getByRole('button', { name: 'Sign in' }).click();
   await tab.getByRole('link', { name: /^Open RL-/ }).click();
-  const seen = tab.getByRole('region', { name: 'Who looked at your contact details' });
+  const seen = tab.getByRole('region', { name: 'Who looked at your details' });
   await expect(seen).toContainText('To ask which door of the hall it was.');
   await expect(seen).not.toContainText('@');
   await reporter.close();

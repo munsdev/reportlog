@@ -17,6 +17,8 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
+import type { Files } from '../files/context.ts';
+import { afterCommit, takeDownForReporter } from '../files/publication.ts';
 import { route } from '../http/route.ts';
 import { notAllowed, requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
@@ -36,6 +38,8 @@ export interface FilingRouteDeps {
   /** The deployment's CONTACT_KEY. Without it, nothing is filed and the refusal says why. */
   contactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
+  /** The files workstream's context, for taking published files down. */
+  files?: Files | null;
 }
 
 /** The request body, already validated against the contract by Fastify. */
@@ -142,14 +146,24 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
         throw refused(400, 'incomplete', 'Say whether you are giving it or taking it back.');
       }
       const owned = await mine.owned(me(request), params.threadId);
-      await setPermission(deps.db, {
-        threadId: owned.thread_id,
-        permission: b.permission,
-        granted: b.granted,
-        reason: b.reason ?? null,
+      const permission = b.permission;
+      const granted = b.granted;
+      await deps.db.transaction().execute(async (trx) => {
+        await setPermission(trx, {
+          threadId: owned.thread_id,
+          permission,
+          granted,
+          reason: b.reason ?? null,
+        });
+        // TAKING BACK THE FILES PERMISSION TAKES PUBLISHED FILES DOWN, in the
+        // same transaction, through the files workstream's one path down (the
+        // moderator's withholding uses it too). The database refuses the
+        // revocation if any file of the thread is still published at commit.
+        if (permission === 'attachment_publication' && !granted) {
+          await takeDownForReporter(trx, owned.thread_id);
+        }
       });
-      // Taking back the files permission must take published files down,
-      // which is storage work for the files workstream (F), behind this.
+      await afterCommit(deps.files ?? null);
       return { permissions: await permissionsFor(deps.db, owned.thread_id) };
     });
     return Promise.resolve();

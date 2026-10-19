@@ -53,15 +53,7 @@ import {
   versionsFor,
   writeNote,
 } from './notes.ts';
-import {
-  decide,
-  historyFor,
-  listQueue,
-  markRead,
-  restore,
-  setFilesPublished,
-  withdraw,
-} from './queue.ts';
+import { decide, historyFor, listQueue, markRead, restore, withdraw } from './queue.ts';
 
 export interface ModerationRouteDeps {
   db: Kysely<DB>;
@@ -116,7 +108,7 @@ export async function moderationRoutes(
       has_note: row.has_note,
       has_contact: row.has_contact,
       file_count: row.file_count,
-      files_published: row.files_published,
+      published_files: row.published_files,
       files_permitted: row.files_permitted,
       public: archive && !row.withdrawn && row.moderation_status === 'valid' && row.may_publish,
     };
@@ -169,15 +161,6 @@ export async function moderationRoutes(
       ok: true as const,
       cleared: await markRead(db, params.threadId, me(request)),
     }));
-
-    route(scope, C.setReportFiles, async ({ params, request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.setReportFiles>>(C.setReportFiles, request);
-      if (typeof b.publish !== 'boolean') {
-        throw refuse(400, 'incomplete', 'Say whether to publish the files or withhold them.');
-      }
-      await setFilesPublished(db, params.threadId, b.publish, me(request));
-      return { ok: true as const };
-    });
 
     route(scope, C.openReportContact, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.openReportContact>>(C.openReportContact, request);
@@ -468,7 +451,11 @@ export async function moderationRoutes(
       await mine.owned(me(request), params.threadId);
       const rows = await accessesForThreads(db, [params.threadId]);
       return {
-        accesses: rows.map((r) => ({ reason: r.reason, accessed_at: r.accessed_at.toISOString() })),
+        accesses: rows.map((r) => ({
+          what: r.kind,
+          reason: r.reason,
+          accessed_at: r.accessed_at.toISOString(),
+        })),
       };
     });
     return Promise.resolve();

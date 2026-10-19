@@ -127,15 +127,38 @@ export async function accessesForThreads(
   db: Kysely<DB>,
   threadIds: readonly string[],
   months = DEFAULT_MONTHS,
-): Promise<{ thread_id: string; kind: string; reason: string | null; accessed_at: Date }[]> {
+): Promise<
+  {
+    thread_id: string;
+    kind: 'contact' | 'file_original';
+    reason: string | null;
+    accessed_at: Date;
+  }[]
+> {
   if (!threadIds.length) return [];
-  const rows = await db
+  const since = sql<Date>`now() - make_interval(months => ${months})`;
+  const contact = await db
     .selectFrom('contact_access_log as a')
-    .select(['a.thread_id', 'a.kind', 'a.reason', 'a.accessed_at'])
+    .select(['a.thread_id', 'a.reason', 'a.accessed_at'])
     .where('a.thread_id', 'in', threadIds)
     .where('a.kind', '=', 'contact')
-    .where('a.accessed_at', '>', sql<Date>`now() - make_interval(months => ${months})`)
-    .orderBy('a.accessed_at', 'desc')
+    .where('a.accessed_at', '>', since)
     .execute();
-  return rows.flatMap((r) => (r.thread_id ? [{ ...r, thread_id: r.thread_id }] : []));
+  // Opening a file's unstripped original (where it was taken, on what
+  // device) is the other look a reporter would care about. Workstream F
+  // records it, with its reason, in attachment_events; the staff address
+  // there is not selected either.
+  const originals = await db
+    .selectFrom('attachment_events as e')
+    .select(['e.thread_id', 'e.reason', 'e.created_at as accessed_at'])
+    .where('e.thread_id', 'in', threadIds)
+    .where('e.action', '=', 'viewed_original')
+    .where('e.created_at', '>', since)
+    .execute();
+  return [
+    ...contact.flatMap((r) =>
+      r.thread_id ? [{ ...r, thread_id: r.thread_id, kind: 'contact' as const }] : [],
+    ),
+    ...originals.map((r) => ({ ...r, kind: 'file_original' as const })),
+  ].sort((a, b) => b.accessed_at.getTime() - a.accessed_at.getTime());
 }

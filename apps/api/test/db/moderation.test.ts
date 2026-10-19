@@ -26,7 +26,7 @@ let admin: { email: string; call: Caller };
 
 const board = async () =>
   (await h.app.inject({ method: 'GET', url: `/api/board/reports?logbook=${lb.slug}` })).json<{
-    reports: { public_ref: string; files: number; editorial_note?: Record<string, unknown> }[];
+    reports: { public_ref: string; editorial_note?: Record<string, unknown> }[];
   }>().reports;
 const onBoard = async (ref: string) => (await board()).some((r) => r.public_ref === ref);
 
@@ -282,6 +282,10 @@ describe('the review flag in the queue', () => {
 });
 
 describe('CONSENT IS THE CEILING, MODERATION IS THE FLOOR: files', () => {
+  // Files are published per file by workstream F (attachment_heads). Written
+  // by hand here, as the correction tests do: F's own tests run the real
+  // upload, re-encoding and copying. What this checks is the meeting point:
+  // a published file shows only while its report's text is public.
   async function withFile(what: string) {
     const r = await file(what);
     const head = await h.db
@@ -289,7 +293,6 @@ describe('CONSENT IS THE CEILING, MODERATION IS THE FLOOR: files', () => {
       .select('current_report_id')
       .where('thread_id', '=', r.thread)
       .executeTakeFirstOrThrow();
-    // Written by hand, as the correction tests do: uploads are workstream F's.
     const a = await h.db
       .insertInto('attachments')
       .values({
@@ -307,79 +310,67 @@ describe('CONSENT IS THE CEILING, MODERATION IS THE FLOOR: files', () => {
       .insertInto('report_attachments')
       .values({ report_id: head.current_report_id, attachment_id: a.id })
       .execute();
-    return { ...r, reportId: head.current_report_id };
+    await h.db
+      .insertInto('attachment_heads')
+      .values({
+        attachment_id: a.id,
+        thread_id: r.thread,
+        rendition_media_type: 'image/jpeg',
+        dek_wrapped: Buffer.alloc(60, 1),
+      })
+      .execute();
+    return { ...r, attachmentId: a.id };
   }
-  const files = (who: Caller, thread: string, publish: boolean) =>
-    who({ method: 'POST', url: `/api/moderation/reports/${thread}/files`, payload: { publish } });
-  const filesOf = async (ref: string) => (await board()).find((x) => x.public_ref === ref)?.files;
-
-  it('files are never published before the text', async () => {
-    const r = await withFile('A report with a photograph, still pending.');
-    const res = await files(mod.call, r.thread, true);
-    expect(res.statusCode).toBe(409);
-    expect(res.json<{ error: { code: string } }>().error.code).toBe('text_first');
-  });
-
-  it('nor without the reporter’s permission, read at the moment of publishing', async () => {
-    const r = await withFile('A report with a photograph, approved.');
-    await decide(mod.call, r.thread, 'valid');
-    const res = await files(mod.call, r.thread, true);
-    expect(res.json<{ error: { code: string } }>().error.code).toBe('not_permitted');
-    expect(await filesOf(r.ref)).toBe(0);
-  });
-
-  it('the text may be public without the files; with both, the files show; taking it back takes them down', async () => {
-    const r = await withFile('A report whose reporter permits the photographs.');
-    await decide(mod.call, r.thread, 'valid');
-    expect(await filesOf(r.ref)).toBe(0);
-    const reporter = as(h, await signIn(h, r.email));
-    const perm = (granted: boolean) =>
-      reporter({
+  const publishByHand = (id: number) =>
+    h.db
+      .updateTable('attachment_heads')
+      .set({
+        publication: 'published',
+        rendition_key: `rendition/${String(id)}`,
+        alt_text: 'A photo',
+      })
+      .where('attachment_id', '=', id)
+      .execute();
+  const shown = async (ref: string) => {
+    const res = await h.app.inject({ method: 'GET', url: `/api/files/report/${ref}` });
+    return res.statusCode === 200 ? res.json<{ published: unknown[] }>().published.length : null;
+  };
+  const grant = (email: string, thread: string, granted: boolean) =>
+    signIn(h, email).then((s) =>
+      as(
+        h,
+        s,
+      )({
         method: 'POST',
-        url: `/api/mine/reports/${r.thread}/permissions`,
+        url: `/api/mine/reports/${thread}/permissions`,
         payload: { permission: 'attachment_publication', granted },
-      });
-    await perm(true);
-    expect(await filesOf(r.ref)).toBe(0);
-    expect((await files(mod.call, r.thread, true)).statusCode).toBe(200);
-    expect(await filesOf(r.ref)).toBe(1);
-    const listed = await h.app.inject({ method: 'GET', url: `/api/board/reports/${r.ref}/files` });
-    expect(listed.json<{ files: unknown[] }>().files).toHaveLength(1);
+      }),
+    );
 
-    await perm(false);
-    expect(await filesOf(r.ref)).toBe(0);
-    expect(
-      (await h.app.inject({ method: 'GET', url: `/api/board/reports/${r.ref}/files` })).json<{
-        files: unknown[];
-      }>().files,
-    ).toHaveLength(0);
+  it('a published file is not shown while its report is waiting, and is once the text is approved', async () => {
+    const r = await withFile('A report with a photograph, still pending.');
+    await grant(r.email, r.thread, true);
+    await publishByHand(r.attachmentId);
+    expect(await shown(r.ref)).toBeNull();
+    await decide(mod.call, r.thread, 'valid');
+    expect(await shown(r.ref)).toBe(1);
+    const item = (
+      await mod.call({ method: 'GET', url: `/api/moderation/reports/${r.thread}` })
+    ).json<{
+      report: { file_count: number; published_files: number; files_permitted: boolean };
+    }>();
+    expect(item.report).toMatchObject({ file_count: 1, published_files: 1, files_permitted: true });
+    // Declining the text takes the published file off with it.
+    await decide(mod.call, r.thread, 'invalid');
+    expect(await shown(r.ref)).toBeNull();
   });
 
-  it('the database holds the same ceiling if the module is bypassed', async () => {
+  it('the text may be public without its files, and the database refuses an unpermitted one', async () => {
     const r = await withFile('A report nobody permitted the files of.');
-    await expect(
-      h.db
-        .insertInto('file_publication_log')
-        .values({
-          thread_id: r.thread,
-          report_id: r.reportId,
-          published: true,
-          actor_email: 'x@example.org',
-        })
-        .execute(),
-    ).rejects.toThrow(/before its text/);
     await decide(mod.call, r.thread, 'valid');
-    await expect(
-      h.db
-        .insertInto('file_publication_log')
-        .values({
-          thread_id: r.thread,
-          report_id: r.reportId,
-          published: true,
-          actor_email: 'x@example.org',
-        })
-        .execute(),
-    ).rejects.toThrow(/not permitted/);
+    expect(await onBoard(r.ref)).toBe(true);
+    expect(await shown(r.ref)).toBe(0);
+    await expect(publishByHand(r.attachmentId)).rejects.toThrow(/not permitted/);
   });
 });
 
@@ -435,6 +426,49 @@ describe("opening a reporter's contact details", () => {
     expect(
       (await other({ method: 'GET', url: `/api/mine/reports/${r.thread}/accesses` })).statusCode,
     ).toBe(404);
+  });
+
+  it('the reporter also sees each opening of a file’s original, with its reason and not who', async () => {
+    const r = await file('An account whose photo’s original a moderator opened.');
+    const head = await h.db
+      .selectFrom('report_heads')
+      .select('current_report_id')
+      .where('thread_id', '=', r.thread)
+      .executeTakeFirstOrThrow();
+    const a = await h.db
+      .insertInto('attachments')
+      .values({
+        thread_id: r.thread,
+        report_id: head.current_report_id,
+        ordinal: 1,
+        media_type: 'image/jpeg',
+        byte_size: 99,
+        sha256: createHash('sha256').update(r.thread).digest('hex'),
+        storage_key: `evidence/${r.thread}`,
+      })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    // As workstream F's original view writes it.
+    await h.db
+      .insertInto('attachment_events')
+      .values({
+        attachment_id: a.id,
+        thread_id: r.thread,
+        action: 'viewed_original',
+        actor: 'moderator',
+        actor_email: mod.email,
+        reason: 'To check where the photograph was taken.',
+      })
+      .execute();
+    const reporter = as(h, await signIn(h, r.email));
+    const res = await reporter({ method: 'GET', url: `/api/mine/reports/${r.thread}/accesses` });
+    expect(res.json<{ accesses: unknown[] }>().accesses).toEqual([
+      expect.objectContaining({
+        what: 'file_original',
+        reason: 'To check where the photograph was taken.',
+      }),
+    ]);
+    expect(res.body).not.toContain('@');
   });
 
   it('after an erasure, opening says so and is still logged', async () => {

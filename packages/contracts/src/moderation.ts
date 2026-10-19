@@ -54,7 +54,8 @@ export const QueueItem = z.object({
   has_note: z.boolean(),
   has_contact: z.boolean(),
   file_count: z.number().int(),
-  files_published: z.boolean(),
+  /** How many of this version's files a moderator has published (workstream F's decision, per file). */
+  published_files: z.number().int(),
   /** The reporter's attachment permission, as it stands now. */
   files_permitted: z.boolean(),
   /** True only when the board shows it right now. */
@@ -131,16 +132,6 @@ export const markReportRead = defineRoute({
   summary: 'Say a flagged report has had its second read. Not a decision; nothing is deleted.',
   params: ThreadParams,
   response: z.object({ ok: z.literal(true), cleared: z.number().int() }),
-});
-
-export const setReportFiles = defineRoute({
-  method: 'POST',
-  path: '/api/moderation/reports/:threadId/files',
-  summary:
-    "Publish or withhold a report's files. Only after its text, and only while the reporter permits it.",
-  params: ThreadParams,
-  body: z.object({ publish: z.boolean().optional() }),
-  response: Ok,
 });
 
 export const OpenedContact = z.object({
@@ -345,9 +336,15 @@ export const getMyReportAccesses = defineRoute({
   method: 'GET',
   path: '/api/mine/reports/:threadId/accesses',
   summary:
-    'When somebody on staff opened your contact details, and the reason they gave. Never who.',
+    'When somebody on staff opened your contact details or a file’s original, and the reason they gave. Never who.',
   params: ThreadParams,
   response: z.object({
-    accesses: z.array(z.object({ reason: z.string().nullable(), accessed_at: Timestamp })),
+    accesses: z.array(
+      z.object({
+        what: z.enum(['contact', 'file_original']),
+        reason: z.string().nullable(),
+        accessed_at: Timestamp,
+      }),
+    ),
   }),
 });

@@ -23,6 +23,7 @@ import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
 import { Route as DocsFirstLogbookRouteImport } from './routes/docs/first-logbook'
+import { Route as EvidenceTokenRouteImport } from './routes/evidence/$token'
 import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
@@ -126,6 +127,11 @@ const DocsCheckingRoute = DocsCheckingRouteImport.update({
 const DocsFirstLogbookRoute = DocsFirstLogbookRouteImport.update({
   id: '/docs/first-logbook',
   path: '/docs/first-logbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvidenceTokenRoute = EvidenceTokenRouteImport.update({
+  id: '/evidence/$token',
+  path: '/evidence/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedbackIndexRoute = FeedbackIndexRouteImport.update({
@@ -313,6 +319,7 @@ export interface FileRoutesByFullPath {
   '/board/numbers': typeof BoardNumbersRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -359,6 +366,7 @@ export interface FileRoutesByTo {
   '/board/numbers': typeof BoardNumbersRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -410,6 +418,7 @@ export interface FileRoutesById {
   '/board/numbers': typeof BoardNumbersRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -462,6 +471,7 @@ export interface FileRouteTypes {
     | '/board/numbers'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -508,6 +518,7 @@ export interface FileRouteTypes {
     | '/board/numbers'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -558,6 +569,7 @@ export interface FileRouteTypes {
     | '/board/numbers'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -609,6 +621,7 @@ export interface RootRouteChildren {
   BoardNumbersRoute: typeof BoardNumbersRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
+  EvidenceTokenRoute: typeof EvidenceTokenRoute
   FeedbackTestersRoute: typeof FeedbackTestersRoute
   FileSlugRoute: typeof FileSlugRoute
   ListSlugRoute: typeof ListSlugRoute
@@ -729,6 +742,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/first-logbook'
       fullPath: '/docs/first-logbook'
       preLoaderRoute: typeof DocsFirstLogbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evidence/$token': {
+      id: '/evidence/$token'
+      path: '/evidence/$token'
+      fullPath: '/evidence/$token'
+      preLoaderRoute: typeof EvidenceTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feedback/': {
@@ -1054,6 +1074,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardNumbersRoute: BoardNumbersRoute,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,
+  EvidenceTokenRoute: EvidenceTokenRoute,
   FeedbackTestersRoute: FeedbackTestersRoute,
   FileSlugRoute: FileSlugRoute,
   ListSlugRoute: ListSlugRoute,
