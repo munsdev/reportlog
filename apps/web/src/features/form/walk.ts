@@ -1,0 +1,167 @@
+/**
+ * Which questions are being asked, what has been answered, and what goes to
+ * the server: in one walk, in the operator's order, because they decide
+ * each other.
+ *
+ * THE SAME CODE AS THE SERVER. A question carrying `shown_when` is asked only
+ * when an earlier answer satisfies it, and visibility cascades. Rather than a
+ * second copy of that rule here (the old form had one, and a suite to keep
+ * the two in step), the page runs `buildAnswers` from @reportlog/fields, the
+ * function the server seals with. What the reporter is shown and what will be
+ * sealed cannot disagree, because they are one computation.
+ *
+ * The server still decides: this only decides what somebody is shown.
+ */
+import type { FormQuestion } from '@reportlog/contracts';
+import { FILE_TYPE, buildAnswers, conditionMet, normalizeAnswer } from '@reportlog/fields';
+import type { Answers, FieldDefinition } from '@reportlog/fields';
+
+/** What a control holds, before the server normalizes it. */
+export type RawValue = string | string[];
+export type RawAnswers = Record<string, RawValue | undefined>;
+
+export function definitionsOf(questions: readonly FormQuestion[]): FieldDefinition[] {
+  return questions.map((q) => ({
+    key: q.key,
+    kind: q.kind,
+    label: q.label,
+    ...(q.help ? { help: q.help } : {}),
+    required: q.required,
+    ...(q.shown_when ? { shown_when: q.shown_when } : {}),
+    settings: q.settings,
+  }));
+}
+
+/**
+ * What the page sends. Only the questions being asked contribute: a control
+ * still holding something typed before an earlier answer changed sends
+ * nothing, so the review, the payload and the record all say the same.
+ *
+ * A date-and-time box reads in the reporter's own clock; it is sent as UTC so
+ * the answer means the same thing read anywhere.
+ */
+export function toSubmission(
+  questions: readonly FormQuestion[],
+  raw: RawAnswers,
+): Record<string, unknown> {
+  const asked = new Set(askedQuestions(questions, raw).map((q) => q.key));
+  const all = toRawSubmission(questions, raw);
+  return Object.fromEntries(Object.entries(all).filter(([key]) => asked.has(key)));
+}
+
+/** The answers as they would be sealed, from what the controls hold now. */
+export function sealedAnswers(questions: readonly FormQuestion[], raw: RawAnswers): Answers {
+  // Required-ness is not this function's business: it is asked "what would
+  // be sealed", and an unanswered required question simply has no key yet.
+  const defs = definitionsOf(questions).map((d) => ({ ...d, required: false }));
+  return buildAnswers(defs, toRawSubmission(questions, raw)).answers ?? {};
+}
+
+// The same conversion as toSubmission, without the asked-filter, which needs
+// the answers this produces (buildAnswers applies the conditions itself).
+function toRawSubmission(questions: readonly FormQuestion[], raw: RawAnswers) {
+  const out: Record<string, unknown> = {};
+  for (const q of questions) {
+    const v = raw[q.key];
+    if (v === undefined) continue;
+    out[q.key] =
+      q.kind === 'datetime' && typeof v === 'string' && v && !Number.isNaN(new Date(v).getTime())
+        ? new Date(v).toISOString()
+        : v;
+  }
+  return out;
+}
+
+/**
+ * The questions being asked right now, in order. The upload question has no
+ * card of its own (the files workstream owns that step), so it is never one.
+ */
+export function askedQuestions(
+  questions: readonly FormQuestion[],
+  raw: RawAnswers,
+): FormQuestion[] {
+  const answers = sealedAnswers(questions, raw);
+  return questions.filter(
+    (q) => q.kind !== FILE_TYPE && (!q.shown_when || conditionMet(q.shown_when, answers)),
+  );
+}
+
+/**
+ * Has the answer that decides whether this question is asked been given?
+ * For the progress bar only: a question nobody has ruled out still counts
+ * towards what is left, so the bar never lurches backwards.
+ */
+export function stillPossible(
+  q: FormQuestion,
+  questions: readonly FormQuestion[],
+  raw: RawAnswers,
+): boolean {
+  if (q.kind === FILE_TYPE) return false;
+  if (!q.shown_when) return true;
+  const answers = sealedAnswers(questions, raw);
+  return answers[q.shown_when.field] === undefined || conditionMet(q.shown_when, answers);
+}
+
+const isEmpty = (v: RawValue | undefined) =>
+  v === undefined || (typeof v === 'string' ? v.trim() === '' : v.length === 0);
+
+/**
+ * What stops somebody leaving this card, in a sentence, or null. Required
+ * means required OF THE PEOPLE ASKED: a hidden question is never checked.
+ */
+export function cardProblem(q: FormQuestion, raw: RawAnswers): string | null {
+  const v = raw[q.key];
+  if (isEmpty(v)) return q.required ? 'An answer is needed here.' : null;
+  if (normalizeAnswer(q.kind, toRawSubmission([q], raw)[q.key], q.settings) === null) {
+    return 'That is not an answer this question takes. Check it, or clear it.';
+  }
+  return null;
+}
+
+/** An answer in the words the reporter read: the review card's rows. */
+export function shownAnswer(q: FormQuestion, raw: RawAnswers): string | null {
+  const v = raw[q.key];
+  if (isEmpty(v) || v === undefined) return null;
+  if (Array.isArray(v)) return v.join(', ');
+  if (q.kind === 'yes_no') return v === 'yes' ? 'Yes' : 'No';
+  if (q.kind === 'evidence_declaration')
+    return v === 'yes' ? 'Yes, I have something' : 'No, I do not';
+  if (q.kind === 'location') {
+    // THE NAME, NOT THE CODE: a code is not something a reporter can check.
+    const all = [...(q.places?.subdivisions ?? []), ...(q.places?.countries ?? [])];
+    return all.find((p) => p.code === v)?.name ?? v;
+  }
+  if (q.kind === 'datetime') {
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? v : d.toLocaleString();
+  }
+  return v;
+}
+
+/**
+ * Sealed answers back into what the controls hold, so a correction starts
+ * from what the report says now. A date-and-time goes back into the
+ * reporter's own clock, the way the box shows it.
+ */
+export function rawFromAnswers(
+  questions: readonly FormQuestion[],
+  answers: Record<string, unknown>,
+): RawAnswers {
+  const out: RawAnswers = {};
+  for (const q of questions) {
+    const v = answers[q.key];
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'boolean') out[q.key] = v ? 'yes' : 'no';
+    else if (Array.isArray(v)) out[q.key] = v.map(String);
+    else if (q.kind === 'datetime' && typeof v === 'string') out[q.key] = localDateTime(v);
+    else if (typeof v === 'string' || typeof v === 'number') out[q.key] = String(v);
+  }
+  return out;
+}
+
+function localDateTime(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}

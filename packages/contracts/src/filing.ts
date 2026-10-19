@@ -1,0 +1,350 @@
+/**
+ * Filing and confirmation (workstream C).
+ *
+ * THREE AUDIENCES. A reporter filing (public, and the only calls a logbook
+ * opened outside the site password lets through: see FILING_CALLS in
+ * apps/api/src/identity/doors.ts). A signed-in reporter looking after their
+ * own reports ("My reports"). And a coordinator entering accounts collected
+ * on paper for an organization.
+ *
+ * Request bodies are typed loosely on purpose, as in logbooks.ts: the server
+ * refuses with a sentence a person can act on, where a schema error would
+ * refuse first with one they cannot.
+ */
+import { z } from 'zod';
+import { FormQuestion } from './logbooks.ts';
+import { defineRoute } from './route.ts';
+
+const Timestamp = z.string();
+const Id = z.coerce.number().int().positive();
+const Answers = z.record(z.string(), z.unknown());
+
+// ── filing ──────────────────────────────────────────────────────────────
+
+export const submitReport = defineRoute({
+  method: 'POST',
+  path: '/api/reports',
+  summary:
+    'Send a report for confirmation. Nothing is filed until the link in the email is followed.',
+  body: z.object({
+    logbook: z.string().optional(),
+    /** The spine: where to reach the reporter. Never sealed. */
+    email: z.string().optional(),
+    /** The spine: the statement on the last card. */
+    consent: z.boolean().optional(),
+    answers: Answers.optional(),
+    /** The spine: the publication answer. Not answering is "no". */
+    may_publish: z.boolean().optional(),
+    /** Issued by GET /api/publication-card, never computed by a client. */
+    may_publish_digest: z.string().optional(),
+  }),
+  response: z.object({ pending: z.literal(true) }),
+});
+
+/**
+ * Where a confirmation link stands. A reporter is never told WHICH
+ * non-public state their report is in: a moderator can always revisit a
+ * decision, so nothing about it is final.
+ */
+export const Confirmation = z.discriminatedUnion('state', [
+  z.object({ state: z.literal('unconfirmed'), logbook_title: z.string(), expires_at: Timestamp }),
+  z.object({ state: z.literal('expired'), logbook_title: z.string() }),
+  z.object({ state: z.literal('received'), logbook_title: z.string(), public_ref: z.string() }),
+  z.object({ state: z.literal('public'), logbook_title: z.string(), public_ref: z.string() }),
+]);
+export type Confirmation = z.infer<typeof Confirmation>;
+
+const TokenParams = z.object({ token: z.string().min(1).max(200) });
+
+export const getConfirmation = defineRoute({
+  method: 'GET',
+  path: '/api/reports/confirm/:token',
+  summary:
+    'Where a confirmation link stands. Only looks: mail scanners open links, so a GET never files anything.',
+  params: TokenParams,
+  response: z.object({ confirmation: Confirmation }),
+});
+
+export const confirmReport = defineRoute({
+  method: 'POST',
+  path: '/api/reports/confirm/:token',
+  summary: 'Confirm: file the report into its logbook. Pressing twice files it once.',
+  params: TokenParams,
+  response: z.object({ confirmation: Confirmation, just_confirmed: z.boolean() }),
+});
+
+// ── whether the site takes new reports ──────────────────────────────────
+
+export const getIntakeSwitch = defineRoute({
+  method: 'GET',
+  path: '/api/intake-switch',
+  summary: 'Whether this site is taking new reports at all.',
+  response: z.object({ open: z.boolean() }),
+});
+
+export const IntakeSwitchAdmin = z.object({
+  open: z.boolean(),
+  /** Null when nobody has decided, which reads as open. */
+  stored: z.boolean().nullable(),
+});
+
+export const getIntakeSwitchAdmin = defineRoute({
+  method: 'GET',
+  path: '/api/admin/intake-switch',
+  summary: 'The intake switch, and whether anybody has set it.',
+  response: IntakeSwitchAdmin,
+});
+
+export const setIntakeSwitch = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/intake-switch',
+  summary:
+    'Open or close the site to new reports. Closing leaves corrections and everything filed alone.',
+  body: z.object({ open: z.boolean().nullable() }),
+  response: IntakeSwitchAdmin,
+});
+
+// ── my reports ──────────────────────────────────────────────────────────
+
+export const PERMISSIONS = [
+  'contact_passing',
+  'attachment_publication',
+  'evidence_request',
+] as const;
+export const Permission = z.enum(PERMISSIONS);
+export type Permission = z.infer<typeof Permission>;
+export const Permissions = z.object({
+  contact_passing: z.boolean(),
+  attachment_publication: z.boolean(),
+  evidence_request: z.boolean(),
+});
+export type Permissions = z.infer<typeof Permissions>;
+
+export const MyReport = z.object({
+  thread_id: z.string(),
+  /** The current version's reference. */
+  public_ref: z.string(),
+  logbook_slug: z.string(),
+  logbook_title: z.string(),
+  /** When the current version was filed. */
+  received_at: Timestamp,
+  first_received_at: Timestamp,
+  versions: z.number().int(),
+  answers: Answers,
+  may_publish: z.boolean(),
+  withdrawn: z.boolean(),
+  /** 'pending' until a moderator has looked; anything else, they have. */
+  moderation_status: z.string(),
+  permissions: Permissions,
+});
+export type MyReport = z.infer<typeof MyReport>;
+
+export const listMyReports = defineRoute({
+  method: 'GET',
+  path: '/api/mine/reports',
+  summary: 'The reports filed from the signed-in address.',
+  response: z.object({ reports: z.array(MyReport) }),
+});
+
+const ThreadParams = z.object({ threadId: z.uuid() });
+
+export const MyReportDetail = MyReport.extend({
+  /** The logbook's questions as they are now: a correction answers these. */
+  questions: z.array(FormQuestion),
+  permission_history: z.array(
+    z.object({
+      permission: Permission,
+      granted: z.boolean(),
+      reason: z.string().nullable(),
+      at: Timestamp,
+    }),
+  ),
+  actions: z.array(z.object({ action: z.string(), comment: z.string().nullable(), at: Timestamp })),
+});
+export type MyReportDetail = z.infer<typeof MyReportDetail>;
+
+export const getMyReport = defineRoute({
+  method: 'GET',
+  path: '/api/mine/reports/:threadId',
+  summary: 'One of your reports, with what a correction would be asked.',
+  params: ThreadParams,
+  response: MyReportDetail,
+});
+
+export const correctMyReport = defineRoute({
+  method: 'POST',
+  path: '/api/mine/reports/:threadId/correct',
+  summary:
+    'Answer the logbook again: a new version in the same thread. May take back permission to publish, never give it.',
+  params: ThreadParams,
+  body: z.object({
+    answers: Answers.optional(),
+    comment: z.string().optional(),
+    may_publish: z.boolean().optional(),
+  }),
+  response: z.object({ public_ref: z.string() }),
+});
+
+export const withdrawMyReport = defineRoute({
+  method: 'POST',
+  path: '/api/mine/reports/:threadId/withdraw',
+  summary: 'Take a report off the public board. It stays in the archive, sealed.',
+  params: ThreadParams,
+  body: z.object({ comment: z.string().optional() }),
+  response: z.object({ ok: z.literal(true) }),
+});
+
+export const eraseMyContact = defineRoute({
+  method: 'POST',
+  path: '/api/mine/reports/:threadId/erase',
+  summary:
+    'Erase your contact details from a report and withdraw it. The report stays, sealed; it never held your address.',
+  params: ThreadParams,
+  body: z.object({ confirm: z.boolean().optional() }),
+  response: z.object({ ok: z.literal(true) }),
+});
+
+export const setMyPermission = defineRoute({
+  method: 'POST',
+  path: '/api/mine/reports/:threadId/permissions',
+  summary: 'Give or take back one permission. Only you can.',
+  params: ThreadParams,
+  body: z.object({
+    permission: z.string().optional(),
+    granted: z.boolean().optional(),
+    reason: z.string().optional(),
+  }),
+  response: z.object({ permissions: Permissions }),
+});
+
+// ── coordinator intake ──────────────────────────────────────────────────
+
+export const IntakeOrganization = z.object({
+  organization_id: z.number().int(),
+  name: z.string(),
+  role: z.string(),
+});
+
+export const IntakeBatch = z.object({
+  id: z.number().int(),
+  organization_id: z.number().int(),
+  organization: z.string(),
+  status: z.enum(['draft', 'submitted']),
+  created_at: Timestamp,
+  submitted_at: Timestamp.nullable(),
+  entries: z.number().int(),
+  filed: z.number().int(),
+});
+export type IntakeBatch = z.infer<typeof IntakeBatch>;
+
+/** One account as a coordinator types it up. Everything optional until review. */
+export const DraftPayload = z.looseObject({
+  logbook: z.string().optional(),
+  answers: Answers.optional(),
+  intake_method: z.string().optional(),
+  collected_on: z.string().optional(),
+  /** The coordinator's own reference to the paper. Never sealed. */
+  source_ref: z.string().optional(),
+  may_publish: z.boolean().optional(),
+  may_publish_digest: z.string().optional(),
+});
+export type DraftPayload = z.infer<typeof DraftPayload>;
+
+export const IntakeDraft = z.object({
+  id: z.number().int(),
+  ordinal: z.number().int(),
+  payload: DraftPayload,
+  public_ref: z.string().nullable(),
+});
+
+export const listIntakeOrganizations = defineRoute({
+  method: 'GET',
+  path: '/api/intake/organizations',
+  summary: 'The organizations you may file accounts for.',
+  response: z.object({ organizations: z.array(IntakeOrganization) }),
+});
+
+export const createIntakeBatch = defineRoute({
+  method: 'POST',
+  path: '/api/intake/batches',
+  summary: 'Start a batch of accounts for one organization.',
+  body: z.object({ organization_id: z.number().int().optional() }),
+  response: IntakeBatch,
+});
+
+export const listIntakeBatches = defineRoute({
+  method: 'GET',
+  path: '/api/intake/batches',
+  summary: 'Your batches, newest first. Only your own.',
+  response: z.object({ batches: z.array(IntakeBatch) }),
+});
+
+const BatchParams = z.object({ id: Id });
+
+export const getIntakeBatch = defineRoute({
+  method: 'GET',
+  path: '/api/intake/batches/:id',
+  summary: 'One of your batches and its accounts.',
+  params: BatchParams,
+  response: z.object({ batch: IntakeBatch, drafts: z.array(IntakeDraft) }),
+});
+
+export const addIntakeDraft = defineRoute({
+  method: 'POST',
+  path: '/api/intake/batches/:id/drafts',
+  summary: 'Add an account to a batch that has not been filed.',
+  params: BatchParams,
+  body: DraftPayload,
+  response: IntakeDraft,
+});
+
+export const updateIntakeDraft = defineRoute({
+  method: 'PUT',
+  path: '/api/intake/drafts/:id',
+  summary: 'Change an account that has not been filed.',
+  params: BatchParams,
+  body: DraftPayload,
+  response: IntakeDraft,
+});
+
+export const removeIntakeDraft = defineRoute({
+  method: 'DELETE',
+  path: '/api/intake/drafts/:id',
+  summary: 'Remove an account that has not been filed.',
+  params: BatchParams,
+  response: z.object({ ok: z.literal(true) }),
+});
+
+export const reviewIntakeBatch = defineRoute({
+  method: 'GET',
+  path: '/api/intake/batches/:id/review',
+  summary: 'What each account is still missing, before anything is filed.',
+  params: BatchParams,
+  response: z.object({
+    batch: IntakeBatch,
+    entries: z.array(
+      z.object({
+        id: z.number().int(),
+        ordinal: z.number().int(),
+        filed: z.boolean(),
+        problems: z.array(z.string()),
+      }),
+    ),
+    ready: z.number().int(),
+    blocked: z.number().int(),
+  }),
+});
+
+export const submitIntakeBatch = defineRoute({
+  method: 'POST',
+  path: '/api/intake/batches/:id/submit',
+  summary:
+    'Attest to the batch and file every complete account. Incomplete ones stay staged, never discarded.',
+  params: BatchParams,
+  body: z.object({ attested: z.boolean().optional() }),
+  response: z.object({
+    filed: z.array(z.object({ ordinal: z.number().int(), public_ref: z.string() })),
+    still_staged: z.number().int(),
+    attested_at: Timestamp,
+  }),
+});
