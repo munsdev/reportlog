@@ -35,6 +35,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Moderation',
       'Moderation settings',
+      'Transparency log',
       'Files',
       'File settings',
       'Settings',
@@ -79,6 +80,7 @@ describe('who sees which staff screen', () => {
       '/lists/review',
       '/moderate',
       '/moderate/settings',
+      '/transparency-log',
       '/files',
       '/files/settings',
     ]) {

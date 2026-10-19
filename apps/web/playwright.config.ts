@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|doors)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -47,7 +47,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|doors)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -94,6 +94,19 @@ export default defineConfig({
       name: 'doors-behind-password',
       testMatch: /doors\/.*\.spec\.ts$/,
       dependencies: ['files-behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // D3: severity on reports the other projects filed (so it files none,
+      // and spends nothing of the per-address filing limit), then the board
+      // with the site password on. Last, because the password is the whole
+      // site's.
+      name: 'board-behind-password',
+      testMatch: /board-locked\/.*\.spec\.ts$/,
+      dependencies: ['doors-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

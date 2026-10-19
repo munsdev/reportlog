@@ -5,8 +5,19 @@
  * how to reach them. Ordinary browsing of the queue is NOT logged: recording
  * every glance would bury the entries that matter under thousands that do
  * not. The log means "somebody opened something protected", and it keeps
- * meaning that only while it stays narrow. (Workstream F adds the opening of
- * a file's unstripped original here, as legacy did.)
+ * meaning that only while it stays narrow.
+ *
+ * WHAT COUNTS AS OPENED, and where each is written:
+ *   - contact details read by staff: `openContactLogged`, here ('contact');
+ *   - contact details opened by the server because staff asked the reporter
+ *     for files: `recordContactUsed`, called by F's evidence ask before it
+ *     decrypts ('contact_used');
+ *   - a file's unstripped original: F writes it to attachment_events
+ *     ('viewed_original'), with its reason, and both views read it there;
+ *   - a file's re-encoded copy, a still or a page: `recordFilePreview`,
+ *     called by F's view route ('file_preview'). For oversight only; the
+ *     reporter is not shown these;
+ *   - a read of this log by an administrator ('audit_log').
  *
  * THE ONLY WAY TO READ CONTACT DETAILS FOR STAFF IS `openContactLogged`. It
  * writes the entry first and decrypts second, so if the write fails nothing
@@ -78,6 +89,75 @@ export async function openContactLogged(
   return { ok: true, contact };
 }
 
+/**
+ * The server is about to open a reporter's contact details because a member
+ * of staff asked them for files (F's evidence ask). Nobody on staff sees the
+ * address, but it is opened on their say-so, so it is recorded, BEFORE the
+ * decryption, and the reporter is shown it. If the ask then fails, the entry
+ * stays: this log over-reports rather than under-reports.
+ */
+export async function recordContactUsed(
+  db: Kysely<DB>,
+  input: { threadId: string; staffEmail: string },
+): Promise<void> {
+  const head = await db
+    .selectFrom('report_heads')
+    .select('current_report_id')
+    .where('thread_id', '=', input.threadId)
+    .executeTakeFirst();
+  if (!head) return;
+  await db
+    .insertInto('contact_access_log')
+    .values({
+      staff_email: input.staffEmail,
+      kind: 'contact_used',
+      thread_id: input.threadId,
+      report_id: head.current_report_id,
+    })
+    .execute();
+}
+
+/** One look at a file is one entry, however many requests the browser makes for it. */
+export const PREVIEW_WINDOW_MINUTES = 15;
+
+/**
+ * A member of staff is about to see a file's re-encoded copy (or a still or a
+ * page of it). Written before the bytes are sent. A video or a document asks
+ * for itself in pieces, so a second entry for the same person and file
+ * within PREVIEW_WINDOW_MINUTES is not written: otherwise one look reads as
+ * forty, and the log stops meaning anything.
+ */
+export async function recordFilePreview(
+  db: Kysely<DB>,
+  input: { attachmentId: number; threadId: string; staffEmail: string },
+): Promise<void> {
+  const recent = await db
+    .selectFrom('contact_access_log')
+    .select('id')
+    .where('kind', '=', 'file_preview')
+    .where('attachment_id', '=', input.attachmentId)
+    .where('staff_email', '=', input.staffEmail)
+    .where('accessed_at', '>', sql<Date>`now() - make_interval(mins => ${PREVIEW_WINDOW_MINUTES})`)
+    .executeTakeFirst();
+  if (recent) return;
+  const head = await db
+    .selectFrom('report_heads')
+    .select('current_report_id')
+    .where('thread_id', '=', input.threadId)
+    .executeTakeFirst();
+  if (!head) return;
+  await db
+    .insertInto('contact_access_log')
+    .values({
+      staff_email: input.staffEmail,
+      kind: 'file_preview',
+      thread_id: input.threadId,
+      report_id: head.current_report_id,
+      attachment_id: input.attachmentId,
+    })
+    .execute();
+}
+
 const DEFAULT_MONTHS = 12;
 
 /**
@@ -91,7 +171,9 @@ export async function recentAccesses(
   opts: { months?: number; threadId?: string | null; limit?: number } = {},
 ) {
   const months = opts.months ?? DEFAULT_MONTHS;
-  let q = db
+  const limit = opts.limit ?? 500;
+  const since = sql<Date>`now() - make_interval(months => ${months})`;
+  let looks = db
     .selectFrom('contact_access_log as a')
     .leftJoin('reports as r', 'r.id', 'a.report_id')
     .select([
@@ -101,14 +183,51 @@ export async function recentAccesses(
       'a.reason',
       'a.accessed_at',
       'a.thread_id',
+      'a.attachment_id',
       'r.public_ref',
     ])
-    .where('a.accessed_at', '>', sql<Date>`now() - make_interval(months => ${months})`)
+    .where('a.accessed_at', '>', since)
     .orderBy('a.accessed_at', 'desc')
     .orderBy('a.id', 'desc')
-    .limit(opts.limit ?? 500);
-  if (opts.threadId) q = q.where('a.thread_id', '=', opts.threadId);
-  return q.execute();
+    .limit(limit);
+  if (opts.threadId) looks = looks.where('a.thread_id', '=', opts.threadId);
+  // Originals are on F's record of the file; the reference is the version
+  // the file arrived with.
+  let originals = db
+    .selectFrom('attachment_events as e')
+    .innerJoin('attachments as f', 'f.id', 'e.attachment_id')
+    .innerJoin('reports as r', 'r.id', 'f.report_id')
+    .select([
+      'e.id',
+      'e.actor_email',
+      'e.reason',
+      'e.created_at',
+      'e.thread_id',
+      'e.attachment_id',
+      'r.public_ref',
+    ])
+    .where('e.action', '=', 'viewed_original')
+    .where('e.created_at', '>', since)
+    .orderBy('e.created_at', 'desc')
+    .orderBy('e.id', 'desc')
+    .limit(limit);
+  if (opts.threadId) originals = originals.where('e.thread_id', '=', opts.threadId);
+  return [
+    ...(await looks.execute()).map((a) => ({ ...a, id: `a${String(a.id)}` })),
+    ...(await originals.execute()).map((e) => ({
+      id: `f${String(e.id)}`,
+      // A moderator's event always carries the address (F's CHECK).
+      staff_email: e.actor_email ?? '',
+      kind: 'file_original',
+      reason: e.reason,
+      accessed_at: e.created_at,
+      thread_id: e.thread_id,
+      attachment_id: e.attachment_id,
+      public_ref: e.public_ref,
+    })),
+  ]
+    .sort((x, y) => y.accessed_at.getTime() - x.accessed_at.getTime())
+    .slice(0, limit);
 }
 
 export async function recordAuditRead(db: Kysely<DB>, staffEmail: string): Promise<void> {
@@ -130,7 +249,7 @@ export async function accessesForThreads(
 ): Promise<
   {
     thread_id: string;
-    kind: 'contact' | 'file_original';
+    kind: 'contact' | 'contact_used' | 'file_original';
     reason: string | null;
     accessed_at: Date;
   }[]
@@ -139,9 +258,10 @@ export async function accessesForThreads(
   const since = sql<Date>`now() - make_interval(months => ${months})`;
   const contact = await db
     .selectFrom('contact_access_log as a')
-    .select(['a.thread_id', 'a.reason', 'a.accessed_at'])
+    .select(['a.thread_id', 'a.kind', 'a.reason', 'a.accessed_at'])
     .where('a.thread_id', 'in', threadIds)
-    .where('a.kind', '=', 'contact')
+    // Previews are oversight, not a disclosure of anything the reporter gave.
+    .where('a.kind', 'in', ['contact', 'contact_used'])
     .where('a.accessed_at', '>', since)
     .execute();
   // Opening a file's unstripped original (where it was taken, on what
@@ -157,7 +277,15 @@ export async function accessesForThreads(
     .execute();
   return [
     ...contact.flatMap((r) =>
-      r.thread_id ? [{ ...r, thread_id: r.thread_id, kind: 'contact' as const }] : [],
+      r.thread_id
+        ? [
+            {
+              ...r,
+              thread_id: r.thread_id,
+              kind: r.kind === 'contact_used' ? ('contact_used' as const) : ('contact' as const),
+            },
+          ]
+        : [],
     ),
     ...originals.map((r) => ({ ...r, kind: 'file_original' as const })),
   ].sort((a, b) => b.accessed_at.getTime() - a.accessed_at.getTime());
