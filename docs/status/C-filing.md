@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/beautiful-hawking-h3m3pn`, based on `ccr-c9c93698-ev856l` (foundation + A, B, G)
-- **Pull request:** into `ccr-c9c93698-ev856l` (link in the PR list; opened with this file)
+- **Pull request:** [#6](https://github.com/munsdev/reportlog/pull/6), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
