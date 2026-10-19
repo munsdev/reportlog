@@ -121,10 +121,9 @@ describe('the frame around every page, on a door', () => {
       page(door);
       // The frame really rendered: the page, the header's name and the footer.
       expect(await screen.findByText('the page behind the door')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'ReportLog' })).toBeInTheDocument();
-      expect(
-        screen.getByRole('link', { name: 'Imprint, privacy and moderation' }),
-      ).toBeInTheDocument();
+      // The header's name; the footer's attribution is a second link so named.
+      expect(screen.getAllByRole('link', { name: 'ReportLog' })[0]).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Imprint and privacy' })).toBeInTheDocument();
       await settle();
       expect(asked()).toEqual(['/api/site-access/status']);
       // And nothing was refused, which is what would have shut the door.
