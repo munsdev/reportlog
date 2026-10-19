@@ -15,6 +15,7 @@ import { DEFAULT_LOOK, Look, getSite } from '@reportlog/contracts';
 import type { BrandPart, Site } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import { useGateMode } from '@/features/identity/gate.tsx';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -25,8 +26,18 @@ export const siteQuery = queryOptions({
   queryFn: ({ signal }) => call(getSite, { signal }),
 });
 
+/**
+ * The site's name, look and wording, except on a door.
+ *
+ * A door page (a logbook opened for filing while the rest of the site is
+ * behind its password) may call only the filing calls. The site's wording is
+ * part of what the password protects, so asking for it there is refused, and
+ * a refusal sends the visitor back to the lock screen. On a door the query
+ * stays off and every caller falls back to the default name and look.
+ */
 export function useSite() {
-  return useQuery(siteQuery);
+  const onDoor = useGateMode() === 'door';
+  return useQuery({ ...siteQuery, enabled: !onDoor });
 }
 
 /** Paint a look onto the page. Remembers it for the next visit. */
