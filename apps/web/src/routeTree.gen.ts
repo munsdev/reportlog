@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as staffFilesRouteRouteImport } from './routes/(staff)/files/route'
 import { Route as staffIntakeRouteRouteImport } from './routes/(staff)/intake/route'
 import { Route as staffListsRouteRouteImport } from './routes/(staff)/lists/route'
 import { Route as staffLogbooksRouteRouteImport } from './routes/(staff)/logbooks/route'
@@ -37,6 +38,10 @@ import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
 import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
+import { Route as staffFilesIndexRouteImport } from './routes/(staff)/files/index'
+import { Route as staffFilesRefRouteImport } from './routes/(staff)/files/$ref'
+import { Route as staffFilesEraseRouteImport } from './routes/(staff)/files/erase'
+import { Route as staffFilesSettingsRouteImport } from './routes/(staff)/files/settings'
 import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/index'
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
 import { Route as staffListsIndexRouteImport } from './routes/(staff)/lists/index'
@@ -60,6 +65,8 @@ import { Route as OrganizationsIdListingRouteImport } from './routes/organizatio
 import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
 import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
 import { Route as staffAccessOrgsIdRouteImport } from './routes/(staff)/access/orgs.$id'
+import { Route as staffFilesLogbooksIndexRouteImport } from './routes/(staff)/files/logbooks.index'
+import { Route as staffFilesLogbooksIdRouteImport } from './routes/(staff)/files/logbooks.$id'
 import { Route as staffIntakeReportsThreadIdRouteImport } from './routes/(staff)/intake/reports.$threadId'
 import { Route as staffListsReviewIndexRouteImport } from './routes/(staff)/lists/review.index'
 import { Route as staffListsReviewIdRouteImport } from './routes/(staff)/lists/review.$id'
@@ -82,6 +89,11 @@ const NotificationsRoute = NotificationsRouteImport.update({
 const SubmitRoute = SubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffFilesRouteRoute = staffFilesRouteRouteImport.update({
+  id: '/(staff)/files',
+  path: '/files',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffIntakeRouteRoute = staffIntakeRouteRouteImport.update({
@@ -204,6 +216,26 @@ const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
   path: '/access/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffFilesIndexRoute = staffFilesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
+const staffFilesRefRoute = staffFilesRefRouteImport.update({
+  id: '/$ref',
+  path: '/$ref',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
+const staffFilesEraseRoute = staffFilesEraseRouteImport.update({
+  id: '/erase',
+  path: '/erase',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
+const staffFilesSettingsRoute = staffFilesSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
 const staffIntakeIndexRoute = staffIntakeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -320,6 +352,16 @@ const staffAccessOrgsIdRoute = staffAccessOrgsIdRouteImport.update({
   path: '/access/orgs/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffFilesLogbooksIndexRoute = staffFilesLogbooksIndexRouteImport.update({
+  id: '/logbooks/',
+  path: '/logbooks/',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
+const staffFilesLogbooksIdRoute = staffFilesLogbooksIdRouteImport.update({
+  id: '/logbooks/$id',
+  path: '/logbooks/$id',
+  getParentRoute: () => staffFilesRouteRoute,
+} as any)
 const staffIntakeReportsThreadIdRoute =
   staffIntakeReportsThreadIdRouteImport.update({
     id: '/reports/$threadId',
@@ -342,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
   '/submit': typeof SubmitRoute
+  '/files': typeof staffFilesRouteRouteWithChildren
   '/intake': typeof staffIntakeRouteRouteWithChildren
   '/lists': typeof staffListsRouteRouteWithChildren
   '/logbooks': typeof staffLogbooksRouteRouteWithChildren
@@ -365,6 +408,9 @@ export interface FileRoutesByFullPath {
   '/organizations/': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/sign-in': typeof staffAccessSignInRoute
+  '/files/$ref': typeof staffFilesRefRoute
+  '/files/erase': typeof staffFilesEraseRoute
+  '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
@@ -380,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/access/': typeof staffAccessIndexRoute
+  '/files/': typeof staffFilesIndexRoute
   '/intake/': typeof staffIntakeIndexRoute
   '/lists/': typeof staffListsIndexRoute
   '/logbooks/': typeof staffLogbooksIndexRoute
@@ -388,9 +435,11 @@ export interface FileRoutesByFullPath {
   '/settings/': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/lists/review/$id': typeof staffListsReviewIdRoute
   '/access/orgs/': typeof staffAccessOrgsIndexRoute
+  '/files/logbooks/': typeof staffFilesLogbooksIndexRoute
   '/lists/review/': typeof staffListsReviewIndexRoute
 }
 export interface FileRoutesByTo {
@@ -416,6 +465,9 @@ export interface FileRoutesByTo {
   '/organizations': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/sign-in': typeof staffAccessSignInRoute
+  '/files/$ref': typeof staffFilesRefRoute
+  '/files/erase': typeof staffFilesEraseRoute
+  '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
@@ -431,6 +483,7 @@ export interface FileRoutesByTo {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/access': typeof staffAccessIndexRoute
+  '/files': typeof staffFilesIndexRoute
   '/intake': typeof staffIntakeIndexRoute
   '/lists': typeof staffListsIndexRoute
   '/logbooks': typeof staffLogbooksIndexRoute
@@ -439,9 +492,11 @@ export interface FileRoutesByTo {
   '/settings': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/lists/review/$id': typeof staffListsReviewIdRoute
   '/access/orgs': typeof staffAccessOrgsIndexRoute
+  '/files/logbooks': typeof staffFilesLogbooksIndexRoute
   '/lists/review': typeof staffListsReviewIndexRoute
 }
 export interface FileRoutesById {
@@ -450,6 +505,7 @@ export interface FileRoutesById {
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
   '/submit': typeof SubmitRoute
+  '/(staff)/files': typeof staffFilesRouteRouteWithChildren
   '/(staff)/intake': typeof staffIntakeRouteRouteWithChildren
   '/(staff)/lists': typeof staffListsRouteRouteWithChildren
   '/(staff)/logbooks': typeof staffLogbooksRouteRouteWithChildren
@@ -473,6 +529,9 @@ export interface FileRoutesById {
   '/organizations/': typeof OrganizationsIndexRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
+  '/(staff)/files/$ref': typeof staffFilesRefRoute
+  '/(staff)/files/erase': typeof staffFilesEraseRoute
+  '/(staff)/files/settings': typeof staffFilesSettingsRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
   '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
@@ -488,6 +547,7 @@ export interface FileRoutesById {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/(staff)/access/': typeof staffAccessIndexRoute
+  '/(staff)/files/': typeof staffFilesIndexRoute
   '/(staff)/intake/': typeof staffIntakeIndexRoute
   '/(staff)/lists/': typeof staffListsIndexRoute
   '/(staff)/logbooks/': typeof staffLogbooksIndexRoute
@@ -496,9 +556,11 @@ export interface FileRoutesById {
   '/(staff)/settings/': typeof staffSettingsIndexRoute
   '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/(staff)/access/orgs/$id': typeof staffAccessOrgsIdRoute
+  '/(staff)/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/(staff)/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/(staff)/lists/review/$id': typeof staffListsReviewIdRoute
   '/(staff)/access/orgs/': typeof staffAccessOrgsIndexRoute
+  '/(staff)/files/logbooks/': typeof staffFilesLogbooksIndexRoute
   '/(staff)/lists/review/': typeof staffListsReviewIndexRoute
 }
 export interface FileRouteTypes {
@@ -508,6 +570,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/notifications'
     | '/submit'
+    | '/files'
     | '/intake'
     | '/lists'
     | '/logbooks'
@@ -531,6 +594,9 @@ export interface FileRouteTypes {
     | '/organizations/'
     | '/access/audit'
     | '/access/sign-in'
+    | '/files/$ref'
+    | '/files/erase'
+    | '/files/settings'
     | '/intake/$id'
     | '/lists/$id'
     | '/logbooks/$id'
@@ -546,6 +612,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/organizations/$id/listing'
     | '/access/'
+    | '/files/'
     | '/intake/'
     | '/lists/'
     | '/logbooks/'
@@ -554,9 +621,11 @@ export interface FileRouteTypes {
     | '/settings/'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
+    | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
     | '/lists/review/$id'
     | '/access/orgs/'
+    | '/files/logbooks/'
     | '/lists/review/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -582,6 +651,9 @@ export interface FileRouteTypes {
     | '/organizations'
     | '/access/audit'
     | '/access/sign-in'
+    | '/files/$ref'
+    | '/files/erase'
+    | '/files/settings'
     | '/intake/$id'
     | '/lists/$id'
     | '/logbooks/$id'
@@ -597,6 +669,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/organizations/$id/listing'
     | '/access'
+    | '/files'
     | '/intake'
     | '/lists'
     | '/logbooks'
@@ -605,9 +678,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
+    | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
     | '/lists/review/$id'
     | '/access/orgs'
+    | '/files/logbooks'
     | '/lists/review'
   id:
     | '__root__'
@@ -615,6 +690,7 @@ export interface FileRouteTypes {
     | '/legal'
     | '/notifications'
     | '/submit'
+    | '/(staff)/files'
     | '/(staff)/intake'
     | '/(staff)/lists'
     | '/(staff)/logbooks'
@@ -638,6 +714,9 @@ export interface FileRouteTypes {
     | '/organizations/'
     | '/(staff)/access/audit'
     | '/(staff)/access/sign-in'
+    | '/(staff)/files/$ref'
+    | '/(staff)/files/erase'
+    | '/(staff)/files/settings'
     | '/(staff)/intake/$id'
     | '/(staff)/lists/$id'
     | '/(staff)/logbooks/$id'
@@ -653,6 +732,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/organizations/$id/listing'
     | '/(staff)/access/'
+    | '/(staff)/files/'
     | '/(staff)/intake/'
     | '/(staff)/lists/'
     | '/(staff)/logbooks/'
@@ -661,9 +741,11 @@ export interface FileRouteTypes {
     | '/(staff)/settings/'
     | '/(staff)/access/invitation/$token'
     | '/(staff)/access/orgs/$id'
+    | '/(staff)/files/logbooks/$id'
     | '/(staff)/intake/reports/$threadId'
     | '/(staff)/lists/review/$id'
     | '/(staff)/access/orgs/'
+    | '/(staff)/files/logbooks/'
     | '/(staff)/lists/review/'
   fileRoutesById: FileRoutesById
 }
@@ -672,6 +754,7 @@ export interface RootRouteChildren {
   LegalRoute: typeof LegalRoute
   NotificationsRoute: typeof NotificationsRoute
   SubmitRoute: typeof SubmitRoute
+  staffFilesRouteRoute: typeof staffFilesRouteRouteWithChildren
   staffIntakeRouteRoute: typeof staffIntakeRouteRouteWithChildren
   staffListsRouteRoute: typeof staffListsRouteRouteWithChildren
   staffLogbooksRouteRoute: typeof staffLogbooksRouteRouteWithChildren
@@ -733,6 +816,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/submit'
       preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/files': {
+      id: '/(staff)/files'
+      path: '/files'
+      fullPath: '/files'
+      preLoaderRoute: typeof staffFilesRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/intake': {
@@ -903,6 +993,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffAccessSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/files/': {
+      id: '/(staff)/files/'
+      path: '/'
+      fullPath: '/files/'
+      preLoaderRoute: typeof staffFilesIndexRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
+    '/(staff)/files/$ref': {
+      id: '/(staff)/files/$ref'
+      path: '/$ref'
+      fullPath: '/files/$ref'
+      preLoaderRoute: typeof staffFilesRefRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
+    '/(staff)/files/erase': {
+      id: '/(staff)/files/erase'
+      path: '/erase'
+      fullPath: '/files/erase'
+      preLoaderRoute: typeof staffFilesEraseRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
+    '/(staff)/files/settings': {
+      id: '/(staff)/files/settings'
+      path: '/settings'
+      fullPath: '/files/settings'
+      preLoaderRoute: typeof staffFilesSettingsRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
     '/(staff)/intake/': {
       id: '/(staff)/intake/'
       path: '/'
@@ -1064,6 +1182,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffAccessOrgsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/files/logbooks/': {
+      id: '/(staff)/files/logbooks/'
+      path: '/logbooks'
+      fullPath: '/files/logbooks/'
+      preLoaderRoute: typeof staffFilesLogbooksIndexRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
+    '/(staff)/files/logbooks/$id': {
+      id: '/(staff)/files/logbooks/$id'
+      path: '/logbooks/$id'
+      fullPath: '/files/logbooks/$id'
+      preLoaderRoute: typeof staffFilesLogbooksIdRouteImport
+      parentRoute: typeof staffFilesRouteRoute
+    }
     '/(staff)/intake/reports/$threadId': {
       id: '/(staff)/intake/reports/$threadId'
       path: '/reports/$threadId'
@@ -1087,6 +1219,28 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface staffFilesRouteRouteChildren {
+  staffFilesRefRoute: typeof staffFilesRefRoute
+  staffFilesEraseRoute: typeof staffFilesEraseRoute
+  staffFilesSettingsRoute: typeof staffFilesSettingsRoute
+  staffFilesIndexRoute: typeof staffFilesIndexRoute
+  staffFilesLogbooksIdRoute: typeof staffFilesLogbooksIdRoute
+  staffFilesLogbooksIndexRoute: typeof staffFilesLogbooksIndexRoute
+}
+
+const staffFilesRouteRouteChildren: staffFilesRouteRouteChildren = {
+  staffFilesRefRoute: staffFilesRefRoute,
+  staffFilesEraseRoute: staffFilesEraseRoute,
+  staffFilesSettingsRoute: staffFilesSettingsRoute,
+  staffFilesIndexRoute: staffFilesIndexRoute,
+  staffFilesLogbooksIdRoute: staffFilesLogbooksIdRoute,
+  staffFilesLogbooksIndexRoute: staffFilesLogbooksIndexRoute,
+}
+
+const staffFilesRouteRouteWithChildren = staffFilesRouteRoute._addFileChildren(
+  staffFilesRouteRouteChildren,
+)
 
 interface staffIntakeRouteRouteChildren {
   staffIntakeIdRoute: typeof staffIntakeIdRoute
@@ -1177,6 +1331,7 @@ const rootRouteChildren: RootRouteChildren = {
   LegalRoute: LegalRoute,
   NotificationsRoute: NotificationsRoute,
   SubmitRoute: SubmitRoute,
+  staffFilesRouteRoute: staffFilesRouteRouteWithChildren,
   staffIntakeRouteRoute: staffIntakeRouteRouteWithChildren,
   staffListsRouteRoute: staffListsRouteRouteWithChildren,
   staffLogbooksRouteRoute: staffLogbooksRouteRouteWithChildren,
