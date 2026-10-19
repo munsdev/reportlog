@@ -107,6 +107,9 @@ export const LogbookFile = z.looseObject({
   slug: z.string().optional(),
   blurb: z.string().optional(),
   accepts_files: z.boolean().optional(),
+  /** The logbook's own upload caps (files workstream), only when it set them. */
+  max_files: z.number().optional(),
+  max_total_bytes: z.number().optional(),
   questions: z.array(LogbookFileQuestion),
 });
 export type LogbookFile = z.infer<typeof LogbookFile>;

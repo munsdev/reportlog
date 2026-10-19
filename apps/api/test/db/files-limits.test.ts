@@ -25,6 +25,8 @@ import {
   validateLimits,
 } from '../../src/files/limits.ts';
 import type { LimitValues } from '../../src/files/limits.ts';
+import { createFromFile, toFile } from '../../src/logbooks/logbookFile.ts';
+import elections from '../../src/logbooks/templates/elections.json' with { type: 'json' };
 import { launchedLogbook, testDatabase } from './helpers.ts';
 
 let db: Database;
@@ -231,5 +233,34 @@ describe('per-logbook caps (evidence-caps, the limits half)', () => {
       expect(kindFor(type)).toBe(want);
     }
     expect(kindFor('application/x-msdownload')).toBeNull();
+  });
+});
+
+describe('the logbook file carries its caps, and only when set (evidence-caps)', () => {
+  it('the elections starting point takes one file, of 300 MB: MORE than the old video ceiling', () => {
+    expect(elections.max_files).toBe(1);
+    expect(elections.max_total_bytes).toBe(300 * 1024 * 1024);
+  });
+
+  it('a downloaded logbook carries its caps; one on the site limits carries no key for either', async () => {
+    await setLogbookLimits(db, lb.id, values({ maxFiles: 1, maxTotalBytes: 300 * 1024 * 1024 }));
+    const f = await toFile(db, lb.id);
+    expect(f).toMatchObject({ max_files: 1, max_total_bytes: 300 * 1024 * 1024 });
+    const other = await launchedLogbook(db, [
+      { key: 'what', kind: 'long_text', label: 'What', required: true },
+    ]);
+    const plain = await toFile(db, other.id);
+    expect(plain && 'max_files' in plain).toBe(false);
+    expect(plain && 'max_total_bytes' in plain).toBe(false);
+
+    const back = await createFromFile(db, { ...f, slug: undefined, title: 'Caps copy' });
+    expect(await capsFor(db, back.id)).toEqual({ maxFiles: 1, maxTotalBytes: 300 * 1024 * 1024 });
+  });
+
+  it('a file naming a cap the database would refuse is refused with a sentence', async () => {
+    const f = await toFile(db, lb.id);
+    await expect(
+      createFromFile(db, { ...f, slug: undefined, title: 'Zero', max_files: 0 }),
+    ).rejects.toThrow(/between 1 and 50/);
   });
 });

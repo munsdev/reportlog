@@ -12,6 +12,10 @@ import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
+import { evidenceRoutes } from './evidence/routes.ts';
+import { filesFrom } from './files/context.ts';
+import type { FilesConfig } from './files/context.ts';
+import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
 import { listButtons } from './lists/manage.ts';
@@ -26,7 +30,8 @@ import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'> &
-    Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX'>>;
+    Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX'>> &
+    FilesConfig;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -93,8 +98,20 @@ export async function buildApp({
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
   listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
+  // Files: storage and FILES_KEY, or the sentence saying why files are not taken.
+  const files = filesFrom(db, config);
   await filingRoutes(app, {
     db,
+    mailer: mail,
+    siteOrigin,
+    contactKey: config.CONTACT_KEY,
+    publicRefPrefix: config.PUBLIC_REF_PREFIX,
+    files: typeof files === 'string' ? null : files,
+  });
+  await fileRoutes(app, { db, files });
+  await evidenceRoutes(app, {
+    db,
+    files,
     mailer: mail,
     siteOrigin,
     contactKey: config.CONTACT_KEY,

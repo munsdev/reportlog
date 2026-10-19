@@ -11,7 +11,9 @@ import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { FastifyInstance } from 'fastify';
 import type { Database } from '../../src/db/database.ts';
+import type { CapturingMailer } from '../../src/email/mailer.ts';
 import { filesFrom } from '../../src/files/context.ts';
 import type { Files } from '../../src/files/context.ts';
 
@@ -190,4 +192,84 @@ export function pdfWithAuthor(pages = 1): Buffer {
   for (const off of offsets) out += `${String(off).padStart(10, '0')} 00000 n \n`;
   out += `trailer\n<< /Size ${String(objects.length + 1)} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${String(xref)}\n%%EOF\n`;
   return Buffer.from(out, 'latin1');
+}
+
+// ── an app that takes reports and files ─────────────────────────────────
+
+export interface FilesHarness {
+  db: Database;
+  app: FastifyInstance;
+  mailer: CapturingMailer;
+  files: Files & { dir: string };
+  close(): Promise<void>;
+}
+
+export async function filesHarness(): Promise<FilesHarness> {
+  const { buildApp } = await import('../../src/app.ts');
+  const { capturingMailer } = await import('../../src/email/mailer.ts');
+  const { testDatabase } = await import('./helpers.ts');
+  const { CONTACT_KEY } = await import('./filing-helpers.ts');
+  const { SITE } = await import('./identity-helpers.ts');
+  const db = testDatabase();
+  const dir = mkdtempSync(join(tmpdir(), 'rl-files-'));
+  const mailer = capturingMailer();
+  const app = await buildApp({
+    config: {
+      LOG_LEVEL: 'silent',
+      SITE_ORIGIN: SITE,
+      CONTACT_KEY,
+      FILES_KEY,
+      FILES_STORAGE: 'disk',
+      FILES_DIR: dir,
+    },
+    db,
+    mailer,
+  });
+  return {
+    db,
+    app,
+    mailer,
+    files: filesFor(db, dir),
+    async close() {
+      await app.close();
+      await db.destroy();
+      removeDir(dir);
+    },
+  };
+}
+
+/** Attach one file through the routes, as the form does. Returns the slot token. */
+export async function attach(
+  h: FilesHarness,
+  input: {
+    draft: string;
+    logbook: string;
+    email: string;
+    body: Buffer;
+    type: string;
+    name?: string;
+  },
+): Promise<string> {
+  const made = await h.app.inject({
+    method: 'POST',
+    url: '/api/uploads',
+    payload: {
+      draft_token: input.draft,
+      logbook: input.logbook,
+      email: input.email,
+      name: input.name ?? 'photo.jpg',
+      type: input.type,
+      size: input.body.length,
+    },
+  });
+  if (made.statusCode !== 200) throw new Error(`slot refused: ${made.body}`);
+  const slot = made.json<{ slot_token: string }>().slot_token;
+  const put = await h.app.inject({
+    method: 'PUT',
+    url: `/api/uploads/${slot}`,
+    headers: { 'content-type': 'application/octet-stream', 'x-draft-token': input.draft },
+    payload: input.body,
+  });
+  if (put.statusCode !== 200) throw new Error(`upload refused: ${put.body}`);
+  return slot;
 }
