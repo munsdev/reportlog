@@ -97,7 +97,7 @@ try {
     await runDigest({
       db,
       mailer: outboxMailer(outbox),
-      siteOrigin: loadConfig().SITE_ORIGIN ?? 'http://127.0.0.1:4173',
+      siteOrigin: loadConfig().SITE_ORIGIN,
       log: () => undefined,
       frequency: 'hourly',
     });

@@ -9,7 +9,20 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-TOTALS
+Against the base at `221cb83` (with F2), merged into this branch.
+
+| Suite                                   | Result                                                                         |
+| --------------------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm check`                            | passes (unit tests: api 251, web 415, fields 69, seal 31, access 6)            |
+| `pnpm test:db`                          | 49 files, 786 tests, all passed (32 are A2's, in `identity-leftovers.test.ts`) |
+| `db:types:check`                        | generated types up to date                                                     |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 111 passed (5 are A2's: 2 tests on desktop and phone, 1 in `identity`)         |
+
+CI on GitHub had not reported when this was written. Check the pull request.
+
+**One run went red on the way, and it was my test.** The stop link the browser test follows
+was first built with the development origin (port 5173), so the browser could not open it. The
+test now passes the test server's origin to the script that runs the digest.
 
 ## What was built, in the order asked
 
