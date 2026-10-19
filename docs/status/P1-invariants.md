@@ -79,7 +79,7 @@ new table, route, page or caller is covered the moment it exists.
 - **One exception, on purpose:** `GET /api/access/owner` answers anybody signed in, because the
   owner's seat can be offered to somebody with no role. The test checks that such a person sees
   only `{ awaitingMyAcceptance: false }`.
-- There are 117 staff routes today, out of 214 (methods counted separately, HEAD left out).
+- There are 119 staff routes today, out of 216 (methods counted separately, HEAD left out).
 
 ### I3 · Rebuilding a sealed object (`invariants.test.ts`)
 
@@ -120,7 +120,7 @@ new table, route, page or caller is covered the moment it exists.
 
 ### I1 · No third-party requests (`third-party.spec.ts`)
 
-- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 65
+- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 66
   today.
 - **Each page is opened twice**, as a stranger and as an administrator. Each of those runs in the
   chromium and phone projects.
@@ -208,23 +208,13 @@ intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
 ## Totals
 
 All three suites were run here (not on CI), after merging `origin/ccr-c9c93698-ev856l` at
-`96b3741` (A2, C3 and D3):
+`a8ea595` (A2, C3, D3, P7, P4 and P6 by then):
 
-| Suite                                       | Result                                                                                             |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | passes: format, lint, types, boundaries; unit tests fields 69, seal 31, access 6, api 282, web 429 |
-| `pnpm test:db`                              | 57 files, **864 passed, 3 skipped** (the three skips are the gaps above)                           |
-| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **396 passed**, all projects                                                                       |
-
-Then the base moved to `a471e7f` (P7: operations tests, `deploy/`, CI, one line in
-`files/storage-check-cli.ts`, nothing under `apps/web`). After merging that:
-
-| Suite          | Result                                                           |
-| -------------- | ---------------------------------------------------------------- |
-| `pnpm check`   | passes (600 modules); api unit 327 passed, 11 skipped (P7's own) |
-| `pnpm test:db` | 58 files, **869 passed, 3 skipped**                              |
-
-The browser suite was not run again for P7, which touched nothing under `apps/web`.
+| Suite                                       | Result                                                                                                                                   |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | passes: format, lint, types, boundaries (610 modules); unit tests fields 69, seal 31, access 6, api 327 (+11 skipped, P7's own), web 436 |
+| `pnpm test:db`                              | 61 files, **905 passed, 3 skipped** (the three skips are the gaps above)                                                                 |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **410 passed**, all projects                                                                                                             |
 
 P1's own tests:
 
@@ -233,7 +223,7 @@ P1's own tests:
 | `invariants.test.ts`   | 33 passed, 3 skipped                                                                              |
 | `anchor-reset.test.ts` | 5 passed                                                                                          |
 | `door-quiet.test.tsx`  | 6 passed                                                                                          |
-| `third-party.spec.ts`  | 132 per browser project (chromium, phone): 65 pages × 2 viewers, the wizard, the route-list check |
+| `third-party.spec.ts`  | 134 per browser project (chromium, phone): 66 pages × 2 viewers, the wizard, the route-list check |
 
 **The merges were a test of the sweeps.**
 
@@ -243,5 +233,7 @@ P1's own tests:
   the public press pack.
 - **D3** added `report_assessments`, which the first definition of append-only wrongly counted
   (see I4).
-- **Picked up with no other change:** after the merges there are 117 staff routes, all refusing,
-  and 65 pages, none asking another host.
+- **P4** added a trigger-guarded table, and **P6** added list indexes. Both were picked up with no
+  change to the tests: P4's table is not append-only, so it is correctly not in the set.
+- **Picked up with no other change:** after the merges there are 119 staff routes, all refusing,
+  66 pages, none asking another host, and still 20 append-only tables.
