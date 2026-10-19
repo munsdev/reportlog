@@ -17,6 +17,7 @@ import { curtainRoutes } from './curtainRoutes.ts';
 import { installGate } from './gate.ts';
 import { orgRoutes } from './orgRoutes.ts';
 import { installSessions } from './sessions.ts';
+import { teamRoutes } from './teamRoutes.ts';
 
 export interface IdentityDeps {
   db: Kysely<DB>;
@@ -33,4 +34,5 @@ export async function identity(app: FastifyInstance, deps: IdentityDeps): Promis
   accessRoutes(app, deps);
   orgRoutes(app, deps);
   curtainRoutes(app, deps);
+  teamRoutes(app, deps);
 }

@@ -24,6 +24,7 @@ import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { call } from '../../lib/api.ts';
+import { desksFor } from './desks.ts';
 import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
@@ -46,6 +47,9 @@ export function AccessHome() {
           <nav aria-label="Access" className="flex flex-wrap gap-4">
             <Link to="/access/orgs" className="underline">
               Organizations
+            </Link>
+            <Link to="/access/roster" className="underline">
+              Roster
             </Link>
             <Link to="/access/audit" className="underline">
               Who changed what
@@ -89,7 +93,39 @@ function YourAccount({ me }: { me: SignedInMe }) {
           ))}
         </ul>
       )}
+      {me.tester && <p>You are a tester: you can open the feedback tracker.</p>}
+      {me.teamMember && <TeamDesks me={me} />}
     </Panel>
+  );
+}
+
+/** Being on the team, and where each of your desks suggests you start. Display only. */
+function TeamDesks({ me }: { me: SignedInMe }) {
+  const desks = desksFor(me.desks, me);
+  return (
+    <div className="space-y-2">
+      <p>You are on the team. That opens the team’s guides; it opens no report.</p>
+      {desks.length > 0 && (
+        <>
+          <h3 className="font-semibold">Your desks</h3>
+          <ul className="list-disc space-y-1 pl-6">
+            {desks.map((d) => (
+              <li key={d.id}>
+                {d.label}
+                {d.start && (
+                  <>
+                    {': start at '}
+                    <Link to={d.start.to} className="underline">
+                      {d.start.label}
+                    </Link>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
 }
 

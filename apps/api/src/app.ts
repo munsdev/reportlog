@@ -20,6 +20,7 @@ import type { FilesConfig } from './files/context.ts';
 import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
+import { logoRoutes } from './identity/logoRoutes.ts';
 import { listButtons } from './lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
@@ -144,6 +145,7 @@ export async function buildApp({
     files: typeof files === 'string' ? null : files,
   });
   await fileRoutes(app, { db, files });
+  await logoRoutes(app, { db, files });
   await evidenceRoutes(app, {
     db,
     files,

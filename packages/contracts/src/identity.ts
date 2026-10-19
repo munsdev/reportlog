@@ -34,6 +34,10 @@ export const Me = z.discriminatedUnion('signedIn', [
     grantsAccess: z.boolean(),
     /** Holds the tester flag: may open the feedback tracker. A flag, not a role. */
     tester: z.boolean(),
+    /** On the team: may open the team's pages. A flag, not a role. */
+    teamMember: z.boolean(),
+    /** What they do on the team (DESKS ids). Display only: grants nothing. */
+    desks: z.array(z.string()),
   }),
 ]);
 export type Me = z.infer<typeof Me>;
@@ -170,6 +174,8 @@ export const Organization = z.object({
   id: z.number().int(),
   name: z.string(),
   details: z.string().nullable(),
+  /** Where its logo is served from, or null. Served only while it is listed in the directory. */
+  logo: z.string().nullable(),
   manager_count: z.number().int(),
   coordinator_count: z.number().int(),
 });
@@ -447,4 +453,130 @@ export const decideCurtain = defineRoute({
     passwordConfirm: z.string().max(200).optional(),
   }),
   response: z.object({ ok: z.literal(true), changed: z.boolean() }),
+});
+
+// ── the team-member flag and desks ──────────────────────────────────────
+
+/**
+ * What somebody on the team does. DISPLAY ONLY: a desk says where their
+ * account page suggests they start, and nothing else. It hides nothing and
+ * grants nothing. The ids are the old application's, so a desk stored there
+ * keeps its meaning here.
+ */
+export const DESKS = [
+  { id: 'lead_dev', label: 'Lead developer' },
+  { id: 'dev', label: 'Developer, supporting' },
+  { id: 'accessibility', label: 'Accessibility' },
+  { id: 'moderating', label: 'Moderating reports' },
+  { id: 'testing', label: 'Testing the site before it is public' },
+  { id: 'group', label: 'Bringing an organization onto the record' },
+  { id: 'policy', label: 'Policy or legal' },
+  { id: 'translation', label: 'Translation' },
+  { id: 'design', label: 'Design or writing' },
+  { id: 'outreach', label: 'Outreach' },
+] as const;
+export type DeskId = (typeof DESKS)[number]['id'];
+export const DESK_IDS: readonly DeskId[] = DESKS.map((d) => d.id);
+
+export const setTeamMember = defineRoute({
+  method: 'POST',
+  path: '/api/access/team-member',
+  summary:
+    'Put somebody on the team, change their desks, or take them off it. Administrators and Access Managers.',
+  body: z.object({
+    email: Email,
+    teamMember: z.boolean(),
+    desks: z.array(z.string().max(40)).max(20),
+  }),
+  response: z.object({ ok: z.literal(true), unchanged: z.boolean(), desks: z.array(z.string()) }),
+});
+
+// ── the roster ──────────────────────────────────────────────────────────
+
+export const RosterPerson = z.object({
+  email: z.string(),
+  role: SystemRoleName,
+  tester: z.boolean(),
+  teamMember: z.boolean(),
+  desks: z.array(z.string()),
+  organizations: z.array(z.object({ name: z.string(), role: OrgRoleName })),
+  /** Reports this person typed up as a coordinator in the period. */
+  filedByThem: z.number().int(),
+  /** Reports typed up for any organization they belong to in the period, by anybody. */
+  filedForTheirOrganizations: z.number().int(),
+  /** The last time they moderated, opened contact details or a file, or changed somebody's access. */
+  lastStaffAction: Iso.nullable(),
+});
+
+export const getRoster = defineRoute({
+  method: 'GET',
+  path: '/api/access/roster',
+  summary:
+    'Everybody with a role, a flag or an organization, with how much they filed. Administrators and Access Managers.',
+  query: z.object({ days: z.coerce.number().int().min(1).max(365).optional() }),
+  response: z.object({ days: z.number().int(), people: z.array(RosterPerson) }),
+});
+
+// ── organization logos ──────────────────────────────────────────────────
+
+/** The largest logo accepted, before it is re-encoded. */
+export const LOGO_MAX_BYTES = 1024 * 1024;
+export const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp'] as const;
+
+/**
+ * The request body is the image itself (PNG, JPEG or WebP), not JSON. It is
+ * decoded and re-encoded before it is kept, so nothing but the picture
+ * survives. Its managers, or an administrator.
+ */
+export const uploadOrganizationLogo = defineRoute({
+  method: 'PUT',
+  path: '/api/orgs/:id/logo',
+  summary: 'Replace the organization’s logo with the image in the body.',
+  params: OrgParams,
+  response: z.object({ ok: z.literal(true), logo: z.string() }),
+});
+
+export const removeOrganizationLogo = defineRoute({
+  method: 'DELETE',
+  path: '/api/orgs/:id/logo',
+  summary: 'Remove the organization’s logo.',
+  params: OrgParams,
+  response: Ok,
+});
+
+// ── stopping a digest from the email ────────────────────────────────────
+
+/**
+ * What a stop link says. `gone` is an unknown link and an expired one alike:
+ * the page cannot tell somebody which addresses have subscriptions.
+ */
+export const DigestStop = z.discriminatedUnion('state', [
+  z.object({
+    state: z.literal('subscribed'),
+    /** The address, partly hidden, so somebody with several can tell which. */
+    address: z.string(),
+    frequency: z.enum(['hourly', 'weekly']),
+  }),
+  z.object({ state: z.literal('stopped'), address: z.string() }),
+  z.object({ state: z.literal('gone') }),
+]);
+export type DigestStop = z.infer<typeof DigestStop>;
+
+const StopParams = z.object({ token: z.string().max(128) });
+
+export const describeDigestStop = defineRoute({
+  method: 'GET',
+  path: '/api/notifications/stop/:token',
+  summary:
+    'What a stop link in a digest email would stop. Changes nothing: mail scanners open links.',
+  params: StopParams,
+  response: DigestStop,
+});
+
+export const stopDigest = defineRoute({
+  method: 'POST',
+  path: '/api/notifications/stop/:token',
+  summary: 'Stop the digest emails this link was sent with. No sign-in needed.',
+  params: StopParams,
+  response: DigestStop,
 });

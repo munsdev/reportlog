@@ -7,7 +7,9 @@
  * would make, on the site's behalf, exactly the claim the site refuses to
  * make. Ranked by members alone, never by reports.
  *
- * No logos yet: they need file storage, which another workstream is building.
+ * A logo, when an organization has one, is served from the site itself
+ * (identity keeps it, through the files workstream's storage). It sits beside
+ * the name, so it is decoration to a screen reader: the name says who it is.
  */
 import { getDirectory, getListing, setListing } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -48,7 +50,16 @@ export function DirectoryPage() {
             <li key={o.name}>
               <Card>
                 <CardContent className="flex flex-col gap-1">
-                  <h2 className="font-display text-lg font-bold">{o.name}</h2>
+                  <div className="flex items-center gap-3">
+                    {o.logo ? (
+                      <img
+                        src={o.logo}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-card object-contain"
+                      />
+                    ) : null}
+                    <h2 className="font-display text-lg font-bold">{o.name}</h2>
+                  </div>
                   {o.details ? <p>{o.details}</p> : null}
                   <p className="text-sm text-ink-alt">
                     {people(o.member_count)} · listed since {day(o.joined)}

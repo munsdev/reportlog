@@ -8,7 +8,8 @@
  * navigate, because there is nothing listening.
  *
  * The one exception is a door: an address that works without the password
- * (a logbook's filing form, a list's form, a report's confirmation link).
+ * (a logbook's filing form, a list's form, a report's confirmation link, the
+ * link in a digest email that stops it).
  * There the router is mounted for that one page with navigation blocked, so
  * leaving it means a full page load, which lands back here. WHETHER THE THING
  * BEHIND A DOOR IS ACTUALLY OPEN is the server's decision: if a call on that
@@ -35,6 +36,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
   /^\/file\/[a-z0-9][a-z0-9-]{0,62}$/,
   /^\/file\/confirm\/[^/]+$/,
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
+  // Stopping email somebody asked for never waits on a password (identity/digestStop.ts).
+  /^\/notifications\/stop\/[^/]+$/,
 ];
 
 export function isDoorPath(pathname: string): boolean {
@@ -116,10 +119,16 @@ export function SiteGate({
     [client, door],
   );
 
-  // On a door, the router may render this page and go nowhere else.
+  // On a door, the router may render this page and go nowhere else. Moving
+  // between history entries of THIS address is let through (the filing form
+  // keeps one per card, so Back goes back one question): an entry's state
+  // can name a card, never another page.
   useEffect(() => {
     if (!door) return;
-    return history.block({ blockerFn: () => true, enableBeforeUnload: false });
+    return history.block({
+      blockerFn: ({ currentLocation, nextLocation }) => nextLocation.href !== currentLocation.href,
+      enableBeforeUnload: false,
+    });
   }, [door, history]);
 
   if (status.isPending)

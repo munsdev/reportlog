@@ -384,6 +384,58 @@ export const submitIntakeBatch = defineRoute({
   }),
 });
 
+// ── files in an account ─────────────────────────────────────────────────
+//
+// The coordinator attaches what the person gave them (a photo, a recording)
+// to the account itself. The files are worked on at once, and sealed into
+// the report when the batch is filed. The bytes are PUT, unparsed, to
+// INTAKE_FILE_PATH, with no draft token: the account is the coordinator's.
+
+export const INTAKE_FILE_PATH = (draftId: number, slot: string) =>
+  `/api/intake/drafts/${String(draftId)}/files/${slot}`;
+
+export const IntakeFile = z.object({
+  slot_token: z.string(),
+  name: z.string(),
+  size: z.number(),
+  /** pending, uploaded, processing, clean, rejected, unreadable, infected, expired */
+  status: z.string(),
+  detail: z.string().nullable(),
+});
+export type IntakeFile = z.infer<typeof IntakeFile>;
+
+export const listIntakeDraftFiles = defineRoute({
+  method: 'GET',
+  path: '/api/intake/drafts/:id/files',
+  summary: "An account's files and where each stands.",
+  params: BatchParams,
+  response: z.object({ files: z.array(IntakeFile) }),
+});
+
+export const addIntakeDraftFile = defineRoute({
+  method: 'POST',
+  path: '/api/intake/drafts/:id/files',
+  summary:
+    "Reserve a place for one file on an account, against its logbook's limits, before a byte is sent.",
+  params: BatchParams,
+  body: z.object({
+    /** The logbook chosen in the dialog, which may not be saved yet. */
+    logbook: z.string().optional(),
+    name: z.string().max(1000).optional(),
+    type: z.string().max(200).optional(),
+    size: z.number().optional(),
+  }),
+  response: z.object({ slot_token: z.string() }),
+});
+
+export const removeIntakeDraftFile = defineRoute({
+  method: 'DELETE',
+  path: '/api/intake/drafts/:id/files/:slot',
+  summary: 'Remove a file from an account that has not been filed.',
+  params: z.object({ id: Id, slot: z.string().max(100) }),
+  response: z.object({ ok: z.literal(true) }),
+});
+
 // ── correcting a filed account, as the coordinator ──────────────────────
 
 const ThreadOnly = z.object({ threadId: z.uuid() });

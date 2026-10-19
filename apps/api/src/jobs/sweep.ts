@@ -78,6 +78,14 @@ export const SWEPT: readonly SweptTable[] = [
     expired: "sent_at < now() - interval '14 days'",
   },
   {
+    // The stop link in a digest email (identity/digestStop.ts). Past its
+    // time it answers as if it never existed, so the row is only a hash.
+    table: 'digest_stop_links',
+    what: 'expired digest stop links',
+    owner: 'A',
+    expired: 'expires_at < now()',
+  },
+  {
     // UNCONFIRMED only. Until confirmation the row holds the reporter's
     // address in the clear (docs/status/C-filing.md), so an unconfirmed one
     // past its link's expiry is exactly what should not be kept. A confirmed

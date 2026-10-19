@@ -61,3 +61,31 @@ export function identityState(...args: string[]): void {
     cwd: API,
   });
 }
+
+/** The digest's stop link in a message (not the board link before it). */
+export function stopLinkIn(m: Message): string {
+  const link = /https?:\/\/\S+\/notifications\/stop\/[a-f0-9]{64}/.exec(m.text)?.[0];
+  if (!link) throw new Error(`no stop link in "${m.subject}"`);
+  return link;
+}
+
+/** Subscribe an address and run the hourly digest, writing its email to the outbox. */
+export function digestFor(address: string): void {
+  execFileSync(
+    'node',
+    ['--env-file-if-exists=../../.env', 'src/identity/dev-state.ts', 'digest-for', address],
+    {
+      cwd: API,
+      env: { ...process.env, MAIL_OUTBOX: OUTBOX, SITE_ORIGIN: 'http://127.0.0.1:4173' },
+    },
+  );
+}
+
+/** How often an address hears about reports: hourly, weekly or none. */
+export function subscriptionOf(address: string): string {
+  return execFileSync(
+    'node',
+    ['--env-file-if-exists=../../.env', 'src/identity/dev-state.ts', 'subscription', address],
+    { cwd: API, encoding: 'utf8' },
+  ).trim();
+}
