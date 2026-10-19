@@ -1,0 +1,15 @@
+# Daily, after the night's jobs and the 05:30 reboot window, with an hour of
+# spread so deployments do not all fetch at once. Not generated from the job
+# registry: the registry's jobs run as the service user, and this is root's
+# (see reportlog-update-check.service).
+[Unit]
+Description=ReportLog update check timer
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+RandomizedDelaySec=3600
+Persistent=true
+Unit=reportlog-update-check.service
+
+[Install]
+WantedBy=timers.target
