@@ -3,8 +3,119 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/c2-filing`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, H)
-- **State:** in progress.
+- **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
+- **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
+
+## Checks, as last run before pushing
+
+| Suite                                   | Before this branch | Now                                                                 |
+| --------------------------------------- | ------------------ | ------------------------------------------------------------------- |
+| `pnpm check`                            | passes             | passes (unit tests: api 189, web 364, fields 69, seal 31, access 4) |
+| `pnpm test:db`                          | 25 files, 408      | 28 files, 438, all passed                                           |
+| `db:types:check`                        |                    | generated types up to date                                          |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 60 passed          | 66 passed (3 new tests, desktop and phone)                          |
+
+CI on GitHub had not reported when this was written. Check the pull request.
+
+## What was built, in the order asked
+
+1. **The coordinator intake screens** (`apps/web/src/features/intake/`,
+   `apps/web/src/routes/(staff)/intake/`), on C's `/api/intake/` API.
+   - `/intake`: your batches, and starting one. With one organization it is chosen for you;
+     with several you choose once per batch, never per account.
+   - `/intake/:id`: the accounts; each typed up in a dialog (the logbook's questions, how and
+     when it was collected, your own reference, and the source's publication answer in the
+     coordinators' wording with the server's digest); "Before filing" says what each account
+     still needs; "File the ready accounts" asks for the legacy statement to be ticked, says how
+     many accounts enter the permanent record and under which name, and files them. Accounts
+     not ready stay staged.
+   - The door is `StaffOnly needs={{ organization: ['coordinator', 'manager'] }}`, admitting by
+     A's memberships as the server's `coordinatorOrgs` does.
+2. **Correcting a coordinator-filed report**, as designed above:
+   `GET`/`POST /api/intake/reports/:threadId[/correct]` (`apps/api/src/filing/intakeCorrection.ts`)
+   and `/intake/reports/:threadId`. The mechanics shared with a reporter's correction (lock the
+   head, form version, carry the files, append, back to pending) moved into
+   `apps/api/src/filing/correction.ts`, unchanged, so the two cannot drift. Migration
+   `20261019184609_coordinator_corrections.sql` adds `coordinator_actions` (append-only).
+3. **Rotating `CONTACT_KEY`**, as designed above: `CONTACT_KEY_PREVIOUS`, the two-key keyring
+   (`contactKeys.ts`), `rotateContactKey.ts`, `reportlog contact-key rotate`, H's check's new
+   `rotating` state, two doctor warnings, migration `20261019185427_contact_key_rotation.sql`
+   (`contact_key_rotations` and the narrowed guard), and a runbook section in
+   `deploy/README.md`. Run for real against the development database through the command line:
+   first record, an unplanned change refused (exit 1), a planned one let through, rotate,
+   left-over reminder, rotate back.
+4. **"My reports" leftovers**: **the signed declaration** is built
+   (`/mine/declaration/:threadId`). **Notification settings are left**: see "Not done".
+
+## Tests
+
+| What                                                                                                                                                                                                                                                                                                                                   | Where                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Intake screens: stage, see what is missing, fix, attest and file; a coordinator corrects a filed account; somebody with no organization is refused                                                                                                                                                                                     | `apps/web/e2e/filing/intake.spec.ts`              |
+| Coordinator correction: new version, same thread, pending, files carried, provenance and fresh attestation sealed, coordinator outside the seal, recorded in their log and never the reporter's, never loosening, the absent `collected_on` key, the switch, who may, a rename                                                         | `apps/api/test/db/intake-correction.test.ts`      |
+| Rotation on real rows: the guard outside and inside a rotation, the two-key window, a wrong previous key changing nothing, every key re-wrapped, the old key no longer opening anything, **an erased report staying erased with its ciphertext byte for byte**, digests and "My reports" on the new key alone, the record, idempotence | `apps/api/test/db/contact-key-rotation.test.ts`   |
+| The deploy check: `rotating` only beside the recorded key, still `changed` otherwise, recording after the rotation                                                                                                                                                                                                                     | `apps/api/test/unit/contact-key-rotation.test.ts` |
+| The declaration: the hashes it prints are the verifier's, and follow a correction                                                                                                                                                                                                                                                      | `apps/api/test/db/declaration.test.ts`            |
+| The declaration page, and that printing shows only the declaration                                                                                                                                                                                                                                                                     | `apps/web/e2e/filing/declaration.spec.ts`         |
+
+## Decisions made here that a reviewer should know about
+
+- **Only the coordinator who filed an account may correct it**, while still in the
+  organization. Every coordinator of the organization is the obvious alternative; it is a
+  one-line change in `ownedFiling`, and it is a decision, so it was not made here.
+- **A correction seals the organization's name as it is now.** A batch does the same at
+  filing; each version says what it was filed through when it was filed. The tests show the old
+  version keeps the old name.
+- **The coordinator attests again** to each correction, with its own statement.
+- **`contact_keys` may now be updated, inside a recorded rotation only** (see the design). This
+  is a database guard narrowed on purpose, said in the migration, the commit and here.
+- **The recorded key fingerprint is replaced only by `contact-key rotate`**, after its
+  transaction commits. If the commit succeeds and recording the file fails, the next deploy
+  sees `same`-or-`rotating` and running the command again finishes it (it is idempotent).
+- **The declaration's legal words are legacy's, word for word**, including the U.S. statute;
+  whether a deployment outside the U.S. wants different words is not decided here.
+
+## Changes outside C's folders (all named in the commit messages)
+
+- `apps/web/src/features/identity/StaffOnly.tsx` (A): the organization-role door.
+- `apps/api/src/jobs/contact-key.ts`, `cli.ts`, `doctor.ts` (H): the `rotating` state, the
+  `contact-key rotate` command, `recordRotated`, two doctor warnings. The refusal of an unplanned
+  change is unchanged.
+- `deploy/README.md` (H): "Rotating the contact key". `deploy.sh` is not changed.
+- `apps/api/src/config.ts`, `apps/api/src/app.ts`, `.env.example`: `CONTACT_KEY_PREVIOUS`.
+- `apps/web/src/routes/mine/$threadId.tsx` (C's): the declaration link beside, not inside,
+  `MyReportPage`, because `features/form/` is F's to change right now.
+- Migrations `20261019184609_coordinator_corrections.sql`,
+  `20261019185427_contact_key_rotation.sql`; `schema.gen.ts` and `routeTree.gen.ts` regenerated.
+
+## For the other workstreams
+
+- **D1 (moderation):** a coordinator's correction writes no `reporter_actions` row. Its reason,
+  who made it and for which organization are in `coordinator_actions` (by `report_id`). A
+  moderator's view of a thread should show both logs.
+- **G2 (staff navigation):** `/intake` needs a link for anybody with an organization membership
+  (coordinator or manager), whatever their system role. Nothing links to it yet.
+- **H (operations):** `contact-key` in `ExecStartPre` and `deploy.sh` already passes a planned
+  rotation, because both read `CONTACT_KEY_PREVIOUS` from the settings file. To make the
+  rotation part of a deploy, run `reportlog contact-key rotate` after the switch when
+  `CONTACT_KEY_PREVIOUS` is set; the runbook describes doing it by hand. The describe title in
+  `test/unit/contact-key.test.ts` ("CONTACT_KEY is never rotated") is now out of date; I left
+  your file alone. The message in `deploy.sh` ("differs from the key this archive started
+  with") could mention rotation.
+- **F (files):** nothing new. A coordinator's correction carries files as a reporter's does
+  (`correction.ts`).
+
+## Not done
+
+- **Notification settings** (legacy `GET`/`POST /me/notifications`: how often to hear about
+  newly published reports, and from which logbooks). They are read only by the digests, which
+  are G2's and being built now, and they were columns on A's `users` table. Built here they
+  would be a setting nothing reads, in a table that is not C's; they belong with G2's digests.
+- **The moderator access log in "My reports"** (D's, unchanged from C's list).
+- **Browser history per card** in the filing form (C's list; the form is F's to change now).
+- **Uploads in an intake account.** The account dialog skips the upload question, as the
+  reporter's form does until F adds uploads.
 
 ## Designs, written before building
 
@@ -98,7 +209,3 @@ migration replaces the trigger function so that an UPDATE is allowed **only** wh
 
 Everything else is refused as before. What the database cannot check is that the new wrap holds
 the same thread key; the rotation checks that itself before it commits.
-
-## Not done
-
-- Everything below this line is written as each part lands.
