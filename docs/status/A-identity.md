@@ -11,18 +11,18 @@ This is for the coordinating session and the other workstreams. There is one fil
 
 ## Checks
 
-| Suite                               | Result                                                                   |
-| ----------------------------------- | ------------------------------------------------------------------------ |
-| `pnpm check`                        | passes (lint, format, types, boundaries; unit tests: api 15, web 13)     |
-| `pnpm test:db`                      | 10 files, 138 tests, all passed (the foundation alone has 26)            |
-| `db:types:check`                    | generated types up to date                                               |
-| Browser suite (`CHROMIUM_PATH` set) | 13 passed (7 of them are A's, in the `identity` project)                 |
-| CI on GitHub                        | lint/types/db job green. Browser job red on the first pushes (see below) |
+| Suite                               | Result                                                               |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `pnpm check`                        | passes (lint, format, types, boundaries; unit tests: api 15, web 13) |
+| `pnpm test:db`                      | 10 files, 138 tests, all passed (the foundation alone has 26)        |
+| `db:types:check`                    | generated types up to date                                           |
+| Browser suite (`CHROMIUM_PATH` set) | 13 passed (7 of them are A's, in the `identity` project)             |
+| CI on GitHub                        | both jobs green on `c8107d1`, and the PR merges cleanly              |
 
-**Why the browser job was red:** the web server timed out before any test ran. G found the cause:
+**Why the browser job was red before `c8107d1`:** the web server timed out before any test ran. G found the cause:
 `vite preview` binds `localhost`, which resolves to `::1` alone on GitHub's runners. I ported G's
 exact one-flag fix (`--host 127.0.0.1` in `apps/web/playwright.config.ts`) in the same commit as
-this file, worded identically so the two branches merge cleanly. Check the PR for the new CI run.
+this file, worded identically so the two branches merge cleanly. CI went green with it.
 
 ## What was built
 
