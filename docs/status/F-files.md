@@ -9,16 +9,23 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                                         |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit: api 143, web 368, fields 69, seal 31, access 4) |
-| `pnpm test:db`                          | 30 files, 485 tests passed (24 / 393 before this branch)                                       |
-| `db:types:check`                        | up to date                                                                                     |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 65 passed, twice in a row on a fresh database (60 before this branch)                          |
+After merging the base at `7898de3` (H, G2, I and D2):
 
-On a long-lived local database, B's front-page test eventually fails: each run leaves about 8
-launched logbooks, and the front page carries at most 50 buttons. CI starts fresh, so it is not
-affected.
+| Suite                               | Result                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm check`                        | passes (format, lint, types, boundaries; unit: api 231, web 396, fields 69, seal 31, access 4) |
+| `pnpm test:db`                      | 38 files, 632 tests: all passed on one run; on the other, D2's anchor test below failed        |
+| `db:types:check`                    | up to date                                                                                     |
+| Browser suite (`CHROMIUM_PATH` set) | 79 passed, twice in a row (each run makes its own fresh database)                              |
+
+**D2's `anchor.test.ts` › "a mirror whose history has gone elsewhere is refused and reported, never
+forced" is intermittent, and not this branch's.** It failed in one of two full runs here, passed
+twice on its own here, and failed twice on its own in a clean checkout of the base `7898de3`. It
+expects `partly_published` and sometimes gets `published`. Nothing in this branch touches the
+anchor or git.
+
+The files worker is now the `files` job in H's runner, one pass a minute
+(`deploy/systemd/reportlog-files.timer`), and the doctor checks files.
 
 ## What was built, in the order asked
 
@@ -192,6 +199,11 @@ Unit tests: `apps/web/test/files.test.tsx`, and C's `filing.test.tsx` updated.
   `max_files` and `max_total_bytes` are now read and written.
 - **H** (`.github/workflows/ci.yml`): installs ImageMagick, libheif, ffmpeg and poppler-utils in
   both jobs. The worker's tests skip without them locally, and **fail** without them in CI.
+- **H, after merging the base:** a `files` entry in `apps/api/src/jobs/registry.ts` and its
+  generated timer, one call in `apps/api/src/jobs/doctor.ts`, and two `NOT_SWEPT` entries in
+  `apps/api/src/jobs/sweep.ts`. `upload_slots` is expired by the files job, which also deletes its
+  objects; `evidence_requests` is the record of asking. H's tests require every table with an
+  `expires_at` column to be decided.
 - **Shared:**
   - `apps/api/src/app.ts`: two registration lines and the files context;
   - `apps/api/src/server.ts`: the inline worker, for development only;
@@ -208,9 +220,19 @@ Unit tests: `apps/web/test/files.test.tsx`, and C's `filing.test.tsx` updated.
 
 ## For the other workstreams
 
-- **H (operations):** run the media worker.
-  - **Command:** `pnpm --filter @reportlog/api files:worker`. This is a loop with a pass every
-    3 s. With `--once` it does one pass, for a timer.
+- **H (operations):** the media worker is registered as the `files` job in your runner (one pass a
+  minute, `deploy/systemd/reportlog-files.timer`, generated from the registry), and
+  `reportlog doctor` now checks files.
+  - **Isolation:** under `reportlog-job@` the worker reads the same environment file as everything
+    else, `CONTACT_KEY` included. Giving it a unit of its own, with only `DATABASE_URL`, `FILES_KEY`
+    and storage, would keep the key to reporters' addresses away from the process that parses
+    hostile files.
+  - **`install.sh`:** add `imagemagick libheif1 ffmpeg poppler-utils` to what it installs. Until
+    then, files wait and the doctor names the packages.
+  - **Off-site backups:** they use the AWS SDK; files use hand-written Signature V4. They could share
+    one S3 client later.
+  - **Alternative command:** `pnpm --filter @reportlog/api files:worker` runs the same pass in a
+    loop, every 3 s.
   - **Packages:** `imagemagick` with `libheif1` (HEIC), `ffmpeg`, `poppler-utils`. ClamAV is
     optional: set `CLAMAV_ENABLED=true` with a running clamd.
   - **Environment:** `DATABASE_URL`, `FILES_KEY`, and the same `FILES_STORAGE` / `S3_*` as the

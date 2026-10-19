@@ -105,6 +105,14 @@ export const NOT_SWEPT: readonly { table: string; why: string }[] = [
     table: 'list_notify_confirmations',
     why: 'a list table: the lists sweep (workstream E) removes spent and expired links',
   },
+  {
+    table: 'upload_slots',
+    why: 'the files job (workstream F) expires these itself: it deletes the staged and stored objects, destroys the key and wipes the address digest. A deleted row would leave objects in storage nothing points at',
+  },
+  {
+    table: 'evidence_requests',
+    why: 'the record that a reporter was asked, kept after the link expires (workstream F stamps expired_at); the token is stored only as a hash',
+  },
 ];
 
 export type SweepResult = Record<string, number | 'absent' | { error: string }>;
