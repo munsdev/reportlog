@@ -3,19 +3,19 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D was split in two; D2 (the anchor, the transparency log, exports) has its own report.
 
-- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
+- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H merged in at `09b08ce`)
 - **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: api 142, web 364, fields 69, seal 31, access 4) |
-| `pnpm test:db`                          | 30 files, 475 tests, all passed (before this branch: 24 files, 393)                                  |
-| `db:types:check`                        | generated types up to date                                                                           |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 77 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
+| Suite                                                      | Result                                                                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 200, web 364, fields 69, seal 31, access 4) |
+| `pnpm test:db`                                             | 31 files, 490 tests, all passed, after merging H (before this branch: 24 files, 393)                 |
+| `db:types:check`                                           | generated types up to date                                                                           |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 77 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
 
 The legacy vector tests in `packages/seal` are untouched and green. CI on GitHub had not reported
 when this was written; check the pull request.
