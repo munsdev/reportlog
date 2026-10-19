@@ -88,10 +88,12 @@ afterAll(async () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Append-only, as the catalogue says it: a table with a trigger that runs
- * `reject_modification()` or is named `*_append_only`. That is how every
- * migration so far has written it, and the source check below holds them to
- * it.
+ * Append-only, as the catalogue says it: a table with a trigger named
+ * `*_append_only`, or a row trigger that runs `reject_modification()` on
+ * UPDATE. That is how every migration so far has written it, and the source
+ * check below holds them to it. A table that only refuses DELETE with the
+ * same function (`report_assessments`: changed by UPDATE, never deleted) is
+ * not append-only and is not in the set.
  */
 async function appendOnlyTables(): Promise<string[]> {
   const r = await sql<{ table: string }>`
@@ -102,7 +104,9 @@ async function appendOnlyTables(): Promise<string[]> {
       JOIN pg_proc p ON p.oid = t.tgfoid
      WHERE n.nspname = current_schema()
        AND NOT t.tgisinternal
-       AND (p.proname = 'reject_modification' OR t.tgname LIKE '%\\_append\\_only')
+       AND (t.tgname LIKE '%\\_append\\_only'
+            OR (p.proname = 'reject_modification' AND (t.tgtype::int & 1) = 1
+                AND (t.tgtype::int & 16) <> 0))
      ORDER BY 1`.execute(db);
   return r.rows.map((x) => x.table);
 }
@@ -631,6 +635,7 @@ const NOT_STAFF_PREFIXES = [
   '/api/board',
   '/api/v1',
   '/api/chain/',
+  '/api/press',
 ] as const;
 
 const isStaff = (url: string) => STAFF_PREFIXES.some((p) => url.startsWith(p));

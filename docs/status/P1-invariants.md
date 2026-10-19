@@ -28,9 +28,14 @@ new table, route, page or caller is covered the moment it exists.
 
 ### I4 · Append-only tables (`invariants.test.ts`)
 
-- **The set** is read from the Postgres catalogue: every table with a trigger that runs
-  `reject_modification()` or is named `*_append_only`. Today that is 21 tables. (The parity audit's
-  `file_publication_log` is not among them: a later migration dropped it.)
+- **The set** is read from the Postgres catalogue: every table with a trigger named
+  `*_append_only`, or a row trigger that runs `reject_modification()` on UPDATE. Today that is 20
+  tables.
+  - The parity audit's `file_publication_log` is not among them: a later migration dropped it.
+  - D3's `report_assessments` is not among them either, on purpose. It is changed by UPDATE and
+    refuses only DELETE and TRUNCATE, using the same function. The first version of this test
+    counted any use of the function, and went red on it when D3 merged. The definition was
+    narrowed; the table was not changed.
 - **A second net:** every table that a migration's comment calls APPEND-ONLY must be in that set.
   This catches a table described as append-only whose trigger was forgotten.
 - **One row is planted in each table.** A table in the set with no row fails, naming the table and
@@ -74,7 +79,7 @@ new table, route, page or caller is covered the moment it exists.
 - **One exception, on purpose:** `GET /api/access/owner` answers anybody signed in, because the
   owner's seat can be offered to somebody with no role. The test checks that such a person sees
   only `{ awaitingMyAcceptance: false }`.
-- There are 114 staff routes today, out of 209 (methods counted separately, HEAD left out).
+- There are 117 staff routes today, out of 214 (methods counted separately, HEAD left out).
 
 ### I3 · Rebuilding a sealed object (`invariants.test.ts`)
 
@@ -115,7 +120,7 @@ new table, route, page or caller is covered the moment it exists.
 
 ### I1 · No third-party requests (`third-party.spec.ts`)
 
-- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 63
+- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 65
   today.
 - **Each page is opened twice**, as a stranger and as an administrator. Each of those runs in the
   chromium and phone projects.
