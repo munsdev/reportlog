@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D was split in two: D1 does moderation and the board, D2 (this) the anchor, the log and exports.
 
-- **Branch:** `claude/d2-anchor`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
+- **Branch:** `claude/d2-anchor`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, and H merged in at `09b08ce`)
 - **Pull request:** [#8](https://github.com/munsdev/reportlog/pull/8), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged. Nothing has been sent to the real
   transparency log or the real timestamp authority.
@@ -11,12 +11,12 @@ D was split in two: D1 does moderation and the board, D2 (this) the anchor, the 
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                 |
-| --------------------------------------- | ---------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: api 157, web 364) |
-| `pnpm test:db`                          | 27 files, 434 tests, all passed (393 before this branch)               |
-| `db:types:check`                        | generated types up to date                                             |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 60 passed. D2 has no screen; run because `app.ts` registers new routes |
+| Suite                           | Result                                                                     |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `pnpm check`                    | passes (format, lint, types, boundaries; unit tests: api 215, web 364)     |
+| `pnpm test:db`                  | 28 files, 449 tests, all passed, after merging H                           |
+| `db:types:check`                | generated types up to date                                                 |
+| Browser suite (`CHROMIUM_PATH`) | 60 passed, after merging H. D2 has no screen; run because `app.ts` changed |
 
 The browser suite first refused to start: the legacy app (`node server.js` in `legacy/`) was
 listening on port 3000 from the container's start, as A and B also found. I stopped it.
@@ -130,14 +130,14 @@ refuses for good.
 
 ## For the other workstreams
 
-- **H (operations):**
-  - The anchor slot in your registry is one line:
-    `run: (ctx) => import('../anchor/job.ts').then((m) => m.runAnchorJob(ctx))`.
-  - Your doctor: `findings.push(await (await import('../anchor/job.ts')).anchorDoctorCheck(ctx))`.
-  - Both take your `JobContext` as it is, structurally (`job.ts` does not import from `jobs/`).
-  - Put `TRANSPARENCY_LOG_DIR` under `/var/lib/reportlog` (your unit's only writable path), and
-    the ssh key and its `known_hosts` beside it, mode 0600.
-  - The server needs `git`. It does not need `openssl`.
+- **H (operations):** wired in after H was merged into the base (named in the merge commit):
+  - `jobs/registry.ts`: the anchor slot now runs `runAnchorJob` (`reportlog-anchor.timer` was
+    already there).
+  - `jobs/doctor.ts`: `anchorDoctorCheck` after the backups. On an unconfigured machine it says
+    `FAIL anchor NOTHING HAS EVER BEEN ANCHORED…` once reports exist.
+  - `deploy/README.md`: the job table's anchor row, and a paragraph on its settings and refusals.
+  - Put `TRANSPARENCY_LOG_DIR` under `/var/lib/reportlog` (the unit's only writable path), with
+    the ssh key and its `known_hosts` beside it, mode 0600. The server needs `git`, not `openssl`.
   - `anchor_runs` is never swept.
 - **D1 (board):** what counts as published is written twice: `buildChainFile` in the foundation,
   and `publishedReportRows` in `anchor/records.ts`, which feeds the snapshot. They use the same

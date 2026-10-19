@@ -14,11 +14,14 @@
     "lists:sweep": "node --env-file-if-exists=../../.env src/lists/sweep-cli.ts",
     "anchor": "node --env-file-if-exists=../../.env src/anchor/cli.ts",
     "check-chain": "node src/anchor/check-chain.ts",
+    "ops": "node --env-file-if-exists=../../.env src/jobs/cli.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --project unit",
     "test:db": "vitest run --project db"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1144.0",
+    "@aws-sdk/lib-storage": "3.1144.0",
     "@fastify/cookie": "11.1.2",
     "@fastify/helmet": "13.2.0",
     "@reportlog/access": "workspace:*",

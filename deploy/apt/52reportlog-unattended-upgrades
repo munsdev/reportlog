@@ -1,0 +1,22 @@
+// Installed by deploy/install.sh, beside the distribution's own
+// 50unattended-upgrades (which already covers the OS security archive).
+//
+// Also take updates from the two third-party repositories install.sh adds.
+// PostgreSQL's packages are versioned by major release (postgresql-16), so
+// this brings minor releases, which is where PostgreSQL ships its security
+// fixes, and never a new major version. Caddy's restart on upgrade costs a
+// second of downtime.
+Unattended-Upgrade::Origins-Pattern {
+        "origin=apt.postgresql.org";
+        "origin=cloudsmith/caddy/stable";
+};
+
+// A kernel or libc fix does nothing until the machine restarts. Reboot when
+// an update needs it, at a quiet hour after the night's backup and anchor.
+// Set to "false" if somebody would rather choose the moment themselves; the
+// doctor then reports when a reboot is waiting.
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "05:30";
+
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
