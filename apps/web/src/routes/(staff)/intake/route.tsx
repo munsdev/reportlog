@@ -1,14 +1,15 @@
 /**
  * Coordinator intake. Every page here is for a coordinator or manager of an
- * organization, so the layout names the door once.
+ * organization, so the layout names the door once, with the same audience
+ * as the staff menu's entry (features/staff-nav/entries.ts).
  */
 import { Outlet, createFileRoute } from '@tanstack/react-router';
-import { StaffOnly } from '../../../features/identity/StaffOnly.tsx';
+import { OnlyFor } from '../../../features/staff-nav/OnlyFor.tsx';
 
 export const Route = createFileRoute('/(staff)/intake')({
   component: () => (
-    <StaffOnly needs={{ organization: ['coordinator', 'manager'] }}>
+    <OnlyFor audience={['organization']} who="coordinators and managers of an organization">
       <Outlet />
-    </StaffOnly>
+    </OnlyFor>
   ),
 });

@@ -15,6 +15,7 @@ import { Input } from '../components/ui/input.tsx';
 import { Label } from '../components/ui/label.tsx';
 import { Page } from '../components/ui/page.tsx';
 import { useSite } from '../components/ui/site.tsx';
+import { MapSlot } from '../features/maps/MapSlot.tsx';
 import { call } from '../lib/api.ts';
 
 export const homeButtonsQuery = queryOptions({
@@ -96,6 +97,7 @@ function Home() {
     <Page title={site?.copy.home_headline ?? 'ReportLog'} lede={site?.copy.home_lede}>
       <HomeButtons buttons={buttons} />
       {site ? <p className="max-w-prose whitespace-pre-wrap">{site.copy.home_intro}</p> : null}
+      <MapSlot slot="home" />
       <CheckAReport />
     </Page>
   );

@@ -18,6 +18,7 @@ import { promisify } from 'node:util';
 import { sql } from 'kysely';
 import type { Config } from '../config.ts';
 import type { Database } from '../db/database.ts';
+import { anchorDoctorCheck } from '../anchor/job.ts';
 import { MIGRATIONS_DIR } from '../db/migrate.ts';
 import { emailReadiness } from '../email/index.ts';
 import { backupHealth } from './backup-files.ts';
@@ -227,6 +228,15 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
       maxAgeHours: config.BACKUP_MAX_AGE_HOURS,
     }),
   );
+
+  // --- the daily anchor (workstream D2) ------------------------------------
+  // A timer that fires is not a timer that works: this reads the newest
+  // anchor and the newest run, and a run that refused outranks everything.
+  try {
+    out.push(await anchorDoctorCheck({ config, db, now: () => now }));
+  } catch (err) {
+    out.push(finding('fail', 'anchor', `could not be checked: ${why(err)}`));
+  }
 
   // --- scheduled jobs ------------------------------------------------------
   if (server) {

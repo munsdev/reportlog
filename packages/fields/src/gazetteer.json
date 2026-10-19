@@ -1,6 +1,6 @@
 {
   "gazetteer": 1,
-  "built_from": "public/geo/maps.json",
+  "built_from": "apps/web/src/features/maps/outlines.json",
   "countries": {
     "AD": "Andorra",
     "AE": "United Arab Emirates",

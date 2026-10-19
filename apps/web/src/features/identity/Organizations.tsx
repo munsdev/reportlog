@@ -138,6 +138,16 @@ export function OrganizationPage({ id }: { id: number }) {
     <div className="space-y-8">
       <h1 className="font-display text-3xl font-bold">{organization.name}</h1>
       {organization.details && <p className="text-ink-alt">{organization.details}</p>}
+      {/* Workstream G2: the organization's own decision to be in the public directory. */}
+      {me.data.memberships.some((m) => m.organization_id === id && m.role === 'manager') ||
+      me.data.role === 'admin' ||
+      me.data.role === 'owner' ? (
+        <p>
+          <Link to="/organizations/$id/listing" params={{ id: String(id) }} className="underline">
+            Listing in the public directory
+          </Link>
+        </p>
+      ) : null}
 
       <Panel title="People">
         <ul className="space-y-2">

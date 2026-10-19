@@ -26,6 +26,8 @@ export interface SignedIn {
   email: string;
   role: SystemRole;
   memberships: Membership[];
+  /** The tester flag (workstream G2's feedback tracker). Grants nothing else. */
+  tester: boolean;
 }
 
 declare module 'fastify' {
@@ -92,7 +94,7 @@ export async function userForSession(
   const row = await db
     .selectFrom('sessions as s')
     .innerJoin('users as u', 'u.id', 's.user_id')
-    .select(['u.id', 'u.email', 'u.role'])
+    .select(['u.id', 'u.email', 'u.role', 'u.is_tester'])
     .where('s.token_hash', '=', sha256Hex(token))
     .where('s.expires_at', '>', new Date())
     .executeTakeFirst();
@@ -102,6 +104,7 @@ export async function userForSession(
     email: row.email,
     role: row.role,
     memberships: await membershipsFor(db, row.id),
+    tester: row.is_tester,
   };
 }
 

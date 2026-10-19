@@ -32,6 +32,8 @@ export const Me = z.discriminatedUnion('signedIn', [
     memberships: z.array(Membership),
     /** An administrator, the owner or an Access Manager: may open the access screens. */
     grantsAccess: z.boolean(),
+    /** Holds the tester flag: may open the feedback tracker. A flag, not a role. */
+    tester: z.boolean(),
   }),
 ]);
 export type Me = z.infer<typeof Me>;

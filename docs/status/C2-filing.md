@@ -9,12 +9,14 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Before this branch | Now                                                                 |
-| --------------------------------------- | ------------------ | ------------------------------------------------------------------- |
-| `pnpm check`                            | passes             | passes (unit tests: api 189, web 364, fields 69, seal 31, access 4) |
-| `pnpm test:db`                          | 25 files, 408      | 28 files, 438, all passed                                           |
-| `db:types:check`                        |                    | generated types up to date                                          |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 60 passed          | 66 passed (3 new tests, desktop and phone)                          |
+Against the base at `7898de3` (with D2, G2 and I), merged into this branch.
+
+| Suite                                   | Base alone | With this branch                                                    |
+| --------------------------------------- | ---------- | ------------------------------------------------------------------- |
+| `pnpm check`                            | passes     | passes (unit tests: api 219, web 394, fields 69, seal 31, access 4) |
+| `pnpm test:db`                          | 540        | 570, all passed (35 files)                                          |
+| `db:types:check`                        |            | generated types up to date                                          |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 74         | 80 passed (3 new tests, desktop and phone)                          |
 
 CI on GitHub had not reported when this was written. Check the pull request.
 
@@ -30,8 +32,9 @@ CI on GitHub had not reported when this was written. Check the pull request.
      still needs; "File the ready accounts" asks for the legacy statement to be ticked, says how
      many accounts enter the permanent record and under which name, and files them. Accounts
      not ready stay staged.
-   - The door is `StaffOnly needs={{ organization: ['coordinator', 'manager'] }}`, admitting by
-     A's memberships as the server's `coordinatorOrgs` does.
+   - The door is G2's `OnlyFor` with a new `organization` audience (anybody who coordinates or
+     manages an organization, by A's memberships, as the server's `coordinatorOrgs` does), and
+     the staff menu has an "Intake" entry for the same audience, so the two cannot disagree.
 2. **Correcting a coordinator-filed report**, as designed above:
    `GET`/`POST /api/intake/reports/:threadId[/correct]` (`apps/api/src/filing/intakeCorrection.ts`)
    and `/intake/reports/:threadId`. The mechanics shared with a reporter's correction (lock the
@@ -52,7 +55,7 @@ CI on GitHub had not reported when this was written. Check the pull request.
 
 | What                                                                                                                                                                                                                                                                                                                                   | Where                                             |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Intake screens: stage, see what is missing, fix, attest and file; a coordinator corrects a filed account; somebody with no organization is refused                                                                                                                                                                                     | `apps/web/e2e/filing/intake.spec.ts`              |
+| Intake screens, reached from the staff menu: stage, see what is missing, fix, attest and file; a coordinator corrects a filed account; somebody with no organization is refused                                                                                                                                                        | `apps/web/e2e/filing/intake.spec.ts`              |
 | Coordinator correction: new version, same thread, pending, files carried, provenance and fresh attestation sealed, coordinator outside the seal, recorded in their log and never the reporter's, never loosening, the absent `collected_on` key, the switch, who may, a rename                                                         | `apps/api/test/db/intake-correction.test.ts`      |
 | Rotation on real rows: the guard outside and inside a rotation, the two-key window, a wrong previous key changing nothing, every key re-wrapped, the old key no longer opening anything, **an erased report staying erased with its ciphertext byte for byte**, digests and "My reports" on the new key alone, the record, idempotence | `apps/api/test/db/contact-key-rotation.test.ts`   |
 | The deploy check: `rotating` only beside the recorded key, still `changed` otherwise, recording after the rotation                                                                                                                                                                                                                     | `apps/api/test/unit/contact-key-rotation.test.ts` |
@@ -78,7 +81,8 @@ CI on GitHub had not reported when this was written. Check the pull request.
 
 ## Changes outside C's folders (all named in the commit messages)
 
-- `apps/web/src/features/identity/StaffOnly.tsx` (A): the organization-role door.
+- `apps/web/src/features/staff-nav/entries.ts` (G2): the `organization` audience and the
+  "Intake" entry. Viewers without memberships see exactly what they saw before.
 - `apps/api/src/jobs/contact-key.ts`, `cli.ts`, `doctor.ts` (H): the `rotating` state, the
   `contact-key rotate` command, `recordRotated`, two doctor warnings. The refusal of an unplanned
   change is unchanged.
@@ -94,8 +98,8 @@ CI on GitHub had not reported when this was written. Check the pull request.
 - **D1 (moderation):** a coordinator's correction writes no `reporter_actions` row. Its reason,
   who made it and for which organization are in `coordinator_actions` (by `report_id`). A
   moderator's view of a thread should show both logs.
-- **G2 (staff navigation):** `/intake` needs a link for anybody with an organization membership
-  (coordinator or manager), whatever their system role. Nothing links to it yet.
+- **G2 (staff navigation):** `entries.ts` gained an `organization` audience and the "Intake"
+  entry (test: `apps/web/test/intake-nav.test.ts`). `OnlyFor` takes it too.
 - **H (operations):** `contact-key` in `ExecStartPre` and `deploy.sh` already passes a planned
   rotation, because both read `CONTACT_KEY_PREVIOUS` from the settings file. To make the
   rotation part of a deploy, run `reportlog contact-key rotate` after the switch when

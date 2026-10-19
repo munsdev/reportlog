@@ -47,7 +47,12 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
   filingState('intake-logbook', slug, `Paper accounts ${id}`);
   await signIn(page, email);
 
-  await page.goto('/intake');
+  // Reached from the staff menu, which shows it by organization membership.
+  await page.goto('/');
+  await page
+    .getByRole('navigation', { name: 'Staff' })
+    .getByRole('link', { name: 'Intake' })
+    .click();
   await expect(
     page.getByRole('heading', { level: 1, name: 'Filing for an organization' }),
   ).toBeVisible();
