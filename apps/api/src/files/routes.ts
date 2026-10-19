@@ -17,7 +17,7 @@
  */
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import type { Kysely } from 'kysely';
+import type { ExpressionBuilder, Kysely } from 'kysely';
 import type { Readable } from 'node:stream';
 import { PUBLICATION_OFF, publicArchiveAvailable } from '../board/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
@@ -26,7 +26,7 @@ import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
-import { permissionsFor } from '../permissions/log.ts';
+import { permissionsFor, permissionsForMany } from '../permissions/log.ts';
 import { filesOn } from './context.ts';
 import type { Files } from './context.ts';
 import { decryptStream } from './envelope.ts';
@@ -53,6 +53,67 @@ import {
 } from './slots.ts';
 import type { Owner } from './slots.ts';
 import type { Bucket } from './storage.ts';
+
+/** The files of one report version, as a moderator or administrator sees them. */
+async function currentFiles(db: Kysely<DB>, reportId: number): Promise<C.ThreadFile[]> {
+  const rows = await db
+    .selectFrom('report_attachments as ra')
+    .innerJoin('attachments as a', 'a.id', 'ra.attachment_id')
+    .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'a.id')
+    .select([
+      'a.id',
+      'a.ordinal',
+      'a.media_type',
+      'a.byte_size',
+      'a.sha256',
+      'a.received_at',
+      'fh.original_name',
+      'fh.rendition_media_type',
+      'fh.publication',
+      'fh.alt_text',
+      'fh.dek_destroyed_at',
+      'fh.has_poster',
+      'fh.page_count',
+      'fh.duration_seconds',
+    ])
+    .where('ra.report_id', '=', reportId)
+    .orderBy('a.ordinal')
+    .execute();
+  return rows.map((r) => ({
+    id: r.id,
+    ordinal: r.ordinal,
+    original_name: r.original_name,
+    media_type: r.media_type,
+    byte_size: r.byte_size,
+    sha256: r.sha256,
+    rendition_media_type: r.rendition_media_type,
+    publication: r.publication as 'withheld' | 'published' | 'refused',
+    alt_text: r.alt_text,
+    erased: r.dek_destroyed_at !== null,
+    has_poster: r.has_poster,
+    pages: r.page_count ?? 1,
+    duration_seconds: r.duration_seconds === null ? null : Number(r.duration_seconds),
+    received_at: r.received_at.toISOString(),
+  }));
+}
+
+/** The thread a reference names, whichever version of it the reference is. */
+async function threadOfRef(db: Kysely<DB>, ref: string): Promise<string | null> {
+  const row = await db
+    .selectFrom('reports')
+    .select('thread_id')
+    .where('public_ref', '=', ref.trim().toUpperCase())
+    .executeTakeFirst();
+  return row?.thread_id ?? null;
+}
+
+/**
+ * What a moderator decides on: the decisions a file can carry. A file with
+ * none of these on its record is still sitting where it arrived (withheld by
+ * default), which is what "waiting" means in the queue. A deliberate
+ * withhold is a decision and leaves the queue.
+ */
+const DECISIONS = ['published', 'withheld', 'refused', 'taken_down', 'erased'];
 
 export interface FileRouteDeps {
   db: Kysely<DB>;
@@ -312,37 +373,92 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
   await app.register((scope) => {
     scope.addHook('preHandler', roleGuard(['moderator']));
 
+    // The queue, or one report by its reference. The reference may be any
+    // version's; what is shown is always the current version, because that is
+    // the version whose files are decided on.
+    route(scope, C.listFileReports, async ({ query }) => {
+      const ref = query.ref?.trim() ?? '';
+      const thread = ref ? await threadOfRef(db, ref) : null;
+      if (ref && !thread) return { reports: [] };
+      const count = (
+        eb: ExpressionBuilder<DB & { r: DB['reports'] }, 'r'>,
+        only: 'all' | 'published' | 'undecided',
+      ) => {
+        let q = eb
+          .selectFrom('report_attachments as ra')
+          .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'ra.attachment_id')
+          .whereRef('ra.report_id', '=', 'r.id');
+        if (only === 'published') q = q.where('fh.publication', '=', 'published');
+        if (only === 'undecided') {
+          q = q
+            .where('fh.publication', '=', 'withheld')
+            .where('fh.dek_destroyed_at', 'is', null)
+            .where((w) =>
+              w.not(
+                w.exists(
+                  w
+                    .selectFrom('attachment_events as e')
+                    .select('e.id')
+                    .whereRef('e.attachment_id', '=', 'ra.attachment_id')
+                    .where('e.action', 'in', DECISIONS),
+                ),
+              ),
+            );
+        }
+        return q.select((x) => x.fn.countAll<string>().as('n'));
+      };
+      let q = db
+        .selectFrom('report_heads as h')
+        .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+        .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
+        .select((eb) => [
+          'h.thread_id',
+          'h.withdrawn',
+          'r.public_ref',
+          'r.received_at',
+          'r.may_publish',
+          'l.title',
+          count(eb, 'all').as('files'),
+          count(eb, 'published').as('published'),
+          count(eb, 'undecided').as('undecided'),
+        ]);
+      q = thread
+        ? q.where('h.thread_id', '=', thread)
+        : q
+            .where('h.withdrawn', '=', false)
+            .where((eb) => eb(count(eb, 'undecided'), '>', '0'))
+            .orderBy('r.received_at')
+            .limit(200);
+      const rows = await q.execute();
+      const permits = await permissionsForMany(
+        db,
+        rows.map((r) => r.thread_id),
+      );
+      return {
+        reports: rows.map((r) => ({
+          thread_id: r.thread_id,
+          public_ref: r.public_ref,
+          logbook_title: r.title,
+          received_at: r.received_at.toISOString(),
+          files: Number(r.files),
+          undecided: Number(r.undecided),
+          published: Number(r.published),
+          may_publish: r.may_publish,
+          files_permitted: permits.get(r.thread_id)?.attachment_publication ?? false,
+          withdrawn: r.withdrawn,
+        })),
+      };
+    });
+
     route(scope, C.getThreadFiles, async ({ params }) => {
       const head = await db
         .selectFrom('report_heads as h')
         .innerJoin('reports as r', 'r.id', 'h.current_report_id')
-        .select(['r.id', 'r.may_publish'])
+        .select(['r.id', 'r.may_publish', 'h.withdrawn'])
         .where('h.thread_id', '=', params.threadId)
         .executeTakeFirst();
       if (!head) throw notFound('There is no such report.');
-      const rows = await db
-        .selectFrom('report_attachments as ra')
-        .innerJoin('attachments as a', 'a.id', 'ra.attachment_id')
-        .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'a.id')
-        .select([
-          'a.id',
-          'a.ordinal',
-          'a.media_type',
-          'a.byte_size',
-          'a.sha256',
-          'a.received_at',
-          'fh.original_name',
-          'fh.rendition_media_type',
-          'fh.publication',
-          'fh.alt_text',
-          'fh.dek_destroyed_at',
-          'fh.has_poster',
-          'fh.page_count',
-          'fh.duration_seconds',
-        ])
-        .where('ra.report_id', '=', head.id)
-        .orderBy('a.ordinal')
-        .execute();
+      const files = await currentFiles(db, head.id);
       const events = await db
         .selectFrom('attachment_events')
         .select(['attachment_id', 'action', 'actor', 'actor_email', 'reason', 'created_at'])
@@ -351,23 +467,9 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
         .execute();
       return {
         may_publish: head.may_publish,
+        withdrawn: head.withdrawn,
         files_permitted: (await permissionsFor(db, params.threadId)).attachment_publication,
-        files: rows.map((r) => ({
-          id: r.id,
-          ordinal: r.ordinal,
-          original_name: r.original_name,
-          media_type: r.media_type,
-          byte_size: r.byte_size,
-          sha256: r.sha256,
-          rendition_media_type: r.rendition_media_type,
-          publication: r.publication as 'withheld' | 'published' | 'refused',
-          alt_text: r.alt_text,
-          erased: r.dek_destroyed_at !== null,
-          has_poster: r.has_poster,
-          pages: r.page_count ?? 1,
-          duration_seconds: r.duration_seconds === null ? null : Number(r.duration_seconds),
-          received_at: r.received_at.toISOString(),
-        })),
+        files,
         events: events.map((e) => ({ ...e, at: e.created_at.toISOString() })),
       };
     });
@@ -521,6 +623,27 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
       const id = await logbook(Number(params.id));
       await setLogbookLimits(db, id, parsed(bodyOf<LimitsInput>(C.setLogbookFileLimits, request)));
       return limitLayers(db, id);
+    });
+
+    // An administrator erasing a file has to see which one. Not the
+    // moderator's view: no copy of the file is served here, only what
+    // identifies it.
+    route(scope, C.getReportFilesForErasing, async ({ params }) => {
+      const thread = await threadOfRef(db, params.ref);
+      const head = thread
+        ? await db
+            .selectFrom('report_heads as h')
+            .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+            .select(['r.id', 'r.public_ref'])
+            .where('h.thread_id', '=', thread)
+            .executeTakeFirst()
+        : undefined;
+      if (!thread || !head) throw notFound('There is no report with that reference.');
+      return {
+        thread_id: thread,
+        public_ref: head.public_ref,
+        files: await currentFiles(db, head.id),
+      };
     });
 
     route(scope, C.eraseFile, async ({ params, request }) => {
