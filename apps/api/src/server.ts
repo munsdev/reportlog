@@ -6,9 +6,12 @@ import { filesFrom } from './files/context.ts';
 import { workOnce } from './files/worker.ts';
 import { createMailer } from './email/index.ts';
 import { listSettingsFrom } from './lists/settings.ts';
+import { createErrorTracker, releaseOf } from './telemetry/tracker.ts';
 
 const config = loadConfig();
 const db = createDatabase(config.DATABASE_URL);
+// Off (and silent) unless ERROR_TRACKING_DSN is set.
+const errors = createErrorTracker({ config, release: releaseOf() });
 
 // The card's wording must be on record before any report can name its digest.
 await recordCardTexts(db);
@@ -17,6 +20,7 @@ const app = await buildApp({
   config,
   db,
   mailer: createMailer(config),
+  errors,
   lists: listSettingsFrom(config),
 });
 
@@ -55,10 +59,20 @@ const shutdown = async (signal: string) => {
   app.log.info({ signal }, 'shutting down');
   clearInterval(inline);
   await app.close();
+  await errors.flush();
   await db.destroy();
   process.exit(0);
 };
 process.once('SIGTERM', () => void shutdown('SIGTERM'));
 process.once('SIGINT', () => void shutdown('SIGINT'));
+// Something nothing caught: report it, then end the way Node would have.
+// systemd restarts the service (Restart=on-failure).
+const fatal = (err: unknown) => {
+  app.log.fatal({ err }, 'uncaught');
+  errors.capture(err, { side: 'api' });
+  void errors.flush().finally(() => process.exit(1));
+};
+process.once('uncaughtException', fatal);
+process.once('unhandledRejection', fatal);
 
 await app.listen({ host: config.HOST, port: config.PORT });

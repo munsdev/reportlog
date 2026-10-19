@@ -23,6 +23,10 @@ export const IN_FRONT: readonly string[] = [
   'GET /api/site-access/status',
   'POST /api/site-access/unlock',
   'GET /api/doors',
+  // Error tracking (telemetry/routes.ts): whether it is on, and the relay the
+  // website reports its errors through. A lock screen can break too.
+  'GET /api/telemetry',
+  'POST /api/telemetry/errors',
 ];
 
 /**

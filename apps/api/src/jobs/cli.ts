@@ -28,6 +28,7 @@ import { CHANGED_MESSAGE, checkAndRecord, recordRotated } from './contact-key.ts
 import { diagnose, render, SERVER_MARKER } from './doctor.ts';
 import { exitCode } from './doctor-checks.ts';
 import { findJob, JOBS, timerUnit } from './registry.ts';
+import { createErrorTracker, releaseOf } from '../telemetry/tracker.ts';
 
 const [command = 'help', ...rest] = process.argv.slice(2);
 
@@ -110,6 +111,12 @@ async function runJob(name: string | undefined, args: string[]): Promise<number>
     console.error(
       `${job.name} stopped: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}`,
     );
+    // A job that THREW is a bug, unlike one that reported `ok: false` (a
+    // refusal, an unreachable provider), which the alert already covers.
+    // Off unless ERROR_TRACKING_DSN is set.
+    const errors = createErrorTracker({ config: c, release: releaseOf() });
+    errors.capture(err, { side: 'job', job: job.name });
+    await errors.flush();
     return 1;
   } finally {
     await db.destroy();

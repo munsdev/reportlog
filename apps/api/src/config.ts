@@ -231,6 +231,30 @@ const ConfigSchema = z.object({
     .min(25)
     .max(24 * 14)
     .default(36),
+
+  // --- error tracking (apps/api/src/telemetry/) ------------------------
+  /**
+   * A Bugsink project's DSN (`https://<key>@bugsink.example.org/<project>`).
+   * Unset, nothing is tracked and nothing is sent anywhere. Set, the server
+   * reports its own unexpected errors there, and relays the website's
+   * (the browser never talks to Bugsink). A secret: never logged.
+   */
+  ERROR_TRACKING_DSN: optional(
+    z
+      .url('ERROR_TRACKING_DSN looks like "https://key@bugsink.example.org/1"')
+      .refine(
+        (u) => /^https?:\/\/[^@/\s]+@[^/\s]+\/(?:.*\/)?\d+$/.test(u),
+        'ERROR_TRACKING_DSN looks like "https://key@bugsink.example.org/1": a key, a host and a project number',
+      ),
+  ),
+  /** Shown beside each event in Bugsink, to tell a staging server from the real one. */
+  ERROR_TRACKING_ENVIRONMENT: z
+    .string()
+    .regex(
+      /^[a-z0-9][a-z0-9_-]{0,31}$/,
+      'ERROR_TRACKING_ENVIRONMENT is a short name, like "production"',
+    )
+    .default('production'),
 });
 
 /**

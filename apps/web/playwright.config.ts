@@ -9,6 +9,7 @@
  */
 import { defineConfig, devices } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
+import { BUGSINK_PORT, BUGSINK_RECEIVED } from './e2e/bugsink.ts';
 
 const chromium = process.env.CHROMIUM_PATH;
 // Where the server writes the email it would have sent, so a test can read a
@@ -17,6 +18,8 @@ const chromium = process.env.CHROMIUM_PATH;
 const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 // Where the test server keeps files (files workstream).
 const FILES = fileURLToPath(new URL('./e2e/.files/', import.meta.url));
+// Error tracking is ON for the whole run, against a stand-in for Bugsink
+// (e2e/telemetry.spec.ts), so every page's no-third-party check runs with it on.
 
 export default defineConfig({
   testDir: 'e2e',
@@ -88,6 +91,12 @@ export default defineConfig({
   ],
   webServer: [
     {
+      // A stand-in for Bugsink (apps/api/test/stand-in-bugsink.ts).
+      command: `node ../api/test/stand-in-bugsink.ts ${BUGSINK_PORT} ${BUGSINK_RECEIVED}`,
+      url: `http://127.0.0.1:${BUGSINK_PORT}/`,
+      reuseExistingServer: !process.env.CI,
+    },
+    {
       command: 'node --env-file-if-exists=../../.env ../api/src/server.ts',
       url: 'http://127.0.0.1:3000/api/health',
       reuseExistingServer: !process.env.CI,
@@ -104,6 +113,8 @@ export default defineConfig({
         FILES_STORAGE: 'disk',
         FILES_DIR: FILES,
         FILES_INLINE_WORKER: 'true',
+        ERROR_TRACKING_DSN: `http://e2e@127.0.0.1:${BUGSINK_PORT}/1`,
+        ERROR_TRACKING_ENVIRONMENT: 'e2e',
       },
     },
     {
