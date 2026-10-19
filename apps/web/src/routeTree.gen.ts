@@ -50,6 +50,7 @@ import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/in
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
 import { Route as staffListsIndexRouteImport } from './routes/(staff)/lists/index'
 import { Route as staffListsIdRouteImport } from './routes/(staff)/lists/$id'
+import { Route as staffListsSearchRouteImport } from './routes/(staff)/lists/search'
 import { Route as staffLogbooksIndexRouteImport } from './routes/(staff)/logbooks/index'
 import { Route as staffLogbooksIdRouteImport } from './routes/(staff)/logbooks/$id'
 import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/logbooks/front-page'
@@ -281,6 +282,11 @@ const staffListsIdRoute = staffListsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => staffListsRouteRoute,
 } as any)
+const staffListsSearchRoute = staffListsSearchRouteImport.update({
+  id: '/search',
+  path: '/search',
+  getParentRoute: () => staffListsRouteRoute,
+} as any)
 const staffLogbooksIndexRoute = staffLogbooksIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -447,6 +453,7 @@ export interface FileRoutesByFullPath {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
+  '/lists/search': typeof staffListsSearchRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
@@ -509,6 +516,7 @@ export interface FileRoutesByTo {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
+  '/lists/search': typeof staffListsSearchRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
@@ -578,6 +586,7 @@ export interface FileRoutesById {
   '/(staff)/files/settings': typeof staffFilesSettingsRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
+  '/(staff)/lists/search': typeof staffListsSearchRoute
   '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
   '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
@@ -648,6 +657,7 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/lists/$id'
+    | '/lists/search'
     | '/logbooks/$id'
     | '/logbooks/front-page'
     | '/moderate/$threadId'
@@ -710,6 +720,7 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/lists/$id'
+    | '/lists/search'
     | '/logbooks/$id'
     | '/logbooks/front-page'
     | '/moderate/$threadId'
@@ -778,6 +789,7 @@ export interface FileRouteTypes {
     | '/(staff)/files/settings'
     | '/(staff)/intake/$id'
     | '/(staff)/lists/$id'
+    | '/(staff)/lists/search'
     | '/(staff)/logbooks/$id'
     | '/(staff)/logbooks/front-page'
     | '/(staff)/moderate/$threadId'
@@ -1142,6 +1154,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffListsIdRouteImport
       parentRoute: typeof staffListsRouteRoute
     }
+    '/(staff)/lists/search': {
+      id: '/(staff)/lists/search'
+      path: '/search'
+      fullPath: '/lists/search'
+      preLoaderRoute: typeof staffListsSearchRouteImport
+      parentRoute: typeof staffListsRouteRoute
+    }
     '/(staff)/logbooks/': {
       id: '/(staff)/logbooks/'
       path: '/'
@@ -1359,6 +1378,7 @@ const staffIntakeRouteRouteWithChildren =
 
 interface staffListsRouteRouteChildren {
   staffListsIdRoute: typeof staffListsIdRoute
+  staffListsSearchRoute: typeof staffListsSearchRoute
   staffListsIndexRoute: typeof staffListsIndexRoute
   staffListsReviewIdRoute: typeof staffListsReviewIdRoute
   staffListsReviewIndexRoute: typeof staffListsReviewIndexRoute
@@ -1366,6 +1386,7 @@ interface staffListsRouteRouteChildren {
 
 const staffListsRouteRouteChildren: staffListsRouteRouteChildren = {
   staffListsIdRoute: staffListsIdRoute,
+  staffListsSearchRoute: staffListsSearchRoute,
   staffListsIndexRoute: staffListsIndexRoute,
   staffListsReviewIdRoute: staffListsReviewIdRoute,
   staffListsReviewIndexRoute: staffListsReviewIndexRoute,

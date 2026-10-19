@@ -50,6 +50,19 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends age postgresql-client-16
       - name: Deploy scripts pass ShellCheck
         run: shellcheck -x -P SCRIPTDIR deploy/*.sh deploy/bin/reportlog
+      # The deploy tests run the shipped Caddyfile in a real Caddy, and the
+      # storage check against moto (an S3 server this repository did not
+      # write). Both fail rather than skip in CI. Caddy's SHA-256 is of the
+      # release tarball, whose SHA-512 is in Caddy's published checksums.
+      - name: Caddy and moto for the deploy tests
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/caddy.tgz" https://github.com/caddyserver/caddy/releases/download/v2.10.2/caddy_2.10.2_linux_amd64.tar.gz
+          echo "5c218bc34c9197369263da7e9317a83acdbd80ef45d94dca5eff76e727c67cdd  $RUNNER_TEMP/caddy.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/caddy.tgz" -C "$RUNNER_TEMP" caddy
+          python3 -m venv "$RUNNER_TEMP/moto"
+          "$RUNNER_TEMP/moto/bin/pip" install --quiet "moto[server]==5.0.28"
+          echo "CADDY_BIN=$RUNNER_TEMP/caddy" >>"$GITHUB_ENV"
+          echo "MOTO_SERVER=$RUNNER_TEMP/moto/bin/moto_server" >>"$GITHUB_ENV"
       # The media worker's tools (files workstream): its tests re-encode real
       # photos, video, sound and PDFs, and fail rather than skip in CI.
       - name: Media tools

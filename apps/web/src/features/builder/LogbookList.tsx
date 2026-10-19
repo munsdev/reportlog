@@ -14,6 +14,7 @@ import { Button } from '../../components/ui/button.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
 import { logbooksQuery, startingPointsQuery } from './queries.ts';
+import { IntakeSwitchPanel } from './Switches.tsx';
 import { stateLabel, stateWords } from './words.ts';
 
 export function LogbookList() {
@@ -54,7 +55,11 @@ export function LogbookList() {
                   <span className="block text-sm text-ink-alt">{stateWords(l)}</span>
                   <span className="block font-mono text-sm text-muted">
                     /{l.slug} · {l.question_count} question{l.question_count === 1 ? '' : 's'} ·{' '}
-                    {l.asks_for_files ? 'asks for files' : 'no files'}
+                    {l.asks_for_files
+                      ? l.files_frozen_at
+                        ? 'files frozen'
+                        : 'asks for files'
+                      : 'no files'}
                   </span>
                 </Link>
               </li>
@@ -63,6 +68,7 @@ export function LogbookList() {
         ))}
 
       <NewLogbook />
+      <IntakeSwitchPanel />
     </div>
   );
 }
