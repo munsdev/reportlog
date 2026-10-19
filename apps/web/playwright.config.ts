@@ -66,7 +66,10 @@ export default defineConfig({
       },
     },
     {
-      command: 'pnpm exec vite build && pnpm exec vite preview --strictPort',
+      // The address the url below waits on. Left to itself, vite preview binds
+      // "localhost", which resolves to ::1 alone on some machines (GitHub's
+      // runners), and the wait on 127.0.0.1 then times out.
+      command: 'pnpm exec vite build && pnpm exec vite preview --strictPort --host 127.0.0.1',
       url: 'http://127.0.0.1:4173',
       reuseExistingServer: !process.env.CI,
     },
