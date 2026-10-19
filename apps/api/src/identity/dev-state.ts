@@ -7,6 +7,10 @@
  *   node src/identity/dev-state.ts fresh-install <password>
  *       As an installer leaves a deployment: nobody holds the owner's or an
  *       administrator's seat, setup not finished, and the given password on.
+ *   node src/identity/dev-state.ts seat <email> <role>
+ *       Give an address a role other than owner, creating the account if it
+ *       has none: how the browser suite makes the administrator its staff
+ *       screens are tested as. The owner's seat is never handed out here.
  *
  * Refuses to run in production. It rewrites who holds a role.
  */
@@ -18,7 +22,7 @@ if (process.env.NODE_ENV === 'production') {
   throw new Error('dev-state does not run in production.');
 }
 
-const [mode, password] = process.argv.slice(2);
+const [mode, password, role] = process.argv.slice(2);
 const db = createDatabase(loadConfig().DATABASE_URL, 2);
 try {
   if (mode === 'set-up') {
@@ -41,8 +45,15 @@ try {
       .where('id', '=', true)
       .execute();
     await writeSiteAccess(db, { password });
+  } else if (mode === 'seat' && password && role && role !== 'owner') {
+    // `password` is the address in this mode: the arguments are positional.
+    await db
+      .insertInto('users')
+      .values({ email: password.toLowerCase(), role })
+      .onConflict((oc) => oc.column('email').doUpdateSet({ role }))
+      .execute();
   } else {
-    throw new Error('Usage: dev-state.ts set-up | fresh-install <password>');
+    throw new Error('Usage: dev-state.ts set-up | fresh-install <password> | seat <email> <role>');
   }
 } finally {
   await db.destroy();

@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 /** File two demo reports and leave their references for the tests. */
 export default function globalSetup() {
   const api = fileURLToPath(new URL('../../api/', import.meta.url));
+  // Migrate first. A database a migration behind fails screens in ways that
+  // look like bugs in them; CI always starts fresh and never sees this.
+  execFileSync('node', ['--env-file-if-exists=../../.env', 'src/db/migrate-cli.ts'], { cwd: api });
   const out = execFileSync('node', ['--env-file-if-exists=../../.env', 'src/dev/seed.ts'], {
     cwd: api,
     encoding: 'utf8',

@@ -26,8 +26,14 @@ export default defineConfig({
   },
   projects: [
     {
+      // Signs an administrator in for the staff screens' tests.
+      name: 'staff-setup',
+      testMatch: /staff\.setup\.ts$/,
+    },
+    {
       name: 'chromium',
       testIgnore: /identity\//,
+      dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -36,6 +42,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore: /identity\//,
+      dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

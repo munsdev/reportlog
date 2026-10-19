@@ -96,6 +96,8 @@ module.exports = {
           '/(test|e2e)/',
           '^apps/api/src/(server|dev/seed|db/migrate-cli|db/gen-types)\\.ts$',
           '^apps/web/src/main\\.tsx$',
+          // Found by the router plugin from the file name, not by an import.
+          '^apps/web/src/routes/',
         ],
       },
       to: {},

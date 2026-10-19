@@ -8,6 +8,10 @@
  */
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { ADMIN } from './auth.ts';
+
+// The builder is for administrators: every test here is signed in as one.
+test.use({ storageState: ADMIN });
 
 const unique = (stem: string, project: string) =>
   `${stem} ${project} ${String(Date.now())}-${String(Math.floor(Math.random() * 1000))}`;

@@ -5,7 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # main, and the branch the rebuild's workstreams merge into, so what is
+    # merged there is tested as merged and not only as separate pull requests.
+    branches: [main, ccr-c9c93698-ev856l]
   pull_request:
 
 concurrency:

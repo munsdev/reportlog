@@ -11,12 +11,13 @@ import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
+import { roleGuard } from './identity/guards.ts';
 import { identity } from './identity/index.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
-import { siteRoutes } from './site/routes.ts';
+import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'> & Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY'>>;
@@ -82,6 +83,7 @@ export async function buildApp({
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
+  await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   logbookRoutes(app, db);
   return app;
 }

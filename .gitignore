@@ -11,3 +11,4 @@ test-results/
 playwright-report/
 **/e2e/.refs.json
 **/e2e/.outbox/
+**/e2e/.auth/

@@ -1,47 +1,47 @@
 /**
  * The site's settings against a real database and a real app. Ports
  * legacy's legal-selftest.mjs (the front page's buttons are B's: see
- * home-buttons.test.ts), and checks the
- * settings routes refuse anybody the guard refuses.
+ * home-buttons.test.ts), and checks that only an administrator reaches the
+ * settings routes.
  */
-import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { buildApp } from '../../src/app.ts';
-import { HttpError } from '../../src/http/errors.ts';
 import { SKELETONS } from '../../src/site/legal.ts';
-import { siteAdminRoutes } from '../../src/site/routes.ts';
 import { readSettings, writeSettings } from '../../src/site/settings.ts';
-import { testDatabase } from './helpers.ts';
+import { address, harness, seat, signIn } from './identity-helpers.ts';
+import type { Harness } from './identity-helpers.ts';
 
-const db = testDatabase();
-let app: FastifyInstance;
+let h: Harness;
+let db: Harness['db'];
+let app: Harness['app'];
+/** An administrator, signed in the way a person would be. */
+let adminSession: string;
+/** Signed in, but not an administrator. */
+let moderatorSession: string;
 
 beforeAll(async () => {
-  app = await buildApp({ config: { LOG_LEVEL: 'silent' }, db });
-  // A stand-in for workstream A's guard: an administrator is whoever sends
-  // this header. The point is to prove the routes sit behind whatever guard
-  // they are given.
-  await siteAdminRoutes(app, db, {
-    requireAdmin: (request) => {
-      if (request.headers['x-test-admin'] !== 'yes') {
-        return Promise.reject(
-          new HttpError(403, 'forbidden', 'Only an administrator can do that.'),
-        );
-      }
-      return Promise.resolve();
-    },
-  });
+  h = await harness();
+  ({ db, app } = h);
+  const adminEmail = address('settings-admin');
+  await seat(db, adminEmail, 'admin');
+  adminSession = await signIn(h, adminEmail);
+  const modEmail = address('settings-moderator');
+  await seat(db, modEmail, 'moderator');
+  moderatorSession = await signIn(h, modEmail);
 });
 afterAll(async () => {
   await writeSettings(db, { impressum_text: null, privacy_text: null, site_name: null });
-  await app.close();
-  await db.destroy();
+  await h.close();
 });
 
 const get = async <T>(url: string) => (await app.inject({ method: 'GET', url })).json<T>();
 const published = () => get<{ impressum: string | null; privacy: string | null }>('/api/legal');
 const admin = (method: 'GET' | 'PUT', url: string, payload?: unknown) =>
-  app.inject({ method, url, headers: { 'x-test-admin': 'yes' }, ...(payload ? { payload } : {}) });
+  app.inject({
+    method,
+    url,
+    cookies: { session_token: adminSession },
+    ...(payload ? { payload } : {}),
+  });
 
 describe('a deployment that has published no legal text', () => {
   beforeEach(async () => {
@@ -92,7 +92,7 @@ describe('what an operator actually wrote', () => {
 });
 
 describe('the settings routes', () => {
-  it('refuse anybody the guard refuses, and change nothing', async () => {
+  it('refuse somebody signed out and a moderator, and change nothing', async () => {
     const before = await readSettings(db);
     for (const [method, url, payload] of [
       ['GET', '/api/admin/site', undefined],
@@ -101,21 +101,17 @@ describe('the settings routes', () => {
       ['PUT', '/api/admin/site/copy/home_headline', { body: 'Taken' }],
       ['PUT', '/api/admin/site/legal/impressum', { text: 'Taken' }],
     ] as const) {
-      const res = await app.inject({ method, url, ...(payload ? { payload } : {}) });
-      expect(res.statusCode, url).toBe(403);
+      const body = payload ? { payload } : {};
+      expect((await app.inject({ method, url, ...body })).statusCode, url).toBe(401);
+      const asModerator = await app.inject({
+        method,
+        url,
+        cookies: { session_token: moderatorSession },
+        ...body,
+      });
+      expect(asModerator.statusCode, url).toBe(403);
     }
     expect(await readSettings(db)).toEqual(before);
-  });
-
-  it('are not mounted at all by the app on its own', async () => {
-    const bare = await buildApp({ config: { LOG_LEVEL: 'silent' }, db });
-    const res = await bare.inject({
-      method: 'PUT',
-      url: '/api/admin/site/look',
-      payload: { palette: 'ink' },
-    });
-    expect(res.statusCode).toBe(404);
-    await bare.close();
   });
 
   it('change the look one axis at a time, and every page reads it', async () => {

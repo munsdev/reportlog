@@ -112,9 +112,10 @@ Several sessions build this at once. To keep that working:
 - **Stay in your workstream's folders** (`docs/workstreams.md`). If you need
   a change in another workstream's folder or in a shared package, keep it
   minimal and say so in the commit message.
-- **Migrations are new files only**, named `YYYYMMDDHHMMSS_what.sql`. Never
-  edit one that exists: the runner refuses an applied migration whose text
-  changed. Adding a nullable column to a core table is fine; changing how an
+- **Migrations are new files only**, named `YYYYMMDDHHMMSS_what.sql`, with
+  the real time you wrote it (three workstreams once all chose
+  `20261018120000`). Never edit one that exists: the runner refuses an
+  applied migration whose text changed. Adding a nullable column to a core table is fine; changing how an
   existing column is read into a sealed object is not.
 - **After a migration, regenerate the database types**:
   `pnpm --filter @reportlog/api db:types`. CI fails if they are stale. If the
@@ -124,6 +125,15 @@ Several sessions build this at once. To keep that working:
   workstream, plus one export line in its `index.ts`.
 - **Server routes go in `apps/api/src/<area>/`**, registered with one line in
   `apps/api/src/app.ts`.
+- **Staff routes are guarded per scope, not per route**:
+  `scope.addHook('preHandler', roleGuard(['admin']))` (from
+  `apps/api/src/identity/guards.ts`), so a route added to the scope later
+  cannot forget to ask. Staff screens wrap their layout in `<StaffOnly>`
+  (`apps/web/src/features/identity/`), and their browser tests use
+  `test.use({ storageState: ADMIN })` from `apps/web/e2e/auth.ts`.
+- **A door page calls only the filing calls.** Anything else is refused and
+  sends the visitor back to the password screen. A shared component that
+  fetches (the header, say) must stay quiet on a door: see `useSite`.
 
 ## Running things
 

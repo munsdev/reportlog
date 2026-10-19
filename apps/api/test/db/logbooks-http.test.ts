@@ -4,21 +4,26 @@
  * get wrong: a refusal arriving as a sentence in the one error shape, the
  * right status for the one-way door, and a draft never being public.
  */
-import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { buildApp } from '../../src/app.ts';
 import { questionsFor } from '../../src/chain/questions.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
-import { testDatabase, uniqueSlug } from './helpers.ts';
+import { uniqueSlug } from './helpers.ts';
+import { address, harness, seat, signIn } from './identity-helpers.ts';
+import type { Harness } from './identity-helpers.ts';
 
-const db = testDatabase();
-let app: FastifyInstance;
+let h: Harness;
+let db: Harness['db'];
+/** The administrator every staff call in this file is made as. */
+let session: string;
 beforeAll(async () => {
-  app = await buildApp({ config: { LOG_LEVEL: 'silent' }, db });
+  h = await harness();
+  db = h.db;
+  const email = address('builder-admin');
+  await seat(db, email, 'admin');
+  session = await signIn(h, email);
 });
 afterAll(async () => {
-  await app.close();
-  await db.destroy();
+  await h.close();
 });
 
 // One helper for every call; the type is the caller's statement of what it expects.
@@ -27,10 +32,37 @@ async function api<T = unknown>(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   payload?: object,
+  as: string | null = session,
 ) {
-  const res = await app.inject({ method, url, ...(payload ? { payload } : {}) });
+  const res = await h.app.inject({
+    method,
+    url,
+    ...(payload ? { payload } : {}),
+    ...(as ? { cookies: { session_token: as } } : {}),
+  });
   return { status: res.statusCode, body: res.json<T>() };
 }
+
+describe('the builder is for administrators', () => {
+  it('refuses somebody signed out, and a moderator, on every kind of staff call', async () => {
+    const moderator = address('builder-moderator');
+    await seat(db, moderator, 'moderator');
+    const modSession = await signIn(h, moderator);
+    for (const [method, url, payload] of [
+      ['GET', '/api/admin/logbooks', undefined],
+      ['POST', '/api/admin/logbooks', { title: 'Sneaked in', slug: uniqueSlug('sneak') }],
+      ['GET', '/api/admin/home-buttons', undefined],
+    ] as const) {
+      expect((await api(method, url, payload, null)).status, `${method} ${url} signed out`).toBe(
+        401,
+      );
+      expect(
+        (await api(method, url, payload, modSession)).status,
+        `${method} ${url} moderator`,
+      ).toBe(403);
+    }
+  });
+});
 
 interface Detail {
   id: number;
@@ -169,9 +201,10 @@ describe('building and launching over HTTP', () => {
   });
 
   it('downloads as a file that uploads again as a new draft', async () => {
-    const res = await app.inject({
+    const res = await h.app.inject({
       method: 'GET',
       url: `/api/admin/logbooks/${String(lb.id)}/file`,
+      cookies: { session_token: session },
     });
     expect(res.headers['content-disposition']).toContain(`logbook-${lb.slug}.json`);
     const file = res.json<{ questions: { key?: string; scope?: string }[] }>();

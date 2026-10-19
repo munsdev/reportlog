@@ -1,8 +1,6 @@
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { LogbookEditor } from '../../../features/builder/LogbookEditor.tsx';
 
-// TODO(workstream A): staff only. Put this route behind requireRole('admin')
-// (which the owner satisfies) in a beforeLoad, and say "sign in" otherwise.
 export const Route = createFileRoute('/(staff)/logbooks/$id')({
   params: {
     parse: ({ id }) => {

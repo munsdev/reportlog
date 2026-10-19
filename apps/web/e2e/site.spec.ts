@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { ADMIN } from './auth.ts';
 
 /** Every request a page makes to a host other than this site's. */
 function outsideRequests(page: Page): string[] {
@@ -108,12 +109,22 @@ test('the look is remembered, so a returning reader is not shown the default fir
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'moss');
 });
 
-test('the settings say why they will not open, rather than showing an empty form', async ({
+test('the settings ask a visitor to sign in, rather than showing an empty form', async ({
   page,
 }) => {
   await page.goto('/settings/look');
-  await expect(page.getByRole('alert')).toContainText('The settings could not be opened.');
+  await expect(page.getByRole('heading', { name: 'Sign in first' })).toBeVisible();
   await expect(page.getByRole('radio')).toHaveCount(0);
+});
+
+test.describe('signed in as an administrator', () => {
+  test.use({ storageState: ADMIN });
+
+  test('the settings open, with every palette to choose from', async ({ page }) => {
+    await page.goto('/settings/look');
+    await expect(page.getByRole('radio').first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Sign in first' })).toHaveCount(0);
+  });
 });
 
 test('none of these pages asks a third party for anything', async ({ page }) => {

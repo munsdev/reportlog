@@ -7,7 +7,7 @@
  */
 import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import { HttpError } from '../http/errors.ts';
 import type { SignedIn } from './sessions.ts';
 
@@ -35,4 +35,15 @@ export function grantsAccess(user: SignedIn): boolean {
 
 export function requireGranter(request: FastifyRequest): SignedIn {
   return requireRole(request, ['admin', 'access_manager']);
+}
+
+/**
+ * The same check as a Fastify hook, for a whole scope of routes at once. A
+ * scope guarded once cannot have a route added to it that forgets to ask.
+ */
+export function roleGuard(roles: readonly SystemRole[]): preHandlerAsyncHookHandler {
+  return (request) => {
+    requireRole(request, roles);
+    return Promise.resolve();
+  };
 }

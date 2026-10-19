@@ -39,6 +39,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
+import { roleGuard } from '../identity/guards.ts';
 import {
   availableButtons,
   clearHomeButtons,
@@ -141,21 +142,16 @@ export function logbookRoutes(
 
   // ── staff: the builder ────────────────────────────────────────────────
   //
-  // TODO(workstream A): every route in this scope needs requireRole('admin')
-  // (which the owner satisfies). One hook here covers all of them, e.g.
-  //   staff.addHook('preHandler', requireRole('admin'));
-  // Until then these routes are open to anybody who can reach the API.
+  // Administrators only (which includes the owner), checked once for the
+  // whole scope, so a route added here later cannot forget to ask.
   void app.register((staff, _opts, done) => {
-    // TODO(workstream A): requireRole('admin') — listing every logbook, drafts included.
+    staff.addHook('preHandler', roleGuard(['admin']));
     route(staff, listLogbooksContract, async () => ({ logbooks: await listLogbooks(db) }));
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, listStartingPoints, () => ({ starting_points: startingPoints() }));
 
     // ONE ROUTE for making a logbook, because it is one act: an operator is
     // making a logbook and has either chosen a question set to begin from or
     // not.
-    // TODO(workstream A): requireRole('admin')
     route(staff, createLogbookContract, async ({ request }) => {
       const body = request.body as {
         title: string;
@@ -172,32 +168,21 @@ export function logbookRoutes(
 
     // Always makes a NEW DRAFT, never launches, never touches an existing
     // logbook, so a file can be as wrong as it likes.
-    // TODO(workstream A): requireRole('admin')
     route(staff, createLogbookFromFile, ({ request }) =>
       createFromFile(db, (request.body as { file: unknown }).file),
     );
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, getLogbook, ({ params }) => logbookDetail(db, Number(params.id)));
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, updateLogbook, async ({ params, request }) => {
       const id = Number(params.id);
       await updateDetails(db, id, request.body as { title?: string; blurb?: string | null });
       return logbookDetail(db, id);
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, deleteLogbook, async ({ params }) => ({
       deleted: await deleteDraft(db, Number(params.id)),
     }));
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, addQuestion, ({ params, request }) =>
       addField(db, Number(params.id), request.body as Parameters<typeof addField>[2]),
     );
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, updateQuestion, ({ params, request }) =>
       updateField(
         db,
@@ -206,21 +191,16 @@ export function logbookRoutes(
         request.body as Parameters<typeof updateField>[3],
       ),
     );
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, removeQuestion, async ({ params }) => {
       await removeField(db, Number(params.id), Number(params.fieldId));
       return { ok: true as const };
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, reorderQuestions, async ({ params, request }) => {
       await reorderFields(db, Number(params.id), (request.body as { ids: number[] }).ids);
       return { ok: true as const };
     });
 
     // LAUNCH: the one-way door.
-    // TODO(workstream A): requireRole('admin')
     route(staff, launchLogbook, async ({ params }) => {
       const id = Number(params.id);
       await launch(db, id);
@@ -228,22 +208,17 @@ export function logbookRoutes(
     });
 
     // Closing and reopening touch nothing sealed and are always reversible.
-    // TODO(workstream A): requireRole('admin')
     route(staff, setLogbookClosed, async ({ params, request }) => {
       const id = Number(params.id);
       await setClosed(db, id, (request.body as { closed: boolean }).closed);
       return logbookDetail(db, id);
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, setLogbookSchedule, async ({ params, request }) => {
       const id = Number(params.id);
       const body = request.body as { opens_at: string | null; closes_at: string | null };
       await setSchedule(db, id, { opensAt: body.opens_at, closesAt: body.closes_at });
       return logbookDetail(db, id);
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, downloadLogbookFile, async ({ params, reply }) => {
       const file = await toFile(db, Number(params.id));
       if (!file) throw notFound('There is no such logbook.');
@@ -260,17 +235,11 @@ export function logbookRoutes(
       stored: await storedOrder(db),
       available: await availableButtons(db, deps.buttons),
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, getHomeButtonsAdmin, adminView);
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, setHomeButtonsContract, async ({ request }) => {
       await setHomeButtons(db, (request.body as { order: unknown }).order, deps.buttons);
       return adminView();
     });
-
-    // TODO(workstream A): requireRole('admin')
     route(staff, clearHomeButtonsContract, async () => {
       await clearHomeButtons(db);
       return adminView();
