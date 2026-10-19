@@ -12,13 +12,11 @@
  *                    no guard to pass, and app.ts does not register them.
  */
 import {
-  getHomeButtons,
   getLegal,
   getSite,
   getSiteEditor,
   getWebManifest,
   setCopy,
-  setHomeButtons as setHomeButtonsContract,
   setLegalText,
   setLook,
   setSiteName,
@@ -30,7 +28,6 @@ import type { Database } from '../db/database.ts';
 import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { validateCopy } from './copy.ts';
-import { clearHomeButtons, homeButtons, setHomeButtons } from './homeButtons.ts';
 import { validateSiteName } from './identity.ts';
 import { validateLegalText } from './legal.ts';
 import { validateLook } from './look.ts';
@@ -50,7 +47,6 @@ export function siteRoutes(app: FastifyInstance, db: Database): void {
     void reply.header('cache-control', 'no-cache');
     return legalFrom(await readSettings(db));
   });
-  route(app, getHomeButtons, async () => ({ buttons: await homeButtons(db) }));
   route(app, getWebManifest, async ({ reply }) => {
     void reply.type('application/manifest+json');
     const site = await publicSite(db);
@@ -116,13 +112,6 @@ export async function siteAdminRoutes(
         db,
         params.kind === 'impressum' ? { impressum_text: text } : { privacy_text: text },
       );
-      return editorState(db);
-    });
-
-    route(scoped, setHomeButtonsContract, async ({ request }) => {
-      const { order } = bodyOf(setHomeButtonsContract, request);
-      if (order === null) await clearHomeButtons(db);
-      else await setHomeButtons(db, order);
       return editorState(db);
     });
 

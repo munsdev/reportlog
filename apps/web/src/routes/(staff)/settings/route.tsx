@@ -14,7 +14,8 @@ const SECTIONS = [
   { to: '/settings/name', label: 'Name' },
   { to: '/settings/words', label: 'Page wording' },
   { to: '/settings/legal', label: 'Legal notices' },
-  { to: '/settings/front-page', label: 'Front page' },
+  // Arranged on the logbooks side, which knows when a logbook closes.
+  { to: '/logbooks/front-page', label: 'Front page' },
 ] as const;
 
 function SettingsLayout() {

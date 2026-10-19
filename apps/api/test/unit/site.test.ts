@@ -14,8 +14,6 @@ import {
 } from '@reportlog/contracts';
 import { describe, expect, it } from 'vitest';
 import { COPY_SLOTS, editorCopy, resolveCopy, validateCopy } from '../../src/site/copy.ts';
-import { resolveButtons } from '../../src/site/homeButtons.ts';
-import type { Available } from '../../src/site/homeButtons.ts';
 import { resolveSiteName, validateSiteName } from '../../src/site/identity.ts';
 import {
   MAX_LEGAL_TEXT,
@@ -208,53 +206,5 @@ describe('the web manifest', () => {
     expect(m.background_color).toBe(midnight?.background);
     expect(m.theme_color).toBe(midnight?.deep);
     expect(m.icons.some((i) => i.purpose === 'maskable')).toBe(true);
-  });
-});
-
-describe('the front page’s buttons, without a database', () => {
-  const lb = (ref: string): Available => ({
-    kind: 'logbook',
-    ref,
-    label: `Logbook ${ref}`,
-    href: `/file/${ref}`,
-    action: null,
-    blurb: null,
-    help: null,
-  });
-  const builtin = (ref: string): Available => ({
-    kind: 'builtin',
-    ref,
-    label: `Built-in ${ref}`,
-    href: `/${ref}`,
-    action: null,
-    blurb: null,
-    help: 'help',
-  });
-  const available = {
-    logbooks: [lb('one'), lb('two')],
-    lists: [],
-    builtins: [builtin('board'), builtin('alerts'), builtin('submit')],
-  };
-
-  it('makes the first button the accent and no other', () => {
-    const buttons = resolveButtons(null, available);
-    expect(buttons.map((b) => b.ref)).toEqual(['one', 'two', 'board', 'alerts']);
-    expect(buttons.filter((b) => b.accent).map((b) => b.ref)).toEqual(['one']);
-  });
-
-  it('uses a label override for a logbook and never for a built-in', () => {
-    const buttons = resolveButtons(
-      [
-        { kind: 'logbook', ref: 'one', label: 'Report a problem' },
-        { kind: 'builtin', ref: 'board', label: 'Something else' },
-      ],
-      available,
-    );
-    expect(buttons[0]).toMatchObject({ label: 'Report a problem', title: 'Logbook one' });
-    expect(buttons[1]).toMatchObject({ label: 'Built-in board' });
-  });
-
-  it('carries no help text to the public page', () => {
-    for (const b of resolveButtons(null, available)) expect(b).not.toHaveProperty('help');
   });
 });

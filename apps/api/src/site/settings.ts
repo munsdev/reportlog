@@ -16,7 +16,6 @@ export interface SettingsRow {
   theme: string;
   impressum_text: string | null;
   privacy_text: string | null;
-  home_buttons: unknown;
 }
 
 const EMPTY: SettingsRow = {
@@ -25,7 +24,6 @@ const EMPTY: SettingsRow = {
   theme: 'signal',
   impressum_text: null,
   privacy_text: null,
-  home_buttons: null,
 };
 
 /**
@@ -36,7 +34,7 @@ const EMPTY: SettingsRow = {
 export async function readSettings(db: Database): Promise<SettingsRow> {
   const row = await db
     .selectFrom('site_settings')
-    .select(['site_name', 'palette', 'theme', 'impressum_text', 'privacy_text', 'home_buttons'])
+    .select(['site_name', 'palette', 'theme', 'impressum_text', 'privacy_text'])
     .where('id', '=', true)
     .executeTakeFirst();
   return row ?? EMPTY;
@@ -52,7 +50,6 @@ type Writable = Partial<{
   theme: Look['theme'];
   impressum_text: string | null;
   privacy_text: string | null;
-  home_buttons: string | null;
 }>;
 
 /** Upserts, so a deleted row comes back rather than every write silently doing nothing. */

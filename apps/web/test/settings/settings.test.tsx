@@ -3,7 +3,6 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Arrange } from '../../src/routes/(staff)/settings/front-page.tsx';
 import { LegalEditor } from '../../src/routes/(staff)/settings/legal.tsx';
 import { LookForm } from '../../src/routes/(staff)/settings/look.tsx';
 import { NameForm, nameProblem } from '../../src/routes/(staff)/settings/name.tsx';
@@ -134,45 +133,6 @@ describe('the legal notices screen', () => {
     expect(sent).toEqual([
       { url: '/api/admin/site/legal/privacy', method: 'PUT', body: { text: '' } },
     ]);
-  });
-});
-
-describe('the front page screen', () => {
-  it('names the first button as the main one, and moves, adds and saves', async () => {
-    const user = userEvent.setup();
-    const sent = stubFetch();
-    wrap(<Arrange state={editorState()} />);
-    const list = screen.getByRole('list', { name: 'Buttons, in order' });
-    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent('Main button: Incidents');
-
-    await user.click(screen.getByRole('button', { name: 'Move View Live Report Board up' }));
-    expect(within(list).getAllByRole('listitem')[0]).toHaveTextContent(
-      'Main button: View Live Report Board',
-    );
-    await user.click(screen.getByRole('button', { name: 'Add Submit a Report' }));
-    await user.click(screen.getByRole('button', { name: 'Save the order' }));
-    expect(sent[0]?.body).toEqual({
-      order: [
-        { kind: 'builtin', ref: 'board' },
-        { kind: 'logbook', ref: 'incidents' },
-        { kind: 'builtin', ref: 'submit' },
-      ],
-    });
-  });
-
-  it('lets a logbook’s button carry its own wording, and never a built-in’s', async () => {
-    const user = userEvent.setup();
-    const sent = stubFetch();
-    wrap(<Arrange state={editorState()} />);
-    expect(screen.getAllByLabelText(/Wording on the button/)).toHaveLength(1);
-    await user.type(screen.getByLabelText(/Wording on the button/), 'Report a problem');
-    await user.click(screen.getByRole('button', { name: 'Save the order' }));
-    expect(sent[0]?.body).toEqual({
-      order: [
-        { kind: 'logbook', ref: 'incidents', label: 'Report a problem' },
-        { kind: 'builtin', ref: 'board' },
-      ],
-    });
   });
 });
 

@@ -3,7 +3,6 @@ import { LEGAL_KINDS, SOFTWARE_NAME, parseBrand, plainName } from '@reportlog/co
 import type { Legal, Site, SiteEditor } from '@reportlog/contracts';
 import type { Database } from '../db/database.ts';
 import { editorCopy, resolveCopy } from './copy.ts';
-import { availableButtons, parseStoredOrder, resolveButtons } from './homeButtons.ts';
 import { resolveSiteName } from './identity.ts';
 import { editorStartingText, resolveLegalText } from './legal.ts';
 import { resolveLook } from './look.ts';
@@ -33,12 +32,7 @@ export function legalFrom(settings: SettingsRow): Legal {
 }
 
 export async function editorState(db: Database): Promise<SiteEditor> {
-  const [settings, rows, available] = await Promise.all([
-    readSettings(db),
-    readCopy(db),
-    availableButtons(db),
-  ]);
-  const order = parseStoredOrder(settings.home_buttons);
+  const [settings, rows] = await Promise.all([readSettings(db), readCopy(db)]);
   return {
     look: resolveLook(settings),
     name: settings.site_name,
@@ -48,10 +42,5 @@ export async function editorState(db: Database): Promise<SiteEditor> {
       kind,
       ...editorStartingText(settings[LEGAL_COLUMN[kind]], kind),
     })),
-    home: {
-      order,
-      buttons: resolveButtons(order, available),
-      available: [...available.logbooks, ...available.lists, ...available.builtins],
-    },
   };
 }

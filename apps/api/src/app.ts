@@ -12,6 +12,7 @@ import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { identity } from './identity/index.ts';
+import { logbookRoutes } from './logbooks/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
@@ -81,5 +82,6 @@ export async function buildApp({
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
+  logbookRoutes(app, db);
   return app;
 }

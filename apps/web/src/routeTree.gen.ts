@@ -16,8 +16,10 @@ import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
 import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
+import { Route as staffLogbooksIndexRouteImport } from './routes/(staff)/logbooks/index'
+import { Route as staffLogbooksIdRouteImport } from './routes/(staff)/logbooks/$id'
+import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/logbooks/front-page'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
-import { Route as staffSettingsFrontPageRouteImport } from './routes/(staff)/settings/front-page'
 import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
 import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings/look'
 import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
@@ -61,14 +63,24 @@ const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
   path: '/access/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffLogbooksIndexRoute = staffLogbooksIndexRouteImport.update({
+  id: '/(staff)/logbooks/',
+  path: '/logbooks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffLogbooksIdRoute = staffLogbooksIdRouteImport.update({
+  id: '/(staff)/logbooks/$id',
+  path: '/logbooks/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffLogbooksFrontPageRoute = staffLogbooksFrontPageRouteImport.update({
+  id: '/(staff)/logbooks/front-page',
+  path: '/logbooks/front-page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => staffSettingsRouteRoute,
-} as any)
-const staffSettingsFrontPageRoute = staffSettingsFrontPageRouteImport.update({
-  id: '/front-page',
-  path: '/front-page',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
 const staffSettingsLegalRoute = staffSettingsLegalRouteImport.update({
@@ -115,12 +127,14 @@ export interface FileRoutesByFullPath {
   '/verify/$ref': typeof VerifyRefRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/sign-in': typeof staffAccessSignInRoute
-  '/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/logbooks/$id': typeof staffLogbooksIdRoute
+  '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/access/': typeof staffAccessIndexRoute
+  '/logbooks/': typeof staffLogbooksIndexRoute
   '/settings/': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -132,12 +146,14 @@ export interface FileRoutesByTo {
   '/verify/$ref': typeof VerifyRefRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/sign-in': typeof staffAccessSignInRoute
-  '/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/logbooks/$id': typeof staffLogbooksIdRoute
+  '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/access': typeof staffAccessIndexRoute
+  '/logbooks': typeof staffLogbooksIndexRoute
   '/settings': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -151,12 +167,14 @@ export interface FileRoutesById {
   '/verify/$ref': typeof VerifyRefRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
-  '/(staff)/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
+  '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/(staff)/settings/legal': typeof staffSettingsLegalRoute
   '/(staff)/settings/look': typeof staffSettingsLookRoute
   '/(staff)/settings/name': typeof staffSettingsNameRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/(staff)/access/': typeof staffAccessIndexRoute
+  '/(staff)/logbooks/': typeof staffLogbooksIndexRoute
   '/(staff)/settings/': typeof staffSettingsIndexRoute
   '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/(staff)/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -171,12 +189,14 @@ export interface FileRouteTypes {
     | '/verify/$ref'
     | '/access/audit'
     | '/access/sign-in'
-    | '/settings/front-page'
+    | '/logbooks/$id'
+    | '/logbooks/front-page'
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
     | '/settings/words'
     | '/access/'
+    | '/logbooks/'
     | '/settings/'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
@@ -188,12 +208,14 @@ export interface FileRouteTypes {
     | '/verify/$ref'
     | '/access/audit'
     | '/access/sign-in'
-    | '/settings/front-page'
+    | '/logbooks/$id'
+    | '/logbooks/front-page'
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
     | '/settings/words'
     | '/access'
+    | '/logbooks'
     | '/settings'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
@@ -206,12 +228,14 @@ export interface FileRouteTypes {
     | '/verify/$ref'
     | '/(staff)/access/audit'
     | '/(staff)/access/sign-in'
-    | '/(staff)/settings/front-page'
+    | '/(staff)/logbooks/$id'
+    | '/(staff)/logbooks/front-page'
     | '/(staff)/settings/legal'
     | '/(staff)/settings/look'
     | '/(staff)/settings/name'
     | '/(staff)/settings/words'
     | '/(staff)/access/'
+    | '/(staff)/logbooks/'
     | '/(staff)/settings/'
     | '/(staff)/access/invitation/$token'
     | '/(staff)/access/orgs/$id'
@@ -225,7 +249,10 @@ export interface RootRouteChildren {
   VerifyRefRoute: typeof VerifyRefRoute
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
+  staffLogbooksIdRoute: typeof staffLogbooksIdRoute
+  staffLogbooksFrontPageRoute: typeof staffLogbooksFrontPageRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
+  staffLogbooksIndexRoute: typeof staffLogbooksIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
   staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
   staffAccessOrgsIndexRoute: typeof staffAccessOrgsIndexRoute
@@ -282,18 +309,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffAccessSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/logbooks/': {
+      id: '/(staff)/logbooks/'
+      path: '/logbooks'
+      fullPath: '/logbooks/'
+      preLoaderRoute: typeof staffLogbooksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/logbooks/$id': {
+      id: '/(staff)/logbooks/$id'
+      path: '/logbooks/$id'
+      fullPath: '/logbooks/$id'
+      preLoaderRoute: typeof staffLogbooksIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/logbooks/front-page': {
+      id: '/(staff)/logbooks/front-page'
+      path: '/logbooks/front-page'
+      fullPath: '/logbooks/front-page'
+      preLoaderRoute: typeof staffLogbooksFrontPageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/settings/': {
       id: '/(staff)/settings/'
       path: '/'
       fullPath: '/settings/'
       preLoaderRoute: typeof staffSettingsIndexRouteImport
-      parentRoute: typeof staffSettingsRouteRoute
-    }
-    '/(staff)/settings/front-page': {
-      id: '/(staff)/settings/front-page'
-      path: '/front-page'
-      fullPath: '/settings/front-page'
-      preLoaderRoute: typeof staffSettingsFrontPageRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
     '/(staff)/settings/legal': {
@@ -349,7 +390,6 @@ declare module '@tanstack/react-router' {
 }
 
 interface staffSettingsRouteRouteChildren {
-  staffSettingsFrontPageRoute: typeof staffSettingsFrontPageRoute
   staffSettingsLegalRoute: typeof staffSettingsLegalRoute
   staffSettingsLookRoute: typeof staffSettingsLookRoute
   staffSettingsNameRoute: typeof staffSettingsNameRoute
@@ -358,7 +398,6 @@ interface staffSettingsRouteRouteChildren {
 }
 
 const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
-  staffSettingsFrontPageRoute: staffSettingsFrontPageRoute,
   staffSettingsLegalRoute: staffSettingsLegalRoute,
   staffSettingsLookRoute: staffSettingsLookRoute,
   staffSettingsNameRoute: staffSettingsNameRoute,
@@ -376,7 +415,10 @@ const rootRouteChildren: RootRouteChildren = {
   VerifyRefRoute: VerifyRefRoute,
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
+  staffLogbooksIdRoute: staffLogbooksIdRoute,
+  staffLogbooksFrontPageRoute: staffLogbooksFrontPageRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
+  staffLogbooksIndexRoute: staffLogbooksIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
   staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,
   staffAccessOrgsIndexRoute: staffAccessOrgsIndexRoute,

@@ -5,3 +5,4 @@ export * from './publication.ts';
 export * from './verify.ts';
 export * from './site.ts';
 export * from './identity.ts';
+export * from './logbooks.ts';

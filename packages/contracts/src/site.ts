@@ -1,7 +1,6 @@
 /**
  * How this deployment looks and what it says about itself: the palette and
- * theme, its name, the words on its own pages, its legal notices and its
- * front page's buttons.
+ * theme, its name, the words on its own pages, and its legal notices.
  *
  * NEVER SEALED. All of this is presentation. A report must not verify
  * differently because somebody renamed the site or corrected their privacy
@@ -395,44 +394,9 @@ export const getWebManifest = defineRoute({
   response: WebManifest,
 });
 
-// ── the front page's buttons ────────────────────────────────────────────
-
-export const BUTTON_KINDS = ['logbook', 'list', 'builtin'] as const;
-export const ButtonKind = z.enum(BUTTON_KINDS);
-export const MAX_BUTTON_LABEL = 80;
-
-/**
- * One button as the front page draws it. The accent is a POSITION, not a
- * stored value: the first button is the accent and no other is, so an
- * arrangement can never have two or none.
- */
-export const HomeButton = z.object({
-  kind: ButtonKind,
-  ref: z.string(),
-  label: z.string(),
-  /** The record's own name, whether or not `label` overrides it. */
-  title: z.string(),
-  href: z.string().nullable(),
-  action: z.string().nullable(),
-  blurb: z.string().nullable(),
-  accent: z.boolean(),
-});
-export type HomeButton = z.infer<typeof HomeButton>;
-
-export const getHomeButtons = defineRoute({
-  method: 'GET',
-  path: '/api/home/buttons',
-  summary: "The front page's buttons, in the operator's order.",
-  response: z.object({ buttons: z.array(HomeButton) }),
-});
-
-/** One entry of a stored arrangement. A label is an override, and only for a logbook or list. */
-export const ButtonEntry = z.object({
-  kind: z.string(),
-  ref: z.string(),
-  label: z.string().optional(),
-});
-export type ButtonEntry = z.infer<typeof ButtonEntry>;
+// The front page's buttons are workstream B's: see `getHomeButtons` in
+// logbooks.ts. This file once had a second copy; the two were merged into
+// B's, which also knows when a logbook closes.
 
 // ── the settings screens ────────────────────────────────────────────────
 
@@ -458,10 +422,6 @@ export const LegalEditor = z.object({
   published: z.boolean(),
 });
 
-export const AvailableButton = HomeButton.omit({ accent: true, title: true }).extend({
-  help: z.string().nullable(),
-});
-
 export const SiteEditor = z.object({
   look: Look,
   /** The stored name, or null when the site uses the default. */
@@ -469,12 +429,6 @@ export const SiteEditor = z.object({
   effective_name: z.string(),
   copy: z.array(CopySlot),
   legal: z.array(LegalEditor),
-  home: z.object({
-    /** Null when nobody has arranged the page; `[]` when somebody removed every button. */
-    order: z.array(ButtonEntry).nullable(),
-    buttons: z.array(HomeButton),
-    available: z.array(AvailableButton),
-  }),
 });
 export type SiteEditor = z.infer<typeof SiteEditor>;
 
@@ -521,13 +475,5 @@ export const setLegalText = defineRoute({
   summary: 'Publish the imprint or the privacy policy. Empty takes it down.',
   params: z.object({ kind: LegalKindSchema }),
   body: z.object({ text: z.string() }),
-  response: SiteEditor,
-});
-
-export const setHomeButtons = defineRoute({
-  method: 'PUT',
-  path: '/api/admin/site/home-buttons',
-  summary: "Arrange the front page's buttons. Null goes back to the shipped order.",
-  body: z.object({ order: z.array(ButtonEntry).nullable() }),
   response: SiteEditor,
 });

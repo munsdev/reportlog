@@ -58,6 +58,7 @@ describe('the front page’s buttons', () => {
     href,
     action: href ? null : 'alerts',
     blurb: null,
+    help: null,
     accent,
   });
 

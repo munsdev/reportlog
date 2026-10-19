@@ -26,6 +26,8 @@ const mailer = capturingMailer();
 let app: FastifyInstance;
 const PASSWORD = 'doors-test-password';
 const reached: string[] = [];
+/** The stand-ins actually registered: a pattern another workstream has built is the real route. */
+const standIns = new Set<string>();
 
 const isLocked = (res: { statusCode: number; json: () => unknown }) =>
   res.statusCode === 401 && (res.json() as { error?: { code?: string } }).error?.code === 'locked';
@@ -40,7 +42,9 @@ async function setPassword(password: string | null) {
 
 beforeAll(async () => {
   app = await buildApp({ config: { LOG_LEVEL: 'silent' }, db, mailer });
-  // Stand-ins at the patterns the filing form's routes are agreed to use.
+  // Stand-ins at the patterns the filing form's routes are agreed to use,
+  // for whichever of them no workstream has built yet. Where the real route
+  // exists, the status checks below are what prove it passed the gate.
   for (const [method, url] of [
     ['GET', '/api/logbooks/:slug'],
     ['GET', '/api/logbooks'],
@@ -49,6 +53,8 @@ beforeAll(async () => {
     ['GET', '/api/reports'],
     ['GET', '/api/moderation/queue'],
   ] as const) {
+    if (app.hasRoute({ method, url })) continue;
+    standIns.add(`${method} ${url}`);
     app.route({ method, url, handler: () => (reached.push(`${method} ${url}`), { ok: true }) });
   }
   // A list route deciding for itself.
@@ -252,11 +258,11 @@ describe('a logbook opened for filing without the password', () => {
     // THE CONFIRMATION LINK, which is only ever reached from an email.
     expect((await get('/api/reports/confirm/some-token')).statusCode).toBe(200);
 
-    expect(reached).toEqual([
-      'GET /api/logbooks/:slug',
-      'POST /api/reports',
-      'GET /api/reports/confirm/:token',
-    ]);
+    expect(reached).toEqual(
+      ['GET /api/logbooks/:slug', 'POST /api/reports', 'GET /api/reports/confirm/:token'].filter(
+        (r) => standIns.has(r),
+      ),
+    );
   });
 
   it('is offered on the password page only when set to `door`, and never as a draft', async () => {
