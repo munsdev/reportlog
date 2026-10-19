@@ -6,12 +6,12 @@
 #
 # Safe to run again: every step checks before it changes anything, and an
 # existing settings file is never overwritten. Run it again after changing
-# deploy/versions.env to move the server to the new pins.
+# deploy/versions.conf to move the server to the new pins.
 #
 # What it does, in order:
 #   1. unattended security updates for the OS (and for PostgreSQL and Caddy)
 #   2. PostgreSQL from the PostgreSQL project's apt repository, socket only
-#   3. Node.js at the exact version in versions.env, checked by SHA-256
+#   3. Node.js at the exact version in versions.conf, checked by SHA-256
 #   4. Caddy from Caddy's apt repository
 #   5. the `reportlog` user, the directories, the database and its role
 #   6. /etc/reportlog/reportlog.env and deploy.env, from templates
@@ -25,8 +25,8 @@ HERE="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
 CHECKOUT="$(dirname "$HERE")"
 # shellcheck source=lib.sh
 . "$HERE/lib.sh"
-# shellcheck source=versions.env
-. "$HERE/versions.env"
+# shellcheck source=versions.conf
+. "$HERE/versions.conf"
 
 require_root
 export DEBIAN_FRONTEND=noninteractive
@@ -85,7 +85,7 @@ if [ ! -x "$NODE_DIR/bin/node" ]; then
   tarball="node-v$NODE_VERSION-linux-$NODE_ARCH.tar.xz"
   curl -fsSL "https://nodejs.org/dist/v$NODE_VERSION/$tarball" -o "$tmp/$tarball"
   echo "$NODE_SHA256  $tmp/$tarball" | sha256sum -c --quiet - \
-    || die "$tarball does not match the SHA-256 pinned in versions.env. Nothing was installed."
+    || die "$tarball does not match the SHA-256 pinned in versions.conf. Nothing was installed."
   tar -xJf "$tmp/$tarball" -C /opt
   rm -rf "$tmp"
 fi

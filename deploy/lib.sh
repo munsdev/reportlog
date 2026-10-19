@@ -208,6 +208,6 @@ install_tooling() {
   local release=$1
   install -d -m 0755 "$LIB"
   install -m 0755 "$release"/deploy/{deploy.sh,rollback.sh,install.sh} "$LIB/"
-  install -m 0644 "$release"/deploy/{lib.sh,versions.env} "$LIB/"
+  install -m 0644 "$release"/deploy/{lib.sh,versions.conf} "$LIB/"
   install -m 0755 "$release/deploy/bin/reportlog" /usr/local/bin/reportlog
 }

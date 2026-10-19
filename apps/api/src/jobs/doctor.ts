@@ -208,7 +208,7 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
       }
     }
     const pinned = /^NODE_VERSION=(.+)$/m.exec(
-      readIfExists(`${CODE_ROOT}deploy/versions.env`) ?? '',
+      readIfExists(`${CODE_ROOT}deploy/versions.conf`) ?? '',
     )?.[1];
     out.push(assessNode(process.version, pinned));
   }

@@ -209,14 +209,14 @@ export function assessUnattended(text: string | undefined, rebootRequired: boole
   return out;
 }
 
-/** Node as installed versus deploy/versions.env. */
+/** Node as installed versus deploy/versions.conf. */
 export function assessNode(running: string, pinned: string | undefined): Finding {
-  if (!pinned) return f('warn', 'node', `running ${running}; deploy/versions.env names no version`);
+  if (!pinned) return f('warn', 'node', `running ${running}; deploy/versions.conf names no version`);
   if (running.replace(/^v/, '') !== pinned) {
     return f(
       'warn',
       'node',
-      `running ${running}, but deploy/versions.env pins ${pinned}. Run deploy/install.sh again.`,
+      `running ${running}, but deploy/versions.conf pins ${pinned}. Run deploy/install.sh again.`,
     );
   }
   return f('ok', 'node', `${running}, as pinned`);
