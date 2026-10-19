@@ -116,10 +116,16 @@ export function SiteGate({
     [client, door],
   );
 
-  // On a door, the router may render this page and go nowhere else.
+  // On a door, the router may render this page and go nowhere else. Moving
+  // between history entries of THIS address is let through (the filing form
+  // keeps one per card, so Back goes back one question): an entry's state
+  // can name a card, never another page.
   useEffect(() => {
     if (!door) return;
-    return history.block({ blockerFn: () => true, enableBeforeUnload: false });
+    return history.block({
+      blockerFn: ({ currentLocation, nextLocation }) => nextLocation.href !== currentLocation.href,
+      enableBeforeUnload: false,
+    });
   }, [door, history]);
 
   if (status.isPending)

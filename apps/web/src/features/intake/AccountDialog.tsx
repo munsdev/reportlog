@@ -6,6 +6,9 @@
  * Saving never refuses for something missing. Staging is the point: the batch's
  * review says what each account still needs, and nothing is filed until then.
  *
+ * Files the person handed over are attached to the account as it is typed
+ * up (AccountFiles.tsx), and are sealed into the report when it is filed.
+ *
  * The publication answer is what the person the coordinator spoke to said,
  * to the wording coordinators are shown. Its digest comes from the server
  * with that wording and goes back with the answer.
@@ -31,6 +34,7 @@ import { Select } from '@/components/ui/select.tsx';
 import { rawFromAnswers, toSubmission } from '@/features/form/walk.ts';
 import type { RawAnswers } from '@/features/form/walk.ts';
 import { call } from '@/lib/api.ts';
+import { AccountFiles } from './AccountFiles.tsx';
 import { PublicationChoice, Questions } from './parts.tsx';
 import { coordinatorCardQuery, logbookQuery, openLogbooksQuery } from './queries.ts';
 
@@ -52,6 +56,8 @@ export function AccountDialog({
   );
   const form = useQuery({ ...logbookQuery(slug), enabled: Boolean(slug) });
   const questions = form.data?.fields ?? [];
+  const fileQuestion = questions.find((q) => q.kind === 'file');
+  const [sending, setSending] = useState(false);
   // Answers are read back into the controls once the questions are known;
   // until then they are held as they were saved.
   const [raw, setRaw] = useState<RawAnswers | null>(null);
@@ -125,6 +131,15 @@ export function AccountDialog({
           }}
           showProblems={false}
         />
+        {slug && fileQuestion ? (
+          <AccountFiles
+            key={slug}
+            draftId={draft.id}
+            logbook={slug}
+            question={fileQuestion}
+            onBusy={setSending}
+          />
+        ) : null}
         <Field>
           <Label>How it was collected</Label>
           <Select
@@ -177,12 +192,12 @@ export function AccountDialog({
           </Button>
           <Button
             type="button"
-            disabled={save.isPending}
+            disabled={save.isPending || sending}
             onClick={() => {
               save.mutate();
             }}
           >
-            Save this account
+            {sending ? 'A file is still sending…' : 'Save this account'}
           </Button>
         </DialogFooter>
       </DialogContent>
