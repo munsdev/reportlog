@@ -10,6 +10,7 @@ import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
+import { anchorRoutes } from './anchor/routes.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
 import { filingRoutes } from './filing/routes.ts';
@@ -32,7 +33,13 @@ export interface AppDeps {
     Partial<
       Pick<
         Config,
-        'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX' | 'ADMIN_EMAIL'
+        | 'SITE_ORIGIN'
+        | 'TRUST_PROXY'
+        | 'CONTACT_KEY'
+        | 'PUBLIC_REF_PREFIX'
+        | 'ADMIN_EMAIL'
+        | 'TRANSPARENCY_LOG_REMOTES'
+        | 'ANCHOR_MAX_AGE_HOURS'
       >
     >;
   db: Database;
@@ -113,6 +120,11 @@ export async function buildApp({
     siteOrigin,
     contactKey: config.CONTACT_KEY,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
+  });
+  anchorRoutes(app, {
+    db,
+    remotes: config.TRANSPARENCY_LOG_REMOTES?.length ?? 0,
+    ...(config.ANCHOR_MAX_AGE_HOURS ? { maxAgeHours: config.ANCHOR_MAX_AGE_HOURS } : {}),
   });
   return app;
 }

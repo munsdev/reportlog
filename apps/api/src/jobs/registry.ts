@@ -77,7 +77,7 @@ export const JOBS: readonly JobDefinition[] = [
     // Every deployment asks the same public timestamp authorities.
     randomizedDelaySec: 1200,
     persistent: true,
-    run: undefined,
+    run: (ctx) => import('../anchor/job.ts').then((m) => m.runAnchorJob(ctx)),
   },
   {
     name: 'digest-hourly',

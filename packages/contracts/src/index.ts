@@ -9,3 +9,4 @@ export * from './logbooks.ts';
 export * from './lists.ts';
 export * from './filing.ts';
 export * from './maps.ts';
+export * from './anchor.ts';
