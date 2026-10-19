@@ -33,6 +33,8 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/logbooks/front-page', label: 'Front page', for: ['admin'] },
   { to: '/lists', label: 'Lists', for: ['admin'] },
   { to: '/lists/review', label: 'List review', for: ['moderator', 'admin'] },
+  { to: '/files', label: 'Files', for: ['moderator'] },
+  { to: '/files/settings', label: 'File settings', for: ['admin'] },
   { to: '/settings', label: 'Settings', for: ['admin'] },
   { to: '/feedback', label: 'Feedback', for: ['tester', 'admin', 'access_manager'] },
   { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin'] },
