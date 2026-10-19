@@ -15,6 +15,8 @@ const chromium = process.env.CHROMIUM_PATH;
 // sign-in code or follow an invitation link the way a person would
 // (e2e/identity/mail.ts reads it).
 const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
+// Where the test server keeps files (files workstream).
+const FILES = fileURLToPath(new URL('./e2e/.files/', import.meta.url));
 
 export default defineConfig({
   testDir: 'e2e',
@@ -33,7 +35,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password)\//,
+      testIgnore: /(identity|behind-password|files-door)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -42,7 +44,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password)\//,
+      testIgnore: /(identity|behind-password|files-door)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -71,6 +73,18 @@ export default defineConfig({
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
+    {
+      // Attaching files behind the site password (files workstream). Its own
+      // project after the last, for the same reason: the password is the
+      // whole site's, and two files turning it on and off would collide.
+      name: 'files-behind-password',
+      testMatch: /files-door\/.*\.spec\.ts$/,
+      dependencies: ['behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
   ],
   webServer: [
     {
@@ -84,6 +98,12 @@ export default defineConfig({
         SITE_ORIGIN: 'http://127.0.0.1:4173',
         // A fixed key for the test server only, so it can take reports.
         CONTACT_KEY: Buffer.alloc(32, 9).toString('base64'),
+        // Files: a fixed key, a directory of its own, and the media worker
+        // inside the server, so an attached photo is really re-encoded.
+        FILES_KEY: Buffer.alloc(32, 8).toString('base64'),
+        FILES_STORAGE: 'disk',
+        FILES_DIR: FILES,
+        FILES_INLINE_WORKER: 'true',
       },
     },
     {

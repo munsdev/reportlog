@@ -80,6 +80,17 @@ export const JOBS: readonly JobDefinition[] = [
     run: (ctx) => import('../anchor/job.ts').then((m) => m.runAnchorJob(ctx)),
   },
   {
+    // Every minute: a reporter's files are prepared between Send and the
+    // click in their email. systemd never overlaps two passes.
+    name: 'files',
+    what: 'Re-encode and encrypt the files reporters sent, sweep abandoned ones, delete what was taken down.',
+    owner: 'F',
+    onCalendar: '*-*-* *:*:00',
+    randomizedDelaySec: 0,
+    persistent: false,
+    run: (ctx) => import('../files/job.ts').then((m) => m.runFilesJob(ctx)),
+  },
+  {
     name: 'digest-hourly',
     what: 'Email hourly subscribers the reports published since their last digest.',
     owner: 'G',

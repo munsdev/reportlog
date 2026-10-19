@@ -92,7 +92,18 @@ describe('the cards', () => {
     vi.unstubAllGlobals();
   });
 
-  function onDoor() {
+  const UPLOADS = {
+    enabled: true,
+    kinds: ['photo'],
+    accept: ['image/jpeg'],
+    max_files: 2,
+    max_total_bytes: 10 * 1024 * 1024,
+    max_bytes: { photo: 5 * 1024 * 1024, video: 0, audio: 0, document: 0 },
+    max_video_seconds: 180,
+    max_document_pages: 40,
+  };
+
+  function onDoor(fields: FormQuestion[] = QS) {
     // jsdom lays nothing out, so there is nowhere to scroll to.
     vi.stubGlobal('scrollTo', vi.fn());
     const answers: Record<string, unknown> = {
@@ -105,13 +116,14 @@ describe('the cards', () => {
         opens_at: null,
         closes_at: null,
         accepting: true,
-        asks_for_files: true,
-        fields: QS,
+        asks_for_files: fields.some((q) => q.kind === 'file'),
+        fields,
         filters: [],
       },
       'GET /api/publication-card': card,
       'GET /api/intake-switch': { open: true },
       'POST /api/reports': { pending: true },
+      'GET /api/uploads/config': UPLOADS,
     };
     vi.stubGlobal(
       'fetch',
@@ -169,6 +181,12 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
     await user.click(screen.getByRole('button', { name: 'Next' }));
+    // The upload question's card comes after the address, wherever it was
+    // placed: the server's staging quota is keyed on the address. Optional,
+    // and nothing is uploaded unless a file is picked.
+    expect(screen.getByRole('heading', { name: 'Photos' })).toBeInTheDocument();
+    expect(screen.getByText(/removed from any copy that could ever be shown/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
     await user.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
@@ -178,6 +196,7 @@ describe('the cards', () => {
       'GET /api/logbooks/demo',
       'GET /api/publication-card',
       'GET /api/site-access/status',
+      'GET /api/uploads/config',
       'POST /api/reports',
     ]);
     const sendCall = vi.mocked(fetch).mock.calls.find((c) => c[1]?.method === 'POST');
@@ -189,5 +208,18 @@ describe('the cards', () => {
       may_publish: false,
       may_publish_digest: card.digest,
     });
+  });
+
+  it('a logbook that does not ask for files never calls the upload routes (on a door they would not pass)', async () => {
+    const user = userEvent.setup();
+    onDoor([{ key: 'what', kind: 'short_text', label: 'What?', required: true, settings: {} }]);
+    await user.click(await screen.findByRole('button', { name: 'Start' }));
+    await user.type(screen.getByRole('textbox', { name: 'What?' }), 'x');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(screen.getByRole('heading', { name: 'Check your answers' })).toBeInTheDocument();
+    expect(calls.filter((c) => c.includes('/api/uploads'))).toEqual([]);
   });
 });

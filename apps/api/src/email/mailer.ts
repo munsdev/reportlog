@@ -9,7 +9,7 @@
  * Plain text only. A message here is a code or a link and a sentence or two
  * around it, and plain text cannot carry somebody's input as markup.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export interface EmailMessage {
@@ -56,7 +56,10 @@ export function outboxMailer(dir: string): Mailer {
       // Each time, since a test run may empty the directory under a running server.
       mkdirSync(dir, { recursive: true });
       const name = `${String(Date.now())}-${String(process.pid)}-${String(n).padStart(4, '0')}.json`;
-      writeFileSync(join(dir, name), JSON.stringify(message));
+      // Written beside and renamed into place, so a test reading the
+      // directory never sees half a message (it reads *.json only).
+      writeFileSync(join(dir, `${name}.part`), JSON.stringify(message));
+      renameSync(join(dir, `${name}.part`), join(dir, name));
       return Promise.resolve();
     },
   };
