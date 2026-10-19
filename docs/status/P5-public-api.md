@@ -11,7 +11,17 @@ The brief is `docs/parity.md` §7, "P5". D1 (`D1-board.md`), D2 (`D2-anchor.md`)
 
 ## Checks, as last run before pushing
 
-RESULTS_TABLE
+| Suite                                                      | Result                                                                                                     |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 282, web 423, fields 69, seal 31, access 6)       |
+| `pnpm test:db`                                             | 55 files, 830 tests, all passed (run before the last change, which touched only `features/board/Maps.tsx`) |
+| `db:types:check`                                           | unchanged (no migration)                                                                                   |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 133 passed, none failed or skipped (P5 adds 1, in its own last project, `board-maps`)                      |
+
+**The first full browser run failed P5's own test (132 of 133):** it used the saved administrator
+session (`e2e/.auth/admin.json`), which the identity project, running earlier, ends. The test now
+signs its own administrator in, as `staff.setup.ts` does. A test in a project after `identity`
+should not use `ADMIN`; D3's uses `MODERATOR`, which survives.
 
 The legacy vector tests in `packages/seal` are untouched and green. No migration: nothing here
 needed a table or a column, so `schema.gen.ts` is unchanged.
