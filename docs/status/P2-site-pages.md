@@ -11,10 +11,10 @@ For the coordinating session and the other workstreams. Brief: `docs/parity.md` 
 
 | Suite                                   | Result                                                                                                                                                  |
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 287, web 440 (P2's: api 5, web 17)                                                              |
-| `pnpm test:db`                          | 52 files, 820 passed (P2's: 18, in `site-pages.test.ts`)                                                                                                |
+| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 332 (11 skipped, not P2's), web 440 (P2's: api 5, web 17)                                       |
+| `pnpm test:db`                          | 57 files, 849 passed (P2's: 18, in `site-pages.test.ts`)                                                                                                |
 | `db:types:check`                        | generated types up to date (part of `pnpm check`'s typecheck run)                                                                                       |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 133 passed, 3 skipped (P2's: 9 passed; its 3 settings tests run on desktop only, as they change site-wide settings, and are the 3 skipped on the phone) |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 141 passed, 3 skipped (P2's: 9 passed; its 3 settings tests run on desktop only, as they change site-wide settings, and are the 3 skipped on the phone) |
 
 ## What was built, in the order asked
 
