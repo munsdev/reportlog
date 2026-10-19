@@ -21,8 +21,8 @@ describe('who sees which staff screen', () => {
     expect(labels(as('user'))).toEqual([]);
   });
 
-  it('a moderator sees list review, moderation and the guides, and nothing an administrator runs', () => {
-    expect(labels(as('moderator'))).toEqual(['List review', 'Moderation', 'Guides']);
+  it('a moderator sees list review, moderation, files and the guides, and nothing an administrator runs', () => {
+    expect(labels(as('moderator'))).toEqual(['List review', 'Moderation', 'Files', 'Guides']);
   });
 
   it('an administrator does not become a moderator, but list review names both', () => {
@@ -35,6 +35,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Moderation',
       'Moderation settings',
+      'File settings',
       'Settings',
       'Feedback',
       'Guides',
@@ -59,6 +60,7 @@ describe('who sees which staff screen', () => {
     expect(labels(as('moderator', true))).toEqual([
       'List review',
       'Moderation',
+      'Files',
       'Feedback',
       'Guides',
     ]);
@@ -76,6 +78,8 @@ describe('who sees which staff screen', () => {
       '/lists/review',
       '/moderate',
       '/moderate/settings',
+      '/files',
+      '/files/settings',
     ]) {
       expect(to).toContain(path);
     }
