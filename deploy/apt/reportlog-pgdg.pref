@@ -1,0 +1,8 @@
+# Installed by deploy/install.sh into /etc/apt/preferences.d/.
+#
+# PostgreSQL comes from the PostgreSQL project's repository, always. Ubuntu's
+# own archive also carries postgresql-16, and without this pin which one apt
+# picks depends only on whose version string sorts higher that week.
+Package: postgresql* libpq*
+Pin: origin "apt.postgresql.org"
+Pin-Priority: 600
