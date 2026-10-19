@@ -29,7 +29,7 @@ main() {
   [[ "$target" != *.failed ]] || die "$target is a release that failed to deploy."
   [ "$target" != "$was" ] || die "$(basename "$target") is already running."
 
-  say "Rolling back from $(basename "${was:-nothing}") to $(basename "$target")"
+  say "Rolling back from $(running_name "$was") to $(basename "$target")"
   if ! activate "$target"; then
     journalctl -u reportlog-api.service -n 20 --no-pager 2>/dev/null | sed 's/^/    /' || true
     die "$(basename "$target") did not answer on /api/health. \`current\` points at it now;

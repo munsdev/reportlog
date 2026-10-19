@@ -67,7 +67,7 @@ main() {
       && pnpm install --frozen-lockfile --prod --offline --reporter=silent"; then
     chown -R root:root "$dir"
     mv "$dir" "$dir.failed"
-    die "the build failed. Still running $(basename "${was:-nothing}"). Kept for inspection: $dir.failed"
+    die "the build failed. Still running: $(running_name "$was"). Kept for inspection: $dir.failed"
   fi
   [ -f "$dir/apps/web/dist/index.html" ] || die "the build produced no apps/web/dist/index.html."
   chown -R root:root "$dir"
@@ -76,7 +76,7 @@ main() {
   say "Migrating the database"
   if ! app_node "$dir/apps/api/src/db/migrate-cli.ts" 2>&1 | sed 's/^/  /'; then
     mv "$dir" "$dir.failed"
-    die "migrations failed. The release was NOT switched; still running $(basename "${was:-nothing}").
+    die "migrations failed. The release was NOT switched; still running: $(running_name "$was").
   Each migration file runs in its own transaction, so the failing one left no
   trace. Any that applied before it are additive, and the running release
   works with them. Kept for inspection: $dir.failed"

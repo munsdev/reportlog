@@ -82,7 +82,15 @@ app_node() {
   as_app "$NODE" --env-file="$ENV_FILE" "$@"
 }
 
-release_of() { readlink -f "$1" 2>/dev/null || true; }
+# Where a link points, or nothing if it does not exist. `-e`, not `-f`: -f
+# answers with the link's own path when the link is missing, which reads as
+# "a release called current is running" on a server that has never deployed.
+release_of() { readlink -e "$1" 2>/dev/null || true; }
+
+# "release <id>", or a sentence for a server with nothing deployed yet.
+running_name() {
+  if [ -n "$1" ]; then echo "release $(basename "$1")"; else echo "nothing (this was the first deploy)"; fi
+}
 
 # Point a symlink somewhere new in one rename, so there is no moment where
 # `current` is missing or half-written.
