@@ -120,7 +120,8 @@ both the unit test and `pnpm boundaries`, then the plant was removed.
   - The archive export must leave the eight list tables out.
 - **I (maps):** a list's `location` answers are durable and impersonal, so they survive the sweep.
   Legacy let a list feed a heat map (migration 051, `list_fields.map_location`, `heat_maps.list_ids`).
-  That is not ported. Add it on your side if wanted, counting approved entries only.
+  _Corrected later (P6):_ I built this on its side (`heat_maps.list_ids`, `map_list_place_questions`,
+  approved entries only, read from `answers` and never `erasable_answers`; `docs/status/I-maps.md`).
 - **C (filing):** the list form has its own small card engine in `features/lists/ListForm.tsx`.
   Once your card form exists, the two could share card components, but **never the filing
   code**: an entry is not a report.
@@ -140,12 +141,15 @@ both the unit test and `pnpm boundaries`, then the plant was removed.
 
   The `/list/:slug` page under the gate was not walked in the browser. That would mean turning the
   password on, which only the `identity` project may do (A's folder).
+  _Corrected later:_ C3 walked it (`apps/web/e2e/doors/doors.spec.ts`).
 
 - **Volunteering as a list** (legacy 047): there are no volunteer roles in this database.
-- **Lists on heat maps** (legacy 051): I's, see above.
+- ~~**Lists on heat maps** (legacy 051): I's, see above.~~ _Corrected later (P6):_ done, by I. The
+  maps handle lists; see `docs/status/I-maps.md`, "Optional, done: lists on maps".
 - **`crossTabFor` and `linkCounts` over HTTP**: built and tested, with no route, as in legacy.
 - **Opening times in the editor.** The API takes `opens_at` and `closes_at`. The screen offers
   only "Taking entries" (closing and reopening).
+  _Corrected later:_ C3 built them (`docs/status/C3-form-and-doors.md`).
 
 ## Running it in a cloud container
 

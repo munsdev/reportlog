@@ -8,6 +8,10 @@
  * never be added to the other one. Neither finds its tables by scanning for a
  * column, so a new table is never swept by accident.
  *
+ * ERASING A COLUMN DOES NOT TAKE ITS WORDS OUT OF THE TEXT INDEX: GIN keeps
+ * every key it ever held until it is rebuilt. So the last step rebuilds it,
+ * after the erasing, whenever anything was erased lately.
+ *
  * NOTHING HERE TOUCHES link_index or list_entry_links. They hold no text and
  * no submitter, so there is nobody in them to erase.
  *
@@ -18,6 +22,7 @@ import { sql } from 'kysely';
 import { blanks } from './erasure.ts';
 import type { Db } from './rows.ts';
 import { forgetCachedSalts } from './salt.ts';
+import { INDEX_NAME, rebuildTextIndex } from './search.ts';
 
 type Outcome = number | { error: string };
 
@@ -98,11 +103,24 @@ export async function sweepListTokens(
   return { list_erasures: erasures, list_notify_confirmations: confirmations };
 }
 
+/**
+ * Take erased words out of the text index (`rebuildTextIndex`). After
+ * `sweepPersonal`, so what it just erased goes too.
+ */
+export async function sweepTextIndex(db: Db): Promise<Record<typeof INDEX_NAME, Outcome>> {
+  try {
+    return { [INDEX_NAME]: await rebuildTextIndex(db) };
+  } catch (e) {
+    return { [INDEX_NAME]: failed(e) };
+  }
+}
+
 /** Everything, for the timer. */
 export async function sweepLists(db: Db, { saltDays }: { saltDays: number }) {
   return {
     ...(await sweepPersonal(db)),
     ...(await sweepSalts(db, saltDays)),
     ...(await sweepListTokens(db)),
+    ...(await sweepTextIndex(db)),
   };
 }

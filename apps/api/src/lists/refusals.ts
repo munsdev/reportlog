@@ -74,6 +74,8 @@ const SENTENCES = {
   'un-review': 'An entry that has been reviewed cannot be put back to waiting.',
   'review-ids': 'Send the entries you looked at, up to 500.',
   'triage-state': 'That is not a triage state.',
+  'search-empty': 'Type a name, an email address or some words to look for.',
+  'search-too-long': 'That is too long to look for. Use up to 200 characters.',
 } as const;
 
 export type ListRefusalCode = keyof typeof SENTENCES;

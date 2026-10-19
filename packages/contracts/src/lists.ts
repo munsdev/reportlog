@@ -332,6 +332,52 @@ export const deleteList = defineRoute({
   response: z.object({ deleted: z.string() }),
 });
 
+// ── administrators: a subject access request ────────────────────────────
+
+export const FoundListEntry = z.object({
+  id: z.number().int(),
+  list_id: z.number().int(),
+  created_at: Timestamp,
+  review_state: ReviewState,
+  triage_state: TriageState,
+  answers: ListAnswers,
+  erasable_answers: ListAnswers.nullable(),
+  email: z.string().nullable(),
+  /** When the clock erases the personal half. Null: kept until its holder erases it. */
+  personal_expires_at: Timestamp.nullable(),
+});
+export type FoundListEntry = z.infer<typeof FoundListEntry>;
+
+export const ListSearchResult = z.object({
+  query: z.string(),
+  entries: z.array(FoundListEntry),
+  lists: z.array(
+    z.object({
+      id: z.number().int(),
+      slug: z.string(),
+      title: z.string(),
+      fields: z.array(z.object({ key: z.string(), label: z.string() })),
+    }),
+  ),
+  /** More matched than were sent. Narrow the words. */
+  more: z.boolean(),
+});
+export type ListSearchResult = z.infer<typeof ListSearchResult>;
+
+/**
+ * A POST, so what is looked for (usually somebody's name or address) is in no
+ * address bar, browser history or access log.
+ */
+export const searchListEntries = defineRoute({
+  method: 'POST',
+  path: '/api/admin/lists/search',
+  summary:
+    'Every entry, on any list, whose personal half has these words or this address in it. ' +
+    'What has been erased is not found.',
+  body: z.object({ q: z.string().optional() }),
+  response: ListSearchResult,
+});
+
 // ── moderators: review, in bulk ─────────────────────────────────────────
 
 export const ReviewQueue = z.object({
