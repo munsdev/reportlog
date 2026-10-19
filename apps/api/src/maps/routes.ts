@@ -24,6 +24,7 @@ import {
   updateHeatMap,
 } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
+import { PUBLICATION_OFF, publicArchiveAvailable } from '../board/publication.ts';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
@@ -55,19 +56,25 @@ export function mapRoutes(app: FastifyInstance, { db, cacheMs = 60_000 }: MapRou
   // ── a reader ──────────────────────────────────────────────────────────
 
   route(app, listPlacedMaps, async () => ({
-    // The placement list: no counts, no threshold, no feeds.
-    maps: (await allMaps(db))
-      .filter((m) => m.enabled)
-      .map((m) => ({
-        slug: m.slug,
-        title: m.title,
-        blurb: m.blurb,
-        slot: m.slot,
-        position: m.position,
-      })),
+    // The placement list: no counts, no threshold, no feeds. A site that
+    // publishes no archive places no maps either (board/publication.ts).
+    maps: !(await publicArchiveAvailable(db))
+      ? []
+      : (await allMaps(db))
+          .filter((m) => m.enabled)
+          .map((m) => ({
+            slug: m.slug,
+            title: m.title,
+            blurb: m.blurb,
+            slot: m.slot,
+            position: m.position,
+          })),
   }));
 
   route(app, getMap, async ({ params }) => {
+    // THE ARCHIVE'S OWN SWITCH OUTRANKS EVERY MAP, and is asked before the
+    // cache so switching it off takes effect at once.
+    if (!(await publicArchiveAvailable(db))) throw notFound(PUBLICATION_OFF.reason);
     const map = await cache.get(
       params.slug,
       async () => (await computeMap(db, await mapBySlug(db, params.slug))).map,

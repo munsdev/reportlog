@@ -32,6 +32,7 @@ import { Page } from '@/components/ui/page.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
+import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { askedQuestions, cardProblem, rawFromAnswers, shownAnswer, toSubmission } from './walk.ts';
@@ -144,6 +145,7 @@ function MyReportView({ threadId }: { threadId: string }) {
       </Link>
       <Answers r={r} />
       <Permissions r={r} />
+      <ContactAccesses threadId={r.thread_id} />
       <Correct r={r} />
       {r.withdrawn ? null : <Withdraw r={r} />}
       <Erase r={r} />

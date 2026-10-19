@@ -16,6 +16,7 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { manifestFor } from '../chain/record.ts';
 import type { DB, Reports } from '../db/schema.gen.ts';
+import { flagReport } from '../moderation/flags.ts';
 
 /** Take the thread's head. Two corrections at once must not both correct the same version. */
 export async function lockHead(trx: Transaction<DB>, threadId: string): Promise<number> {
@@ -81,5 +82,13 @@ export async function appendCorrection(
     .set({ current_report_id: row.id, moderation_status: 'pending', updated_at: new Date() })
     .where('thread_id', '=', input.threadId)
     .execute();
+  // A correction gets its own look for the review flag: words that were
+  // unremarkable before may not be now.
+  await flagReport(trx, {
+    reportId: row.id,
+    threadId: input.threadId,
+    logbookId: lb.id,
+    answers: row.answers,
+  });
   return row;
 }

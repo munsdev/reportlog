@@ -19,6 +19,7 @@ import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Readable } from 'node:stream';
+import { PUBLICATION_OFF, publicArchiveAvailable } from '../board/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
@@ -265,6 +266,8 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
 
   // ── public: a report's published files ────────────────────────────────
   route(app, C.getReportFiles, async ({ params }) => {
+    // Said in the same words as every other public read when the archive is off.
+    if (!(await publicArchiveAvailable(db))) throw notFound(PUBLICATION_OFF.reason);
     const out = await publicFilesOf(db, params.ref);
     if (!out) throw notFound('There is no public report with that reference.');
     return out;

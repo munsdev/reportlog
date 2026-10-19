@@ -299,6 +299,8 @@ describe.skipIf(toolsMissing)('files on the public record', () => {
       .selectFrom('attachment_events')
       .selectAll()
       .where('action', '=', 'viewed_original')
+      // Its own report's: other files in the run write such rows too.
+      .where('thread_id', '=', thread)
       .executeTakeFirstOrThrow();
     expect(ev).toMatchObject({ actor_email: moderatorEmail, reason: 'checking the time' });
   });

@@ -4,7 +4,9 @@
  *
  * This is courtesy, not security. The server refuses the same people on
  * every staff route regardless; this only saves them a screen of errors.
- * Rank comes from @reportlog/access, so `admin` admits the owner.
+ * Rank comes from @reportlog/access, so `admin` admits the owner. Several
+ * roles mean any of them: admin does not imply moderator, so a screen for
+ * both names both.
  */
 import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
@@ -13,16 +15,33 @@ import type { ReactNode } from 'react';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 
-export function StaffOnly({ needs, children }: { needs: SystemRole; children: ReactNode }) {
+const WHO: Partial<Record<SystemRole, string>> = {
+  admin: 'an administrator',
+  moderator: 'a moderator',
+  access_manager: 'an access manager',
+};
+
+export function StaffOnly({
+  needs,
+  children,
+}: {
+  needs: SystemRole | readonly SystemRole[];
+  children: ReactNode;
+}) {
+  const roles: readonly SystemRole[] = typeof needs === 'string' ? [needs] : needs;
   const me = useMe();
   const { pathname } = useLocation();
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next={pathname} />;
-  if (!roleSatisfies(me.data.role, needs)) {
+  const role = me.data.role;
+  if (!roles.some((r) => roleSatisfies(role, r))) {
     return (
       <section className="space-y-3">
         <h1 className="font-display text-2xl font-bold">Not for this account</h1>
-        <p>Only an administrator can open this page. Ask one if you need to.</p>
+        <p>
+          Only {roles.map((r) => WHO[r] ?? r).join(' or ')} can open this page. Ask one if you need
+          to.
+        </p>
       </section>
     );
   }

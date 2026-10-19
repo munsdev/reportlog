@@ -363,7 +363,7 @@ export class Intake {
           formId,
           publicRefPrefix: this.publicRefPrefix,
         });
-        await startThread(trx, threadId, row.id);
+        await startThread(trx, threadId, row);
         // One accountable, reachable person per record: the coordinator. The
         // source's own contact details are deliberately not collected.
         await sealContact(trx, ring, {

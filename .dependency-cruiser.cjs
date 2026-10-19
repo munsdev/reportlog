@@ -82,6 +82,15 @@ module.exports = {
       to: { path: '^apps/api/src/maps/', reachable: true },
     },
     {
+      name: 'moderation-stays-out-of-the-seal',
+      comment:
+        'Review flags, keyword lists, editorial notes and the board are editable and revocable. ' +
+        'A report must never verify differently because an editor revised a note or an operator added a word.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/(moderation|board)/', reachable: true },
+    },
+    {
       name: 'packages-do-not-import-apps',
       severity: 'error',
       from: { path: '^packages/' },
