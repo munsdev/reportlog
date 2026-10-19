@@ -13,10 +13,10 @@ After merging the base at `81a4c77` (C2 and D1).
 
 | Suite                                   | Result                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes (format, lint, types, boundaries; unit: api 231, web 407, fields 69, seal 31, access 4) |
-| `pnpm test:db`                          | 39 files, 638 tests, all passed (6 are F2's, in `apps/api/test/db/files-staff.test.ts`)        |
+| `pnpm check`                            | passes (format, lint, types, boundaries; unit: api 251, web 409, fields 69, seal 31, access 4) |
+| `pnpm test:db`                          | 48 files, 754 tests, all passed (6 are F2's, in `apps/api/test/db/files-staff.test.ts`)        |
 | `db:types:check`                        | up to date (no migration)                                                                      |
-| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 83 passed, 4 of them F2's (2 tests, each on desktop and phone)                                 |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 106 passed, 4 of them F2's (2 tests, each on desktop and phone)                                |
 
 ## What was built
 
