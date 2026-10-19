@@ -5,6 +5,7 @@
  * server for nothing it does not need, and a session check would be refused
  * there and put the password back.
  */
+import { roleSatisfies } from '@reportlog/access';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useGateMode } from './gate.tsx';
 import { useMe, useSignOut } from './session.ts';
@@ -32,6 +33,11 @@ function SessionLinks() {
       <Link to="/mine" className="underline-offset-4 hover:underline">
         My reports
       </Link>
+      {roleSatisfies(me.data.role, 'moderator') || roleSatisfies(me.data.role, 'admin') ? (
+        <Link to="/moderate" className="underline-offset-4 hover:underline">
+          Moderate
+        </Link>
+      ) : null}
       <Link to="/access" className="underline-offset-4 hover:underline">
         {me.data.grantsAccess ? 'Access' : 'Your account'}
       </Link>
