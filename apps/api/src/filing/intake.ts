@@ -175,6 +175,9 @@ export class Intake {
   async addDraft(user: SignedIn, batchId: number, payload: DraftPayload) {
     const batch = await this.batch(user, batchId);
     if (batch.status !== 'draft') throw alreadyFiled();
+    if (!mayFileFor(user, batch.organization_id)) {
+      throw notAllowed('You no longer file for this organization.');
+    }
     const row = await this.db
       .insertInto('intake_drafts')
       .values({
@@ -290,6 +293,11 @@ export class Intake {
     const ring = this.ring;
     const batch = await this.batch(user, batchId);
     if (batch.status !== 'draft') throw alreadyFiled();
+    // Asked again now, not only when the batch was opened: somebody who has
+    // since left the organization no longer files in its name.
+    if (!mayFileFor(user, batch.organization_id)) {
+      throw notAllowed('You no longer file for this organization.');
+    }
     // A specific statement, not a box that says "ok". The page shows the
     // words; this refuses without them, so a client that skips the dialog
     // cannot file anything.

@@ -244,6 +244,45 @@ describe('a batch, from typing up to filing', () => {
   });
 });
 
+describe('somebody who has left the organization', () => {
+  it('can no longer file a batch they opened while in it', async () => {
+    const leaver = address('leaver');
+    const uid = await seat(h.db, leaver, 'user');
+    await h.db
+      .insertInto('organization_memberships')
+      .values({ organization_id: orgId, user_id: uid, role: 'coordinator' })
+      .execute();
+    const them = as(h, await signIn(h, leaver));
+    const made = await call(them, 'POST', '/api/intake/batches', { organization_id: orgId });
+    const id = String(made.body.id);
+    await call(them, 'POST', `/api/intake/batches/${id}/drafts`, {
+      logbook: lb.slug,
+      answers: { what_happened: 'Typed up before leaving' },
+      intake_method: 'paper',
+      may_publish: false,
+      may_publish_digest: CARD,
+    });
+    // Another organization keeps them a coordinator, so the scope still admits them.
+    const other = await h.db
+      .insertInto('organizations')
+      .values({ name: `${ORG} elsewhere`, verified_by: 'admin@example.org' })
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    await h.db
+      .insertInto('organization_memberships')
+      .values({ organization_id: other.id, user_id: uid, role: 'coordinator' })
+      .execute();
+    await h.db
+      .deleteFrom('organization_memberships')
+      .where('organization_id', '=', orgId)
+      .where('user_id', '=', uid)
+      .execute();
+    const r = await call(them, 'POST', `/api/intake/batches/${id}/submit`, { attested: true });
+    expect(r.status).toBe(403);
+    expect((await call(them, 'POST', `/api/intake/batches/${id}/drafts`, {})).status).toBe(403);
+  });
+});
+
 describe('the intake switch', () => {
   const admin = address('switch-admin');
   let asAdmin: ReturnType<typeof as>;
