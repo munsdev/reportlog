@@ -115,7 +115,7 @@ new table, route, page or caller is covered the moment it exists.
 
 ### I1 · No third-party requests (`third-party.spec.ts`)
 
-- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 61
+- **The set:** every page in the router's `fullPaths`, read from `src/routeTree.gen.ts`. That is 63
   today.
 - **Each page is opened twice**, as a stranger and as an administrator. Each of those runs in the
   chromium and phone projects.
@@ -202,4 +202,28 @@ intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
 
 ## Totals
 
-Filled in below once all three suites have run on the merged branch.
+Run on the branch after merging `origin/ccr-c9c93698-ev856l` at `9771872`, which brought in A2
+and C3. All three suites were run here (not on CI).
+
+| Suite                                       | Result                                                                                                           |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | passes: format, lint, types, boundaries (582 modules); unit tests fields 69, seal 31, access 6, api 282, web 429 |
+| `pnpm test:db`                              | 53 files, **840 passed, 3 skipped** (the three skips are the gaps above)                                         |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **380 passed**, all projects                                                                                     |
+
+P1's own tests:
+
+| File                   | Tests                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------- |
+| `invariants.test.ts`   | 33 passed, 3 skipped                                                                              |
+| `anchor-reset.test.ts` | 5 passed                                                                                          |
+| `door-quiet.test.tsx`  | 6 passed                                                                                          |
+| `third-party.spec.ts`  | 128 per browser project (chromium, phone): 63 pages × 2 viewers, the wizard, the route-list check |
+
+**The merge was a test of the sweeps.**
+
+- A2 added a door shape (`/notifications/stop/$token`). `door-quiet` failed on it, as designed,
+  and now covers it. The frame is quiet there too.
+- A2 and C3's new routes and pages were picked up without changes to the tests: 114 staff routes
+  and 63 pages after the merge.
+- The merge added no append-only table.
