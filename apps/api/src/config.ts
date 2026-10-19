@@ -36,6 +36,28 @@ const ConfigSchema = z.object({
    * becomes one limit for the whole site.
    */
   TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+  /**
+   * Lists (apps/api/src/lists/). How many days the personal half of a list
+   * entry is kept before the sweep erases it, or "never" (then only the
+   * person's own erasure link removes it). A typo stops the server here
+   * rather than quietly turning retention off.
+   */
+  LIST_PERSONAL_DAYS: z
+    .string()
+    .trim()
+    .regex(/^(never|[1-9]\d{0,4})$/i, 'LIST_PERSONAL_DAYS is a number of days, like 90, or "never"')
+    .optional(),
+  /** Days a day's address-hashing secret is kept before it is destroyed. */
+  LIST_SALT_DAYS: z.coerce.number().int().min(1).max(30).default(2),
+  /** Days an erasure link lasts where nothing is erased on its own ("never" above). */
+  LIST_ERASURE_LINK_DAYS: z.coerce.number().int().min(1).max(3650).default(365),
+  /** Link hosts a moderator knows, comma-separated. Others are marked for their eye. */
+  LIST_KNOWN_HOSTS: z.string().default(''),
+  /** Where a list's new entries go when it names no address of its own. */
+  ADMIN_EMAIL: z.preprocess(
+    (v) => (typeof v === 'string' && !v.trim() ? undefined : v),
+    z.email('ADMIN_EMAIL looks like "office@example.org"').optional(),
+  ),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

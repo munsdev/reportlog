@@ -17,6 +17,7 @@
 import type { FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { listDoors } from '../lists/manage.ts';
 
 export const OUTSIDE_ACCESS = ['closed', 'link', 'door'] as const;
 export type OutsideAccess = (typeof OUTSIDE_ACCESS)[number];
@@ -49,12 +50,15 @@ async function logbooksOpenOutside(db: Kysely<DB>) {
  * `link` logbook works without the password too but is not shown; that is the
  * whole difference between the two.
  *
- * Lists join this when the lists workstream builds them.
+ * A list is a door when it is listed, taking entries and set to `door`. The
+ * lists module answers that, so the two cannot disagree about whether a list
+ * is open.
  */
 export async function doors(db: Kysely<DB>): Promise<Door[]> {
-  return (await logbooksOpenOutside(db))
+  const logbooks = (await logbooksOpenOutside(db))
     .filter((l) => l.outside_access === 'door')
-    .map((l) => ({ kind: 'logbook', slug: l.slug, title: l.title, href: `/file/${l.slug}` }));
+    .map((l): Door => ({ kind: 'logbook', slug: l.slug, title: l.title, href: `/file/${l.slug}` }));
+  return [...logbooks, ...(await listDoors(db))];
 }
 
 /**

@@ -27,11 +27,15 @@ export function route<
   handler: (
     input: HandlerInput<RouteContract<P, Q, B, R>>,
   ) => ResponseOf<RouteContract<P, Q, B, R>> | Promise<ResponseOf<RouteContract<P, Q, B, R>>>,
+  // Route-level settings Fastify reads at registration: today only the list
+  // routes' `curtain` mark, which the gate checks as each route registers.
+  extra: Pick<RouteOptions, 'config'> = {},
 ): void {
   // Typed by this wrapper rather than by Fastify's type provider: the
   // contract already says what goes in and out, and saying it twice is how
   // the two would come to disagree.
   const options: RouteOptions = {
+    ...extra,
     method: contract.method,
     url: contract.path,
     schema: {

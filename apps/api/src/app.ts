@@ -13,6 +13,10 @@ import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
 import { identity } from './identity/index.ts';
+import { listButtons } from './lists/manage.ts';
+import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
+import type { ListSettings } from './lists/retention.ts';
+import { listRoutes } from './lists/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
@@ -26,6 +30,8 @@ export interface AppDeps {
   mailer?: Mailer;
   /** Where log lines go. Standard output unless a test captures them. */
   logStream?: { write: (line: string) => void };
+  /** How long a list keeps what is personal, and who hears of new entries. */
+  lists?: ListSettings;
 }
 
 export async function buildApp({
@@ -33,6 +39,7 @@ export async function buildApp({
   db,
   logStream,
   mailer,
+  lists,
 }: AppDeps): Promise<FastifyInstance> {
   const hops = config.TRUST_PROXY ?? 0;
   const app = Fastify({
@@ -73,17 +80,16 @@ export async function buildApp({
   });
 
   installErrorHandling(app);
+  const mail = mailer ?? stderrMailer();
+  const siteOrigin = config.SITE_ORIGIN ?? 'http://127.0.0.1:5173';
   // First: its hooks must see every route registered after it.
-  await identity(app, {
-    db,
-    mailer: mailer ?? stderrMailer(),
-    siteOrigin: config.SITE_ORIGIN ?? 'http://127.0.0.1:5173',
-  });
+  await identity(app, { db, mailer: mail, siteOrigin });
   healthRoutes(app, db);
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
-  logbookRoutes(app, db);
+  logbookRoutes(app, db, { buttons: { lists: listButtons } });
+  listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
   return app;
 }
