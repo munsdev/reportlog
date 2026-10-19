@@ -162,21 +162,12 @@ function describedAppendOnly(): string[] {
 }
 
 /**
- * KNOWN GAPS, found by this sweep and reported rather than fixed: fixing them
- * is a migration in another workstream's folder. Each is skipped with its
- * reason, and the test that a gap is still a gap makes sure the skip goes
- * when the gap does.
+ * KNOWN GAPS, found by this sweep and reported rather than fixed. The two it
+ * found (TRUNCATE on the feedback tables) are closed by migration
+ * *_close_invariant_gaps.sql; a new one goes here, with its reason, and the
+ * test below makes sure the entry goes when the gap does.
  */
-const KNOWN_GAPS: Record<string, { truncate: string }> = {
-  feedback_events: {
-    truncate:
-      'GAP: no BEFORE TRUNCATE trigger (20261019180450_site_feedback_digests.sql). UPDATE and DELETE are refused; TRUNCATE empties it.',
-  },
-  feedback_comments: {
-    truncate:
-      'GAP: no BEFORE TRUNCATE trigger (20261019180450_site_feedback_digests.sql). UPDATE and DELETE are refused; TRUNCATE empties it.',
-  },
-};
+const KNOWN_GAPS: Record<string, { truncate: string }> = {};
 
 /** One row in every append-only table, so a row trigger has something to fire on. */
 async function plantOneRowEach(): Promise<void> {
@@ -543,14 +534,14 @@ describe('I6 · a third-party block is complete or absent, whatever writes the r
     await expect(insert(block)).rejects.toThrow(/check constraint/);
   });
 
-  // GAP, found by this test and reported, not fixed (the fix is a migration in
-  // the core): with third_party NULL and filed_via, intake_method and
+  // Was a GAP, found by this test and closed by *_close_invariant_gaps.sql:
+  // with third_party NULL and filed_via, intake_method and
   // attested_at all present, the core CHECK evaluates to NULL, and a CHECK
   // that is NULL passes. The row is stored with a coordinator's provenance
   // that rebuildSealedObject leaves out (it adds the block only when
   // third_party is true): the silently dropped block the rebuild fixed in
-  // code, still open in the database. Unskip when the CHECK is fixed.
-  it.skip('refuses a whole block whose third_party flag is missing', async () => {
+  // code, which the database now refuses too.
+  it('refuses a whole block whose third_party flag is missing', async () => {
     await expect(insert({ ...complete, third_party: null })).rejects.toThrow(/check constraint/);
   });
 
