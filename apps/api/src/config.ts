@@ -80,6 +80,21 @@ const ConfigSchema = z.object({
     )
     .optional(),
   /**
+   * Only while CONTACT_KEY is being rotated (workstream C2): the key being
+   * rotated away from. Read with, never written with; removed once
+   * `reportlog contact-key rotate` has run (deploy/README.md).
+   */
+  CONTACT_KEY_PREVIOUS: z.preprocess(
+    (v) => (typeof v === 'string' && !v.trim() ? undefined : v),
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'CONTACT_KEY_PREVIOUS is 32 random bytes, base64, like CONTACT_KEY',
+      )
+      .optional(),
+  ),
+  /**
    * Files (apps/api/src/files/). The key every file's own key is wrapped
    * under: 32 random bytes, base64. NOT the same as CONTACT_KEY: the media
    * worker holds this one and parses hostile files. Losing it makes every

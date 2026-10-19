@@ -8,7 +8,9 @@
  *   { to: '/moderate', label: 'Moderation', for: ['moderator'] },
  *
  * `for` names roles from @reportlog/access, plus `tester` for the tester
- * flag. Rank is the package's: `admin` admits the owner, and admin does NOT
+ * flag, and `organization` for anybody who coordinates or manages an
+ * organization (by membership; no system role stands in for it, as on the
+ * server's coordinatorOrgs). Rank is the package's: `admin` admits the owner, and admin does NOT
  * imply moderator, so a screen for both names both.
  *
  * This decides what the menu SHOWS, nothing more. Every staff route on the
@@ -19,7 +21,7 @@ import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
 import type { LinkProps } from '@tanstack/react-router';
 
-export type Audience = SystemRole | 'tester';
+export type Audience = SystemRole | 'tester' | 'organization';
 
 export interface StaffEntry {
   to: NonNullable<LinkProps['to']>;
@@ -36,15 +38,25 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/settings', label: 'Settings', for: ['admin'] },
   { to: '/feedback', label: 'Feedback', for: ['tester', 'admin', 'access_manager'] },
   { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin'] },
+  { to: '/intake', label: 'Intake', for: ['organization'] },
 ];
 
 export interface Viewer {
   role: SystemRole;
   tester: boolean;
+  memberships?: readonly { role: string }[];
 }
 
+const ORGANIZATION_ROLES: readonly string[] = ['coordinator', 'manager'];
+
 export function mayOpen(entry: StaffEntry, viewer: Viewer): boolean {
-  return entry.for.some((a) => (a === 'tester' ? viewer.tester : roleSatisfies(viewer.role, a)));
+  return entry.for.some((a) =>
+    a === 'tester'
+      ? viewer.tester
+      : a === 'organization'
+        ? (viewer.memberships ?? []).some((m) => ORGANIZATION_ROLES.includes(m.role))
+        : roleSatisfies(viewer.role, a),
+  );
 }
 
 /** The entries this person may open, in the order above. */

@@ -173,6 +173,13 @@ export const listMyReports = defineRoute({
 const ThreadParams = z.object({ threadId: z.uuid() });
 
 export const MyReportDetail = MyReport.extend({
+  /**
+   * The current version's fingerprint and chain link, for the signed
+   * declaration: it declares one exact sealed version, and anyone can check
+   * these on the verify page.
+   */
+  content_hash: z.string(),
+  chain_hash: z.string(),
   /** The logbook's questions as they are now: a correction answers these. */
   questions: z.array(FormQuestion),
   permission_history: z.array(
@@ -278,8 +285,12 @@ export const IntakeDraft = z.object({
   id: z.number().int(),
   ordinal: z.number().int(),
   payload: DraftPayload,
+  /** The reference it was FIRST filed as, once filed. A correction makes a new one. */
   public_ref: z.string().nullable(),
+  /** Once filed: the thread a correction continues. */
+  thread_id: z.string().nullable(),
 });
+export type IntakeDraft = z.infer<typeof IntakeDraft>;
 
 export const listIntakeOrganizations = defineRoute({
   method: 'GET',
@@ -371,4 +382,70 @@ export const submitIntakeBatch = defineRoute({
     still_staged: z.number().int(),
     attested_at: Timestamp,
   }),
+});
+
+// ── correcting a filed account, as the coordinator ──────────────────────
+
+const ThreadOnly = z.object({ threadId: z.uuid() });
+
+/**
+ * A report a coordinator filed, as its coordinator sees it. Not "My
+ * reports": nothing here is the reporter's to give or take back.
+ */
+export const IntakeFiling = z.object({
+  thread_id: z.string(),
+  /** The current version's reference. */
+  public_ref: z.string(),
+  logbook_slug: z.string(),
+  logbook_title: z.string(),
+  batch_id: z.number().int(),
+  ordinal: z.number().int(),
+  /** The organization's name as the current version seals it. */
+  filed_via: z.string(),
+  intake_method: z.string(),
+  collected_on: z.string().nullable(),
+  may_publish: z.boolean(),
+  answers: Answers,
+  /** The logbook's questions as they are now: a correction answers these. */
+  questions: z.array(FormQuestion),
+  versions: z.number().int(),
+  received_at: Timestamp,
+  moderation_status: z.string(),
+  /** Filing and every correction, newest first, with who did it. */
+  history: z.array(
+    z.object({
+      action: z.enum(['filed', 'correct']),
+      public_ref: z.string(),
+      by: z.string(),
+      comment: z.string().nullable(),
+      at: Timestamp,
+    }),
+  ),
+});
+export type IntakeFiling = z.infer<typeof IntakeFiling>;
+
+export const getIntakeFiling = defineRoute({
+  method: 'GET',
+  path: '/api/intake/reports/:threadId',
+  summary: 'An account you filed, with what a correction would be asked.',
+  params: ThreadOnly,
+  response: IntakeFiling,
+});
+
+export const correctIntakeFiling = defineRoute({
+  method: 'POST',
+  path: '/api/intake/reports/:threadId/correct',
+  summary:
+    'Correct an account you filed: a new version in the same thread, attested by you. May take back permission to publish, never give it.',
+  params: ThreadOnly,
+  body: z.object({
+    answers: Answers.optional(),
+    comment: z.string().optional(),
+    may_publish: z.boolean().optional(),
+    intake_method: z.string().optional(),
+    /** A calendar day, or '' to say it is not known. Left out, it carries forward. */
+    collected_on: z.string().optional(),
+    attested: z.boolean().optional(),
+  }),
+  response: z.object({ public_ref: z.string() }),
 });

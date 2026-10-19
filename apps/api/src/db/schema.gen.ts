@@ -106,10 +106,30 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface ContactKeyRotations {
+  created_at: Generated<Timestamp>;
+  from_fingerprint: string;
+  id: Generated<number>;
+  rewrapped: Generated<number>;
+  to_fingerprint: string;
+  xact: Generated<string>;
+}
+
 export interface ContactKeys {
   created_at: Generated<Timestamp>;
   dek_wrapped: Buffer;
   email_hmac: string | null;
+  thread_id: string;
+}
+
+export interface CoordinatorActions {
+  action: string;
+  comment: string;
+  coordinator_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  organization_id: number;
+  report_id: number;
   thread_id: string;
 }
 
@@ -634,7 +654,9 @@ export interface DB {
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  contact_key_rotations: ContactKeyRotations;
   contact_keys: ContactKeys;
+  coordinator_actions: CoordinatorActions;
   digest_subscriptions: DigestSubscriptions;
   evidence_requests: EvidenceRequests;
   feedback: Feedback;

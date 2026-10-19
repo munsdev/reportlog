@@ -40,6 +40,7 @@ export interface AppDeps {
         | 'SITE_ORIGIN'
         | 'TRUST_PROXY'
         | 'CONTACT_KEY'
+        | 'CONTACT_KEY_PREVIOUS'
         | 'PUBLIC_REF_PREFIX'
         | 'ADMIN_EMAIL'
         | 'TRANSPARENCY_LOG_REMOTES'
@@ -126,6 +127,7 @@ export async function buildApp({
     mailer: mail,
     siteOrigin,
     contactKey: config.CONTACT_KEY,
+    previousContactKey: config.CONTACT_KEY_PREVIOUS,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     files: typeof files === 'string' ? null : files,
   });
