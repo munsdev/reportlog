@@ -2,14 +2,28 @@
 
 For the coordinating session and the other workstreams. Brief: `docs/parity.md` §7, P3.
 
-- **Branch:** `claude/p3-setup-wizard`, based on `ccr-c9c93698-ev856l` at `dc2e2ca` (P2 merged)
+- **Branch:** `claude/p3-setup-wizard`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `a62b6b4` (P5 merged)
 - **Pull request:** see the PR into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-TOTALS
+Run after merging the base at `a62b6b4`.
+
+| Suite                                   | Result                                                                                                            |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 342 (11 skipped, not P3's), web 460 (P3's: api 10, web 7) |
+| `pnpm test:db`                          | 64 files, 964 passed (P3's: 36, in `deploy-templates.test.ts` 21 and `setup-wizard.test.ts` 15)                   |
+| `db:types:check`                        | generated types up to date                                                                                        |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 444 passed, 3 skipped (not P3's). P3 rewrote one test, the wizard in `identity/access.spec.ts`                    |
+
+**Red on the way, both my tests:** the browser wizard test's selector for "Election incidents"
+also matched "Election incidents, no files" (fixed: it names the first one's description too);
+and `setup-wizard.test.ts` expected the slug `election-incidents` when an earlier file in the
+run had already made one (fixed: it accepts the `-2` the slug rule adds). Lint and the boundary
+check also caught a `site.tsx → gate.tsx → SetupWizard → site.tsx` cycle, broken by moving the
+gate-mode context into `gateMode.ts`.
 
 ## What was built
 
@@ -94,6 +108,9 @@ well as the setup flag, and a test clears the flag by hand to show the step stay
 - `apps/api/src/app.ts`: one registration line.
 - `packages/contracts/src/index.ts`: one export line.
 - `apps/web/e2e/identity/access.spec.ts` (A's): the wizard test, as above.
+- `apps/web/src/features/identity/gateMode.ts` (new), `gate.tsx` (A's) and
+  `components/ui/site.tsx` (G's): the gate-mode context in its own file, to break the import
+  cycle. `gate.tsx` re-exports `useGateMode`, so no other importer changed.
 - `schema.gen.ts` regenerated.
 
 ## Differences from legacy, on purpose

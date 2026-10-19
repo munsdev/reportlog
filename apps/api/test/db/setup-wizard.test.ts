@@ -180,7 +180,8 @@ describe('walking the wizard', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
       applied: 'elections',
-      logbook: { slug: 'election-incidents' },
+      // -2 and so on if an earlier file in this run made one: files share the database.
+      logbook: { slug: expect.stringMatching(/^election-incidents(-\d+)?$/) as unknown },
     });
     expect((await readSettings(h.db)).site_name).toBe('Polling "Watch"');
   });
