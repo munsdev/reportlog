@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/c3-form-and-doors`, based on `ccr-c9c93698-ev856l` at `221cb83` (with F2), merged in
-- **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
+- **Pull request:** [#16](https://github.com/munsdev/reportlog/pull/16), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
