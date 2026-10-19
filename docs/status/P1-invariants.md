@@ -207,14 +207,24 @@ intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
 
 ## Totals
 
-Run on the branch after merging `origin/ccr-c9c93698-ev856l` at `96b3741`, which brought in A2, C3
-and D3. All three suites were run here (not on CI).
+All three suites were run here (not on CI), after merging `origin/ccr-c9c93698-ev856l` at
+`96b3741` (A2, C3 and D3):
 
-| Suite                                       | Result                                                                                                           |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | passes: format, lint, types, boundaries (594 modules); unit tests fields 69, seal 31, access 6, api 282, web 429 |
-| `pnpm test:db`                              | 57 files, **864 passed, 3 skipped** (the three skips are the gaps above)                                         |
-| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **396 passed**, all projects                                                                                     |
+| Suite                                       | Result                                                                                             |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | passes: format, lint, types, boundaries; unit tests fields 69, seal 31, access 6, api 282, web 429 |
+| `pnpm test:db`                              | 57 files, **864 passed, 3 skipped** (the three skips are the gaps above)                           |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **396 passed**, all projects                                                                       |
+
+Then the base moved to `a471e7f` (P7: operations tests, `deploy/`, CI, one line in
+`files/storage-check-cli.ts`, nothing under `apps/web`). After merging that:
+
+| Suite          | Result                                                           |
+| -------------- | ---------------------------------------------------------------- |
+| `pnpm check`   | passes (600 modules); api unit 327 passed, 11 skipped (P7's own) |
+| `pnpm test:db` | 58 files, **869 passed, 3 skipped**                              |
+
+The browser suite was not run again for P7, which touched nothing under `apps/web`.
 
 P1's own tests:
 
