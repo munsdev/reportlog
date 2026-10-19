@@ -145,12 +145,14 @@ describe.skipIf(toolsMissing)('files on the public record', () => {
         { original_name: 'two.png', publication: 'withheld', media_type: 'image/png' },
       ],
     });
-    // Not for anybody else, and an administrator is not a moderator.
+    // Not for anybody else. An administrator is let in because the scope
+    // names administrators, as moderation's does, not because administrator
+    // implies moderator (it does not).
     expect(
       (await reporter({ method: 'GET', url: `/api/moderate/files/${thread}` })).statusCode,
     ).toBe(403);
     expect((await admin({ method: 'GET', url: `/api/moderate/files/${thread}` })).statusCode).toBe(
-      403,
+      200,
     );
   });
 

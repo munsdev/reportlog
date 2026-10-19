@@ -35,6 +35,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Moderation',
       'Moderation settings',
+      'Files',
       'File settings',
       'Settings',
       'Feedback',

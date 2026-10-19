@@ -120,8 +120,10 @@ export async function evidenceRoutes(app: FastifyInstance, deps: EvidenceRouteDe
   });
 
   // ── moderators ────────────────────────────────────────────────────────
+  // Administrators too, as on the moderation routes these sit beside and as
+  // in legacy (routes/moderators.js): the moderation page shows them.
   await app.register((scope) => {
-    scope.addHook('preHandler', roleGuard(['moderator']));
+    scope.addHook('preHandler', roleGuard(['moderator', 'admin']));
 
     route(scope, C.getEvidenceState, async ({ params }) => {
       const state = await askableState(db, params.threadId);
