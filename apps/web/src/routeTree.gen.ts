@@ -23,6 +23,7 @@ import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
+import { Route as MapSlugRouteImport } from './routes/map/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
 import { Route as MineThreadIdRouteImport } from './routes/mine/$threadId'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
@@ -35,6 +36,7 @@ import { Route as staffListsIdRouteImport } from './routes/(staff)/lists/$id'
 import { Route as staffLogbooksIndexRouteImport } from './routes/(staff)/logbooks/index'
 import { Route as staffLogbooksIdRouteImport } from './routes/(staff)/logbooks/$id'
 import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/logbooks/front-page'
+import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
 import { Route as staffSettingsFeedbackRouteImport } from './routes/(staff)/settings/feedback'
 import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
@@ -119,6 +121,11 @@ const ListSlugRoute = ListSlugRouteImport.update({
   path: '/list/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MapSlugRoute = MapSlugRouteImport.update({
+  id: '/map/$slug',
+  path: '/map/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MineIndexRoute = MineIndexRouteImport.update({
   id: '/mine/',
   path: '/mine/',
@@ -178,6 +185,11 @@ const staffLogbooksFrontPageRoute = staffLogbooksFrontPageRouteImport.update({
   id: '/front-page',
   path: '/front-page',
   getParentRoute: () => staffLogbooksRouteRoute,
+} as any)
+const staffMapsIndexRoute = staffMapsIndexRouteImport.update({
+  id: '/(staff)/maps/',
+  path: '/maps/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
   id: '/',
@@ -259,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
+  '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/docs/': typeof DocsIndexRoute
@@ -280,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/access/': typeof staffAccessIndexRoute
   '/lists/': typeof staffListsIndexRoute
   '/logbooks/': typeof staffLogbooksIndexRoute
+  '/maps/': typeof staffMapsIndexRoute
   '/settings/': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -297,6 +311,7 @@ export interface FileRoutesByTo {
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
+  '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/docs': typeof DocsIndexRoute
@@ -318,6 +333,7 @@ export interface FileRoutesByTo {
   '/access': typeof staffAccessIndexRoute
   '/lists': typeof staffListsIndexRoute
   '/logbooks': typeof staffLogbooksIndexRoute
+  '/maps': typeof staffMapsIndexRoute
   '/settings': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -339,6 +355,7 @@ export interface FileRoutesById {
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
+  '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/docs/': typeof DocsIndexRoute
@@ -360,6 +377,7 @@ export interface FileRoutesById {
   '/(staff)/access/': typeof staffAccessIndexRoute
   '/(staff)/lists/': typeof staffListsIndexRoute
   '/(staff)/logbooks/': typeof staffLogbooksIndexRoute
+  '/(staff)/maps/': typeof staffMapsIndexRoute
   '/(staff)/settings/': typeof staffSettingsIndexRoute
   '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/(staff)/access/orgs/$id': typeof staffAccessOrgsIdRoute
@@ -382,6 +400,7 @@ export interface FileRouteTypes {
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
+    | '/map/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/docs/'
@@ -403,6 +422,7 @@ export interface FileRouteTypes {
     | '/access/'
     | '/lists/'
     | '/logbooks/'
+    | '/maps/'
     | '/settings/'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
@@ -420,6 +440,7 @@ export interface FileRouteTypes {
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
+    | '/map/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/docs'
@@ -441,6 +462,7 @@ export interface FileRouteTypes {
     | '/access'
     | '/lists'
     | '/logbooks'
+    | '/maps'
     | '/settings'
     | '/access/invitation/$token'
     | '/access/orgs/$id'
@@ -461,6 +483,7 @@ export interface FileRouteTypes {
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
+    | '/map/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/docs/'
@@ -482,6 +505,7 @@ export interface FileRouteTypes {
     | '/(staff)/access/'
     | '/(staff)/lists/'
     | '/(staff)/logbooks/'
+    | '/(staff)/maps/'
     | '/(staff)/settings/'
     | '/(staff)/access/invitation/$token'
     | '/(staff)/access/orgs/$id'
@@ -503,6 +527,7 @@ export interface RootRouteChildren {
   FeedbackTestersRoute: typeof FeedbackTestersRoute
   FileSlugRoute: typeof FileSlugRoute
   ListSlugRoute: typeof ListSlugRoute
+  MapSlugRoute: typeof MapSlugRoute
   MineThreadIdRoute: typeof MineThreadIdRoute
   VerifyRefRoute: typeof VerifyRefRoute
   DocsIndexRoute: typeof DocsIndexRoute
@@ -514,6 +539,7 @@ export interface RootRouteChildren {
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
+  staffMapsIndexRoute: typeof staffMapsIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
   staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
   staffAccessOrgsIndexRoute: typeof staffAccessOrgsIndexRoute
@@ -619,6 +645,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ListSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/map/$slug': {
+      id: '/map/$slug'
+      path: '/map/$slug'
+      fullPath: '/map/$slug'
+      preLoaderRoute: typeof MapSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mine/': {
       id: '/mine/'
       path: '/mine'
@@ -702,6 +735,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/logbooks/front-page'
       preLoaderRoute: typeof staffLogbooksFrontPageRouteImport
       parentRoute: typeof staffLogbooksRouteRoute
+    }
+    '/(staff)/maps/': {
+      id: '/(staff)/maps/'
+      path: '/maps'
+      fullPath: '/maps/'
+      preLoaderRoute: typeof staffMapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/(staff)/settings/': {
       id: '/(staff)/settings/'
@@ -864,6 +904,7 @@ const rootRouteChildren: RootRouteChildren = {
   FeedbackTestersRoute: FeedbackTestersRoute,
   FileSlugRoute: FileSlugRoute,
   ListSlugRoute: ListSlugRoute,
+  MapSlugRoute: MapSlugRoute,
   MineThreadIdRoute: MineThreadIdRoute,
   VerifyRefRoute: VerifyRefRoute,
   DocsIndexRoute: DocsIndexRoute,
@@ -875,6 +916,7 @@ const rootRouteChildren: RootRouteChildren = {
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
+  staffMapsIndexRoute: staffMapsIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
   staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,
   staffAccessOrgsIndexRoute: staffAccessOrgsIndexRoute,
