@@ -81,8 +81,9 @@ export function startingPoints(): StartingPoint[] {
 }
 
 /**
- * Make a draft from a starting point. A STARTING POINT ONLY EVER SUPPLIES
- * QUESTIONS: the operator's title and address win over the file's, because
+ * Make a draft from a starting point. A STARTING POINT SUPPLIES QUESTIONS,
+ * and the switches its file carries (editorial notes), as any logbook file
+ * does: the operator's title and address win over the file's, because
  * they typed them second and on purpose. Nothing is launched on anybody's
  * behalf; launching is the one step that cannot be undone.
  */
@@ -93,6 +94,8 @@ export async function createFromStartingPoint(
     title: string;
     slug?: string | undefined;
     blurb?: string | undefined;
+    /** Who is making it (see FileOverrides.by). */
+    by?: string | undefined;
   },
 ): Promise<LogbookDetail> {
   if (!isStartingPoint(spec.starting_point)) return refuse('no-starting-point');
@@ -100,5 +103,6 @@ export async function createFromStartingPoint(
     title: spec.title,
     slug: spec.slug,
     blurb: spec.blurb,
+    by: spec.by,
   });
 }
