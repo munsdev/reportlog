@@ -3,13 +3,22 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/workstream-F-files`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
-- **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
+- **Pull request:** [#11](https://github.com/munsdev/reportlog/pull/11), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-The numbers are in the pull request description, from the run just before the push.
+| Suite                                   | Result                                                                                         |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes (format, lint, types, boundaries; unit: api 143, web 368, fields 69, seal 31, access 4) |
+| `pnpm test:db`                          | 30 files, 485 tests passed (24 / 393 before this branch)                                       |
+| `db:types:check`                        | up to date                                                                                     |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 65 passed, twice in a row on a fresh database (60 before this branch)                          |
+
+On a long-lived local database, B's front-page test eventually fails: each run leaves about 8
+launched logbooks, and the front page carries at most 50 buttons. CI starts fresh, so it is not
+affected.
 
 ## What was built, in the order asked
 
