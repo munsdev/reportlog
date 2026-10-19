@@ -58,9 +58,14 @@ export function ListAdmin() {
       title="Lists"
       lede="A list is a form whose entries are not sealed or chained. Its personal half is deleted on a timer, a moderator approves entries in bulk, and only counts are ever published."
       actions={
-        <Button asChild variant="secondary">
-          <Link to="/lists/review">Review entries</Link>
-        </Button>
+        <>
+          <Button asChild variant="secondary">
+            <Link to="/lists/review">Review entries</Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link to="/lists/search">Find somebody's entries</Link>
+          </Button>
+        </>
       }
     >
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
