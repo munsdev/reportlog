@@ -44,6 +44,8 @@ export interface FilingRouteDeps {
   /** Only while CONTACT_KEY is being rotated: the key being rotated from (contactKeys.ts). */
   previousContactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
+  /** FILING_SENDS_PER_CLIENT: reports one client may send in 15 minutes. */
+  sendsPerClient?: number | undefined;
   /** The files workstream's context, for taking published files down. */
   files?: Files | null;
 }
@@ -72,7 +74,7 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
 
   // Anyone can make this site email any address they type, as with sign-in
   // codes, and the same kind of limit answers it. In memory, never logged.
-  const sendsPerClient = limiter({ max: 20, windowMs: 15 * 60 * 1000 });
+  const sendsPerClient = limiter({ max: deps.sendsPerClient ?? 20, windowMs: 15 * 60 * 1000 });
   const sendsPerAddress = limiter({ max: 10, windowMs: 60 * 60 * 1000 });
   const confirmsPerClient = limiter({ max: 60, windowMs: 15 * 60 * 1000 });
 
