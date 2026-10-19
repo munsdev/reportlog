@@ -11,12 +11,12 @@ of §1. I8 is left alone: it waits on the owner's ruling.
 
 New files only, as the brief says, plus one rule in `.dependency-cruiser.cjs`:
 
-| File                                    | Closes      |
-| --------------------------------------- | ----------- |
-| `apps/api/test/db/invariants.test.ts`   | I2, I3, I4, I6 |
-| `apps/api/test/db/anchor-reset.test.ts` | I5          |
-| `apps/web/e2e/third-party.spec.ts`      | I1          |
-| `apps/web/test/door-quiet.test.tsx`     | I7          |
+| File                                    | Closes                       |
+| --------------------------------------- | ---------------------------- |
+| `apps/api/test/db/invariants.test.ts`   | I2, I3, I4, I6               |
+| `apps/api/test/db/anchor-reset.test.ts` | I5                           |
+| `apps/web/e2e/third-party.spec.ts`      | I1                           |
+| `apps/web/test/door-quiet.test.tsx`     | I7                           |
 | `.dependency-cruiser.cjs`               | `files-stay-out-of-the-seal` |
 
 No feature code, migration or fixture was changed.
@@ -74,7 +74,7 @@ new table, route, page or caller is covered the moment it exists.
 - **One exception, on purpose:** `GET /api/access/owner` answers anybody signed in, because the
   owner's seat can be offered to somebody with no role. The test checks that such a person sees
   only `{ awaitingMyAcceptance: false }`.
-- There are 89 staff routes today.
+- There are 114 staff routes today, out of 209 (methods counted separately, HEAD left out).
 
 ### I3 · Rebuilding a sealed object (`invariants.test.ts`)
 
@@ -155,26 +155,26 @@ Each test was checked by planting the violation it guards against, watching it g
 removing the plant. Every plant was reverted (`git checkout`, or the planted file deleted). None
 is in the branch.
 
-| Plant | Went red |
-| ----- | -------- |
-| Temporary migration: a table commented APPEND-ONLY with no trigger | "described as append-only and has no such trigger" |
-| Same migration: an append-only table with no TRUNCATE trigger and no row | "empty here", the trigger structure check |
-| Same migration: a row inserted, so UPDATE and DELETE fire | "planted_log: went through" for UPDATE and DELETE |
-| `DROP TRIGGER reports_no_truncate` | TRUNCATE: "reports: … not permitted on attachments" (refused by the wrong table) |
-| `ALTER TABLE role_audit DISABLE TRIGGER role_audit_append_only` | catalogue check, UPDATE and DELETE: "role_audit: went through" |
-| `DROP CONSTRAINT consent_texts_check` | both digest tests |
-| `DROP CONSTRAINT reports_check1, reports_third_party_check` | all six third-party refusals |
-| An open `GET /api/admin/planted-open` in `app.ts` | 401 and 403 sweeps |
-| `GET /api/admin/planted-signed-in` that only calls `requireUser` | 403 sweep |
-| `GET /api/planted-new-prefix` | "every route is under a prefix somebody decided" |
-| `roleGuard` removed from the maps staff scope | 9 maps routes in both sweeps (one answered 400, still caught) |
-| `src/anchor/planted.ts`: a row from its own query, and an aliased import | the I3 walk, both problems named; the caller list changed |
-| `reset.ts`: one anchor dropped from the record | "names every anchor" |
-| `reset.ts`: the refusal to replace a notice disabled | the commit message check, and "never replaced" |
-| `useSite` made to ignore the door | all three door addresses |
-| `<img src="https://example.org/…">` in the `__root.tsx` footer | the I1 walk (see totals) |
-| `chain/heads.ts` importing `files/context.ts` | `files-stay-out-of-the-seal` |
-| `chain/verify.ts` → a new `chain/planted.ts` → `evidence/routes.ts` | `files-stay-out-of-the-seal` (transitive) |
+| Plant                                                                    | Went red                                                                         |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| Temporary migration: a table commented APPEND-ONLY with no trigger       | "described as append-only and has no such trigger"                               |
+| Same migration: an append-only table with no TRUNCATE trigger and no row | "empty here", the trigger structure check                                        |
+| Same migration: a row inserted, so UPDATE and DELETE fire                | "planted_log: went through" for UPDATE and DELETE                                |
+| `DROP TRIGGER reports_no_truncate`                                       | TRUNCATE: "reports: … not permitted on attachments" (refused by the wrong table) |
+| `ALTER TABLE role_audit DISABLE TRIGGER role_audit_append_only`          | catalogue check, UPDATE and DELETE: "role_audit: went through"                   |
+| `DROP CONSTRAINT consent_texts_check`                                    | both digest tests                                                                |
+| `DROP CONSTRAINT reports_check1, reports_third_party_check`              | all six third-party refusals                                                     |
+| An open `GET /api/admin/planted-open` in `app.ts`                        | 401 and 403 sweeps                                                               |
+| `GET /api/admin/planted-signed-in` that only calls `requireUser`         | 403 sweep                                                                        |
+| `GET /api/planted-new-prefix`                                            | "every route is under a prefix somebody decided"                                 |
+| `roleGuard` removed from the maps staff scope                            | 9 maps routes in both sweeps (one answered 400, still caught)                    |
+| `src/anchor/planted.ts`: a row from its own query, and an aliased import | the I3 walk, both problems named; the caller list changed                        |
+| `reset.ts`: one anchor dropped from the record                           | "names every anchor"                                                             |
+| `reset.ts`: the refusal to replace a notice disabled                     | the commit message check, and "never replaced"                                   |
+| `useSite` made to ignore the door                                        | all three door addresses                                                         |
+| `<img src="https://example.org/…">` in the `__root.tsx` footer           | the I1 walk (see totals)                                                         |
+| `chain/heads.ts` importing `files/context.ts`                            | `files-stay-out-of-the-seal`                                                     |
+| `chain/verify.ts` → a new `chain/planted.ts` → `evidence/routes.ts`      | `files-stay-out-of-the-seal` (transitive)                                        |
 
 ## Gaps found
 
@@ -198,7 +198,7 @@ folders.**
      fixed in code, still open in the database.
    - Nothing writes such a row today: `normalizeReportFields` refuses it.
    - The fix: a new CHECK, for example `third_party IS NOT NULL OR (filed_via IS NULL AND
-     intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
+intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
 
 ## Totals
 

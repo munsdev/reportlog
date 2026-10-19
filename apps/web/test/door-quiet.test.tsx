@@ -60,6 +60,11 @@ const routeTree = RootRoute.addChildren([
   createRoute({ getParentRoute: () => RootRoute, path: '/file/$slug', component: Page }),
   createRoute({ getParentRoute: () => RootRoute, path: '/file/confirm/$token', component: Page }),
   createRoute({ getParentRoute: () => RootRoute, path: '/list/$slug', component: Page }),
+  createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/notifications/stop/$token',
+    component: Page,
+  }),
 ]);
 
 function page(pathname: string) {
@@ -89,7 +94,12 @@ afterEach(() => {
 describe('the frame around every page, on a door', () => {
   // One address of each door shape the gate knows. If a shape is added to
   // DOOR_PATHS, this list must grow with it.
-  const DOORS = ['/file/some-logbook', '/file/confirm/a-token', '/list/some-list'];
+  const DOORS = [
+    '/file/some-logbook',
+    '/file/confirm/a-token',
+    '/list/some-list',
+    '/notifications/stop/a-token',
+  ];
 
   it('covers every door shape the gate knows', () => {
     for (const shape of DOOR_PATHS)
