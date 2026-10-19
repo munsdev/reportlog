@@ -201,6 +201,7 @@ describe.skipIf(toolsMissing)('files on the public record', () => {
     const part = await fetchPublic(key, { range: 'bytes=0-9' });
     expect(part.statusCode).toBe(206);
     expect(part.rawPayload.length).toBe(10);
+    expect((await fetchPublic(key, { range: 'bytes=99999999-' })).statusCode).toBe(416);
   });
 
   it('served only while the report itself is public, checked at every request', async () => {

@@ -126,6 +126,15 @@ export function diskStorage(root: string): Storage {
       } catch {
         return null;
       }
+      if (range && range.start >= total) {
+        // Nothing there: the caller answers 416.
+        return {
+          body: Readable.from([]),
+          size: 0,
+          total,
+          range: { start: range.start, end: range.start - 1 },
+        };
+      }
       if (range) {
         const end = Math.min(range.end, total - 1);
         return {
@@ -229,6 +238,16 @@ export function s3Storage(s: S3Settings, fetchImpl: typeof fetch = fetch): Stora
       if (res.status === 404) {
         await res.body?.cancel();
         return null;
+      }
+      if (res.status === 416 && range) {
+        await res.body?.cancel();
+        const total = Number(/\/(\d+)/.exec(res.headers.get('content-range') ?? '')?.[1] ?? 0);
+        return {
+          body: Readable.from([]),
+          size: 0,
+          total,
+          range: { start: range.start, end: range.start - 1 },
+        };
       }
       if (!res.ok || !res.body) throw await fail(`GET ${bucket}`, res);
       const size = Number(res.headers.get('content-length') ?? 0);

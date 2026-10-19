@@ -133,6 +133,10 @@ export async function sendObject(
       : undefined;
   const o = await input.files.storage.get(input.bucket, input.key, wanted);
   if (!o) throw notFound('That file is not here.');
+  if (o.range && o.range.end < o.range.start) {
+    void reply.header('content-range', `bytes */${String(o.total)}`);
+    return reply.code(416).send();
+  }
   // Never cached anywhere but this browser, and checked again next time: a
   // file taken down must stop being served at once.
   void reply.header('cache-control', 'private, no-cache');

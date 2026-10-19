@@ -15,6 +15,7 @@ import { Route as SubmitRouteImport } from './routes/submit'
 import { Route as staffListsRouteRouteImport } from './routes/(staff)/lists/route'
 import { Route as staffLogbooksRouteRouteImport } from './routes/(staff)/logbooks/route'
 import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/settings/route'
+import { Route as EvidenceTokenRouteImport } from './routes/evidence/$token'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
@@ -68,6 +69,11 @@ const staffLogbooksRouteRoute = staffLogbooksRouteRouteImport.update({
 const staffSettingsRouteRoute = staffSettingsRouteRouteImport.update({
   id: '/(staff)/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvidenceTokenRoute = EvidenceTokenRouteImport.update({
+  id: '/evidence/$token',
+  path: '/evidence/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FileSlugRoute = FileSlugRouteImport.update({
@@ -199,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/lists': typeof staffListsRouteRouteWithChildren
   '/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/settings': typeof staffSettingsRouteRouteWithChildren
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/legal': typeof LegalRoute
   '/submit': typeof SubmitRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   '/(staff)/lists': typeof staffListsRouteRouteWithChildren
   '/(staff)/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -295,6 +304,7 @@ export interface FileRouteTypes {
     | '/lists'
     | '/logbooks'
     | '/settings'
+    | '/evidence/$token'
     | '/file/$slug'
     | '/list/$slug'
     | '/mine/$threadId'
@@ -324,6 +334,7 @@ export interface FileRouteTypes {
     | '/'
     | '/legal'
     | '/submit'
+    | '/evidence/$token'
     | '/file/$slug'
     | '/list/$slug'
     | '/mine/$threadId'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '/(staff)/lists'
     | '/(staff)/logbooks'
     | '/(staff)/settings'
+    | '/evidence/$token'
     | '/file/$slug'
     | '/list/$slug'
     | '/mine/$threadId'
@@ -389,6 +401,7 @@ export interface RootRouteChildren {
   staffListsRouteRoute: typeof staffListsRouteRouteWithChildren
   staffLogbooksRouteRoute: typeof staffLogbooksRouteRouteWithChildren
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
+  EvidenceTokenRoute: typeof EvidenceTokenRoute
   FileSlugRoute: typeof FileSlugRoute
   ListSlugRoute: typeof ListSlugRoute
   MineThreadIdRoute: typeof MineThreadIdRoute
@@ -445,6 +458,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof staffSettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evidence/$token': {
+      id: '/evidence/$token'
+      path: '/evidence/$token'
+      fullPath: '/evidence/$token'
+      preLoaderRoute: typeof EvidenceTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/file/$slug': {
@@ -677,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffListsRouteRoute: staffListsRouteRouteWithChildren,
   staffLogbooksRouteRoute: staffLogbooksRouteRouteWithChildren,
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
+  EvidenceTokenRoute: EvidenceTokenRoute,
   FileSlugRoute: FileSlugRoute,
   ListSlugRoute: ListSlugRoute,
   MineThreadIdRoute: MineThreadIdRoute,
