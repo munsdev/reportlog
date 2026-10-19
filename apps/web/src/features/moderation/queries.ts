@@ -4,6 +4,7 @@
 import {
   getAccessLog,
   getArchiveSwitch,
+  getCorroboration,
   getQueueItem,
   getReportNote,
   getReviewKeywords,
@@ -15,11 +16,15 @@ import { call } from '../../lib/api.ts';
 
 export type QueueStatus = 'all' | 'pending' | 'valid' | 'invalid' | 'unknown' | 'withdrawn';
 
+/** A rating, or `none` for the reports nobody has rated yet. */
+export type QueueSeverity = 'note' | 'irregularity' | 'serious' | 'systemic' | 'none';
+
 export interface QueueSearch {
   status?: QueueStatus | undefined;
   q?: string | undefined;
   flagged?: boolean | undefined;
   logbook?: string | undefined;
+  severity?: QueueSeverity | undefined;
   sort?: 'newest' | 'oldest' | undefined;
 }
 
@@ -33,6 +38,7 @@ export const queueQuery = (s: QueueSearch) =>
           ...(s.q ? { q: s.q } : {}),
           ...(s.flagged ? { flagged: 'true' as const } : {}),
           ...(s.logbook ? { logbook: s.logbook } : {}),
+          ...(s.severity ? { severity: s.severity } : {}),
           ...(s.sort ? { sort: s.sort } : {}),
         },
         signal,
@@ -45,6 +51,11 @@ export const queueItemQuery = (threadId: string) =>
     queryFn: ({ signal }) => call(getQueueItem, { params: { threadId }, signal }),
     retry: false,
   });
+
+export const corroborationQuery = queryOptions({
+  queryKey: ['moderation', 'corroboration'],
+  queryFn: ({ signal }) => call(getCorroboration, { signal }),
+});
 
 export const noteQuery = (threadId: string) =>
   queryOptions({

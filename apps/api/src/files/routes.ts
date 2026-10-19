@@ -26,6 +26,7 @@ import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
+import { recordFilePreview } from '../moderation/accessLog.ts';
 import { permissionsFor, permissionsForMany } from '../permissions/log.ts';
 import { filesOn } from './context.ts';
 import type { Files } from './context.ts';
@@ -526,6 +527,15 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
       if (!row.dek_wrapped) throw new HttpError(410, 'erased', 'This file has been erased.');
       let key = row.storage_key;
       let type = row.media_type;
+      // A look at the copy is recorded before a byte is sent (D3; the
+      // original is recorded below, on the file's own record).
+      if (what !== 'original') {
+        await recordFilePreview(db, {
+          attachmentId: id,
+          threadId: row.thread_id,
+          staffEmail: requireUser(request).email,
+        });
+      }
       if (what === 'original') {
         const reason = (request.query as { reason?: string }).reason?.trim() ?? '';
         if (!reason)

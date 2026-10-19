@@ -33,6 +33,7 @@ import {
   recentAccesses,
   recordAuditRead,
 } from './accessLog.ts';
+import { assessmentOf, corroborationSummary, linkIncident, setSeverity } from './assessment.ts';
 import { openFlagCount } from './flags.ts';
 import { json } from './json.ts';
 import {
@@ -84,6 +85,19 @@ export async function moderationRoutes(
     return present(row, archive);
   }
 
+  async function assessment(
+    threadId: string,
+  ): Promise<C.ResponseOf<typeof C.getQueueItem>['assessment']> {
+    const a = await assessmentOf(db, threadId);
+    return {
+      ...a,
+      linked: a.linked.map((l) => ({
+        ...l,
+        moderation_status: C.ModerationStatus.parse(l.moderation_status),
+      })),
+    };
+  }
+
   function present(
     row: Awaited<ReturnType<typeof listQueue>>[number],
     archive: boolean,
@@ -111,6 +125,9 @@ export async function moderationRoutes(
       published_files: row.published_files,
       files_permitted: row.files_permitted,
       public: archive && !row.withdrawn && row.moderation_status === 'valid' && row.may_publish,
+      severity: row.severity,
+      corroboration: row.corroboration,
+      incident_size: row.incident_size,
     };
   }
 
@@ -125,6 +142,7 @@ export async function moderationRoutes(
         q: query.q,
         flagged: query.flagged === 'true',
         logbook: query.logbook,
+        severity: query.severity,
         sort: query.sort,
       });
       return {
@@ -137,7 +155,29 @@ export async function moderationRoutes(
     route(scope, C.getQueueItem, async ({ params }) => ({
       report: await queueItem(params.threadId),
       history: json(await historyFor(db, params.threadId)),
+      assessment: await assessment(params.threadId),
     }));
+
+    // ── severity and incidents: a moderator's judgement, never sealed ──
+    route(scope, C.setReportSeverity, async ({ params, request }) => {
+      const b = bodyOf<C.BodyOf<typeof C.setReportSeverity>>(C.setReportSeverity, request);
+      // Clearing is a choice somebody states ("none"); a request that forgot
+      // the field is refused rather than read as one.
+      if (b.severity === undefined) {
+        throw refuse(400, 'invalid_severity', 'Choose a severity, or none to clear it.');
+      }
+      const chosen = b.severity === 'none' ? null : b.severity;
+      const severity = await setSeverity(db, params.threadId, chosen, b.comment, me(request));
+      return { ok: true as const, severity };
+    });
+
+    route(scope, C.linkReportIncident, async ({ params, request }) => {
+      const b = bodyOf<C.BodyOf<typeof C.linkReportIncident>>(C.linkReportIncident, request);
+      const incident = await linkIncident(db, params.threadId, b.link_to, b.comment, me(request));
+      return { ok: true as const, incident_id: incident };
+    });
+
+    route(scope, C.getCorroboration, () => corroborationSummary(db));
 
     route(scope, C.decideReport, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.decideReport>>(C.decideReport, request);

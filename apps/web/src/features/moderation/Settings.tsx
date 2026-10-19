@@ -192,10 +192,11 @@ function NotesSwitches() {
 function AccessLog() {
   const [shown, setShown] = useState(false);
   return (
-    <Section title="Who opened contact details">
+    <Section title="Who opened what">
       <p className="text-sm text-ink-alt">
-        Every opening of a reporter’s contact details, with who and why. Reading this list is itself
-        recorded.
+        Every opening of a reporter’s contact details or of a file’s original, with who and why;
+        every time an address was opened to ask a reporter for files; and every look at a file’s
+        cleaned copy. Reading this list is itself recorded.
       </p>
       {shown ? (
         <AccessLogEntries />
@@ -214,19 +215,29 @@ function AccessLog() {
   );
 }
 
+const LOOKED: Record<string, string> = {
+  contact: 'opened the contact details of',
+  contact_used: 'had the address opened, to ask for files, of',
+  file_original: 'opened a file’s original on',
+  file_preview: 'looked at a file’s cleaned copy on',
+};
+
 function AccessLogEntries() {
   const query = useQuery(accessLogQuery(12));
   if (query.isPending) return <p role="status">Reading the log…</p>;
   if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
-  const entries = query.data.entries.filter((e) => e.kind === 'contact');
-  if (!entries.length) return <p>Nobody has opened any contact details.</p>;
+  // A read of the log itself is recorded, and not listed back here.
+  const entries = query.data.entries.filter((e) => e.kind !== 'audit_log');
+  if (!entries.length) return <p>Nobody has opened anything protected.</p>;
   return (
     <ul className="flex flex-col gap-2 text-sm">
       {entries.map((e) => (
         <li key={e.id}>
-          <span className="font-semibold">{e.staff_email}</span> opened{' '}
-          <span className="font-mono">{e.public_ref ?? 'a report'}</span>,{' '}
-          {new Date(e.accessed_at).toLocaleString()}: {e.reason}
+          <span className="font-semibold">{e.staff_email}</span> {LOOKED[e.kind] ?? 'opened'}{' '}
+          <span className="font-mono">{e.public_ref ?? 'a report'}</span>
+          {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`},{' '}
+          {new Date(e.accessed_at).toLocaleString()}
+          {e.reason ? `: ${e.reason}` : ''}
         </li>
       ))}
     </ul>

@@ -1,0 +1,60 @@
+/**
+ * D3's screens: the transparency log (as an administrator) and the press pack
+ * (as anybody). Neither asks another host for anything. Severity and
+ * incidents are walked in board-locked/board.spec.ts, which runs after
+ * everything else, because filing reports for them here would spend the
+ * per-address filing limit the whole suite shares.
+ */
+import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { ADMIN } from '../auth.ts';
+
+function watchOutside(page: Page): string[] {
+  const outside: string[] = [];
+  page.on('request', (r) => {
+    const host = new URL(r.url()).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+  });
+  return outside;
+}
+
+test.describe('the transparency log', () => {
+  test.use({ storageState: ADMIN });
+
+  test('an administrator reads the anchor’s state and finds the complete chain files', async ({
+    page,
+  }) => {
+    const outside = watchOutside(page);
+    await page.goto('/');
+    await page
+      .getByRole('navigation', { name: 'Staff' })
+      .getByRole('link', { name: 'Transparency log' })
+      .click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Transparency log' })).toBeVisible();
+    // The test server anchors nothing and has no mirror, and the page says so.
+    await expect(page.getByText('The anchor is not working')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'The last anchors' })).toContainText(
+      'Nothing has been anchored yet.',
+    );
+    const files = page.getByRole('region', { name: 'Complete chain files' });
+    const demo = files.getByRole('link', { name: 'Demo logbook' });
+    await expect(demo).toHaveAttribute('href', '/api/admin/chain/demo');
+    const download = page.waitForEvent('download');
+    await demo.click();
+    expect((await download).suggestedFilename()).toMatch(
+      /^demo-chain-complete-\d{4}-\d\d-\d\d\.json$/,
+    );
+    expect(outside).toEqual([]);
+  });
+});
+
+test.describe('the press pack', () => {
+  test('says plainly that nothing is published, and asks no other host', async ({ page }) => {
+    const outside = watchOutside(page);
+    await page.goto('/board');
+    await page.getByRole('link', { name: 'Press pack' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Press pack' })).toBeVisible();
+    await expect(page.getByText('Nothing has been published here yet.')).toBeVisible();
+    expect(outside).toEqual([]);
+  });
+});

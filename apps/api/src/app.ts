@@ -6,6 +6,7 @@ import helmet from '@fastify/helmet';
 import Fastify from 'fastify';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
+import { pressRoutes } from './board/press.ts';
 import { boardRoutes } from './board/routes.ts';
 import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
@@ -48,9 +49,11 @@ export interface AppDeps {
         | 'CONTACT_KEY'
         | 'CONTACT_KEY_PREVIOUS'
         | 'PUBLIC_REF_PREFIX'
+        | 'FILING_SENDS_PER_CLIENT'
         | 'ADMIN_EMAIL'
         | 'TRANSPARENCY_LOG_REMOTES'
         | 'ANCHOR_MAX_AGE_HOURS'
+        | 'PRESS_DIR'
       >
     > &
     FilesConfig;
@@ -142,6 +145,7 @@ export async function buildApp({
     contactKey: config.CONTACT_KEY,
     previousContactKey: config.CONTACT_KEY_PREVIOUS,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
+    sendsPerClient: config.FILING_SENDS_PER_CLIENT,
     files: typeof files === 'string' ? null : files,
   });
   await fileRoutes(app, { db, files });
@@ -160,6 +164,7 @@ export async function buildApp({
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
   });
   boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
+  pressRoutes(app, { dir: config.PRESS_DIR });
   anchorRoutes(app, {
     db,
     remotes: config.TRANSPARENCY_LOG_REMOTES?.length ?? 0,
