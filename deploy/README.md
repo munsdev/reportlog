@@ -307,7 +307,9 @@ automatic.
 ## How this was tested
 
 The install, deploy, rollback, failure and backup paths have been run end
-to end on fresh Debian 12 and Ubuntu 24.04 machines with systemd, against a
-local S3-compatible server. That was everything except a real domain,
-Scaleway and real EU object storage. The commit messages on the branch that
-added this list what each run found.
+to end on fresh Debian 12 and Ubuntu 24.04 machines with systemd. The test
+site was `https://localhost` with Caddy's internal certificate authority,
+and a local S3-compatible server stood in for object storage. That was
+everything except a real domain, Scaleway and real EU object storage. The
+commit messages on the branch that added this list what each run found;
+`docs/status/H-operations.md` summarizes them.
