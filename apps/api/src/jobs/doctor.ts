@@ -38,6 +38,7 @@ import {
 } from './doctor-checks.ts';
 import { offsiteTarget } from './offsite.ts';
 import { JOBS } from './registry.ts';
+import { assessUpdates, readUpdateFacts } from './updates.ts';
 
 const run = promisify(execFile);
 
@@ -272,6 +273,8 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
         // A missing backup directory is already reported above.
       }
     }
+    // Root's daily check (reportlog-update-check.timer) wrote what it found.
+    out.push(assessUpdates(await readUpdateFacts(config.STATE_DIR), now));
     const pinned = /^NODE_VERSION=(.+)$/m.exec(
       readIfExists(`${CODE_ROOT}deploy/versions.conf`) ?? '',
     )?.[1];
