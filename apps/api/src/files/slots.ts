@@ -22,6 +22,9 @@
  *
  * An evidence request's slots skip 1 and 4: its link authorises them, and
  * they are released when made, because its "send" hands them over at once.
+ * So do a coordinator's, staged into an account of an intake batch
+ * (filing/intakeFiles.ts): the coordinator is signed in and the account is
+ * theirs, and attaching a file to it is handing it over.
  */
 import { randomBytes } from 'node:crypto';
 import { Transform } from 'node:stream';
@@ -80,6 +83,12 @@ export interface SlotRequest {
   logbookId: number;
   /** The address the form collected; required while filing. */
   email?: string | null;
+  /**
+   * A coordinator staging into an intake account: signed in, so no address
+   * and no per-address quota (one coordinator stages many people's
+   * accounts), and released at once.
+   */
+  coordinator?: boolean;
 }
 
 export async function createUploadSlot(
@@ -88,7 +97,7 @@ export async function createUploadSlot(
   req: SlotRequest,
 ): Promise<{ slot_token: string }> {
   const { db } = files;
-  const filing = 'draft' in owner;
+  const filing = 'draft' in owner && req.coordinator !== true;
   const type = req.type.trim().toLowerCase();
 
   // WHOSE STAGING THIS IS, first, so a request without an address is refused
@@ -368,11 +377,14 @@ export async function releaseDraft(
   return Number(out.numUpdatedRows);
 }
 
-export type Source = { submissionId: number } | { evidenceRequestId: number };
+/** Whose files: a sent submission, an evidence request, or (an intake account's) a draft. */
+export type Source = { submissionId: number } | { evidenceRequestId: number } | { draft: string };
 const sourceIs = (where: Source) =>
   'submissionId' in where
     ? sql<boolean>`submission_id = ${where.submissionId}`
-    : sql<boolean>`evidence_request_id = ${where.evidenceRequestId}`;
+    : 'draft' in where
+      ? sql<boolean>`draft_hash = ${where.draft}`
+      : sql<boolean>`evidence_request_id = ${where.evidenceRequestId}`;
 
 /**
  * Files whose bytes are here and whose work is not finished. Confirming must
