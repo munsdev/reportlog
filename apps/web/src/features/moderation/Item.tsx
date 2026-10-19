@@ -39,9 +39,9 @@ import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
 import { ReportAnswers } from '../board/ReportAnswers.tsx';
+import { EvidenceRequests } from '../files/staff/EvidenceRequests.tsx';
+import { ReportFiles } from '../files/staff/ReportFiles.tsx';
 import { useMe } from '../identity/session.ts';
-import { EvidencePanel } from './EvidencePanel.tsx';
-import { FilesPanel } from './FilesPanel.tsx';
 import { noteQuery, queueItemQuery } from './queries.ts';
 import { ACTION_WORDS, SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
 
@@ -118,8 +118,10 @@ export function ItemPage({ threadId }: { threadId: string }) {
       {r.withdrawn ? null : <Decide r={r} />}
       <Severity r={r} a={assessment} />
       <Incident r={r} a={assessment} />
-      {r.file_count > 0 ? <FilesPanel threadId={r.thread_id} isPublic={r.public} /> : null}
-      <EvidencePanel threadId={r.thread_id} />
+      {/* Workstream F's own screens for a report's files and for asking for
+          more, the same ones /files/:ref shows. */}
+      {r.file_count > 0 ? <ReportFiles threadId={r.thread_id} /> : null}
+      <EvidenceRequests threadId={r.thread_id} />
       <OffTheBoard r={r} />
       {r.has_contact ? <Contact r={r} /> : null}
       {r.notes_enabled ? <Note r={r} /> : null}
@@ -351,7 +353,7 @@ function Incident({ r, a }: { r: QueueItem; a: Assessment }) {
                   {l.public_ref}
                 </Link>{' '}
                 · {l.withdrawn ? STATUS_WORDS.withdrawn : STATUS_WORDS[l.moderation_status]}
-                {l.published ? ' · on the board' : ' · not public'}
+                {l.published ? ' · published' : ' · not published'}
               </li>
             ))}
           </ul>
