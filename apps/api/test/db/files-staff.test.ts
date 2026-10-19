@@ -143,8 +143,10 @@ describe.skipIf(toolsMissing)('the files staff lookups', () => {
     expect(await queue('?ref=RL-NOPE-NOPE')).toEqual([]);
   });
 
-  it('the queue is for moderators: an administrator is refused', async () => {
-    expect((await admin({ method: 'GET', url: '/api/moderate/files' })).statusCode).toBe(403);
+  it('the queue is for moderators and administrators, as moderation is', async () => {
+    expect((await admin({ method: 'GET', url: '/api/moderate/files' })).statusCode).toBe(200);
+    // Somebody with neither role, signed in, is still refused.
+    expect((await reporter({ method: 'GET', url: '/api/moderate/files' })).statusCode).toBe(403);
   });
 
   it('an administrator finds the files by reference, and a moderator cannot', async () => {

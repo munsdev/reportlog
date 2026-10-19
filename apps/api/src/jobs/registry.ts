@@ -80,6 +80,19 @@ export const JOBS: readonly JobDefinition[] = [
     run: (ctx) => import('../anchor/job.ts').then((m) => m.runAnchorJob(ctx)),
   },
   {
+    // Hours after the anchor, not minutes: it asks a public timestamp
+    // authority over the network and may take a while on a slow day. 09:00
+    // is late enough that a failure is real and early enough that somebody
+    // is awake to read the email.
+    name: 'anchor-watch',
+    what: 'Check from outside the anchor that it ran: fail, and alert, if the archive has not been anchored.',
+    owner: 'H',
+    onCalendar: '*-*-* 09:00:00',
+    randomizedDelaySec: 600,
+    persistent: true,
+    run: (ctx) => import('./anchor-watch.ts').then((m) => m.runAnchorWatch(ctx)),
+  },
+  {
     // Every minute: a reporter's files are prepared between Send and the
     // click in their email. systemd never overlaps two passes.
     name: 'files',

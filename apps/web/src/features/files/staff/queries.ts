@@ -6,6 +6,7 @@ import {
   listFileReports,
 } from '@reportlog/contracts';
 import { queryOptions } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { call } from '../../../lib/api.ts';
 
 /**
@@ -49,3 +50,12 @@ export const logbookLimitsQuery = (id: number) =>
     queryFn: () => call(getLogbookFileLimits, { params: { id } }),
     ...still,
   });
+
+/**
+ * After a moderator acts: these screens, and D1's moderation and board views,
+ * which show the same files from their own queries.
+ */
+export const refreshStaffViews = (qc: QueryClient) =>
+  Promise.all(
+    ['files-staff', 'moderation', 'board'].map((k) => qc.invalidateQueries({ queryKey: [k] })),
+  );

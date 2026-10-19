@@ -5,6 +5,13 @@ import { NOT_SWEPT, SWEPT } from '../../src/jobs/sweep.ts';
 
 const SYSTEMD = new URL('../../../../deploy/systemd/', import.meta.url);
 const unit = (name: string) => readFileSync(new URL(name, SYSTEMD), 'utf8');
+/**
+ * The update check fetches with root's credentials, as a deploy does
+ * (apps/api/src/jobs/updates.ts), so it is the one unit not run as the
+ * service user and not in the job registry. Named here, so another cannot
+ * join it quietly.
+ */
+const ROOT_UNITS = ['reportlog-update-check.service', 'reportlog-update-check.timer'];
 
 describe('the job registry and the timers on disk', () => {
   it('has a timer for every job, exactly as the registry describes it', () => {
@@ -12,7 +19,9 @@ describe('the job registry and the timers on disk', () => {
   });
 
   it('has no timer for a job that does not exist', () => {
-    const timers = readdirSync(SYSTEMD).filter((f) => f.endsWith('.timer'));
+    const timers = readdirSync(SYSTEMD).filter(
+      (f) => f.endsWith('.timer') && !ROOT_UNITS.includes(f),
+    );
     expect(timers.sort()).toEqual(JOBS.map((j) => `reportlog-${j.name}.timer`).sort());
   });
 
@@ -63,7 +72,9 @@ describe('the credential sweep', () => {
 });
 
 describe('the systemd units', () => {
-  const services = readdirSync(SYSTEMD).filter((f) => f.endsWith('.service'));
+  const services = readdirSync(SYSTEMD).filter(
+    (f) => f.endsWith('.service') && !ROOT_UNITS.includes(f),
+  );
 
   it.each(services)('%s runs as the service user, confined', (name) => {
     const text = unit(name);
@@ -99,6 +110,17 @@ describe('the systemd units', () => {
     expect(unit('reportlog-api.service')).toMatch(
       /^ExecStartPre=.*apps\/api\/src\/jobs\/cli\.ts contact-key$/m,
     );
+  });
+
+  it("runs root's update check from root's own copy of the scripts, never from a release", () => {
+    const text = unit('reportlog-update-check.service');
+    expect(text).not.toMatch(/^User=/m);
+    expect(text.match(/^ExecStart.*$/gm)).toEqual([
+      'ExecStart=/usr/local/bin/reportlog updates --notify',
+    ]);
+    expect(text).not.toContain('/srv/reportlog');
+    expect(text).toContain('\nNoNewPrivileges=yes\n');
+    expect(unit('reportlog-update-check.timer')).toMatch(/^Unit=reportlog-update-check\.service$/m);
   });
 
   it('runs the code from the current release, never from a fixed release', () => {

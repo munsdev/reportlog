@@ -34,12 +34,7 @@ main() {
   [ -n "$ref" ] || die "no ref given and DEPLOY_REF is not set in $DEPLOY_ENV."
 
   say "Fetching $ref"
-  if [ ! -d "$MIRROR" ]; then
-    git clone --quiet --mirror "$repo" "$MIRROR"
-  else
-    git -C "$MIRROR" remote set-url origin "$repo"
-    git -C "$MIRROR" fetch --quiet --prune origin
-  fi
+  fetch_mirror "$repo" || die "could not fetch $ref. What git said is above."
   sha=$(git -C "$MIRROR" rev-parse --verify --quiet "$ref^{commit}") \
     || die "$ref is not a branch, tag or commit in $repo."
   note "$ref is ${sha:0:12}"

@@ -9,14 +9,14 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-Against the base at `221cb83` (with F2), merged into this branch.
+Against the base at `66e16af` (with F2 and H2), merged into this branch.
 
 | Suite                                   | Result                                                                         |
 | --------------------------------------- | ------------------------------------------------------------------------------ |
-| `pnpm check`                            | passes (unit tests: api 251, web 415, fields 69, seal 31, access 6)            |
-| `pnpm test:db`                          | 49 files, 786 tests, all passed (32 are A2's, in `identity-leftovers.test.ts`) |
+| `pnpm check`                            | passes (unit tests: api 282, web 419, fields 69, seal 31, access 6)            |
+| `pnpm test:db`                          | 50 files, 795 tests, all passed (32 are A2's, in `identity-leftovers.test.ts`) |
 | `db:types:check`                        | generated types up to date                                                     |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 111 passed (5 are A2's: 2 tests on desktop and phone, 1 in `identity`)         |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 113 passed (5 are A2's: 2 tests on desktop and phone, 1 in `identity`)         |
 
 CI on GitHub had not reported when this was written. Check the pull request.
 

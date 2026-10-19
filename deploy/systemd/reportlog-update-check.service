@@ -1,0 +1,31 @@
+# Is there an update? Fetches the deploy mirror and writes what it found
+# under /var/lib/reportlog/updates, then (as the service user) emails
+# OPS_ALERT_EMAIL once for each new upstream commit. Installs nothing:
+# deploying stays `sudo reportlog deploy`, run by a person.
+#
+# THE ONE UNIT THAT RUNS AS ROOT, because the repository's address and its
+# credentials (/etc/reportlog/deploy.env, a deploy key) are root's, as they
+# are for a deploy. It runs root's own copy of the deploy scripts
+# (/usr/local/lib/reportlog), never anything from a release; the part that
+# reads the findings and sends the email runs as `reportlog` through the
+# same `runuser` a deploy uses. apps/api/src/jobs/updates.ts says why the
+# application itself never fetches or applies anything.
+[Unit]
+Description=ReportLog update check
+After=network-online.target
+Wants=network-online.target
+OnFailure=reportlog-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/reportlog updates --notify
+TimeoutStartSec=15min
+# Not confined the way the application's units are: it switches user to
+# read the findings and send the email, which an empty capability set would
+# stop, and a deploy key for a private repository may live in /root/.ssh,
+# which ProtectHome would hide. Confined as far as that allows.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes

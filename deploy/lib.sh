@@ -219,3 +219,103 @@ install_tooling() {
   install -m 0644 "$release"/deploy/{lib.sh,versions.conf} "$LIB/"
   install -m 0755 "$release/deploy/bin/reportlog" /usr/local/bin/reportlog
 }
+
+# Fetch the repository into the mirror: the only place code is fetched from.
+# Bounded, so a hung remote cannot hold the deploy lock forever.
+fetch_mirror() {
+  local repo=$1
+  if [ ! -d "$MIRROR" ]; then
+    timeout 300 git clone --quiet --mirror "$repo" "$MIRROR"
+  else
+    git -C "$MIRROR" remote set-url origin "$repo" \
+      && timeout 300 git -C "$MIRROR" fetch --quiet --prune origin
+  fi
+}
+
+# Why a fetch failed, as one word, from git's error text on standard input
+# (ported from legacy updateCheck.js). Only the word is ever kept: git's own
+# text can contain the repository's address, and an address can carry a
+# token. apps/api/src/jobs/updates.ts has a sentence for each word.
+classify_fetch_failure() {
+  local text
+  text=$(tr '[:upper:]' '[:lower:]')
+  case "$text" in
+    *"could not read username"* | *"could not read password"* | *"terminal prompts disabled"* \
+      | *"authentication failed"* | *"permission denied"* | *"invalid username or password"* \
+      | *"repository not found"* | *" 403"*)
+      echo auth ;;
+    *"could not resolve host"* | *"name or service not known"* \
+      | *"temporary failure in name resolution"*)
+      echo dns ;;
+    *"connection refused"* | *"connection timed out"* | *"network is unreachable"* \
+      | *"unable to access"*)
+      echo network ;;
+    *) echo unknown ;;
+  esac
+}
+
+# What the update check found, as plain files in $out for the application to
+# read (apps/api/src/jobs/updates.ts). DISPLAY ONLY: nothing reads these to
+# decide what to deploy. Written to a new directory and swapped in, so a
+# reader never sees half of one check and half of another.
+#
+#   write_update_facts <mirror> <ref> <running release dir or ""> <out> [fetch failure cause]
+write_update_facts() {
+  local mirror=$1 ref=$2 release=$3 out=$4 cause=${5:-} tmp cur tip
+  tmp=$(mktemp -d "$out.new.XXXXXX")
+  date -u +%Y-%m-%dT%H:%M:%SZ >"$tmp/checked_at"
+  printf '%s\n' "$ref" >"$tmp/ref"
+  [ -z "$cause" ] || printf '%s\n' "$cause" >"$tmp/fetch_failed"
+  cur=$(cat "$release/REVISION" 2>/dev/null || true)
+  tip=$(git -C "$mirror" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null || true)
+  printf '%s\n' "$cur" >"$tmp/current"
+  printf '%s\n' "$tip" >"$tmp/tip"
+  if [ -n "$tip" ]; then
+    git -C "$mirror" show "$tip:package.json" >"$tmp/package-tip.json" 2>/dev/null \
+      || rm -f "$tmp/package-tip.json"
+    git -C "$mirror" show "$tip:CHANGELOG.md" >"$tmp/changelog-tip.md" 2>/dev/null \
+      || rm -f "$tmp/changelog-tip.md"
+    # Counted only when the running commit is in the mirror's history; a
+    # release deployed from elsewhere has no meaningful distance.
+    if [ -n "$cur" ] && git -C "$mirror" cat-file -e "$cur^{commit}" 2>/dev/null; then
+      git -C "$mirror" show "$cur:package.json" >"$tmp/package-current.json" 2>/dev/null \
+        || rm -f "$tmp/package-current.json"
+      git -C "$mirror" rev-list --count "$cur..$tip" >"$tmp/behind"
+      git -C "$mirror" rev-list --count "$tip..$cur" >"$tmp/ahead"
+      git -C "$mirror" log --no-merges --format='%h %s' -n 100 "$cur..$tip" >"$tmp/commits"
+    fi
+  fi
+  chmod 0755 "$tmp"
+  chmod 0644 "$tmp"/*
+  # The state directory is the service user's. -T: if something put a
+  # symlink where $out goes, the rename fails rather than following it.
+  rm -rf "$out"
+  mv -T "$tmp" "$out"
+}
+
+# `reportlog updates`: fetch the mirror as root (with root's credentials, as
+# a deploy does) and write what it found under the state directory. Never
+# deploys anything. A failed fetch still writes the facts, from the mirror as
+# it was, with the cause.
+update_check() {
+  local repo ref cause="" err rc=0
+  repo=$(env_value REPO_URL "$DEPLOY_ENV")
+  ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
+  [ -n "$repo" ] || die "REPO_URL is not set in $DEPLOY_ENV."
+  [ -n "$ref" ] || die "DEPLOY_REF is not set in $DEPLOY_ENV."
+  # No prompt: in a timer there is nobody to type a password, and a prompt
+  # would wait out the whole timeout instead of failing at once.
+  err=$(GIT_TERMINAL_PROMPT=0 fetch_mirror "$repo" 2>&1 >/dev/null) || rc=$?
+  if [ "$rc" -eq 124 ]; then
+    cause=timeout
+  elif [ "$rc" -ne 0 ]; then
+    cause=$(printf '%s' "$err" | classify_fetch_failure)
+  fi
+  [ -d "$MIRROR" ] || cause=${cause:-unknown}
+  [ -d "$STATE_DIR" ] || install -d -m 0750 -o "$APP_USER" -g "$APP_USER" "$STATE_DIR"
+  if [ -d "$MIRROR" ]; then
+    write_update_facts "$MIRROR" "$ref" "$(release_of "$CURRENT")" "$STATE_DIR/updates" "$cause"
+  else
+    write_update_facts /nonexistent "$ref" "" "$STATE_DIR/updates" "$cause"
+  fi
+}

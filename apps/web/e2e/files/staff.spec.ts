@@ -209,7 +209,7 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   expect(outside).toEqual([]);
 });
 
-test('an administrator sets a logbook’s own limits over the site’s, and cannot open the moderator’s screen', async ({
+test('an administrator sets a logbook’s own limits over the site’s, and opens the files queue too', async ({
   page,
   playwright,
 }, info) => {
@@ -254,9 +254,10 @@ test('an administrator sets a logbook’s own limits over the site’s, and cann
   };
   expect(config.max_files).toBe(2);
 
-  // Admin does not imply moderator.
+  // The queue names administrators as well as moderators, as moderation
+  // does. (Admin still does not imply moderator: the screen names both.)
   await page.goto('/files');
-  await expect(page.getByRole('heading', { name: 'Not for this account' })).toBeVisible();
-  await expect(page.getByText('This page is for moderators.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Files', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Not for this account' })).toHaveCount(0);
   expect(outside).toEqual([]);
 });

@@ -19,7 +19,7 @@ import { Alert } from '../../../components/ui/alert.tsx';
 import { Button } from '../../../components/ui/button.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
-import { evidenceQuery } from './queries.ts';
+import { evidenceQuery, refreshStaffViews } from './queries.ts';
 
 type Ask = ResponseOf<typeof getEvidenceState>['history'][number];
 
@@ -35,7 +35,7 @@ function outcome(a: Ask): string {
 export function EvidenceRequests({ threadId }: { threadId: string }) {
   const qc = useQueryClient();
   const query = useQuery(evidenceQuery(threadId));
-  const refresh = () => qc.invalidateQueries({ queryKey: ['files-staff'] });
+  const refresh = () => refreshStaffViews(qc);
 
   return (
     <section className="flex flex-col gap-4" aria-labelledby="evidence-heading">

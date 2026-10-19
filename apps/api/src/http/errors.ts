@@ -33,6 +33,21 @@ export function installErrorHandling(app: FastifyInstance): void {
         },
       });
     }
+    // Fastify's own refusals (a body too large, a malformed body, a type it
+    // does not read) are the request's fault, not ours: say so with their
+    // status rather than "something went wrong on our side".
+    const status = (err as { statusCode?: unknown } | null)?.statusCode;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      return reply.status(status).send({
+        error: {
+          code: 'invalid_request',
+          message:
+            status === 413
+              ? 'That is more than this address accepts.'
+              : 'The request could not be read.',
+        },
+      });
+    }
     request.log.error({ err }, 'unhandled error');
     return reply.status(500).send({
       error: { code: 'internal', message: 'Something went wrong on our side. It has been logged.' },

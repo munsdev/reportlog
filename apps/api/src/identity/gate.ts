@@ -2,8 +2,8 @@
  * THE GATE: every API route is behind the site password unless it is named
  * here.
  *
- * In front of it, always: the lock screen's own calls, the health check and
- * the digest email's stop link.
+ * In front of it, always: the lock screen's own calls, the health check,
+ * error reporting and the digest email's stop link.
  * Past it without the password: a list deciding for itself (by prefix), and
  * a logbook's filing calls through `outsidePass` (doors.ts). Nothing else.
  *
@@ -32,6 +32,10 @@ export const IN_FRONT: readonly string[] = [
   'GET /api/doors',
   'GET /api/notifications/stop/:token',
   'POST /api/notifications/stop/:token',
+  // Error tracking (telemetry/routes.ts): whether it is on, and the relay the
+  // website reports its errors through. A lock screen can break too.
+  'GET /api/telemetry',
+  'POST /api/telemetry/errors',
 ];
 
 /**
