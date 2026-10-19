@@ -114,7 +114,13 @@ export async function runBackup(ctx: JobContext, uploader?: Uploader): Promise<J
     }
   }
 
-  await mkdir(dir, { recursive: true, mode: 0o700 });
+  try {
+    await mkdir(dir, { recursive: true, mode: 0o700 });
+  } catch (err) {
+    // On a server this is usually ReadWritePaths in the backup unit's
+    // drop-in not naming BACKUP_DIR.
+    return failed('directory', `${dir} cannot be created (${firstLine(err)})`);
+  }
   const name = backupName(ctx.now());
   const partial = path.join(dir, `${name}.partial`);
   const finished = path.join(dir, name);

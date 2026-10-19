@@ -30,10 +30,12 @@ describe('the doctor', () => {
     expect(ahead.detail).toMatch(/rollback/);
   });
 
-  it('warns before a certificate expires and fails when it is nearly gone', () => {
+  it('only complains about a certificate when renewal has stopped', () => {
     expect(assessCertificate('x.org', 60).status).toBe('ok');
-    expect(assessCertificate('x.org', 15).status).toBe('warn');
-    expect(assessCertificate('x.org', 3).status).toBe('fail');
+    // A 45-day certificate sits at about 15 days left before Caddy renews it.
+    expect(assessCertificate('x.org', 15).status).toBe('ok');
+    expect(assessCertificate('x.org', 5).status).toBe('warn');
+    expect(assessCertificate('x.org', 0.5).status).toBe('fail');
   });
 
   it('warns at 20% disk and fails at 10%', () => {

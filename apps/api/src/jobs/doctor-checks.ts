@@ -59,21 +59,28 @@ export function assessMigrations(files: readonly string[], applied: readonly str
   return f('ok', 'migrations', `all ${String(files.length)} applied`);
 }
 
+/**
+ * Caddy renews a certificate when a third of its lifetime is left: about 30
+ * days for today's 90-day certificates, 15 for 45-day ones, two for 6-day
+ * ones. So "a few days left" is normal for short certificates, and these
+ * limits only catch renewal that has actually stopped.
+ */
 export function assessCertificate(host: string, daysLeft: number): Finding {
-  const left = `${String(Math.floor(daysLeft))} day(s)`;
-  if (daysLeft < 7) {
+  const left = daysLeft < 1 ? 'under a day' : `${String(Math.floor(daysLeft))} day(s)`;
+  if (daysLeft < 3) {
     return f(
       'fail',
       'certificate',
-      `${host}'s certificate expires in ${left}. Caddy renews at 30 days left; look at: journalctl -u caddy`,
+      `${host}'s certificate expires in ${left}. Caddy should have renewed it; look at: journalctl -u caddy`,
     );
   }
-  if (daysLeft < 21)
+  if (daysLeft < 7) {
     return f(
       'warn',
       'certificate',
-      `${host}'s certificate expires in ${left}; Caddy should have renewed it.`,
+      `${host}'s certificate expires in ${left}; check Caddy is renewing it.`,
     );
+  }
   return f('ok', 'certificate', `${host}, valid for ${left}`);
 }
 
@@ -211,7 +218,8 @@ export function assessUnattended(text: string | undefined, rebootRequired: boole
 
 /** Node as installed versus deploy/versions.conf. */
 export function assessNode(running: string, pinned: string | undefined): Finding {
-  if (!pinned) return f('warn', 'node', `running ${running}; deploy/versions.conf names no version`);
+  if (!pinned)
+    return f('warn', 'node', `running ${running}; deploy/versions.conf names no version`);
   if (running.replace(/^v/, '') !== pinned) {
     return f(
       'warn',
