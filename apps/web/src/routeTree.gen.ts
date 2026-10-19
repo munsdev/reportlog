@@ -10,8 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as HowRouteImport } from './routes/how'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as PublicApiRouteImport } from './routes/public-api'
+import { Route as StandardsRouteImport } from './routes/standards'
 import { Route as SubmitRouteImport } from './routes/submit'
 import { Route as staffFilesRouteRouteImport } from './routes/(staff)/files/route'
 import { Route as staffIntakeRouteRouteImport } from './routes/(staff)/intake/route'
@@ -58,6 +62,7 @@ import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderat
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
+import { Route as staffSettingsDevelopmentRouteImport } from './routes/(staff)/settings/development'
 import { Route as staffSettingsFeedbackRouteImport } from './routes/(staff)/settings/feedback'
 import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
 import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings/look'
@@ -81,6 +86,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HowRoute = HowRouteImport.update({
+  id: '/how',
+  path: '/how',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LegalRoute = LegalRouteImport.update({
   id: '/legal',
   path: '/legal',
@@ -89,6 +104,16 @@ const LegalRoute = LegalRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PublicApiRoute = PublicApiRouteImport.update({
+  id: '/public-api',
+  path: '/public-api',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StandardsRoute = StandardsRouteImport.update({
+  id: '/standards',
+  path: '/standards',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SubmitRoute = SubmitRouteImport.update({
@@ -321,6 +346,12 @@ const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
+const staffSettingsDevelopmentRoute =
+  staffSettingsDevelopmentRouteImport.update({
+    id: '/development',
+    path: '/development',
+    getParentRoute: () => staffSettingsRouteRoute,
+  } as any)
 const staffSettingsFeedbackRoute = staffSettingsFeedbackRouteImport.update({
   id: '/feedback',
   path: '/feedback',
@@ -411,8 +442,12 @@ const staffListsReviewIdRoute = staffListsReviewIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
+  '/public-api': typeof PublicApiRoute
+  '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
   '/files': typeof staffFilesRouteRouteWithChildren
   '/intake': typeof staffIntakeRouteRouteWithChildren
@@ -451,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
@@ -479,8 +515,12 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
+  '/public-api': typeof PublicApiRoute
+  '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
@@ -513,6 +553,7 @@ export interface FileRoutesByTo {
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
@@ -542,8 +583,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
+  '/public-api': typeof PublicApiRoute
+  '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
   '/(staff)/files': typeof staffFilesRouteRouteWithChildren
   '/(staff)/intake': typeof staffIntakeRouteRouteWithChildren
@@ -582,6 +627,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
+  '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
   '/(staff)/settings/feedback': typeof staffSettingsFeedbackRoute
   '/(staff)/settings/legal': typeof staffSettingsLegalRoute
   '/(staff)/settings/look': typeof staffSettingsLookRoute
@@ -612,8 +658,12 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
+    | '/how'
     | '/legal'
     | '/notifications'
+    | '/public-api'
+    | '/standards'
     | '/submit'
     | '/files'
     | '/intake'
@@ -652,6 +702,7 @@ export interface FileRouteTypes {
     | '/logbooks/front-page'
     | '/moderate/$threadId'
     | '/moderate/settings'
+    | '/settings/development'
     | '/settings/feedback'
     | '/settings/legal'
     | '/settings/look'
@@ -680,8 +731,12 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
+    | '/how'
     | '/legal'
     | '/notifications'
+    | '/public-api'
+    | '/standards'
     | '/submit'
     | '/transparency-log'
     | '/board/$ref'
@@ -714,6 +769,7 @@ export interface FileRouteTypes {
     | '/logbooks/front-page'
     | '/moderate/$threadId'
     | '/moderate/settings'
+    | '/settings/development'
     | '/settings/feedback'
     | '/settings/legal'
     | '/settings/look'
@@ -742,8 +798,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
+    | '/how'
     | '/legal'
     | '/notifications'
+    | '/public-api'
+    | '/standards'
     | '/submit'
     | '/(staff)/files'
     | '/(staff)/intake'
@@ -782,6 +842,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/front-page'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/settings'
+    | '/(staff)/settings/development'
     | '/(staff)/settings/feedback'
     | '/(staff)/settings/legal'
     | '/(staff)/settings/look'
@@ -811,8 +872,12 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  HowRoute: typeof HowRoute
   LegalRoute: typeof LegalRoute
   NotificationsRoute: typeof NotificationsRoute
+  PublicApiRoute: typeof PublicApiRoute
+  StandardsRoute: typeof StandardsRoute
   SubmitRoute: typeof SubmitRoute
   staffFilesRouteRoute: typeof staffFilesRouteRouteWithChildren
   staffIntakeRouteRoute: typeof staffIntakeRouteRouteWithChildren
@@ -861,6 +926,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/how': {
+      id: '/how'
+      path: '/how'
+      fullPath: '/how'
+      preLoaderRoute: typeof HowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/legal': {
       id: '/legal'
       path: '/legal'
@@ -873,6 +952,20 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/public-api': {
+      id: '/public-api'
+      path: '/public-api'
+      fullPath: '/public-api'
+      preLoaderRoute: typeof PublicApiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/standards': {
+      id: '/standards'
+      path: '/standards'
+      fullPath: '/standards'
+      preLoaderRoute: typeof StandardsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/submit': {
@@ -1197,6 +1290,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsIndexRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
+    '/(staff)/settings/development': {
+      id: '/(staff)/settings/development'
+      path: '/development'
+      fullPath: '/settings/development'
+      preLoaderRoute: typeof staffSettingsDevelopmentRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
     '/(staff)/settings/feedback': {
       id: '/(staff)/settings/feedback'
       path: '/feedback'
@@ -1407,6 +1507,7 @@ const staffModerateRouteRouteWithChildren =
   staffModerateRouteRoute._addFileChildren(staffModerateRouteRouteChildren)
 
 interface staffSettingsRouteRouteChildren {
+  staffSettingsDevelopmentRoute: typeof staffSettingsDevelopmentRoute
   staffSettingsFeedbackRoute: typeof staffSettingsFeedbackRoute
   staffSettingsLegalRoute: typeof staffSettingsLegalRoute
   staffSettingsLookRoute: typeof staffSettingsLookRoute
@@ -1416,6 +1517,7 @@ interface staffSettingsRouteRouteChildren {
 }
 
 const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
+  staffSettingsDevelopmentRoute: staffSettingsDevelopmentRoute,
   staffSettingsFeedbackRoute: staffSettingsFeedbackRoute,
   staffSettingsLegalRoute: staffSettingsLegalRoute,
   staffSettingsLookRoute: staffSettingsLookRoute,
@@ -1429,8 +1531,12 @@ const staffSettingsRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  HowRoute: HowRoute,
   LegalRoute: LegalRoute,
   NotificationsRoute: NotificationsRoute,
+  PublicApiRoute: PublicApiRoute,
+  StandardsRoute: StandardsRoute,
   SubmitRoute: SubmitRoute,
   staffFilesRouteRoute: staffFilesRouteRouteWithChildren,
   staffIntakeRouteRoute: staffIntakeRouteRouteWithChildren,

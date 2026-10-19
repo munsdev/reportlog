@@ -1,6 +1,7 @@
-import { DIRECTORY_NAME } from '@reportlog/contracts';
 import type { QueryClient } from '@tanstack/react-query';
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
+import { DevBadge } from '../components/ui/dev-badge.tsx';
+import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
 import { SessionNav } from '../features/identity/SessionNav.tsx';
 import { StaffNav } from '../features/staff-nav/StaffNav.tsx';
@@ -37,21 +38,8 @@ function RootLayout() {
       <main id="main" className="mx-auto w-full max-w-page flex-1 px-4 py-8">
         <Outlet />
       </main>
-      <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted">
-        <p>Every report is fingerprinted and chained, so any later change shows.</p>
-        <p className="mt-2 flex flex-wrap justify-center gap-x-4">
-          <Link to="/legal" className="underline">
-            Imprint, privacy and moderation
-          </Link>
-          <Link to="/organizations" className="underline">
-            {DIRECTORY_NAME}
-          </Link>
-          {/* A deployment naming itself is not a deployment claiming to have written this. */}
-          {site && site.plain_name !== site.software_name ? (
-            <span>Runs on {site.software_name}</span>
-          ) : null}
-        </p>
-      </footer>
+      <SiteFooter />
+      <DevBadge />
     </div>
   );
 }

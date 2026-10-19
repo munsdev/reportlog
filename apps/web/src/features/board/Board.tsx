@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
+import { CopyText } from '../../components/ui/copy-text.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -46,6 +47,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
         </>
       }
     >
+      <CopyText slot="board_intro" />
       {meta.isPending ? <p role="status">Loading the board…</p> : null}
       {meta.isError ? <Alert tone="serious">{meta.error.message}</Alert> : null}
       {meta.data && !meta.data.published ? <Alert>{meta.data.reason}</Alert> : null}

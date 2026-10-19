@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { BrandName } from '@/components/ui/site.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave } from './-editor.tsx';
+import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
@@ -47,6 +47,7 @@ export function NameForm({ state }: { state: SiteEditor }) {
   const save = useSave((value: string | null) => call(setSiteName, { body: { name: value } }));
   const problem = nameProblem(name);
   const preview = name.trim() || state.effective_name;
+  useUnsavedChanges('the name', (name.trim() || null) !== state.name);
 
   return (
     <form

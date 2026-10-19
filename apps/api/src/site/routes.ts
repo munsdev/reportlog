@@ -12,11 +12,14 @@
  *                    no guard to pass, and app.ts does not register them.
  */
 import {
+  getCopyFigures,
+  getDevMode,
   getLegal,
   getSite,
   getSiteEditor,
   getWebManifest,
   setCopy,
+  setDevMode,
   setLegalText,
   setLook,
   setSiteName,
@@ -27,7 +30,9 @@ import type { z } from 'zod';
 import type { Database } from '../db/database.ts';
 import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
+import { catalogue, checkText, figureValues } from '../board/figures.ts';
 import { validateCopy } from './copy.ts';
+import * as dev from './devMode.ts';
 import { validateSiteName } from './identity.ts';
 import { validateLegalText } from './legal.ts';
 import { validateLook } from './look.ts';
@@ -35,11 +40,14 @@ import { buildManifest } from './manifest.ts';
 import { readSettings, writeCopy, writeSettings } from './settings.ts';
 import { editorState, legalFrom, publicSite } from './site.ts';
 import type { Checked } from './result.ts';
+import { readVersion } from './version.ts';
 
 export function siteRoutes(app: FastifyInstance, db: Database): void {
+  // Once, here: which release this is does not change while it runs.
+  const version = readVersion();
   route(app, getSite, ({ reply }) => {
     void reply.header('cache-control', 'no-cache');
-    return publicSite(db);
+    return publicSite(db, version);
   });
   route(app, getLegal, async ({ reply }) => {
     // Short: an operator who just corrected their policy should not find the
@@ -102,8 +110,25 @@ export async function siteAdminRoutes(
 
     route(scoped, setCopy, async ({ params, request }) => {
       const { key, body } = accept(validateCopy(params.key, bodyOf(setCopy, request).body));
+      // A number that will not work is refused here, in words, rather than
+      // showing "?" on a page the operator may never look at. Checked
+      // against every figure, public archive or not: whether a name exists
+      // does not depend on whether it is shown today.
+      if (body?.includes('{{')) {
+        const problems = checkText(body, await figureValues(db));
+        if (problems.length) throw new HttpError(400, 'refused', problems.join(' · '));
+      }
       await writeCopy(db, key, body);
       return editorState(db);
+    });
+
+    route(scoped, getCopyFigures, async () => ({ figures: await catalogue(db) }));
+
+    route(scoped, getDevMode, () => dev.getDevMode(db));
+
+    route(scoped, setDevMode, async ({ request }) => {
+      const hours = accept(dev.validateDevModeHours(bodyOf(setDevMode, request).hours));
+      return dev.setDevMode(db, hours);
     });
 
     route(scoped, setLegalText, async ({ params, request }) => {

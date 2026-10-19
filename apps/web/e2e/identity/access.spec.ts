@@ -159,7 +159,7 @@ test('a door: a logbook opened outside is offered, and only that page opens', as
   await expect(lockHeading(page)).toHaveCount(0);
 
   // Nowhere else from here: the router is blocked on a door.
-  await page.getByRole('link', { name: 'ReportLog' }).click();
+  await page.getByRole('banner').getByRole('link', { name: 'ReportLog' }).click();
   await expect(page).toHaveURL(/\/file\/demo$/);
   await expect(page.getByText('Check a report')).toHaveCount(0);
 

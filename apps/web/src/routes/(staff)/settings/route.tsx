@@ -5,6 +5,7 @@
  */
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router';
 import { StaffOnly } from '../../../features/identity/StaffOnly.tsx';
+import { UnsavedChangesGuard } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings')({
   component: SettingsLayout,
@@ -15,6 +16,7 @@ const SECTIONS = [
   { to: '/settings/name', label: 'Name' },
   { to: '/settings/words', label: 'Page wording' },
   { to: '/settings/legal', label: 'Legal notices' },
+  { to: '/settings/development', label: 'Development notice' },
   // Arranged on the logbooks side, which knows when a logbook closes.
   { to: '/logbooks/front-page', label: 'Front page' },
   { to: '/settings/feedback', label: 'Feedback' },
@@ -39,7 +41,9 @@ function SettingsLayout() {
             ))}
           </ul>
         </nav>
-        <Outlet />
+        <UnsavedChangesGuard>
+          <Outlet />
+        </UnsavedChangesGuard>
       </div>
     </StaffOnly>
   );

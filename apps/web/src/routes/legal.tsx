@@ -1,5 +1,6 @@
 /**
- * The operator's imprint, privacy policy and moderation standard.
+ * The operator's imprint and privacy policy. The moderation standard has
+ * its own page (/standards), linked from here.
  *
  * An unpublished notice SAYS it is unpublished. It is never filled with a
  * placeholder, because a placeholder that reads like a legal notice is
@@ -8,11 +9,10 @@
  */
 import { getLegal } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { Alert } from '../components/ui/alert.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx';
 import { Page } from '../components/ui/page.tsx';
-import { useSite } from '../components/ui/site.tsx';
 import { call } from '../lib/api.ts';
 
 export const legalQuery = queryOptions({
@@ -51,9 +51,8 @@ function Notice({
 
 function LegalPage() {
   const legal = useQuery(legalQuery);
-  const site = useSite();
   return (
-    <Page title="Imprint, privacy and moderation" width="prose">
+    <Page title="Imprint and privacy" width="prose">
       {legal.isError ? (
         <Alert tone="serious" title="The legal notices could not be loaded.">
           {legal.error.message}
@@ -74,9 +73,13 @@ function LegalPage() {
           />
         </>
       ) : null}
-      {site.data ? (
-        <Notice title="Moderation standard" text={site.data.copy.standards} missing="" />
-      ) : null}
+      <p>
+        What gets published here, and who decides, is in the{' '}
+        <Link to="/standards" className="underline underline-offset-2">
+          moderation standard
+        </Link>
+        .
+      </p>
     </Page>
   );
 }

@@ -685,9 +685,11 @@ export interface SiteCopy {
 }
 
 export interface SiteSettings {
+  dev_mode_until: Timestamp | null;
   home_buttons: Json | null;
   id: Generated<boolean>;
   impressum_text: string | null;
+  last_seen_build: string | null;
   palette: Generated<string>;
   privacy_text: string | null;
   site_name: string | null;
