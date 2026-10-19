@@ -190,6 +190,11 @@ const ConfigSchema = z.object({
       )
       .default('https://zeitstempel.dfn.de'),
   ),
+  /**
+   * The press pack: a folder holding manifest.json and the files it lists,
+   * built ahead of time (board/press.ts). Unset is no pack.
+   */
+  PRESS_DIR: optional(z.string().refine((s) => s.startsWith('/'), 'PRESS_DIR is an absolute path')),
   /** The checkout of the public transparency log on this server: an absolute path. */
   TRANSPARENCY_LOG_DIR: optional(
     z.string().refine((s) => s.startsWith('/'), 'TRANSPARENCY_LOG_DIR is an absolute path'),

@@ -38,6 +38,7 @@ import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
+import { recordContactUsed } from '../moderation/accessLog.ts';
 import {
   askableState,
   attachEvidence,
@@ -159,6 +160,8 @@ export async function evidenceRoutes(app: FastifyInstance, deps: EvidenceRouteDe
         );
       }
       // Checked before anything is created: an ask nobody can receive is not an ask.
+      // Opening the address is recorded first, for the reporter to see (D3).
+      await recordContactUsed(db, { threadId: params.threadId, staffEmail: by });
       const contact = await openContact(db, ring, params.threadId);
       if (contact?.filed_by !== 'reporter' || !contact.email) {
         throw new HttpError(

@@ -3,19 +3,17 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 
-export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
-  ? U[]
-  : ArrayTypeImpl<T>;
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>;
 
-export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S[], I[], U[]>
-  : T[];
+export type ArrayTypeImpl<T> =
+  T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S[], I[], U[]> : T[];
 
-export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S, I | undefined, U>
-  : ColumnType<T, T | undefined, T>;
+export type Generated<T> =
+  T extends ColumnType<infer S, infer I, infer U>
+    ? ColumnType<S, I | undefined, U>
+    : ColumnType<T, T | undefined, T>;
 
 export type Json = JsonValue;
 
@@ -108,6 +106,7 @@ export interface ConsentTexts {
 
 export interface ContactAccessLog {
   accessed_at: Generated<Timestamp>;
+  attachment_id: number | null;
   id: Generated<number>;
   kind: string;
   reason: string | null;
@@ -539,6 +538,13 @@ export interface OwnershipTransfers {
   to_email: string;
 }
 
+export interface ReportAssessments {
+  incident_id: string | null;
+  severity: string | null;
+  thread_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface ReportAttachments {
   attachment_id: number;
   created_at: Generated<Timestamp>;
@@ -772,6 +778,7 @@ export interface DB {
   organizations: Organizations;
   otp_codes: OtpCodes;
   ownership_transfers: OwnershipTransfers;
+  report_assessments: ReportAssessments;
   report_attachments: ReportAttachments;
   report_contacts: ReportContacts;
   report_heads: ReportHeads;

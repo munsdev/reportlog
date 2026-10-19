@@ -35,6 +35,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Moderation',
       'Moderation settings',
+      'Transparency log',
       'Settings',
       'Feedback',
       'Guides',
@@ -76,6 +77,7 @@ describe('who sees which staff screen', () => {
       '/lists/review',
       '/moderate',
       '/moderate/settings',
+      '/transparency-log',
     ]) {
       expect(to).toContain(path);
     }

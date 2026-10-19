@@ -216,3 +216,38 @@ export const getPublicStats = defineRoute({
     PublicationOff.extend({ api_version: z.literal(1) }),
   ]),
 });
+
+// ── the press pack ──────────────────────────────────────────────────────
+
+export const PressFile = z.object({
+  /** What to ask for: `/api/press/<key>`. */
+  key: z.string(),
+  /** The name a downloaded copy is saved under, before its version is added. */
+  name: z.string(),
+  label: z.string(),
+  blurb: z.string().nullable(),
+  type: z.string(),
+  /** Null when the file is listed but was not built: worth seeing, not hiding. */
+  bytes: z.number().int().nullable(),
+  /** Set when this file was built apart from the rest of the pack. */
+  version: z.string().nullable(),
+  note: z.string().nullable(),
+});
+
+export const getPressPack = defineRoute({
+  method: 'GET',
+  path: '/api/press',
+  summary:
+    "The deployment's own documents for press and reviewers, built ahead of time. ReportLog ships none.",
+  response: z.object({
+    /** none: no pack is built. unreadable: its manifest could not be read. */
+    state: z.enum(['ready', 'none', 'unreadable']),
+    version: z.string().nullable(),
+    commit: z.string().nullable(),
+    built_at: z.string().nullable(),
+    files: z.array(PressFile),
+  }),
+});
+
+/** One file of the pack, as a download. Not JSON, so not a contract. */
+export const PRESS_FILE_PATH = '/api/press/:key';

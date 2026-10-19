@@ -35,7 +35,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door)\//,
+      testIgnore: /(identity|behind-password|files-door|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -44,7 +44,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door)\//,
+      testIgnore: /(identity|behind-password|files-door|board-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -80,6 +80,17 @@ export default defineConfig({
       name: 'files-behind-password',
       testMatch: /files-door\/.*\.spec\.ts$/,
       dependencies: ['behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // The board with the site password on (D3). After the last password
+      // project, for the same reason: the password is the whole site's.
+      name: 'board-behind-password',
+      testMatch: /board-locked\/.*\.spec\.ts$/,
+      dependencies: ['files-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

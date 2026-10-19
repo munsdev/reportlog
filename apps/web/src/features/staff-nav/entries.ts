@@ -37,6 +37,7 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/lists/review', label: 'List review', for: ['moderator', 'admin'] },
   { to: '/moderate', label: 'Moderation', for: ['moderator', 'admin'] },
   { to: '/moderate/settings', label: 'Moderation settings', for: ['admin'] },
+  { to: '/transparency-log', label: 'Transparency log', for: ['admin'] },
   { to: '/settings', label: 'Settings', for: ['admin'] },
   { to: '/feedback', label: 'Feedback', for: ['tester', 'admin', 'access_manager'] },
   { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin'] },
