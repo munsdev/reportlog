@@ -2,19 +2,40 @@
 @import './fonts/fonts.css';
 
 /*
- * THE LOOK, as tokens. Every colour a screen uses is one of these, so an
- * operator's palette reaches every screen by changing values here at runtime
- * (the theming workstream sets them on :root from site settings).
+ * THE LOOK, as tokens. Two axes, and they do not overlap:
+ *
+ *   PALETTE owns every colour.
+ *   THEME owns type, corners, shadow depth and page width, and sets NO colour.
+ *
+ * Any theme works with any palette, so an operator who wants the typewritten
+ * look in their own colours gets it without anybody having drawn that pair.
+ * The operator's choice reaches every screen by setting `data-palette` and
+ * `data-theme` on <html> (components/ui/site.tsx); nothing computes a colour
+ * at runtime, so nothing can compute an unreadable one. Ported from the
+ * legacy tokens.css, where every value was measured for contrast; the suite
+ * measures them again (test/ui/look.test.ts).
  *
  * COLOUR IS EXCLUSIVE: every chromatic value has exactly one job.
- *   action     the thing you came to do — buttons only. Dark text on it.
- *   confirmed  a moderator confirmed this — status only, never a button.
- *   serious    serious, and errors — status only, never a button.
+ *   action     the thing you came to do. Buttons only.
+ *   confirmed  a moderator confirmed this. Status only, never a button.
+ *   serious    serious, and errors. Status only, never a button.
  * A report nobody has assessed gets no colour at all.
  *
- * These defaults are the legacy "ReportLog" palette.
+ * STATUS COLOUR IS MEANING, NOT BRAND. Serious is a red and confirmed is a
+ * teal in every palette, tuned lighter on a dark ground so it still reads,
+ * and never a different hue: a confirmation that changed colour with the
+ * decor would stop being a signal. The suite checks the hue.
+ *
+ * The bare `:root` is the page with no attribute at all, so the shipped
+ * palette and theme share their blocks with it rather than being written
+ * twice.
  */
-:root {
+
+/* ---- the palettes ------------------------------------------------------
+   Nine light, then nine dark. The names are the legacy ones, so a stored
+   choice carries across. */
+:root,
+[data-palette='flint'] {
   --rl-background: #e7ecef;
   --rl-background-alt: #dde4e8;
   --rl-background-deep: #121a24;
@@ -27,11 +48,432 @@
   --rl-action: #e9a81c;
   --rl-on-action: #0e151c;
   --rl-brand: #7d5b10;
+  --rl-brand-on-deep: #e9a81c;
   --rl-serious: #a81d33;
   --rl-on-serious: #ffffff;
   --rl-confirmed: #296b60;
   --rl-on-confirmed: #ffffff;
-  --rl-radius: 6px;
+}
+[data-palette='paper'] {
+  --rl-background: #f6f4ef;
+  --rl-background-alt: #ebe8e0;
+  --rl-background-deep: #1f1d1a;
+  --rl-surface: #ffffff;
+  --rl-border: #c9c4b8;
+  --rl-text: #17150f;
+  --rl-text-alt: #3c382f;
+  --rl-text-muted: #5e5849;
+  --rl-text-on-deep: #f4f1e8;
+  --rl-action: #8a6307;
+  --rl-on-action: #ffffff;
+  --rl-brand: #8a6307;
+  --rl-brand-on-deep: #9bb6dd;
+  --rl-serious: #c0392b;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='bureau'] {
+  --rl-background: #f3f5f8;
+  --rl-background-alt: #e7ebf1;
+  --rl-background-deep: #121a26;
+  --rl-surface: #ffffff;
+  --rl-border: #c2cbd8;
+  --rl-text: #0f1620;
+  --rl-text-alt: #33414f;
+  --rl-text-muted: #566371;
+  --rl-text-on-deep: #edf2f8;
+  --rl-action: #1f5aa8;
+  --rl-on-action: #ffffff;
+  --rl-brand: #1f5aa8;
+  --rl-brand-on-deep: #5fc9be;
+  --rl-serious: #c0392b;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='sage'] {
+  --rl-background: #f2f5f0;
+  --rl-background-alt: #e5eae1;
+  --rl-background-deep: #17211a;
+  --rl-surface: #fcfdfb;
+  --rl-border: #c1cbbd;
+  --rl-text: #131a14;
+  --rl-text-alt: #35422f;
+  --rl-text-muted: #57634f;
+  --rl-text-on-deep: #eef4ec;
+  --rl-action: #2f6b45;
+  --rl-on-action: #ffffff;
+  --rl-brand: #2f6b45;
+  --rl-brand-on-deep: #e3b361;
+  --rl-serious: #c0392b;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='gallery'] {
+  --rl-background: #f7f3eb;
+  --rl-background-alt: #efeadf;
+  --rl-background-deep: #2b2620;
+  --rl-surface: #fffdf8;
+  --rl-border: #d6cfc2;
+  --rl-text: #2b2620;
+  --rl-text-alt: #4a443b;
+  --rl-text-muted: #6e6558;
+  --rl-text-on-deep: #e4ded2;
+  --rl-action: #3e4a5c;
+  --rl-on-action: #fffdf8;
+  --rl-brand: #7a2e24;
+  --rl-brand-on-deep: #d9b463;
+  --rl-serious: #a32b22;
+  --rl-on-serious: #fffdf8;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='parchment'] {
+  --rl-background: #ede3cc;
+  --rl-background-alt: #dfd2b6;
+  --rl-background-deep: #1e3a5f;
+  --rl-surface: #f7f1e1;
+  --rl-border: #bca98a;
+  --rl-text: #2c1a14;
+  --rl-text-alt: #4a3428;
+  --rl-text-muted: #6b5443;
+  --rl-text-on-deep: #ede3cc;
+  --rl-action: #1e3a5f;
+  --rl-on-action: #f7f1e1;
+  --rl-brand: #7a5a1c;
+  --rl-brand-on-deep: #d9a441;
+  --rl-serious: #8e2230;
+  --rl-on-serious: #f7f1e1;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='ledger'] {
+  --rl-background: #f1f2ed;
+  --rl-background-alt: #e4e7de;
+  --rl-background-deep: #1c2620;
+  --rl-surface: #ffffff;
+  --rl-border: #b9bfb2;
+  --rl-text: #161a14;
+  --rl-text-alt: #3e463a;
+  --rl-text-muted: #5a6152;
+  --rl-text-on-deep: #edf0e7;
+  --rl-action: #8a5a12;
+  --rl-on-action: #ffffff;
+  --rl-brand: #2f5d50;
+  --rl-brand-on-deep: #d9a93f;
+  --rl-serious: #b3202c;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='indigo'] {
+  --rl-background: #f2f3f8;
+  --rl-background-alt: #e5e7f0;
+  --rl-background-deep: #191c33;
+  --rl-surface: #ffffff;
+  --rl-border: #c3c7da;
+  --rl-text: #14162b;
+  --rl-text-alt: #363a57;
+  --rl-text-muted: #545974;
+  --rl-text-on-deep: #e9ebf6;
+  --rl-action: #3a3f9e;
+  --rl-on-action: #ffffff;
+  --rl-brand: #3a3f9e;
+  --rl-brand-on-deep: #e0b45a;
+  --rl-serious: #b3202c;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='bone'] {
+  --rl-background: #fafaf8;
+  --rl-background-alt: #efefec;
+  --rl-background-deep: #111111;
+  --rl-surface: #ffffff;
+  --rl-border: #cfcfc8;
+  --rl-text: #111111;
+  --rl-text-alt: #3a3a36;
+  --rl-text-muted: #5c5c56;
+  --rl-text-on-deep: #f2f2ee;
+  --rl-action: #111111;
+  --rl-on-action: #ffffff;
+  --rl-brand: #3a3a36;
+  --rl-brand-on-deep: #f2f2ee;
+  --rl-serious: #b3202c;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='midnight'] {
+  --rl-background: #121a24;
+  --rl-background-alt: #1a2430;
+  --rl-background-deep: #0a1017;
+  --rl-surface: #1b2531;
+  --rl-border: #5e7286;
+  --rl-text: #e8eef5;
+  --rl-text-alt: #bac7d6;
+  --rl-text-muted: #a2b2c4;
+  --rl-text-on-deep: #e8eef5;
+  --rl-action: #e9a81c;
+  --rl-on-action: #0a1017;
+  --rl-brand: #e9a81c;
+  --rl-brand-on-deep: #7fb2e0;
+  --rl-serious: #ff7b87;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='ink'] {
+  --rl-background: #14172a;
+  --rl-background-alt: #1c2038;
+  --rl-background-deep: #0a0c18;
+  --rl-surface: #1d2136;
+  --rl-border: #656c93;
+  --rl-text: #e7e9f5;
+  --rl-text-alt: #bfc4e0;
+  --rl-text-muted: #a8aed0;
+  --rl-text-on-deep: #e7e9f5;
+  --rl-action: #9fb4ff;
+  --rl-on-action: #0a0c18;
+  --rl-brand: #9fb4ff;
+  --rl-brand-on-deep: #e0b8ff;
+  --rl-serious: #ff8093;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='graphite'] {
+  --rl-background: #191b1e;
+  --rl-background-alt: #212427;
+  --rl-background-deep: #0e1012;
+  --rl-surface: #232629;
+  --rl-border: #6b7076;
+  --rl-text: #e9ebee;
+  --rl-text-alt: #c2c6cb;
+  --rl-text-muted: #aaafb5;
+  --rl-text-on-deep: #e9ebee;
+  --rl-action: #d7dbe0;
+  --rl-on-action: #0e1012;
+  --rl-brand: #d7dbe0;
+  --rl-brand-on-deep: #9fd2c8;
+  --rl-serious: #ff8087;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='harbour'] {
+  --rl-background: #10212b;
+  --rl-background-alt: #182c37;
+  --rl-background-deep: #081419;
+  --rl-surface: #192d38;
+  --rl-border: #567886;
+  --rl-text: #e3eef0;
+  --rl-text-alt: #b6cbd1;
+  --rl-text-muted: #9fb7be;
+  --rl-text-on-deep: #e3eef0;
+  --rl-action: #5fd0c4;
+  --rl-on-action: #081419;
+  --rl-brand: #5fd0c4;
+  --rl-brand-on-deep: #f0c270;
+  --rl-serious: #ff8189;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='dusk'] {
+  --rl-background: #1b1524;
+  --rl-background-alt: #241c30;
+  --rl-background-deep: #110c18;
+  --rl-surface: #261e33;
+  --rl-border: #77668f;
+  --rl-text: #ede8f2;
+  --rl-text-alt: #c7bcd6;
+  --rl-text-muted: #b0a4c2;
+  --rl-text-on-deep: #ede8f2;
+  --rl-action: #d9a7f0;
+  --rl-on-action: #110c18;
+  --rl-brand: #d9a7f0;
+  --rl-brand-on-deep: #f2b98c;
+  --rl-serious: #ff8496;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='blackedition'] {
+  --rl-background: #101010;
+  --rl-background-alt: #181818;
+  --rl-background-deep: #000000;
+  --rl-surface: #1a1a1a;
+  --rl-border: #676767;
+  --rl-text: #edeae4;
+  --rl-text-alt: #c4c0b8;
+  --rl-text-muted: #aca8a0;
+  --rl-text-on-deep: #edeae4;
+  --rl-action: #e9a81c;
+  --rl-on-action: #101010;
+  --rl-brand: #e9a81c;
+  --rl-brand-on-deep: #edeae4;
+  --rl-serious: #ff7f86;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='moss'] {
+  --rl-background: #131a15;
+  --rl-background-alt: #1b241d;
+  --rl-background-deep: #0a0f0b;
+  --rl-surface: #1d261f;
+  --rl-border: #5f7364;
+  --rl-text: #e6efe7;
+  --rl-text-alt: #bdccbf;
+  --rl-text-muted: #a6b8a9;
+  --rl-text-on-deep: #e6efe7;
+  --rl-action: #8fd6a6;
+  --rl-on-action: #0a0f0b;
+  --rl-brand: #8fd6a6;
+  --rl-brand-on-deep: #e8c878;
+  --rl-serious: #ff858c;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='umber'] {
+  --rl-background: #1c1712;
+  --rl-background-alt: #251f18;
+  --rl-background-deep: #110d09;
+  --rl-surface: #27211a;
+  --rl-border: #7b6c5e;
+  --rl-text: #f1eae1;
+  --rl-text-alt: #ccc0b2;
+  --rl-text-muted: #b5a899;
+  --rl-text-on-deep: #f1eae1;
+  --rl-action: #e8b972;
+  --rl-on-action: #110d09;
+  --rl-brand: #e8b972;
+  --rl-brand-on-deep: #9fc5d8;
+  --rl-serious: #ff8a84;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+[data-palette='slate'] {
+  --rl-background: #161b22;
+  --rl-background-alt: #1e242d;
+  --rl-background-deep: #0c1016;
+  --rl-surface: #1f262f;
+  --rl-border: #657282;
+  --rl-text: #e6eaf0;
+  --rl-text-alt: #bec6d1;
+  --rl-text-muted: #a7b0bd;
+  --rl-text-on-deep: #e6eaf0;
+  --rl-action: #8fc2f0;
+  --rl-on-action: #0c1016;
+  --rl-brand: #8fc2f0;
+  --rl-brand-on-deep: #f0b97f;
+  --rl-serious: #ff838f;
+  --rl-on-serious: #101010;
+  --rl-confirmed: #6fc7b6;
+  --rl-on-confirmed: #101010;
+}
+
+/* Derived once for every palette rather than restated in each: secondary
+   text on the deep surface, mixed from the palette's own on-deep text so it
+   follows the ground it sits on (82%, measured in legacy across every
+   palette to clear 4.5:1). Repeated for [data-palette] so an element asking
+   for a palette of its own resolves it against that palette. */
+:root,
+[data-palette] {
+  --rl-text-on-deep-muted: color-mix(
+    in srgb,
+    var(--rl-text-on-deep) 82%,
+    var(--rl-background-deep)
+  );
+}
+
+/* ---- the themes --------------------------------------------------------
+   Sizes, weights, families and shapes. NO COLOUR, and no colour token
+   either: the suite fails if a theme block names a hex, an rgb, an hsl or
+   any --rl- colour. The shadow's colour is the palette's text, applied
+   where the shadow is used; a theme only says how far it falls.
+
+   Only fonts this site bundles are named, so no theme ever falls back to a
+   face fetched from somebody else's server. Width is the theme's too: a
+   theme is a finished opinion and its measure is part of it. */
+:root,
+[data-theme='signal'] {
+  --rl-page-max: 760px;
+  --rl-radius: 10px;
+  --rl-radius-sm: 5px;
+  --rl-shadow-offset: 4px;
+  --rl-border-main: 1px;
+  --rl-font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --rl-font-display: 'Archivo', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --rl-font-mono: 'Red Hat Mono', ui-monospace, monospace;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: -0.015em;
+  --rl-display-transform: none;
+}
+/* Plain: the same type, with nothing raised off the page. */
+[data-theme='plain'] {
+  --rl-page-max: 760px;
+  --rl-radius: 2px;
+  --rl-radius-sm: 2px;
+  --rl-shadow-offset: 0px;
+  --rl-border-main: 1px;
+  --rl-h1-tracking: -0.01em;
+}
+/* Docket: a typewritten record. Square, unshadowed, one monospace family,
+   and a narrow measure. */
+[data-theme='docket'] {
+  --rl-page-max: 720px;
+  --rl-radius: 0px;
+  --rl-radius-sm: 0px;
+  --rl-shadow-offset: 0px;
+  --rl-border-main: 2px;
+  --rl-font-sans: 'Red Hat Mono', ui-monospace, monospace;
+  --rl-font-display: 'Red Hat Mono', ui-monospace, monospace;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: 0.01em;
+  --rl-display-transform: uppercase;
+}
+/* Broadsheet: heavier headings, a tighter set, hard edges, a wider column. */
+[data-theme='broadsheet'] {
+  --rl-page-max: 900px;
+  --rl-radius: 0px;
+  --rl-radius-sm: 0px;
+  --rl-shadow-offset: 0px;
+  --rl-border-main: 2px;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: -0.03em;
+  --rl-display-transform: none;
+}
+/* Bulletin: one family throughout, set dense, a little wider for a busy
+   board. */
+[data-theme='bulletin'] {
+  --rl-page-max: 820px;
+  --rl-radius: 4px;
+  --rl-radius-sm: 2px;
+  --rl-shadow-offset: 0px;
+  --rl-border-main: 1px;
+  --rl-font-display: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: -0.02em;
+  --rl-display-transform: none;
+}
+/* Register: monospace headings over ordinary text. Square, and the widest,
+   for a board with a great deal on it. */
+[data-theme='register'] {
+  --rl-page-max: 1080px;
+  --rl-radius: 0px;
+  --rl-radius-sm: 0px;
+  --rl-shadow-offset: 0px;
+  --rl-border-main: 2px;
+  --rl-font-display: 'Red Hat Mono', ui-monospace, monospace;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: 0;
+  --rl-display-transform: none;
 }
 
 @theme inline {
@@ -44,22 +486,36 @@
   --color-ink-alt: var(--rl-text-alt);
   --color-muted: var(--rl-text-muted);
   --color-on-deep: var(--rl-text-on-deep);
+  --color-on-deep-muted: var(--rl-text-on-deep-muted);
   --color-action: var(--rl-action);
   --color-on-action: var(--rl-on-action);
   --color-brand: var(--rl-brand);
+  --color-brand-on-deep: var(--rl-brand-on-deep);
   --color-serious: var(--rl-serious);
   --color-on-serious: var(--rl-on-serious);
   --color-confirmed: var(--rl-confirmed);
   --color-on-confirmed: var(--rl-on-confirmed);
   --radius-card: var(--rl-radius);
-  --font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Archivo', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Red Hat Mono', ui-monospace, monospace;
+  --radius-control: var(--rl-radius-sm);
+  --shadow-raised: var(--rl-shadow-offset) var(--rl-shadow-offset) 0 var(--rl-text);
+  --container-page: var(--rl-page-max);
+  --font-sans: var(--rl-font-sans);
+  --font-display: var(--rl-font-display);
+  --font-mono: var(--rl-font-mono);
 }
 
 @layer base {
   html {
     @apply bg-paper font-sans text-ink antialiased;
+  }
+  h1 {
+    font-weight: var(--rl-h1-weight);
+    letter-spacing: var(--rl-h1-tracking);
+  }
+  h1,
+  h2,
+  h3 {
+    text-transform: var(--rl-display-transform);
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ink;

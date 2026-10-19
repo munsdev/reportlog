@@ -10,11 +10,29 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LegalRouteImport } from './routes/legal'
+import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/settings/route'
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
+import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
+import { Route as staffSettingsFrontPageRouteImport } from './routes/(staff)/settings/front-page'
+import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
+import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings/look'
+import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
+import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LegalRoute = LegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffSettingsRouteRoute = staffSettingsRouteRouteImport.update({
+  id: '/(staff)/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyRefRoute = VerifyRefRouteImport.update({
@@ -22,30 +40,115 @@ const VerifyRefRoute = VerifyRefRouteImport.update({
   path: '/verify/$ref',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
+const staffSettingsFrontPageRoute = staffSettingsFrontPageRouteImport.update({
+  id: '/front-page',
+  path: '/front-page',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
+const staffSettingsLegalRoute = staffSettingsLegalRouteImport.update({
+  id: '/legal',
+  path: '/legal',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
+const staffSettingsLookRoute = staffSettingsLookRouteImport.update({
+  id: '/look',
+  path: '/look',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
+const staffSettingsNameRoute = staffSettingsNameRouteImport.update({
+  id: '/name',
+  path: '/name',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
+const staffSettingsWordsRoute = staffSettingsWordsRouteImport.update({
+  id: '/words',
+  path: '/words',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/legal': typeof LegalRoute
+  '/settings': typeof staffSettingsRouteRouteWithChildren
   '/verify/$ref': typeof VerifyRefRoute
+  '/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/settings/legal': typeof staffSettingsLegalRoute
+  '/settings/look': typeof staffSettingsLookRoute
+  '/settings/name': typeof staffSettingsNameRoute
+  '/settings/words': typeof staffSettingsWordsRoute
+  '/settings/': typeof staffSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/legal': typeof LegalRoute
   '/verify/$ref': typeof VerifyRefRoute
+  '/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/settings/legal': typeof staffSettingsLegalRoute
+  '/settings/look': typeof staffSettingsLookRoute
+  '/settings/name': typeof staffSettingsNameRoute
+  '/settings/words': typeof staffSettingsWordsRoute
+  '/settings': typeof staffSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/legal': typeof LegalRoute
+  '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
   '/verify/$ref': typeof VerifyRefRoute
+  '/(staff)/settings/front-page': typeof staffSettingsFrontPageRoute
+  '/(staff)/settings/legal': typeof staffSettingsLegalRoute
+  '/(staff)/settings/look': typeof staffSettingsLookRoute
+  '/(staff)/settings/name': typeof staffSettingsNameRoute
+  '/(staff)/settings/words': typeof staffSettingsWordsRoute
+  '/(staff)/settings/': typeof staffSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/verify/$ref'
+  fullPaths:
+    | '/'
+    | '/legal'
+    | '/settings'
+    | '/verify/$ref'
+    | '/settings/front-page'
+    | '/settings/legal'
+    | '/settings/look'
+    | '/settings/name'
+    | '/settings/words'
+    | '/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/verify/$ref'
-  id: '__root__' | '/' | '/verify/$ref'
+  to:
+    | '/'
+    | '/legal'
+    | '/verify/$ref'
+    | '/settings/front-page'
+    | '/settings/legal'
+    | '/settings/look'
+    | '/settings/name'
+    | '/settings/words'
+    | '/settings'
+  id:
+    | '__root__'
+    | '/'
+    | '/legal'
+    | '/(staff)/settings'
+    | '/verify/$ref'
+    | '/(staff)/settings/front-page'
+    | '/(staff)/settings/legal'
+    | '/(staff)/settings/look'
+    | '/(staff)/settings/name'
+    | '/(staff)/settings/words'
+    | '/(staff)/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LegalRoute: typeof LegalRoute
+  staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
   VerifyRefRoute: typeof VerifyRefRoute
 }
 
@@ -58,6 +161,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/legal': {
+      id: '/legal'
+      path: '/legal'
+      fullPath: '/legal'
+      preLoaderRoute: typeof LegalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/settings': {
+      id: '/(staff)/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof staffSettingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/verify/$ref': {
       id: '/verify/$ref'
       path: '/verify/$ref'
@@ -65,11 +182,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyRefRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/settings/': {
+      id: '/(staff)/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof staffSettingsIndexRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/front-page': {
+      id: '/(staff)/settings/front-page'
+      path: '/front-page'
+      fullPath: '/settings/front-page'
+      preLoaderRoute: typeof staffSettingsFrontPageRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/legal': {
+      id: '/(staff)/settings/legal'
+      path: '/legal'
+      fullPath: '/settings/legal'
+      preLoaderRoute: typeof staffSettingsLegalRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/look': {
+      id: '/(staff)/settings/look'
+      path: '/look'
+      fullPath: '/settings/look'
+      preLoaderRoute: typeof staffSettingsLookRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/name': {
+      id: '/(staff)/settings/name'
+      path: '/name'
+      fullPath: '/settings/name'
+      preLoaderRoute: typeof staffSettingsNameRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/words': {
+      id: '/(staff)/settings/words'
+      path: '/words'
+      fullPath: '/settings/words'
+      preLoaderRoute: typeof staffSettingsWordsRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
   }
 }
 
+interface staffSettingsRouteRouteChildren {
+  staffSettingsFrontPageRoute: typeof staffSettingsFrontPageRoute
+  staffSettingsLegalRoute: typeof staffSettingsLegalRoute
+  staffSettingsLookRoute: typeof staffSettingsLookRoute
+  staffSettingsNameRoute: typeof staffSettingsNameRoute
+  staffSettingsWordsRoute: typeof staffSettingsWordsRoute
+  staffSettingsIndexRoute: typeof staffSettingsIndexRoute
+}
+
+const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
+  staffSettingsFrontPageRoute: staffSettingsFrontPageRoute,
+  staffSettingsLegalRoute: staffSettingsLegalRoute,
+  staffSettingsLookRoute: staffSettingsLookRoute,
+  staffSettingsNameRoute: staffSettingsNameRoute,
+  staffSettingsWordsRoute: staffSettingsWordsRoute,
+  staffSettingsIndexRoute: staffSettingsIndexRoute,
+}
+
+const staffSettingsRouteRouteWithChildren =
+  staffSettingsRouteRoute._addFileChildren(staffSettingsRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LegalRoute: LegalRoute,
+  staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
   VerifyRefRoute: VerifyRefRoute,
 }
 export const routeTree = rootRouteImport
