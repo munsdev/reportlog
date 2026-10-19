@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/p7-ops-tests`, based on `ccr-c9c93698-ev856l`
-- **Pull request:** see below
+- **Pull request:** [#19](https://github.com/munsdev/reportlog/pull/19), into `ccr-c9c93698-ev856l`
 - **State:** finished. The storage check against a real provider waits on one being chosen.
 - **Last updated:** 2026-10-19
 
