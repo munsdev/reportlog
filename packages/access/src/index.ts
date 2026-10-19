@@ -74,3 +74,26 @@ export function roleSatisfies(
 export function hasAdminAuthority(role: SystemRole | null | undefined): boolean {
   return roleSatisfies(role, 'admin');
 }
+
+/**
+ * FLAGS ARE NOT ROLES. The tester flag and the team-member flag compose with
+ * whatever role somebody holds and open no report, so they are not rungs on
+ * the ladder above. Who may set them is still decided here, beside the
+ * ladder, so every grant asks this package: administrators (the owner
+ * included) and Access Managers, the same people who grant access. Nobody
+ * else, a flag's holder included.
+ */
+export const FLAGS = ['tester', 'team_member'] as const;
+export type Flag = (typeof FLAGS)[number];
+
+const MAY_SET_FLAGS: Readonly<Record<SystemRole, readonly Flag[]>> = {
+  owner: FLAGS,
+  admin: FLAGS,
+  access_manager: FLAGS,
+  moderator: [],
+  user: [],
+};
+
+export function canSetFlag(actor: SystemRole | null | undefined, flag: Flag): boolean {
+  return actor ? MAY_SET_FLAGS[actor].includes(flag) : false;
+}

@@ -18,6 +18,7 @@ import { placeLabel } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
 import { publishedReportIds } from '../board/published.ts';
+import { stopLinkFor } from '../identity/digestStop.ts';
 import type { EmailJobDeps, JobOutcome } from './job.ts';
 
 export type DigestFrequency = 'hourly' | 'weekly';
@@ -79,6 +80,8 @@ export function digestEmail(
   frequency: DigestFrequency,
   reports: readonly DigestReport[],
   siteOrigin: string,
+  /** This email's own link that stops these emails without signing in (identity/digestStop.ts). */
+  stopLink: string,
 ): { subject: string; text: string } {
   const n = reports.length;
   const count = n === 1 ? 'one new report' : `${String(n)} new reports`;
@@ -92,7 +95,9 @@ export function digestEmail(
       '',
       `Read them on the board: ${siteOrigin}/board`,
       '',
-      `You asked for these emails. To change how often they come, or stop them, sign in and go to ${siteOrigin}/notifications`,
+      `You asked for these emails. To stop them, open this link (you do not need to sign in): ${stopLink}`,
+      '',
+      `To change how often they come, or which logbooks they are about, sign in and go to ${siteOrigin}/notifications`,
     ].join('\n'),
   };
 }
@@ -177,9 +182,10 @@ export async function runDigest(
         questions: questions.get(r.logbook_id) ?? [],
       }));
       try {
+        const stopLink = await stopLinkFor(deps.db, sub.user_id, deps.siteOrigin);
         await deps.mailer.send({
           to: sub.email,
-          ...digestEmail(deps.frequency, reports, deps.siteOrigin),
+          ...digestEmail(deps.frequency, reports, deps.siteOrigin, stopLink),
         });
         sent += 1;
       } catch {

@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FLAGS,
   MAY_GRANT,
   SYSTEM_ROLES,
   canChangeSubject,
+  canSetFlag,
   canGrantSystemRole,
   hasAdminAuthority,
   roleSatisfies,
@@ -35,5 +37,24 @@ describe('rank', () => {
     expect(roleSatisfies(null, 'user')).toBe(false);
     expect(hasAdminAuthority('owner')).toBe(true);
     expect(hasAdminAuthority('access_manager')).toBe(false);
+  });
+});
+
+describe('flags', () => {
+  it('are set by those who grant access, and by nobody else', () => {
+    for (const flag of FLAGS) {
+      for (const role of SYSTEM_ROLES) {
+        expect(canSetFlag(role, flag)).toBe(
+          role === 'owner' || role === 'admin' || role === 'access_manager',
+        );
+      }
+      expect(canSetFlag(null, flag)).toBe(false);
+    }
+  });
+
+  it('are not roles: no flag can be granted as one', () => {
+    for (const flag of FLAGS) {
+      expect(SYSTEM_ROLES as readonly string[]).not.toContain(flag);
+    }
   });
 });
