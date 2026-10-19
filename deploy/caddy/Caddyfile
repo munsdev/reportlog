@@ -52,13 +52,29 @@
 		# changes under its name and may be kept for a year. Everything else
 		# (index.html above all) must be revalidated, or a browser can keep an
 		# old page that names assets a new release no longer has.
+		#
+		# An asset that is not there is a 404, never the page: a page loaded
+		# before a deploy can still ask for a chunk the new release does not
+		# have, and answering with index.html under that name, kept for a
+		# year, is how a browser ends up running HTML as a script.
+		# (apps/api/test/unit/deploy-caddy.test.ts runs this file in Caddy.)
 		@hashed path /assets/*
-		@unhashed not path /assets/*
-		header @hashed Cache-Control "public, max-age=31536000, immutable"
-		header @unhashed Cache-Control "no-cache"
+		handle @hashed {
+			@present file
+			@absent not file
+			header @present Cache-Control "public, max-age=31536000, immutable"
+			header @absent Cache-Control "no-cache"
+			# respond, not file_server's own 404: an error response skips the
+			# site's header block above (HSTS, nosniff, no Server).
+			respond @absent 404
+			file_server
+		}
 
-		# A single-page app: any path that is not a file is a route.
-		try_files {path} /index.html
-		file_server
+		# A single-page app: any other path that is not a file is a route.
+		handle {
+			header Cache-Control "no-cache"
+			try_files {path} /index.html
+			file_server
+		}
 	}
 }
