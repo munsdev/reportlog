@@ -217,6 +217,31 @@ export const getPublicStats = defineRoute({
   ]),
 });
 
+/**
+ * One wording of the publication question, by the digest a report seals.
+ * `introduced_by_role` is a role, never a person: this leaves the building.
+ */
+export const ConsentText = z.object({
+  digest: z.string(),
+  variant: z.string(),
+  body: z.string(),
+  introduced_by_role: z.string(),
+  first_seen_at: Timestamp,
+});
+export type ConsentText = z.infer<typeof ConsentText>;
+
+export const getPublicConsentTexts = defineRoute({
+  method: 'GET',
+  path: '/api/v1/consent-texts',
+  summary:
+    'Every wording of the publication question this site has shown, by digest, oldest first.',
+  response: z.object({
+    texts: z.array(ConsentText),
+    api_version: z.literal(1),
+    licence: z.string(),
+  }),
+});
+
 // ── the press pack ──────────────────────────────────────────────────────
 
 export const PressFile = z.object({

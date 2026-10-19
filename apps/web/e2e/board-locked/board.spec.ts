@@ -161,6 +161,9 @@ test('locked: every board page is the password screen, and every board read is r
     '/api/press',
     '/api/chain/demo',
     '/api/v1/stats',
+    // Behind the password until the owner decides otherwise (parity §8 item 2).
+    '/api/v1',
+    '/api/v1/consent-texts',
   ]) {
     const res = await v.page.request.get(url);
     expect({ url, status: res.status() }).toEqual({ url, status: 401 });

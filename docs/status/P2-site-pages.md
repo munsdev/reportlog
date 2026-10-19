@@ -2,19 +2,19 @@
 
 For the coordinating session and the other workstreams. Brief: `docs/parity.md` §7, P2.
 
-- **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `faa4b68` (D3 and P7 merged)
+- **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `af9114b` (D3, P7, P1, P4, P6 merged)
 - **Pull request:** [#23](https://github.com/munsdev/reportlog/pull/23), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result                                                                                                                                                  |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 332 (11 skipped, not P2's), web 440 (P2's: api 5, web 17)                                       |
-| `pnpm test:db`                          | 57 files, 849 passed (P2's: 18, in `site-pages.test.ts`)                                                                                                |
-| `db:types:check`                        | generated types up to date (run on its own)                                                                                                             |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 141 passed, 3 skipped (P2's: 9 passed; its 3 settings tests run on desktop only, as they change site-wide settings, and are the 3 skipped on the phone) |
+| Suite                                   | Result                                                                                                                                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 332 (11 skipped, not P2's), web 453 (P2's: api 5, web 17)                                                                                          |
+| `pnpm test:db`                          | 62 files, 924 passed (P2's: 18, in `site-pages.test.ts`)                                                                                                                                                   |
+| `db:types:check`                        | generated types up to date (run on its own)                                                                                                                                                                |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 439 passed, 3 skipped, including P1's no-third-party walk of every route (P2's: 9 passed; its 3 settings tests run on desktop only, as they change site-wide settings, and are the 3 skipped on the phone) |
 
 ## What was built, in the order asked
 
@@ -129,6 +129,11 @@ guide; it is not nearly free.
   `features/` and recognises `<CopyText slot="…">`.
 - `apps/web/e2e/identity/access.spec.ts` (A's): the door test clicks the **header's** "ReportLog"
   link (`getByRole('banner')`). The footer's attribution is now a second link with that name.
+- `apps/web/test/door-quiet.test.tsx` (P1's): the two links it uses to see that the frame
+  rendered are now found inside the header and the footer (`within(banner)`,
+  `within(contentinfo)`), and the footer link is "Imprint and privacy". The assertion that a
+  door asks nothing beyond the gate is unchanged, and its control (past the password the same
+  frame does ask) still passes.
 - `schema.gen.ts` and `routeTree.gen.ts` regenerated.
 
 ## Not done
