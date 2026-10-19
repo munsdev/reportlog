@@ -22,7 +22,7 @@ import { notFound } from '../http/errors.ts';
 import { fieldsFor } from '../logbooks/logbooks.ts';
 import { forForm } from '../logbooks/routes.ts';
 import { NONE_GRANTED, permissionHistory, permissionsForMany } from '../permissions/log.ts';
-import { emailDigest, eraseContact } from './contactKeys.ts';
+import { emailDigests, eraseContact } from './contactKeys.ts';
 import { appendCorrection, lockHead } from './correction.ts';
 import type { ContactKeyring } from './contactKeys.ts';
 import { notConfigured, refused } from './filing.ts';
@@ -91,14 +91,15 @@ export class Mine {
     this.publicRefPrefix = publicRefPrefix;
   }
 
-  private digest(email: string): string {
+  /** Two digests only while CONTACT_KEY is being rotated (contactKeys.ts). */
+  private digests(email: string): string[] {
     if (!this.ring) throw notConfigured();
-    return emailDigest(this.ring, email);
+    return emailDigests(this.ring, email);
   }
 
   async list(email: string): Promise<MyReport[]> {
     const rows = await reportsOf(this.db)
-      .where('k.email_hmac', '=', this.digest(email))
+      .where('k.email_hmac', 'in', this.digests(email))
       .orderBy('r.received_at', 'desc')
       .execute();
     // One query for every card's permissions rather than one per card.
@@ -112,7 +113,7 @@ export class Mine {
   /** A thread this address owns, or a 404 that does not say whether it exists. */
   async owned(email: string, threadId: string): Promise<Row> {
     const row = await reportsOf(this.db)
-      .where('k.email_hmac', '=', this.digest(email))
+      .where('k.email_hmac', 'in', this.digests(email))
       .where('h.thread_id', '=', threadId)
       .executeTakeFirst();
     if (!row) throw notYours();

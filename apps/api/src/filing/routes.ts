@@ -36,6 +36,8 @@ export interface FilingRouteDeps {
   siteOrigin: string;
   /** The deployment's CONTACT_KEY. Without it, nothing is filed and the refusal says why. */
   contactKey?: string | undefined;
+  /** Only while CONTACT_KEY is being rotated: the key being rotated from (contactKeys.ts). */
+  previousContactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
 }
 
@@ -44,7 +46,7 @@ export interface FilingRouteDeps {
 const bodyOf = <B>(_contract: { body?: unknown }, request: FastifyRequest) => request.body as B;
 
 export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps): Promise<void> {
-  const ring = deps.contactKey ? keyringFrom(deps.contactKey) : null;
+  const ring = deps.contactKey ? keyringFrom(deps.contactKey, deps.previousContactKey) : null;
   if (!ring) {
     app.log.warn('CONTACT_KEY is not set: this site will refuse every report until it is.');
   }

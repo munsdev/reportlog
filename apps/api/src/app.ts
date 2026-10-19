@@ -26,7 +26,12 @@ import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'> &
-    Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX'>>;
+    Partial<
+      Pick<
+        Config,
+        'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'CONTACT_KEY_PREVIOUS' | 'PUBLIC_REF_PREFIX'
+      >
+    >;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -98,6 +103,7 @@ export async function buildApp({
     mailer: mail,
     siteOrigin,
     contactKey: config.CONTACT_KEY,
+    previousContactKey: config.CONTACT_KEY_PREVIOUS,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
   });
   return app;

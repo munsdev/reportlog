@@ -79,6 +79,21 @@ const ConfigSchema = z.object({
       'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
     )
     .optional(),
+  /**
+   * Only while CONTACT_KEY is being rotated (workstream C2): the key being
+   * rotated away from. Read with, never written with; removed once
+   * `reportlog contact-key rotate` has run (deploy/README.md).
+   */
+  CONTACT_KEY_PREVIOUS: z.preprocess(
+    (v) => (typeof v === 'string' && !v.trim() ? undefined : v),
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'CONTACT_KEY_PREVIOUS is 32 random bytes, base64, like CONTACT_KEY',
+      )
+      .optional(),
+  ),
 
   // --- email (apps/api/src/email/) -------------------------------------
   /**

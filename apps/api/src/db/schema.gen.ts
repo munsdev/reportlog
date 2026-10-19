@@ -59,6 +59,15 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface ContactKeyRotations {
+  created_at: Generated<Timestamp>;
+  from_fingerprint: string;
+  id: Generated<number>;
+  rewrapped: Generated<number>;
+  to_fingerprint: string;
+  xact: Generated<string>;
+}
+
 export interface ContactKeys {
   created_at: Generated<Timestamp>;
   dek_wrapped: Buffer;
@@ -435,6 +444,7 @@ export interface DB {
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  contact_key_rotations: ContactKeyRotations;
   contact_keys: ContactKeys;
   coordinator_actions: CoordinatorActions;
   home_buttons: HomeButtons;
