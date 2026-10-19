@@ -95,6 +95,8 @@ module.exports = {
           '\\.gen\\.ts$',
           '/(test|e2e)/',
           '^apps/api/src/(server|dev/seed|db/migrate-cli|db/gen-types)\\.ts$',
+          // Commands, started by name rather than imported.
+          '^apps/api/src/anchor/(cli|job)\\.ts$',
           '^apps/web/src/main\\.tsx$',
           // Found by the router plugin from the file name, not by an import.
           '^apps/web/src/routes/',

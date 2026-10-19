@@ -12,6 +12,8 @@
     "db:types:check": "node --env-file-if-exists=../../.env src/db/gen-types.ts --check",
     "db:seed": "node --env-file-if-exists=../../.env src/dev/seed.ts",
     "lists:sweep": "node --env-file-if-exists=../../.env src/lists/sweep-cli.ts",
+    "anchor": "node --env-file-if-exists=../../.env src/anchor/cli.ts",
+    "check-chain": "node src/anchor/check-chain.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --project unit",
     "test:db": "vitest run --project db"
