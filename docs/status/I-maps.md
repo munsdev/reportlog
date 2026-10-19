@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/workstream-i-maps`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G)
-- **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
+- **Pull request:** [#9](https://github.com/munsdev/reportlog/pull/9), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
