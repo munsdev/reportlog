@@ -13,6 +13,7 @@
  * previews a name while it is typed.
  */
 import { z } from 'zod';
+import { Figure } from './board.ts';
 import { defineRoute } from './route.ts';
 
 // ── the look ────────────────────────────────────────────────────────────
@@ -233,6 +234,15 @@ export function isDarkPalette(id: string): boolean {
 /** The software's own name, which the footer keeps whatever the site is called. */
 export const SOFTWARE_NAME = 'ReportLog';
 
+/**
+ * Where the software's source is published, and under what licence. The
+ * footer names both on every deployment, whatever it calls itself: AGPL
+ * attribution belongs where a reader can see it, and a deployment renaming
+ * itself is not a deployment claiming to have written the software.
+ */
+export const SOFTWARE_SOURCE = 'https://github.com/munsdev/reportlog';
+export const SOFTWARE_LICENCE = 'AGPL-3.0-or-later';
+
 /** A name has to fit in a page header and a mail subject. Counted without the marks. */
 export const MAX_SITE_NAME = 60;
 
@@ -322,11 +332,34 @@ export const BrandPartSchema = z.object({ text: z.string(), mark: z.enum(['', 'a
  * added here by whoever builds the page that shows it. The wording, help
  * and fallbacks are the server's (apps/api/src/site/copy.ts).
  */
-export const COPY_KEYS = ['home_headline', 'home_lede', 'home_intro', 'standards'] as const;
+export const COPY_KEYS = [
+  'home_headline',
+  'home_lede',
+  'home_intro',
+  'about_archive',
+  'submit_intro',
+  'board_intro',
+  'how_intro',
+  'alliance_intro',
+  'standards',
+] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);
 
 // ── what every page reads ───────────────────────────────────────────────
+
+/**
+ * Which release this is, for the footer. `release` is the version in the
+ * repository's package.json (`v1.2.3`); `build` is the commit a deployment
+ * unpacked (the release's REVISION file). Either is null where there is
+ * none, as in a development checkout, and the footer then says nothing
+ * rather than inventing a number.
+ */
+export const SiteVersion = z.object({
+  release: z.string().nullable(),
+  build: z.string().nullable(),
+});
+export type SiteVersion = z.infer<typeof SiteVersion>;
 
 export const Site = z.object({
   software_name: z.string(),
@@ -335,8 +368,19 @@ export const Site = z.object({
   name_parts: z.array(BrandPartSchema).min(1),
   plain_name: z.string(),
   look: Look,
-  /** Every slot resolved: what the operator wrote, or what ships. Never missing. */
+  /**
+   * Every slot resolved: what the operator wrote, or what ships. Never
+   * missing; an optional slot nobody wrote is ''. Any {{ … }} figure in it is
+   * already a number (or "?" while the archive is not public).
+   */
   copy: z.record(CopyKeySchema, z.string()),
+  /**
+   * When the development notice switches itself off, or null when it is
+   * off. An expiry rather than a flag, so the page can hide the notice at
+   * that moment without asking again.
+   */
+  dev_mode_until: z.string().nullable(),
+  version: SiteVersion,
 });
 export type Site = z.infer<typeof Site>;
 
@@ -476,6 +520,49 @@ export const setLegalText = defineRoute({
   params: z.object({ kind: LegalKindSchema }),
   body: z.object({ text: z.string() }),
   response: SiteEditor,
+});
+
+/** The development notice, as the settings screen sees it. */
+export const DevMode = z.object({
+  active: z.boolean(),
+  /** When it switches itself off; null when it is off. */
+  until: z.string().nullable(),
+  /** How long "turn it on" turns it on for, and how long a deploy arms it. */
+  default_hours: z.number().int(),
+  max_hours: z.number().int(),
+});
+export type DevMode = z.infer<typeof DevMode>;
+
+export const getDevMode = defineRoute({
+  method: 'GET',
+  path: '/api/admin/site/dev-mode',
+  summary: 'Whether the "under active development" notice is showing, and until when.',
+  response: DevMode,
+});
+
+/**
+ * A switch, not a form: it applies at once. A deploy arms the notice by
+ * itself, so this is the manual override, on for a window or off now.
+ */
+export const setDevMode = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/site/dev-mode',
+  summary: 'Show the development notice for some hours, or (null) take it down now.',
+  body: z.object({ hours: z.number().nullable() }),
+  response: DevMode,
+});
+
+/**
+ * Every figure an operator can put in their page wording, with its value
+ * now, for the editor's "insert a number". Administrators only, and served
+ * whether or not the archive is public: the editor needs the names either
+ * way. The public pages render them only while it is.
+ */
+export const getCopyFigures = defineRoute({
+  method: 'GET',
+  path: '/api/admin/site/figures',
+  summary: 'The figures page wording may contain, with their values now.',
+  response: z.object({ figures: z.array(Figure) }),
 });
 
 // ── feedback ────────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import { filesFrom } from './files/context.ts';
 import { workOnce } from './files/worker.ts';
 import { createMailer } from './email/index.ts';
 import { listSettingsFrom } from './lists/settings.ts';
+import { armDevModeOnDeploy } from './site/devMode.ts';
 import { createErrorTracker, releaseOf } from './telemetry/tracker.ts';
 
 const config = loadConfig();
@@ -15,6 +16,8 @@ const errors = createErrorTracker({ config, release: releaseOf() });
 
 // The card's wording must be on record before any report can name its digest.
 await recordCardTexts(db);
+// A new build just started: show the development notice for a while.
+await armDevModeOnDeploy(db, releaseOf());
 
 const app = await buildApp({
   config,

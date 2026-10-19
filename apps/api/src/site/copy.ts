@@ -18,9 +18,14 @@
  * `optional` shows nothing until written instead, where our note to the
  * operator would be the wrong thing for a reader to see.
  *
- * Legacy had nine slots. Only the ones a page in this rebuild reads are
- * here (see COPY_KEYS in @reportlog/contracts); the workstream that builds
- * the About page, the board or the how-to page adds its slot with it.
+ * All nine of legacy's slots, each read by a page (see COPY_KEYS in
+ * @reportlog/contracts).
+ *
+ * FIGURES. A slot may carry {{ … }} placeholders (board/figures.ts). The
+ * stored text keeps the placeholder, so the editor edits what was written;
+ * the public read renders it (site.ts), and a save is refused if a
+ * placeholder would not work (routes.ts), rather than it showing "?" on a
+ * page the operator may never look at.
  */
 import type { CopyKey, CopySlot } from '@reportlog/contracts';
 import type { Checked } from './result.ts';
@@ -61,6 +66,54 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     help: 'Under the buttons. Who should file into this archive, and about what.',
     fallback:
       'This deployment has not written its front page yet. An operator replaces this text with what this archive is for and who should file into it.',
+  },
+  {
+    key: 'about_archive',
+    kind: 'block',
+    label: 'About this archive',
+    help: 'The first thing on the About page. Who runs this archive, why it exists, what it covers and what it will not do, and how to reach you. The part under it explains the software and is written already.',
+    // A fresh install must not come up with an empty About, nor with
+    // something that reads like a real answer. The safe default is the one
+    // that is obviously unfinished.
+    fallback:
+      'This deployment has not written its About page yet.\n\nAn operator says here who runs this archive, why it exists, what it covers and what it will not do, and how to get in touch. The part below, about the software itself and how to check the record without taking anybody’s word for it, is already written and needs nothing from you.',
+  },
+  {
+    // OPTIONAL, so an unwritten one shows a reporter nothing at all. Somebody
+    // filing an account of something that happened to them should not be
+    // reading our note to the operator.
+    key: 'submit_intro',
+    kind: 'block',
+    optional: true,
+    label: 'Your own words before filing',
+    help: 'Shown where somebody chooses what to report, under the heading. Who should file here and about what. Left empty, nothing is shown.',
+    fallback: '',
+  },
+  {
+    key: 'board_intro',
+    kind: 'block',
+    label: 'What the board is',
+    help: 'Under the board’s heading. What somebody is looking at, and what it covers.',
+    // Not legacy's "Every submitted report, in real time": the board shows
+    // only what a moderator approved and the reporter allowed, and saying
+    // otherwise would be the board describing itself wrongly.
+    fallback: 'Reports a moderator has approved, and that the people who filed them allowed us to publish.',
+  },
+  {
+    key: 'how_intro',
+    kind: 'block',
+    optional: true,
+    label: 'Your own words on the how-to page',
+    help: 'Above the instructions, which are about the software and are written already. Anything particular to this archive: who to ask, local rules, when somebody reads what you file.',
+    fallback: '',
+  },
+  {
+    key: 'alliance_intro',
+    kind: 'block',
+    optional: true,
+    label: 'Your own words on the directory',
+    help: 'Above the list of organizations. What this directory is for here. The note saying that listing is not verification is the software’s and stays.',
+    fallback: '',
   },
   {
     key: 'standards',
