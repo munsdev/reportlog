@@ -2,7 +2,8 @@
  * THE GATE: every API route is behind the site password unless it is named
  * here.
  *
- * In front of it, always: the lock screen's own calls and the health check.
+ * In front of it, always: the lock screen's own calls, the health check and
+ * the digest email's stop link.
  * Past it without the password: a list deciding for itself (by prefix), and
  * a logbook's filing calls through `outsidePass` (doors.ts). Nothing else.
  *
@@ -17,12 +18,20 @@ import type { DB } from '../db/schema.gen.ts';
 import { outsidePass } from './doors.ts';
 import { hasSiteAccess, locked } from './siteAccess.ts';
 
-/** Always in front of the password, by method and route pattern. */
+/**
+ * Always in front of the password, by method and route pattern.
+ *
+ * The digest's stop link is here because stopping email somebody asked for
+ * must never depend on a password they may have forgotten or that has
+ * changed since. It shows nothing of the site (digestStop.ts).
+ */
 export const IN_FRONT: readonly string[] = [
   'GET /api/health',
   'GET /api/site-access/status',
   'POST /api/site-access/unlock',
   'GET /api/doors',
+  'GET /api/notifications/stop/:token',
+  'POST /api/notifications/stop/:token',
 ];
 
 /**

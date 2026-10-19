@@ -106,6 +106,8 @@ const ADMIN_ME = {
   memberships: [],
   grantsAccess: true,
   tester: false,
+  teamMember: false,
+  desks: [],
 };
 
 function page(pathname: string) {

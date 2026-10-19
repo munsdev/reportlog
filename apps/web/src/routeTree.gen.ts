@@ -36,6 +36,7 @@ import { Route as OrganizationsIndexRouteImport } from './routes/organizations/i
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
 import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
+import { Route as staffAccessRosterRouteImport } from './routes/(staff)/access/roster'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
 import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/index'
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
@@ -56,6 +57,7 @@ import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
+import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
 import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
 import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
@@ -199,6 +201,11 @@ const staffAccessAuditRoute = staffAccessAuditRouteImport.update({
   path: '/access/audit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffAccessRosterRoute = staffAccessRosterRouteImport.update({
+  id: '/(staff)/access/roster',
+  path: '/access/roster',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
   id: '/(staff)/access/sign-in',
   path: '/access/sign-in',
@@ -299,6 +306,11 @@ const MineDeclarationThreadIdRoute = MineDeclarationThreadIdRouteImport.update({
   path: '/mine/declaration/$threadId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotificationsStopTokenRoute = NotificationsStopTokenRouteImport.update({
+  id: '/notifications_/stop/$token',
+  path: '/notifications/stop/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrganizationsIdListingRoute = OrganizationsIdListingRouteImport.update({
   id: '/organizations/$id/listing',
   path: '/organizations/$id/listing',
@@ -364,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
+  '/access/roster': typeof staffAccessRosterRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
@@ -378,6 +391,7 @@ export interface FileRoutesByFullPath {
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
+  '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/access/': typeof staffAccessIndexRoute
   '/intake/': typeof staffIntakeIndexRoute
@@ -415,6 +429,7 @@ export interface FileRoutesByTo {
   '/mine': typeof MineIndexRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
+  '/access/roster': typeof staffAccessRosterRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/lists/$id': typeof staffListsIdRoute
@@ -429,6 +444,7 @@ export interface FileRoutesByTo {
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
+  '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/access': typeof staffAccessIndexRoute
   '/intake': typeof staffIntakeIndexRoute
@@ -472,6 +488,7 @@ export interface FileRoutesById {
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
+  '/(staff)/access/roster': typeof staffAccessRosterRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
@@ -486,6 +503,7 @@ export interface FileRoutesById {
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
+  '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
   '/(staff)/access/': typeof staffAccessIndexRoute
   '/(staff)/intake/': typeof staffIntakeIndexRoute
@@ -530,6 +548,7 @@ export interface FileRouteTypes {
     | '/mine/'
     | '/organizations/'
     | '/access/audit'
+    | '/access/roster'
     | '/access/sign-in'
     | '/intake/$id'
     | '/lists/$id'
@@ -544,6 +563,7 @@ export interface FileRouteTypes {
     | '/settings/words'
     | '/file/confirm/$token'
     | '/mine/declaration/$threadId'
+    | '/notifications/stop/$token'
     | '/organizations/$id/listing'
     | '/access/'
     | '/intake/'
@@ -581,6 +601,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/organizations'
     | '/access/audit'
+    | '/access/roster'
     | '/access/sign-in'
     | '/intake/$id'
     | '/lists/$id'
@@ -595,6 +616,7 @@ export interface FileRouteTypes {
     | '/settings/words'
     | '/file/confirm/$token'
     | '/mine/declaration/$threadId'
+    | '/notifications/stop/$token'
     | '/organizations/$id/listing'
     | '/access'
     | '/intake'
@@ -637,6 +659,7 @@ export interface FileRouteTypes {
     | '/mine/'
     | '/organizations/'
     | '/(staff)/access/audit'
+    | '/(staff)/access/roster'
     | '/(staff)/access/sign-in'
     | '/(staff)/intake/$id'
     | '/(staff)/lists/$id'
@@ -651,6 +674,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
     | '/mine/declaration/$threadId'
+    | '/notifications_/stop/$token'
     | '/organizations/$id/listing'
     | '/(staff)/access/'
     | '/(staff)/intake/'
@@ -694,9 +718,11 @@ export interface RootRouteChildren {
   MineIndexRoute: typeof MineIndexRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   staffAccessAuditRoute: typeof staffAccessAuditRoute
+  staffAccessRosterRoute: typeof staffAccessRosterRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
+  NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
   staffMapsIndexRoute: typeof staffMapsIndexRoute
@@ -896,6 +922,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffAccessAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/access/roster': {
+      id: '/(staff)/access/roster'
+      path: '/access/roster'
+      fullPath: '/access/roster'
+      preLoaderRoute: typeof staffAccessRosterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/access/sign-in': {
       id: '/(staff)/access/sign-in'
       path: '/access/sign-in'
@@ -1034,6 +1067,13 @@ declare module '@tanstack/react-router' {
       path: '/mine/declaration/$threadId'
       fullPath: '/mine/declaration/$threadId'
       preLoaderRoute: typeof MineDeclarationThreadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications_/stop/$token': {
+      id: '/notifications_/stop/$token'
+      path: '/notifications/stop/$token'
+      fullPath: '/notifications/stop/$token'
+      preLoaderRoute: typeof NotificationsStopTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/organizations/$id/listing': {
@@ -1199,9 +1239,11 @@ const rootRouteChildren: RootRouteChildren = {
   MineIndexRoute: MineIndexRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   staffAccessAuditRoute: staffAccessAuditRoute,
+  staffAccessRosterRoute: staffAccessRosterRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
+  NotificationsStopTokenRoute: NotificationsStopTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
   staffMapsIndexRoute: staffMapsIndexRoute,

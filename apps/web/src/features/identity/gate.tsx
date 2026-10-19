@@ -8,7 +8,8 @@
  * navigate, because there is nothing listening.
  *
  * The one exception is a door: an address that works without the password
- * (a logbook's filing form, a list's form, a report's confirmation link).
+ * (a logbook's filing form, a list's form, a report's confirmation link, the
+ * link in a digest email that stops it).
  * There the router is mounted for that one page with navigation blocked, so
  * leaving it means a full page load, which lands back here. WHETHER THE THING
  * BEHIND A DOOR IS ACTUALLY OPEN is the server's decision: if a call on that
@@ -35,6 +36,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
   /^\/file\/[a-z0-9][a-z0-9-]{0,62}$/,
   /^\/file\/confirm\/[^/]+$/,
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
+  // Stopping email somebody asked for never waits on a password (identity/digestStop.ts).
+  /^\/notifications\/stop\/[^/]+$/,
 ];
 
 export function isDoorPath(pathname: string): boolean {
