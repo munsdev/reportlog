@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. Brief: `docs/parity.md` §7, P3.
 
 - **Branch:** `claude/p3-setup-wizard`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `a62b6b4` (P5 merged)
-- **Pull request:** see the PR into `ccr-c9c93698-ev856l`
+- **Pull request:** [#25](https://github.com/munsdev/reportlog/pull/25), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
