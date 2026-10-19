@@ -180,9 +180,37 @@ export const getThreadFiles = defineRoute({
   response: z.object({
     may_publish: z.boolean(),
     files_permitted: z.boolean(),
+    /** The reporter withdrew it: its files were taken down and stay down. */
+    withdrawn: z.boolean(),
     files: z.array(ThreadFile),
     events: z.array(FileEvent),
   }),
+});
+
+/** One report in the files queue, or the one a reference names. */
+export const FileReport = z.object({
+  thread_id: z.string(),
+  /** The current version's reference. */
+  public_ref: z.string(),
+  logbook_title: z.string(),
+  received_at: Timestamp,
+  files: z.number().int(),
+  /** Withheld, not erased, and nobody has decided on it yet. */
+  undecided: z.number().int(),
+  published: z.number().int(),
+  may_publish: z.boolean(),
+  files_permitted: z.boolean(),
+  withdrawn: z.boolean(),
+});
+export type FileReport = z.infer<typeof FileReport>;
+
+export const listFileReports = defineRoute({
+  method: 'GET',
+  path: '/api/moderate/files',
+  summary:
+    'Reports with files nobody has decided on yet, oldest first; or, with a reference, that one report.',
+  query: z.object({ ref: z.string().max(100).optional() }),
+  response: z.object({ reports: z.array(FileReport) }),
 });
 
 export const setFilePublication = defineRoute({
@@ -197,6 +225,18 @@ export const setFilePublication = defineRoute({
     reason: z.string().max(2000).optional(),
   }),
   response: z.object({ ok: z.literal(true) }),
+});
+
+export const getReportFilesForErasing = defineRoute({
+  method: 'GET',
+  path: '/api/admin/files/report/:ref',
+  summary: "A report's files, by its reference, for an administrator choosing one to erase.",
+  params: z.object({ ref: z.string().max(100) }),
+  response: z.object({
+    thread_id: z.string(),
+    public_ref: z.string(),
+    files: z.array(ThreadFile),
+  }),
 });
 
 export const eraseFile = defineRoute({

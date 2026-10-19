@@ -168,6 +168,15 @@ export async function publish(
   const row = await fileRow(files.db, input.attachmentId);
   if (!row) throw refuse(404, 'not_found', 'There is no such file.');
   if (!row.dek_wrapped) throw refuse(410, 'erased', 'This file has been erased.');
+  // Withdrawing took every file down (C's withdraw calls takeDown); a
+  // withdrawn report is not public, so nothing of it goes back up.
+  const withdrawn = await files.db
+    .selectFrom('report_heads')
+    .select('withdrawn')
+    .where('thread_id', '=', row.thread_id)
+    .executeTakeFirst();
+  if (withdrawn?.withdrawn)
+    throw refuse(409, 'withdrawn', 'The reporter withdrew this report, so its files stay down.');
   const perms = await permissionsFor(files.db, row.thread_id);
   if (!perms.attachment_publication) {
     throw refuse(
