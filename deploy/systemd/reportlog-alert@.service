@@ -1,0 +1,45 @@
+# Tells somebody that a scheduled job failed: emails OPS_ALERT_EMAIL with the
+# unit's name and nothing else. The log is on the server, and an email is the
+# wrong place for it.
+[Unit]
+Description=ReportLog failure alert for %i
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=reportlog
+Group=reportlog
+WorkingDirectory=/srv/reportlog/current
+ExecStart=/usr/local/bin/node --env-file=/etc/reportlog/reportlog.env apps/api/src/jobs/cli.ts alert %i
+TimeoutStartSec=2min
+
+# --- confinement ------------------------------------------------------
+# The whole file system is read-only to this process except the paths in
+# ReadWritePaths. The code in /srv/reportlog is owned by root, so even
+# without this the service could not rewrite itself.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+# AF_UNIX for the PostgreSQL socket, INET for outbound mail and storage.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+UMask=0077
+# MemoryDenyWriteExecute is deliberately absent: V8 compiles JavaScript to
+# machine code at run time and needs writable, executable memory to do it.

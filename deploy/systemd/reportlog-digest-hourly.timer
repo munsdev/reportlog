@@ -1,0 +1,13 @@
+# Generated from apps/api/src/jobs/registry.ts. Edit the registry, then
+# regenerate: pnpm --filter @reportlog/api ops timers --write
+[Unit]
+Description=ReportLog job timer: digest-hourly
+
+[Timer]
+OnCalendar=*-*-* *:00:00
+RandomizedDelaySec=120
+Persistent=false
+Unit=reportlog-job@digest-hourly.service
+
+[Install]
+WantedBy=timers.target
