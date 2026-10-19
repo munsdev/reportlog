@@ -29,6 +29,9 @@ function SessionLinks() {
   }
   return (
     <div className="flex items-center gap-4 text-sm">
+      <Link to="/mine" className="underline-offset-4 hover:underline">
+        My reports
+      </Link>
       <Link to="/access" className="underline-offset-4 hover:underline">
         {me.data.grantsAccess ? 'Access' : 'Your account'}
       </Link>

@@ -32,7 +32,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /identity\//,
+      testIgnore: /(identity|behind-password)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -41,7 +41,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /identity\//,
+      testIgnore: /(identity|behind-password)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -59,6 +59,17 @@ export default defineConfig({
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
+    {
+      // Filing behind the site password: it turns the password on too, so it
+      // runs alone, after the identity tests have put the site back.
+      name: 'behind-password',
+      testMatch: /behind-password\/.*\.spec\.ts$/,
+      dependencies: ['identity'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
   ],
   webServer: [
     {
@@ -70,6 +81,8 @@ export default defineConfig({
         LOG_LEVEL: 'warn',
         MAIL_OUTBOX: OUTBOX,
         SITE_ORIGIN: 'http://127.0.0.1:4173',
+        // A fixed key for the test server only, so it can take reports.
+        CONTACT_KEY: Buffer.alloc(32, 9).toString('base64'),
       },
     },
     {
