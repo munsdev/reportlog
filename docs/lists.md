@@ -192,6 +192,36 @@ and deletes spent and expired links. `pnpm --filter @reportlog/api lists:sweep`
 runs it once and prints one line per table. **The operations workstream
 schedules it**; until it does, `LIST_PERSONAL_DAYS` is a sentence only.
 
+Its last step rebuilds the text index (below) whenever anything was erased in
+the last 31 days, by the clock or by an erasure link.
+
+## Finding somebody: the subject access search
+
+"What do you hold about me" is answered at **`/lists/search`**, for
+administrators only (`POST /api/admin/lists/search`, `search.ts`). It searches
+every list's personal half, the string answers in `erasable_answers` and the
+address in `email`, through one GIN index (`list_entries_text_idx`, legacy
+046's). The durable half is links and choices, with nobody in it, so it is not
+searched. The words go in a POST body, never an address, so a name typed there
+is in no history or access log.
+
+- **`simple`, not `english`.** It finds a person, and English drops stop words:
+  "Will" and "May" are names. No stemming: it looks for what was written.
+- **`websearch_to_tsquery`**, so quotes, `or`, `-word` and stray punctuation
+  all parse. Up to 200 characters, up to 200 entries, newest first.
+- **The expression is written twice**, in the migration and in `search.ts`,
+  character for character; Postgres uses an expression index only for the same
+  expression. `test/db/lists-search.test.ts` checks the plan and both texts.
+
+**What has been erased is not found, and is not in the index.** A blanked entry
+stops matching at once, because the index covers only columns the sweep
+empties. That alone is not enough: a GIN index keeps an erased word's bytes in
+its pages after the UPDATE, and `VACUUM` does not remove them. So the sweep
+rebuilds the index (`REINDEX … CONCURRENTLY`, entries keep arriving), and first
+drops any half-built copy a failed rebuild left behind, which would hold the
+same words. The database test reads the index's raw pages with `pageinspect`
+to see the word there before the sweep and gone after it.
+
 ## Lists are not in the archive export
 
 An entry is a lead or a tally whose personal half is about to be erased, so
@@ -208,15 +238,13 @@ explicitly and leave the list tables out.
   is fixed once saved), counts so far, and deleting a list nobody has used.
 - **`/lists/review`** and **`/lists/review/:id`**: bulk review, for moderators
   and administrators.
+- **`/lists/search`**: finding somebody's entries, for administrators.
 - **`/list/:slug`**: the form, one question per card.
 
 ## Not ported
 
 - **Volunteering as a list** (legacy migration 047 made `/list/volunteer` from
   that deployment's volunteer roles). There are no volunteer roles here.
-- **Lists feeding heat maps** (legacy migration 051, `map_location`). The maps
-  workstream adds it if it wants it: a list's `location` answers are already
-  durable and impersonal, so they survive the sweep.
 - **Cross-tabulation and link counts over HTTP.** `crossTabFor` and
   `linkCounts` exist and are tested; nothing calls them from a route yet, as in
   legacy.

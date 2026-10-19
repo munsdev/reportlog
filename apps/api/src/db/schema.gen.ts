@@ -447,6 +447,10 @@ export interface Logbooks {
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
   created_at: Generated<Timestamp>;
+  /**
+   * When somebody froze this logbook's uploads, or NULL. A protective measure, not the everyday control: whether a logbook asks for files is whether it has a question of kind 'file'. Freezing stops NEW upload slots and hides nothing already filed or published. Never sealed.
+   */
+  files_frozen_at: Timestamp | null;
   id: Generated<number>;
   launched_at: Timestamp | null;
   opens_at: Timestamp | null;
