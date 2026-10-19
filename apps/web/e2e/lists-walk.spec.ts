@@ -24,6 +24,21 @@ import { countTo, lastMessageTo, linkIn } from './identity/mail.ts';
 
 test.use({ storageState: ADMIN });
 
+/**
+ * Every listed, open list is a button on the front page, and the front page
+ * takes fifty at most (builder.spec.ts arranges it). So what this file opens,
+ * it closes again: entries and rows stay, the button goes.
+ */
+const opened: number[] = [];
+test.afterEach(async ({ page }) => {
+  for (const id of opened.splice(0)) {
+    const r = await page.request.patch(`/api/admin/lists/${String(id)}`, {
+      data: { closed: true },
+    });
+    expect(r.ok(), await r.text()).toBe(true);
+  }
+});
+
 const unique = (stem: string, project: string) =>
   `${stem}-${project}-${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
@@ -44,6 +59,7 @@ async function make(
   const made = await admin.post('/api/admin/lists', { data: { template, slug, title } });
   expect(made.ok(), await made.text()).toBe(true);
   const { id } = (await made.json()) as { id: number };
+  opened.push(id);
   if (Object.keys(settings).length) {
     const set = await admin.patch(`/api/admin/lists/${String(id)}`, { data: settings });
     expect(set.ok(), await set.text()).toBe(true);
