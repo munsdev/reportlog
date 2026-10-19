@@ -92,12 +92,13 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
   {
     key: 'board_intro',
     kind: 'block',
-    label: 'What the board is',
-    help: 'Under the board’s heading. What somebody is looking at, and what it covers.',
-    // Not legacy's "Every submitted report, in real time": the board shows
-    // only what a moderator approved and the reporter allowed, and saying
-    // otherwise would be the board describing itself wrongly.
-    fallback: 'Reports a moderator has approved, and that the people who filed them allowed us to publish.',
+    optional: true,
+    label: 'Your own words on the board',
+    help: 'Under the board’s heading. What somebody is looking at here, and what it covers. The sentence saying that published is not the same as true is the software’s and stays.',
+    // OPTIONAL here, unlike legacy, whose fallback ("Every submitted report,
+    // in real time") described the board wrongly. The board's own lede
+    // already says what it shows; a shipped default would only repeat it.
+    fallback: '',
   },
   {
     key: 'how_intro',

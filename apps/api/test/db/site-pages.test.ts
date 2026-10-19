@@ -191,7 +191,12 @@ describe('the five slots the other pages read', () => {
 
   it('an optional slot nobody wrote shows nothing, not our note to the operator', async () => {
     const copy = (await site()).copy;
-    expect([copy.submit_intro, copy.how_intro, copy.alliance_intro]).toEqual(['', '', '']);
+    expect([copy.submit_intro, copy.board_intro, copy.how_intro, copy.alliance_intro]).toEqual([
+      '',
+      '',
+      '',
+      '',
+    ]);
     // A page that must not come up empty says plainly that it is unwritten.
     expect(copy.about_archive).toMatch(/has not written its About page/);
   });

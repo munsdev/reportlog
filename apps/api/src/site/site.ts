@@ -40,11 +40,7 @@ export async function renderCopy(
 }
 
 export async function publicSite(db: Database, version: SiteVersion = NO_VERSION): Promise<Site> {
-  const [settings, rows, dev] = await Promise.all([
-    readSettings(db),
-    readCopy(db),
-    getDevMode(db),
-  ]);
+  const [settings, rows, dev] = await Promise.all([readSettings(db), readCopy(db), getDevMode(db)]);
   const name = resolveSiteName(settings.site_name);
   return {
     software_name: SOFTWARE_NAME,

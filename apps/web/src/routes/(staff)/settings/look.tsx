@@ -17,7 +17,7 @@ import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave } from './-editor.tsx';
+import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/look')({
   component: () => (
@@ -47,6 +47,7 @@ export function LookForm({ state }: { state: SiteEditor }) {
   const [look, setLookState] = useState<Look>(state.look);
   const save = useSave((value: Look) => call(setLook, { body: value }));
   const changed = look.palette !== state.look.palette || look.theme !== state.look.theme;
+  useUnsavedChanges('the look', changed);
 
   return (
     <form

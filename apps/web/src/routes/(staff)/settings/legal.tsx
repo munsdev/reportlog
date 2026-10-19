@@ -20,7 +20,7 @@ import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave } from './-editor.tsx';
+import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/legal')({
   component: () => (
@@ -46,6 +46,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
     call(setLegalText, { params: { kind: entry.kind }, body: { text: value } }),
   );
   const title = TITLES[entry.kind];
+  useUnsavedChanges(`the ${title.toLowerCase()}`, text !== entry.text);
 
   return (
     <Card>
@@ -89,7 +90,13 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
                 type="button"
                 variant="quiet"
                 onClick={() => {
-                  save.mutate('');
+                  // The box then holds the outline the server starts from
+                  // again, so nothing reads as unsaved afterwards.
+                  save.mutate('', {
+                    onSuccess: (state) => {
+                      setText(state.legal.find((l) => l.kind === entry.kind)?.text ?? '');
+                    },
+                  });
                 }}
               >
                 Take it down

@@ -42,12 +42,14 @@ test('the legal page says plainly what has not been published', async ({ page })
   // The dev database is the operator's; on a fresh one nothing is published,
   // and on any database the outline is never what the page shows.
   await expect(page.getByText('outline to complete')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: 'Moderation standard' })).toBeVisible();
+  await page.getByRole('main').getByRole('link', { name: 'moderation standard' }).click();
+  await expect(page).toHaveURL(/\/standards$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Moderation standard' })).toBeVisible();
 });
 
 test('the footer reaches the legal page', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Imprint, privacy and moderation' }).click();
+  await page.getByRole('link', { name: 'Imprint and privacy' }).click();
   await expect(page).toHaveURL(/\/legal$/);
 });
 

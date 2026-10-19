@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
+import { CopyText } from '../../components/ui/copy-text.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { useMe } from '../identity/session.ts';
@@ -39,6 +40,7 @@ export function DirectoryPage() {
   }
   return (
     <Page title={dir.data.name} width="prose">
+      <CopyText slot="alliance_intro" />
       <Alert tone="note" title="What this list is">
         {dir.data.disclaimer}
       </Alert>
