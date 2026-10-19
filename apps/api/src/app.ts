@@ -19,6 +19,7 @@ import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
 import { listRoutes } from './lists/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
+import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
@@ -34,6 +35,8 @@ export interface AppDeps {
   logStream?: { write: (line: string) => void };
   /** How long a list keeps what is personal, and who hears of new entries. */
   lists?: ListSettings;
+  /** How long one heat map computation serves every reader. Tests pass 0. */
+  mapCacheMs?: number;
 }
 
 export async function buildApp({
@@ -42,6 +45,7 @@ export async function buildApp({
   logStream,
   mailer,
   lists,
+  mapCacheMs,
 }: AppDeps): Promise<FastifyInstance> {
   const hops = config.TRUST_PROXY ?? 0;
   const app = Fastify({
@@ -93,6 +97,7 @@ export async function buildApp({
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
   listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
+  mapRoutes(app, { db, ...(mapCacheMs === undefined ? {} : { cacheMs: mapCacheMs }) });
   await filingRoutes(app, {
     db,
     mailer: mail,

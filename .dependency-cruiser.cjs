@@ -72,6 +72,15 @@ module.exports = {
       to: { path: '^apps/api/src/site/', reachable: true },
     },
     {
+      name: 'maps-stay-out-of-the-seal',
+      comment:
+        'A heat map is a view of the record, not part of it. A report must never verify ' +
+        'differently because somebody changed a map.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/maps/', reachable: true },
+    },
+    {
       name: 'packages-do-not-import-apps',
       severity: 'error',
       from: { path: '^packages/' },

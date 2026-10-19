@@ -5,6 +5,14 @@
 
 import type { ColumnType } from "kysely";
 
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
+  ? U[]
+  : ArrayTypeImpl<T>;
+
+export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S[], I[], U[]>
+  : T[];
+
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
@@ -64,6 +72,26 @@ export interface ContactKeys {
   dek_wrapped: Buffer;
   email_hmac: string | null;
   thread_id: string;
+}
+
+export interface HeatMaps {
+  blurb: string | null;
+  created_at: Generated<Timestamp>;
+  enabled: Generated<boolean>;
+  id: Generated<number>;
+  list_ids: Generated<ArrayType<number>>;
+  logbook_ids: Generated<ArrayType<number>>;
+  min_area: Generated<number>;
+  outcome_key: string | null;
+  outcome_logbook_id: number | null;
+  outcome_stances: Generated<Json>;
+  planes: Generated<string[]>;
+  position: Generated<number>;
+  slot: Generated<string>;
+  slug: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  views: Generated<string[]>;
 }
 
 export interface HomeButtons {
@@ -227,6 +255,18 @@ export interface Logbooks {
   slug: string;
   title: string;
   updated_at: Generated<Timestamp>;
+}
+
+export interface MapListPlaceQuestions {
+  field_key: string;
+  list_id: number;
+  marked_at: Generated<Timestamp>;
+}
+
+export interface MapPlaceQuestions {
+  field_key: string;
+  logbook_id: number;
+  marked_at: Generated<Timestamp>;
 }
 
 export interface OrganizationInvites {
@@ -425,6 +465,7 @@ export interface DB {
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
   contact_keys: ContactKeys;
+  heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
@@ -440,6 +481,8 @@ export interface DB {
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  map_list_place_questions: MapListPlaceQuestions;
+  map_place_questions: MapPlaceQuestions;
   organization_invite_sends: OrganizationInviteSends;
   organization_invites: OrganizationInvites;
   organization_memberships: OrganizationMemberships;
