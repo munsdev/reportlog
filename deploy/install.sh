@@ -68,6 +68,7 @@ say "2. PostgreSQL $POSTGRES_MAJOR"
 trusted_key "$PGDG_KEY_URL" "$PGDG_KEY_FINGERPRINT" /usr/share/keyrings/pgdg.gpg
 echo "deb [signed-by=/usr/share/keyrings/pgdg.gpg] https://apt.postgresql.org/pub/repos/apt $VERSION_CODENAME-pgdg main" \
   >/etc/apt/sources.list.d/pgdg.list
+install -m 0644 "$HERE/apt/reportlog-pgdg.pref" /etc/apt/preferences.d/reportlog-pgdg.pref
 apt-get update -qq
 apt-get install -y -qq "postgresql-$POSTGRES_MAJOR" "postgresql-client-$POSTGRES_MAJOR" >/dev/null
 # Socket only. Nothing listens on a TCP port, public or otherwise; the
