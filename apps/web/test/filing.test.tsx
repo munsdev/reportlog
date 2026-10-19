@@ -148,7 +148,7 @@ describe('the cards', () => {
     return render(
       <QueryClientProvider client={client}>
         <SiteGate history={history} pathname="/file/demo">
-          <FilingForm slug="demo" history={cards} />
+          <FilingForm slug="demo" {...(cards ? { history: cards } : {})} />
         </SiteGate>
       </QueryClientProvider>,
     );

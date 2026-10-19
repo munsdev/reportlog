@@ -100,7 +100,9 @@ describe('the gate', () => {
     gate('/file/open', history);
     expect(await screen.findByText('The site behind the curtain (door)')).toBeVisible();
     expect(block).toHaveBeenCalledTimes(1);
-    type At = { href: string };
+    interface At {
+      href: string;
+    }
     const blocker = (
       block.mock.calls[0] as unknown as [
         { blockerFn: (a: { currentLocation: At; nextLocation: At }) => boolean },
