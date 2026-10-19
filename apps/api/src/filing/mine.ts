@@ -24,6 +24,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { notFound } from '../http/errors.ts';
 import { fieldsFor } from '../logbooks/logbooks.ts';
 import { forForm } from '../logbooks/routes.ts';
+import { flagReport } from '../moderation/flags.ts';
 import { NONE_GRANTED, permissionHistory, permissionsForMany } from '../permissions/log.ts';
 import { emailDigest, eraseContact } from './contactKeys.ts';
 import type { ContactKeyring } from './contactKeys.ts';
@@ -230,6 +231,9 @@ export class Mine {
         .set({ current_report_id: row.id, moderation_status: 'pending', updated_at: new Date() })
         .where('thread_id', '=', threadId)
         .execute();
+      // A correction gets its own look for the review flag: words that were
+      // unremarkable before may not be now.
+      await flagReport(trx, { reportId: row.id, threadId, logbookId: lb.id, answers: row.answers });
       await trx
         .insertInto('reporter_actions')
         .values({ thread_id: threadId, action: 'correct', report_id: row.id, comment })

@@ -59,10 +59,58 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface ContactAccessLog {
+  accessed_at: Generated<Timestamp>;
+  id: Generated<number>;
+  kind: string;
+  reason: string | null;
+  report_id: number | null;
+  staff_email: string;
+  thread_id: string | null;
+}
+
 export interface ContactKeys {
   created_at: Generated<Timestamp>;
   dek_wrapped: Buffer;
   email_hmac: string | null;
+  thread_id: string;
+}
+
+export interface EditorialNoteLinks {
+  added_by: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  note_id: number;
+  published_on: string | null;
+  publisher: string | null;
+  removed_at: Timestamp | null;
+  title: string;
+  url: string;
+}
+
+export interface EditorialNotes {
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  state: Generated<string>;
+  thread_id: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface EditorialNoteVersions {
+  author_email: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  note_id: number;
+  revision_reason: string | null;
+}
+
+export interface FilePublicationLog {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  published: boolean;
+  report_id: number;
   thread_id: string;
 }
 
@@ -192,6 +240,13 @@ export interface ListSalts {
   salt: Buffer;
 }
 
+export interface LogbookEditorialNotes {
+  enabled: boolean;
+  logbook_id: number;
+  set_at: Generated<Timestamp>;
+  set_by: string;
+}
+
 export interface LogbookFields {
   created_at: Generated<Timestamp>;
   filterable: Generated<boolean>;
@@ -226,6 +281,27 @@ export interface Logbooks {
   outside_access: Generated<string>;
   slug: string;
   title: string;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ModerationLog {
+  action: string;
+  actor_email: string;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  new_status: string | null;
+  report_id: number;
+  thread_id: string;
+}
+
+export interface ModerationSettings {
+  id: Generated<boolean>;
+  public_archive_enabled: boolean | null;
+  public_archive_set_by: string | null;
+  review_keywords: string[] | null;
+  review_keywords_set_at: Timestamp | null;
+  review_keywords_set_by: string | null;
   updated_at: Generated<Timestamp>;
 }
 
@@ -327,6 +403,16 @@ export interface ReportPermissionsLog {
   thread_id: string;
 }
 
+export interface ReportReviewFlags {
+  cleared_at: Timestamp | null;
+  cleared_by: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  report_id: number;
+  terms: string[];
+  thread_id: string;
+}
+
 export interface Reports {
   answers: Json | null;
   attested_at: Timestamp | null;
@@ -424,7 +510,12 @@ export interface DB {
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  contact_access_log: ContactAccessLog;
   contact_keys: ContactKeys;
+  editorial_note_links: EditorialNoteLinks;
+  editorial_note_versions: EditorialNoteVersions;
+  editorial_notes: EditorialNotes;
+  file_publication_log: FilePublicationLog;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
@@ -437,9 +528,12 @@ export interface DB {
   list_notify_confirmations: ListNotifyConfirmations;
   list_salts: ListSalts;
   lists: Lists;
+  logbook_editorial_notes: LogbookEditorialNotes;
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  moderation_log: ModerationLog;
+  moderation_settings: ModerationSettings;
   organization_invite_sends: OrganizationInviteSends;
   organization_invites: OrganizationInvites;
   organization_memberships: OrganizationMemberships;
@@ -450,6 +544,7 @@ export interface DB {
   report_contacts: ReportContacts;
   report_heads: ReportHeads;
   report_permissions_log: ReportPermissionsLog;
+  report_review_flags: ReportReviewFlags;
   report_submissions: ReportSubmissions;
   reporter_actions: ReporterActions;
   reports: Reports;
