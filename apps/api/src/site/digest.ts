@@ -9,14 +9,15 @@
  * a digest carries exactly what the public board carries and nothing more:
  * approved by a moderator, not withdrawn, and the reporter permitted
  * publication. The old digest once checked only the first two and emailed
- * reports whose reporters had said no. `boardVisible` below is that rule in
- * one place; when the board workstream has its own, this should call it.
+ * reports whose reporters had said no. The rule is the board's own
+ * (`publishedReportIds` in board/published.ts), and a site whose archive is
+ * switched off sends no digest at all.
  * Files are never in an email: only the answers.
  */
 import { placeLabel } from '@reportlog/fields';
 import { sql } from 'kysely';
-import type { ExpressionBuilder } from 'kysely';
-import type { DB } from '../db/schema.gen.ts';
+import { publicArchiveAvailable } from '../board/publication.ts';
+import { publishedReportIds } from '../board/published.ts';
 import type { EmailJobDeps, JobOutcome } from './job.ts';
 
 export type DigestFrequency = 'hourly' | 'weekly';
@@ -28,24 +29,6 @@ const PERIOD_MS: Record<DigestFrequency, number> = {
   hourly: 60 * 60 * 1000,
   weekly: 7 * 24 * 60 * 60 * 1000,
 };
-
-/**
- * What the public board shows, as a condition on a report's head (`h`) and
- * its current version (`r`). Nothing is public until a moderator approves
- * it; consent is the ceiling.
- *
- * TODO(workstream D): replace with the board's own predicate, including the
- * public-archive switch, once it exists, so the two can never disagree.
- */
-export function boardVisible(
-  eb: ExpressionBuilder<DB & { h: DB['report_heads']; r: DB['reports'] }, 'h' | 'r'>,
-) {
-  return eb.and([
-    eb('h.moderation_status', '=', 'valid'),
-    eb('h.withdrawn', '=', false),
-    eb('r.may_publish', '=', true),
-  ]);
-}
 
 export interface DigestQuestion {
   key: string;
@@ -143,6 +126,15 @@ async function questionsFor(deps: EmailJobDeps, logbookIds: readonly number[]) {
 export async function runDigest(
   deps: EmailJobDeps & { frequency: DigestFrequency },
 ): Promise<JobOutcome> {
+  // A digest is the archive leaving the building. With the public archive
+  // switched off nothing is sent, and no subscriber's clock moves, so what
+  // was approved meanwhile is sent once the archive is back.
+  if (!(await publicArchiveAvailable(deps.db))) {
+    return {
+      ok: true,
+      summary: `${deps.frequency} digest: the public archive is switched off, so nothing was sent.`,
+    };
+  }
   // The database's clock, not this process's: `updated_at` was written by
   // it. And a minute behind it: a moderation still committing when this
   // runs carries a time from before it, and would otherwise fall behind the
@@ -168,7 +160,7 @@ export async function runDigest(
       .innerJoin('reports as r', 'r.id', 'h.current_report_id')
       .innerJoin('logbooks as lb', 'lb.id', 'r.logbook_id')
       .select(['r.public_ref', 'r.answers', 'r.logbook_id', 'lb.title as logbook_title'])
-      .where(boardVisible)
+      .where('r.id', 'in', publishedReportIds(deps.db))
       .where('h.updated_at', '>', since)
       .where('h.updated_at', '<=', until)
       .orderBy('r.received_at')

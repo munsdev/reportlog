@@ -29,6 +29,7 @@ import { publicLinksFor, publicNoteFor, publicNotesForMany } from '../moderation
 import type { PublicNote } from '../moderation/notes.ts';
 import { permissionsForMany } from '../permissions/log.ts';
 import { publicArchiveAvailable } from './publication.ts';
+import { isPublic, publishedReportIds } from './published.ts';
 import {
   ANSWER_KEY,
   answerMatches,
@@ -46,9 +47,7 @@ export function published(db: Kysely<DB>) {
     .selectFrom('report_heads as h')
     .innerJoin('reports as r', 'r.id', 'h.current_report_id')
     .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
-    .where('h.withdrawn', '=', false)
-    .where('h.moderation_status', '=', 'valid')
-    .where('r.may_publish', '=', true);
+    .where('r.id', 'in', publishedReportIds(db));
 }
 
 type Published = ReturnType<typeof published>;
@@ -377,8 +376,4 @@ export async function everyHead(db: Kysely<DB>) {
     .execute();
 }
 
-export const isPublic = (r: {
-  withdrawn: boolean;
-  moderation_status: string;
-  may_publish: boolean;
-}) => !r.withdrawn && r.moderation_status === 'valid' && r.may_publish;
+export { isPublic };

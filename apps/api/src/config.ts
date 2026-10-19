@@ -118,6 +118,64 @@ const ConfigSchema = z.object({
   BACKUP_S3_PREFIX: z.string().default('reportlog/'),
   BACKUP_S3_ACCESS_KEY_ID: optional(z.string()),
   BACKUP_S3_SECRET_ACCESS_KEY: optional(z.string()),
+
+  // --- the daily anchor (apps/api/src/anchor/) -------------------------
+  /**
+   * The daily anchor (apps/api/src/anchor/). The RFC 3161 authority asked to
+   * timestamp the list of chain heads: DFN's, in Germany, unless changed.
+   * https only; plain http is allowed for a stand-in on this machine.
+   */
+  TSA_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z
+      .url()
+      .refine(
+        (u) => u.startsWith('https://') || /^http:\/\/(127\.0\.0\.1|localhost|\[::1\])[:/]/.test(u),
+        'TSA_URL is an https address, like "https://zeitstempel.dfn.de"',
+      )
+      .default('https://zeitstempel.dfn.de'),
+  ),
+  /** The checkout of the public transparency log on this server: an absolute path. */
+  TRANSPARENCY_LOG_DIR: optional(
+    z.string().refine((s) => s.startsWith('/'), 'TRANSPARENCY_LOG_DIR is an absolute path'),
+  ),
+  /**
+   * Where the log is pushed: git addresses, comma-separated, each pushed on
+   * its own. An https address may carry its token
+   * (https://user:token@host/owner/log.git); an ssh one uses
+   * TRANSPARENCY_LOG_SSH_KEY. Secrets, so never logged.
+   */
+  TRANSPARENCY_LOG_REMOTES: z
+    .string()
+    .default('')
+    .transform((s) =>
+      s
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean),
+    )
+    .refine(
+      (list) =>
+        list.every((r) => /^(https:\/\/|ssh:\/\/|[^@\s/]+@[^:\s]+:|file:\/\/|\/)\S+$/.test(r)),
+      'TRANSPARENCY_LOG_REMOTES is a comma-separated list of git addresses (https://, ssh:// or git@host:path)',
+    ),
+  TRANSPARENCY_LOG_BRANCH: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._/-]{0,100}$/, 'TRANSPARENCY_LOG_BRANCH is a branch name')
+    .default('main'),
+  /** A private key file for ssh remotes. Kept outside the database, mode 0600. */
+  TRANSPARENCY_LOG_SSH_KEY: optional(
+    z.string().refine((s) => s.startsWith('/'), 'TRANSPARENCY_LOG_SSH_KEY is an absolute path'),
+  ),
+  /** Who the log's commits are by. */
+  TRANSPARENCY_LOG_AUTHOR_NAME: z.string().min(1).default('ReportLog anchor'),
+  TRANSPARENCY_LOG_AUTHOR_EMAIL: z.email().default('anchor@reportlog.invalid'),
+  /** Hours after which the newest anchor counts as stale (the job runs daily). */
+  ANCHOR_MAX_AGE_HOURS: z.coerce
+    .number()
+    .min(25)
+    .max(24 * 14)
+    .default(36),
 });
 
 /**

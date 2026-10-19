@@ -193,3 +193,27 @@ describe('the figures language', () => {
     );
   });
 });
+
+describe('what is public is decided in one place', () => {
+  // The board, the published chain file, the snapshot and the maps once each
+  // had their own copy of the rule. One copy cannot disagree with itself.
+  it('only board/published.ts spells the rule in a query', () => {
+    const root = new URL('../../src/', import.meta.url);
+    const found: string[] = [];
+    const walk = (dir: URL) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.isDirectory()) walk(new URL(`${e.name}/`, dir));
+        else if (e.name.endsWith('.ts') && !e.name.endsWith('.gen.ts')) {
+          const src = readFileSync(new URL(e.name, dir), 'utf8');
+          // The query forms only (a builder call, or SQL with a table alias), so a
+          // comment naming the rule is not mistaken for a copy of it.
+          if (/moderation_status', '=', 'valid'|\w\.moderation_status\s*=\s*'valid'/.test(src)) {
+            found.push(new URL(e.name, dir).pathname.split('/src/')[1] ?? e.name);
+          }
+        }
+      }
+    };
+    walk(root);
+    expect(found).toEqual(['board/published.ts']);
+  });
+});

@@ -3,7 +3,10 @@
  * @reportlog/seal, without this server.
  *
  * `complete` carries every version, published or not, and is for
- * administrators. `published` carries only what the public board shows.
+ * administrators. `published` carries only what the public board shows: the
+ * caller hands in the ids of published versions (`publishedReportIds`, the
+ * one definition of public). The chain code may not import it, and must not
+ * keep a second copy of the rule that could drift from the board's.
  */
 import {
   CHAIN_FILE_FORMAT,
@@ -12,7 +15,7 @@ import {
   rebuildSealedObject,
 } from '@reportlog/seal';
 import type { ChainFile } from '@reportlog/seal';
-import type { Kysely } from 'kysely';
+import type { Expression, Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { formVersions } from './forms.ts';
 import { manifestFor, sealedReportRows, toStoredRecord } from './record.ts';
@@ -20,7 +23,7 @@ import { manifestFor, sealedReportRows, toStoredRecord } from './record.ts';
 export async function buildChainFile(
   db: Kysely<DB>,
   logbookId: number,
-  { publishedOnly = false }: { publishedOnly?: boolean } = {},
+  { published }: { published?: Expression<number> } = {},
 ): Promise<ChainFile | null> {
   const lb = await db
     .selectFrom('logbooks')
@@ -31,13 +34,7 @@ export async function buildChainFile(
   if (!lb) return null;
 
   let query = sealedReportRows(db).where('r.logbook_id', '=', lb.id);
-  if (publishedOnly) {
-    query = query
-      .innerJoin('report_heads as h', 'h.current_report_id', 'r.id')
-      .where('h.withdrawn', '=', false)
-      .where('h.moderation_status', '=', 'valid')
-      .where('r.may_publish', '=', true);
-  }
+  if (published) query = query.where('r.id', 'in', published);
   const rows = await query.orderBy('r.id').execute();
 
   const reports = [];
@@ -72,7 +69,7 @@ export async function buildChainFile(
 
   return {
     chain_file_format: CHAIN_FILE_FORMAT,
-    kind: publishedOnly ? 'published' : 'complete',
+    kind: published ? 'published' : 'complete',
     logbook: lb.slug,
     title: lb.title,
     genesis: chainGenesis(lb.slug),

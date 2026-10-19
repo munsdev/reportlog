@@ -31,6 +31,15 @@ export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AnchorRuns {
+  anchor_date: string | null;
+  detail: string;
+  finished_at: Generated<Timestamp>;
+  id: Generated<number>;
+  outcome: string;
+  started_at: Timestamp;
+}
+
 export interface Attachments {
   byte_size: number;
   id: Generated<number>;
@@ -589,6 +598,7 @@ export interface Users {
 }
 
 export interface DB {
+  anchor_runs: AnchorRuns;
   attachments: Attachments;
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;

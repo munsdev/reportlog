@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D was split in two; D2 (the anchor, the transparency log, exports) has its own report.
 
-- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2 and I merged in at `b7effe5`)
+- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2, I and D2 merged in at `7898de3`)
 - **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
@@ -12,8 +12,8 @@ D was split in two; D2 (the anchor, the transparency log, exports) has its own r
 
 | Suite                                                      | Result                                                                                               |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 200, web 392, fields 69, seal 31, access 4) |
-| `pnpm test:db`                                             | 35 files, 582 tests, all passed, after merging H, G2 and I (before this branch: 24 files, 393)       |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 231, web 392, fields 69, seal 31, access 4) |
+| `pnpm test:db`                                             | 38 files, 626 tests, all passed, after merging H, G2, I and D2 (before this branch: 24 files, 393)   |
 | `db:types:check`                                           | generated types up to date                                                                           |
 | Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 91 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
 
@@ -86,6 +86,29 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 | (new)                                                                           | `apps/api/test/db/board.test.ts`                       | Search, filters, CSV, counts, figures                                                                                                                                        |
 | (new)                                                                           | `apps/web/e2e/board/moderate.spec.ts`, `board.spec.ts` | Including the no-third-party-request test for every new page                                                                                                                 |
 
+## What counts as public is decided once
+
+`apps/api/src/board/published.ts` holds the rule: the current version of a thread, approved, not
+withdrawn, and permitted by its reporter. It is a subquery of published report ids
+(`publishedReportIds`) plus the same rule in JavaScript (`isPublic`). Everything that reads the
+published record uses it:
+
+- the board (`board/board.ts`) and its counts and figures;
+- the published chain file: D2's route passes the subquery to `buildChainFile`, which takes it as an
+  argument because `chain/` may not import `board/`;
+- D2's daily snapshot (`publishedReportRows` in `anchor/records.ts`);
+- I's heat maps (`publishedHeads` in `maps/aggregate.ts`);
+- G's email digest (`site/digest.ts`, which carried a `TODO(workstream D)` for exactly this);
+- C's confirmation page (`isPublic`).
+
+A unit test fails if any other file spells the rule in a query. A database test checks that the
+published chain file carries exactly the reports the board shows.
+
+The archive switch is a second gate, asked by each public read: the board, the published chain
+file, both map reads and the digest (which then sends nothing and moves no subscriber's clock). The
+daily snapshot in the transparency log does NOT ask it: whether a never-rewritten log should skip
+reports while the site is not publishing is D2's call.
+
 ## Decisions a reviewer should know about
 
 - **A reporter's own withdrawal is never undone by staff.** Legacy let a moderator restore any
@@ -112,8 +135,8 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
   timestamp and is shown to staff and the reporter, so it is not a secret anyone can rely on. It is
   behind the site password. A decision for the coordinator: perhaps verify an unpublished report by
   its hashes only.
-- **C's confirmation page says "public"** when a report is approved, permitted and not withdrawn,
-  without asking the archive switch. With the archive off it says "public" for a report nobody can
+- **C's confirmation page says "public"** when a report is approved, permitted and not withdrawn
+  (now through the shared `isPublic`), without asking the archive switch. With the archive off it says "public" for a report nobody can
   see. `filing.ts` could call `publicArchiveAvailable` from `board/publication.ts`. I did not change
   it.
 - **`/api/v1` is behind the site password.** Legacy put it in front, so people with no account
@@ -129,6 +152,14 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 
 ## Changes outside D1's folders (all named in the commit messages)
 
+- `apps/api/src/chain/chainFile.ts` (foundation): `buildChainFile` takes the published ids as an
+  argument (`{ published }`) instead of its own copy of the rule.
+- `apps/api/src/anchor/records.ts`, `anchor/routes.ts` (D2): the snapshot and the published chain
+  file use `publishedReportIds`; the published chain file asks the archive switch.
+- `apps/api/src/site/digest.ts` (G): the digest uses the shared rule and the archive switch
+  (`boardVisible` removed; it had no other caller).
+- `apps/api/src/maps/aggregate.ts` (I): `publishedHeads` uses the shared rule.
+- `apps/api/src/filing/filing.ts` (C): the confirmation page uses `isPublic`.
 - `apps/api/src/maps/routes.ts` (I): the two public map reads ask the archive switch first, as
   I's report asked (the per-report rule in `publishedHeads` already matched D1's).
 - `apps/web/src/features/staff-nav/entries.ts` (G2): Moderation and Moderation settings, one line
@@ -150,9 +181,9 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 
 ## For the other workstreams
 
-- **D2 (anchor, exports):** every public read of the archive must ask
-  `publicArchiveAvailable(db)` from `apps/api/src/board/publication.ts` first, including a
-  published chain file. `published(db)` in `board/board.ts` is the one definition of "public".
+- **D2 (anchor, exports):** "public" is `publishedReportIds` in `board/published.ts`, now used by
+  the snapshot and the published chain file; the chain file also asks the archive switch. Decide
+  whether the snapshot should too.
   Legacy's distribution switch was not ported; it belongs with the exports. The archive export
   should carry `moderation_log`, `report_review_flags`, the editorial note tables,
   `contact_access_log` and `file_publication_log`, and must never seal any of them.

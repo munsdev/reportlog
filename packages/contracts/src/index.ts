@@ -11,3 +11,4 @@ export * from './filing.ts';
 export * from './moderation.ts';
 export * from './board.ts';
 export * from './maps.ts';
+export * from './anchor.ts';

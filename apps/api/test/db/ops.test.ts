@@ -354,7 +354,8 @@ describe('the doctor, off a server', () => {
     expect(by('migrations')).toEqual(['ok']);
     expect(by('email')).toEqual(['warn']);
     expect(by('backup')).toEqual(['fail']);
-    expect(by('jobs')).toEqual(['warn']);
+    // Every scheduled job has a runner now, so nothing is "not built yet".
+    expect(by('jobs')).toEqual([]);
     // Server-only checks are skipped, not failed.
     expect(by('postgres')).toEqual([]);
     expect(by('updates')).toEqual([]);

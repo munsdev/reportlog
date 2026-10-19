@@ -30,6 +30,7 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
+import { isPublic } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { HttpError } from '../http/errors.ts';
@@ -199,9 +200,9 @@ async function threadState(
     .select(['r.public_ref', 'r.may_publish', 'h.withdrawn', 'h.moderation_status'])
     .where('h.thread_id', '=', threadId)
     .executeTakeFirstOrThrow();
-  const isPublic = head.moderation_status === 'valid' && !head.withdrawn && head.may_publish;
   return {
-    state: isPublic ? 'public' : 'received',
+    // The board's own rule (board/published.ts), so the two cannot disagree.
+    state: isPublic(head) ? 'public' : 'received',
     logbook_title: logbookTitle,
     public_ref: head.public_ref,
   };

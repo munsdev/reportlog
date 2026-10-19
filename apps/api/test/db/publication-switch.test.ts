@@ -20,8 +20,9 @@ import { setOutsideAccess } from '../../src/identity/doors.ts';
 import { createMap, deleteMap } from '../../src/maps/manage.ts';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
 import type { FilingHarness } from './filing-helpers.ts';
+import { runDigest } from '../../src/site/digest.ts';
 import { launchedLogbook } from './helpers.ts';
-import { liftCurtain } from './identity-helpers.ts';
+import { SITE, liftCurtain } from './identity-helpers.ts';
 import {
   approve,
   fileThread,
@@ -147,6 +148,53 @@ describe('the switch is the administrators’', () => {
       payload: { published: null },
     });
     expect(reset.json()).toEqual({ published: true, stored: null });
+  });
+});
+
+describe('the published chain file obeys the same switch, and the same rule as the board', () => {
+  it('is withheld while the archive is off', async () => {
+    await set(false);
+    const off = await get(`/api/chain/${slug}`);
+    expect(off.status).toBe(404);
+    expect(off.text).toContain(NOTICE);
+    await set(null);
+    expect((await get(`/api/chain/${slug}`)).status).toBe(200);
+  });
+
+  it('carries exactly the reports the board shows', async () => {
+    const lb = await h.db
+      .selectFrom('logbooks')
+      .select('id')
+      .where('slug', '=', slug)
+      .executeTakeFirstOrThrow();
+    const pending = await fileThread(h.db, { id: lb.id, slug }, Q, {
+      what: 'Not approved, so not public.',
+    });
+    const file = JSON.parse((await get(`/api/chain/${slug}`)).text) as {
+      reports: { public_ref: string }[];
+    };
+    const board = JSON.parse((await get(`/api/board/reports?logbook=${slug}`)).text) as {
+      reports: { public_ref: string }[];
+    };
+    const refsOf = (x: { public_ref: string }[]) => x.map((r) => r.public_ref).sort();
+    expect(refsOf(file.reports)).toEqual(refsOf(board.reports));
+    expect(refsOf(file.reports)).not.toContain(pending.publicRef);
+  });
+});
+
+describe('the email digest obeys the same switch', () => {
+  it('sends nothing while the archive is off', async () => {
+    await set(false);
+    const lines: string[] = [];
+    const out = await runDigest({
+      db: h.db,
+      mailer: h.mailer,
+      siteOrigin: SITE,
+      log: (l) => lines.push(l),
+      frequency: 'weekly',
+    });
+    expect(out.summary).toMatch(/switched off, so nothing was sent/);
+    await set(null);
   });
 });
 
