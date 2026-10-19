@@ -57,10 +57,11 @@ beforeAll(async () => {
     standIns.add(`${method} ${url}`);
     app.route({ method, url, handler: () => (reached.push(`${method} ${url}`), { ok: true }) });
   }
-  // A list route deciding for itself.
+  // A list route deciding for itself. Its own address, now that the real list
+  // routes exist (test/db/lists-routes.test.ts walks those with the password on).
   app.route({
     method: 'GET',
-    url: '/api/lists/:slug',
+    url: '/api/lists/stand-in/:slug',
     config: { curtain: 'decides-itself' },
     handler: () => ({ list: true }),
   });
@@ -190,7 +191,7 @@ describe('with the password on', () => {
 
 describe('a list decides for itself', () => {
   it('reaches its own handler without the password', async () => {
-    const res = await get('/api/lists/anything');
+    const res = await get('/api/lists/stand-in/anything');
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ list: true });
   });

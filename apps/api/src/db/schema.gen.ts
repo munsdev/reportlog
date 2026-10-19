@@ -65,6 +65,100 @@ export interface HomeButtons {
   updated_at: Generated<Timestamp>;
 }
 
+export interface LinkIndex {
+  first_seen: Generated<Timestamp>;
+  host: string;
+  last_seen: Generated<Timestamp>;
+  submission_count: Generated<number>;
+  url_key: string;
+}
+
+export interface ListEntries {
+  answers: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  email_consent: Generated<boolean>;
+  erasable_answers: Json | null;
+  erased_at: Timestamp | null;
+  id: Generated<number>;
+  ip_hash: string | null;
+  list_id: number;
+  personal_expires_at: Timestamp | null;
+  review_state: Generated<string>;
+  reviewed_at: Timestamp | null;
+  reviewed_by: number | null;
+  triage_state: Generated<string>;
+}
+
+export interface ListEntryLinks {
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  field_key: string;
+  host: string;
+  id: Generated<number>;
+  url_key: string;
+  url_raw: string;
+}
+
+export interface ListErasures {
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  expires_at: Timestamp;
+  token_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface ListFields {
+  aggregatable: Generated<boolean>;
+  created_at: Generated<Timestamp>;
+  help: string | null;
+  id: Generated<number>;
+  key: string;
+  kind: string;
+  label: string;
+  list_id: number;
+  max_values: Generated<number>;
+  position: Generated<number>;
+  required: Generated<boolean>;
+  retention: string;
+  settings: Generated<Json>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface ListNotifyConfirmations {
+  created_at: Generated<Timestamp>;
+  email: string;
+  expires_at: Timestamp;
+  list_id: number;
+  token_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface Lists {
+  aggregates_published: Generated<boolean>;
+  blurb: string | null;
+  closed_at: Timestamp | null;
+  closes_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  email_mode: Generated<string>;
+  id: Generated<number>;
+  notify: Generated<boolean>;
+  notify_email: string | null;
+  notify_pending_email: string | null;
+  opens_at: Timestamp | null;
+  outside_access: Generated<string>;
+  slug: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  visibility: Generated<string>;
+}
+
+export interface ListSalts {
+  created_at: Generated<Timestamp>;
+  day: string;
+  salt: Buffer;
+}
+
 export interface LogbookFields {
   created_at: Generated<Timestamp>;
   filterable: Generated<boolean>;
@@ -258,6 +352,14 @@ export interface DB {
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
   home_buttons: HomeButtons;
+  link_index: LinkIndex;
+  list_entries: ListEntries;
+  list_entry_links: ListEntryLinks;
+  list_erasures: ListErasures;
+  list_fields: ListFields;
+  list_notify_confirmations: ListNotifyConfirmations;
+  list_salts: ListSalts;
+  lists: Lists;
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
