@@ -4,19 +4,22 @@ For the coordinating session and the other workstreams. One file per workstream 
 The brief is `docs/parity.md` §7, "P5". D1 (`D1-board.md`), D2 (`D2-anchor.md`) and D3
 (`D3-moderation-extras.md`) built the rest of D.
 
-- **Branch:** `claude/p5-public-api`, based on `ccr-c9c93698-ev856l` at `96b3741` (D3 merged)
+- **Branch:** `claude/p5-public-api`, based on `ccr-c9c93698-ev856l` at `96b3741` (D3 merged); the base merged in again at `af9114b` (P1, P4, P6, P7)
 - **Pull request:** see the coordinating session's message (into `ccr-c9c93698-ev856l`)
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
 
-| Suite                                                      | Result                                                                                                     |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 282, web 423, fields 69, seal 31, access 6)       |
-| `pnpm test:db`                                             | 55 files, 830 tests, all passed (run before the last change, which touched only `features/board/Maps.tsx`) |
-| `db:types:check`                                           | unchanged (no migration)                                                                                   |
-| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 133 passed, none failed or skipped (P5 adds 1, in its own last project, `board-maps`)                      |
+| Suite                                                      | Result (after merging `af9114b`)                                                                                                     |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 327 passed and 11 skipped, web 436, fields 69, seal 31, access 6)           |
+| `pnpm test:db`                                             | 61 files, 910 tests, all passed                                                                                                      |
+| `db:types:check`                                           | unchanged (no migration; regenerated after the merge, no difference)                                                                 |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 415 passed, none failed (P5 adds one test in its own last project, `board-maps`; P1's walk of every page now includes `/board/maps`) |
+
+The 11 skipped unit tests are P7's (`deploy-caddy.test.ts`, `deploy-storage-check.test.ts`): they
+skip when Caddy or moto is not installed, and this container has neither. None is P5's.
 
 **The first full browser run failed P5's own test (132 of 133):** it used the saved administrator
 session (`e2e/.auth/admin.json`), which the identity project, running earlier, ends. The test now
