@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -47,7 +47,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -107,6 +107,18 @@ export default defineConfig({
       name: 'board-behind-password',
       testMatch: /board-locked\/.*\.spec\.ts$/,
       dependencies: ['doors-behind-password'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // P5: a map in each of the board's slots. Alone and last, because a map
+      // placed above the report board changes the page the board's other
+      // tests read. Files nothing through the filing route.
+      name: 'board-maps',
+      testMatch: /board-maps\/.*\.spec\.ts$/,
+      dependencies: ['board-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

@@ -20,6 +20,7 @@ import { route } from '../http/route.ts';
 import { json } from '../moderation/json.ts';
 import { boardCsv, boardLogbooks, boardPage, boardReport } from './board.ts';
 import type { BoardQuery } from './board.ts';
+import { allConsentTexts } from './consentTexts.ts';
 import { catalogue } from './figures.ts';
 import { PUBLICATION_OFF, publicArchiveAvailable } from './publication.ts';
 import { cachedStats } from './stats.ts';
@@ -116,15 +117,18 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
       version: 1 as const,
       // SCOPED, AND THE SCOPE IS THE POINT. A report is its reporter's own
       // account: they permitted publication here, not relicensing by anybody
-      // who fetches it. What the operator can offer is the counts it computed.
+      // who fetches it. What the operator can offer is the counts it computed
+      // and the wordings it wrote.
       licence: {
-        covers: 'The aggregate counts served under /api/v1.',
+        covers: 'The aggregate counts and the consent wordings served under /api/v1.',
         terms: `CC BY 4.0, attributed to ${deps.siteOrigin}`,
         excludes:
           'The reports themselves. Each is its own author’s account, published here with their permission; that permission is not ours to pass on.',
       },
       endpoints: {
         '/api/v1/stats': 'Aggregate counts over the published record. Cached for 60 seconds.',
+        '/api/v1/consent-texts':
+          'Every wording of the publication question this site has shown, by digest. A published report seals the digest of the exact sentence its reporter answered; this is how that digest is read back. The digest is the SHA-256 of the body, so it can be checked.',
       },
       stability:
         'Fields may be added. Existing fields will not be renamed, retyped or removed without a new version at /api/v2.',
@@ -139,6 +143,19 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
       ...(await stats()),
       api_version: 1 as const,
       licence: `CC BY 4.0 (these figures only; not the reports), ${deps.siteOrigin}`,
+    };
+  });
+
+  // Not asked of the archive switch: see consentTexts.ts. An hour, because
+  // these change about never and a row once listed never moves.
+  route(app, C.getPublicConsentTexts, async ({ reply }) => {
+    void reply.header('cache-control', 'public, max-age=3600');
+    return {
+      texts: await allConsentTexts(db),
+      api_version: 1 as const,
+      // The wordings are the site's own, so they are the operator's to
+      // license, unlike the reports answered against them.
+      licence: `CC BY 4.0 (these wordings only; not the reports), ${deps.siteOrigin}`,
     };
   });
 }

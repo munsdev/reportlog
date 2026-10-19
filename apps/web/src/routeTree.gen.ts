@@ -22,6 +22,7 @@ import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/setting
 import { Route as staffTransparencyLogRouteImport } from './routes/(staff)/transparency-log'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
+import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as BoardPressRouteImport } from './routes/board/press'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
@@ -138,6 +139,11 @@ const BoardIndexRoute = BoardIndexRouteImport.update({
 const BoardRefRoute = BoardRefRouteImport.update({
   id: '/board/$ref',
   path: '/board/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardMapsRoute = BoardMapsRouteImport.update({
+  id: '/board/maps',
+  path: '/board/maps',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardNumbersRoute = BoardNumbersRouteImport.update({
@@ -416,6 +422,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof staffSettingsRouteRouteWithChildren
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
@@ -477,6 +484,7 @@ export interface FileRoutesByTo {
   '/submit': typeof SubmitRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
@@ -545,6 +553,7 @@ export interface FileRoutesById {
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
   '/(staff)/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
   '/docs/checking': typeof DocsCheckingRoute
@@ -614,6 +623,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/transparency-log'
     | '/board/$ref'
+    | '/board/maps'
     | '/board/numbers'
     | '/board/press'
     | '/docs/checking'
@@ -675,6 +685,7 @@ export interface FileRouteTypes {
     | '/submit'
     | '/transparency-log'
     | '/board/$ref'
+    | '/board/maps'
     | '/board/numbers'
     | '/board/press'
     | '/docs/checking'
@@ -742,6 +753,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings'
     | '/(staff)/transparency-log'
     | '/board/$ref'
+    | '/board/maps'
     | '/board/numbers'
     | '/board/press'
     | '/docs/checking'
@@ -810,6 +822,7 @@ export interface RootRouteChildren {
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
   staffTransparencyLogRoute: typeof staffTransparencyLogRoute
   BoardRefRoute: typeof BoardRefRoute
+  BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
   BoardPressRoute: typeof BoardPressRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
@@ -931,6 +944,13 @@ declare module '@tanstack/react-router' {
       path: '/board/$ref'
       fullPath: '/board/$ref'
       preLoaderRoute: typeof BoardRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/board/maps': {
+      id: '/board/maps'
+      path: '/board/maps'
+      fullPath: '/board/maps'
+      preLoaderRoute: typeof BoardMapsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board/numbers': {
@@ -1419,6 +1439,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
   staffTransparencyLogRoute: staffTransparencyLogRoute,
   BoardRefRoute: BoardRefRoute,
+  BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
   BoardPressRoute: BoardPressRoute,
   DocsCheckingRoute: DocsCheckingRoute,

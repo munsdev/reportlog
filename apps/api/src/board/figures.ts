@@ -5,9 +5,15 @@
  * catalogue of figures and the language that combines them.
  *
  * WHAT A FIGURE MAY BE: only what is already public elsewhere on the site,
- * defined the same way. Reports filed (confirmed into the record) and
- * published, as stats.ts counts them, overall and per logbook. (Legacy also
- * offered a list's published counts; that half is not ported yet.)
+ * defined the same way:
+ *   - reports filed (confirmed into the record) and published, as stats.ts
+ *     counts them, overall and per logbook;
+ *   - a list's received and approved, and its counts per answer of each
+ *     question an operator ticked as countable, ONLY for a list that is
+ *     listed and whose counts an administrator published: the same two
+ *     conditions as the list's public counts (GET /api/lists/:slug/counts),
+ *     counted by the lists' own code (lists/aggregates.ts), so the two can
+ *     never disagree.
  *
  * NO BARE TOTAL is still the rule: the operator writes the qualification
  * around the number.
@@ -17,8 +23,11 @@
  * percent(part, whole). Anything else is a refusal with a reason: the text
  * box is somebody's front page, and nothing typed into it may run.
  */
+import { createHash } from 'node:crypto';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { summaryFor } from '../lists/aggregates.ts';
+import { listBySlug } from '../lists/rows.ts';
 import { launchedLogbooks } from '../logbooks/logbooks.ts';
 import { everyHead, isPublic } from './board.ts';
 
@@ -301,6 +310,70 @@ export async function catalogue(db: Kysely<DB>, now = Date.now()): Promise<Figur
         label: `${b.title}: published, of those filed ${words}`,
         value: mine.filter(isPublic).length,
       });
+    }
+  }
+  out.push(...(await listFigures(db, now)));
+  return out;
+}
+
+/**
+ * A short, stable name for one answer, so an operator's placeholder keeps
+ * working when the list's options are reordered or another is added. Legacy's
+ * exactly (the first six hex digits of the answer's SHA-256), so a placeholder
+ * written against the old site still names the same figure.
+ */
+export const valueId = (v: string) => createHash('sha256').update(v).digest('hex').slice(0, 6);
+
+/** A list's figures: only a list that is listed AND whose counts were published. */
+async function listFigures(db: Kysely<DB>, now: number): Promise<Figure[]> {
+  const lists = await db
+    .selectFrom('lists')
+    .select('slug')
+    .where('aggregates_published', '=', true)
+    .where('visibility', '=', 'listed')
+    .orderBy('created_at')
+    .orderBy('id')
+    .execute();
+  const out: Figure[] = [];
+  for (const { slug } of lists) {
+    const list = await listBySlug(db, slug);
+    if (!list) continue;
+    const group = `List: ${list.title}`;
+    for (const [w, days] of Object.entries(WINDOWS) as [WindowName, number | null][]) {
+      const since = days === null ? null : new Date(now - days * 864e5);
+      const s = await summaryFor(db, list, { since });
+      if (!s) continue;
+      const words = WINDOW_WORDS[w];
+      out.push({
+        id: `list.${slug}.received.${w}`,
+        group,
+        label: `${list.title}: received ${words}`,
+        value: s.totals.received,
+      });
+      out.push({
+        id: `list.${slug}.approved.${w}`,
+        group,
+        label: `${list.title}: approved, of those received ${words}`,
+        value: s.totals.approved,
+      });
+      for (const f of s.fields) {
+        for (const v of f.values) {
+          const base = `list.${slug}.${f.key}.${valueId(v.value)}`;
+          const said = `${list.title}: "${f.label}" answered "${v.value}"`;
+          out.push({
+            id: `${base}.received.${w}`,
+            group,
+            label: `${said}, received ${words}`,
+            value: v.received,
+          });
+          out.push({
+            id: `${base}.approved.${w}`,
+            group,
+            label: `${said}, approved ${words}`,
+            value: v.approved,
+          });
+        }
+      }
     }
   }
   return out;

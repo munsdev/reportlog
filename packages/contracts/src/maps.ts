@@ -51,8 +51,8 @@ export const DEFAULT_MIN_AREA = 3;
  * reason). Every map also has its own address, /map/<slug>, whatever its
  * slot.
  *
- * The board's slots (legacy's tab, above the reports, with the figures)
- * belong here once the board exists; the board's workstream adds them.
+ * The board's three are legacy's: a tab of its own, above the reports, and
+ * with the figures (workstream D, apps/web/src/features/board/).
  */
 export const MAP_SLOTS = [
   {
@@ -60,6 +60,24 @@ export const MAP_SLOTS = [
     label: 'Only at its own address',
     description:
       'At /map/<short name> and nowhere else. Somebody reaches it from a link you share.',
+  },
+  {
+    id: 'board_tab',
+    label: 'Its own tab on the board',
+    description:
+      'A Maps page beside the reports and the numbers, at /board/maps. Best for a map somebody comes to the board to read.',
+  },
+  {
+    id: 'board_reports',
+    label: 'Above the report board',
+    description:
+      'At the top of the list of reports, so the map and the reports it summarises are on one screen.',
+  },
+  {
+    id: 'board_numbers',
+    label: 'With the numbers',
+    description:
+      'Under the counts on the board’s “By the numbers” page, where a reader is already looking at totals.',
   },
   {
     id: 'home',
