@@ -6,8 +6,9 @@
 import type { FormQuestion } from '@reportlog/contracts';
 import { cardFor } from '@reportlog/seal';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { createMemoryHistory } from '@tanstack/react-router';
 import type { RouterHistory } from '@tanstack/react-router';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FilingForm } from '../src/features/form/FilingForm.tsx';
@@ -103,7 +104,7 @@ describe('the cards', () => {
     max_document_pages: 40,
   };
 
-  function onDoor(fields: FormQuestion[] = QS) {
+  function onDoor(fields: FormQuestion[] = QS, cards?: RouterHistory) {
     // jsdom lays nothing out, so there is nowhere to scroll to.
     vi.stubGlobal('scrollTo', vi.fn());
     const answers: Record<string, unknown> = {
@@ -147,7 +148,7 @@ describe('the cards', () => {
     return render(
       <QueryClientProvider client={client}>
         <SiteGate history={history} pathname="/file/demo">
-          <FilingForm slug="demo" />
+          <FilingForm slug="demo" history={cards} />
         </SiteGate>
       </QueryClientProvider>,
     );
@@ -221,5 +222,119 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('heading', { name: 'Check your answers' })).toBeInTheDocument();
     expect(calls.filter((c) => c.includes('/api/uploads'))).toEqual([]);
+  });
+
+  describe('one history entry per card', () => {
+    const heading = (name: string) => screen.findByRole('heading', { name });
+    const press = (user: ReturnType<typeof userEvent.setup>, name: string) =>
+      user.click(screen.getByRole('button', { name }));
+    const browser = (move: () => void) => {
+      act(move);
+    };
+
+    it("the browser's Back goes back one question, and Forward returns, answers kept", async () => {
+      const user = userEvent.setup();
+      const cards = createMemoryHistory({ initialEntries: ['/file/demo?from=poster'] });
+      onDoor(QS, cards);
+      await user.click(await screen.findByRole('button', { name: 'Start' }));
+      await user.type(screen.getByRole('textbox', { name: 'What happened?' }), 'It happened.');
+      await press(user, 'Next');
+      await heading('Did anybody see it?');
+      // Every entry is the same address, query and all.
+      expect(cards.location.href).toBe('/file/demo?from=poster');
+
+      browser(() => {
+        cards.back();
+      });
+      expect(await heading('What happened?')).toHaveFocus();
+      expect(screen.getByRole('textbox', { name: 'What happened?' })).toHaveValue('It happened.');
+      browser(() => {
+        cards.back();
+      });
+      await screen.findByRole('button', { name: 'Start' });
+      browser(() => {
+        cards.forward();
+      });
+      await heading('What happened?');
+      browser(() => {
+        cards.forward();
+      });
+      await heading('Did anybody see it?');
+    });
+
+    it("the page's Back is the browser's, so after Change it returns to the review", async () => {
+      const user = userEvent.setup();
+      const cards = createMemoryHistory({ initialEntries: ['/file/demo'] });
+      onDoor(
+        [{ key: 'what', kind: 'short_text', label: 'What?', required: true, settings: {} }],
+        cards,
+      );
+      await user.click(await screen.findByRole('button', { name: 'Start' }));
+      await user.type(screen.getByRole('textbox', { name: 'What?' }), 'x');
+      await press(user, 'Next');
+      await press(user, 'Next');
+      await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
+      await press(user, 'Next');
+      await heading('Check your answers');
+      await user.click(screen.getByRole('button', { name: 'Change: What?' }));
+      await heading('What?');
+      await press(user, 'Back');
+      await heading('Check your answers');
+      // And Next from a card reached by Change returns to the review too.
+      browser(() => {
+        cards.forward();
+      });
+      await heading('What?');
+      await press(user, 'Next');
+      await heading('Check your answers');
+    });
+
+    it('a card the answers since have stopped asking gives way to the one before it', async () => {
+      const user = userEvent.setup();
+      const cards = createMemoryHistory({ initialEntries: ['/file/demo'] });
+      onDoor(QS, cards);
+      await user.click(await screen.findByRole('button', { name: 'Start' }));
+      await user.type(screen.getByRole('textbox', { name: 'What happened?' }), 'It happened.');
+      await press(user, 'Next');
+      await user.click(screen.getByRole('radio', { name: 'Yes' }));
+      await press(user, 'Next');
+      await heading('Who saw it?');
+      await press(user, 'Back');
+      await heading('Did anybody see it?');
+      // Changing the answer here never moves the card on...
+      await user.click(screen.getByRole('radio', { name: 'No' }));
+      expect(screen.getByRole('heading', { name: 'Did anybody see it?' })).toBeInTheDocument();
+      // ...and Forward to "Who saw it?", no longer asked, stays here.
+      browser(() => {
+        cards.forward();
+      });
+      await heading('Did anybody see it?');
+      expect(screen.queryByRole('heading', { name: 'Who saw it?' })).not.toBeInTheDocument();
+      // The entry the browser is on now says so.
+      expect(cards.location.state).toMatchObject({ filingCard: 'q:seen' });
+    });
+
+    it('an entry left from before a reload starts the form again', async () => {
+      const user = userEvent.setup();
+      const cards = createMemoryHistory({ initialEntries: ['/file/demo'] });
+      // What the browser keeps from an earlier visit to the page.
+      cards.push('/file/demo', { filingVisit: 'earlier', filingCard: 'q:seen' });
+      cards.push('/file/demo', { filingVisit: 'earlier', filingCard: 'q:at' });
+      onDoor(QS, cards);
+      await user.click(await screen.findByRole('button', { name: 'Start' }));
+      await heading('What happened?');
+      await press(user, 'Back');
+      await screen.findByRole('button', { name: 'Start' });
+      browser(() => {
+        cards.back();
+      });
+      // "Did anybody see it?" from the earlier visit: nothing behind it here.
+      await screen.findByRole('button', { name: 'Start' });
+      expect(
+        screen.queryByRole('heading', { name: 'Did anybody see it?' }),
+      ).not.toBeInTheDocument();
+      expect(cards.location.state).toMatchObject({ filingCard: 'intro' });
+      expect(cards.location.state).not.toMatchObject({ filingVisit: 'earlier' });
+    });
   });
 });
