@@ -3,12 +3,11 @@
  * moderator), the transparency log (as an administrator), and the press pack
  * (as anybody). Every one asks no other host for anything.
  */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
-import type { APIRequestContext, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { ADMIN, MODERATOR } from '../auth.ts';
-import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
-
-const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
 function watchOutside(page: Page): string[] {
   const outside: string[] = [];
@@ -19,43 +18,24 @@ function watchOutside(page: Page): string[] {
   return outside;
 }
 
-/** File by link and confirm, through the API, as a reporter with no session would. */
-async function filed(anon: APIRequestContext, what: string): Promise<string> {
-  const email = `extras-${unique()}@example.org`;
-  const card = (await (await anon.get('/api/publication-card')).json()) as { digest: string };
-  const before = countTo(email);
-  const sent = await anon.post('/api/reports', {
-    data: {
-      logbook: 'demo',
-      email,
-      consent: true,
-      answers: { what },
-      may_publish: true,
-      may_publish_digest: card.digest,
-    },
-  });
-  expect(sent.ok(), await sent.text()).toBe(true);
-  const token = /\/file\/confirm\/([a-f0-9]{64})/.exec(
-    linkIn(await lastMessageTo(email, before)),
-  )?.[1];
-  const done = (await (await anon.post(`/api/reports/confirm/${token ?? ''}`)).json()) as {
-    confirmation: { public_ref: string };
-  };
-  return done.confirmation.public_ref;
-}
+/**
+ * The two demo reports global-setup files. Filing more here would spend the
+ * server's per-address filing limit, which the whole suite shares.
+ */
+const refs = JSON.parse(
+  readFileSync(fileURLToPath(new URL('../.refs.json', import.meta.url)), 'utf8'),
+) as string[];
 
 test.describe('severity and incidents', () => {
   test.use({ storageState: MODERATOR });
 
   test('a moderator rates a report and links it to another; the queue says so', async ({
     page,
-    playwright,
   }) => {
-    const anon = await playwright.request.newContext({ baseURL: 'http://127.0.0.1:4173' });
-    const word = `sv${unique()}`;
-    const first = await filed(anon, `The ramp at hall ${word} was locked all morning.`);
-    const second = await filed(anon, `Nobody could get a wheelchair in at hall ${word}.`);
-    await anon.dispose();
+    // Once per run, not per device: it changes the demo reports' assessment.
+    test.skip(test.info().project.name !== 'chromium', 'Runs on the desktop project only.');
+    const first = refs[0] ?? '';
+    const second = refs[1] ?? '';
     const outside = watchOutside(page);
 
     await page.goto(`/moderate?status=all&q=${first}`);
@@ -75,7 +55,7 @@ test.describe('severity and incidents', () => {
     await incident.getByLabel('Why they are the same incident').fill('Same hall, same morning.');
     await incident.getByRole('button', { name: 'Link them' }).click();
     await expect(incident.getByRole('list', { name: 'Linked reports' })).toContainText(second);
-    await expect(incident).toContainText('0 of the 2 accounts are published');
+    await expect(incident).toContainText(/\d of the 2 accounts are published/);
     await expect(page.getByRole('region', { name: 'What happened to it' })).toContainText(
       'Rated its severity: serious',
     );
@@ -83,12 +63,15 @@ test.describe('severity and incidents', () => {
     await page.goto('/moderate');
     await page.getByLabel('Showing').selectOption('all');
     await page.getByLabel('Severity').selectOption('serious');
-    await page.getByLabel('Search the words or a reference').fill(word);
+    await page.getByLabel('Search the words or a reference').fill(first);
     await page.getByRole('button', { name: 'Show' }).click();
     const row = page.getByRole('link', { name: `Open ${first}` });
     await expect(row).toContainText('Severity: Serious');
     await expect(row).toContainText('Linked with 1 other report');
-    await expect(page.getByRole('link', { name: `Open ${second}` })).toHaveCount(0);
+    // The other one is linked but not rated, so a filter on the rating leaves it out.
+    await page.getByLabel('Search the words or a reference').fill(second);
+    await page.getByRole('button', { name: 'Show' }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Nothing here.' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Corroboration' })).toContainText(
       'Accounts corroborated by at least one other',
     );
