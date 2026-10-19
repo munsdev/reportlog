@@ -36,6 +36,19 @@ const ConfigSchema = z.object({
    * becomes one limit for the whole site.
    */
   TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
+  /**
+   * The key every report's contact key is wrapped under, and the address
+   * digest is keyed with: 32 random bytes, base64 (`openssl rand -base64 32`).
+   * Losing it makes every reporter's address unreadable; it is never sealed.
+   * Without it the site runs but takes no reports, and says so.
+   */
+  CONTACT_KEY: z
+    .string()
+    .refine(
+      (s) => Buffer.from(s, 'base64').length === 32,
+      'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+    )
+    .optional(),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

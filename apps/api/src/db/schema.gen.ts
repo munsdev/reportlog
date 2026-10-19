@@ -59,10 +59,43 @@ export interface ConsentTexts {
   variant: string;
 }
 
+export interface ContactKeys {
+  created_at: Generated<Timestamp>;
+  dek_wrapped: Buffer;
+  email_hmac: string | null;
+  thread_id: string;
+}
+
 export interface HomeButtons {
   buttons: Json | null;
   id: Generated<boolean>;
   updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeBatches {
+  coordinator_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  organization_id: number;
+  status: Generated<string>;
+  submitted_at: Timestamp | null;
+}
+
+export interface IntakeDrafts {
+  batch_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  ordinal: number;
+  payload: Generated<Json>;
+  report_id: number | null;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeSettings {
+  id: Generated<boolean>;
+  intake_enabled: boolean | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
 }
 
 export interface LogbookFields {
@@ -165,12 +198,39 @@ export interface ReportAttachments {
   report_id: number;
 }
 
+export interface ReportContacts {
+  contact_enc: Buffer;
+  created_at: Generated<Timestamp>;
+  filed_by: string;
+  organization_enc: Buffer | null;
+  thread_id: string;
+}
+
+export interface ReporterActions {
+  action: string;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  report_id: number | null;
+  thread_id: string;
+}
+
 export interface ReportHeads {
   current_report_id: number;
   moderation_status: Generated<string>;
   thread_id: string;
   updated_at: Generated<Timestamp>;
   withdrawn: Generated<boolean>;
+}
+
+export interface ReportPermissionsLog {
+  actor: Generated<string>;
+  created_at: Generated<Timestamp>;
+  granted: boolean;
+  id: Generated<number>;
+  permission: string;
+  reason: string | null;
+  thread_id: string;
 }
 
 export interface Reports {
@@ -193,6 +253,19 @@ export interface Reports {
   recipe: Generated<number>;
   third_party: boolean | null;
   thread_id: string;
+}
+
+export interface ReportSubmissions {
+  confirmed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  email: string | null;
+  expires_at: Timestamp;
+  form_id: number;
+  id: Generated<number>;
+  logbook_id: number;
+  payload: Json;
+  thread_id: string | null;
+  token_hash: string;
 }
 
 export interface RoleAudit {
@@ -257,7 +330,11 @@ export interface DB {
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
+  contact_keys: ContactKeys;
   home_buttons: HomeButtons;
+  intake_batches: IntakeBatches;
+  intake_drafts: IntakeDrafts;
+  intake_settings: IntakeSettings;
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
@@ -268,7 +345,11 @@ export interface DB {
   otp_codes: OtpCodes;
   ownership_transfers: OwnershipTransfers;
   report_attachments: ReportAttachments;
+  report_contacts: ReportContacts;
   report_heads: ReportHeads;
+  report_permissions_log: ReportPermissionsLog;
+  report_submissions: ReportSubmissions;
+  reporter_actions: ReporterActions;
   reports: Reports;
   role_audit: RoleAudit;
   sessions: Sessions;

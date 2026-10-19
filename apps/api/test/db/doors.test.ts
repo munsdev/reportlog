@@ -245,7 +245,8 @@ describe('a logbook opened for filing without the password', () => {
       url: '/api/reports',
       payload: { logbook: open.slug },
     });
-    expect(filed.statusCode).toBe(200);
+    // Past the gate. The real route then judges the report on its merits.
+    expect(isLocked(filed)).toBe(false);
     const refused = await app.inject({
       method: 'POST',
       url: '/api/reports',
@@ -256,7 +257,7 @@ describe('a logbook opened for filing without the password', () => {
     expect(isLocked(unnamed)).toBe(true);
 
     // THE CONFIRMATION LINK, which is only ever reached from an email.
-    expect((await get('/api/reports/confirm/some-token')).statusCode).toBe(200);
+    expect(isLocked(await get('/api/reports/confirm/some-token'))).toBe(false);
 
     expect(reached).toEqual(
       ['GET /api/logbooks/:slug', 'POST /api/reports', 'GET /api/reports/confirm/:token'].filter(

@@ -33,6 +33,10 @@ if [ -n "$PG_BIN" ] && id postgres >/dev/null 2>&1; then
     || psql "host=$PG_DIR/run port=5446 user=postgres" -qc "CREATE DATABASE reportlog_dev" >/dev/null 2>&1
   pnpm --filter @reportlog/api -s db:migrate >/dev/null 2>&1
 fi
+# A development key for reporters' addresses, so filing works locally.
+if [ -f .env ] && ! grep -q '^CONTACT_KEY=.' .env; then
+  printf 'CONTACT_KEY=%s\n' "$(openssl rand -base64 32)" >> .env
+fi
 
 # --- the briefing -------------------------------------------------------------
 echo "=== ReportLog · session briefing ==="

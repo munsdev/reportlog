@@ -12,6 +12,7 @@ import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
+import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { healthRoutes } from './routes/health.ts';
@@ -20,7 +21,8 @@ import { verifyRoutes } from './routes/verify.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
-  config: Pick<Config, 'LOG_LEVEL'> & Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY'>>;
+  config: Pick<Config, 'LOG_LEVEL'> &
+    Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX'>>;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -73,17 +75,22 @@ export async function buildApp({
   });
 
   installErrorHandling(app);
+  const mail = mailer ?? stderrMailer();
+  const siteOrigin = config.SITE_ORIGIN ?? 'http://127.0.0.1:5173';
   // First: its hooks must see every route registered after it.
-  await identity(app, {
-    db,
-    mailer: mailer ?? stderrMailer(),
-    siteOrigin: config.SITE_ORIGIN ?? 'http://127.0.0.1:5173',
-  });
+  await identity(app, { db, mailer: mail, siteOrigin });
   healthRoutes(app, db);
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   logbookRoutes(app, db);
+  await filingRoutes(app, {
+    db,
+    mailer: mail,
+    siteOrigin,
+    contactKey: config.CONTACT_KEY,
+    publicRefPrefix: config.PUBLIC_REF_PREFIX,
+  });
   return app;
 }

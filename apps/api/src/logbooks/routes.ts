@@ -79,7 +79,7 @@ export interface LogbookRouteDeps {
  * `filterable` are the builder's business. `help` and `shown_when` are
  * absent, not null, when there is none, as in the form definition.
  */
-function forForm(q: Question): FormQuestion {
+export function forForm(q: Question): FormQuestion {
   return {
     key: q.key,
     kind: q.kind,
