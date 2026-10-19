@@ -66,6 +66,17 @@ export interface ContactKeys {
   thread_id: string;
 }
 
+export interface CoordinatorActions {
+  action: string;
+  comment: string;
+  coordinator_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  organization_id: number;
+  report_id: number;
+  thread_id: string;
+}
+
 export interface HomeButtons {
   buttons: Json | null;
   id: Generated<boolean>;
@@ -425,6 +436,7 @@ export interface DB {
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
   contact_keys: ContactKeys;
+  coordinator_actions: CoordinatorActions;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
