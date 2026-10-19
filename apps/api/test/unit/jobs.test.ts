@@ -95,6 +95,12 @@ describe('the systemd units', () => {
     );
   });
 
+  it("will not start the API on a contact key other than the archive's own", () => {
+    expect(unit('reportlog-api.service')).toMatch(
+      /^ExecStartPre=.*apps\/api\/src\/jobs\/cli\.ts contact-key$/m,
+    );
+  });
+
   it('runs the code from the current release, never from a fixed release', () => {
     for (const name of services)
       expect(unit(name)).toContain('WorkingDirectory=/srv/reportlog/current');
