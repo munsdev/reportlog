@@ -12,13 +12,19 @@
  *   the logbook's own      one per question being asked
  *   the publication card   its wording and digest come from the server
  *   where to reach you     the address the confirmation link goes to
+ *   files                  only when the logbook asks for files (files
+ *                          workstream). AFTER the address wherever the
+ *                          operator put the question, because the server's
+ *                          staging quota is keyed on the address
  *   check your answers     every answer, each one changeable, and the statement
  *
  * ON A DOOR this page may call only the filing calls: the logbook's form, the
- * publication card and sending. It asks for nothing else, so it works on a
+ * publication card and sending, and, only for a logbook that asks for files,
+ * the upload calls. It asks for nothing else, so it works on a
  * site behind its password for a logbook opened outside it.
  */
 import {
+  getUploadConfig,
   getIntakeSwitch,
   getPublicLogbook,
   getPublicationCard,
@@ -36,6 +42,8 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
+import { useUploader } from '@/features/files/uploader.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { askedQuestions, cardProblem, shownAnswer, stillPossible, toSubmission } from './walk.ts';
@@ -65,7 +73,7 @@ export const STATEMENT =
 
 const looksLikeEmail = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 
-type Step = 'intro' | 'publish' | 'contact' | 'review' | `q:${string}`;
+type Step = 'intro' | 'publish' | 'contact' | 'files' | 'review' | `q:${string}`;
 
 export function FilingForm({ slug }: { slug: string }) {
   const logbook = useQuery(publicLogbookQuery(slug));
@@ -149,6 +157,18 @@ function Cards({
   const [step, setStep] = useState<Step>('intro');
   const [backToReview, setBackToReview] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // Files, only where the logbook asks for them: on a door the upload calls
+  // pass for such a logbook and no other.
+  const fileQuestion = questions.find((q) => q.kind === 'file');
+  const uploadConfig = useQuery({
+    queryKey: ['upload-config', slug],
+    queryFn: ({ signal }) => call(getUploadConfig, { query: { logbook: slug }, signal }),
+    enabled: Boolean(fileQuestion),
+  });
+  const takesFiles = Boolean(fileQuestion && uploadConfig.data?.enabled);
+  const target = useFilingTarget(slug, email);
+  const uploader = useUploader(takesFiles ? target : null);
+  const draft = target.draft();
   const send = useMutation({
     mutationFn: () =>
       call(submitReport, {
@@ -160,6 +180,7 @@ function Cards({
           // Not answering is "no", and the card said so before anybody acted.
           may_publish: publish === 'yes',
           may_publish_digest: card?.digest ?? '',
+          ...(draft && uploader.kept.length ? { draft_token: draft } : {}),
         },
       }),
   });
@@ -170,6 +191,7 @@ function Cards({
     ...asked.map((q): Step => `q:${q.key}`),
     'publish',
     'contact',
+    ...(takesFiles ? (['files'] as Step[]) : []),
     'review',
   ];
   const dirty = Object.keys(raw).length > 0 || email !== '' || publish !== '';
@@ -197,6 +219,8 @@ function Cards({
       return 'This question has not loaded yet. Try again in a moment.';
     if (step === 'contact' && !looksLikeEmail(email))
       return 'Enter an email address we can reach you at.';
+    if (step === 'files' && fileQuestion?.required && !uploader.kept.length)
+      return 'Attach at least one file.';
     return null;
   };
   const go = (to: Step) => {
@@ -221,6 +245,7 @@ function Cards({
       ...askedQuestions(questions, raw).map((q) => `q:${q.key}`),
       'publish',
       'contact',
+      ...(takesFiles ? ['files'] : []),
       'review',
     ] as Step[];
     go(now[now.indexOf(step) + 1] ?? 'review');
@@ -233,7 +258,8 @@ function Cards({
   // Measured against every question that could STILL be asked, so on the
   // way forward the bar only ever advances. No numbers: a total that changes
   // as you answer reads as a trap.
-  const possible = questions.filter((q) => stillPossible(q, questions, raw)).length + 3;
+  const possible =
+    questions.filter((q) => stillPossible(q, questions, raw)).length + (takesFiles ? 4 : 3);
   const progress = step === 'intro' ? null : Math.round((at / possible) * 100);
 
   return (
@@ -302,6 +328,33 @@ function Cards({
         </CardShell>
       ) : null}
 
+      {step === 'files' && fileQuestion && uploadConfig.data ? (
+        <CardShell
+          heading={fileQuestion.label}
+          step={step}
+          headingId="files-card-heading"
+          help={
+            <div className="flex flex-col gap-1 text-ink-alt">
+              {fileQuestion.help ? (
+                <p className="whitespace-pre-wrap">{fileQuestion.help}</p>
+              ) : null}
+              {fileQuestion.required ? null : <p className="text-sm">Optional.</p>}
+            </div>
+          }
+        >
+          <FilePicker
+            config={uploadConfig.data}
+            uploader={uploader}
+            labelledBy="files-card-heading"
+          />
+          {problem ? (
+            <p role="alert" className="text-sm font-semibold text-serious">
+              {problem}
+            </p>
+          ) : null}
+        </CardShell>
+      ) : null}
+
       {step === 'review' ? (
         <CardShell heading="Check your answers" step={step}>
           <p>Nothing is filed until you confirm it from your email. Check it over first.</p>
@@ -325,6 +378,22 @@ function Cards({
                 go('publish');
               }}
             />
+            {takesFiles && fileQuestion ? (
+              <ReviewRow
+                label={fileQuestion.label}
+                value={
+                  uploader.kept.length
+                    ? uploader.kept.map((f) => f.name).join(', ')
+                    : fileQuestion.required
+                      ? null
+                      : '—'
+                }
+                onChange={() => {
+                  setBackToReview(true);
+                  go('files');
+                }}
+              />
+            ) : null}
             <ReviewRow
               label="Your email address"
               value={email.trim() || null}
@@ -356,7 +425,7 @@ function Cards({
         </CardShell>
       ) : null}
 
-      {problem && step !== 'review' && step !== 'contact' && !question ? (
+      {problem && step !== 'review' && step !== 'contact' && step !== 'files' && !question ? (
         <Alert tone="serious" title={problem} />
       ) : null}
 
@@ -382,10 +451,18 @@ function Cards({
                 setProblem(`“${missing.label}” needs an answer. Press Change beside it.`);
                 return;
               }
+              if (uploader.busy) {
+                setProblem('Wait until your files have finished sending, then send the report.');
+                return;
+              }
               send.mutate();
             }}
           >
-            {send.isPending ? 'Sending…' : 'Send report'}
+            {send.isPending
+              ? 'Sending…'
+              : uploader.busy
+                ? 'Your files are still sending…'
+                : 'Send report'}
           </Button>
         ) : (
           <Button type="button" onClick={next}>

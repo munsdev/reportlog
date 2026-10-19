@@ -12,3 +12,5 @@ playwright-report/
 **/e2e/.refs.json
 **/e2e/.outbox/
 **/e2e/.auth/
+.files/
+**/e2e/.files/

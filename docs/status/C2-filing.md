@@ -9,14 +9,14 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-Against the base at `7898de3` (with D2, G2 and I), merged into this branch.
+Against the base at `c93ae88` (with D2, F, G2 and I), merged into this branch.
 
 | Suite                                   | Base alone | With this branch                                                    |
 | --------------------------------------- | ---------- | ------------------------------------------------------------------- |
-| `pnpm check`                            | passes     | passes (unit tests: api 219, web 394, fields 69, seal 31, access 4) |
-| `pnpm test:db`                          | 540        | 570, all passed (35 files)                                          |
+| `pnpm check`                            | passes     | passes (unit tests: api 235, web 398, fields 69, seal 31, access 4) |
+| `pnpm test:db`                          | 632        | 662, all passed (41 files)                                          |
 | `db:types:check`                        |            | generated types up to date                                          |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 74         | 80 passed (3 new tests, desktop and phone)                          |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 79         | 85 passed (3 new tests, desktop and phone)                          |
 
 CI on GitHub had not reported when this was written. Check the pull request.
 
@@ -107,8 +107,9 @@ CI on GitHub had not reported when this was written. Check the pull request.
   `test/unit/contact-key.test.ts` ("CONTACT_KEY is never rotated") is now out of date; I left
   your file alone. The message in `deploy.sh` ("differs from the key this archive started
   with") could mention rotation.
-- **F (files):** nothing new. A coordinator's correction carries files as a reporter's does
-  (`correction.ts`).
+- **F (files):** a coordinator's correction carries files as a reporter's does
+  (`correction.ts`, the code C wrote, moved). Your takedown on withdraw and erase in `mine.ts`
+  is kept as you merged it.
 
 ## Not done
 

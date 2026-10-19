@@ -19,6 +19,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { sha256Hex } from './secrets.ts';
 import { listDoors } from '../lists/manage.ts';
+import { anyTakesFilesOutside, namedTakesFilesOutside } from '../files/doors.ts';
 
 export const OUTSIDE_ACCESS = ['closed', 'link', 'door'] as const;
 export type OutsideAccess = (typeof OUTSIDE_ACCESS)[number];
@@ -105,6 +106,25 @@ const FILING_CALLS: readonly {
   // anything else, so the gate says nothing about which tokens exist.
   { method: 'GET', route: '/api/reports/confirm/:token', passes: submissionExists },
   { method: 'POST', route: '/api/reports/confirm/:token', passes: submissionExists },
+  // Attaching files while filing (files workstream). They pass only while a
+  // logbook open outside ASKS FOR FILES, as legacy conditioned them; the two
+  // that name their logbook pass for that logbook only. The rest carry a free
+  // draft token and no logbook. See apps/api/src/files/doors.ts.
+  {
+    method: 'GET',
+    route: '/api/uploads/config',
+    passes: (db, r) => namedTakesFilesOutside(db, (r.query as Record<string, unknown>).logbook),
+  },
+  {
+    method: 'POST',
+    route: '/api/uploads',
+    passes: (db, r) =>
+      namedTakesFilesOutside(db, (r.body as Record<string, unknown> | null)?.logbook),
+  },
+  { method: 'POST', route: '/api/uploads/draft', passes: anyTakesFilesOutside },
+  { method: 'PUT', route: '/api/uploads/:slot', passes: anyTakesFilesOutside },
+  { method: 'GET', route: '/api/uploads/status', passes: anyTakesFilesOutside },
+  { method: 'DELETE', route: '/api/uploads/:slot', passes: anyTakesFilesOutside },
 ];
 
 async function submissionExists(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {

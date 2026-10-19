@@ -19,6 +19,7 @@ import { sql } from 'kysely';
 import type { Config } from '../config.ts';
 import type { Database } from '../db/database.ts';
 import { anchorDoctorCheck } from '../anchor/job.ts';
+import { filesDoctorCheck } from '../files/doctor.ts';
 import { MIGRATIONS_DIR } from '../db/migrate.ts';
 import { emailReadiness } from '../email/index.ts';
 import { backupHealth } from './backup-files.ts';
@@ -236,6 +237,13 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
     out.push(await anchorDoctorCheck({ config, db, now: () => now }));
   } catch (err) {
     out.push(finding('fail', 'anchor', `could not be checked: ${why(err)}`));
+  }
+
+  // --- files (workstream F) ---------------------------------------------------
+  try {
+    out.push(...(await filesDoctorCheck({ config, db })));
+  } catch (err) {
+    out.push(finding('fail', 'files', `could not be checked: ${why(err)}`));
   }
 
   // --- scheduled jobs ------------------------------------------------------

@@ -50,6 +50,10 @@ jobs:
         run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends age postgresql-client-16
       - name: Deploy scripts pass ShellCheck
         run: shellcheck -x -P SCRIPTDIR deploy/*.sh deploy/bin/reportlog
+      # The media worker's tools (files workstream): its tests re-encode real
+      # photos, video, sound and PDFs, and fail rather than skip in CI.
+      - name: Media tools
+        run: sudo apt-get install -yq --no-install-recommends imagemagick libheif1 ffmpeg poppler-utils
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
@@ -81,6 +85,10 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The media worker's tools (files workstream): its tests re-encode real
+      # photos, video, sound and PDFs, and fail rather than skip in CI.
+      - name: Media tools
+        run: sudo apt-get update -q && sudo apt-get install -yq --no-install-recommends imagemagick libheif1 ffmpeg poppler-utils
       - run: pnpm --filter @reportlog/api db:migrate
       - run: pnpm --filter @reportlog/web exec playwright install --with-deps chromium
       - run: pnpm --filter @reportlog/web e2e

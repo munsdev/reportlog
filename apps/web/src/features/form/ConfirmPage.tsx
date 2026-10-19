@@ -100,6 +100,34 @@ function Shown({
       </Page>
     );
   }
+  // FILES WORKSTREAM: the attached files are still being made safe to keep.
+  // Nothing was filed; pressing again files the report once they are ready
+  // (or after a while without the ones that never become ready).
+  if (c.state === 'preparing') {
+    return (
+      <Page
+        title="Your files are still being prepared"
+        width="prose"
+        lede={`For “${c.logbook_title}”.`}
+      >
+        <p>
+          Nothing has been filed yet. Every file is checked and re-encoded first, so that no
+          location or camera details are kept in any copy that could be shown. That can take a
+          minute or two for a video.
+        </p>
+        <ul className="list-disc pl-6">
+          {c.files.map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+        <div>
+          <Button type="button" onClick={onConfirm} disabled={pressing}>
+            {pressing ? 'Trying…' : 'Try again'}
+          </Button>
+        </div>
+      </Page>
+    );
+  }
   if (c.state === 'expired') {
     return (
       <Page title="This link has expired" width="prose">
@@ -126,6 +154,7 @@ function Shown({
           ? 'A moderator approved it, and it is on the public archive.'
           : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
       </Alert>
+      {c.files ? <FilesFiled files={c.files} /> : null}
       <p>
         Keep the reference: anybody can use it to check that the report has not been changed since
         it was filed.
@@ -142,5 +171,33 @@ function Shown({
         </p>
       )}
     </Page>
+  );
+}
+
+/** Which attached files are in the record, and why any are not. Said, never dropped quietly. */
+function FilesFiled({
+  files,
+}: {
+  files: NonNullable<Extract<Confirmation, { state: 'received' }>['files']>;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <p>
+        {files.attached === 1
+          ? 'One file is part of the report.'
+          : `${String(files.attached)} files are part of the report.`}
+      </p>
+      {files.not_attached.length ? (
+        <Alert tone="serious" title="Some files are not part of the report">
+          <ul className="list-disc pl-6">
+            {files.not_attached.map((f, i) => (
+              <li key={`${f.name}-${String(i)}`}>
+                {f.name}: {f.reason}.
+              </li>
+            ))}
+          </ul>
+        </Alert>
+      ) : null}
+    </div>
   );
 }

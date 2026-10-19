@@ -29,6 +29,8 @@ export type JsonPrimitive = boolean | number | string | null;
 
 export type JsonValue = JsonArray | JsonObject | JsonPrimitive;
 
+export type Numeric = ColumnType<string, number | string, number | string>;
+
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
 export interface AnchorRuns {
@@ -38,6 +40,34 @@ export interface AnchorRuns {
   id: Generated<number>;
   outcome: string;
   started_at: Timestamp;
+}
+
+export interface AttachmentEvents {
+  action: string;
+  actor: string;
+  actor_email: string | null;
+  attachment_id: number;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  reason: string | null;
+  thread_id: string;
+}
+
+export interface AttachmentHeads {
+  alt_text: string | null;
+  attachment_id: number;
+  dek_destroyed_at: Timestamp | null;
+  dek_wrapped: Buffer | null;
+  duration_seconds: Numeric | null;
+  has_poster: Generated<boolean>;
+  meta_enc: Buffer | null;
+  original_name: string | null;
+  page_count: number | null;
+  publication: Generated<string>;
+  rendition_key: string | null;
+  rendition_media_type: string;
+  thread_id: string;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface Attachments {
@@ -111,6 +141,21 @@ export interface DigestSubscriptions {
   user_id: number;
 }
 
+export interface EvidenceRequests {
+  asked_at: Generated<Timestamp>;
+  asked_by: string;
+  cancelled_at: Timestamp | null;
+  cancelled_by: string | null;
+  expired_at: Timestamp | null;
+  expires_at: Timestamp;
+  id: Generated<number>;
+  message: string;
+  thread_id: string;
+  token_hash: string;
+  used_at: Timestamp | null;
+  used_report_id: number | null;
+}
+
 export interface Feedback {
   body: string;
   context: Generated<Json>;
@@ -141,6 +186,22 @@ export interface FeedbackEvents {
   id: Generated<number>;
   new_status: string | null;
   note: string | null;
+}
+
+export interface FileSettings {
+  attachment_kinds: string[] | null;
+  attachments_enabled: boolean | null;
+  id: Generated<boolean>;
+  max_audio_bytes: number | null;
+  max_document_bytes: number | null;
+  max_document_pages: number | null;
+  max_files: number | null;
+  max_image_bytes: number | null;
+  max_total_bytes: number | null;
+  max_video_bytes: number | null;
+  max_video_seconds: number | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
 }
 
 export interface HeatMaps {
@@ -302,6 +363,20 @@ export interface LogbookFields {
   required: Generated<boolean>;
   settings: Generated<Json>;
   shown_when: Json | null;
+}
+
+export interface LogbookFileLimits {
+  attachment_kinds: string[] | null;
+  logbook_id: number;
+  max_audio_bytes: number | null;
+  max_document_bytes: number | null;
+  max_document_pages: number | null;
+  max_files: number | null;
+  max_image_bytes: number | null;
+  max_total_bytes: number | null;
+  max_video_bytes: number | null;
+  max_video_seconds: number | null;
+  updated_at: Generated<Timestamp>;
 }
 
 export interface LogbookForms {
@@ -522,6 +597,46 @@ export interface SiteSettings {
   updated_at: Generated<Timestamp>;
 }
 
+export interface StorageDeletions {
+  attempts: Generated<number>;
+  bucket: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  key: string;
+  last_error: string | null;
+}
+
+export interface UploadSlots {
+  byte_size: number | null;
+  claimed_at: Timestamp | null;
+  contact_hmac: string | null;
+  created_at: Generated<Timestamp>;
+  declared_name: Generated<string>;
+  declared_size: number;
+  declared_type: string;
+  dek_wrapped: Buffer | null;
+  draft_hash: string | null;
+  duration_seconds: Numeric | null;
+  evidence_request_id: number | null;
+  expires_at: Timestamp;
+  has_poster: Generated<boolean>;
+  id: Generated<number>;
+  logbook_id: number;
+  media_type: string | null;
+  meta_enc: Buffer | null;
+  page_count: number | null;
+  promoted_at: Timestamp | null;
+  released_at: Timestamp | null;
+  rendition_media_type: string | null;
+  sha256: string | null;
+  slot_token: string;
+  staging_key: string;
+  status: Generated<string>;
+  status_detail: string | null;
+  storage_key: string | null;
+  submission_id: number | null;
+}
+
 export interface Users {
   created_at: Generated<Timestamp>;
   email: string;
@@ -533,6 +648,8 @@ export interface Users {
 
 export interface DB {
   anchor_runs: AnchorRuns;
+  attachment_events: AttachmentEvents;
+  attachment_heads: AttachmentHeads;
   attachments: Attachments;
   chain_anchor_heads: ChainAnchorHeads;
   chain_anchors: ChainAnchors;
@@ -541,9 +658,11 @@ export interface DB {
   contact_keys: ContactKeys;
   coordinator_actions: CoordinatorActions;
   digest_subscriptions: DigestSubscriptions;
+  evidence_requests: EvidenceRequests;
   feedback: Feedback;
   feedback_comments: FeedbackComments;
   feedback_events: FeedbackEvents;
+  file_settings: FileSettings;
   heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
@@ -558,6 +677,7 @@ export interface DB {
   list_salts: ListSalts;
   lists: Lists;
   logbook_fields: LogbookFields;
+  logbook_file_limits: LogbookFileLimits;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
   map_list_place_questions: MapListPlaceQuestions;
@@ -581,5 +701,7 @@ export interface DB {
   site_access_tokens: SiteAccessTokens;
   site_copy: SiteCopy;
   site_settings: SiteSettings;
+  storage_deletions: StorageDeletions;
+  upload_slots: UploadSlots;
   users: Users;
 }

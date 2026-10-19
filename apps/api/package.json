@@ -12,6 +12,8 @@
     "db:types:check": "node --env-file-if-exists=../../.env src/db/gen-types.ts --check",
     "db:seed": "node --env-file-if-exists=../../.env src/dev/seed.ts",
     "lists:sweep": "node --env-file-if-exists=../../.env src/lists/sweep-cli.ts",
+    "files:worker": "node --env-file-if-exists=../../.env src/files/worker-cli.ts",
+    "files:storage-check": "node --env-file-if-exists=../../.env src/files/storage-check-cli.ts",
     "anchor": "node --env-file-if-exists=../../.env src/anchor/cli.ts",
     "check-chain": "node src/anchor/check-chain.ts",
     "ops": "node --env-file-if-exists=../../.env src/jobs/cli.ts",

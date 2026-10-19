@@ -26,10 +26,10 @@
  * no reports and no chain: it is the questions, not the record.
  *
  * KEYS THIS VERSION DOES NOT READ YET. The shipped files also carry
- * `editorial_notes`, `max_files` and `max_total_bytes`. Those are properties
- * of the moderation and files workstreams, whose columns do not exist yet, so
- * they are accepted and ignored rather than refused: a file from the old
- * deployment must still import.
+ * `editorial_notes`, a property of the moderation workstream, accepted and
+ * ignored rather than refused: a file from the old deployment must still
+ * import. `max_files` and `max_total_bytes` are read (files workstream):
+ * they become the logbook's own upload caps.
  */
 import { LogbookFile } from '@reportlog/contracts';
 import type { LogbookDetail, QuestionSettingsInput } from '@reportlog/contracts';
@@ -45,6 +45,7 @@ import {
   slugify,
 } from './logbooks.ts';
 import { LogbookRefusal, refuse } from './refusals.ts';
+import { setLogbookLimits, validateLimits } from '../files/limits.ts';
 
 export const LOGBOOK_FILE_VERSION = 1;
 
@@ -213,6 +214,16 @@ export async function createFromFile(
         help: 'Anything that shows what happened. Everything is re-encoded, so camera metadata and location do not survive.',
       });
     }
+    // The upload caps (files workstream), only when the file names them.
+    const caps = {
+      ...(file.max_files !== undefined ? { maxFiles: file.max_files } : {}),
+      ...(file.max_total_bytes !== undefined ? { maxTotalBytes: file.max_total_bytes } : {}),
+    };
+    if (Object.keys(caps).length) {
+      const v = validateLimits(caps);
+      if (!v.ok) refuse('bad-file', v.message);
+      else await setLogbookLimits(trx, made.id, v.values);
+    }
     return made.id;
   });
   return logbookDetail(db, id);
@@ -223,6 +234,13 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
   const lb = await logbookById(db, logbookId);
   if (!lb) return null;
   const fields = await fieldsFor(db, lb.id);
+  // The upload caps, ONLY when this logbook set them, so a file from a
+  // logbook on the site's limits looks as it always did.
+  const caps = await db
+    .selectFrom('logbook_file_limits')
+    .select(['max_files', 'max_total_bytes'])
+    .where('logbook_id', '=', lb.id)
+    .executeTakeFirst();
   return {
     reportlog_logbook: LOGBOOK_FILE_VERSION,
     title: lb.title,
@@ -231,6 +249,8 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
     // DERIVED, and kept so a copy read by an older deployment still takes
     // files. It restates what the upload question already says.
     accepts_files: lb.asks_for_files,
+    ...(caps?.max_files != null ? { max_files: caps.max_files } : {}),
+    ...(caps?.max_total_bytes != null ? { max_total_bytes: caps.max_total_bytes } : {}),
     questions: fields.map((f) => {
       const s = f.settings;
       const options = Array.isArray(s.options) ? (s.options as string[]) : [];

@@ -37,6 +37,8 @@ export const submitReport = defineRoute({
     may_publish: z.boolean().optional(),
     /** Issued by GET /api/publication-card, never computed by a client. */
     may_publish_digest: z.string().optional(),
+    /** From POST /api/uploads/draft: the files staged while this was written. */
+    draft_token: z.string().optional(),
   }),
   response: z.object({ pending: z.literal(true) }),
 });
@@ -46,11 +48,33 @@ export const submitReport = defineRoute({
  * non-public state their report is in: a moderator can always revisit a
  * decision, so nothing about it is final.
  */
+/** Which attached files made it into the report, and why any did not (files workstream). */
+const FileOutcome = z.object({
+  attached: z.number().int(),
+  not_attached: z.array(z.object({ name: z.string(), reason: z.string() })),
+});
+
 export const Confirmation = z.discriminatedUnion('state', [
   z.object({ state: z.literal('unconfirmed'), logbook_title: z.string(), expires_at: Timestamp }),
   z.object({ state: z.literal('expired'), logbook_title: z.string() }),
-  z.object({ state: z.literal('received'), logbook_title: z.string(), public_ref: z.string() }),
-  z.object({ state: z.literal('public'), logbook_title: z.string(), public_ref: z.string() }),
+  /** Files are still being prepared; nothing was filed yet. Press again shortly. */
+  z.object({
+    state: z.literal('preparing'),
+    logbook_title: z.string(),
+    files: z.array(z.string()),
+  }),
+  z.object({
+    state: z.literal('received'),
+    logbook_title: z.string(),
+    public_ref: z.string(),
+    files: FileOutcome.optional(),
+  }),
+  z.object({
+    state: z.literal('public'),
+    logbook_title: z.string(),
+    public_ref: z.string(),
+    files: FileOutcome.optional(),
+  }),
 ]);
 export type Confirmation = z.infer<typeof Confirmation>;
 

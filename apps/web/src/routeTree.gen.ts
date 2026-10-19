@@ -20,6 +20,7 @@ import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/setting
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
 import { Route as DocsFirstLogbookRouteImport } from './routes/docs/first-logbook'
+import { Route as EvidenceTokenRouteImport } from './routes/evidence/$token'
 import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
@@ -109,6 +110,11 @@ const DocsCheckingRoute = DocsCheckingRouteImport.update({
 const DocsFirstLogbookRoute = DocsFirstLogbookRouteImport.update({
   id: '/docs/first-logbook',
   path: '/docs/first-logbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvidenceTokenRoute = EvidenceTokenRouteImport.update({
+  id: '/evidence/$token',
+  path: '/evidence/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FeedbackIndexRoute = FeedbackIndexRouteImport.update({
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof staffSettingsRouteRouteWithChildren
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/submit': typeof SubmitRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -393,6 +401,7 @@ export interface FileRoutesById {
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
+  '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
   '/list/$slug': typeof ListSlugRoute
@@ -443,6 +452,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -487,6 +497,7 @@ export interface FileRouteTypes {
     | '/submit'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -535,6 +546,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings'
     | '/docs/checking'
     | '/docs/first-logbook'
+    | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
     | '/list/$slug'
@@ -584,6 +596,7 @@ export interface RootRouteChildren {
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
+  EvidenceTokenRoute: typeof EvidenceTokenRoute
   FeedbackTestersRoute: typeof FeedbackTestersRoute
   FileSlugRoute: typeof FileSlugRoute
   ListSlugRoute: typeof ListSlugRoute
@@ -683,6 +696,13 @@ declare module '@tanstack/react-router' {
       path: '/docs/first-logbook'
       fullPath: '/docs/first-logbook'
       preLoaderRoute: typeof DocsFirstLogbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evidence/$token': {
+      id: '/evidence/$token'
+      path: '/evidence/$token'
+      fullPath: '/evidence/$token'
+      preLoaderRoute: typeof EvidenceTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/feedback/': {
@@ -1013,6 +1033,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,
+  EvidenceTokenRoute: EvidenceTokenRoute,
   FeedbackTestersRoute: FeedbackTestersRoute,
   FileSlugRoute: FileSlugRoute,
   ListSlugRoute: ListSlugRoute,
