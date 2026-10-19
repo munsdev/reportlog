@@ -183,6 +183,45 @@ answers that error tracking is off.
 5. The five `BACKUP_S3_` settings, then `sudo reportlog backup` and
    `sudo reportlog doctor`.
 
+### Checking file storage
+
+Reporters' files (evidence) live in three buckets, separate from the backup
+bucket: staging, evidence and renditions (`FILES_STORAGE=s3` and the `S3_`
+settings, explained in the settings file). No provider has been chosen yet.
+Once one is, and before the site takes anybody's files, run the check once
+against it, on the server:
+
+```sh
+cd /srv/reportlog/current
+sudo -u reportlog /usr/local/bin/node --env-file=/etc/reportlog/reportlog.env \
+  apps/api/src/files/storage-check-cli.ts
+```
+
+It writes a small object to each bucket, reads it back whole and as a range,
+deletes it, and checks it is gone. It leaves nothing behind. Every line
+should start with `ok`:
+
+```
+ok    staging: write, read, range, delete
+ok    evidence: write, read, range, delete
+ok    renditions: write, read, range, delete
+```
+
+| It says                                           | Usually                                                        |
+| ------------------------------------------------- | -------------------------------------------------------------- |
+| `Storage is not configured: …`                    | the setting it names is empty                                  |
+| `failed: 404 … NoSuchBucket`                      | that bucket's name is wrong, or it was made in another region  |
+| `failed: 403 … SignatureDoesNotMatch` / `…Denied` | the key or secret is wrong, or the key may not use that bucket |
+| `fetch failed (ENOTFOUND)`                        | `S3_ENDPOINT` names a host that does not exist                 |
+| `fetch failed (ECONNREFUSED)` or a certificate    | the endpoint is wrong, or not reachable from the server        |
+
+The files key needs read, write and delete on these three buckets (unlike
+the backup key, which may only upload). The check has been run against
+moto, a local S3-compatible server, by `apps/api/test/unit/deploy-storage-check.test.ts`
+on every CI run, with path-style addressing. Virtual-hosted addressing
+(`S3_ADDRESSING=virtual`) has never been run against anything: if the
+provider needs it, this check is the first thing that will.
+
 ## Deploying
 
 ```sh
@@ -427,3 +466,14 @@ and a local S3-compatible server stood in for object storage. That was
 everything except a real domain, Scaleway and real EU object storage. The
 commit messages on the branch that added this list what each run found;
 `docs/status/H-operations.md` summarizes them.
+
+On every CI run (`docs/status/P7-ops-tests.md` lists what each proves):
+
+- `install.sh`, `deploy.sh`, `rollback.sh` and `reportlog` run against a
+  pretend server in a temporary directory, with systemd, apt, Caddy and the
+  build as stand-ins (`apps/api/test/unit/deploy-install.test.ts`,
+  `deploy-release.test.ts`);
+- this Caddyfile, in a real Caddy (`deploy-caddy.test.ts`);
+- the storage check, against moto (`deploy-storage-check.test.ts`);
+- the doctor's migration check, against real databases in each drift state
+  (`apps/api/test/db/deploy-schema-drift.test.ts`).
