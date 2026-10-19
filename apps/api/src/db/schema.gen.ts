@@ -5,6 +5,14 @@
 
 import type { ColumnType } from "kysely";
 
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
+  ? U[]
+  : ArrayTypeImpl<T>;
+
+export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S[], I[], U[]>
+  : T[];
+
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
@@ -76,6 +84,14 @@ export interface ContactKeys {
   thread_id: string;
 }
 
+export interface DigestSubscriptions {
+  frequency: string;
+  last_sent_at: Timestamp | null;
+  logbooks: string[] | null;
+  updated_at: Generated<Timestamp>;
+  user_id: number;
+}
+
 export interface EditorialNoteLinks {
   added_by: string;
   created_at: Generated<Timestamp>;
@@ -105,6 +121,38 @@ export interface EditorialNoteVersions {
   revision_reason: string | null;
 }
 
+export interface Feedback {
+  body: string;
+  context: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  related_ref: string | null;
+  severity: string;
+  status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
+  submitter_id: number;
+  title: string;
+  type: string;
+}
+
+export interface FeedbackComments {
+  author_id: number;
+  body: string;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+}
+
+export interface FeedbackEvents {
+  action: string;
+  actor_id: number;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+  new_status: string | null;
+  note: string | null;
+}
+
 export interface FilePublicationLog {
   actor_email: string;
   created_at: Generated<Timestamp>;
@@ -112,6 +160,26 @@ export interface FilePublicationLog {
   published: boolean;
   report_id: number;
   thread_id: string;
+}
+
+export interface HeatMaps {
+  blurb: string | null;
+  created_at: Generated<Timestamp>;
+  enabled: Generated<boolean>;
+  id: Generated<number>;
+  list_ids: Generated<ArrayType<number>>;
+  logbook_ids: Generated<ArrayType<number>>;
+  min_area: Generated<number>;
+  outcome_key: string | null;
+  outcome_logbook_id: number | null;
+  outcome_stances: Generated<Json>;
+  planes: Generated<string[]>;
+  position: Generated<number>;
+  slot: Generated<string>;
+  slug: string;
+  title: string;
+  updated_at: Generated<Timestamp>;
+  views: Generated<string[]>;
 }
 
 export interface HomeButtons {
@@ -284,6 +352,18 @@ export interface Logbooks {
   updated_at: Generated<Timestamp>;
 }
 
+export interface MapListPlaceQuestions {
+  field_key: string;
+  list_id: number;
+  marked_at: Generated<Timestamp>;
+}
+
+export interface MapPlaceQuestions {
+  field_key: string;
+  logbook_id: number;
+  marked_at: Generated<Timestamp>;
+}
+
 export interface ModerationLog {
   action: string;
   actor_email: string;
@@ -338,6 +418,8 @@ export interface Organizations {
   created_at: Generated<Timestamp>;
   details: string | null;
   id: Generated<number>;
+  listed: Generated<boolean>;
+  listed_at: Timestamp | null;
   name: string;
   updated_at: Generated<Timestamp>;
   verified_at: Generated<Timestamp>;
@@ -501,6 +583,7 @@ export interface Users {
   created_at: Generated<Timestamp>;
   email: string;
   id: Generated<number>;
+  is_tester: Generated<boolean>;
   role: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
@@ -512,10 +595,15 @@ export interface DB {
   consent_texts: ConsentTexts;
   contact_access_log: ContactAccessLog;
   contact_keys: ContactKeys;
+  digest_subscriptions: DigestSubscriptions;
   editorial_note_links: EditorialNoteLinks;
   editorial_note_versions: EditorialNoteVersions;
   editorial_notes: EditorialNotes;
+  feedback: Feedback;
+  feedback_comments: FeedbackComments;
+  feedback_events: FeedbackEvents;
   file_publication_log: FilePublicationLog;
+  heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
@@ -532,6 +620,8 @@ export interface DB {
   logbook_fields: LogbookFields;
   logbook_forms: LogbookForms;
   logbooks: Logbooks;
+  map_list_place_questions: MapListPlaceQuestions;
+  map_place_questions: MapPlaceQuestions;
   moderation_log: ModerationLog;
   moderation_settings: ModerationSettings;
   organization_invite_sends: OrganizationInviteSends;

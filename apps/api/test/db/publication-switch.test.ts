@@ -17,6 +17,7 @@ import type { FieldDefinition } from '@reportlog/fields';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { publicArchiveAvailable } from '../../src/board/publication.ts';
 import { setOutsideAccess } from '../../src/identity/doors.ts';
+import { createMap, deleteMap } from '../../src/maps/manage.ts';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
 import type { FilingHarness } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
@@ -146,6 +147,27 @@ describe('the switch is the administrators’', () => {
       payload: { published: null },
     });
     expect(reset.json()).toEqual({ published: true, stored: null });
+  });
+});
+
+describe('the maps obey the same switch', () => {
+  it('no map is placed or served while the archive is off, and both come back with it', async () => {
+    const made = await createMap(h.db, {
+      slug: `switch-${String(Date.now())}`,
+      title: 'Switch map',
+      enabled: true,
+    });
+    const list = async () => (await get('/api/maps')).text;
+    await set(null);
+    expect(await list()).toContain(made.slug);
+    await set(false);
+    expect(await list()).not.toContain(made.slug);
+    const one = await get(`/api/maps/${made.slug}`);
+    expect(one.status).toBe(404);
+    expect(one.text).toContain(NOTICE);
+    await set(null);
+    expect(await list()).toContain(made.slug);
+    await deleteMap(h.db, made.id);
   });
 });
 

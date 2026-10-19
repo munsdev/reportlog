@@ -206,9 +206,9 @@ differ). All times are UTC.
 | `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                 |
 | `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`) |
 | `anchor`          | daily 04:00   | Timestamp the chain heads. Not built yet (workstream D)                                          |
-| `digest-hourly`   | hourly        | Not built yet (workstream G)                                                                     |
-| `digest-weekly`   | Mondays 07:00 | Not built yet (workstream G)                                                                     |
-| `feedback-digest` | Mondays 08:00 | Not built yet (workstream G)                                                                     |
+| `digest-hourly`   | hourly        | Email hourly subscribers what the board published since their last email                         |
+| `digest-weekly`   | Mondays 07:00 | The same, for weekly subscribers                                                                 |
+| `feedback-digest` | Mondays 08:00 | Email `ADMIN_EMAIL` every open feedback issue, longest-untouched first                           |
 
 The two sweeps are different jobs on purpose. The first deletes rows; the
 second erases columns and must never delete a row. A list table in the

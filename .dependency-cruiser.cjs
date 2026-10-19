@@ -65,11 +65,21 @@ module.exports = {
     {
       name: 'presentation-stays-out-of-the-seal',
       comment:
-        "The site's name, look, wording and legal text are presentation. A report must " +
-        'never verify differently because somebody renamed the site or corrected a policy.',
+        "The site's name, look, wording and legal text are presentation, and the directory " +
+        'and feedback are mutable state about people. A report must never verify differently ' +
+        'because somebody renamed the site, an organization left the directory, or a tester filed an issue.',
       severity: 'error',
       from: { path: '^(packages/seal/|apps/api/src/chain/)' },
-      to: { path: '^apps/api/src/site/', reachable: true },
+      to: { path: '^apps/api/src/(site|feedback)/', reachable: true },
+    },
+    {
+      name: 'maps-stay-out-of-the-seal',
+      comment:
+        'A heat map is a view of the record, not part of it. A report must never verify ' +
+        'differently because somebody changed a map.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/maps/', reachable: true },
     },
     {
       name: 'moderation-stays-out-of-the-seal',

@@ -12,7 +12,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { normalizeEmail } from './secrets.ts';
 
-export type AuditAxis = 'system' | 'owner' | 'organization' | 'site';
+export type AuditAxis = 'system' | 'owner' | 'organization' | 'site' | 'flag';
 
 export interface AuditEntry {
   actorEmail: string;

@@ -86,7 +86,7 @@ export const JOBS: readonly JobDefinition[] = [
     onCalendar: '*-*-* *:00:00',
     randomizedDelaySec: 120,
     persistent: false,
-    run: undefined,
+    run: (ctx) => import('../site/jobs.ts').then((m) => m.runHourlyDigest(ctx)),
   },
   {
     name: 'digest-weekly',
@@ -95,7 +95,7 @@ export const JOBS: readonly JobDefinition[] = [
     onCalendar: 'Mon *-*-* 07:00:00',
     randomizedDelaySec: 600,
     persistent: true,
-    run: undefined,
+    run: (ctx) => import('../site/jobs.ts').then((m) => m.runWeeklyDigest(ctx)),
   },
   {
     name: 'feedback-digest',
@@ -104,7 +104,7 @@ export const JOBS: readonly JobDefinition[] = [
     onCalendar: 'Mon *-*-* 08:00:00',
     randomizedDelaySec: 600,
     persistent: true,
-    run: undefined,
+    run: (ctx) => import('../site/jobs.ts').then((m) => m.runFeedbackDigestJob(ctx)),
   },
 ];
 

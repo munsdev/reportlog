@@ -56,7 +56,10 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
 
   // Waiting in the queue, asking for a second read.
   await page.goto('/');
-  await page.getByRole('link', { name: 'Moderate' }).click();
+  await page
+    .getByRole('navigation', { name: 'Staff' })
+    .getByRole('link', { name: 'Moderation', exact: true })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: 'Moderation' })).toBeVisible();
   await page.getByLabel('Search the words or a reference').fill(word);
   await page.getByRole('button', { name: 'Show' }).click();

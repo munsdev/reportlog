@@ -35,6 +35,7 @@ export function toMe(user: SignedIn | null): Me {
     role: user.role,
     memberships: user.memberships,
     grantsAccess: grantsAccess(user),
+    tester: user.tester,
   };
 }
 

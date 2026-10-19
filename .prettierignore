@@ -4,3 +4,5 @@ pnpm-lock.yaml
 **/gazetteer.json
 apps/web/src/routeTree.gen.ts
 apps/api/src/db/schema.gen.ts
+**/outlines.json
+tools/geo/data/

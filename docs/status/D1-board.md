@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 D was split in two; D2 (the anchor, the transparency log, exports) has its own report.
 
-- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H merged in at `09b08ce`)
+- **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2 and I merged in at `b7effe5`)
 - **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
@@ -12,10 +12,10 @@ D was split in two; D2 (the anchor, the transparency log, exports) has its own r
 
 | Suite                                                      | Result                                                                                               |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 200, web 364, fields 69, seal 31, access 4) |
-| `pnpm test:db`                                             | 31 files, 490 tests, all passed, after merging H (before this branch: 24 files, 393)                 |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 200, web 392, fields 69, seal 31, access 4) |
+| `pnpm test:db`                                             | 35 files, 582 tests, all passed, after merging H, G2 and I (before this branch: 24 files, 393)       |
 | `db:types:check`                                           | generated types up to date                                                                           |
-| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 77 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 91 passed (16 of them D1's: 8 tests on desktop and phone)                                            |
 
 The legacy vector tests in `packages/seal` are untouched and green. CI on GitHub had not reported
 when this was written; check the pull request.
@@ -121,7 +121,19 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
   password, which is not D1's to open. Until then the "public API" is public only to people who have
   the site password.
 
+- **The board publishes each published report's place, so the map threshold protects nothing for
+  a logbook whose location question is shown or filtered on the board** (I's report raises this).
+  The board shows every answer of a report its reporter permitted and a moderator approved, as
+  legacy did. Whether a location answer should be held back from the board when a map counts that
+  question is a policy decision, not D1's alone. Nothing was changed.
+
 ## Changes outside D1's folders (all named in the commit messages)
+
+- `apps/api/src/maps/routes.ts` (I): the two public map reads ask the archive switch first, as
+  I's report asked (the per-report rule in `publishedHeads` already matched D1's).
+- `apps/web/src/features/staff-nav/entries.ts` (G2): Moderation and Moderation settings, one line
+  each; G2's `staff-nav.test.tsx` updated for the two entries. The "Moderate" header link from the
+  first commit gave way to G2's staff menu in the merge.
 
 - `apps/api/src/filing/filing.ts`, `intake.ts`, `mine.ts` (C): `startThread` takes the appended row
   and calls `flagReport`; a correction calls it too.
@@ -130,8 +142,6 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 - `.dependency-cruiser.cjs`: the seal and the chain never reach `moderation/` or `board/` (seen to
   fail on a planted import, then removed).
 - `apps/web/src/features/identity/StaffOnly.tsx` (A): `needs` may name several roles.
-- `apps/web/src/features/identity/SessionNav.tsx` (A): a "Moderate" link for moderators and
-  administrators.
 - `apps/web/src/features/form/MyReports.tsx` (C): one line rendering `ContactAccesses`.
 - `apps/web/e2e/auth.ts`, `e2e/staff.setup.ts`: a `MODERATOR` session.
 - New `apps/web/src/features/board/` and `features/moderation/` for the screens' components.
@@ -156,6 +166,9 @@ I stopped that process. Without `CI=1` it would have tested the legacy app inste
 - **B (logbooks):** the logbook file could carry the editorial-notes switch (legacy's
   `editorial_notes` key, written only when on). The builder could show it; the API is
   `PUT /api/admin/moderation/logbooks/:slug/notes`.
+- **I (maps):** the publication rule agrees with D1's, and the archive switch is now asked by
+  both public map reads. The board's slots were not added to `MAP_SLOTS`; a map on the board page
+  is not placed yet.
 - **E (lists):** the figures catalogue covers reports and logbooks. Legacy also offered a listed
   list's published counts; adding them in `board/figures.ts` means reading E's aggregates (the
   direction board → lists is allowed).

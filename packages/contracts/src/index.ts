@@ -10,3 +10,4 @@ export * from './lists.ts';
 export * from './filing.ts';
 export * from './moderation.ts';
 export * from './board.ts';
+export * from './maps.ts';
