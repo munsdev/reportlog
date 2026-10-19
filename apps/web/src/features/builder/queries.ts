@@ -4,6 +4,7 @@
  */
 import {
   getHomeButtonsAdmin,
+  getIntakeSwitchAdmin,
   getLogbook,
   listLogbooks,
   listStartingPoints,
@@ -35,4 +36,11 @@ export const homeButtonsAdminQuery = () =>
   queryOptions({
     queryKey: ['admin', 'home-buttons'],
     queryFn: ({ signal }) => call(getHomeButtonsAdmin, { signal }),
+  });
+
+/** The site's intake switch (filing workstream's API). */
+export const intakeSwitchQuery = () =>
+  queryOptions({
+    queryKey: ['admin', 'intake-switch'],
+    queryFn: ({ signal }) => call(getIntakeSwitchAdmin, { signal }),
   });

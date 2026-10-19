@@ -12,6 +12,7 @@
  *     "slug": "election-incidents",          optional, made from the title
  *     "blurb": "…",                          optional
  *     "accepts_files": false,                optional, older files
+ *     "editorial_notes": true,               optional, present only when on
  *     "questions": [
  *       { "key": "state", "kind": "place", "label": "Which state?",
  *         "help": "…", "required": true, "filterable": true,
@@ -25,11 +26,13 @@
  * as wrong as it likes without anything reaching a reporter. The file carries
  * no reports and no chain: it is the questions, not the record.
  *
- * KEYS THIS VERSION DOES NOT READ YET. The shipped files also carry
- * `editorial_notes`, a property of the moderation workstream, accepted and
- * ignored rather than refused: a file from the old deployment must still
- * import. `max_files` and `max_total_bytes` are read (files workstream):
- * they become the logbook's own upload caps.
+ * KEYS THAT BELONG TO OTHER WORKSTREAMS, read and written here so a file
+ * round-trips: `max_files` and `max_total_bytes` become the logbook's own
+ * upload caps (files), and `editorial_notes` turns on the moderation
+ * workstream's per-logbook notes switch. `editorial_notes` is written only
+ * when the switch is on, so a file from a logbook without notes is the same
+ * file it always was, and `false` is read as "off", which is what no key
+ * means anyway.
  */
 import { LogbookFile } from '@reportlog/contracts';
 import type { LogbookDetail, QuestionSettingsInput } from '@reportlog/contracts';
@@ -46,6 +49,7 @@ import {
 } from './logbooks.ts';
 import { LogbookRefusal, refuse } from './refusals.ts';
 import { setLogbookLimits, validateLimits } from '../files/limits.ts';
+import { notesEnabled, setNotesEnabled } from '../moderation/notes.ts';
 
 export const LOGBOOK_FILE_VERSION = 1;
 
@@ -73,6 +77,9 @@ export function validateLogbookFile(f: unknown): string[] {
   if (!title || title.length > 120) errors.push('The title must be 1 to 120 characters.');
   if (f.slug !== undefined && !(typeof f.slug === 'string' && SLUG_RE.test(f.slug))) {
     errors.push('The web address may use lowercase letters, digits and hyphens only.');
+  }
+  if (f.editorial_notes !== undefined && typeof f.editorial_notes !== 'boolean') {
+    errors.push('"editorial_notes" must be true or false.');
   }
   if (!Array.isArray(f.questions) || !f.questions.length) {
     errors.push('A logbook needs at least one question.');
@@ -146,6 +153,11 @@ export interface FileOverrides {
   /** Exactly this address, refused if taken. Without one, a free one is found. */
   slug?: string | undefined;
   blurb?: string | undefined;
+  /**
+   * Who is making it, recorded as whoever turned on editorial notes when the
+   * file asks for them. Every route passes the signed-in administrator.
+   */
+  by?: string | undefined;
 }
 
 /**
@@ -224,6 +236,11 @@ export async function createFromFile(
       if (!v.ok) refuse('bad-file', v.message);
       else await setLogbookLimits(trx, made.id, v.values);
     }
+    // Editorial notes, only when the file turns them on. Off is the default
+    // and needs no row (logbook_editorial_notes: no row is off).
+    if (file.editorial_notes === true) {
+      await setNotesEnabled(trx, made.id, true, overrides.by ?? 'a logbook file');
+    }
     return made.id;
   });
   return logbookDetail(db, id);
@@ -251,6 +268,8 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
     accepts_files: lb.asks_for_files,
     ...(caps?.max_files != null ? { max_files: caps.max_files } : {}),
     ...(caps?.max_total_bytes != null ? { max_total_bytes: caps.max_total_bytes } : {}),
+    // Only when on, so a file from a logbook without notes looks as it did.
+    ...((await notesEnabled(db, lb.id)) ? { editorial_notes: true } : {}),
     questions: fields.map((f) => {
       const s = f.settings;
       const options = Array.isArray(s.options) ? (s.options as string[]) : [];

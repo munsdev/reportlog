@@ -28,6 +28,7 @@ import { Check, Field, Panel, Problem, TextArea, TextInput } from './controls.ts
 import { logbookQuery, logbooksQuery } from './queries.ts';
 import { QuestionForm } from './QuestionForm.tsx';
 import type { QuestionBody } from './QuestionForm.tsx';
+import { FreezePanel, OutsidePanel } from './Switches.tsx';
 import { TypeToConfirm } from './TypeToConfirm.tsx';
 import { fromLocalInput, stateLabel, stateWords, toLocalInput } from './words.ts';
 
@@ -102,6 +103,9 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
       {!launched && <Launch lb={lb} refresh={refresh} />}
       {launched && <Lifecycle lb={lb} refresh={refresh} />}
+
+      <FreezePanel lb={lb} refresh={refresh} />
+      <OutsidePanel lb={lb} refresh={refresh} />
 
       <Panel title="As a file">
         <p className="text-ink-alt">

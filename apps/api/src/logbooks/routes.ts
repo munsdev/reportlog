@@ -29,6 +29,7 @@ import {
   reorderQuestions,
   setHomeButtons as setHomeButtonsContract,
   setLogbookClosed,
+  setLogbookFilesFrozen,
   setLogbookSchedule,
   updateLogbook,
   updateQuestion,
@@ -39,7 +40,7 @@ import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
-import { roleGuard } from '../identity/guards.ts';
+import { requireUser, roleGuard } from '../identity/guards.ts';
 import {
   availableButtons,
   clearHomeButtons,
@@ -63,6 +64,7 @@ import {
   removeField,
   reorderFields,
   setClosed,
+  setFilesFrozen,
   setSchedule,
   updateDetails,
   updateField,
@@ -160,7 +162,11 @@ export function logbookRoutes(
         starting_point?: string;
       };
       if (body.starting_point && body.starting_point !== 'none') {
-        return createFromStartingPoint(db, { ...body, starting_point: body.starting_point });
+        return createFromStartingPoint(db, {
+          ...body,
+          starting_point: body.starting_point,
+          by: requireUser(request).email,
+        });
       }
       const lb = await createLogbook(db, body);
       return logbookDetail(db, lb.id);
@@ -169,7 +175,9 @@ export function logbookRoutes(
     // Always makes a NEW DRAFT, never launches, never touches an existing
     // logbook, so a file can be as wrong as it likes.
     route(staff, createLogbookFromFile, ({ request }) =>
-      createFromFile(db, (request.body as { file: unknown }).file),
+      createFromFile(db, (request.body as { file: unknown }).file, {
+        by: requireUser(request).email,
+      }),
     );
     route(staff, getLogbook, ({ params }) => logbookDetail(db, Number(params.id)));
     route(staff, updateLogbook, async ({ params, request }) => {
@@ -217,6 +225,13 @@ export function logbookRoutes(
       const id = Number(params.id);
       const body = request.body as { opens_at: string | null; closes_at: string | null };
       await setSchedule(db, id, { opensAt: body.opens_at, closesAt: body.closes_at });
+      return logbookDetail(db, id);
+    });
+    // THE FREEZE: a protective handle on uploads, either way, before or
+    // after launch. Not a question, so not behind the one-way door.
+    route(staff, setLogbookFilesFrozen, async ({ params, request }) => {
+      const id = Number(params.id);
+      await setFilesFrozen(db, id, (request.body as { frozen: boolean }).frozen);
       return logbookDetail(db, id);
     });
     route(staff, downloadLogbookFile, async ({ params, reply }) => {

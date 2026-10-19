@@ -1,7 +1,7 @@
 /** What the builder says about a logbook, in plain words. */
 import type { LogbookSummary } from '@reportlog/contracts';
 
-const when = (iso: string) =>
+export const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 export function stateWords(l: LogbookSummary): string {
@@ -35,3 +35,22 @@ export function toLocalInput(iso: string | null): string {
 export function fromLocalInput(v: string): string | null {
   return v ? new Date(v).toISOString() : null;
 }
+
+/** The three answers to "who can file without the site password", in plain words. */
+export const outsideWords: Record<
+  LogbookSummary['outside_access'],
+  { label: string; help: string }
+> = {
+  closed: {
+    label: 'Nobody: only people who know the password',
+    help: 'Filing needs the site password, like everything else on the site.',
+  },
+  link: {
+    label: 'Anybody who has its address',
+    help: 'Anybody with the address of its form can file a report there without the password. Nothing else opens to them.',
+  },
+  door: {
+    label: 'Anybody, and the password page offers it',
+    help: 'As with its address, and the password page also offers this logbook as a way in to file a report.',
+  },
+};

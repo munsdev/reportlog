@@ -34,6 +34,7 @@ import {
   listReviewQueues,
   replaceListQuestions,
   reviewListEntries,
+  searchListEntries,
   sendListEntry,
   triageListEntries,
   updateList,
@@ -85,6 +86,7 @@ import type { ReviewState } from './policy.ts';
 import { NEVER } from './retention.ts';
 import type { ListSettings } from './retention.ts';
 import { reviewBatch, reviewEntries, setTriageState } from './review.ts';
+import { searchEntries } from './search.ts';
 import { iso, isAccepting, listBySlug } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
 
@@ -378,6 +380,12 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
     });
 
     route(staff, deleteList, async ({ params }) => deleteUnused(db, Number(params.id)));
+
+    // A subject access request: every list, the personal half. Administrators
+    // only, which this scope already insists on.
+    route(staff, searchListEntries, async ({ request }) =>
+      searchEntries(db, (request.body as BodyOf<typeof searchListEntries>).q),
+    );
     done();
   });
 
