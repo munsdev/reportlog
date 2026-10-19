@@ -156,6 +156,14 @@ async function alert(unit: string | undefined): Promise<number> {
       text: [
         `A scheduled job on ${host} failed: ${unit ?? '(unit not named)'}.`,
         '',
+        ...(unit?.startsWith('reportlog-job@anchor-watch')
+          ? [
+              'That job checks the daily anchor from outside it. It failing means the archive',
+              'has not been anchored lately, or the last anchor run refused or published nothing.',
+              'Until that is fixed, nothing published since can be shown to be unaltered.',
+              '',
+            ]
+          : []),
         'What it said is in the journal on the server:',
         `  sudo journalctl -u ${unit ?? 'reportlog-job@*'} -n 50`,
         '',

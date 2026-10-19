@@ -230,6 +230,7 @@ differ). All times are UTC.
 | `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                          |
 | `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`)          |
 | `anchor`          | daily 04:00   | Timestamp the chain heads (DFN) and publish them to the transparency log (workstream D2's `runAnchorJob`) |
+| `anchor-watch`    | daily 09:00   | Check from outside the anchor that it ran; fails (and alerts) when the archive has not been anchored      |
 | `digest-hourly`   | hourly        | Email hourly subscribers what the board published since their last email                                  |
 | `digest-weekly`   | Mondays 07:00 | The same, for weekly subscribers                                                                          |
 | `feedback-digest` | Mondays 08:00 | Email `ADMIN_EMAIL` every open feedback issue, longest-untouched first                                    |
@@ -241,6 +242,15 @@ access. Without a remote it still timestamps, keeps the day on the server and
 fails the unit. A run that **refuses** (a logbook gone from the list, or a
 chain shorter than published) exits 2 and keeps refusing every day: that is
 what deleting reports looks like, and the doctor puts it first.
+
+`anchor-watch` exists because the alert below fires only when a job runs
+and fails. An anchor that never runs (its timer disabled, its unit lost)
+fails nothing, and the doctor notices only when somebody runs it. So every
+morning this job asks the doctor's own anchor question from outside the
+anchor, and fails, which sends the alert, when the newest anchor is over
+`ANCHOR_MAX_AGE_HOURS` old, when the last run refused or published nothing,
+or when the log has nowhere to go. On a day the anchor itself failed you get
+two emails: the anchor's at about 04:00 and this one at about 09:00.
 
 The two sweeps are different jobs on purpose. The first deletes rows; the
 second erases columns and must never delete a row. A list table in the

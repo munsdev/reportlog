@@ -1,0 +1,13 @@
+# Generated from apps/api/src/jobs/registry.ts. Edit the registry, then
+# regenerate: pnpm --filter @reportlog/api ops timers --write
+[Unit]
+Description=ReportLog job timer: anchor-watch
+
+[Timer]
+OnCalendar=*-*-* 09:00:00
+RandomizedDelaySec=600
+Persistent=true
+Unit=reportlog-job@anchor-watch.service
+
+[Install]
+WantedBy=timers.target
