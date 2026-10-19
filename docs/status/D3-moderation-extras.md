@@ -10,7 +10,21 @@ D3 builds what D1 (`D1-board.md`) and D2 (`D2-anchor.md`) left.
 
 ## Checks, as last run before pushing
 
-TOTALS
+| Suite                                                      | Result                                                                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                               | passes (format, lint, types, boundaries; unit tests: api 251, web 409, fields 69, seal 31, access 4) |
+| `pnpm test:db`                                             | 51 files, 777 tests, all passed (base before D3: 48 files; D3 adds 23 tests in three new files)      |
+| `db:types:check`                                           | generated types up to date                                                                           |
+| Browser suite (`pnpm --filter @reportlog/web e2e`, `CI=1`) | 114 passed, none skipped or not run                                                                  |
+
+**One thing found on the way: the browser suite is at the filing limit.** Filing allows 20 sends
+per address per 15 minutes (`filing/routes.ts`), and every browser test files from 127.0.0.1.
+The suite already files about 18 to 20 reports in a run. A first version of D3's tests filed three
+more, and C's `behind-password/confirm.spec.ts` was refused ("That has been tried too many
+times"). D3's browser tests now file nothing: they use reports the other projects leave behind,
+in a project that runs last. The limit was not changed. The next workstream that adds a filing
+test will hit it; a test-only allowance (a setting the test server passes, never the default)
+would be the fix, and it is C's and the coordinator's call.
 
 The legacy vector tests in `packages/seal` are untouched and green.
 
@@ -68,7 +82,8 @@ The legacy vector tests in `packages/seal` are untouched and green.
    password like everything under `/api`; not hidden by the archive switch, since it is not the
    archive. With nothing configured the page says "Nothing has been published here yet."
 5. **A browser walk of `/board` with the site password on** (`e2e/board-locked/board.spec.ts`, its
-   own Playwright project after the other password projects): every board page is the password
+   own Playwright project after the other password projects, which also walks severity and
+   incidents first): every board page is the password
    screen and every board read the page makes, or that is asked directly (`/api/board/*`,
    `/api/press`, `/api/chain/demo`, `/api/v1/stats`), is 401, even with the demo logbook opened
    outside for filing; then the same visitor enters the password and walks the board, a report,

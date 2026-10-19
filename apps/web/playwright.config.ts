@@ -86,8 +86,10 @@ export default defineConfig({
       },
     },
     {
-      // The board with the site password on (D3). After the last password
-      // project, for the same reason: the password is the whole site's.
+      // D3: severity on reports the other projects filed (so it files none,
+      // and spends nothing of the per-address filing limit), then the board
+      // with the site password on. Last, because the password is the whole
+      // site's.
       name: 'board-behind-password',
       testMatch: /board-locked\/.*\.spec\.ts$/,
       dependencies: ['files-behind-password'],

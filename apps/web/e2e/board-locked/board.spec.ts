@@ -1,18 +1,19 @@
 /**
- * The public board with the site password ON, walked in a browser.
+ * Two walks that need reports to already exist, so they run after every other
+ * project (playwright.config.ts) and file nothing: filing is limited per
+ * address, and the whole suite shares one.
  *
- * The board is never a door: while the site is locked, every board page is
- * the password screen and every board read is refused, even with a logbook
- * opened outside the password for filing. With the password, the same reader
- * walks the board, a report, the numbers and the press pack, and no page asks
- * another host for anything.
+ *   1. Severity and incidents on the moderation screen, as a moderator, on two
+ *      reports nobody has rated or linked.
+ *   2. The public board with the site password ON. The board is never a door:
+ *      while the site is locked, every board page is the password screen and
+ *      every board read is refused, even with a logbook opened outside the
+ *      password for filing. With the password, the same reader walks the board,
+ *      a report, the numbers and the press pack.
  *
- * Its own project, after the other password tests (playwright.config.ts):
- * the password is the whole site's, and two files turning it on and off would
- * collide.
+ * No page asks another host for anything.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
@@ -30,17 +31,18 @@ function filingState(...args: string[]): void {
 
 const BASE = 'http://127.0.0.1:4173';
 const PASSWORD = `board-locked-${Date.now().toString(36)}`;
-const refs = JSON.parse(
-  readFileSync(fileURLToPath(new URL('../.refs.json', import.meta.url)), 'utf8'),
-) as string[];
+/** A report on the board, approved by the board tests that ran before this project. */
 let ref = '';
+/** Two reports in the queue that nobody has rated or linked. */
+let first = '';
+let second = '';
 
 const lockHeading = (page: Page) =>
   page.getByRole('heading', { name: 'This site needs a password' });
 
 /** A fresh visitor, with every board read and every outside request it makes written down. */
-async function visitor(browser: Browser) {
-  const context = await browser.newContext();
+async function visitor(browser: Browser, storageState?: string) {
+  const context = await browser.newContext(storageState ? { storageState } : {});
   const page = await context.newPage();
   const reads: { url: string; status: number }[] = [];
   const outside: string[] = [];
@@ -57,36 +59,83 @@ async function visitor(browser: Browser) {
 }
 
 test.beforeAll(async ({ playwright }) => {
-  // One of the demo reports global-setup files, approved by a moderator
-  // through the real route while the site is still open. Filing a new one
-  // would spend the per-address filing limit the whole suite shares. A
-  // moderator, because the identity tests before this take the
+  // A moderator, because the identity tests before this take the
   // administrators' seats away.
-  ref = refs[1] ?? '';
+  const anon = await playwright.request.newContext({ baseURL: BASE });
   const mod = await playwright.request.newContext({ baseURL: BASE, storageState: MODERATOR });
-  const queue = (await (await mod.get(`/api/moderation/reports?status=all&q=${ref}`)).json()) as {
-    reports: { thread_id: string; may_publish: boolean }[];
+  const board = (await (await anon.get('/api/board/reports')).json()) as {
+    reports?: { public_ref: string }[];
   };
-  const thread = queue.reports[0];
-  expect(thread?.may_publish, 'the demo report permits publishing').toBe(true);
-  const ok = await mod.post(`/api/moderation/reports/${thread?.thread_id ?? ''}/decision`, {
-    data: { status: 'valid', comment: 'Approved for the locked-board walk.' },
-  });
-  expect(ok.ok(), await ok.text()).toBe(true);
+  ref = board.reports?.[0]?.public_ref ?? '';
+  expect(ref, 'an earlier project left a report on the board').not.toBe('');
+  const queue = (await (await mod.get('/api/moderation/reports?status=pending')).json()) as {
+    reports: { public_ref: string; severity: string | null; incident_size: number }[];
+  };
+  const fresh = queue.reports.filter((r) => r.severity === null && r.incident_size === 0);
+  expect(fresh.length, 'two unrated reports are waiting').toBeGreaterThanOrEqual(2);
+  first = fresh[0]?.public_ref ?? '';
+  second = fresh[1]?.public_ref ?? '';
+  await anon.dispose();
   await mod.dispose();
-
-  // The password on, and the demo logbook opened outside it, for filing only.
-  filingState('outside', 'demo', 'door');
-  filingState('curtain', PASSWORD);
 });
 test.afterAll(() => {
   filingState('outside', 'demo', 'closed');
   identityState('set-up');
 });
 
+test('a moderator rates a report and links it to another; the queue says so', async ({
+  browser,
+}) => {
+  const v = await visitor(browser, MODERATOR);
+  const page = v.page;
+  await page.goto(`/moderate?status=all&q=${first}`);
+  await page.getByRole('link', { name: `Open ${first}` }).click();
+  const severity = page.getByRole('region', { name: 'Severity' });
+  await expect(severity).toContainText('Nobody has rated it yet.');
+  // Nothing is preselected: saving is a deliberate act.
+  await expect(severity.getByRole('button', { name: 'Record the rating' })).toBeDisabled();
+  await severity.getByLabel('Rate it').selectOption('serious');
+  await severity.getByLabel('Why this rating').fill('People were shut out of the hall.');
+  await severity.getByRole('button', { name: 'Record the rating' }).click();
+  await expect(severity).toContainText('Rated Serious');
+
+  const incident = page.getByRole('region', { name: 'Same incident' });
+  await expect(incident).toContainText('Not linked to any other report.');
+  await incident.getByLabel('Link it to').fill(second);
+  await incident.getByLabel('Why they are the same incident').fill('Same hall, same morning.');
+  await incident.getByRole('button', { name: 'Link them' }).click();
+  await expect(incident.getByRole('list', { name: 'Linked reports' })).toContainText(second);
+  // Both are waiting for a moderator, so neither counts as corroboration yet.
+  await expect(incident).toContainText('0 of the 2 accounts are published');
+  await expect(page.getByRole('region', { name: 'What happened to it' })).toContainText(
+    'Rated its severity: serious',
+  );
+
+  await page.goto('/moderate');
+  await page.getByLabel('Showing').selectOption('all');
+  await page.getByLabel('Severity').selectOption('serious');
+  await page.getByLabel('Search the words or a reference').fill(first);
+  await page.getByRole('button', { name: 'Show' }).click();
+  const row = page.getByRole('link', { name: `Open ${first}` });
+  await expect(row).toContainText('Severity: Serious');
+  await expect(row).toContainText('Linked with 1 other report · 0 of the 2 published');
+  // The other one is linked but not rated, so a filter on the rating leaves it out.
+  await page.getByLabel('Search the words or a reference').fill(second);
+  await page.getByRole('button', { name: 'Show' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Nothing here.' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Corroboration' })).toContainText(
+    'Accounts corroborated by at least one other',
+  );
+  expect(v.outside).toEqual([]);
+  await v.context.close();
+});
+
 test('locked: every board page is the password screen, and every board read is refused', async ({
   browser,
 }) => {
+  // The password on, and the demo logbook opened outside it, for filing only.
+  filingState('outside', 'demo', 'door');
+  filingState('curtain', PASSWORD);
   const v = await visitor(browser);
   for (const path of [
     '/board',
