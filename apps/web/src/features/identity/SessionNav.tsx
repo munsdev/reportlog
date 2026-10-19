@@ -32,8 +32,13 @@ function SessionLinks() {
       <Link to="/mine" className="underline-offset-4 hover:underline">
         My reports
       </Link>
+      <Link to="/notifications" className="underline-offset-4 hover:underline">
+        Email updates
+      </Link>
       <Link to="/access" className="underline-offset-4 hover:underline">
-        {me.data.grantsAccess ? 'Access' : 'Your account'}
+        {/* The same page for everybody; the staff menu (features/staff-nav)
+            is where "Access" is offered to the people who grant it. */}
+        Your account
       </Link>
       <button
         type="button"
