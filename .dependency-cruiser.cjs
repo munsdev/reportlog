@@ -65,11 +65,12 @@ module.exports = {
     {
       name: 'presentation-stays-out-of-the-seal',
       comment:
-        "The site's name, look, wording and legal text are presentation. A report must " +
-        'never verify differently because somebody renamed the site or corrected a policy.',
+        "The site's name, look, wording and legal text are presentation, and the directory " +
+        'and feedback are mutable state about people. A report must never verify differently ' +
+        'because somebody renamed the site, an organization left the directory, or a tester filed an issue.',
       severity: 'error',
       from: { path: '^(packages/seal/|apps/api/src/chain/)' },
-      to: { path: '^apps/api/src/site/', reachable: true },
+      to: { path: '^apps/api/src/(site|feedback)/', reachable: true },
     },
     {
       name: 'packages-do-not-import-apps',

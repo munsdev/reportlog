@@ -22,11 +22,18 @@ import { logbookRoutes } from './logbooks/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
+import { feedbackRoutes } from './feedback/routes.ts';
+import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 
 export interface AppDeps {
   config: Pick<Config, 'LOG_LEVEL'> &
-    Partial<Pick<Config, 'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX'>>;
+    Partial<
+      Pick<
+        Config,
+        'SITE_ORIGIN' | 'TRUST_PROXY' | 'CONTACT_KEY' | 'PUBLIC_REF_PREFIX' | 'ADMIN_EMAIL'
+      >
+    >;
   db: Database;
   /** How email leaves. Standard error until a provider is wired in. */
   mailer?: Mailer;
@@ -91,6 +98,8 @@ export async function buildApp({
   verifyRoutes(app, db);
   siteRoutes(app, db);
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
+  sitePeopleRoutes(app, db);
+  await feedbackRoutes(app, { db, mailer: mail, siteOrigin, adminEmail: config.ADMIN_EMAIL });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
   listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
   await filingRoutes(app, {

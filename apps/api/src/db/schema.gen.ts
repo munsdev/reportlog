@@ -66,6 +66,46 @@ export interface ContactKeys {
   thread_id: string;
 }
 
+export interface DigestSubscriptions {
+  frequency: string;
+  last_sent_at: Timestamp | null;
+  logbooks: string[] | null;
+  updated_at: Generated<Timestamp>;
+  user_id: number;
+}
+
+export interface Feedback {
+  body: string;
+  context: Generated<Json>;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  related_ref: string | null;
+  severity: string;
+  status: Generated<string>;
+  status_changed_at: Generated<Timestamp>;
+  submitter_id: number;
+  title: string;
+  type: string;
+}
+
+export interface FeedbackComments {
+  author_id: number;
+  body: string;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+}
+
+export interface FeedbackEvents {
+  action: string;
+  actor_id: number;
+  created_at: Generated<Timestamp>;
+  feedback_id: number;
+  id: Generated<number>;
+  new_status: string | null;
+  note: string | null;
+}
+
 export interface HomeButtons {
   buttons: Json | null;
   id: Generated<boolean>;
@@ -262,6 +302,8 @@ export interface Organizations {
   created_at: Generated<Timestamp>;
   details: string | null;
   id: Generated<number>;
+  listed: Generated<boolean>;
+  listed_at: Timestamp | null;
   name: string;
   updated_at: Generated<Timestamp>;
   verified_at: Generated<Timestamp>;
@@ -415,6 +457,7 @@ export interface Users {
   created_at: Generated<Timestamp>;
   email: string;
   id: Generated<number>;
+  is_tester: Generated<boolean>;
   role: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
@@ -425,6 +468,10 @@ export interface DB {
   chain_anchors: ChainAnchors;
   consent_texts: ConsentTexts;
   contact_keys: ContactKeys;
+  digest_subscriptions: DigestSubscriptions;
+  feedback: Feedback;
+  feedback_comments: FeedbackComments;
+  feedback_events: FeedbackEvents;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
