@@ -149,6 +149,13 @@ export const listMyReports = defineRoute({
 const ThreadParams = z.object({ threadId: z.uuid() });
 
 export const MyReportDetail = MyReport.extend({
+  /**
+   * The current version's fingerprint and chain link, for the signed
+   * declaration: it declares one exact sealed version, and anyone can check
+   * these on the verify page.
+   */
+  content_hash: z.string(),
+  chain_hash: z.string(),
   /** The logbook's questions as they are now: a correction answers these. */
   questions: z.array(FormQuestion),
   permission_history: z.array(

@@ -45,6 +45,8 @@ function reportsOf(db: Kysely<DB>) {
       'r.answers',
       'r.may_publish',
       'r.may_publish_digest',
+      'r.content_hash',
+      'r.chain_hash',
       'r.logbook_id',
       'l.slug as logbook_slug',
       'l.title as logbook_title',
@@ -131,6 +133,8 @@ export class Mine {
       .execute();
     return {
       ...present(row, perms.get(threadId) ?? { ...NONE_GRANTED }),
+      content_hash: row.content_hash,
+      chain_hash: row.chain_hash,
       questions: (await fieldsFor(this.db, row.logbook_id)).map(forForm),
       permission_history: await permissionHistory(this.db, threadId),
       actions: actions.map((a) => ({

@@ -37,6 +37,7 @@ import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings
 import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
+import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
 import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
 import { Route as staffAccessOrgsIdRouteImport } from './routes/(staff)/access/orgs.$id'
@@ -184,6 +185,11 @@ const FileConfirmTokenRoute = FileConfirmTokenRouteImport.update({
   path: '/file/confirm/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MineDeclarationThreadIdRoute = MineDeclarationThreadIdRouteImport.update({
+  id: '/mine/declaration/$threadId',
+  path: '/mine/declaration/$threadId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffAccessInvitationTokenRoute =
   staffAccessInvitationTokenRouteImport.update({
     id: '/(staff)/access/invitation/$token',
@@ -241,6 +247,7 @@ export interface FileRoutesByFullPath {
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/access/': typeof staffAccessIndexRoute
   '/intake/': typeof staffIntakeIndexRoute
   '/lists/': typeof staffListsIndexRoute
@@ -273,6 +280,7 @@ export interface FileRoutesByTo {
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/access': typeof staffAccessIndexRoute
   '/intake': typeof staffIntakeIndexRoute
   '/lists': typeof staffListsIndexRoute
@@ -310,6 +318,7 @@ export interface FileRoutesById {
   '/(staff)/settings/name': typeof staffSettingsNameRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/(staff)/access/': typeof staffAccessIndexRoute
   '/(staff)/intake/': typeof staffIntakeIndexRoute
   '/(staff)/lists/': typeof staffListsIndexRoute
@@ -348,6 +357,7 @@ export interface FileRouteTypes {
     | '/settings/name'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/mine/declaration/$threadId'
     | '/access/'
     | '/intake/'
     | '/lists/'
@@ -380,6 +390,7 @@ export interface FileRouteTypes {
     | '/settings/name'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/mine/declaration/$threadId'
     | '/access'
     | '/intake'
     | '/lists'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings/name'
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
+    | '/mine/declaration/$threadId'
     | '/(staff)/access/'
     | '/(staff)/intake/'
     | '/(staff)/lists/'
@@ -445,6 +457,7 @@ export interface RootRouteChildren {
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
+  MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
   staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
@@ -649,6 +662,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FileConfirmTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mine/declaration/$threadId': {
+      id: '/mine/declaration/$threadId'
+      path: '/mine/declaration/$threadId'
+      fullPath: '/mine/declaration/$threadId'
+      preLoaderRoute: typeof MineDeclarationThreadIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/access/invitation/$token': {
       id: '/(staff)/access/invitation/$token'
       path: '/access/invitation/$token'
@@ -777,6 +797,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
+  MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
   staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,
