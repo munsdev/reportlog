@@ -482,7 +482,10 @@ describe('the reportlog command', () => {
     const out = s.reportlog('releases').out;
     expect(out).toContain(`* ${r2}`);
     expect(out).toContain(`< ${r1}`);
-    expect(out.indexOf(r2)).toBeLessThan(out.indexOf(r1));
+    // Newest first, by name (a UTC time, then the commit). Two deploys in
+    // the same second order by commit, so compare with the names' order.
+    const [first, second] = [r1, r2].sort().reverse();
+    expect(out.indexOf(String(first))).toBeLessThan(out.indexOf(String(second)));
   });
 
   it("runs the application's commands as the service user, in the running release", () => {

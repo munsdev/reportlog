@@ -9,7 +9,18 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 ## Checks, as last run before pushing
 
-@@CHECKS@@
+| Suite                                   | Result                                                                                                                            |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes (format, lint, types, boundaries; unit tests: api 338, web 423, fields 69, seal 31, access 6), with Caddy and moto present |
+| `pnpm test:db`                          | 52 files, 807 tests, all passed                                                                                                   |
+| `db:types:check`                        | generated types up to date (P7 adds no migration)                                                                                 |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 124 passed                                                                                                                        |
+| ShellCheck on `deploy/`                 | clean (0.11.0, as CI runs it)                                                                                                     |
+
+Run after merging `origin/ccr-c9c93698-ev856l` at `9771872` (A2 and C3 in). P7's own tests: api unit
+56 (`deploy-release` 30, `deploy-install` 15, `deploy-caddy` 7, `deploy-storage-check` 4), api db 5
+(`deploy-schema-drift`). One earlier run failed: my listing test assumed two deploys never share a
+second; it now checks the rule the command actually uses (name order).
 
 ## What was built
 
