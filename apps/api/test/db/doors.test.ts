@@ -258,7 +258,10 @@ describe('a logbook opened for filing without the password', () => {
     expect(isLocked(unnamed)).toBe(true);
 
     // THE CONFIRMATION LINK, which is only ever reached from an email.
-    expect(isLocked(await get('/api/reports/confirm/some-token'))).toBe(false);
+    // A made-up token is refused like anything else: the link passes on a
+    // token that names a real submission (filing-doors.test.ts), and on
+    // nothing else, so the gate says nothing about which tokens exist.
+    expect(isLocked(await get('/api/reports/confirm/some-token'))).toBe(true);
 
     expect(reached).toEqual(
       ['GET /api/logbooks/:slug', 'POST /api/reports', 'GET /api/reports/confirm/:token'].filter(

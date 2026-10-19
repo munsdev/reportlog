@@ -80,14 +80,27 @@ describe('a logbook opened outside the password', () => {
     expect(isLocked(r)).toBe(true);
   });
 
+  it('says whether the site is taking reports, so the form can say so on its first card', async () => {
+    const r = await get('/api/intake-switch');
+    expect(r.status).toBe(200);
+  });
+
   it('and nothing else filing serves', async () => {
     expect(isLocked(await get('/api/mine/reports'))).toBe(true);
     expect(isLocked(await get('/api/intake/organizations'))).toBe(true);
-    expect(isLocked(await get('/api/intake-switch'))).toBe(true);
     expect(isLocked(await get('/api/admin/intake-switch'))).toBe(true);
   });
 
-  it('closing the door closes filing, while an unknown link still answers only "not found"', async () => {
+  it('closing the door closes filing, but a reporter who sent while it was open can still confirm', async () => {
+    const email = address('before-shut');
+    const sent = await send(h, {
+      ...spine(email),
+      logbook: outside.slug,
+      answers: { what: 'Sent while open' },
+    });
+    expect(sent.status).toBe(200);
+    const token = tokenFor(h.mailer, email) ?? '';
+
     await h.db
       .updateTable('logbooks')
       .set({ outside_access: 'closed' })
@@ -99,8 +112,13 @@ describe('a logbook opened outside the password', () => {
       answers: { what: 'x' },
     });
     expect(isLocked(r)).toBe(true);
-    // With no logbook open outside, the confirmation link is behind the password too.
+    // The link that was emailed still works: the token is the reporter's proof.
+    expect((await look(h, token)).body.confirmation).toMatchObject({ state: 'unconfirmed' });
+    expect((await confirm(h, token)).body.just_confirmed).toBe(true);
+    // A token that names no submission is refused like anything else behind the
+    // password, so the gate gives nothing away about which tokens exist.
     expect(isLocked(await look(h, 'f'.repeat(64)))).toBe(true);
+    expect(isLocked(await get('/api/intake-switch'))).toBe(true);
     await h.db
       .updateTable('logbooks')
       .set({ outside_access: 'link' })

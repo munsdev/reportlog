@@ -36,7 +36,6 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { askedQuestions, cardProblem, shownAnswer, stillPossible, toSubmission } from './walk.ts';
@@ -69,12 +68,11 @@ const looksLikeEmail = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim()
 type Step = 'intro' | 'publish' | 'contact' | 'review' | `q:${string}`;
 
 export function FilingForm({ slug }: { slug: string }) {
-  const onDoor = useGateMode() === 'door';
   const logbook = useQuery(publicLogbookQuery(slug));
   const card = useQuery(publicationCardQuery);
-  // Whether the site takes reports at all is not a filing call, so a door
-  // does not ask: there, a closed site says so when the report is sent.
-  const intake = useQuery({ ...intakeSwitchQuery, enabled: !onDoor });
+  // Asked on a door too: the door lets this one call through, so the form
+  // can say the site is closed before anybody starts writing.
+  const intake = useQuery(intakeSwitchQuery);
 
   if (logbook.isPending) return <p role="status">Loading the form…</p>;
   if (logbook.isError) {

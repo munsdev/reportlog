@@ -17,6 +17,7 @@
 import type { FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { sha256Hex } from './secrets.ts';
 import { listDoors } from '../lists/manage.ts';
 
 export const OUTSIDE_ACCESS = ['closed', 'link', 'door'] as const;
@@ -65,7 +66,8 @@ export async function doors(db: Kysely<DB>): Promise<Door[]> {
  * The calls the filing form makes, by route pattern (never by raw URL, which
  * a client controls). `slug` says where the logbook is named, if the call is
  * about one; a call naming no logbook passes while any logbook is open
- * outside, because it carries nothing about a report.
+ * outside, because it carries nothing about a report. `passes` replaces both
+ * rules for a call that proves its own right to be answered.
  *
  * Several of these routes belong to other workstreams and may not exist yet.
  * The pattern is the agreement: a route registered under another pattern is
@@ -75,6 +77,7 @@ const FILING_CALLS: readonly {
   method: string;
   route: string;
   slug?: (r: FastifyRequest) => unknown;
+  passes?: (db: Kysely<DB>, r: FastifyRequest) => Promise<boolean>;
 }[] = [
   // The wording of the publication card and its digest.
   { method: 'GET', route: '/api/publication-card' },
@@ -90,18 +93,37 @@ const FILING_CALLS: readonly {
     route: '/api/reports',
     slug: (r) => (r.body as Record<string, unknown> | null)?.logbook,
   },
-  // The confirmation link. The token is the secret, and the logbook was
-  // checked when the report was sent: somebody who filed while it was open
-  // can confirm after it closes, like anybody else.
-  { method: 'GET', route: '/api/reports/confirm/:token' },
-  { method: 'POST', route: '/api/reports/confirm/:token' },
+  // Whether the site is taking reports at all, so the form can say so on its
+  // first card rather than after somebody has written everything. It answers
+  // open or closed and nothing else.
+  { method: 'GET', route: '/api/intake-switch' },
+  // The confirmation link. The token is the secret: it was emailed to the
+  // person who sent the report, and the logbook was checked when they sent
+  // it. So the link passes on the token alone, whether or not any logbook is
+  // open outside NOW: somebody who filed while it was open can finish after
+  // it closes. A token that names no submission gets the same `locked` as
+  // anything else, so the gate says nothing about which tokens exist.
+  { method: 'GET', route: '/api/reports/confirm/:token', passes: submissionExists },
+  { method: 'POST', route: '/api/reports/confirm/:token', passes: submissionExists },
 ];
+
+async function submissionExists(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {
+  const token = (request.params as Record<string, unknown>).token;
+  if (typeof token !== 'string' || !token) return false;
+  const row = await db
+    .selectFrom('report_submissions')
+    .select('id')
+    .where('token_hash', '=', sha256Hex(token))
+    .executeTakeFirst();
+  return row !== undefined;
+}
 
 /** True to let this request past the gate. Read only by the gate. */
 export async function outsidePass(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {
   const route = request.routeOptions.url;
   const call = FILING_CALLS.find((c) => c.method === request.method && c.route === route);
   if (!call) return false;
+  if (call.passes) return call.passes(db, request);
   const open = await logbooksOpenOutside(db);
   if (!open.length) return false;
   if (!call.slug) return true;

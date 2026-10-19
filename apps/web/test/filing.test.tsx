@@ -110,6 +110,7 @@ describe('the cards', () => {
         filters: [],
       },
       'GET /api/publication-card': card,
+      'GET /api/intake-switch': { open: true },
       'POST /api/reports': { pending: true },
     };
     vi.stubGlobal(
@@ -173,6 +174,7 @@ describe('the cards', () => {
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
 
     expect([...new Set(calls)].sort()).toEqual([
+      'GET /api/intake-switch',
       'GET /api/logbooks/demo',
       'GET /api/publication-card',
       'GET /api/site-access/status',
