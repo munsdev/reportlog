@@ -74,7 +74,10 @@ export function digestFor(address: string): void {
   execFileSync(
     'node',
     ['--env-file-if-exists=../../.env', 'src/identity/dev-state.ts', 'digest-for', address],
-    { cwd: API, env: { ...process.env, MAIL_OUTBOX: OUTBOX } },
+    {
+      cwd: API,
+      env: { ...process.env, MAIL_OUTBOX: OUTBOX, SITE_ORIGIN: 'http://127.0.0.1:4173' },
+    },
   );
 }
 
