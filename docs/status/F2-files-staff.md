@@ -3,7 +3,7 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 
 - **Branch:** `claude/f2-files-staff`, based on `ccr-c9c93698-ev856l` at `c93ae88` (F merged)
-- **Pull request:** see the PR into `ccr-c9c93698-ev856l`
+- **Pull request:** [#13](https://github.com/munsdev/reportlog/pull/13), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
