@@ -15,10 +15,12 @@
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
+import type { Readable } from 'node:stream';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import type { Files } from '../files/context.ts';
 import { afterCommit, takeDownForReporter } from '../files/publication.ts';
+import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { notAllowed, requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
@@ -29,6 +31,7 @@ import { confirmSubmission, confirmationState, refused, stageSubmission } from '
 import type { FilingDeps } from './filing.ts';
 import { Intake, coordinatorOrgs } from './intake.ts';
 import { IntakeCorrection } from './intakeCorrection.ts';
+import { IntakeFiles } from './intakeFiles.ts';
 import { intakeIsOpen, setIntakeSwitch, storedIntakeSwitch } from './intakeSwitch.ts';
 import { Mine } from './mine.ts';
 
@@ -63,7 +66,8 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     publicRefPrefix: prefix,
   };
   const mine = new Mine(deps.db, ring, prefix);
-  const intake = new Intake(deps.db, ring, prefix);
+  const intake = new Intake(deps.db, ring, prefix, deps.files ?? null);
+  const intakeFiles = new IntakeFiles(deps.db, intake, deps.files ?? null);
   const intakeCorrection = new IntakeCorrection(deps.db, prefix);
 
   // Anyone can make this site email any address they type, as with sign-in
@@ -174,7 +178,7 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
   });
 
   // ── coordinator intake ────────────────────────────────────────────────
-  await app.register((scope) => {
+  await app.register(async (scope) => {
     scope.addHook('preHandler', (request) => {
       const user = requireUser(request);
       if (!coordinatorOrgs(user).length) {
@@ -219,6 +223,41 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     route(scope, C.removeIntakeDraft, async ({ params, request }) => {
       await intake.removeDraft(who(request), Number(params.id));
       return { ok: true as const };
+    });
+    // An account's files: the same slots, limits and worker as a reporter's
+    // (intakeFiles.ts says what differs, and why).
+    route(scope, C.listIntakeDraftFiles, async ({ params, request }) => ({
+      files: await intakeFiles.list(who(request), Number(params.id)),
+    }));
+    route(scope, C.addIntakeDraftFile, ({ params, request }) => {
+      const b = bodyOf<C.BodyOf<typeof C.addIntakeDraftFile>>(C.addIntakeDraftFile, request);
+      return intakeFiles.add(who(request), Number(params.id), {
+        logbook: b.logbook,
+        name: b.name ?? '',
+        type: b.type ?? '',
+        size: typeof b.size === 'number' ? b.size : NaN,
+      });
+    });
+    route(scope, C.removeIntakeDraftFile, async ({ params, request }) => {
+      await intakeFiles.remove(who(request), Number(params.id), params.slot);
+      return { ok: true as const };
+    });
+    // The bytes, in a scope whose parser hands the body over unread.
+    await scope.register((bytes) => {
+      bytes.addContentTypeParser('*', (_req, payload, done) => {
+        done(null, payload);
+      });
+      bytes.route({
+        method: 'PUT',
+        url: '/api/intake/drafts/:id/files/:slot',
+        handler: async (request) => {
+          const p = request.params as { id: string; slot: string };
+          const id = Number(p.id);
+          if (!Number.isSafeInteger(id) || id < 1) throw notFound('There is no such account.');
+          return intakeFiles.receive(who(request), id, p.slot, request.body as Readable);
+        },
+      });
+      return Promise.resolve();
     });
     route(scope, C.reviewIntakeBatch, ({ params, request }) =>
       intake.review(who(request), Number(params.id)),

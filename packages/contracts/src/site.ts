@@ -747,7 +747,7 @@ export const DIRECTORY_DISCLAIMER =
  * did not exist before they were asked.
  */
 export const DIRECTORY_WHAT_APPEARS = [
-  'The organization’s name and its description.',
+  'The organization’s name, its description, and its logo if it has one.',
   'The date it joined the directory.',
   'How many people have accepted an invitation to it: an exact number, not a range.',
 ] as const;
@@ -762,6 +762,8 @@ export const DirectoryEntry = z.object({
   details: z.string().nullable(),
   joined: z.string(),
   member_count: z.number().int(),
+  /** Where its logo is served from, or null when it has none. */
+  logo: z.string().nullable(),
 });
 
 export const getDirectory = defineRoute({

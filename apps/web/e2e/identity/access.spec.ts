@@ -11,7 +11,16 @@
  */
 import { expect, test } from '@playwright/test';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
-import { codeIn, countTo, identityState, lastMessageTo, linkIn } from './mail.ts';
+import {
+  codeIn,
+  countTo,
+  digestFor,
+  identityState,
+  lastMessageTo,
+  linkIn,
+  stopLinkIn,
+  subscriptionOf,
+} from './mail.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -20,6 +29,7 @@ const OWNER = `owner-${run}@example.org`;
 const MANAGER = `manager-${run}@example.org`;
 const COORD = `coord-${run}@example.org`;
 const MOD = `mod-${run}@example.org`;
+const READER = `reader-${run}@example.org`;
 const ORG = `E2E Org ${run}`;
 const INSTALL_PW = 'installer-pw-1';
 const SITE_PW = 'operator-pw-2';
@@ -218,6 +228,44 @@ test('the owner gives somebody a role, and it is on the record', async () => {
 
   await owner.getByRole('link', { name: 'Who changed what' }).click();
   await expect(owner.getByText(`${OWNER} gave ${MOD}: moderator`)).toBeVisible();
+});
+
+test('a digest is stopped from the link in its email, in front of the password, by the button only', async ({
+  browser,
+}) => {
+  const before = countTo(READER);
+  digestFor(READER);
+  const link = stopLinkIn(await lastMessageTo(READER, before));
+
+  // A stranger's browser: no session and not past the password.
+  const page = await freshPage(browser);
+  const outside: string[] = [];
+  page.on('request', (r) => {
+    const host = new URL(r.url()).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+  });
+  await page.goto(link);
+  await expect(page.getByRole('heading', { level: 1, name: 'Stop these emails?' })).toBeVisible();
+  await expect(lockHeading(page)).toHaveCount(0);
+  // The address, partly hidden, and nothing else of the site.
+  await expect(page.getByText(`${READER.slice(0, 1)}•••@example.org`)).toBeVisible();
+
+  // Opening it, twice, as a mail scanner would, changed nothing.
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1, name: 'Stop these emails?' })).toBeVisible();
+  expect(subscriptionOf(READER)).toBe('hourly');
+
+  await page.getByRole('button', { name: 'Stop these emails' }).click();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'These emails are stopped' }),
+  ).toBeVisible();
+  expect(subscriptionOf(READER)).toBe('none');
+
+  // Still a door: the rest of the site is behind the password.
+  await page.goto('/organizations');
+  await expect(lockHeading(page)).toBeVisible();
+  expect(outside).toEqual([]);
+  await page.context().close();
 });
 
 test('signing out', async () => {

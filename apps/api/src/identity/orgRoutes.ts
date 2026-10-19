@@ -42,6 +42,7 @@ import {
   removeMember,
   setOrganizationDetails,
 } from './organizations.ts';
+import { logoUrl } from './logos.ts';
 import type { SignedIn } from './sessions.ts';
 
 const INVITE_REFUSALS: Record<
@@ -168,6 +169,7 @@ export function orgRoutes(
         id: org.id,
         name: org.name,
         details: org.details,
+        logo: logoUrl(org.logo_key),
         manager_count: org.manager_count,
         coordinator_count: org.coordinator_count,
       },

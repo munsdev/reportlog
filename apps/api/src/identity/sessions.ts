@@ -28,6 +28,10 @@ export interface SignedIn {
   memberships: Membership[];
   /** The tester flag (workstream G2's feedback tracker). Grants nothing else. */
   tester: boolean;
+  /** The team-member flag. Opens the team's pages; grants nothing else. */
+  teamMember: boolean;
+  /** Display only (identity/flags.ts). */
+  desks: string[];
 }
 
 declare module 'fastify' {
@@ -94,7 +98,7 @@ export async function userForSession(
   const row = await db
     .selectFrom('sessions as s')
     .innerJoin('users as u', 'u.id', 's.user_id')
-    .select(['u.id', 'u.email', 'u.role', 'u.is_tester'])
+    .select(['u.id', 'u.email', 'u.role', 'u.is_tester', 'u.is_team_member', 'u.desks'])
     .where('s.token_hash', '=', sha256Hex(token))
     .where('s.expires_at', '>', new Date())
     .executeTakeFirst();
@@ -105,6 +109,8 @@ export async function userForSession(
     role: row.role,
     memberships: await membershipsFor(db, row.id),
     tester: row.is_tester,
+    teamMember: row.is_team_member,
+    desks: row.desks,
   };
 }
 

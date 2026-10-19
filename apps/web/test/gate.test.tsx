@@ -100,8 +100,24 @@ describe('the gate', () => {
     gate('/file/open', history);
     expect(await screen.findByText('The site behind the curtain (door)')).toBeVisible();
     expect(block).toHaveBeenCalledTimes(1);
-    const blocker = (block.mock.calls[0] as unknown as [{ blockerFn: () => boolean }])[0];
-    expect(blocker.blockerFn()).toBe(true);
+    interface At {
+      href: string;
+    }
+    const blocker = (
+      block.mock.calls[0] as unknown as [
+        { blockerFn: (a: { currentLocation: At; nextLocation: At }) => boolean },
+      ]
+    )[0];
+    const from = { href: '/file/open' };
+    // Anywhere else is refused...
+    expect(blocker.blockerFn({ currentLocation: from, nextLocation: { href: '/' } })).toBe(true);
+    expect(
+      blocker.blockerFn({ currentLocation: from, nextLocation: { href: '/file/other' } }),
+    ).toBe(true);
+    // ...and another history entry of the same address (a card) is not.
+    expect(blocker.blockerFn({ currentLocation: from, nextLocation: { href: '/file/open' } })).toBe(
+      false,
+    );
   });
 
   it('fails closed when the server cannot say', async () => {

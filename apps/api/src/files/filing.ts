@@ -23,6 +23,7 @@ import {
   releaseDraft,
   slotsOfSubmission,
 } from './slots.ts';
+import type { Source } from './slots.ts';
 import { CONFIRM_WAIT_MS } from './worker.ts';
 
 /** Send: the files staged under this draft now belong to this submission. */
@@ -69,7 +70,7 @@ export interface SealedFiles {
  */
 export async function sealFiles(
   trx: Transaction<DB>,
-  source: { submissionId: number } | { evidenceRequestId: number },
+  source: Source,
   threadId: string,
   carried: readonly AttachmentEntry[] = [],
 ): Promise<SealedFiles & { count: number }> {
