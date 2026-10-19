@@ -6,11 +6,16 @@
  * only for a question its logbook's maker marked, and there is no built-in
  * date or place filter. Counts are always broken out, with the denominator.
  */
+import { createHash } from 'node:crypto';
 import type { FieldDefinition } from '@reportlog/fields';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { checkText, parseExpression, renderText } from '../../src/board/figures.ts';
+import { checkText, parseExpression, renderText, valueId } from '../../src/board/figures.ts';
+import { fileEntry } from '../../src/lists/entries.ts';
+import { createFromTemplate } from '../../src/lists/manage.ts';
+import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
+import { reviewEntries } from '../../src/lists/review.ts';
 import type { FilingHarness } from './filing-helpers.ts';
-import { launchedLogbook } from './helpers.ts';
+import { launchedLogbook, uniqueSlug } from './helpers.ts';
 import {
   approve,
   fileThread,
@@ -257,6 +262,50 @@ describe('the counts', () => {
   });
 });
 
+describe('the consent wordings (/api/v1/consent-texts)', () => {
+  interface Texts {
+    texts: { digest: string; variant: string; body: string; introduced_by_role: string }[];
+    api_version: number;
+    licence: string;
+  }
+
+  it('reads back the sentence behind a published report’s sealed digest, and the digest checks', async () => {
+    const r = await get<Texts>('/api/v1/consent-texts');
+    expect(r.status).toBe(200);
+    expect(r.headers['cache-control']).toBe('public, max-age=3600');
+    expect(r.body.api_version).toBe(1);
+    expect(r.body.licence).toMatch(/these wordings only; not the reports/);
+
+    const sealed = await h.db
+      .selectFrom('reports')
+      .select('may_publish_digest')
+      .where('public_ref', '=', t.a?.publicRef ?? '')
+      .executeTakeFirstOrThrow();
+    const row = r.body.texts.find((x) => x.digest === sealed.may_publish_digest);
+    expect(row?.variant).toBe('general');
+    // Anybody can check the wording is the one the digest names.
+    for (const x of r.body.texts) {
+      expect(createHash('sha256').update(x.body.normalize('NFC'), 'utf8').digest('hex')).toBe(
+        x.digest,
+      );
+    }
+    expect(new Set(r.body.texts.map((x) => x.variant))).toEqual(
+      new Set(['general', 'coordinator']),
+    );
+  });
+
+  it('names a role, never a person, and is listed in the API’s index', async () => {
+    const r = await get<Texts>('/api/v1/consent-texts');
+    expect(r.text).not.toMatch(/@/);
+    expect(r.body.texts.every((x) => x.introduced_by_role === 'deployment')).toBe(true);
+    const index = await get<{ endpoints: Record<string, string>; licence: { covers: string } }>(
+      '/api/v1',
+    );
+    expect(Object.keys(index.body.endpoints)).toContain('/api/v1/consent-texts');
+    expect(index.body.licence.covers).toMatch(/consent wordings/);
+  });
+});
+
 describe('the figures', () => {
   it('offers filed and published counts per window, overall and per logbook', async () => {
     const r = await get<{ figures: { id: string; value: number }[] }>('/api/board/figures');
@@ -271,6 +320,69 @@ describe('the figures', () => {
         values,
       ),
     ).toMatch(/^3 of \d+$/);
+  });
+
+  it('offers a list’s counts only once it is listed AND its counts are published', async () => {
+    const list = await createFromTemplate(h.db, 'check-ins', { slug: uniqueSlug('figs') });
+    const ids: number[] = [];
+    for (const [verdict, n] of [
+      ['It went fine', 3],
+      ['Something went wrong', 2],
+    ] as const) {
+      for (let i = 0; i < n; i++) {
+        const got = await fileEntry(
+          h.db,
+          list.slug,
+          { answers: { verdict, state: 'Not sure' }, address: `203.0.113.${String(i)}` },
+          { settings: DEFAULT_LIST_SETTINGS },
+        );
+        ids.push(got.id);
+      }
+    }
+    expect(ids).toHaveLength(5);
+    // Two of the fine ones and one of the others approved.
+    await reviewEntries(h.db, list.id, [ids[0], ids[1], ids[3]], { state: 'approved' });
+
+    const figures = async () => {
+      const r = await get<{ figures: { id: string; group: string; value: number }[] }>(
+        '/api/board/figures',
+      );
+      return new Map(
+        r.body.figures
+          .filter((f) => f.id.startsWith(`list.${list.slug}.`))
+          .map((f) => [f.id, f.value]),
+      );
+    };
+    const set = (cols: { visibility?: string; aggregates_published?: boolean }) =>
+      h.db.updateTable('lists').set(cols).where('id', '=', list.id).execute();
+
+    // Hidden, unpublished; then published but hidden; then listed but not published.
+    expect((await figures()).size).toBe(0);
+    await set({ aggregates_published: true });
+    expect((await figures()).size).toBe(0);
+    await set({ aggregates_published: false, visibility: 'listed' });
+    expect((await figures()).size).toBe(0);
+
+    await set({ aggregates_published: true });
+    const f = await figures();
+    const fine = valueId('It went fine');
+    const wrong = valueId('Something went wrong');
+    expect(f.get(`list.${list.slug}.received.all`)).toBe(5);
+    expect(f.get(`list.${list.slug}.approved.all`)).toBe(3);
+    expect(f.get(`list.${list.slug}.received.7d`)).toBe(5);
+    expect(f.get(`list.${list.slug}.verdict.${fine}.received.all`)).toBe(3);
+    expect(f.get(`list.${list.slug}.verdict.${fine}.approved.all`)).toBe(2);
+    expect(f.get(`list.${list.slug}.verdict.${wrong}.approved.24h`)).toBe(1);
+    // Legacy's name for an answer, so an old placeholder still works.
+    expect(fine).toBe(createHash('sha256').update('It went fine').digest('hex').slice(0, 6));
+    expect(
+      renderText(
+        `{{ percent([list.${list.slug}.verdict.${fine}.approved.all], [list.${list.slug}.approved.all]) }}%`,
+        Object.fromEntries(f),
+      ),
+    ).toBe('66.7%');
+
+    await set({ visibility: 'hidden', aggregates_published: false });
   });
 
   it('parses arithmetic, never evaluates code, and says what is wrong', () => {

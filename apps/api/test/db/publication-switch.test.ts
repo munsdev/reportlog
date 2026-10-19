@@ -36,6 +36,16 @@ const Q: FieldDefinition[] = [
 ];
 const NOTICE = 'does not publish a public archive';
 
+/**
+ * Public reads that are deliberately NOT the archive, each with its reason.
+ * They answer the same with the switch off, and a test below says so.
+ */
+const NOT_THE_ARCHIVE: Record<string, string> = {
+  // The site's own sentences, by digest: a reporter checking their own
+  // report's seal needs them whatever the site publishes this week.
+  '/api/v1/consent-texts': 'the wordings of the publication question (board/consentTexts.ts)',
+};
+
 let h: FilingHarness;
 let ref = '';
 let doors: string[] = [];
@@ -116,6 +126,19 @@ describe('with the archive switched off', () => {
     expect(JSON.parse(list.text)).toMatchObject({ published: false });
     const csv = await get('/api/board/reports.csv');
     expect(csv.status).toBe(404);
+  });
+});
+
+describe('what is not the archive', () => {
+  it('answers the same with the archive switched off', async () => {
+    await set(false);
+    for (const door of Object.keys(NOT_THE_ARCHIVE)) {
+      const r = await get(door);
+      expect({ door, status: r.status }).toEqual({ door, status: 200 });
+      expect(r.text).not.toContain(NOTICE);
+      expect(r.text).not.toContain(ref);
+    }
+    await set(null);
   });
 });
 
@@ -259,7 +282,9 @@ describe('no door is forgotten', () => {
     expect(paths.length).toBeGreaterThanOrEqual(7);
     for (const p of paths) {
       expect(h.app.hasRoute({ method: 'GET', url: p })).toBe(true);
-      const covered = doors.some((d) => d.split('?')[0] === p.replace(':ref', ref));
+      const covered =
+        doors.some((d) => d.split('?')[0] === p.replace(':ref', ref)) ||
+        Object.hasOwn(NOT_THE_ARCHIVE, p);
       expect({ p, covered }).toEqual({ p, covered: true });
     }
   });

@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { MapSlot } from '../maps/MapSlot.tsx';
 import { boardStatsQuery } from './queries.ts';
 
 const DISPOSITIONS = [
@@ -83,6 +84,7 @@ export function NumbersPage() {
               ))}
             </section>
           ))}
+          <MapSlot slot="board_numbers" />
           <p className="text-sm text-ink-alt">As of {new Date(d.as_of).toLocaleString()}.</p>
         </>
       ) : null}

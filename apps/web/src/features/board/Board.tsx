@@ -24,6 +24,8 @@ import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
+import { MapSlot } from '../maps/MapSlot.tsx';
+import { BoardMapsButton } from './Maps.tsx';
 import { boardMetaQuery, boardReportsQuery } from './queries.ts';
 import type { BoardSearch } from './queries.ts';
 import { ReportAnswers } from './ReportAnswers.tsx';
@@ -44,6 +46,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
           <Button asChild variant="secondary">
             <Link to="/board/press">Press pack</Link>
           </Button>
+          <BoardMapsButton />
         </>
       }
     >
@@ -53,6 +56,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       {meta.data && !meta.data.published ? <Alert>{meta.data.reason}</Alert> : null}
       {meta.data?.published ? (
         <>
+          <MapSlot slot="board_reports" />
           <Filters
             // A new address means new starting values for the form.
             key={JSON.stringify(search)}
