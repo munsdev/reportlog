@@ -91,6 +91,17 @@ module.exports = {
       to: { path: '^apps/api/src/(moderation|board)/', reachable: true },
     },
     {
+      name: 'files-stay-out-of-the-seal',
+      comment:
+        'A report seals its attachment manifest (ordinal, hash, size, type), read from the ' +
+        'core tables by chain/record.ts. Storage, renditions, publication, erasure and evidence ' +
+        'requests are mutable and erasable. A report must never verify differently because a ' +
+        'file was re-encoded, taken down or erased.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/(files|evidence)/', reachable: true },
+    },
+    {
       name: 'packages-do-not-import-apps',
       severity: 'error',
       from: { path: '^packages/' },
