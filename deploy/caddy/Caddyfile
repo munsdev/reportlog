@@ -1,0 +1,64 @@
+# ReportLog behind Caddy. Rendered into /etc/caddy/Caddyfile by deploy/lib.sh:
+# @SITE_DOMAIN@ comes from SITE_ORIGIN in /etc/reportlog/reportlog.env, and
+# the ACME email line is dropped when ACME_EMAIL in /etc/reportlog/deploy.env
+# is empty. Edit this file, not the rendered one: a deploy overwrites it.
+#
+# Caddy obtains and renews the certificate itself (automatic HTTPS) and
+# redirects plain HTTP to HTTPS.
+#
+# NO ACCESS LOG. Caddy writes none unless a `log` directive asks for one, and
+# none is asked for here. On a site where people report things without being
+# identified, a per-request log of addresses and paths is a visitor list. The
+# API logs requests itself, by route pattern and without addresses.
+{
+	@ACME_EMAIL_LINE@
+	# The admin endpoint stays on localhost, which is Caddy's default; written
+	# out so nobody wonders.
+	admin localhost:2019
+}
+
+@SITE_DOMAIN@ {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	# The API sets its own security headers (helmet, apps/api/src/app.ts).
+	#
+	# Caddy passes the visitor's address in X-Forwarded-For, replacing any the
+	# visitor sent (no proxy in front of Caddy is trusted). The API reads it
+	# with TRUST_PROXY=1 for its sign-in limits, which must count each visitor
+	# and not the whole site as one, and never logs it.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	# The website: static files from the release `current` points at. A
+	# deploy switches the symlink, so nothing here needs reloading for one.
+	handle {
+		root * /srv/reportlog/current/apps/web/dist
+
+		# The same policy the API sends, without its `https:` allowances: the
+		# site loads nothing from anywhere else, so there is nothing to allow.
+		header Content-Security-Policy "default-src 'self'; base-uri 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+		header X-Frame-Options DENY
+		header Cross-Origin-Opener-Policy same-origin
+
+		# Vite puts a content hash in every asset's name, so an asset never
+		# changes under its name and may be kept for a year. Everything else
+		# (index.html above all) must be revalidated, or a browser can keep an
+		# old page that names assets a new release no longer has.
+		@hashed path /assets/*
+		@unhashed not path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header @unhashed Cache-Control "no-cache"
+
+		# A single-page app: any path that is not a file is a route.
+		try_files {path} /index.html
+		file_server
+	}
+}
