@@ -207,14 +207,14 @@ intake_method IS NULL AND attested_at IS NULL AND collected_on IS NULL)`.
 
 ## Totals
 
-Run on the branch after merging `origin/ccr-c9c93698-ev856l` at `9771872`, which brought in A2
-and C3. All three suites were run here (not on CI).
+Run on the branch after merging `origin/ccr-c9c93698-ev856l` at `96b3741`, which brought in A2, C3
+and D3. All three suites were run here (not on CI).
 
 | Suite                                       | Result                                                                                                           |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | passes: format, lint, types, boundaries (582 modules); unit tests fields 69, seal 31, access 6, api 282, web 429 |
-| `pnpm test:db`                              | 53 files, **840 passed, 3 skipped** (the three skips are the gaps above)                                         |
-| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **380 passed**, all projects                                                                                     |
+| `pnpm check`                                | passes: format, lint, types, boundaries (594 modules); unit tests fields 69, seal 31, access 6, api 282, web 429 |
+| `pnpm test:db`                              | 57 files, **864 passed, 3 skipped** (the three skips are the gaps above)                                         |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **396 passed**, all projects                                                                                     |
 
 P1's own tests:
 
@@ -223,12 +223,15 @@ P1's own tests:
 | `invariants.test.ts`   | 33 passed, 3 skipped                                                                              |
 | `anchor-reset.test.ts` | 5 passed                                                                                          |
 | `door-quiet.test.tsx`  | 6 passed                                                                                          |
-| `third-party.spec.ts`  | 128 per browser project (chromium, phone): 63 pages × 2 viewers, the wizard, the route-list check |
+| `third-party.spec.ts`  | 132 per browser project (chromium, phone): 65 pages × 2 viewers, the wizard, the route-list check |
 
-**The merge was a test of the sweeps.**
+**The merges were a test of the sweeps.**
 
-- A2 added a door shape (`/notifications/stop/$token`). `door-quiet` failed on it, as designed,
-  and now covers it. The frame is quiet there too.
-- A2 and C3's new routes and pages were picked up without changes to the tests: 114 staff routes
-  and 63 pages after the merge.
-- The merge added no append-only table.
+- **A2** added a door shape (`/notifications/stop/$token`). `door-quiet` failed on it, as
+  designed, and now covers it. The frame is quiet there too.
+- **D3** added a new prefix, `/api/press`. The route sweep failed until it was classified: it is
+  the public press pack.
+- **D3** added `report_assessments`, which the first definition of append-only wrongly counted
+  (see I4).
+- **Picked up with no other change:** after the merges there are 117 staff routes, all refusing,
+  and 65 pages, none asking another host.
