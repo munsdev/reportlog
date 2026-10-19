@@ -12,6 +12,9 @@ Group=reportlog
 WorkingDirectory=/srv/reportlog/current
 ExecStart=/usr/local/bin/node --env-file=/etc/reportlog/reportlog.env apps/api/src/jobs/cli.ts alert %i
 TimeoutStartSec=2min
+StateDirectory=reportlog
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/reportlog
 
 # --- confinement ------------------------------------------------------
 # The whole file system is read-only to this process except the paths in

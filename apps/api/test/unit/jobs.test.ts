@@ -80,8 +80,12 @@ describe('the systemd units', () => {
     expect(text).not.toMatch(/^MemoryDenyWriteExecute/m);
   });
 
-  it('lets the API and the jobs write their state directory and nothing else', () => {
-    for (const name of ['reportlog-api.service', 'reportlog-job@.service']) {
+  it('lets the API, the jobs and the alert write their state directory and nothing else', () => {
+    for (const name of [
+      'reportlog-api.service',
+      'reportlog-job@.service',
+      'reportlog-alert@.service',
+    ]) {
       expect(unit(name).match(/^ReadWritePaths=.*$/gm)).toEqual([
         'ReadWritePaths=/var/lib/reportlog',
       ]);
