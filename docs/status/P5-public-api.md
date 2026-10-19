@@ -5,7 +5,7 @@ The brief is `docs/parity.md` §7, "P5". D1 (`D1-board.md`), D2 (`D2-anchor.md`)
 (`D3-moderation-extras.md`) built the rest of D.
 
 - **Branch:** `claude/p5-public-api`, based on `ccr-c9c93698-ev856l` at `96b3741` (D3 merged); the base merged in again at `af9114b` (P1, P4, P6, P7)
-- **Pull request:** see the coordinating session's message (into `ccr-c9c93698-ev856l`)
+- **Pull request:** [#24](https://github.com/munsdev/reportlog/pull/24), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-19
 
