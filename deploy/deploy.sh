@@ -62,8 +62,13 @@ main() {
   # As the service user, in its build home, so no package's install script
   # ever runs as root. Ownership goes back to root before anything runs it.
   chown -R "$APP_USER:$APP_USER" "$dir"
+  # Then the build tools go: everything is removed and the production
+  # dependencies alone are installed again from the local store (pnpm's
+  # --prod on an existing install skips dev dependencies without deleting
+  # them, which left Vite, TypeScript and Playwright in every release).
   if ! as_app sh -c "cd '$dir' && pnpm install --frozen-lockfile --reporter=silent \
       && pnpm --filter @reportlog/web build >/dev/null \
+      && find . -name node_modules -type d -prune -exec rm -rf {} + \
       && pnpm install --frozen-lockfile --prod --offline --reporter=silent"; then
     chown -R root:root "$dir"
     mv "$dir" "$dir.failed"
