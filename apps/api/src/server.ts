@@ -2,7 +2,7 @@ import { buildApp } from './app.ts';
 import { loadConfig } from './config.ts';
 import { recordCardTexts } from './consent/cards.ts';
 import { createDatabase } from './db/database.ts';
-import { outboxMailer, stderrMailer } from './email/mailer.ts';
+import { createMailer } from './email/index.ts';
 import { listSettingsFrom } from './lists/settings.ts';
 
 const config = loadConfig();
@@ -14,7 +14,7 @@ await recordCardTexts(db);
 const app = await buildApp({
   config,
   db,
-  mailer: config.MAIL_OUTBOX ? outboxMailer(config.MAIL_OUTBOX) : stderrMailer(),
+  mailer: createMailer(config),
   lists: listSettingsFrom(config),
 });
 
