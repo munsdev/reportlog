@@ -20,10 +20,19 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { manifestFor, sealedReportRows, toStoredRecord } from './record.ts';
 
+/**
+ * The whole answer, text included. Whether a caller may SEE the text is not
+ * decided here (routes/verify.ts, decisions.md §1).
+ */
+export type FullVerification = Verification & {
+  hashed_fields: Record<string, unknown>;
+  canonical_json: string;
+};
+
 export async function verifyReport(
   db: Kysely<DB>,
   publicRef: string,
-): Promise<Verification | null> {
+): Promise<FullVerification | null> {
   const row = await sealedReportRows(db).where('r.public_ref', '=', publicRef).executeTakeFirst();
   if (!row) return null;
 

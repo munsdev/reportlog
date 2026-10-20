@@ -12,9 +12,10 @@
  * Every gate is checked on every request, the reporter's own permission
  * included (requests.ts says why).
  *
- * The door stays BEHIND THE SITE PASSWORD, as it did in legacy: only filing
- * and lists get past it. Whether an evidence link should pass on its token, as
- * a confirmation link does, is a decision for the identity workstream.
+ * The door is IN FRONT OF THE SITE PASSWORD, like the confirmation link
+ * (decisions.md §4): its token is what guards it. The gate lets these routes
+ * past on a token that names a request (identity/doors.ts); everything else
+ * is still decided here.
  */
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';

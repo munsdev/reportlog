@@ -18,7 +18,7 @@
  * `optional` shows nothing until written instead, where our note to the
  * operator would be the wrong thing for a reader to see.
  *
- * All nine of legacy's slots, each read by a page (see COPY_KEYS in
+ * All nine of legacy's slots and the lock screen's paragraph, each read by a page (see COPY_KEYS in
  * @reportlog/contracts).
  *
  * FIGURES. A slot may carry {{ … }} placeholders (board/figures.ts). The
@@ -40,6 +40,8 @@ interface SlotDefinition {
   label: string;
   help: string;
   optional?: boolean;
+  /** False for the one slot that may not carry {{ figures }}. */
+  figures?: false;
   fallback: string;
 }
 
@@ -124,6 +126,21 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback:
       'An operator publishes their moderation standard here — what gets approved, what gets refused, and who decides.\n\nPublishing this is not optional if a deployment takes moderator applications, and it is difficult to write honestly after the fact. Write it before opening an intake, not afterwards.',
   },
+  {
+    // THE ONE SLOT IN FRONT OF THE SITE PASSWORD (decisions.md §3). The lock
+    // screen shows the site's name, this, and nothing else, so it is read on
+    // the lock screen's own call (lockScreen.ts), never with the rest of the
+    // wording. Optional: unwritten, the lock screen says only what ships.
+    // Figures are never rendered in it: they are counts of what the password
+    // protects.
+    key: 'lock_intro',
+    kind: 'block',
+    optional: true,
+    figures: false,
+    label: 'Your own words on the password screen',
+    help: 'Shown to everybody who reaches the site while it needs a password, under its name. Who this site is for, or how to ask for the password. It is the only thing a stranger reads here, so say nothing you would not put on a public notice board. Left empty, nothing is shown.',
+    fallback: '',
+  },
 ];
 
 const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s]));
@@ -178,6 +195,15 @@ export function validateCopy(
   // A headline with a line break in it is a headline that will not lay out.
   if (slot.kind === 'line' && /[\r\n]/.test(raw)) {
     return { ok: false, error: 'This one is a single line.' };
+  }
+  // The password screen shows no figures: they count what the password
+  // protects. Refused, rather than shown as typed to every stranger.
+  if (slot.figures === false && raw.includes('{{')) {
+    return {
+      ok: false,
+      error:
+        'The password screen cannot show numbers: they count what the password protects. Take out the {{ }}.',
+    };
   }
   return { ok: true, value: { key: slot.key, body: raw.trim() ? raw : null } };
 }

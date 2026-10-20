@@ -14,6 +14,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { HttpError } from '../http/errors.ts';
+import { devModeUntil, lockScreenSite } from '../site/lockScreen.ts';
 import { route } from '../http/route.ts';
 import { doors } from './doors.ts';
 import { notSignedIn } from './guards.ts';
@@ -58,10 +59,19 @@ export function curtainRoutes(
   // THE SAME RULE THE GATE USES (gateApplies). If this said "locked" while
   // the gate let requests through, the lock screen would sit over a working
   // site with nothing to explain it.
+  //
+  // While locked it also carries what the password screen shows of the site
+  // (its name and the operator's paragraph, decisions.md §3) and, always, when
+  // the development notice ends: on the lock screen and on a door nothing
+  // behind the gate is asked, so this is the only call that can bring them.
   route(app, C.getSiteAccessStatus, async ({ request }) => {
     const settings = await siteAccessSettings(db);
-    if (!gateApplies(settings)) return { locked: false };
-    return { locked: !(await tokenIsLive(db, request.cookies[SITE_ACCESS_COOKIE])) };
+    const dev_mode_until = await devModeUntil(db);
+    if (!gateApplies(settings)) return { locked: false, dev_mode_until };
+    if (await tokenIsLive(db, request.cookies[SITE_ACCESS_COOKIE])) {
+      return { locked: false, dev_mode_until };
+    }
+    return { locked: true, site: await lockScreenSite(db), dev_mode_until };
   });
 
   route(app, C.unlockSite, async ({ request, reply }) => {

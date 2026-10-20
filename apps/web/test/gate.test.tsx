@@ -49,7 +49,10 @@ afterEach(() => {
 
 describe('the gate', () => {
   it('shows only the password screen while locked: nothing behind it renders', async () => {
-    server({ '/api/site-access/status': { locked: true }, '/api/doors': { doors: [] } });
+    server({
+      '/api/site-access/status': { locked: true, dev_mode_until: null },
+      '/api/doors': { doors: [] },
+    });
     const { history, block } = fakeHistory();
     gate('/verify/RL-1', history);
     expect(
@@ -62,7 +65,7 @@ describe('the gate', () => {
 
   it('offers what an administrator opened, as plain links', async () => {
     server({
-      '/api/site-access/status': { locked: true },
+      '/api/site-access/status': { locked: true, dev_mode_until: null },
       '/api/doors': {
         doors: [{ kind: 'logbook', slug: 'open', title: 'Open logbook', href: '/file/open' }],
       },
@@ -74,7 +77,7 @@ describe('the gate', () => {
 
   it('renders the site once past the password, unless it still needs setting up', async () => {
     server({
-      '/api/site-access/status': { locked: false },
+      '/api/site-access/status': { locked: false, dev_mode_until: null },
       '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
     });
     gate('/', fakeHistory().history);
@@ -83,7 +86,7 @@ describe('the gate', () => {
 
   it('shows the setup wizard instead of the site on a deployment nobody has set up', async () => {
     server({
-      '/api/site-access/status': { locked: false },
+      '/api/site-access/status': { locked: false, dev_mode_until: null },
       '/api/setup/status': { needed: true, hasOwner: false, minPassword: 8 },
       '/api/auth/me': { signedIn: false },
     });
@@ -95,7 +98,7 @@ describe('the gate', () => {
   });
 
   it('lets one door page render while locked, with navigation blocked', async () => {
-    server({ '/api/site-access/status': { locked: true } });
+    server({ '/api/site-access/status': { locked: true, dev_mode_until: null } });
     const { history, block } = fakeHistory();
     gate('/file/open', history);
     expect(await screen.findByText('The site behind the curtain (door)')).toBeVisible();
@@ -134,8 +137,14 @@ describe('the gate', () => {
 });
 
 describe('door paths', () => {
-  it('are a filing form, a confirmation link and a list form, and nothing else', () => {
-    for (const p of ['/file/demo', '/file/demo/', '/file/confirm/abc', '/list/tips'])
+  it('are a filing form, the two emailed links and a list form, and nothing else', () => {
+    for (const p of [
+      '/file/demo',
+      '/file/demo/',
+      '/file/confirm/abc',
+      '/evidence/abc',
+      '/list/tips',
+    ])
       expect(isDoorPath(p), p).toBe(true);
     for (const p of [
       '/',
@@ -145,6 +154,8 @@ describe('door paths', () => {
       '/access',
       '/verify/RL-1',
       '/list',
+      '/evidence',
+      '/evidence/abc/files',
     ]) {
       expect(isDoorPath(p), p).toBe(false);
     }

@@ -1,17 +1,31 @@
 /**
  * The password screen. All that stands between a visitor and the site while
  * the gate is on, so it shows nothing of what is behind it: no menu, no
- * name of a logbook that is not on offer. Only what an administrator chose
- * to offer without the password (the doors), as plain links.
+ * name of a logbook that is not on offer. Only the site's name and the
+ * paragraph its operator wrote for this screen (decisions.md §3), both
+ * carried by the password check itself, and what an administrator chose to
+ * offer without the password (the doors), as plain links.
+ *
+ * Not the look: a palette is the site's, and the screen is the same plain
+ * page on every deployment.
  */
 import { listDoors, unlockSite } from '@reportlog/contracts';
+import type { LockScreenSite } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { DevBadge } from '@/components/ui/dev-badge.tsx';
+import { BrandName } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorText, TextField } from './ui.tsx';
 
-export function LockScreen({ onUnlocked }: { onUnlocked: () => Promise<void> }) {
+export function LockScreen({
+  site,
+  onUnlocked,
+}: {
+  site?: LockScreenSite | undefined;
+  onUnlocked: () => Promise<void>;
+}) {
   const [password, setPassword] = useState('');
   const doors = useQuery({
     queryKey: ['site-access', 'doors'],
@@ -29,7 +43,18 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => Promise<void> }) 
       className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-8 px-4 py-12"
     >
       <div className="space-y-2">
+        {site ? (
+          <p className="font-display text-xl font-bold" data-site-name>
+            <BrandName parts={site.name_parts} />
+          </p>
+        ) : null}
         <h1 className="font-display text-3xl font-bold">This site needs a password</h1>
+        {site?.intro ? (
+          // The operator's own words: plain text with their line breaks, never HTML.
+          <p data-copy="lock_intro" className="max-w-prose whitespace-pre-wrap">
+            {site.intro}
+          </p>
+        ) : null}
         <p className="text-ink-alt">
           It is not open to the public yet. If you were given the password, enter it here.
         </p>
@@ -71,6 +96,7 @@ export function LockScreen({ onUnlocked }: { onUnlocked: () => Promise<void> }) 
           </ul>
         </nav>
       )}
+      <DevBadge />
     </main>
   );
 }
