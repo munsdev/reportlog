@@ -155,14 +155,14 @@ group's moderator comment. Lists use it; it never imports the seal or chain code
 they carry **report content**, which J3 forbids. Their stop link works without signing in and
 changes nothing until a button is pressed.
 
-| ID                                                     | Status            | Notes                                                                                                |
-| ------------------------------------------------------ | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| J1 Signup: name, outlet, email, coverage states        | **New/Change**    | A journalist signup, separate from (or a variant of) the digest.                                     |
-| J2 Double opt-in                                       | **Check**         | Confirm the digest signup confirms by link before listing; add a browser test that follows the link. |
-| J3 Counts only, by area; no links, no content, no tips | **Change**        | A counts-only alert per subscriber's states, from the published rule (approved reports only).        |
-| J4 Working unsubscribe                                 | **Met (Check)**   | The digest stop link.                                                                                |
-| J5 No access to anything non-public                    | **Met by design** |                                                                                                      |
-| J6 Legal notice and privacy links on signup            | **Met (Check)**   | The site footer.                                                                                     |
+| ID                                                     | Status         | Notes                                                                                                |
+| ------------------------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------- |
+| J1 Signup: name, outlet, email, coverage states        | **Done** (PD2) | A journalist signup, separate from (or a variant of) the digest.                                     |
+| J2 Double opt-in                                       | **Done** (PD2) | Confirm the digest signup confirms by link before listing; add a browser test that follows the link. |
+| J3 Counts only, by area; no links, no content, no tips | **Done** (PD2) | A counts-only alert per subscriber's states, from the published rule (approved reports only).        |
+| J4 Working unsubscribe                                 | **Done** (PD2) | The digest stop link.                                                                                |
+| J5 No access to anything non-public                    | **Done** (PD2) |                                                                                                      |
+| J6 Legal notice and privacy links on signup            | **Done** (PD2) | The site footer.                                                                                     |
 
 ### 7b. Vetted access
 
