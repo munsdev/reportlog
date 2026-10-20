@@ -15,7 +15,6 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { ADMIN } from '../auth.ts';
 import { photoWithLocation, signedIn } from '../files/helpers.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 
@@ -48,8 +47,14 @@ function watch(page: Page) {
 
 let admin: APIRequestContext;
 
+// Its own administrator, signed in now: the identity project, earlier in the
+// run, rearranges the seats, so the session saved at the start may be gone.
+let adminState: Awaited<ReturnType<APIRequestContext['storageState']>>;
 test.beforeAll(async ({ playwright }) => {
-  admin = await playwright.request.newContext({ baseURL: BASE, storageState: ADMIN });
+  const email = `in-front-admin-${run()}@example.org`;
+  identityState('seat', email, 'admin');
+  admin = await signedIn(playwright, BASE, email);
+  adminState = await admin.storageState();
 });
 test.afterAll(async () => {
   // Password off first: the settings routes are behind it.
@@ -67,6 +72,7 @@ test('a reporter without the password follows the evidence link from the email a
   // A logbook asking whether there is evidence, a report saying yes, the
   // reporter's permission, and a moderator's ask: all before the password.
   const made = await admin.post('/api/admin/logbooks', { data: { title: `In front ${run()}` } });
+  expect(made.ok(), await made.text()).toBe(true);
   const lb = (await made.json()) as { id: number; slug: string };
   const add = async (data: Record<string, unknown>) =>
     (
@@ -76,7 +82,8 @@ test('a reporter without the password follows the evidence link from the email a
     ).key;
   const what = await add({ kind: 'long_text', label: 'What happened?', required: true });
   const has = await add({ kind: 'evidence_declaration', label: 'Do you have photos of it?' });
-  expect((await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`)).ok()).toBe(true);
+  const launched = await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`);
+  expect(launched.ok(), await launched.text()).toBe(true);
   const card = (await (await admin.get('/api/publication-card?variant=general')).json()) as {
     digest: string;
   };
@@ -177,7 +184,7 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   browser,
 }) => {
   // Written in the settings, as an operator would, while the password is off.
-  const staff = await browser.newContext({ storageState: ADMIN });
+  const staff = await browser.newContext({ storageState: adminState });
   const settings = await staff.newPage();
   await settings.goto('/settings/words');
   const box = settings.getByRole('textbox', { name: 'Your own words on the password screen' });
