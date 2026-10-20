@@ -255,7 +255,7 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         size="sm"
                         variant="secondary"
                         disabled={i === 0}
-                        aria-label={`Move “${q.label}” up`}
+                        aria-label={`Move up: “${q.label}”`}
                         onClick={() => void move(i, -1)}
                       >
                         Move up
@@ -264,7 +264,7 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         size="sm"
                         variant="secondary"
                         disabled={i === lb.fields.length - 1}
-                        aria-label={`Move “${q.label}” down`}
+                        aria-label={`Move down: “${q.label}”`}
                         onClick={() => void move(i, 1)}
                       >
                         Move down
