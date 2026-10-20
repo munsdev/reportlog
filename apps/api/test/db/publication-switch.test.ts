@@ -9,13 +9,19 @@
  * the quietest possible bug. A second test fails if a board route exists that
  * this list does not name.
  *
- * Legacy's distribution switch is not ported: it belongs with the exports
- * (workstream D2).
+ * And the distribution switch (decision 11, legacy 009's second half): the
+ * bulk downloads, the spreadsheet and the published chain file, need it as
+ * well, and it is OFF until an administrator says yes.
  */
 import * as C from '@reportlog/contracts';
 import type { FieldDefinition } from '@reportlog/fields';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { publicArchiveAvailable } from '../../src/board/publication.ts';
+import {
+  DISTRIBUTION_OFF,
+  distributionAvailable,
+  publicArchiveAvailable,
+  setDistribution,
+} from '../../src/board/publication.ts';
 import { setOutsideAccess } from '../../src/identity/doors.ts';
 import { createMap, deleteMap } from '../../src/maps/manage.ts';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
@@ -67,6 +73,9 @@ async function set(value: boolean | null) {
 beforeAll(async () => {
   h = await moderationHarness();
   await resetModerationSettings(h.db);
+  // The archive switch is the subject until "the distribution switch" below,
+  // so the downloads are allowed and only the archive switch decides.
+  await setDistribution(h.db, true, 'admin@example.org');
   const lb = await launchedLogbook(h.db, Q);
   const t = await fileThread(h.db, lb, Q, { what: 'A published account, visible on the board.' });
   await approve(h.db, t.threadId);
@@ -164,13 +173,13 @@ describe('the switch is the administrators’', () => {
       url: '/api/admin/moderation/archive',
       payload: { published: false },
     });
-    expect(off.json()).toEqual({ published: false, stored: false });
+    expect(off.json()).toMatchObject({ published: false, stored: false });
     const reset = await admin.call({
       method: 'PUT',
       url: '/api/admin/moderation/archive',
       payload: { published: null },
     });
-    expect(reset.json()).toEqual({ published: true, stored: null });
+    expect(reset.json()).toMatchObject({ published: true, stored: null });
   });
 });
 
@@ -202,6 +211,137 @@ describe('the published chain file obeys the same switch, and the same rule as t
     const refsOf = (x: { public_ref: string }[]) => x.map((r) => r.public_ref).sort();
     expect(refsOf(file.reports)).toEqual(refsOf(board.reports));
     expect(refsOf(file.reports)).not.toContain(pending.publicRef);
+  });
+});
+
+describe('the distribution switch (decision 11)', () => {
+  /** The bulk downloads. Each needs the archive on AND the downloads on. */
+  const downloads = () => [
+    '/api/board/reports.csv',
+    `/api/board/reports.csv?logbook=${slug}`,
+    `/api/chain/${slug}`,
+  ];
+  const setStored = async (value: boolean | null) => {
+    await h.db
+      .updateTable('moderation_settings')
+      .set({ distribution_enabled: value })
+      .where('id', '=', true)
+      .execute();
+  };
+
+  it('a fresh site stores NULL, and NULL distributes nothing', async () => {
+    await resetModerationSettings(h.db);
+    const row = await h.db
+      .selectFrom('moderation_settings')
+      .select('distribution_enabled')
+      .executeTakeFirstOrThrow();
+    expect(row.distribution_enabled).toBeNull();
+    expect(await distributionAvailable(h.db)).toBe(false);
+    for (const door of downloads()) {
+      const r = await get(door);
+      expect({ door, status: r.status }).toEqual({ door, status: 404 });
+      expect(r.text).toContain(DISTRIBUTION_OFF);
+      expect(r.text).not.toContain(ref);
+    }
+    // The board itself is still read, and does not offer the spreadsheet.
+    const board = JSON.parse((await get('/api/board')).text) as { downloads: boolean };
+    expect(board.downloads).toBe(false);
+    expect((await get('/api/board/reports')).text).toContain(ref);
+  });
+
+  it('each download opens only once an administrator says yes', async () => {
+    await setStored(true);
+    for (const door of downloads()) {
+      const r = await get(door);
+      expect({ door, status: r.status }).toEqual({ door, status: 200 });
+      expect(r.text).toContain(ref);
+    }
+    expect((JSON.parse((await get('/api/board')).text) as { downloads: boolean }).downloads).toBe(
+      true,
+    );
+    await setStored(false);
+    for (const door of downloads()) expect((await get(door)).status).toBe(404);
+  });
+
+  it('with the archive off, nothing is distributed whatever this says, and the archive says why', async () => {
+    await setStored(true);
+    await set(false);
+    expect(await distributionAvailable(h.db)).toBe(false);
+    for (const door of downloads()) {
+      const r = await get(door);
+      expect({ door, status: r.status }).toEqual({ door, status: 404 });
+      expect(r.text).toContain(NOTICE);
+      expect(r.text).not.toContain(ref);
+    }
+    await set(null);
+  });
+
+  it('is never in a seal: a report verifies byte for byte the same either way', async () => {
+    const verify = async () => {
+      const r = await get(`/api/reports/${ref}/verify`);
+      expect(r.status).toBe(200);
+      const v = JSON.parse(r.text) as { canonical_json: string; content: unknown; link: unknown };
+      return JSON.stringify([v.canonical_json, v.content, v.link]);
+    };
+    await setStored(null);
+    const before = await verify();
+    await setStored(true);
+    expect(await verify()).toBe(before);
+    await setStored(false);
+    expect(await verify()).toBe(before);
+    expect(before).not.toMatch(/distribution/);
+  });
+
+  it('only an administrator turns it, and turning one switch leaves the other alone', async () => {
+    await resetModerationSettings(h.db);
+    const mod = await staff(h, 'mod-dist', 'moderator');
+    const admin = await staff(h, 'admin-dist', 'admin');
+    const refused = await mod.call({
+      method: 'PUT',
+      url: '/api/admin/moderation/archive',
+      payload: { distribution: true },
+    });
+    expect(refused.statusCode).toBe(403);
+    expect(await distributionAvailable(h.db)).toBe(false);
+    const on = await admin.call({
+      method: 'PUT',
+      url: '/api/admin/moderation/archive',
+      payload: { distribution: true },
+    });
+    expect(on.json()).toEqual({
+      published: true,
+      stored: null,
+      distribution: true,
+      distribution_stored: true,
+    });
+    const archiveOff = await admin.call({
+      method: 'PUT',
+      url: '/api/admin/moderation/archive',
+      payload: { published: false },
+    });
+    expect(archiveOff.json()).toEqual({
+      published: false,
+      stored: false,
+      distribution: false,
+      distribution_stored: true,
+    });
+    const reset = await admin.call({
+      method: 'PUT',
+      url: '/api/admin/moderation/archive',
+      payload: { published: null, distribution: null },
+    });
+    expect(reset.json()).toEqual({
+      published: true,
+      stored: null,
+      distribution: false,
+      distribution_stored: null,
+    });
+    const row = await h.db
+      .selectFrom('moderation_settings')
+      .select('distribution_set_by')
+      .executeTakeFirstOrThrow();
+    expect(row.distribution_set_by).toMatch(/admin-dist/);
+    await setDistribution(h.db, true, 'admin@example.org');
   });
 });
 

@@ -63,7 +63,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             logbooks={meta.data.logbooks}
             search={search}
           />
-          <Results search={search} logbooks={meta.data.logbooks} />
+          <Results search={search} logbooks={meta.data.logbooks} downloads={meta.data.downloads} />
         </>
       ) : null}
     </Page>
@@ -215,7 +215,16 @@ function optionsOf(q: FormQuestion): { value: string; label: string }[] | null {
   return null;
 }
 
-function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLogbook[] }) {
+function Results({
+  search,
+  logbooks,
+  downloads,
+}: {
+  search: BoardSearch;
+  logbooks: BoardLogbook[];
+  /** The distribution switch: without it the server refuses the spreadsheet. */
+  downloads: boolean;
+}) {
   const navigate = useNavigate();
   const query = useQuery(boardReportsQuery(search));
   if (query.isPending) return <p role="status">Reading the reports…</p>;
@@ -245,7 +254,7 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
                 total > size ? `, page ${String(page)} of ${String(Math.ceil(total / size))}` : ''
               }.`}
         </p>
-        {total > 0 ? (
+        {total > 0 && downloads ? (
           <a className="text-sm underline" href={`${BOARD_CSV_PATH}?${csv.toString()}`} download>
             Download these as a spreadsheet (CSV)
           </a>

@@ -56,3 +56,52 @@ export async function setPublicArchive(
     .where('id', '=', true)
     .execute();
 }
+
+// ── distribution ─────────────────────────────────────────────────────────
+
+/**
+ * THE DISTRIBUTION SWITCH (decision 11): whether the archive may also be
+ * carried off in bulk, as the board's spreadsheet and the published chain
+ * file. A second gate after the archive switch, never instead of it: with
+ * the archive off nothing is distributed whatever this says.
+ *
+ * TRI-STATE, AND NULL IS OFF, the opposite of the archive switch: nothing
+ * distributed before the switch existed, and nothing may start because a
+ * migration ran.
+ *
+ * NOT asked by: the board's pages, one report, the counts and figures, the
+ * consent wordings, the maps, published files (each is a moderator's
+ * decision about one report), the daily snapshot in the transparency log
+ * (the anchor's own record, which the integrity promise depends on), and
+ * the owner's backups and archive export (the operator's own copy, not a
+ * distribution).
+ */
+export const DISTRIBUTION_OFF =
+  'This site does not offer its archive for download. Read it on the board.';
+
+export async function storedDistribution(db: Kysely<DB>): Promise<boolean | null> {
+  const row = await db
+    .selectFrom('moderation_settings')
+    .select('distribution_enabled')
+    .where('id', '=', true)
+    .executeTakeFirst();
+  return row?.distribution_enabled ?? null;
+}
+
+/** Both gates: the archive is published AND an administrator said yes. */
+export async function distributionAvailable(db: Kysely<DB>): Promise<boolean> {
+  return (await publicArchiveAvailable(db)) && (await storedDistribution(db)) === true;
+}
+
+/** Null puts it back to "nobody chose", which is off. */
+export async function setDistribution(
+  db: Kysely<DB>,
+  enabled: boolean | null,
+  byEmail: string,
+): Promise<void> {
+  await db
+    .updateTable('moderation_settings')
+    .set({ distribution_enabled: enabled, distribution_set_by: byEmail, updated_at: new Date() })
+    .where('id', '=', true)
+    .execute();
+}

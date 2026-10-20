@@ -75,7 +75,15 @@ export const getBoard = defineRoute({
   summary:
     'What the board can be narrowed by: every launched logbook and its operator-chosen filters.',
   response: z.union([
-    z.object({ published: z.literal(true), logbooks: z.array(BoardLogbook) }),
+    z.object({
+      published: z.literal(true),
+      logbooks: z.array(BoardLogbook),
+      /**
+       * Whether the board may also be downloaded as a spreadsheet: the
+       * distribution switch (decision 11), off until an administrator says yes.
+       */
+      downloads: z.boolean(),
+    }),
     PublicationOff,
   ]),
 });

@@ -16,8 +16,11 @@ import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import {
+  distributionAvailable,
   publicArchiveAvailable,
+  setDistribution,
   setPublicArchive,
+  storedDistribution,
   storedPublicArchive,
 } from '../board/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
@@ -452,12 +455,20 @@ export async function moderationRoutes(
 
     const archiveState = async () => {
       const stored = await storedPublicArchive(db);
-      return { published: stored !== false, stored };
+      const distribution_stored = await storedDistribution(db);
+      return {
+        published: stored !== false,
+        stored,
+        distribution: await distributionAvailable(db),
+        distribution_stored,
+      };
     };
     route(scope, C.getArchiveSwitch, archiveState);
     route(scope, C.setArchiveSwitch, async ({ request }) => {
       const b = bodyOf<C.BodyOf<typeof C.setArchiveSwitch>>(C.setArchiveSwitch, request);
-      await setPublicArchive(db, b.published, me(request));
+      // Each switch only when named: turning one must never reset the other.
+      if (b.published !== undefined) await setPublicArchive(db, b.published, me(request));
+      if (b.distribution !== undefined) await setDistribution(db, b.distribution, me(request));
       return archiveState();
     });
 

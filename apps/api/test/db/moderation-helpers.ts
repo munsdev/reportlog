@@ -100,11 +100,11 @@ export async function approve(db: Database, threadId: string): Promise<void> {
     .execute();
 }
 
-/** Put the shared settings row back as a fresh install has it. */
+/** Put the shared settings row back as a fresh install has it: archive on, downloads off. */
 export async function resetModerationSettings(db: Database): Promise<void> {
   await db
     .updateTable('moderation_settings')
-    .set({ public_archive_enabled: null, review_keywords: null })
+    .set({ public_archive_enabled: null, distribution_enabled: null, review_keywords: null })
     .where('id', '=', true)
     .execute();
 }

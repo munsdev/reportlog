@@ -6,6 +6,7 @@
  */
 import type { FieldDefinition } from '@reportlog/fields';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setDistribution } from '../../src/board/publication.ts';
 import { placeGuards } from '../../src/board/places.ts';
 import { createMap, setLogbookPlace, updateMap } from '../../src/maps/manage.ts';
 import type { FilingHarness } from './filing-helpers.ts';
@@ -46,6 +47,9 @@ const threshold = async (id: number) => (await placeGuards(h.db)).get(id)?.thres
 beforeAll(async () => {
   h = await moderationHarness();
   await resetModerationSettings(h.db);
+  // The spreadsheet is a bulk download: it needs the distribution switch
+  // (decision 11), tested in publication-switch.test.ts.
+  await setDistribution(h.db, true, 'admin@example.org');
   lb = await launchedLogbook(h.db, Q);
   other = await launchedLogbook(h.db, Q);
   for (const l of [lb, other]) {

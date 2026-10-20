@@ -189,7 +189,7 @@ describe('walking the wizard', () => {
   it('publishing, which can overrule what the starting point chose', async () => {
     expect(await storedPublicArchive(h.db)).toBe(true);
     const res = await asOwner('PUT', '/api/admin/moderation/archive', { published: false });
-    expect(res.json()).toEqual({ published: false, stored: false });
+    expect(res.json()).toMatchObject({ published: false, stored: false });
   });
 
   it('files, whether or not storage is set up yet', async () => {

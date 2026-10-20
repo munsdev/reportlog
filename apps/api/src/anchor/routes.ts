@@ -16,7 +16,12 @@ import {
   getPublishedChainFile,
 } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { PUBLICATION_OFF, publicArchiveAvailable } from '../board/publication.ts';
+import {
+  DISTRIBUTION_OFF,
+  PUBLICATION_OFF,
+  distributionAvailable,
+  publicArchiveAvailable,
+} from '../board/publication.ts';
 import { publishedReportIds } from '../board/published.ts';
 import { buildChainFile } from '../chain/chainFile.ts';
 import type { Database } from '../db/database.ts';
@@ -73,6 +78,9 @@ export function anchorRoutes(app: FastifyInstance, deps: AnchorRouteDeps): void 
     // A public read of the archive, so it asks the operator's switch first,
     // as the board and the maps do (board/publication.ts).
     if (!(await publicArchiveAvailable(db))) throw notFound(PUBLICATION_OFF.reason);
+    // And, after it, the distribution switch: a whole chain is the archive
+    // carried off in bulk (decision 11). Off until an administrator says yes.
+    if (!(await distributionAvailable(db))) throw notFound(DISTRIBUTION_OFF);
     const file = await chainFile(db, params.slug, true);
     asDownload(reply, params.slug, 'published');
     return file;

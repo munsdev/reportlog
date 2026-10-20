@@ -57,14 +57,14 @@ export async function placeGuards(db: Kysely<DB>): Promise<Map<number, PlaceGuar
     let threshold = 0;
     for (const m of maps) {
       // EMPTY logbook_ids MEANS EVERY LOGBOOK, as on the map itself.
-      if (m.logbook_ids.length && !m.logbook_ids.map(Number).includes(Number(q.logbook_id))) {
+      if (m.logbook_ids.length && !m.logbook_ids.map(Number).includes(q.logbook_id)) {
         continue;
       }
       // Clamped as the aggregate clamps it: the one setting whose wrong value
       // is a disclosure is checked everywhere it is read.
       threshold = Math.max(threshold, MIN_AREA_FLOOR, Math.trunc(m.min_area) || MIN_AREA_FLOOR);
     }
-    if (threshold) out.set(Number(q.logbook_id), { key: q.field_key, threshold });
+    if (threshold) out.set(q.logbook_id, { key: q.field_key, threshold });
   }
   return out;
 }

@@ -373,6 +373,13 @@ export const ArchiveState = z.object({
   published: z.boolean(),
   /** Null when nobody has chosen, which is on. */
   stored: z.boolean().nullable(),
+  /**
+   * Whether the archive may also be downloaded in bulk (the spreadsheet and
+   * the published chain file). Needs the archive on as well. Decision 11.
+   */
+  distribution: z.boolean(),
+  /** Null when nobody has chosen, which is OFF, unlike the archive. */
+  distribution_stored: z.boolean().nullable(),
 });
 
 export const getArchiveSwitch = defineRoute({
@@ -385,8 +392,12 @@ export const getArchiveSwitch = defineRoute({
 export const setArchiveSwitch = defineRoute({
   method: 'PUT',
   path: '/api/admin/moderation/archive',
-  summary: 'Turn the public archive on or off. Null puts it back to "nobody chose" (on).',
-  body: z.object({ published: z.boolean().nullable() }),
+  summary:
+    'Turn the public archive, or its bulk downloads, on or off. Null puts either back to "nobody chose" (the archive on, downloads off).',
+  body: z.object({
+    published: z.boolean().nullable().optional(),
+    distribution: z.boolean().nullable().optional(),
+  }),
   response: ArchiveState,
 });
 
