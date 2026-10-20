@@ -131,7 +131,8 @@ Several sessions build this at once. To keep that working:
   cannot forget to ask. Staff screens wrap their layout in `<StaffOnly>`
   (`apps/web/src/features/identity/`), and their browser tests use
   `test.use({ storageState: ADMIN })` from `apps/web/e2e/auth.ts`.
-- **A door page calls only the filing calls.** Anything else is refused and
+- **A door page calls only the calls named in front of the password for that door**
+  (`IN_FRONT` and `FILING_CALLS` in `apps/api/src/identity/`). Anything else is refused and
   sends the visitor back to the password screen. A shared component that
   fetches (the header, say) must stay quiet on a door: see `useSite`.
 
