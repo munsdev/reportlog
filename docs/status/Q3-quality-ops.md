@@ -3,15 +3,34 @@
 For the coordinating session and the other workstreams. Brief: the owner's decisions 12, 13 and
 15 and "Keys and secrets" (`docs/decisions.md`), plus the starting-points screen P3 left.
 
-- **Branch:** `claude/q3-quality-ops`, based on `ccr-c9c93698-ev856l` at `909179a` (nothing newer
-  on the base when the suites ran)
+- **Branch:** `claude/q3-quality-ops`, based on `ccr-c9c93698-ev856l`; the base was merged in
+  again at `b43b43a` (Q1 merged)
 - **Pull request:** PR_LINE
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing
 
-CHECKS_TABLE
+Run after merging `origin/ccr-c9c93698-ev856l` at `b43b43a` (Q1 merged; Q2 not yet).
+
+| Suite                                   | Result                                                                                                                                                      |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests api 399 (4 skipped: moto is not installed here, CI has it), web 472, fields 69, seal 31, access 6       |
+| `pnpm test:db`                          | 65 files, 984 passed                                                                                                                                        |
+| `db:types:check`                        | generated types up to date (Q3 adds no migration)                                                                                                           |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 748 passed, 3 skipped (not Q3's). The accessibility walk is 296 of them: 73 pages × stranger and administrator, the wizard and the floor, desktop and phone |
+| ShellCheck on `deploy/`                 | clean (0.11.0, as CI runs it)                                                                                                                               |
+| gitleaks over the whole history         | no leaks found (8.30.1, `.gitleaks.toml`, as CI's new job runs it)                                                                                          |
+
+Q3's own tests: api unit 50 (`deploy-bugsink` 22, `secrets` 10, `secret-scan` 4, `release` 6, the
+installer's questions 7 and the API's backup path 1 in P7's files, the unit paths 2 updated), web
+unit 4 (`starting-points`), browser 296 (`accessibility.spec.ts`). Caddy 2.10.2 and gitleaks
+8.30.1 were present for the unit run, so the real-Caddy and planted-key tests ran, not skipped.
+
+**Red on the way:** the first full browser run failed 8 accessibility tests on `/board/` and
+`/moderate`, which the earlier walk on its own had passed because no report had been published
+yet (below). One unit run went red after I widened the API's writable paths for Q2 and pushed
+before running H's `jobs.test.ts`, which pinned the old rule; fixed in the next commit.
 
 ## What was built
 
@@ -29,7 +48,8 @@ CHECKS_TABLE
   `wcag21aa`, `wcag22a`, `wcag22aa` tags). A failure names the rule, the elements and axe's help.
 - **Allowances:** `ALLOWED` in the spec, one rule on one page for one visitor, each with its
   reason. No blanket disable exists. An allowance that no longer matches fails the test, so a fix
-  cannot leave one behind. **There are none:** everything found was fixed.
+  cannot leave one behind (unless it is marked `onlyWhenPresent`, with why). **There are two,**
+  for Q2's board (below); everything else found was fixed.
 
 **What it found, and what was fixed:**
 
@@ -38,8 +58,12 @@ CHECKS_TABLE
 | `label-content-name-mismatch` (serious) | `/logbooks/front-page` (B's `HomeButtonsEditor`), administrator | The buttons' accessible names ("Move “Demo logbook” up") did not contain their visible words ("Move up"), so somebody using speech input who says what they see cannot press them (WCAG 2.5.3). Now "Move up: “Demo logbook”", "Move down: …", "Take off the page: …", "Add to the page: …". |
 | the same                                | B's `LogbookEditor` (question order), not reached by the walk   | The same pattern, the same fix. The walk opens a launched logbook, where these buttons are not drawn, so it could not see them. `e2e/builder.spec.ts` (B's) clicks the two new names.                                                                                                        |
 
-Both are inside B's screens and small; no fix was needed in `components/ui/`. Nothing else on
-any page failed on desktop or phone.
+| the same | `/moderate` (D's moderation `Queue.tsx`), administrator | Each row is one link, labelled "Open RL-…", which hid the whole card's visible text. Now the card's text names it, after a screen-reader-only "Open ", so the existing tests' `/^Open RL-/` still match. |
+| the same | `/board/` (Q2's `features/board/Board.tsx`), both visitors | **Not fixed here: Q2's folder while Q2 works in it.** "Read in full" is labelled "Read RL-… in full". Two commented allowances in `ALLOWED`, marked `onlyWhenPresent` (the board is empty until another test publishes a report, and files run in no fixed order). Reported; the coordinating session asked Q2 to fix it before #27 merges. Remove both entries with that fix. |
+
+The first two and the third are small fixes in B's and D's screens; nothing needed fixing in
+`components/ui/`. Nothing else on any page failed, on desktop or phone, with the reports the
+other specs filed and published present.
 
 **What it does not cover:** only what a page shows when it loads (a dialog, a menu or a later
 card of a form is checked only if it is open on arrival); only the default look (the operator
@@ -152,13 +176,19 @@ accessibility) by being in the route tree.
 2. **The Bugsink administrator's password on a command line**, in my own first version of the
    installer (`env DJANGO_SUPERUSER_PASSWORD=…`). The test that checks no secret appears in a
    recorded call caught it before it was committed; the password now goes in on standard input.
-3. **`label-content-name-mismatch`** in B's front-page and question-order buttons (above).
+3. **`label-content-name-mismatch`** in B's front-page and question-order buttons and D's
+   moderation queue (above).
 
 ## Changes outside Q3's folders (named in the commit messages)
 
 - `apps/web/src/features/builder/HomeButtonsEditor.tsx`, `LogbookEditor.tsx` and
   `apps/web/e2e/builder.spec.ts` (B): the button names above.
+- `apps/web/src/features/moderation/Queue.tsx` (D): the row's name, above.
 - `apps/web/src/routes/(staff)/settings/route.tsx` (P2's settings area): one nav line.
+- `deploy/systemd/reportlog-api.service` (H's units, in `deploy/`): `ReadWritePaths=/var/backups/reportlog`,
+  asked by Q2 for its owner-only backup screen; `apps/api/test/unit/jobs.test.ts` (H) names it,
+  and `deploy-release.test.ts` (P7) checks the installed unit, the backup drop-in and
+  `BACKUP_DIR` agree.
 - `apps/api/src/config.ts` (shared): blank is "not set" for the keys and `S3_` settings.
 - `apps/api/test/unit/deploy-sandbox.ts`, `deploy-install.test.ts` (P7's harness): stand-ins for
   `ssh-keygen`, `python3 -m venv`, pip and `bugsink-manage`; `id` per user; answers on standard
