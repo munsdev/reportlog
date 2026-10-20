@@ -30,7 +30,9 @@ import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
 import type { LoadedList } from '../../src/lists/rows.ts';
 import { INDEX_NAME, MAX_QUERY, rebuildTextIndex, searchEntries } from '../../src/lists/search.ts';
 import { sweepLists, sweepPersonal } from '../../src/lists/sweep.ts';
+import type { LinkKeys } from '../../src/links/keys.ts';
 import { uniqueSlug } from './helpers.ts';
+import { LINK_CONTACT_KEY, linkKeys } from './links-helpers.ts';
 import { address, as, harness, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
@@ -49,8 +51,9 @@ const SWEPT = tag('vexantor');
 const LINKED = tag('drumbello');
 const EMAIL = `${tag('sar')}@example.org`;
 
+let keys: LinkKeys;
 const file = (list: LoadedList, input: EntryInput) =>
-  fileEntry(h.db, list.slug, input, { settings: DEFAULT_LIST_SETTINGS });
+  fileEntry(h.db, list.slug, input, { settings: DEFAULT_LIST_SETTINGS, keys });
 
 const tip = (description: string, email: string) =>
   file(tips, {
@@ -64,7 +67,8 @@ const tip = (description: string, email: string) =>
     emailConsent: false,
   });
 
-const found = async (q: string) => (await searchEntries(h.db, q)).entries.map((e) => e.id);
+const found = async (q: string) =>
+  (await searchEntries(h.db, q, { keys })).entries.map((e) => e.id);
 
 /**
  * How many of the index's pages hold these bytes. Reads the files Postgres
@@ -91,7 +95,8 @@ async function refusal(p: Promise<unknown>): Promise<string> {
 }
 
 beforeAll(async () => {
-  h = await harness();
+  h = await harness({ CONTACT_KEY: LINK_CONTACT_KEY });
+  keys = await linkKeys(h.db);
   // In a schema of its own, so nothing that reads the public schema sees it.
   await sql`CREATE SCHEMA IF NOT EXISTS probe`.execute(h.db);
   await sql`CREATE EXTENSION IF NOT EXISTS pageinspect SCHEMA probe`.execute(h.db);
@@ -120,10 +125,13 @@ describe('finding somebody', () => {
     expect(await found(OTHER)).toEqual([two]);
   });
 
-  it('by their address, which is held beside the answers and erased with them', async () => {
+  it('by their address, found by its keyed digest and never decrypted (ruling 40)', async () => {
     expect(await found(EMAIL)).toEqual([three, one]);
-    const r = await searchEntries(h.db, EMAIL);
-    expect(r.entries.every((e) => e.email === EMAIL)).toBe(true);
+    expect(await found(EMAIL.toUpperCase())).toEqual([three, one]);
+    const r = await searchEntries(h.db, EMAIL, { keys });
+    expect(r.entries.every((e) => e.email === EMAIL && e.has_email)).toBe(true);
+    // Without the keys there is no digest to look up, so no address is found.
+    expect((await searchEntries(h.db, EMAIL)).entries).toEqual([]);
     // Labels to read the answers by, for each list a match is on.
     expect(r.lists.map((l) => l.id).sort()).toEqual([tips.id, contact.id].sort());
     expect(r.lists.find((l) => l.id === tips.id)?.fields.map((f) => f.key)).toContain(
@@ -172,7 +180,7 @@ describe('finding somebody', () => {
           .selectFrom('list_entries')
           .select('id')
           .where(
-            sql<boolean>`(jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '["string"]'::jsonb) || to_tsvector('simple'::regconfig, coalesce(email, ''))) @@ websearch_to_tsquery('simple'::regconfig, ${PERSON})`,
+            sql<boolean>`(jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '["string"]'::jsonb)) @@ websearch_to_tsquery('simple'::regconfig, ${PERSON})`,
           )
           .compile();
         const r = await c.executeQuery<{ 'QUERY PLAN': string }>({
@@ -189,11 +197,12 @@ describe('finding somebody', () => {
     const { readFile } = await import('node:fs/promises');
     const source = await readFile(new URL('../../src/lists/search.ts', import.meta.url), 'utf8');
     const migration = await readFile(
-      new URL('../../migrations/20261019205538_list_search.sql', import.meta.url),
+      // The index as the links migration rebuilt it, without the plain email (ruling 40).
+      new URL('../../migrations/20261020172901_links.sql', import.meta.url),
       'utf8',
     );
     const expression =
-      "jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '[\"string\"]'::jsonb) || to_tsvector('simple'::regconfig, coalesce(email, ''))";
+      "jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '[\"string\"]'::jsonb)";
     expect(source).toContain(expression);
     expect(migration.replace(/\s+/g, ' ')).toContain(expression);
   });
@@ -230,7 +239,7 @@ describe('WHAT HAS BEEN ERASED IS NOT FOUND, AND IS NOT IN THE INDEX', () => {
   });
 
   it('after the sweep, neither word is anywhere in the index, and neither is found', async () => {
-    const out = await sweepLists(h.db, { saltDays: DEFAULT_LIST_SETTINGS.saltDays });
+    const out = await sweepLists(h.db);
     expect(out[INDEX_NAME]).toBe(1);
     expect(await pagesHolding(SWEPT)).toBe(0);
     expect(await pagesHolding(LINKED)).toBe(0);
@@ -239,13 +248,13 @@ describe('WHAT HAS BEEN ERASED IS NOT FOUND, AND IS NOT IN THE INDEX', () => {
     // The rows stand; only their personal half went.
     const rows = await h.db
       .selectFrom('list_entries')
-      .select(['id', 'erasable_answers', 'email', 'erased_at', 'answers'])
+      .select(['id', 'erasable_answers', 'email_enc', 'erased_at', 'answers'])
       .where('id', 'in', [swept, linked])
       .execute();
     expect(rows).toHaveLength(2);
     for (const r of rows) {
       expect(r.erasable_answers).toBe(null);
-      expect(r.email).toBe(null);
+      expect(r.email_enc).toBe(null);
       expect(r.erased_at).not.toBe(null);
       expect(r.answers).toMatchObject({ state: 'Not sure' });
     }
@@ -266,7 +275,7 @@ describe('WHAT HAS BEEN ERASED IS NOT FOUND, AND IS NOT IN THE INDEX', () => {
     // from the same rows. Made here by hand, marked invalid as Postgres would.
     const copy = `${INDEX_NAME}_ccnew`;
     await sql`DROP INDEX IF EXISTS ${sql.id(copy)}`.execute(h.db);
-    await sql`CREATE INDEX ${sql.id(copy)} ON list_entries USING gin ((to_tsvector('simple'::regconfig, coalesce(email, ''))))`.execute(
+    await sql`CREATE INDEX ${sql.id(copy)} ON list_entries USING gin ((jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '["string"]'::jsonb)))`.execute(
       h.db,
     );
     await sql`UPDATE pg_index SET indisvalid = false WHERE indexrelid = ${copy}::regclass`.execute(

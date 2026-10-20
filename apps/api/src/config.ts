@@ -55,8 +55,6 @@ const ConfigSchema = z.object({
     .trim()
     .regex(/^(never|[1-9]\d{0,4})$/i, 'LIST_PERSONAL_DAYS is a number of days, like 90, or "never"')
     .optional(),
-  /** Days a day's address-hashing secret is kept before it is destroyed. */
-  LIST_SALT_DAYS: z.coerce.number().int().min(1).max(30).default(2),
   /** Days an erasure link lasts where nothing is erased on its own ("never" above). */
   LIST_ERASURE_LINK_DAYS: z.coerce.number().int().min(1).max(3650).default(365),
   /** Link hosts a moderator knows, comma-separated. Others are marked for their eye. */

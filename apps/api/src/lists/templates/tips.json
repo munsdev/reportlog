@@ -19,7 +19,6 @@
       "kind": "choice_one",
       "label": "Where",
       "required": true,
-      "aggregatable": true,
       "retention": "durable",
       "settings": { "options": ["Not sure"] }
     },
@@ -28,7 +27,6 @@
       "kind": "choice_one",
       "label": "What kind of thing is it",
       "required": true,
-      "aggregatable": true,
       "retention": "durable",
       "settings": { "options": ["Not sure"] }
     },

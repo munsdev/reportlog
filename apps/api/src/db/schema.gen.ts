@@ -328,39 +328,92 @@ export interface JournalistSubscribers {
   status: Generated<string>;
 }
 
-export interface LinkIndex {
-  first_seen: Generated<Timestamp>;
-  host: string;
-  last_seen: Generated<Timestamp>;
-  submission_count: Generated<number>;
-  url_key: string;
+export interface LinkBlocklist {
+  added_by: string;
+  created_at: Generated<Timestamp>;
+  hash: string;
+  id: Generated<number>;
+  kind: string;
+  reason_category: string;
+}
+
+export interface LinkBlockLog {
+  action: string;
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  id: Generated<number>;
+  kind: string;
+  reason_category: string;
+}
+
+export interface LinkChecks {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  group_id: number;
+  id: Generated<number>;
+  outcome: string;
+}
+
+export interface LinkComments {
+  actor_email: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  group_id: number;
+  id: Generated<number>;
+}
+
+export interface LinkErasures {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  erased_count: number;
+  group_id: number;
+  id: Generated<number>;
+  reason_category: string;
+}
+
+export interface LinkGroups {
+  checked_at: Timestamp | null;
+  checked_by: string | null;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  match_key: string | null;
+  outcome: string | null;
+}
+
+export interface Links {
+  created_at: Generated<Timestamp>;
+  entry_id: number;
+  field_key: string;
+  group_id: number;
+  id: Generated<number>;
+  value_enc: Buffer;
+  value_key: Buffer;
+}
+
+export interface LinkSecrets {
+  created_at: Generated<Timestamp>;
+  id: number;
+  secret_wrapped: Buffer;
 }
 
 export interface ListEntries {
   answers: Generated<Json>;
   created_at: Generated<Timestamp>;
-  email: string | null;
   email_consent: Generated<boolean>;
+  email_enc: Buffer | null;
+  email_hmac: string | null;
+  email_key: Buffer | null;
   erasable_answers: Json | null;
   erased_at: Timestamp | null;
   id: Generated<number>;
-  ip_hash: string | null;
   list_id: number;
   personal_expires_at: Timestamp | null;
   review_state: Generated<string>;
   reviewed_at: Timestamp | null;
   reviewed_by: number | null;
   triage_state: Generated<string>;
-}
-
-export interface ListEntryLinks {
-  created_at: Generated<Timestamp>;
-  entry_id: number;
-  field_key: string;
-  host: string;
-  id: Generated<number>;
-  url_key: string;
-  url_raw: string;
 }
 
 export interface ListErasures {
@@ -414,12 +467,6 @@ export interface Lists {
   title: string;
   updated_at: Generated<Timestamp>;
   visibility: Generated<string>;
-}
-
-export interface ListSalts {
-  created_at: Generated<Timestamp>;
-  day: string;
-  salt: Buffer;
 }
 
 export interface LogbookEditorialNotes {
@@ -817,13 +864,18 @@ export interface DB {
   intake_settings: IntakeSettings;
   journalist_links: JournalistLinks;
   journalist_subscribers: JournalistSubscribers;
-  link_index: LinkIndex;
+  link_block_log: LinkBlockLog;
+  link_blocklist: LinkBlocklist;
+  link_checks: LinkChecks;
+  link_comments: LinkComments;
+  link_erasures: LinkErasures;
+  link_groups: LinkGroups;
+  link_secrets: LinkSecrets;
+  links: Links;
   list_entries: ListEntries;
-  list_entry_links: ListEntryLinks;
   list_erasures: ListErasures;
   list_fields: ListFields;
   list_notify_confirmations: ListNotifyConfirmations;
-  list_salts: ListSalts;
   lists: Lists;
   logbook_editorial_notes: LogbookEditorialNotes;
   logbook_fields: LogbookFields;

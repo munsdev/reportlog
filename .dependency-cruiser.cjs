@@ -54,6 +54,15 @@ module.exports = {
       to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
     },
     {
+      name: 'links-never-reach-the-chain',
+      comment:
+        'A tip link is a message, never sealed (Plan D §5). Nothing under links may reach the ' +
+        'sealing code or the chain.',
+      severity: 'error',
+      from: { path: '^apps/api/src/links/' },
+      to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
+    },
+    {
       name: 'journalists-never-reach-the-chain',
       comment:
         'The alert list holds people, not reports. Nothing under journalists may reach the ' +

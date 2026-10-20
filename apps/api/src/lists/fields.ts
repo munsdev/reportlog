@@ -106,7 +106,7 @@ export const AGGREGATABLE_KINDS: ReadonlySet<string> = new Set([
   'place',
 ]);
 
-/** Kinds whose answers also become rows in list_entry_links. */
+/** Kinds whose answers go to the links module, encrypted, and never into the answers (Plan D §5). */
 export const LINK_KINDS: ReadonlySet<string> = new Set(['url']);
 
 /**

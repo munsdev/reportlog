@@ -344,7 +344,7 @@ tracking and backups, are explained in their own sections above.
 | `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain verified in Scaleway.                                                     |
 | `SCALEWAY_PROJECT_ID`, `SCALEWAY_REGION`                                         | The Scaleway project and region (`fr-par`) mail goes through.                                     |
 | `MAIL_OUTBOX`                                                                    | Browser tests only: write each email as a file. Never on a server.                                |
-| `LIST_PERSONAL_DAYS`, `LIST_SALT_DAYS`, `LIST_ERASURE_LINK_DAYS`                 | How long a list keeps the personal half of an entry, a day's hashing secret, and an erasure link. |
+| `LIST_PERSONAL_DAYS`, `LIST_ERASURE_LINK_DAYS`                                   | How long a list keeps the personal half of an entry (with its links), and an erasure link.        |
 | `LIST_KNOWN_HOSTS`                                                               | Link hosts a moderator knows; others are marked for a look.                                       |
 | `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_MAX_AGE_HOURS`                              | Where local dumps go, how many to keep, and how old the newest may be before the doctor fails it. |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`, `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX` | The off-site bucket. The installer reads the region off the endpoint where it can.                |

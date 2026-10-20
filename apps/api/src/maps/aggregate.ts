@@ -239,7 +239,14 @@ export async function computeMap(
      when the sweep runs. The two columns exist so a query like this CANNOT
      reach anything erasable.
 
-     EMPTY list_ids MEANS NO LISTS. */
+     EMPTY list_ids MEANS NO LISTS.
+
+     AND ONLY A LIST WHOSE COUNTS AN OPERATOR PUBLISHED (`aggregates_published`,
+     the list's "count this list" switch; owner ruling 42). Every other count
+     of a list (its counts route, the board figures, the daily snapshot) reads
+     the same switch, and a map is a count. A tips list simply has it off.
+     Checked here, at count time, as well as when the map is saved: the
+     switch can be turned off after a map names the list. */
   let listsCounted = 0;
   if (row.list_ids.length) {
     const listKeys = await db
@@ -247,8 +254,10 @@ export async function computeMap(
       .innerJoin('list_fields as f', (j) =>
         j.onRef('f.list_id', '=', 'q.list_id').onRef('f.key', '=', 'q.field_key'),
       )
+      .innerJoin('lists as l', 'l.id', 'q.list_id')
       .select(['q.list_id'])
       .where('f.kind', '=', LOCATION_TYPE)
+      .where('l.aggregates_published', '=', true)
       .where('q.list_id', 'in', row.list_ids)
       .execute();
     listsCounted = listKeys.length;

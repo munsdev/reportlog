@@ -104,9 +104,9 @@ test('a visitor sends a tip; the emailed link erases what they wrote, and only w
   await expect(v.getByRole('heading', { name: 'Deleted' })).toBeVisible();
   await page.reload();
   await expect(page.getByText(words)).toHaveCount(0);
-  await expect(page.getByText(/Its personal half has been deleted/)).toBeVisible();
-  // The link stays: it points at something already public.
-  await expect(page.getByText('news.example.org').first()).toBeVisible();
+  await expect(page.getByText(/Its personal half and its links have been deleted/)).toBeVisible();
+  // Its link went with it, value and key (Plan D T3).
+  await expect(page.getByText('news.example.org')).toHaveCount(0);
 
   // A link works once.
   await v.goto(link);

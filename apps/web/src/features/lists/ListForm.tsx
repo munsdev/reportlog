@@ -18,7 +18,7 @@
  * ON A DOOR (the site password is on and this list is open outside) this page
  * calls exactly its list's two routes and nothing else.
  */
-import { sendListEntry } from '@reportlog/contracts';
+import { LINK_FIELD_WORDING, sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
@@ -362,6 +362,10 @@ function Control({
     };
     return (
       <div className="space-y-2">
+        {/* K2: part of the field type, so every form asking for a link says it. */}
+        <p className="text-sm text-ink-alt" data-testid="link-wording">
+          {LINK_FIELD_WORDING}
+        </p>
         {boxes.map((b, i) => (
           <Input
             // Boxes only ever grow at the end, so a position is a stable key.

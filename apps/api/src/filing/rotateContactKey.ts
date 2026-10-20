@@ -26,6 +26,7 @@
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { rotateSubscriberKeys } from '../journalists/rotate.ts';
+import { rewrapLinkSecret } from '../links/keys.ts';
 import { fingerprint } from '../jobs/contact-key.ts';
 import { emailDigest, keyringFrom, openWithDek, tryUnwrap, wrapDek } from './contactKeys.ts';
 
@@ -96,7 +97,16 @@ export async function rotateContactKey(
         `${e instanceof Error ? e.message : 'A subscriber key failed.'} Nothing was changed.`,
       );
     });
-    if (!pending.length && !listed) return { rewrapped: 0, already_current: current };
+    // The tip links' secret, one row, under the same key (links/keys.ts).
+    const linkSecret = await rewrapLinkSecret(trx, keys.current, keys.previous).catch(
+      (e: unknown) => {
+        throw new RotationError(
+          `${e instanceof Error ? e.message : 'The link secret failed.'} Nothing was changed.`,
+        );
+      },
+    );
+    const moved = listed + linkSecret;
+    if (!pending.length && !moved) return { rewrapped: 0, already_current: current };
 
     const record = await trx
       .insertInto('contact_key_rotations')
@@ -115,9 +125,9 @@ export async function rotateContactKey(
     }
     await trx
       .updateTable('contact_key_rotations')
-      .set({ rewrapped: pending.length + listed })
+      .set({ rewrapped: pending.length + moved })
       .where('id', '=', record.id)
       .execute();
-    return { rewrapped: pending.length + listed, already_current: current };
+    return { rewrapped: pending.length + moved, already_current: current };
   });
 }

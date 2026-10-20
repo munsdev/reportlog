@@ -4,7 +4,6 @@
  * Nothing here needs a database; the rows round-tripping through Postgres are
  * test/db/lists.test.ts.
  */
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,7 +30,7 @@ import {
 import { clustersIn } from '../../src/lists/review.ts';
 import { listSettingsFrom } from '../../src/lists/settings.ts';
 import { parseListTemplate, shippedTemplates } from '../../src/lists/templates.ts';
-import { REJECTIONS, SHORTENERS, normalizeUrl } from '../../src/lists/urls.ts';
+import { MAX_URL_LENGTH, REJECTIONS, SHORTENERS, normalizeUrl } from '../../src/lists/urls.ts';
 import { normalizeValue } from '../../src/lists/values.ts';
 
 const API = fileURLToPath(new URL('../../', import.meta.url));
@@ -254,7 +253,7 @@ describe('the migration', () => {
         } else if (p.endsWith('.ts') && !p.endsWith('.gen.ts')) {
           const src = stripComments(readFileSync(p, 'utf8'));
           if (
-            /deleteFrom\('(lists|list_entries|list_entry_links|link_index|list_fields)'\)|DELETE FROM (lists|list_entries|list_entry_links|link_index)\b/.test(
+            /deleteFrom\('(lists|list_entries|list_fields)'\)|DELETE FROM (lists|list_entries)\b/.test(
               src,
             )
           ) {
@@ -297,9 +296,9 @@ describe('the two halves of an entry, which is the structural heart', () => {
       description: 'something somebody typed',
     });
     if (!out.ok) throw new Error(out.reason);
-    expect(Object.keys(out.answers).sort()).toEqual(['links', 'state']);
+    // The link is in neither half: it is on its way to the links module.
+    expect(Object.keys(out.answers).sort()).toEqual(['state']);
     expect(Object.keys(out.erasable ?? {})).toEqual(['description']);
-    expect(out.answers.links).toEqual(['https://ex.org/a']);
     expect(out.links).toHaveLength(1);
     expect(out.links[0]?.host).toBe('ex.org');
   });
@@ -327,7 +326,6 @@ describe('the two halves of an entry, which is the structural heart', () => {
       state: 'Ohio',
     });
     if (!out.ok) throw new Error(out.reason);
-    expect(out.answers.links).toHaveLength(1);
     expect(out.links).toHaveLength(1);
   });
 
@@ -362,8 +360,22 @@ describe('the two halves of an entry, which is the structural heart', () => {
     expect(out.ok && 'stray' in out.answers).toBe(false);
   });
 
-  it('the erasure names the columns it blanks, and the link index is not one', () => {
-    expect([...ERASABLE_COLUMNS]).toEqual(['erasable_answers', 'email', 'ip_hash']);
+  it('the erasure names the columns it blanks: the words, and the email in all three parts', () => {
+    expect([...ERASABLE_COLUMNS]).toEqual([
+      'erasable_answers',
+      'email_enc',
+      'email_key',
+      'email_hmac',
+    ]);
+  });
+
+  it('a link is in neither half: it goes to the links module (Plan D §5)', () => {
+    const out = prepareAnswers(FORM, { links: 'https://ex.org/a?utm_source=x' });
+    expect(out.ok).toBe(true);
+    if (!out.ok) return;
+    expect(out.answers).not.toHaveProperty('links');
+    expect(out.erasable).toBe(null);
+    expect(out.links).toEqual([{ fieldKey: 'links', url: 'https://ex.org/a', host: 'ex.org' }]);
   });
 
   it('the submission gate reads what arrived, never the form’s flag', () => {
@@ -588,8 +600,22 @@ describe('normalizing a link', () => {
     expect(ok('https://www.youtube.com/watch?v=xyz&t=42').url).toMatch(/t=42/);
   });
 
-  it('remaining parameters are sorted, so two apps produce one key', () => {
-    expect(ok('https://ex.com/p?b=2&a=1').urlKey).toBe(ok('https://ex.com/p?a=1&b=2').urlKey);
+  it('remaining parameters are sorted, so two apps produce one matching form', () => {
+    expect(ok('https://ex.com/p?b=2&a=1').url).toBe(ok('https://ex.com/p?a=1&b=2').url);
+  });
+
+  it('the matching form (K11): default port and trailing slash go, the root keeps its slash', () => {
+    expect(ok('https://ex.com:443/clip/').url).toBe('https://ex.com/clip');
+    expect(ok('http://ex.com:80/clip//').url).toBe('http://ex.com/clip');
+    expect(ok('https://ex.com:8443/clip').url).toBe('https://ex.com:8443/clip');
+    expect(ok('HTTPS://EX.com').url).toBe('https://ex.com/');
+    expect(ok('https://ex.com/clip/?a=1').url).toBe('https://ex.com/clip?a=1');
+  });
+
+  it('K1: only http and https, and the length is capped', () => {
+    expect(why('data:text/html,hi')).toBe(REJECTIONS.SCHEME);
+    expect(why('file:///etc/passwd')).toBe(REJECTIONS.SCHEME);
+    expect(why(`https://ex.com/${'a'.repeat(MAX_URL_LENGTH)}`)).toBe(REJECTIONS.TOO_LONG);
   });
 
   it('a fragment goes unless it carries a post identifier', () => {
@@ -620,12 +646,6 @@ describe('normalizing a link', () => {
   it('youtu.be is NOT a shortener and must never become one', () => {
     expect(SHORTENERS.has('youtu.be')).toBe(false);
     expect(ok('https://youtu.be/dQw4w9WgXcQ?si=track').url).toBe('https://youtu.be/dQw4w9WgXcQ');
-  });
-
-  it('url_key is sha256 of the normalized form, not of what was typed', () => {
-    expect(ok('https://EX.com/p?utm_source=x').urlKey).toBe(
-      createHash('sha256').update('https://ex.com/p').digest('hex'),
-    );
   });
 
   it('the server never fetches a submitted link', () => {
@@ -720,13 +740,11 @@ describe('the shipped templates', () => {
     expect(Object.keys(by).sort()).toEqual(['check-ins', 'contact', 'tips']);
   });
 
-  it('the Tip List asks for an address, because it takes free text', () => {
+  it('the Tip List asks for an address, because it takes free text, and counts nothing', () => {
     const t = by.tips;
     expect(t?.requiresEmail).toBe(true);
-    expect(t?.fields.filter((f) => f.aggregatable).map((f) => f.key)).toEqual([
-      'state',
-      'category',
-    ]);
+    // Owner ruling 42: a tips list has counting off, by its own settings.
+    expect(t?.fields.filter((f) => f.aggregatable)).toEqual([]);
     const links = t?.fields.find((f) => f.key === 'links');
     expect(links?.max_values).toBe(3);
     expect(links?.retention).toBe('durable');
@@ -767,21 +785,10 @@ describe('the shipped templates', () => {
 // ── what a reviewer sees at a glance ──────────────────────────────────
 
 describe('what a reviewer can see at a glance', () => {
-  it('a repeated submitter is counted without the hash leaving the function', () => {
-    const entries = [1, 2, 3, 4].map((id) => ({ id, created_at: '2026-11-03T09:02:00Z' }));
-    const rows = [{ ip_hash: 'aaa' }, { ip_hash: 'aaa' }, { ip_hash: 'aaa' }, { ip_hash: 'bbb' }];
-    const c = clustersIn(entries, rows);
-    expect(c.repeated_submitters).toBe(1);
-    expect(c.largest_repeated_submitter).toBe(3);
-    expect(c.entries_from_repeated_submitters).toEqual([1, 2, 3]);
-    expect(JSON.stringify(c)).not.toContain('aaa');
-  });
-
   it('a burst is visible with no addresses at all, so a flood’s shape survives the sweep', () => {
     const entries = [1, 2, 3].map((id) => ({ id, created_at: '2026-11-03T09:02:00Z' }));
-    const c = clustersIn(entries, [{}, {}, {}]);
-    expect(c.repeated_submitters).toBe(0);
-    expect(c.busiest_minutes[0]).toEqual({ minute: '2026-11-03T09:02', count: 3 });
+    const c = clustersIn(entries);
+    expect(c).toEqual({ busiest_minutes: [{ minute: '2026-11-03T09:02', count: 3 }] });
   });
 
   it('an entry cannot be un-reviewed', () => {

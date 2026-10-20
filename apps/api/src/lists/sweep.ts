@@ -4,7 +4,7 @@
  * There are two sweeps and they do different things. The credentials sweep
  * (operations workstream) DELETEs whole rows from a named list of tables of
  * expired credentials. This one UPDATEs, and the row is meant to survive it:
- * the links stay, the words and the contact details go. A list table must
+ * the choices stay; the words, the links and the contact details go. A list table must
  * never be added to the other one. Neither finds its tables by scanning for a
  * column, so a new table is never swept by accident.
  *
@@ -12,16 +12,17 @@
  * every key it ever held until it is rebuilt. So the last step rebuilds it,
  * after the erasing, whenever anything was erased lately.
  *
- * NOTHING HERE TOUCHES link_index or list_entry_links. They hold no text and
- * no submitter, so there is nobody in them to erase.
+ * A TIP'S LINKS GO WITH ITS PERSONAL HALF (Plan D T3): the rows in `links`,
+ * which hold each value and its key, are deleted in the same transaction.
+ * A group's check stays, so it still covers a later copy (links/store.ts).
  *
  * Each step reports rather than throws: this runs on a timer, and a failure to
  * tidy one thing must never stop the rest.
  */
 import { sql } from 'kysely';
+import { eraseEntryLinks } from '../links/store.ts';
 import { blanks } from './erasure.ts';
 import type { Db } from './rows.ts';
-import { forgetCachedSalts } from './salt.ts';
 import { INDEX_NAME, rebuildTextIndex } from './search.ts';
 
 type Outcome = number | { error: string };
@@ -37,34 +38,24 @@ const failed = (e: unknown): { error: string } => ({
  */
 export async function sweepPersonal(db: Db): Promise<{ list_entries: Outcome }> {
   try {
-    const out = await db
-      .updateTable('list_entries')
-      .set({ ...blanks(), erased_at: sql<Date>`now()` })
-      .where('erased_at', 'is', null)
-      .where('personal_expires_at', 'is not', null)
-      .where('personal_expires_at', '<', sql<Date>`now()`)
-      .executeTakeFirst();
-    return { list_entries: Number(out.numUpdatedRows) };
+    const n = await db.transaction().execute(async (trx) => {
+      const erased = await trx
+        .updateTable('list_entries')
+        .set({ ...blanks(), erased_at: sql<Date>`now()` })
+        .where('erased_at', 'is', null)
+        .where('personal_expires_at', 'is not', null)
+        .where('personal_expires_at', '<', sql<Date>`now()`)
+        .returning('id')
+        .execute();
+      await eraseEntryLinks(
+        trx,
+        erased.map((e) => e.id),
+      );
+      return erased.length;
+    });
+    return { list_entries: n };
   } catch (e) {
     return { list_entries: failed(e) };
-  }
-}
-
-/**
- * Destroy expired hashing secrets. THIS IS THE STEP THAT MAKES THE HASHES
- * ONE-WAY: until a day's secret is gone, somebody holding the database can
- * enumerate the IPv4 space against it. Today's secret is never a candidate.
- */
-export async function sweepSalts(db: Db, saltDays: number): Promise<{ list_salts: Outcome }> {
-  try {
-    const out = await db
-      .deleteFrom('list_salts')
-      .where('day', '<', sql<string>`current_date - ${Math.max(1, Math.floor(saltDays))}::int`)
-      .executeTakeFirst();
-    forgetCachedSalts();
-    return { list_salts: Number(out.numDeletedRows) };
-  } catch (e) {
-    return { list_salts: failed(e) };
   }
 }
 
@@ -116,10 +107,9 @@ export async function sweepTextIndex(db: Db): Promise<Record<typeof INDEX_NAME, 
 }
 
 /** Everything, for the timer. */
-export async function sweepLists(db: Db, { saltDays }: { saltDays: number }) {
+export async function sweepLists(db: Db) {
   return {
     ...(await sweepPersonal(db)),
-    ...(await sweepSalts(db, saltDays)),
     ...(await sweepListTokens(db)),
     ...(await sweepTextIndex(db)),
   };

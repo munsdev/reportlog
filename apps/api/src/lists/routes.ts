@@ -89,6 +89,7 @@ import { reviewBatch, reviewEntries, setTriageState } from './review.ts';
 import { searchEntries } from './search.ts';
 import { iso, isAccepting, listBySlug } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
+import type { LinkKeys } from '../links/keys.ts';
 
 export interface ListRouteDeps {
   db: Db;
@@ -96,6 +97,8 @@ export interface ListRouteDeps {
   /** Where the website is, for the links in emails. */
   siteOrigin: string;
   settings: ListSettings;
+  /** The link keys (links/keys.ts); null without CONTACT_KEY. */
+  keys?: (() => Promise<LinkKeys>) | null;
 }
 
 /** The mark that lets a list route decide the site password for itself. */
@@ -179,7 +182,7 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
 }
 
 export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
-  const { db, mailer, siteOrigin, settings } = deps;
+  const { db, mailer, siteOrigin, settings, keys = null } = deps;
   const send = async (to: string, subject: string, text: string): Promise<boolean> => {
     try {
       await mailer.send({ to, subject, text });
@@ -271,9 +274,8 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
           answers: b.answers ?? {},
           email: b.email ?? null,
           emailConsent: b.email_consent === true,
-          address: request.ip,
         },
-        { settings },
+        { settings, keys: keys ? await keys() : null },
       );
 
       // THE ERASURE LINK, mailed now and only now: the token exists in
@@ -287,7 +289,7 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
           `What you sent to ${list.title}`,
           `Thank you. What you sent to "${list.title}" arrived.\n\n` +
             'If you want what you wrote and your email address deleted, open this link and press the button. ' +
-            'Any links you sent stay; your words and your address go.\n\n' +
+            'What you wrote, any links you sent and your address all go.\n\n' +
             `${siteOrigin}/api/forget/${got.erasureToken}\n\n` +
             (kept === null
               ? 'Nothing is deleted on its own, so this link is the way to do it.\n\n'
@@ -384,7 +386,9 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
     // A subject access request: every list, the personal half. Administrators
     // only, which this scope already insists on.
     route(staff, searchListEntries, async ({ request }) =>
-      searchEntries(db, (request.body as BodyOf<typeof searchListEntries>).q),
+      searchEntries(db, (request.body as BodyOf<typeof searchListEntries>).q, {
+        keys: keys ? await keys() : null,
+      }),
     );
     done();
   });
@@ -405,6 +409,7 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
         state,
         limit: Number(query.limit ?? 100),
         knownHosts: settings.knownHosts,
+        keys: keys ? await keys() : null,
       });
       return {
         list: { id: list.id, slug: list.slug, title: list.title },

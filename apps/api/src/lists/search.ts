@@ -3,7 +3,11 @@
  *
  * "What do you hold about me" is answered from the erasable half, because
  * that is where a person is: what they wrote, and their address. The durable
- * half is links and choices, with nobody in it, so it is not searched.
+ * half is choices, with nobody in it, so it is not searched.
+ *
+ * THE ADDRESS IS ENCRYPTED (owner ruling 40), so it is not in the text index:
+ * a query that is an email address is looked up by its keyed digest instead,
+ * and the address is never decrypted to answer it.
  *
  * WHAT HAS BEEN ERASED IS NOT FOUND, because it is not there. The index covers
  * only columns the sweep empties, so a blanked entry stops matching the moment
@@ -17,6 +21,8 @@
  */
 import type { AnswerValue } from '@reportlog/fields';
 import { sql } from 'kysely';
+import { emailDigest } from '../links/keys.ts';
+import type { LinkKeys } from '../links/keys.ts';
 import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
 import { iso } from './rows.ts';
@@ -28,7 +34,9 @@ import type { Db } from './rows.ts';
  * only for the same expression, so a drifted copy here would quietly read
  * every row; test/db/lists-search.test.ts checks the plan.
  */
-const DOCUMENT = sql`(jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '["string"]'::jsonb) || to_tsvector('simple'::regconfig, coalesce(email, '')))`;
+const DOCUMENT = sql`(jsonb_to_tsvector('simple'::regconfig, coalesce(erasable_answers, '{}'::jsonb), '["string"]'::jsonb))`;
+
+const LOOKS_LIKE_EMAIL = /^[^@\s]+@[^@\s.]+\.[^@\s]+$/;
 
 export const INDEX_NAME = 'list_entries_text_idx';
 
@@ -46,7 +54,12 @@ export interface FoundEntry {
   triage_state: TriageState;
   answers: Answers;
   erasable_answers: Answers | null;
+  /**
+   * The address searched for, when this entry is under it. Never decrypted:
+   * an entry found by its words says only whether it has an address.
+   */
   email: string | null;
+  has_email: boolean;
   /** When the clock erases the personal half. Null: kept until its holder erases it. */
   personal_expires_at: string | null;
 }
@@ -71,12 +84,13 @@ const asAnswers = (v: unknown): Answers =>
 export async function searchEntries(
   db: Db,
   q: unknown,
-  { limit = MAX_RESULTS }: { limit?: number } = {},
+  { limit = MAX_RESULTS, keys = null }: { limit?: number; keys?: LinkKeys | null } = {},
 ): Promise<{ query: string; entries: FoundEntry[]; lists: FoundList[]; more: boolean }> {
   const query = typeof q === 'string' ? q.trim() : '';
   if (!query) refuse('search-empty');
   if (query.length > MAX_QUERY) refuse('search-too-long');
   const size = Math.min(Math.max(Math.floor(limit) || MAX_RESULTS, 1), MAX_RESULTS);
+  const digest = keys && LOOKS_LIKE_EMAIL.test(query) ? emailDigest(keys, query) : null;
 
   // One more than asked, to say whether there are more without counting.
   const rows = await db
@@ -89,10 +103,13 @@ export async function searchEntries(
       'triage_state',
       'answers',
       'erasable_answers',
-      'email',
+      'email_hmac',
       'personal_expires_at',
     ])
-    .where(sql<boolean>`${DOCUMENT} @@ websearch_to_tsquery('simple'::regconfig, ${query})`)
+    .where((eb) => {
+      const words = sql<boolean>`${DOCUMENT} @@ websearch_to_tsquery('simple'::regconfig, ${query})`;
+      return digest ? eb.or([words, eb('email_hmac', '=', digest)]) : words;
+    })
     .orderBy('created_at', 'desc')
     .orderBy('id', 'desc')
     .limit(size + 1)
@@ -129,7 +146,8 @@ export async function searchEntries(
       triage_state: r.triage_state as TriageState,
       answers: asAnswers(r.answers),
       erasable_answers: r.erasable_answers === null ? null : asAnswers(r.erasable_answers),
-      email: r.email,
+      email: digest !== null && r.email_hmac === digest ? query.toLowerCase() : null,
+      has_email: r.email_hmac !== null,
       personal_expires_at: iso(r.personal_expires_at),
     })),
     lists: lists.map((l) => ({

@@ -215,28 +215,6 @@ export async function crossTabFor(
   }));
 }
 
-/**
- * The deduplicated link layer, ranked by how many people sent each one. No
- * description and no submitter: there is nobody in this table.
- */
-export async function linkCounts(db: Db, { limit = 100, minCount = 1 } = {}) {
-  const rows = await db
-    .selectFrom('link_index')
-    .select(['url_key', 'host', 'first_seen', 'last_seen', 'submission_count'])
-    .where('submission_count', '>=', minCount)
-    .orderBy('submission_count', 'desc')
-    .orderBy('last_seen', 'desc')
-    .limit(Math.min(Math.max(1, limit), 1000))
-    .execute();
-  return rows.map((r) => ({
-    url_key: r.url_key,
-    host: r.host,
-    first_seen: iso(r.first_seen),
-    last_seen: iso(r.last_seen),
-    submission_count: r.submission_count,
-  }));
-}
-
 export const SNAPSHOT_FORMAT = 1;
 
 /**

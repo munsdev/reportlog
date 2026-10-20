@@ -1,5 +1,5 @@
 /**
- * Normalizing a submitted link, and hashing it into `url_key`.
+ * Normalizing a submitted link: what is refused, and the form it is matched in.
  *
  * ACCEPT BROADLY, SORT AFTERWARDS. No domain allowlist at the door: an
  * allowlist blocks junk domains but not junk tips, and rejects the material
@@ -12,10 +12,15 @@
  * server visit arbitrary addresses, and would tell whoever posted the material
  * that somebody looked.
  *
- * `url_key` is a dedup key, not a fingerprint. No chain reads it. CHANGING THE
- * NORMALIZATION IS A DECISION ABOUT EVERY ROW ALREADY WRITTEN, not a tidy-up.
+ * THIS IS ALSO THE MATCHING FORM (Plan D K11, settled in docs/plan-d.md
+ * and docs/status/PD3-links.md). The links module keys its HMAC on what this returns: lower-case
+ * scheme and host, default port and trailing slash removed, the query KEPT
+ * but with trackers stripped and sorted, and a fragment kept only when it
+ * points at something. The plan's "query and fragment kept" is met in that
+ * sense; stripping `fbclid` also stops a tip carrying who shared it. No chain
+ * reads it. CHANGING THE NORMALIZATION SPLITS EVERY GROUP AND STOPS EVERY
+ * EXACT BLOCKLIST ENTRY MATCHING, so it is a decision, not a tidy-up.
  */
-import { createHash } from 'node:crypto';
 
 export const MAX_URL_LENGTH = 2048;
 
@@ -153,12 +158,7 @@ export const REJECTIONS = {
 export type UrlRejection = (typeof REJECTIONS)[keyof typeof REJECTIONS];
 
 export type NormalizedUrl =
-  { ok: true; url: string; host: string; urlKey: string } | { ok: false; reason: UrlRejection };
-
-/** The dedup key: sha256 of the NORMALIZED form, so only as stable as the normalization. */
-export function urlKey(normalizedUrl: string): string {
-  return createHash('sha256').update(normalizedUrl, 'utf8').digest('hex');
-}
+  { ok: true; url: string; host: string } | { ok: false; reason: UrlRejection };
 
 /** Never throws on bad input: every caller is handling something a stranger typed. */
 export function normalizeUrl(input: unknown): NormalizedUrl {
@@ -201,9 +201,12 @@ export function normalizeUrl(input: unknown): NormalizedUrl {
   for (const [k, v] of keep) u.searchParams.append(k, v);
 
   if (!fragmentCarriesIdentifier(u.hash)) u.hash = '';
+  // `/clip/` and `/clip` are one link. The root keeps its slash: URL always
+  // writes one there.
+  if (u.pathname.length > 1) u.pathname = u.pathname.replace(/\/+$/, '') || '/';
 
-  const url = u.toString();
-  return { ok: true, url, host, urlKey: urlKey(url) };
+  // URL has already dropped a default port (`:443` on https, `:80` on http).
+  return { ok: true, url: u.toString(), host };
 }
 
 function cmp(a: string, b: string): number {

@@ -3,6 +3,7 @@
  * visitor's form never describe the same setting two ways.
  */
 import type {
+  LinkFilter,
   ListEmailMode,
   ListOutsideAccess,
   ListVisibility,
@@ -80,3 +81,11 @@ export function said(v: string | number | boolean | string[]): string {
   if (v === false) return 'No';
   return String(v);
 }
+
+/** How a link was checked (Plan D M3), in the words a moderator reads. */
+export const LINK_OUTCOME: Record<LinkFilter, string> = {
+  unchecked: 'Not checked yet',
+  checked: 'Checked: journalists may see it',
+  withheld: 'Withheld from journalists',
+  illegal: 'Illegal: erased',
+};

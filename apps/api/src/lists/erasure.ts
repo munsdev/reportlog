@@ -13,6 +13,7 @@
  */
 import { createHash, randomBytes } from 'node:crypto';
 import { sql } from 'kysely';
+import { eraseEntryLinks } from '../links/store.ts';
 import { ERASABLE_COLUMNS } from './policy.ts';
 import { erasureExpiry } from './retention.ts';
 import type { Db } from './rows.ts';
@@ -47,6 +48,8 @@ export async function mintErasureToken(
  * Blank the erasable columns and mark the entry erased, in ONE statement, so
  * there is no moment in which `erased_at` is set and the columns are not. The
  * table's CHECK would refuse that anyway; it is the backstop, not the plan.
+ * The entry's links go with them, value and key (Plan D T3, X2). Call it
+ * inside a transaction, so the two go together.
  */
 export async function erasePersonal(db: Db, entryId: number): Promise<number> {
   const out = await db
@@ -55,7 +58,9 @@ export async function erasePersonal(db: Db, entryId: number): Promise<number> {
     .where('id', '=', entryId)
     .where('erased_at', 'is', null)
     .executeTakeFirst();
-  return Number(out.numUpdatedRows);
+  const n = Number(out.numUpdatedRows);
+  if (n) await eraseEntryLinks(db, [entryId]);
+  return n;
 }
 
 /** The columns an erasure blanks, from the one list of them. */
@@ -68,7 +73,7 @@ export function blanks(): Record<(typeof ERASABLE_COLUMNS)[number], null> {
 
 /**
  * Redeem a link: erase the erasable half IN PLACE and leave the row standing.
- * The links stay; the words and the address go.
+ * The words, the links and the address go; the choices stay, to be counted.
  *
  * Unknown, expired and already used all answer the same, on purpose: somebody
  * probing tokens learns nothing from which it was.

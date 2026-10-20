@@ -44,6 +44,13 @@ answers them. Decided 2026-10-20 unless a line says otherwise.
 
 Rows 19 to 35 decided 2026-10-20, answering `docs/parity.md` §7 R0 and R2's question.
 
+| #   | Question                                                         | Decision                                                                                                                                                                                                                                                                                                          |
+| --- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 40  | A tip's email address and network address (Plan D review item 5) | The email is encrypted under a key of its own, like a report's contact details, with a keyed digest for a subject access search. The `ip_hash` and its daily secrets go. Rate limiting, if needed, is in memory only.                                                                                             |
+| 42  | Counting a tips list (Plan D T4, review item 7)                  | ReportLog stays general. A list keeps its own "count this list" setting (the questions ticked countable, and "Publish the counts"), and every count respects it: maps, board figures, the counts route and the daily counts snapshot. A tips list simply has it off. Nothing hard-codes "tips are never counted". |
+
+Rows 40 and 42 decided 2026-10-20 by the owner, recorded by the tip links session (Plan D session 3).
+
 ## Keys and secrets
 
 Keys, passwords and tokens are part of setting up a server, never part of

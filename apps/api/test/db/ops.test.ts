@@ -144,7 +144,7 @@ describe('the credential sweep', () => {
     for (const never of ['contact_keys', 'report_contacts']) expect(swept).not.toContain(never);
     const { rows } = await sql<{ table_name: string }>`
       SELECT table_name FROM information_schema.tables
-      WHERE table_schema = 'public' AND (table_name LIKE 'list%' OR table_name = 'link_index')`.execute(
+      WHERE table_schema = 'public' AND (table_name LIKE 'list%' OR table_name LIKE 'link%')`.execute(
       db,
     );
     expect(rows.length).toBeGreaterThan(0);

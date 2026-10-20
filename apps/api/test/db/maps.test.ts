@@ -530,6 +530,19 @@ describe('a list can feed a map, and only its approved entries count', () => {
     /* SCOPED TO A LOGBOOK WITH NOTHING PUBLISHED, so the numbers are the
        list's alone. Not an empty logbook_ids: empty means EVERY logbook. */
     const empty = await launchedLogbook(db, OTHER);
+
+    // OWNER RULING 42: a map counts a list only when the list publishes its
+    // counts. Off by default, so the map is refused until it is on.
+    expect(
+      await refusal(
+        run({ enabled: true, min_area: 3, logbook_ids: [empty.id], list_ids: [list.id] }),
+      ),
+    ).toBe('list_ids');
+    await db
+      .updateTable('lists')
+      .set({ aggregates_published: true })
+      .where('id', '=', list.id)
+      .execute();
     const { row } = await run({
       enabled: true,
       min_area: 3,
@@ -560,6 +573,22 @@ describe('a list can feed a map, and only its approved entries count', () => {
       .executeTakeFirstOrThrow();
     expect(stored.answers).toMatchObject({ where: expect.any(String) as unknown });
     expect(JSON.stringify(stored.erasable_answers ?? {})).not.toContain('where');
+
+    // TURNED OFF AFTER THE MAP NAMED IT: counted again at render time, so nothing.
+    await db
+      .updateTable('lists')
+      .set({ aggregates_published: false })
+      .where('id', '=', list.id)
+      .execute();
+    const off = (await computeMap(db, row)).map;
+    if (!off.published) throw new Error('unpublished');
+    expect(off.areas['US-AZ']).toBeUndefined();
+    expect(off.suppressed.areas).not.toContain('US-TX');
+    await db
+      .updateTable('lists')
+      .set({ aggregates_published: true })
+      .where('id', '=', list.id)
+      .execute();
 
     // A REJECTED entry is not counted either.
     await reviewEntries(db, list.id, filed.slice(0, 1), { state: 'rejected' });

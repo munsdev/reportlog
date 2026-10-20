@@ -180,9 +180,21 @@ async function validate(
   if (has('list_ids')) {
     const ids = cleanIds(patch.list_ids, 'lists');
     if (ids.length) {
-      const found = await db.selectFrom('lists').select('id').where('id', 'in', ids).execute();
+      const found = await db
+        .selectFrom('lists')
+        .select(['id', 'aggregates_published'])
+        .where('id', 'in', ids)
+        .execute();
       if (found.length !== ids.length)
         throw refused('list_ids', 'One of those lists does not exist.');
+      // Owner ruling 42: a map counts a list only if the list's counts are
+      // published. Counted again at render time (aggregate.ts), in case the
+      // switch is turned off later.
+      if (found.some((l) => !l.aggregates_published))
+        throw refused(
+          'list_ids',
+          'One of those lists does not publish its counts, so a map cannot count it. Turn on “Publish the counts” for that list first.',
+        );
     }
     out.list_ids = ids;
   }

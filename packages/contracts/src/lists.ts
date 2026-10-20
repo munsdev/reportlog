@@ -342,7 +342,9 @@ export const FoundListEntry = z.object({
   triage_state: TriageState,
   answers: ListAnswers,
   erasable_answers: ListAnswers.nullable(),
+  /** The address searched for, when the entry is under it. Never decrypted. */
   email: z.string().nullable(),
+  has_email: z.boolean(),
   /** When the clock erases the personal half. Null: kept until its holder erases it. */
   personal_expires_at: Timestamp.nullable(),
 });
@@ -397,10 +399,14 @@ export const listReviewQueues = defineRoute({
 
 export const ReviewLink = z.object({
   field_key: z.string(),
-  url_raw: z.string(),
+  /** Normalized (trackers stripped), decrypted for a moderator. Never fetched. */
+  url: z.string(),
   host: z.string(),
   /** Whether the host is one the operator knows. Unfamiliar ones are for the reviewer's eye. */
   known_host: z.boolean(),
+  /** The link's group (one per distinct address) and how it was checked; null: not yet. */
+  group_id: z.number().int(),
+  outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
 });
 
 export const ReviewEntry = z.object({
@@ -417,10 +423,8 @@ export const ReviewEntry = z.object({
 });
 export type ReviewEntry = z.infer<typeof ReviewEntry>;
 
+/** No "one address sending many": no network address is kept (owner ruling 40). */
 export const ReviewClusters = z.object({
-  repeated_submitters: z.number().int(),
-  largest_repeated_submitter: z.number().int(),
-  entries_from_repeated_submitters: z.array(z.number().int()),
   busiest_minutes: z.array(z.object({ minute: z.string(), count: z.number().int() })),
 });
 

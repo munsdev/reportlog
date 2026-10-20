@@ -15,6 +15,8 @@ import { doors } from '../../src/identity/doors.ts';
 import { hashPassword } from '../../src/identity/secrets.ts';
 import { mintErasureToken } from '../../src/lists/erasure.ts';
 import { uniqueSlug } from './helpers.ts';
+import { LINK_CONTACT_KEY, linkKeys } from './links-helpers.ts';
+import { emailDigest } from '../../src/links/keys.ts';
 import { SITE, address, as, harness, liftCurtain, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
@@ -39,7 +41,7 @@ const message = (r: LightMyRequestResponse) =>
   json<{ error?: { message?: string } }>(r).error?.message ?? '';
 
 beforeAll(async () => {
-  h = await harness();
+  h = await harness({ CONTACT_KEY: LINK_CONTACT_KEY });
   const adminEmail = address('lists-admin');
   const modEmail = address('lists-mod');
   const userEmail = address('lists-user');
@@ -380,7 +382,9 @@ describe('published counts', () => {
       r,
     );
     expect(b.totals).toMatchObject({ received: 3, approved: 0 });
-    expect(b.fields.map((f) => f.key).sort()).toEqual(['category', 'state']);
+    // The tips template ticks no question as countable (owner ruling 42): an
+    // operator who wants counts ticks them. Totals only, until then.
+    expect(b.fields).toEqual([]);
     expect(r.body).not.toMatch(/SECRET-WORDS-123|someone@example\.org/);
   });
 });
@@ -473,9 +477,14 @@ describe('the erasure link', () => {
       .where('id', '=', held)
       .executeTakeFirstOrThrow();
     expect(row.erasable_answers).toBe(null);
-    expect(row.email).toBe(null);
+    expect(row.email_enc).toBe(null);
     expect(row.erased_at).not.toBe(null);
-    expect(row.answers).toMatchObject({ state: 'Texas', links: ['https://example.org/b'] });
+    expect(row.answers).not.toHaveProperty('links');
+    expect(row.answers).toMatchObject({ state: 'Texas' });
+    // Its links went with it (Plan D T3).
+    expect(
+      await h.db.selectFrom('links').select('id').where('entry_id', '=', held).execute(),
+    ).toEqual([]);
   });
 
   it('works once, and a mangled link says so rather than erroring', async () => {
@@ -499,7 +508,7 @@ describe('the erasure link', () => {
     const row = await h.db
       .selectFrom('list_entries')
       .select(['id', 'personal_expires_at'])
-      .where('email', '=', 'other@example.org')
+      .where('email_hmac', '=', emailDigest(await linkKeys(h.db), 'other@example.org'))
       .executeTakeFirstOrThrow();
     const t = await mintErasureToken(h.db, {
       entryId: row.id,

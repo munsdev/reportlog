@@ -319,6 +319,41 @@ async function plantOneRowEach(): Promise<void> {
     .insertInto('contact_key_rotations')
     .values({ from_fingerprint: hex('d'), to_fingerprint: hex('e') })
     .execute();
+
+  // Plan D tip links: the check, comment, erasure and blocklist histories.
+  const group = await db
+    .insertInto('link_groups')
+    .values({ match_key: hex('f') })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const actor = 'sweep@example.org';
+  await db
+    .insertInto('link_checks')
+    .values({ group_id: group.id, outcome: 'withheld', actor_email: actor })
+    .execute();
+  await db
+    .insertInto('link_comments')
+    .values({ group_id: group.id, body: 'for the sweep', actor_email: actor })
+    .execute();
+  await db
+    .insertInto('link_erasures')
+    .values({
+      group_id: group.id,
+      reason_category: 'other-illegal',
+      erased_count: 0,
+      actor_email: actor,
+    })
+    .execute();
+  await db
+    .insertInto('link_block_log')
+    .values({
+      entry_id: 1,
+      kind: 'domain',
+      action: 'add',
+      reason_category: 'other-illegal',
+      actor_email: actor,
+    })
+    .execute();
 }
 
 /** Run a statement and roll it back whatever happens; resolve to its error, or null. */
@@ -357,6 +392,11 @@ describe('I4 · APPEND-ONLY MEANS APPEND-ONLY, for every table that says so', ()
       'report_permissions_log',
       'consent_texts',
       'logbook_forms',
+      // Plan D tip links (review item 12).
+      'link_checks',
+      'link_comments',
+      'link_erasures',
+      'link_block_log',
     ]) {
       expect(tables).toContain(t);
     }
@@ -585,6 +625,7 @@ const STAFF_PREFIXES = [
   '/api/access/',
   '/api/intake/',
   '/api/list-review',
+  '/api/link-checks',
 ] as const;
 
 /**
