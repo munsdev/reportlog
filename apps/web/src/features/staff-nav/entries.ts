@@ -31,6 +31,8 @@ export interface StaffEntry {
 
 export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/access', label: 'Access', for: ['admin', 'access_manager'] },
+  { to: '/access/journalists', label: 'Journalists', for: ['owner'] },
+  { to: '/desk', label: 'Journalist desk', for: ['journalist'] },
   { to: '/logbooks', label: 'Logbooks', for: ['admin'] },
   { to: '/logbooks/front-page', label: 'Front page', for: ['admin'] },
   { to: '/lists', label: 'Lists', for: ['admin'] },

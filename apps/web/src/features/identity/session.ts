@@ -39,6 +39,7 @@ export const ROLE_LABELS: Record<SystemRoleName, string> = {
   access_manager: 'Access Manager',
   admin: 'Administrator',
   owner: 'Owner',
+  journalist: 'Journalist',
 };
 
 export const ROLE_EXPLAINED: Record<SystemRoleName, string> = {
@@ -48,4 +49,6 @@ export const ROLE_EXPLAINED: Record<SystemRoleName, string> = {
     'Makes and removes Moderators and organizations. Cannot make another Access Manager.',
   admin: 'Runs the deployment. Can make Access Managers, but not another administrator.',
   owner: 'The one person who appoints administrators and can hand the deployment on.',
+  journalist:
+    'A vetted journalist. Reads the desk of checked links, and nothing else. Only the owner approves one.',
 };

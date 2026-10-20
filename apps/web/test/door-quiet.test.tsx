@@ -82,6 +82,11 @@ const routeTree = RootRoute.addChildren([
     path: '/journalists/stop/$token',
     component: Page,
   }),
+  createRoute({
+    getParentRoute: () => RootRoute,
+    path: '/journalists/access/$token',
+    component: Page,
+  }),
 ]);
 
 function page(pathname: string) {
@@ -121,6 +126,7 @@ describe('the frame around every page, on a door', () => {
     '/illegal-content/status/a-token',
     '/journalists/confirm/a-token',
     '/journalists/stop/a-token',
+    '/journalists/access/a-token',
   ];
 
   it('covers every door shape the gate knows', () => {

@@ -47,6 +47,7 @@ export function AgreementGate({
       await client.invalidateQueries({ queryKey: ['agreement', audience] });
       // Whatever was refused while it was unaccepted can be asked again.
       await client.invalidateQueries({ queryKey: ['moderation'] });
+      await client.invalidateQueries({ queryKey: ['desk'] });
     },
   });
   if (state.isPending) return <p role="status">Loading…</p>;
@@ -57,7 +58,7 @@ export function AgreementGate({
     <Page
       title="Read and accept the agreement"
       width="prose"
-      lede={`Version ${String(current.version)}. You accept it before you work on reports, and again whenever it changes.`}
+      lede={`Version ${String(current.version)}. You accept it before you ${audience === 'journalist' ? 'open the desk' : 'work on reports'}, and again whenever it changes.`}
     >
       <div className="rounded-card border border-line bg-surface p-5">
         <p className="whitespace-pre-wrap" data-agreement-text>
@@ -103,8 +104,8 @@ export function AgreementAdminPage({ audience }: { audience: AgreementAudience }
   });
   return (
     <Page
-      title="Moderator agreement"
-      lede="The words every moderator accepts before they work on reports. Publishing a new version asks everybody to accept it again; the old versions and who accepted them stay on the record."
+      title={audience === 'journalist' ? 'Journalist agreement' : 'Moderator agreement'}
+      lede={`The words every ${audience === 'journalist' ? 'journalist accepts before they open the desk' : 'moderator accepts before they work on reports'}. Publishing a new version asks everybody to accept it again; the old versions and who accepted them stay on the record.`}
     >
       {state.data?.current ? (
         <div className="rounded-card border border-line bg-surface p-5">
@@ -115,7 +116,9 @@ export function AgreementAdminPage({ audience }: { audience: AgreementAudience }
         </div>
       ) : (
         <Alert title="No agreement is published">
-          Until one is, nobody is asked to accept anything before moderating.
+          {audience === 'journalist'
+            ? 'Until one is, the journalist desk stays closed.'
+            : 'Until one is, nobody is asked to accept anything before moderating.'}
         </Alert>
       )}
       <form

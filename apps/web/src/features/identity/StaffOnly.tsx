@@ -20,6 +20,7 @@ const WHO: Partial<Record<SystemRole, string>> = {
   admin: 'an administrator',
   moderator: 'a moderator',
   access_manager: 'an access manager',
+  journalist: 'a vetted journalist',
 };
 
 export function StaffOnly({

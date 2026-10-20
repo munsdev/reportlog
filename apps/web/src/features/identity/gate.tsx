@@ -49,6 +49,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
   /^\/illegal-content\/status\/[^/]+$/,
   // The alert list's two email links: joining and leaving (journalists/routes.ts).
   /^\/journalists\/(confirm|stop)\/[^/]+$/,
+  // The access request link (journalists/vetting.ts), emailed to a subscriber.
+  /^\/journalists\/access\/[^/]+$/,
 ];
 
 export function isDoorPath(pathname: string): boolean {

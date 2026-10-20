@@ -46,7 +46,8 @@ export const STOP_LINK_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 const TOKEN = /^[a-f0-9]{64}$/;
 
-export type LinkPurpose = 'confirm' | 'stop';
+/** 'request' opens the access request form (vetting.ts). */
+export type LinkPurpose = 'confirm' | 'stop' | 'request';
 
 export interface ListDeps {
   db: Kysely<DB>;
@@ -80,7 +81,7 @@ export async function issueLink(
       subscriber_id: subscriberId,
       purpose,
       expires_at: new Date(
-        Date.now() + (purpose === 'confirm' ? CONFIRM_LINK_TTL_MS : STOP_LINK_TTL_MS),
+        Date.now() + (purpose === 'stop' ? STOP_LINK_TTL_MS : CONFIRM_LINK_TTL_MS),
       ),
     })
     .execute();

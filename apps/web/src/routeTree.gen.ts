@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as DeskRouteImport } from './routes/desk'
 import { Route as HowRouteImport } from './routes/how'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -39,6 +40,7 @@ import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
 import { Route as IllegalContentIndexRouteImport } from './routes/illegal-content/index'
+import { Route as JournalistsAccessRouteImport } from './routes/journalists_.access'
 import { Route as JournalistsAlertsRouteImport } from './routes/journalists_.alerts'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MapSlugRouteImport } from './routes/map/$slug'
@@ -48,6 +50,7 @@ import { Route as OrganizationsIndexRouteImport } from './routes/organizations/i
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
 import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
+import { Route as staffAccessJournalistsRouteImport } from './routes/(staff)/access/journalists'
 import { Route as staffAccessRosterRouteImport } from './routes/(staff)/access/roster'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
 import { Route as staffFilesIndexRouteImport } from './routes/(staff)/files/index'
@@ -80,12 +83,14 @@ import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/setting
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
 import { Route as FileEraseTokenRouteImport } from './routes/file/erase/$token'
 import { Route as IllegalContentStatusTokenRouteImport } from './routes/illegal-content/status.$token'
+import { Route as JournalistsAccessTokenRouteImport } from './routes/journalists_.access_.$token'
 import { Route as JournalistsConfirmTokenRouteImport } from './routes/journalists_.confirm.$token'
 import { Route as JournalistsStopTokenRouteImport } from './routes/journalists_.stop.$token'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
 import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
+import { Route as staffAccessJournalistsAgreementRouteImport } from './routes/(staff)/access/journalists_.agreement'
 import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
 import { Route as staffAccessOrgsIdRouteImport } from './routes/(staff)/access/orgs.$id'
 import { Route as staffFilesLogbooksIndexRouteImport } from './routes/(staff)/files/logbooks.index'
@@ -102,6 +107,11 @@ const IndexRoute = IndexRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeskRoute = DeskRouteImport.update({
+  id: '/desk',
+  path: '/desk',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowRoute = HowRouteImport.update({
@@ -244,6 +254,11 @@ const IllegalContentIndexRoute = IllegalContentIndexRouteImport.update({
   path: '/illegal-content/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JournalistsAccessRoute = JournalistsAccessRouteImport.update({
+  id: '/journalists_/access',
+  path: '/journalists/access',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalistsAlertsRoute = JournalistsAlertsRouteImport.update({
   id: '/journalists_/alerts',
   path: '/journalists/alerts',
@@ -287,6 +302,11 @@ const staffAccessIndexRoute = staffAccessIndexRouteImport.update({
 const staffAccessAuditRoute = staffAccessAuditRouteImport.update({
   id: '/(staff)/access/audit',
   path: '/access/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessJournalistsRoute = staffAccessJournalistsRouteImport.update({
+  id: '/(staff)/access/journalists',
+  path: '/access/journalists',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffAccessRosterRoute = staffAccessRosterRouteImport.update({
@@ -453,6 +473,11 @@ const IllegalContentStatusTokenRoute =
     path: '/illegal-content/status/$token',
     getParentRoute: () => rootRouteImport,
   } as any)
+const JournalistsAccessTokenRoute = JournalistsAccessTokenRouteImport.update({
+  id: '/journalists_/access_/$token',
+  path: '/journalists/access/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JournalistsConfirmTokenRoute = JournalistsConfirmTokenRouteImport.update({
   id: '/journalists_/confirm/$token',
   path: '/journalists/confirm/$token',
@@ -482,6 +507,12 @@ const staffAccessInvitationTokenRoute =
   staffAccessInvitationTokenRouteImport.update({
     id: '/(staff)/access/invitation/$token',
     path: '/access/invitation/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const staffAccessJournalistsAgreementRoute =
+  staffAccessJournalistsAgreementRouteImport.update({
+    id: '/(staff)/access/journalists_/agreement',
+    path: '/access/journalists/agreement',
     getParentRoute: () => rootRouteImport,
   } as any)
 const staffAccessOrgsIndexRoute = staffAccessOrgsIndexRouteImport.update({
@@ -524,6 +555,7 @@ const staffListsReviewIdRoute = staffListsReviewIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/desk': typeof DeskRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -548,6 +580,7 @@ export interface FileRoutesByFullPath {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists/access': typeof JournalistsAccessRoute
   '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
@@ -560,6 +593,7 @@ export interface FileRoutesByFullPath {
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
+  '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
@@ -585,6 +619,7 @@ export interface FileRoutesByFullPath {
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
+  '/journalists/access/$token': typeof JournalistsAccessTokenRoute
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
@@ -599,6 +634,7 @@ export interface FileRoutesByFullPath {
   '/moderate/': typeof staffModerateIndexRoute
   '/settings/': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/access/journalists/agreement': typeof staffAccessJournalistsAgreementRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
   '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
@@ -610,6 +646,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/desk': typeof DeskRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -628,6 +665,7 @@ export interface FileRoutesByTo {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists/access': typeof JournalistsAccessRoute
   '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
@@ -640,6 +678,7 @@ export interface FileRoutesByTo {
   '/mine': typeof MineIndexRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
+  '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
@@ -665,6 +704,7 @@ export interface FileRoutesByTo {
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
+  '/journalists/access/$token': typeof JournalistsAccessTokenRoute
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
@@ -679,6 +719,7 @@ export interface FileRoutesByTo {
   '/moderate': typeof staffModerateIndexRoute
   '/settings': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/access/journalists/agreement': typeof staffAccessJournalistsAgreementRoute
   '/access/orgs/$id': typeof staffAccessOrgsIdRoute
   '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
@@ -691,6 +732,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/desk': typeof DeskRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -715,6 +757,7 @@ export interface FileRoutesById {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists_/access': typeof JournalistsAccessRoute
   '/journalists_/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
@@ -727,6 +770,7 @@ export interface FileRoutesById {
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
+  '/(staff)/access/journalists': typeof staffAccessJournalistsRoute
   '/(staff)/access/roster': typeof staffAccessRosterRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
   '/(staff)/files/$ref': typeof staffFilesRefRoute
@@ -752,6 +796,7 @@ export interface FileRoutesById {
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
+  '/journalists_/access_/$token': typeof JournalistsAccessTokenRoute
   '/journalists_/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists_/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
@@ -766,6 +811,7 @@ export interface FileRoutesById {
   '/(staff)/moderate/': typeof staffModerateIndexRoute
   '/(staff)/settings/': typeof staffSettingsIndexRoute
   '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
+  '/(staff)/access/journalists_/agreement': typeof staffAccessJournalistsAgreementRoute
   '/(staff)/access/orgs/$id': typeof staffAccessOrgsIdRoute
   '/(staff)/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/(staff)/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
@@ -779,6 +825,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/desk'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -803,6 +850,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists/access'
     | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
@@ -815,6 +863,7 @@ export interface FileRouteTypes {
     | '/mine/'
     | '/organizations/'
     | '/access/audit'
+    | '/access/journalists'
     | '/access/roster'
     | '/access/sign-in'
     | '/files/$ref'
@@ -840,6 +889,7 @@ export interface FileRouteTypes {
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
+    | '/journalists/access/$token'
     | '/journalists/confirm/$token'
     | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
@@ -854,6 +904,7 @@ export interface FileRouteTypes {
     | '/moderate/'
     | '/settings/'
     | '/access/invitation/$token'
+    | '/access/journalists/agreement'
     | '/access/orgs/$id'
     | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
@@ -865,6 +916,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/desk'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -883,6 +935,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists/access'
     | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
@@ -895,6 +948,7 @@ export interface FileRouteTypes {
     | '/mine'
     | '/organizations'
     | '/access/audit'
+    | '/access/journalists'
     | '/access/roster'
     | '/access/sign-in'
     | '/files/$ref'
@@ -920,6 +974,7 @@ export interface FileRouteTypes {
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
+    | '/journalists/access/$token'
     | '/journalists/confirm/$token'
     | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
@@ -934,6 +989,7 @@ export interface FileRouteTypes {
     | '/moderate'
     | '/settings'
     | '/access/invitation/$token'
+    | '/access/journalists/agreement'
     | '/access/orgs/$id'
     | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
@@ -945,6 +1001,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/desk'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -969,6 +1026,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists_/access'
     | '/journalists_/alerts'
     | '/list/$slug'
     | '/map/$slug'
@@ -981,6 +1039,7 @@ export interface FileRouteTypes {
     | '/mine/'
     | '/organizations/'
     | '/(staff)/access/audit'
+    | '/(staff)/access/journalists'
     | '/(staff)/access/roster'
     | '/(staff)/access/sign-in'
     | '/(staff)/files/$ref'
@@ -1006,6 +1065,7 @@ export interface FileRouteTypes {
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
+    | '/journalists_/access_/$token'
     | '/journalists_/confirm/$token'
     | '/journalists_/stop/$token'
     | '/mine/declaration/$threadId'
@@ -1020,6 +1080,7 @@ export interface FileRouteTypes {
     | '/(staff)/moderate/'
     | '/(staff)/settings/'
     | '/(staff)/access/invitation/$token'
+    | '/(staff)/access/journalists_/agreement'
     | '/(staff)/access/orgs/$id'
     | '/(staff)/files/logbooks/$id'
     | '/(staff)/intake/reports/$threadId'
@@ -1032,6 +1093,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  DeskRoute: typeof DeskRoute
   HowRoute: typeof HowRoute
   LegalRoute: typeof LegalRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -1056,6 +1118,7 @@ export interface RootRouteChildren {
   EvidenceTokenRoute: typeof EvidenceTokenRoute
   FeedbackTestersRoute: typeof FeedbackTestersRoute
   FileSlugRoute: typeof FileSlugRoute
+  JournalistsAccessRoute: typeof JournalistsAccessRoute
   JournalistsAlertsRoute: typeof JournalistsAlertsRoute
   ListSlugRoute: typeof ListSlugRoute
   MapSlugRoute: typeof MapSlugRoute
@@ -1068,11 +1131,13 @@ export interface RootRouteChildren {
   MineIndexRoute: typeof MineIndexRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   staffAccessAuditRoute: typeof staffAccessAuditRoute
+  staffAccessJournalistsRoute: typeof staffAccessJournalistsRoute
   staffAccessRosterRoute: typeof staffAccessRosterRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   FileEraseTokenRoute: typeof FileEraseTokenRoute
   IllegalContentStatusTokenRoute: typeof IllegalContentStatusTokenRoute
+  JournalistsAccessTokenRoute: typeof JournalistsAccessTokenRoute
   JournalistsConfirmTokenRoute: typeof JournalistsConfirmTokenRoute
   JournalistsStopTokenRoute: typeof JournalistsStopTokenRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
@@ -1081,6 +1146,7 @@ export interface RootRouteChildren {
   staffAccessIndexRoute: typeof staffAccessIndexRoute
   staffMapsIndexRoute: typeof staffMapsIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
+  staffAccessJournalistsAgreementRoute: typeof staffAccessJournalistsAgreementRoute
   staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
   staffAccessOrgsIndexRoute: typeof staffAccessOrgsIndexRoute
 }
@@ -1099,6 +1165,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desk': {
+      id: '/desk'
+      path: '/desk'
+      fullPath: '/desk'
+      preLoaderRoute: typeof DeskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how': {
@@ -1297,6 +1370,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IllegalContentIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journalists_/access': {
+      id: '/journalists_/access'
+      path: '/journalists/access'
+      fullPath: '/journalists/access'
+      preLoaderRoute: typeof JournalistsAccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journalists_/alerts': {
       id: '/journalists_/alerts'
       path: '/journalists/alerts'
@@ -1358,6 +1438,13 @@ declare module '@tanstack/react-router' {
       path: '/access/audit'
       fullPath: '/access/audit'
       preLoaderRoute: typeof staffAccessAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/journalists': {
+      id: '/(staff)/access/journalists'
+      path: '/access/journalists'
+      fullPath: '/access/journalists'
+      preLoaderRoute: typeof staffAccessJournalistsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/access/roster': {
@@ -1584,6 +1671,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IllegalContentStatusTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journalists_/access_/$token': {
+      id: '/journalists_/access_/$token'
+      path: '/journalists/access/$token'
+      fullPath: '/journalists/access/$token'
+      preLoaderRoute: typeof JournalistsAccessTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journalists_/confirm/$token': {
       id: '/journalists_/confirm/$token'
       path: '/journalists/confirm/$token'
@@ -1624,6 +1718,13 @@ declare module '@tanstack/react-router' {
       path: '/access/invitation/$token'
       fullPath: '/access/invitation/$token'
       preLoaderRoute: typeof staffAccessInvitationTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/journalists_/agreement': {
+      id: '/(staff)/access/journalists_/agreement'
+      path: '/access/journalists/agreement'
+      fullPath: '/access/journalists/agreement'
+      preLoaderRoute: typeof staffAccessJournalistsAgreementRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/access/orgs/': {
@@ -1799,6 +1900,7 @@ const staffSettingsRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  DeskRoute: DeskRoute,
   HowRoute: HowRoute,
   LegalRoute: LegalRoute,
   NotificationsRoute: NotificationsRoute,
@@ -1823,6 +1925,7 @@ const rootRouteChildren: RootRouteChildren = {
   EvidenceTokenRoute: EvidenceTokenRoute,
   FeedbackTestersRoute: FeedbackTestersRoute,
   FileSlugRoute: FileSlugRoute,
+  JournalistsAccessRoute: JournalistsAccessRoute,
   JournalistsAlertsRoute: JournalistsAlertsRoute,
   ListSlugRoute: ListSlugRoute,
   MapSlugRoute: MapSlugRoute,
@@ -1835,11 +1938,13 @@ const rootRouteChildren: RootRouteChildren = {
   MineIndexRoute: MineIndexRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   staffAccessAuditRoute: staffAccessAuditRoute,
+  staffAccessJournalistsRoute: staffAccessJournalistsRoute,
   staffAccessRosterRoute: staffAccessRosterRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   FileEraseTokenRoute: FileEraseTokenRoute,
   IllegalContentStatusTokenRoute: IllegalContentStatusTokenRoute,
+  JournalistsAccessTokenRoute: JournalistsAccessTokenRoute,
   JournalistsConfirmTokenRoute: JournalistsConfirmTokenRoute,
   JournalistsStopTokenRoute: JournalistsStopTokenRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
@@ -1848,6 +1953,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessIndexRoute: staffAccessIndexRoute,
   staffMapsIndexRoute: staffMapsIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
+  staffAccessJournalistsAgreementRoute: staffAccessJournalistsAgreementRoute,
   staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,
   staffAccessOrgsIndexRoute: staffAccessOrgsIndexRoute,
 }

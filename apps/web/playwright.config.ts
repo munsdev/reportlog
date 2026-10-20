@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front|a11y-locked)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front|a11y-locked)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -144,13 +144,25 @@ export default defineConfig({
       },
     },
     {
+      // Plan D session 5: the journalist desk, followed through its emails.
+      // Alone, after the owner's project, for the same reason: it takes the
+      // owner's seat and gives it back.
+      name: 'journalist-desk',
+      testMatch: /journalist-desk\/.*\.spec\.ts$/,
+      dependencies: ['owner'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // R8: the lock screen's accessibility check (decision 12), which the
       // walk of every page cannot reach with the password off. Alone, for
       // the same reason as the others: it turns on the password, renames the
       // site and shows the development notice. Before Q1's, which stays last.
       name: 'accessibility-behind-password',
       testMatch: /a11y-locked\/.*\.spec\.ts$/,
-      dependencies: ['owner'],
+      dependencies: ['journalist-desk'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

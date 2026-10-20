@@ -48,6 +48,9 @@ function notPermittedMessage(role: string): string {
     return 'Only an administrator can appoint an Access Manager. This is deliberate: if Access Managers could appoint each other, the role would spread on its own.';
   }
   if (role === 'admin') return 'Only the owner can appoint an administrator.';
+  if (role === 'journalist') {
+    return 'Only the owner can make somebody a journalist, by approving their access request.';
+  }
   if (role === 'owner') {
     return 'The owner’s seat is not granted. It is handed over, and the person receiving it has to accept.';
   }
@@ -75,6 +78,9 @@ export function accessRoutes(
   route(app, C.setSystemRole, async ({ request }) => {
     const actor = requireGranter(request);
     const { email, role } = bodyOf(C.setSystemRole, request);
+    // A journalist is made only by approving an access request (journalists/vetting.ts),
+    // so every one has a request, an agreement and a recorded approval behind it.
+    if (role === 'journalist') throw notAllowed(notPermittedMessage(role));
     const out = await setSystemRole(db, { actor, email, role });
     if (out.ok) return out.unchanged ? { ok: true as const, unchanged: true } : out;
     if (out.reason === 'not-permitted') throw notAllowed(notPermittedMessage(role));

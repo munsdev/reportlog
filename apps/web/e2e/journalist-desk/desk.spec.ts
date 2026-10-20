@@ -1,0 +1,177 @@
+/**
+ * Vetted journalist access, followed through its emails (plan D, J7a to J13;
+ * review item 15): a subscriber asks for the request form, opens the emailed
+ * link, sends a request; the owner approves it; the approval email's desk
+ * link opens the agreement and then the desk, which shows the checked link
+ * and not the unchecked one; the owner revokes, and the next look is refused.
+ *
+ * Its own project, after the owner's: it hands the owner's seat to a test
+ * address (apps/api/src/anchor/dev-owner.ts) and gives it back afterwards,
+ * and it publishes a journalist agreement, which nothing can take back.
+ */
+import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { expect, test } from '@playwright/test';
+import type { APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test';
+import { axe, describeViolation } from '../a11y.ts';
+import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+
+const API = fileURLToPath(new URL('../../../api/', import.meta.url));
+const OUTBOX = fileURLToPath(new URL('../.outbox/', import.meta.url));
+const run = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
+const OWNER = `e2e-desk-owner-${run}@example.org`;
+const JOURNALIST = `e2e-desk-journalist-${run}@example.org`;
+const CHECKED = `https://checked-${run}.example.org/post/1`;
+const UNCHECKED = `https://unchecked-${run}.example.org/post/1`;
+const COMMENT = `Matches the original upload ${run}.`;
+let previous = '-';
+
+/** The same key the test server runs with (playwright.config.ts). */
+const env = {
+  ...process.env,
+  MAIL_OUTBOX: OUTBOX,
+  CONTACT_KEY: Buffer.alloc(32, 9).toString('base64'),
+};
+const node = (script: string, ...args: string[]) =>
+  execFileSync('node', ['--env-file-if-exists=../../.env', script, ...args], {
+    cwd: API,
+    env,
+    encoding: 'utf8',
+  }).trim();
+
+async function signIn(request: APIRequestContext, email: string) {
+  const before = countTo(email);
+  const asked = await request.post('/api/auth/code', { data: { email } });
+  expect(asked.ok(), await asked.text()).toBe(true);
+  const code = codeIn(await lastMessageTo(email, before));
+  const signed = await request.post('/api/auth/sign-in', { data: { email, code } });
+  expect(signed.ok(), await signed.text()).toBe(true);
+}
+
+async function signedIn(browser: Browser, email: string): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  await signIn(context.request, email);
+  return context;
+}
+
+function outsideRequests(page: Page) {
+  const outside: string[] = [];
+  page.on('request', (r) => {
+    const host = new URL(r.url()).hostname;
+    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+  });
+  return outside;
+}
+
+async function noViolations(page: Page) {
+  expect((await axe(page)).violations.map(describeViolation)).toEqual([]);
+}
+
+const linkIn = (text: string, path: string) =>
+  new RegExp(`https?://\\S+${path}(?:/[a-f0-9]{64})?`).exec(text)?.[0] ?? '';
+
+test.describe.configure({ mode: 'serial' });
+
+test.beforeAll(() => {
+  previous = node('src/anchor/dev-owner.ts', 'take', OWNER);
+  node('src/dev/desk-state.ts', 'links', CHECKED, UNCHECKED, COMMENT);
+});
+test.afterAll(() => {
+  node('src/anchor/dev-owner.ts', 'give-back', previous, OWNER);
+});
+
+test('a journalist asks, the owner approves, the desk shows checked links, and revoking ends it', async ({
+  browser,
+  request,
+}) => {
+  const outside: string[] = [];
+
+  // On the alert list first (its own browser test follows that link).
+  let before = countTo(JOURNALIST);
+  const signup = await request.post('/api/journalists/signup', {
+    data: { name: 'Pat Reporter', outlet: 'Desk Daily', email: JOURNALIST, states: ['US-VT'] },
+  });
+  expect(signup.ok(), await signup.text()).toBe(true);
+  const confirm = linkIn((await lastMessageTo(JOURNALIST, before)).text, '/journalists/confirm');
+  expect(
+    (
+      await request.post(new URL(confirm).pathname.replace('/journalists', '/api/journalists'))
+    ).ok(),
+  ).toBe(true);
+
+  // J7a: ask for the form; the link arrives by email.
+  const asking = await (await browser.newContext()).newPage();
+  outside.push(...outsideRequests(asking));
+  await asking.goto('/journalists/access');
+  await noViolations(asking);
+  await asking.getByLabel('The address you joined the alert list with').fill(JOURNALIST);
+  before = countTo(JOURNALIST);
+  await asking.getByRole('button', { name: 'Email me the request form' }).click();
+  await expect(asking.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  const form = linkIn((await lastMessageTo(JOURNALIST, before)).text, '/journalists/access');
+  expect(form).toMatch(/[a-f0-9]{64}$/);
+
+  const link = await (await browser.newContext()).newPage();
+  outside.push(...outsideRequests(link));
+  await link.goto(form);
+  await expect(
+    link.getByRole('heading', { level: 1, name: 'Ask for access to the journalist desk' }),
+  ).toBeVisible();
+  await noViolations(link);
+  await link.getByLabel('Your outlet').fill('Desk Daily');
+  await link.getByLabel('Your role there').fill('Reporter');
+  await link
+    .getByLabel('Links to your published work')
+    .fill('https://deskdaily.example.org/by/pat');
+  await link.getByLabel('Press card number (optional)').fill('PC-777');
+  await link.getByRole('button', { name: 'Send my request to the owner' }).click();
+  await expect(
+    link.getByRole('heading', { level: 1, name: 'Your request is with the owner' }),
+  ).toBeVisible();
+
+  // J7b, J7: the owner's queue, and the agreement the desk waits for (J8).
+  const owner = await (await signedIn(browser, OWNER)).newPage();
+  outside.push(...outsideRequests(owner));
+  await owner.goto('/access/journalists/agreement');
+  await owner.getByLabel('The new version').fill(`Use what you read here with care. ${run}`);
+  await owner.getByRole('button', { name: 'Publish this version' }).click();
+  await expect(owner.getByText('Published.')).toBeVisible();
+
+  await owner.goto('/access/journalists');
+  const card = owner.getByRole('article', { name: 'Request from Pat Reporter' });
+  await expect(card.getByText('PC-777')).toBeVisible();
+  await expect(card.getByText('https://deskdaily.example.org/by/pat')).toBeVisible();
+  await noViolations(owner);
+  before = countTo(JOURNALIST);
+  await card.getByRole('button', { name: 'Approve' }).click();
+  await expect(card.getByRole('button', { name: 'Revoke access' })).toBeVisible();
+
+  // The approval email's link, followed: the agreement, then the desk.
+  const desk = linkIn((await lastMessageTo(JOURNALIST, before)).text, '/desk');
+  expect(desk).not.toBe('');
+  const reader = await (await signedIn(browser, JOURNALIST)).newPage();
+  outside.push(...outsideRequests(reader));
+  await reader.goto(desk);
+  await expect(
+    reader.getByRole('heading', { level: 1, name: 'Read and accept the agreement' }),
+  ).toBeVisible();
+  await noViolations(reader);
+  await reader.getByRole('button', { name: 'I have read this and I accept it' }).click();
+  await expect(reader.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
+  const entry = reader.locator('[data-desk-link]').filter({ hasText: CHECKED });
+  await expect(entry).toBeVisible();
+  await expect(entry.getByText(COMMENT)).toBeVisible();
+  await expect(reader.getByText(UNCHECKED)).toHaveCount(0);
+  // K6: text, never an anchor.
+  await expect(reader.locator(`a[href*="checked-${run}"]`)).toHaveCount(0);
+  await noViolations(reader);
+
+  // J13: revoked, and the next look is refused.
+  await card.getByRole('button', { name: 'Revoke access' }).click();
+  await expect(card.getByText('Revoked', { exact: true })).toBeVisible();
+  await reader.reload();
+  await expect(reader.getByRole('heading', { name: 'Not for this account' })).toBeVisible();
+  await expect(reader.getByText(CHECKED)).toHaveCount(0);
+
+  expect(outside).toEqual([]);
+});
