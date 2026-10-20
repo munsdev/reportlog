@@ -119,13 +119,13 @@ export function HeatMapView({
   };
 
   const units = (n: number) => `${String(n)} ${n === 1 ? map.unit.one : map.unit.many}`;
-  const tip = (code: string) => {
+  const detail = (code: string) => {
     const s = status(code);
-    const name = placeLabel(code);
-    if (s.kind === 'shown') return `${name}: ${units(s.a.n)}`;
-    if (s.kind === 'below') return `${name}: fewer than ${String(k)}, not shown`;
-    return `${name}: none counted`;
+    if (s.kind === 'shown') return units(s.a.n);
+    if (s.kind === 'below') return `fewer than ${String(k)}, not shown`;
+    return 'none counted';
   };
+  const tip = (code: string) => `${placeLabel(code)}: ${detail(code)}`;
 
   const choosePlane = (p: MapPlane) => {
     setPlane(p);
@@ -195,12 +195,23 @@ export function HeatMapView({
           >
             {outlines.tiles.map((t) => {
               const s = status(t.code);
+              const count =
+                s.kind === 'shown' ? String(s.a.n) : s.kind === 'below' ? `<${String(k)}` : '—';
+              // THE NAME STARTS WITH WHAT THE TILE SAYS ("Am. Samoa 12"), then
+              // the sentence. Somebody using speech input says what they see,
+              // and "American Samoa: …" is not what they see (WCAG 2.5.3). A
+              // tile with nothing counted shows a dash, which is not a word.
+              // The {' '} between the two spans is part of this: flex draws
+              // no space, but without one the tile's text reads "Alaska3".
+              const said = s.kind === 'none' ? t.short : `${t.short} ${count}`;
+              const full = placeLabel(t.code);
+              const name = `${said}${full === t.short ? '' : `, ${full}`}: ${detail(t.code)}`;
               return (
                 <li key={t.code}>
                   <button
                     type="button"
                     aria-pressed={selected === t.code}
-                    aria-label={tip(t.code)}
+                    aria-label={name}
                     data-code={t.code}
                     onClick={() => {
                       setSelected(s.kind === 'shown' || s.kind === 'below' ? t.code : null);
@@ -219,14 +230,8 @@ export function HeatMapView({
                         vectorEffect="non-scaling-stroke"
                       />
                     </svg>
-                    <span className="text-xs font-semibold">{t.short}</span>
-                    <span className="font-mono text-sm">
-                      {s.kind === 'shown'
-                        ? String(s.a.n)
-                        : s.kind === 'below'
-                          ? `<${String(k)}`
-                          : '—'}
-                    </span>
+                    <span className="text-xs font-semibold">{t.short}</span>{' '}
+                    <span className="font-mono text-sm">{count}</span>
                   </button>
                 </li>
               );

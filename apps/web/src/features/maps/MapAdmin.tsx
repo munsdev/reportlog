@@ -36,8 +36,17 @@ import type {
 } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { Link, useBlocker } from '@tanstack/react-router';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
@@ -67,51 +76,117 @@ const STANCES: [Stance | '', string][] = [
   ['negative', 'Negative'],
 ];
 
-export function MapAdmin() {
+export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask } = {}) {
   const maps = useQuery(adminMapsQuery());
   const cands = useQuery(mapCandidatesQuery());
   return (
-    <Page
-      title="Maps"
-      lede="Where published reports came from, as counts. Make as many maps as you want. Each is off until you turn it on, and an area with fewer reports than its threshold is never published with its number."
-    >
-      {maps.isError ? <Alert tone="serious">{maps.error.message}</Alert> : null}
-      {cands.isError ? <Alert tone="serious">{cands.error.message}</Alert> : null}
-      {cands.isSuccess ? (
-        <PlaceQuestions logbooks={cands.data.logbooks} lists={cands.data.lists} />
-      ) : null}
-      {maps.isPending || cands.isPending ? <p role="status">Reading the maps…</p> : null}
-      {maps.isSuccess && cands.isSuccess ? (
-        <>
-          <NewMap />
-          {maps.data.maps.length === 0 ? <p>No maps yet.</p> : null}
-          {maps.data.slots.map((slot) => {
-            const here = maps.data.maps.filter((m) => m.slot === slot.id);
-            if (!here.length) return null;
-            return (
-              <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
-                <h2 className="font-display text-xl font-bold">{slot.label}</h2>
-                <p className="text-sm text-muted">{slot.description}</p>
-                <ul className="flex flex-col gap-3">
-                  {here.map((m, i) => (
-                    <li key={m.id}>
-                      <MapCard
-                        map={m}
-                        order={here.map((x) => x.id)}
-                        index={i}
-                        slots={maps.data.slots}
-                        logbooks={cands.data.logbooks}
-                        lists={cands.data.lists}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </>
-      ) : null}
-    </Page>
+    <UnsavedMaps ask={ask}>
+      <Page
+        title="Maps"
+        lede="Where published reports came from, as counts. Make as many maps as you want. Each is off until you turn it on, and an area with fewer reports than its threshold is never published with its number."
+      >
+        {maps.isError ? <Alert tone="serious">{maps.error.message}</Alert> : null}
+        {cands.isError ? <Alert tone="serious">{cands.error.message}</Alert> : null}
+        {cands.isSuccess ? (
+          <PlaceQuestions logbooks={cands.data.logbooks} lists={cands.data.lists} />
+        ) : null}
+        {maps.isPending || cands.isPending ? <p role="status">Reading the maps…</p> : null}
+        {maps.isSuccess && cands.isSuccess ? (
+          <>
+            <NewMap />
+            {maps.data.maps.length === 0 ? <p>No maps yet.</p> : null}
+            {maps.data.slots.map((slot) => {
+              const here = maps.data.maps.filter((m) => m.slot === slot.id);
+              if (!here.length) return null;
+              return (
+                <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
+                  <h2 className="font-display text-xl font-bold">{slot.label}</h2>
+                  <p className="text-sm text-muted">{slot.description}</p>
+                  <ul className="flex flex-col gap-3">
+                    {here.map((m, i) => (
+                      <li key={m.id}>
+                        <MapCard
+                          map={m}
+                          order={here.map((x) => x.id)}
+                          index={i}
+                          slots={maps.data.slots}
+                          logbooks={cands.data.logbooks}
+                          lists={cands.data.lists}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+          </>
+        ) : null}
+      </Page>
+    </UnsavedMaps>
+  );
+}
+
+// ── unsaved changes ──────────────────────────────────────────────────────
+//
+// ONE QUESTION FOR THE WHOLE SCREEN, as the settings screens ask it: several
+// maps can be open at once, and one blocker per map would ask once per map.
+// Each editor says whether it differs from the map the server holds; the
+// screen asks once, naming every one that does, before the router leaves it
+// and before the tab is closed or reloaded (the browser asks that one in its
+// own words). Closing one editor asks about that map alone.
+//
+// "Differs from what the server holds", not "was typed in": ticking a box
+// and unticking it again leaves nothing to lose, and a save makes the editor
+// clean the moment the server's answer arrives.
+
+type Ask = (question: string) => boolean;
+
+/** The sentence the warning asks, naming what would be lost. */
+export function unsavedMapsQuestion(titles: readonly string[]): string {
+  const named = titles.map((t) => `“${t}”`);
+  const list =
+    named.length <= 1
+      ? `the map ${named[0] ?? ''}`.trim()
+      : `the maps ${named.slice(0, -1).join(', ')} and ${named.at(-1) ?? ''}`;
+  return `You have changes to ${list} that are not saved. Leave without saving them?`;
+}
+
+const UnsavedContext = createContext<{
+  set: (id: number, title: string | null) => void;
+  has: (id: number) => boolean;
+  ask: Ask;
+} | null>(null);
+
+function UnsavedMaps({ ask, children }: { ask: Ask; children: ReactNode }) {
+  const unsaved = useRef(new Map<number, string>());
+  const set = useCallback((id: number, title: string | null) => {
+    if (title === null) unsaved.current.delete(id);
+    else unsaved.current.set(id, title);
+  }, []);
+  useBlocker({
+    shouldBlockFn: () => {
+      const titles = [...unsaved.current.values()];
+      if (!titles.length) return false;
+      return !ask(unsavedMapsQuestion(titles));
+    },
+    enableBeforeUnload: () => unsaved.current.size > 0,
+  });
+  const has = useCallback((id: number) => unsaved.current.has(id), []);
+  const value = useMemo(() => ({ set, has, ask }), [set, has, ask]);
+  return <UnsavedContext.Provider value={value}>{children}</UnsavedContext.Provider>;
+}
+
+/** Tell the screen whether this map's editor holds something the server does not. */
+function useUnsavedMap(id: number, title: string, dirty: boolean): void {
+  const guard = useContext(UnsavedContext);
+  useEffect(() => {
+    guard?.set(id, dirty ? title : null);
+  }, [guard, id, title, dirty]);
+  useEffect(
+    () => () => {
+      guard?.set(id, null);
+    },
+    [guard, id],
   );
 }
 
@@ -313,6 +388,7 @@ function MapCard({
   lists: ListCandidate[];
 }) {
   const qc = useQueryClient();
+  const guard = useContext(UnsavedContext);
   const [open, setOpen] = useState(false);
   const refresh = () => qc.invalidateQueries({ queryKey: adminMapsQuery().queryKey });
   const arrange = useMutation({
@@ -340,7 +416,8 @@ function MapCard({
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm">
           <strong>{map.enabled ? 'On' : 'Off'}</strong>
-          {' · '}threshold {map.min_area}
+          {' · '}
+          {thresholdInWords(map.min_area)}
           {' · '}
           {map.logbook_ids.length
             ? `${String(map.logbook_ids.length)} logbook(s)`
@@ -354,6 +431,9 @@ function MapCard({
             variant="secondary"
             aria-expanded={open}
             onClick={() => {
+              if (open && guard?.has(map.id) && !guard.ask(unsavedMapsQuestion([map.title]))) {
+                return;
+              }
               setOpen((o) => !o);
             }}
           >
@@ -423,6 +503,47 @@ function Tick({
   );
 }
 
+/** A map as the editor's fields hold it. */
+function fieldsOf(map: HeatMapAdmin) {
+  return {
+    title: map.title,
+    slug: map.slug,
+    blurb: map.blurb ?? '',
+    enabled: map.enabled,
+    minArea: String(map.min_area),
+    planes: map.planes,
+    views: map.views,
+    logbookIds: map.logbook_ids,
+    listIds: map.list_ids,
+    outcome: map.outcome,
+    slot: map.slot,
+  };
+}
+
+/**
+ * The fields as one string, with every set sorted: ticking a box off and on
+ * again moves it to the end of its list, which changes nothing that is saved.
+ */
+function comparable(f: ReturnType<typeof fieldsOf>): string {
+  const sorted = <T extends string | number>(xs: readonly T[]) =>
+    [...xs].sort((a, b) => String(a).localeCompare(String(b)));
+  return JSON.stringify({
+    ...f,
+    planes: sorted(f.planes),
+    views: sorted(f.views),
+    logbookIds: sorted(f.logbookIds),
+    listIds: sorted(f.listIds),
+    outcome: f.outcome && {
+      ...f.outcome,
+      stances: Object.entries(f.outcome.stances).sort(([a], [b]) => a.localeCompare(b)),
+    },
+  });
+}
+
+/** The threshold as a reader of the list needs it, not a bare number. */
+export const thresholdInWords = (n: number) =>
+  `an area shows its number at ${String(n)} reports or more`;
+
 const toggle = <T,>(list: readonly T[], item: T, on: boolean): T[] =>
   on ? [...new Set([...list, item])] : list.filter((x) => x !== item);
 
@@ -439,6 +560,9 @@ function MapEditor({
   lists: ListCandidate[];
   onSaved: () => Promise<void>;
 }) {
+  // What the server holds, as this editor last heard it: the map it opened
+  // with, then each save's answer. Unsaved means the fields differ from it.
+  const [base, setBase] = useState(map);
   const [title, setTitle] = useState(map.title);
   const [slug, setSlug] = useState(map.slug);
   const [blurb, setBlurb] = useState(map.blurb ?? '');
@@ -464,6 +588,21 @@ function MapEditor({
     ? outcomeChoices.find((c) => c.logbookId === outcome.logbook_id && c.q.key === outcome.key)
     : undefined;
 
+  const draft = {
+    title,
+    slug,
+    blurb,
+    enabled,
+    minArea,
+    planes,
+    views,
+    logbookIds,
+    listIds,
+    outcome,
+    slot,
+  };
+  useUnsavedMap(map.id, map.title, comparable(draft) !== comparable(fieldsOf(base)));
+
   const save = useMutation({
     mutationFn: () =>
       call(updateHeatMap, {
@@ -482,7 +621,24 @@ function MapEditor({
           slot,
         },
       }),
-    onSuccess: onSaved,
+    onSuccess: async (saved) => {
+      // The server's answer, not what was sent: it may have tidied a value,
+      // and the editor must not call its own tidied value unsaved.
+      const f = fieldsOf(saved);
+      setBase(saved);
+      setTitle(f.title);
+      setSlug(f.slug);
+      setBlurb(f.blurb);
+      setEnabled(f.enabled);
+      setMinArea(f.minArea);
+      setPlanes(f.planes);
+      setViews(f.views);
+      setLogbookIds(f.logbookIds);
+      setListIds(f.listIds);
+      setOutcome(f.outcome);
+      setSlot(f.slot);
+      await onSaved();
+    },
   });
   const preview = useMutation({
     mutationFn: () => call(previewHeatMap, { params: { id: map.id } }),
