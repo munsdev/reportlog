@@ -9,16 +9,11 @@ import type { ListSettings } from './retention.ts';
 export function listSettingsFrom(
   config: Pick<
     Config,
-    | 'LIST_PERSONAL_DAYS'
-    | 'LIST_SALT_DAYS'
-    | 'LIST_ERASURE_LINK_DAYS'
-    | 'LIST_KNOWN_HOSTS'
-    | 'ADMIN_EMAIL'
+    'LIST_PERSONAL_DAYS' | 'LIST_ERASURE_LINK_DAYS' | 'LIST_KNOWN_HOSTS' | 'ADMIN_EMAIL'
   >,
 ): ListSettings {
   return {
     personalDays: personalRetentionDays(config.LIST_PERSONAL_DAYS),
-    saltDays: config.LIST_SALT_DAYS,
     erasureLinkDays: config.LIST_ERASURE_LINK_DAYS,
     knownHosts: config.LIST_KNOWN_HOSTS.split(',')
       .map((h) => h.trim().toLowerCase())

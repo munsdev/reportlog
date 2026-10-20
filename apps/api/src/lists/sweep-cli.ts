@@ -12,13 +12,12 @@
  */
 import { loadConfig } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
-import { listSettingsFrom } from './settings.ts';
 import { sweepLists } from './sweep.ts';
 
 const config = loadConfig();
 const db = createDatabase(config.DATABASE_URL, 2);
 try {
-  const out = await sweepLists(db, { saltDays: listSettingsFrom(config).saltDays });
+  const out = await sweepLists(db);
   let failed = false;
   for (const [table, result] of Object.entries(out)) {
     if (typeof result === 'number') {

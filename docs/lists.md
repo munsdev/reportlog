@@ -124,12 +124,13 @@ triaged / actioned / closed) are different columns on purpose. A reviewer
 approves **the ids ticked on screen**, never "everything waiting". An entry
 cannot be un-reviewed, and rejecting is not deleting.
 
-## Addresses: an HMAC under a secret that is then destroyed
+## Addresses: none kept, and the email encrypted
 
-The raw address is never written. `ip_hash` is HMAC-SHA256 under a random
-32-byte secret per UTC day (`salt.ts`); the sweep destroys secrets older than
-`LIST_SALT_DAYS`. **Never derive the day's secret from a long-lived key and the
-date**: that looks like rotation and destroys nothing.
+No network address is written, hashed or not (decision 40). The email is
+encrypted under a key of its own (`email_enc`, `email_key`), with a keyed
+digest (`email_hmac`) so an administrator's subject access search can find an
+address without anybody being able to read every address. The keys hang from
+the link secret (`apps/api/src/links/keys.ts`). Erasure blanks all three.
 
 ## Links
 
@@ -138,10 +139,15 @@ Accept broadly, sort afterwards. Refused: non-http(s), a bare address as host
 **`youtu.be` is not a shortener and must never become one.** Normalizing
 lowercases the host, strips a trailing dot, punycodes, strips trackers (not `v`,
 not `t`), sorts the remaining parameters and drops a fragment unless it names a
-post. `url_key` is sha256 of that, so **changing the normalization is a decision
-about every row already written.** The server never requests a submitted URL.
+post, and removes a trailing slash (not the root's). That is the matching form:
+the links module keys an HMAC on it, so **changing the normalization splits
+every group and stops every exact blocklist entry matching.** The server never
+requests a submitted URL.
 
-One person pasting the same link twice is one link.
+One person pasting the same link twice is one link. A link is never in the
+entry's answers: it is in `links`, encrypted under its own key, grouped with
+every copy of the same address, checked by a moderator, and erased with the
+entry's personal half. See `docs/status/PD3-links.md`.
 
 ## The erasure link and the list-mail link
 
@@ -180,7 +186,6 @@ gate would.
 | Setting                  | Default | Meaning                                                        |
 | ------------------------ | ------- | -------------------------------------------------------------- |
 | `LIST_PERSONAL_DAYS`     | 90      | Days the personal half is kept, or `never`. A typo stops start |
-| `LIST_SALT_DAYS`         | 2       | Days a day's address secret is kept                            |
 | `LIST_ERASURE_LINK_DAYS` | 365     | An erasure link's life where nothing expires on its own        |
 | `LIST_KNOWN_HOSTS`       | (none)  | Link hosts a reviewer knows, comma-separated                   |
 | `ADMIN_EMAIL`            | (none)  | Where entries go when a list names no address                  |

@@ -128,6 +128,12 @@ function Found({
               <dt className="font-semibold">Email address</dt>
               <dd className="break-all">{e.email}</dd>
             </div>
+          ) : e.has_email ? (
+            // Kept encrypted, so it is shown only when it is the one searched for.
+            <div className="contents">
+              <dt className="font-semibold">Email address</dt>
+              <dd>Given, and kept encrypted. Search for the address itself to match it.</dd>
+            </div>
           ) : null}
           {answers.map(([k, v]) => (
             <div key={k} className="contents">

@@ -76,7 +76,7 @@ export const brokenLink = () =>
 export function erasePrompt(token: string): string {
   return page(
     'Delete what you wrote',
-    `<p>This deletes what you wrote and your email address from what you sent. Any links you sent stay, because they point at things that are already public.</p>
+    `<p>This deletes what you wrote, the links you sent and your email address.</p>
 <p>It cannot be undone.</p>
 <form method="post" action="/api/forget/${esc(token)}">
 <button type="submit">Delete it</button>

@@ -27,6 +27,8 @@ import { listButtons } from './lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
 import { listRoutes } from './lists/routes.ts';
+import { linkKeySource } from './links/keys.ts';
+import { linkRoutes } from './links/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
 import { mapRoutes } from './maps/routes.ts';
@@ -151,7 +153,16 @@ export async function buildApp({
   sitePeopleRoutes(app, db);
   await feedbackRoutes(app, { db, mailer: mail, siteOrigin, adminEmail: config.ADMIN_EMAIL });
   logbookRoutes(app, db, { buttons: { lists: listButtons } });
-  listRoutes(app, { db, mailer: mail, siteOrigin, settings: lists ?? DEFAULT_LIST_SETTINGS });
+  // One loader for the link keys, shared by lists and the link check.
+  const linkKeys = linkKeySource(db, config.CONTACT_KEY, config.CONTACT_KEY_PREVIOUS);
+  listRoutes(app, {
+    db,
+    mailer: mail,
+    siteOrigin,
+    settings: lists ?? DEFAULT_LIST_SETTINGS,
+    keys: linkKeys,
+  });
+  linkRoutes(app, { db, keys: linkKeys });
   // Files: storage and FILES_KEY, or the sentence saying why files are not taken.
   const files = filesFrom(db, config);
   mapRoutes(app, { db, ...(mapCacheMs === undefined ? {} : { cacheMs: mapCacheMs }) });

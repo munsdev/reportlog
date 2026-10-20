@@ -10,7 +10,9 @@
  * over questions an operator ticked, and only after a moderator approves.
  */
 import type { AnswerValue } from '@reportlog/fields';
-import { sql } from 'kysely';
+import { emailDigest, sealValue } from '../links/keys.ts';
+import type { LinkKeys } from '../links/keys.ts';
+import { storeLinks } from '../links/store.ts';
 import { mintErasureToken } from './erasure.ts';
 import { prepareAnswers } from './policy.ts';
 import type { PreparedLink } from './policy.ts';
@@ -20,19 +22,21 @@ import { personalExpiresAt } from './retention.ts';
 import type { ListSettings } from './retention.ts';
 import { isAccepting, listBySlug } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
-import { hashAddress } from './salt.ts';
 
+/**
+ * NO NETWORK ADDRESS, HASHED OR NOT (owner ruling 40). A tip is a message to
+ * the site's operators, and nothing else about the sender is kept.
+ */
 export interface EntryInput {
   answers: Record<string, unknown>;
   email?: string | null | undefined;
   emailConsent?: boolean | undefined;
-  /** The client's network address. Hashed under the day's secret, never written. */
-  address?: string | null | undefined;
 }
 
 export interface FiledEntry {
   id: number;
   list: LoadedList;
+  /** The links kept. One the blocklist matched is not here and was never written. */
   links: PreparedLink[];
   /** What was stored, for the new-entry email. Nothing new leaves here. */
   answers: Record<string, AnswerValue>;
@@ -65,7 +69,16 @@ export async function fileEntry(
   db: Db,
   slug: string,
   input: EntryInput,
-  { now = new Date(), settings }: { now?: Date; settings: ListSettings },
+  {
+    now = new Date(),
+    settings,
+    keys = null,
+  }: {
+    now?: Date;
+    settings: ListSettings;
+    /** The link keys (links/keys.ts). Without them no email and no link is taken. */
+    keys?: LinkKeys | null;
+  },
 ): Promise<FiledEntry> {
   const list = await listBySlug(db, slug);
   if (!list) return refuse('no-such-list');
@@ -88,8 +101,12 @@ export async function fileEntry(
   // gate, never instead of it.
   if (list.email_mode === 'required' && !email) return refuse('email-required');
 
+  // An email and a link are both kept encrypted, so a site with no key takes
+  // neither: refusing is better than keeping one in plain text.
+  if ((email || prepared.links.length) && !keys) return refuse('no-contact-key');
+
   const expires = personalExpiresAt(now, settings.personalDays);
-  const ipHash = await hashAddress(db, input.address ?? null);
+  const sealed = email && keys ? sealValue(keys, email) : null;
 
   return db.transaction().execute(async (trx) => {
     const entry = await trx
@@ -98,42 +115,22 @@ export async function fileEntry(
         list_id: list.id,
         answers: JSON.stringify(prepared.answers),
         erasable_answers: prepared.erasable ? JSON.stringify(prepared.erasable) : null,
-        email,
+        email_enc: sealed?.enc ?? null,
+        email_key: sealed?.key ?? null,
+        email_hmac: email && keys ? emailDigest(keys, email) : null,
         email_consent: input.emailConsent === true,
-        ip_hash: ipHash,
         personal_expires_at: expires,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
 
-    for (const l of prepared.links) {
-      await trx
-        .insertInto('list_entry_links')
-        .values({
-          entry_id: entry.id,
-          field_key: l.fieldKey,
-          url_raw: l.urlRaw,
-          url_key: l.urlKey,
-          host: l.host,
-        })
-        .execute();
-      // The durable layer: one row per distinct link, with a count. It holds
-      // no text and no submitter, so the sweep leaves it alone.
-      await trx
-        .insertInto('link_index')
-        .values({ url_key: l.urlKey, host: l.host, submission_count: 1 })
-        .onConflict((oc) =>
-          oc.column('url_key').doUpdateSet({
-            last_seen: sql<Date>`now()`,
-            submission_count: sql<number>`link_index.submission_count + 1`,
-          }),
-        )
-        .execute();
-    }
+    // Encrypted, grouped, and checked against the blocklist (links/store.ts).
+    const kept = keys ? await storeLinks(trx, keys, entry.id, prepared.links) : null;
 
     // Only where there is both something to erase and somewhere to send the
     // link: a token with no address to mail it to can never be redeemed.
-    const holdsPersonal = Boolean(prepared.erasable) || Boolean(email) || Boolean(ipHash);
+    const holdsPersonal =
+      Boolean(prepared.erasable) || Boolean(email) || Boolean(kept?.kept.length);
     const erasureToken =
       holdsPersonal && email
         ? await mintErasureToken(
@@ -146,7 +143,7 @@ export async function fileEntry(
     return {
       id: entry.id,
       list,
-      links: prepared.links,
+      links: kept?.kept ?? [],
       answers: prepared.answers,
       erasable: prepared.erasable,
       email,

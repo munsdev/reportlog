@@ -39,6 +39,7 @@ import { createFromTemplate } from '../../src/lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
 import { GENERAL_DIGEST, QUESTIONS, fileReport, launchedLogbook, uniqueSlug } from './helpers.ts';
 import { seat } from './identity-helpers.ts';
+import { linkKeys } from './links-helpers.ts';
 import { standInTsa } from './stand-in-tsa.ts';
 
 const exec = promisify(execFile);
@@ -240,7 +241,7 @@ beforeAll(async () => {
       email: 'someone@example.org',
       emailConsent: true,
     },
-    { settings: DEFAULT_LIST_SETTINGS },
+    { settings: DEFAULT_LIST_SETTINGS, keys: await linkKeys(src) },
   );
   expect(await src.selectFrom('list_entries').select('id').execute()).toHaveLength(1);
 
@@ -288,14 +289,18 @@ describe('the export', () => {
     }
   });
 
-  it('LEAVES THE EIGHT LIST TABLES OUT: an entry is not a report', () => {
-    // Read from E's own migration, so a ninth list table cannot be missed.
+  it('LEAVES THE LIST AND LINK TABLES OUT: an entry is not a report', () => {
+    // Read from the lists and links migrations, less what a later one
+    // dropped, so a new list or link table cannot be missed.
     const migrations = fileURLToPath(new URL('../../migrations/', import.meta.url));
-    const file = readdirSync(migrations).find((f) => f.endsWith('_lists.sql')) ?? '';
-    const created = [
-      ...readFileSync(join(migrations, file), 'utf8').matchAll(/CREATE TABLE (\w+) \(/g),
-    ].map((m) => m[1]);
-    expect(created).toHaveLength(8);
+    const files = readdirSync(migrations).filter((f) => /_(lists|links)\.sql$/.test(f));
+    const text = files.map((f) => readFileSync(join(migrations, f), 'utf8')).join('\n');
+    const dropped = new Set([...text.matchAll(/^DROP TABLE (\w+);/gm)].map((m) => m[1]));
+    const created = [...text.matchAll(/CREATE TABLE (\w+) \(/g)]
+      .map((m) => m[1])
+      .filter((t) => !dropped.has(t));
+    expect(files).toHaveLength(2);
+    expect(created).toHaveLength(13);
     expect([...LIST_TABLES].sort()).toEqual([...created].sort());
     for (const t of created) {
       expect(archive.tables, t ?? '').not.toHaveProperty(t ?? '');

@@ -4,8 +4,12 @@
  *
  * NOTHING IS COUNTED PUBLICLY UNTIL A MODERATOR APPROVES IT. The difference
  * from a logbook is the unit of review, so the page shows what makes skimming
- * safe: the site of every link, with unfamiliar ones marked, and clusters (one
- * address sending many, and the busiest minutes).
+ * safe: the site of every link, with unfamiliar ones marked, how each link
+ * was checked, and the busiest minutes. No network address is kept, so there
+ * is no "one address sending many" (owner ruling 40).
+ *
+ * A LINK IS TEXT, NEVER AN ANCHOR (K6): nothing on this page opens or fetches
+ * it. A moderator copies it out deliberately.
  *
  * THE ENTRIES TICKED ON SCREEN are what is approved, never "everything
  * waiting": an entry that arrives between reading the page and pressing the
@@ -25,7 +29,7 @@ import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { call } from '../../lib/api.ts';
 import { reviewBatchQuery, reviewQueuesQuery } from './queries.ts';
-import { REVIEW, TRIAGE, said } from './words.ts';
+import { LINK_OUTCOME, REVIEW, TRIAGE, said } from './words.ts';
 
 export function ReviewQueues() {
   const query = useQuery(reviewQueuesQuery());
@@ -33,6 +37,11 @@ export function ReviewQueues() {
     <Page
       title="List entries to review"
       lede="Nothing on a list is counted publicly until it is approved here. Entries are read a page at a time and approved together."
+      actions={
+        <Button asChild variant="secondary">
+          <Link to="/lists/links">Check links</Link>
+        </Button>
+      }
     >
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
@@ -123,29 +132,19 @@ function Batch({ batch }: { batch: ReviewBatch }) {
     onSuccess: refresh,
   });
   const labels = new Map(batch.fields.map((f) => [f.key, f.label]));
-  const repeated = new Set(batch.clusters.entries_from_repeated_submitters);
   const all = batch.entries.map((e) => e.id);
 
   if (!batch.entries.length) return <p>Nothing here.</p>;
   return (
     <div className="space-y-4">
-      <Alert title="At a glance">
-        <p>
-          {batch.clusters.repeated_submitters === 0
-            ? 'No address sent more than one of these.'
-            : `${String(batch.clusters.repeated_submitters)} address${
-                batch.clusters.repeated_submitters === 1 ? '' : 'es'
-              } sent more than one; the most from one was ${String(
-                batch.clusters.largest_repeated_submitter,
-              )}. Those entries are marked.`}
-        </p>
-        {batch.clusters.busiest_minutes[0] && batch.clusters.busiest_minutes[0].count > 1 ? (
+      {batch.clusters.busiest_minutes[0] && batch.clusters.busiest_minutes[0].count > 1 ? (
+        <Alert title="At a glance">
           <p>
             Busiest minute: {String(batch.clusters.busiest_minutes[0].count)} entries at{' '}
             {new Date(`${batch.clusters.busiest_minutes[0].minute}:00Z`).toLocaleString()}.
           </p>
-        ) : null}
-      </Alert>
+        </Alert>
+      ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
@@ -181,20 +180,21 @@ function Batch({ batch }: { batch: ReviewBatch }) {
                     <Label htmlFor={box} className="font-normal">
                       Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()} ·{' '}
                       {REVIEW[e.review_state]} · {TRIAGE[e.triage_state]}
-                      {repeated.has(e.id) ? ' · from an address that sent more than one' : ''}
                     </Label>
                   </div>
                   {e.links.length ? (
+                    // Checked one address at a time, for every tip that sent it.
                     <ul className="space-y-1" aria-label="Links">
                       {e.links.map((l) => (
-                        <li key={`${l.field_key}-${l.url_raw}`} className="text-sm">
+                        <li key={`${l.field_key}-${l.url}`} className="text-sm">
                           <span className={l.known_host ? '' : 'font-semibold'}>
                             {l.host}
                             {l.known_host ? '' : ' (unfamiliar site)'}
+                          </span>{' '}
+                          <span className="text-ink-alt">
+                            · {LINK_OUTCOME[l.outcome ?? 'unchecked']}
                           </span>
-                          <span className="block break-all font-mono text-ink-alt">
-                            {l.url_raw}
-                          </span>
+                          <span className="block break-all font-mono text-ink-alt">{l.url}</span>
                         </li>
                       ))}
                     </ul>
@@ -211,7 +211,7 @@ function Batch({ batch }: { batch: ReviewBatch }) {
                   </dl>
                   {e.erased ? (
                     <p className="text-sm text-ink-alt">
-                      Its personal half has been deleted. The links and choices stay.
+                      Its personal half and its links have been deleted. The choices stay.
                     </p>
                   ) : null}
                 </CardContent>

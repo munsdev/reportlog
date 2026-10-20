@@ -24,14 +24,23 @@ export type ReviewState = (typeof REVIEW_STATES)[number];
 export const TRIAGE_STATES = ['new', 'triaged', 'actioned', 'closed'] as const;
 export type TriageState = (typeof TRIAGE_STATES)[number];
 
-/** The columns an erasure blanks, named rather than discovered. */
-export const ERASABLE_COLUMNS = ['erasable_answers', 'email', 'ip_hash'] as const;
+/**
+ * The columns an erasure blanks, named rather than discovered. The email is
+ * three: its ciphertext, its own key and its keyed digest (ruling 40). The
+ * entry's links are erased with them, in the links module (lists/erasure.ts).
+ */
+export const ERASABLE_COLUMNS = [
+  'erasable_answers',
+  'email_enc',
+  'email_key',
+  'email_hmac',
+] as const;
 
+/** A link, normalized, on its way to the links module. NEVER in `answers`. */
 export interface PreparedLink {
   fieldKey: string;
-  urlRaw: string;
+  /** The normalized form (lists/urls.ts): what is encrypted and what is matched. */
   url: string;
-  urlKey: string;
   host: string;
 }
 
@@ -56,6 +65,10 @@ const blank = (v: unknown) =>
  * durable; `erasable` holds what the sweep blanks. A KEY IS PRESENT ONLY WHEN
  * IT WAS ANSWERED. Keys the form does not ask are dropped silently: a form
  * left open in a tab must not fail on a question nobody can see.
+ *
+ * A LINK IS IN NEITHER HALF (Plan D §5). It goes to `links`, and from there
+ * to its own encrypted row: a copy in the answers would be a plaintext link
+ * store all over again.
  */
 export function prepareAnswers(
   fields: readonly ListField[],
@@ -88,11 +101,11 @@ export function prepareAnswers(
         if (got.value === undefined) continue;
         // ONE PERSON PASTING THE SAME LINK TWICE IS ONE LINK: the whole value
         // of a submission count is that it counts people.
-        const dedup = got.url ? got.url.urlKey : JSON.stringify(got.value);
+        const dedup = got.url ? got.url.url : JSON.stringify(got.value);
         if (seen.has(dedup)) continue;
         seen.add(dedup);
         out.push(String(got.value));
-        if (got.url && LINK_KINDS.has(field.kind)) links.push(linkOf(field.key, item, got.url));
+        if (got.url && LINK_KINDS.has(field.kind)) links.push(linkOf(field.key, got.url));
       }
       value = out.length ? out : undefined;
     } else {
@@ -103,7 +116,7 @@ export function prepareAnswers(
       if (!got.ok) return { ok: false, reason: got.reason, key: field.key };
       value = got.value;
       if (value !== undefined && got.url && LINK_KINDS.has(field.kind)) {
-        links.push(linkOf(field.key, raw, got.url));
+        links.push(linkOf(field.key, got.url));
       }
     }
 
@@ -111,6 +124,7 @@ export function prepareAnswers(
       if (field.required) missing.push(field.key);
       continue;
     }
+    if (LINK_KINDS.has(field.kind)) continue;
     if (retention === CLASSES.DURABLE) answers[field.key] = value;
     else erasable[field.key] = value;
   }
@@ -121,17 +135,6 @@ export function prepareAnswers(
   return { ok: true, answers, erasable: Object.keys(erasable).length ? erasable : null, links };
 }
 
-function linkOf(
-  fieldKey: string,
-  raw: unknown,
-  url: { url: string; urlKey: string; host: string },
-): PreparedLink {
-  const typed = (Array.isArray(raw) ? raw[0] : raw) as unknown;
-  return {
-    fieldKey,
-    urlRaw: (typeof typed === 'string' ? typed : url.url).trim().slice(0, 2048),
-    url: url.url,
-    urlKey: url.urlKey,
-    host: url.host,
-  };
+function linkOf(fieldKey: string, url: { url: string; host: string }): PreparedLink {
+  return { fieldKey, url: url.url, host: url.host };
 }

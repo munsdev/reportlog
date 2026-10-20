@@ -35,6 +35,7 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
   { to: '/logbooks/front-page', label: 'Front page', for: ['admin'] },
   { to: '/lists', label: 'Lists', for: ['admin'] },
   { to: '/lists/review', label: 'List review', for: ['moderator', 'admin'] },
+  { to: '/lists/links', label: 'Link checks', for: ['moderator', 'admin'] },
   { to: '/moderate', label: 'Moderation', for: ['moderator', 'admin'] },
   { to: '/moderate/settings', label: 'Moderation settings', for: ['admin'] },
   { to: '/transparency-log', label: 'Transparency log', for: ['admin'] },

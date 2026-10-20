@@ -388,7 +388,7 @@ describe('the figures', () => {
         const got = await fileEntry(
           h.db,
           list.slug,
-          { answers: { verdict, state: 'Not sure' }, address: `203.0.113.${String(i)}` },
+          { answers: { verdict, state: 'Not sure' } },
           { settings: DEFAULT_LIST_SETTINGS },
         );
         ids.push(got.id);

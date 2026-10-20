@@ -27,6 +27,8 @@ const SENTENCES = {
   'not-a-datetime': 'That needs to be a date and time.',
   'not-a-place': 'Pick a place from the list.',
   'not-an-email': 'That does not look like an email address.',
+  'no-contact-key':
+    'This form cannot take an email address or a link yet, because the site is not fully set up. Tell whoever runs this site.',
   'not-an-answer': 'That answer could not be read.',
   'unknown-field-kind': 'This form asks a question this software cannot read.',
   'kind-not-available-on-a-list': 'This form asks for something a list cannot take.',
@@ -85,6 +87,7 @@ const STATUS: Partial<Record<ListRefusalCode, number>> = {
   'no-such-list': 404,
   'slug-taken': 409,
   'has-entries': 409,
+  'no-contact-key': 503,
 };
 
 export class ListRefusal extends HttpError {

@@ -17,13 +17,11 @@
  * Other test files share this database, so everything here is scoped to its
  * own lists and its own link hosts rather than emptying the tables.
  */
-import { createHash } from 'node:crypto';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   crossTabFor,
   fieldValueCounts,
-  linkCounts,
   snapshotDocument,
   summaryFor,
 } from '../../src/lists/aggregates.ts';
@@ -37,14 +35,16 @@ import { DEFAULT_LIST_SETTINGS, NEVER } from '../../src/lists/retention.ts';
 import { pendingCount, reviewBatch, reviewEntries } from '../../src/lists/review.ts';
 import { isAccepting, listById } from '../../src/lists/rows.ts';
 import type { LoadedList } from '../../src/lists/rows.ts';
-import { forgetCachedSalts, hashAddress, saltForDay, utcDay } from '../../src/lists/salt.ts';
-import { sweepListTokens, sweepPersonal, sweepSalts } from '../../src/lists/sweep.ts';
+import { sweepListTokens, sweepPersonal } from '../../src/lists/sweep.ts';
+import { matchKey, openValue } from '../../src/links/keys.ts';
+import type { LinkKeys } from '../../src/links/keys.ts';
 import { testDatabase, uniqueSlug } from './helpers.ts';
+import { linkKeys } from './links-helpers.ts';
 
 const db = testDatabase();
 const settings = DEFAULT_LIST_SETTINGS;
 const run = `${String(process.pid)}${String(Date.now() % 1e6)}`;
-// Hosts nobody else uses, because link_index is one table for every list.
+// Hosts nobody else uses, because the link groups are one table for every list.
 const NEWS = `news-${run}.example.org`;
 const SAME = `same-${run}.example.org`;
 
@@ -52,11 +52,22 @@ let tips: LoadedList;
 let checkins: LoadedList;
 let contact: LoadedList;
 let before: { reports: number; logbooks: number; heads: number };
+let keys: LinkKeys;
 
 const file = (list: LoadedList, input: EntryInput, opts: { personalDays?: typeof NEVER } = {}) =>
   fileEntry(db, list.slug, input, {
     settings: opts.personalDays ? { ...settings, personalDays: opts.personalDays } : settings,
+    keys,
   });
+
+/** The live copies of one address, by its keyed matching key. */
+const copiesOf = (url: string) =>
+  db
+    .selectFrom('links as l')
+    .innerJoin('link_groups as g', 'g.id', 'l.group_id')
+    .select(['l.id', 'l.entry_id', 'l.group_id'])
+    .where('g.match_key', '=', matchKey(keys, url))
+    .execute();
 
 async function refusal(p: Promise<unknown>): Promise<string> {
   try {
@@ -97,7 +108,7 @@ async function counts() {
 
 beforeAll(async () => {
   before = await counts();
-  forgetCachedSalts();
+  keys = await linkKeys(db);
 });
 afterAll(async () => {
   await db.destroy();
@@ -124,7 +135,9 @@ describe('the three shipped templates apply', () => {
         l.id,
         l.fields.map((f) => ({
           ...f,
-          ...(opts[f.key] ? { settings: { options: opts[f.key] } } : {}),
+          // The tips template counts nothing (owner ruling 42); an operator
+          // may still choose to, which is what this list's counts below test.
+          ...(opts[f.key] ? { settings: { options: opts[f.key] }, aggregatable: true } : {}),
         })),
       );
     tips = await withOptions(tips, {
@@ -149,29 +162,36 @@ describe('filing on a list', () => {
       },
       email: 'tipster@example.org',
       emailConsent: true,
-      address: '203.0.113.7',
     });
     first = got.id;
     const row = await entry(got.id);
-    expect(Object.keys(row.answers as object).sort()).toEqual(['category', 'links', 'state']);
+    // THE LINK IS IN NEITHER HALF: it is in `links`, encrypted (Plan D §5).
+    expect(Object.keys(row.answers as object).sort()).toEqual(['category', 'state']);
     expect(Object.keys(row.erasable_answers as object)).toEqual(['description']);
-    expect((row.answers as { links: string[] }).links).toEqual([`https://${NEWS}/story?id=4`]);
+    expect(JSON.stringify(row)).not.toContain(NEWS);
+    expect(JSON.stringify(row)).not.toContain('tipster@example.org');
     expect(row.review_state).toBe('received');
     expect(row.reviewed_at).toBe(null);
     expect(got.erasureToken).toMatch(/^[A-Za-z0-9_-]{40,}$/);
   });
 
-  it('keeps the link as typed beside its key, and which question it answered', async () => {
+  it('keeps the link encrypted under its own key, normalized, with which question it answered', async () => {
     const link = await db
-      .selectFrom('list_entry_links')
+      .selectFrom('links')
       .selectAll()
       .where('entry_id', '=', first)
       .executeTakeFirstOrThrow();
-    expect(link.url_raw).toContain('utm_source');
-    expect(link.url_key).toBe(
-      createHash('sha256').update(`https://${NEWS}/story?id=4`).digest('hex'),
-    );
+    expect(link.value_enc.toString('latin1')).not.toContain(NEWS);
+    // Trackers stripped before it is kept: `utm_source` says who shared it.
+    expect(openValue(keys, link.value_enc, link.value_key)).toBe(`https://${NEWS}/story?id=4`);
     expect(link.field_key).toBe('links');
+    // Every link has its own key: a second copy of one address shares nothing.
+    const group = await db
+      .selectFrom('link_groups')
+      .select('match_key')
+      .where('id', '=', link.group_id)
+      .executeTakeFirstOrThrow();
+    expect(group.match_key).toBe(matchKey(keys, `https://${NEWS}/story?id=4`));
   });
 
   it('a second entry with no free text needs no address, and gets no erasure link', async () => {
@@ -181,30 +201,23 @@ describe('filing on a list', () => {
         state: 'Iowa',
         category: 'Ballot',
       },
-      address: '203.0.113.9',
     });
     expect(got.erasureToken).toBe(null);
-    const idx = await db.selectFrom('link_index').selectAll().where('host', '=', NEWS).execute();
-    // Forty people sending the same clip is ONE row with a count.
-    expect(idx).toHaveLength(1);
-    expect(idx[0]?.submission_count).toBe(2);
+    // Forty people sending the same clip is ONE group, each keeping its own row.
+    const copies = await copiesOf(`https://${NEWS}/story?id=4`);
+    expect(copies).toHaveLength(2);
+    expect(new Set(copies.map((c) => c.group_id)).size).toBe(1);
   });
 
-  it('one person pasting the same link twice adds one to the count, not two', async () => {
+  it('one person pasting the same link twice keeps one copy, not two', async () => {
     await file(tips, {
       answers: {
         links: [`https://${SAME}/same?utm_source=a`, `https://${SAME.toUpperCase()}/same#top`],
         state: 'Ohio',
         category: 'Ballot',
       },
-      address: '203.0.113.20',
     });
-    const row = await db
-      .selectFrom('link_index')
-      .select('submission_count')
-      .where('host', '=', SAME)
-      .executeTakeFirstOrThrow();
-    expect(row.submission_count).toBe(1);
+    expect(await copiesOf(`https://${SAME}/same`)).toHaveLength(1);
   });
 });
 
@@ -283,40 +296,22 @@ describe('intake is checked here, not trusted from the form', () => {
   });
 });
 
-describe('the address is never written', () => {
-  it('no column holds the address that was passed in, only a digest', async () => {
+describe('nothing about the sender but what they typed (owner ruling 40)', () => {
+  it('no network address is kept, hashed or not, and the email only encrypted', async () => {
+    const cols = await sql<{ column_name: string }>`
+      SELECT column_name FROM information_schema.columns WHERE table_name = 'list_entries'`.execute(
+      db,
+    );
+    const names = cols.rows.map((c) => c.column_name);
+    expect(names).not.toContain('ip_hash');
+    expect(names).not.toContain('email');
+    expect(names).toEqual(expect.arrayContaining(['email_enc', 'email_key', 'email_hmac']));
     const rows = await db
       .selectFrom('list_entries')
-      .select(['ip_hash', 'answers', 'erasable_answers'])
+      .selectAll()
       .where('list_id', '=', tips.id)
       .execute();
-    expect(JSON.stringify(rows)).not.toContain('203.0.113');
-    expect(rows.every((r) => r.ip_hash === null || /^[0-9a-f]{64}$/.test(r.ip_hash))).toBe(true);
-    expect(new Set(rows.map((r) => r.ip_hash)).size).toBeGreaterThanOrEqual(2);
-  });
-});
-
-describe('rotating and then destroying the day’s secret', () => {
-  it('one secret per day, the same all day, different the next', async () => {
-    const today = utcDay();
-    const a = await saltForDay(db, today);
-    forgetCachedSalts();
-    expect(Buffer.compare(a, await saltForDay(db, today))).toBe(0);
-    expect(a.length).toBe(32);
-    const yesterday = utcDay(new Date(Date.now() - 864e5));
-    expect(Buffer.compare(a, await saltForDay(db, yesterday))).not.toBe(0);
-  });
-
-  it('the sweep destroys an expired day’s secret and never today’s', async () => {
-    const old = utcDay(new Date(Date.now() - 400 * 864e5));
-    const hashed = await hashAddress(db, '203.0.113.7', old);
-    expect(hashed).toMatch(/^[0-9a-f]{64}$/);
-    const swept = await sweepSalts(db, 2);
-    expect(typeof swept.list_salts === 'number' && swept.list_salts >= 1).toBe(true);
-    const left = await db.selectFrom('list_salts').select('day').execute();
-    expect(left.map((r) => r.day)).toContain(utcDay());
-    // Nothing that still exists can recompute a hash taken under it.
-    expect(left.map((r) => r.day)).not.toContain(old);
+    expect(JSON.stringify(rows)).not.toContain('tipster@example.org');
   });
 });
 
@@ -364,7 +359,7 @@ describe('review, in bulk', () => {
   let ids: number[] = [];
 
   it('shows every link with its host, unfamiliar ones marked, and the erasable half to the moderator', async () => {
-    const batch = await reviewBatch(db, tips.id, { knownHosts: [NEWS] });
+    const batch = await reviewBatch(db, tips.id, { knownHosts: [NEWS], keys });
     expect(batch.entries).toHaveLength(3);
     ids = batch.entries.map((e) => e.id);
     const links = batch.entries.flatMap((e) => e.links);
@@ -424,28 +419,23 @@ describe('the sweep erases the pieces and leaves the row', () => {
     first = await entry(row.id);
   });
 
-  it('THE ROW IS STILL THERE, with its words, email and hashed address gone', () => {
+  it('THE ROW IS STILL THERE, with its words and email gone, ciphertext, key and digest', () => {
     expect(first.erasable_answers).toBe(null);
-    expect(first.email).toBe(null);
-    expect(first.ip_hash).toBe(null);
+    expect(first.email_enc).toBe(null);
+    expect(first.email_key).toBe(null);
+    expect(first.email_hmac).toBe(null);
     expect(first.erased_at).not.toBe(null);
   });
 
-  it('THE DURABLE HALF IS UNTOUCHED, and so are the link rows and the index', async () => {
+  it('ITS LINKS GO WITH IT, value and key (T3); the other copy and the durable half stay', async () => {
     expect(first.answers).toMatchObject({ state: 'Ohio', category: 'Polling place' });
-    expect((first.answers as { links: string[] }).links).toHaveLength(1);
     const links = await db
-      .selectFrom('list_entry_links')
+      .selectFrom('links')
       .select('id')
       .where('entry_id', '=', first.id)
       .execute();
-    expect(links).toHaveLength(1);
-    const idx = await db
-      .selectFrom('link_index')
-      .select('submission_count')
-      .where('host', '=', NEWS)
-      .executeTakeFirstOrThrow();
-    expect(idx.submission_count).toBe(2);
+    expect(links).toEqual([]);
+    expect(await copiesOf(`https://${NEWS}/story?id=4`)).toHaveLength(1);
     expect(first.review_state).toBe('approved');
   });
 
@@ -520,17 +510,15 @@ describe('what the database refuses', () => {
     expect(await refuses(change({ kind: 'choice_many' }))).toBe(true);
   });
 
-  it('a link key that is not a sha256, and a hashing secret of the wrong length', async () => {
+  it('a matching key that is not a keyed hash, and half an encrypted email', async () => {
     expect(
-      await refuses(
-        db.insertInto('link_index').values({ url_key: 'nope', host: 'x.com' }).execute(),
-      ),
+      await refuses(db.insertInto('link_groups').values({ match_key: 'nope' }).execute()),
     ).toBe(true);
     expect(
       await refuses(
         db
-          .insertInto('list_salts')
-          .values({ day: '2001-01-01', salt: Buffer.alloc(16) })
+          .insertInto('list_entries')
+          .values({ list_id: tips.id, email_enc: Buffer.alloc(40) })
           .execute(),
       ),
     ).toBe(true);
@@ -563,7 +551,6 @@ describe('an entry kept indefinitely is erased by its holder, never by the clock
       {
         answers: { subject: 'Keeping this', message: 'Indefinitely' },
         email: 'keeper@example.org',
-        address: '203.0.113.11',
       },
       { personalDays: NEVER },
     );
@@ -578,7 +565,7 @@ describe('an entry kept indefinitely is erased by its holder, never by the clock
     expect(await redeemErasureToken(db, kept.erasureToken)).toEqual({ ok: true, entryId: kept.id });
     const row = await entry(kept.id);
     expect(row.erasable_answers).toBe(null);
-    expect(row.email).toBe(null);
+    expect(row.email_enc).toBe(null);
     expect(row.erased_at).not.toBe(null);
   });
 
@@ -614,7 +601,7 @@ describe('check-ins, where what is left after the sweep is the count', () => {
       ['Iowa', 'It went fine', 3],
     ] as const) {
       for (let i = 0; i < n; i++) {
-        await file(checkins, { answers: { state, verdict }, address: `198.51.100.${String(i)}` });
+        await file(checkins, { answers: { state, verdict } });
       }
     }
     const ids = (
@@ -631,7 +618,7 @@ describe('check-ins, where what is left after the sweep is the count', () => {
       .selectFrom('list_entries')
       .select('id')
       .where('list_id', '=', checkins.id)
-      .where('email', 'is not', null)
+      .where('email_enc', 'is not', null)
       .execute();
     expect(emails).toEqual([]);
   });
@@ -643,13 +630,13 @@ describe('check-ins, where what is left after the sweep is the count', () => {
       .where('list_id', '=', checkins.id)
       .execute();
     await sweepPersonal(db);
-    const hashed = await db
+    const held = await db
       .selectFrom('list_entries')
       .select('id')
       .where('list_id', '=', checkins.id)
-      .where('ip_hash', 'is not', null)
+      .where('email_enc', 'is not', null)
       .execute();
-    expect(hashed).toEqual([]);
+    expect(held).toEqual([]);
     expect((await summaryFor(db, checkins))?.fields).toEqual(ci?.fields);
   });
 });
@@ -684,13 +671,6 @@ describe('what would be published, and what would not', () => {
     expect(doc.reportlog_list_aggregates).toBe(1);
     expect(typeof doc.generated_at).toBe('string');
     expect(JSON.stringify(doc)).not.toMatch(/queue around the block|Indefinitely/);
-  });
-
-  it('the deduplicated link layer reports counts and no submitter', async () => {
-    const links = (await linkCounts(db, { limit: 1000 })).filter((l) => l.host === NEWS);
-    expect(links).toHaveLength(1);
-    expect(links[0]?.submission_count).toBe(2);
-    expect(Object.keys(links[0] ?? {}).some((k) => /email|ip|address/i.test(k))).toBe(false);
   });
 });
 

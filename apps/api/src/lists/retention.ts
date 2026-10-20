@@ -63,19 +63,6 @@ export function personalRetentionDays(raw: string | undefined): PersonalDays {
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_PERSONAL_DAYS;
 }
 
-/**
- * How long a day's hashing secret is kept before the sweep destroys it. Two
- * days, not one: a limit that looks back a day needs yesterday's secret at one
- * minute past midnight. Every extra day is a day in which a hash is still
- * correlatable.
- */
-export const DEFAULT_SALT_DAYS = 2;
-
-export function saltRetentionDays(raw: string | undefined): number {
-  const n = Number((raw ?? '').trim());
-  return Number.isInteger(n) && n >= 1 ? n : DEFAULT_SALT_DAYS;
-}
-
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** `personal_expires_at` for a row written now. NULL means kept, as the column means. */
@@ -104,7 +91,6 @@ export function erasureExpiry(
 /** Everything about time a list reads, resolved once from configuration. */
 export interface ListSettings {
   personalDays: PersonalDays;
-  saltDays: number;
   erasureLinkDays: number;
   /** Hosts a reviewer knows; every other host is marked for their eye. */
   knownHosts: readonly string[];
@@ -114,7 +100,6 @@ export interface ListSettings {
 
 export const DEFAULT_LIST_SETTINGS: ListSettings = {
   personalDays: DEFAULT_PERSONAL_DAYS,
-  saltDays: DEFAULT_SALT_DAYS,
   erasureLinkDays: DEFAULT_ERASURE_LINK_DAYS,
   knownHosts: [],
   adminEmail: null,

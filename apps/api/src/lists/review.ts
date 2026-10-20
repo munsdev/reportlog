@@ -7,8 +7,9 @@
  *
  * SO THE PAGE HAS TO SHOW WHAT MAKES SKIMMING SAFE, because a reviewer
  * approving fifty rows can only catch what the page puts in front of them: the
- * host of every link with unfamiliar ones marked, and clusters (a flood from
- * one source is only ever visible as a cluster, never row by row).
+ * host of every link with unfamiliar ones marked, and the busiest minutes (a
+ * flood is only ever visible as a cluster, never row by row). Each link also
+ * says which group it is in and how that group was checked (links/).
  *
  * REJECTING IS NOT DELETING. The row stays, the retention clock still governs
  * its erasable half, and a subject access request can still be answered about
@@ -20,6 +21,9 @@ import { REVIEW_STATES, TRIAGE_STATES } from './policy.ts';
 import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
 import type { Db } from './rows.ts';
+import type { LinkKeys } from '../links/keys.ts';
+import { linksForEntries } from '../links/reads.ts';
+import type { Outcome } from '../links/rows.ts';
 
 type Answers = Record<string, AnswerValue>;
 
@@ -32,13 +36,21 @@ export interface ReviewEntry {
   erasable_answers: Answers | null;
   has_email: boolean;
   erased: boolean;
-  links: { field_key: string; url_raw: string; host: string; known_host: boolean }[];
+  links: {
+    field_key: string;
+    url: string;
+    host: string;
+    known_host: boolean;
+    group_id: number;
+    outcome: Outcome | null;
+  }[];
 }
 
+/**
+ * The shape of a burst. There is no "one address sending many" any more: no
+ * network address is kept, hashed or not (owner ruling 40).
+ */
 export interface Clusters {
-  repeated_submitters: number;
-  largest_repeated_submitter: number;
-  entries_from_repeated_submitters: number[];
   busiest_minutes: { minute: string; count: number }[];
 }
 
@@ -57,7 +69,14 @@ export async function reviewBatch(
     state = 'received',
     limit = 100,
     knownHosts = [],
-  }: { state?: ReviewState; limit?: number; knownHosts?: readonly string[] } = {},
+    keys = null,
+  }: {
+    state?: ReviewState;
+    limit?: number;
+    knownHosts?: readonly string[];
+    /** Without them the links are not shown; none can have been taken either. */
+    keys?: LinkKeys | null;
+  } = {},
 ): Promise<{ entries: ReviewEntry[]; clusters: Clusters }> {
   const size = Math.min(Math.max(Math.floor(limit) || 100, 1), 500);
   const rows = await db
@@ -69,8 +88,7 @@ export async function reviewBatch(
       'triage_state',
       'answers',
       'erasable_answers',
-      'email',
-      'ip_hash',
+      'email_enc',
       'erased_at',
     ])
     .where('list_id', '=', listId)
@@ -80,14 +98,7 @@ export async function reviewBatch(
     .limit(size)
     .execute();
   const ids = rows.map((r) => r.id);
-  const links = ids.length
-    ? await db
-        .selectFrom('list_entry_links')
-        .select(['entry_id', 'field_key', 'url_raw', 'host'])
-        .where('entry_id', 'in', ids)
-        .orderBy('id')
-        .execute()
-    : [];
+  const links = keys ? await linksForEntries(db, keys, ids) : [];
   const known = new Set(knownHosts.map((h) => h.trim().toLowerCase()));
 
   const entries: ReviewEntry[] = rows.map((r) => ({
@@ -99,46 +110,29 @@ export async function reviewBatch(
     // Shown to a MODERATOR, the one person who has to read it to do their job.
     // Not published, and still swept on schedule.
     erasable_answers: r.erasable_answers === null ? null : asAnswers(r.erasable_answers),
-    has_email: r.email !== null,
+    has_email: r.email_enc !== null,
     erased: r.erased_at !== null,
     links: links
       .filter((l) => l.entry_id === r.id)
       .map((l) => ({
         field_key: l.field_key,
-        url_raw: l.url_raw,
-        host: l.host,
-        known_host: known.has(l.host.toLowerCase()),
+        url: l.url,
+        host: l.host ?? '',
+        known_host: known.has((l.host ?? '').toLowerCase()),
+        group_id: l.group_id,
+        outcome: l.outcome,
       })),
   }));
-  return { entries, clusters: clustersIn(entries, rows) };
+  return { entries, clusters: clustersIn(entries) };
 }
 
 /**
- * Suspicious sameness, which a reviewer cannot see row by row.
- *
- * Fifty check-ins from one state in one minute is usually a local radio
- * mention: the system working. Fifty from one hashed address is one person
- * pressing a button fifty times. They look identical in a list of timestamps,
- * and the hashed address is the only thing that tells them apart. THE HASH
- * NEVER LEAVES THIS FUNCTION: entries are grouped by it and the group is
- * reported by size. Reported, never acted on.
+ * The same minute, whatever the source: the shape of a burst. Fifty entries
+ * in a minute is usually a local radio mention, the system working; the
+ * page shows it so a reviewer looks before approving the lot. Timestamps are
+ * durable, so the shape of a flood survives the sweep.
  */
-export function clustersIn(
-  entries: readonly { id: number; created_at: string }[],
-  rows: readonly { ip_hash?: string | null }[] = [],
-): Clusters {
-  const byAddress = new Map<string, number[]>();
-  rows.forEach((r, i) => {
-    const entry = entries[i];
-    if (!r.ip_hash || !entry) return;
-    const group = byAddress.get(r.ip_hash) ?? [];
-    group.push(entry.id);
-    byAddress.set(r.ip_hash, group);
-  });
-  const repeated = [...byAddress.values()].filter((ids) => ids.length > 1);
-
-  // The same minute, whatever the source: the shape of a burst. Timestamps are
-  // durable, so the shape of a flood survives the sweep.
+export function clustersIn(entries: readonly { id: number; created_at: string }[]): Clusters {
   const byMinute = new Map<string, number>();
   for (const e of entries) {
     const minute = new Date(e.created_at).toISOString().slice(0, 16);
@@ -148,13 +142,7 @@ export function clustersIn(
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([minute, count]) => ({ minute, count }));
-
-  return {
-    repeated_submitters: repeated.length,
-    largest_repeated_submitter: repeated.reduce((m, ids) => Math.max(m, ids.length), 0),
-    entries_from_repeated_submitters: repeated.flat(),
-    busiest_minutes: busiest,
-  };
+  return { busiest_minutes: busiest };
 }
 
 const idsOf = (ids: readonly unknown[]) =>

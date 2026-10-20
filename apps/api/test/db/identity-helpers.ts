@@ -19,10 +19,15 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-export async function harness(): Promise<Harness> {
+/** `extra` is more configuration, such as the CONTACT_KEY a list needs to take an email or a link. */
+export async function harness(extra: { CONTACT_KEY?: string } = {}): Promise<Harness> {
   const db = testDatabase();
   const mailer = capturingMailer();
-  const app = await buildApp({ config: { LOG_LEVEL: 'silent', SITE_ORIGIN: SITE }, db, mailer });
+  const app = await buildApp({
+    config: { LOG_LEVEL: 'silent', SITE_ORIGIN: SITE, ...extra },
+    db,
+    mailer,
+  });
   return {
     db,
     app,
