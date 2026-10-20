@@ -9,9 +9,17 @@
  *
  * Its own database, because it anchors, and anchors are for good.
  */
-import { checkChainFile } from '@reportlog/seal';
+import {
+  buildSealedObject,
+  chainGenesis,
+  chainHash,
+  checkChainFile,
+  contentHash,
+  normalizeReportFields,
+} from '@reportlog/seal';
 import type { ChainFile } from '@reportlog/seal';
 import { execFile } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,7 +38,7 @@ import type { Throwaway } from '../../src/db/throwaway.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
 import type { CapturingMailer } from '../../src/email/mailer.ts';
 import { hashPassword } from '../../src/identity/secrets.ts';
-import { fileReport, launchedLogbook } from './helpers.ts';
+import { GENERAL_DIGEST, fileReport, launchedLogbook } from './helpers.ts';
 import { address, codeFor, cookieFrom, seat } from './identity-helpers.ts';
 import { standInTsa } from './stand-in-tsa.ts';
 import type { StandInTsa } from './stand-in-tsa.ts';
@@ -271,5 +279,79 @@ describe('the command-line checker, with nothing but the file', () => {
     const out = await runCli({ hello: 'world' });
     expect(out.code).toBe(2);
     expect(out.stdout).toMatch(/not a chain file this checker understands/);
+  });
+});
+
+describe('a chain from before forms were sealed', () => {
+  // Reports filed before `logbook_form` existed have no form_id and seal no
+  // form hash. Nothing files one today (every append resolves a form), so
+  // they are written the only way they could arrive: as rows, linked by
+  // hand, which the database's own link guard still checks.
+  let old: { id: number; slug: string };
+  const oldRefs: string[] = [];
+
+  beforeAll(async () => {
+    old = await launchedLogbook(db);
+    let prev = chainGenesis(old.slug);
+    for (const [i, what] of ['the first, before forms', 'the second, before forms'].entries()) {
+      const sealed = buildSealedObject({
+        publicRef: `RL-0-PREF0${String(i)}`,
+        receivedAt: `2026-01-0${String(i + 1)}T09:00:00.000Z`,
+        threadId: randomUUID(),
+        correctsId: null,
+        fields: normalizeReportFields({
+          logbook: old.slug,
+          answers: { what },
+          may_publish: true,
+          may_publish_digest: GENERAL_DIGEST,
+        }),
+      });
+      const content = contentHash(sealed);
+      const link = chainHash(content, prev);
+      await db
+        .insertInto('reports')
+        .values({
+          public_ref: sealed.public_ref,
+          received_at: sealed.received_at,
+          thread_id: sealed.thread_id,
+          corrects_id: null,
+          recipe: 1,
+          content_hash: content,
+          prev_chain_hash: prev,
+          chain_hash: link,
+          logbook_id: old.id,
+          form_id: null,
+          answers: JSON.stringify(sealed.answers),
+          may_publish: sealed.may_publish,
+          may_publish_digest: sealed.may_publish_digest,
+        })
+        .execute();
+      prev = link;
+      oldRefs.push(sealed.public_ref);
+    }
+    // And one filed today, against a form, after them in the same chain.
+    oldRefs.push((await fileReport(db, old, { what: 'filed against a form' })).row.public_ref);
+  });
+
+  it('still checks end to end, and the later report is still held to its form', async () => {
+    const res = await get(`/api/admin/chain/${old.slug}`, {
+      site_access: pass,
+      session_token: admin,
+    });
+    expect(res.statusCode).toBe(200);
+    const file = res.json<ChainFile>();
+    expect(file.reports?.map((r) => r.public_ref)).toEqual(oldRefs);
+    expect(file.reports?.map((r) => 'logbook_form' in r.hashed_fields)).toEqual([
+      false,
+      false,
+      true,
+    ]);
+    expect(file.forms).toHaveLength(1);
+    expect(checkChainFile(file).problems).toEqual([]);
+
+    // Without its forms only the report that names one is a problem.
+    const formless = checkChainFile({ ...file, forms: [] });
+    expect(formless.problems).toHaveLength(1);
+    expect(formless.problems[0]).toMatch(/Report 3 .* does not carry them/);
   });
 });
