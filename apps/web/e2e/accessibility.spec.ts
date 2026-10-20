@@ -40,7 +40,37 @@ type Visitor = 'stranger' | 'administrator';
  * the route tree spells it, who sees it, and why it is allowed for now.
  * docs/status/Q3-quality-ops.md lists the same entries.
  */
-const ALLOWED: { rule: string; page: string; visitor: Visitor; why: string }[] = [];
+interface Allowance {
+  rule: string;
+  page: string;
+  visitor: Visitor;
+  why: string;
+  /**
+   * Set when what breaks the rule is drawn only once other tests have made
+   * it (a published report, say): files run in no fixed order, so a run can
+   * reach the page before then. Then, and only then, an allowance that
+   * matched nothing is not called stale. Say why in the value.
+   */
+  onlyWhenPresent?: string;
+}
+
+const ALLOWED: Allowance[] = [
+  // The board's links to a report in full: see `why`.
+  {
+    rule: 'label-content-name-mismatch',
+    page: '/board/',
+    visitor: 'stranger',
+    onlyWhenPresent: 'the board shows no report until another test has published one',
+    why: 'Q2\'s board (features/board/Board.tsx) names each report\'s "Read in full" link "Read RL-… in full", which does not contain the visible words. Q2\'s own specs click that name, and board/ is Q2\'s folder while Q2 is working in it, so the fix ("Read in full: RL-…") is theirs to make; reported to the coordinating session. Remove these two lines with it.',
+  },
+  {
+    rule: 'label-content-name-mismatch',
+    page: '/board/',
+    visitor: 'administrator',
+    onlyWhenPresent: 'the board shows no report until another test has published one',
+    why: 'Q2\'s board (features/board/Board.tsx) names each report\'s "Read in full" link "Read RL-… in full", which does not contain the visible words. Q2\'s own specs click that name, and board/ is Q2\'s folder while Q2 is working in it, so the fix ("Read in full: RL-…") is theirs to make; reported to the coordinating session. Remove these two lines with it.',
+  },
+];
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
@@ -110,7 +140,9 @@ async function check(page: Page, path: string, visitor: Visitor) {
   const allowedHere = ALLOWED.filter((a) => a.page === path && a.visitor === visitor);
   const found = violations.filter((v) => !allowedHere.some((a) => a.rule === v.id));
   expect(found.map(describe).join('\n\n'), `${path} as ${visitor}`).toBe('');
-  const stale = allowedHere.filter((a) => !violations.some((v) => v.id === a.rule));
+  const stale = allowedHere.filter(
+    (a) => !a.onlyWhenPresent && !violations.some((v) => v.id === a.rule),
+  );
   expect(
     stale.map((a) => a.rule),
     `${path} as ${visitor}: allowed but no longer found, so remove the allowance`,
