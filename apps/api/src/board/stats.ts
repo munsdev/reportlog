@@ -21,6 +21,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { filterableFields, launchedLogbooks } from '../logbooks/logbooks.ts';
 import { everyHead, isPublic } from './board.ts';
+import { placeGuards } from './places.ts';
 
 export const STATS_NOTE =
   'Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.';
@@ -68,7 +69,12 @@ export interface Stats {
         published: number;
         by_question: Record<
           string,
-          { label: string; counts: Record<string, number>; unanswered: number }
+          {
+            label: string;
+            counts: Record<string, number>;
+            unanswered: number;
+            withheld?: { threshold: number; areas: string[]; reports: number | null };
+          }
         >;
       }
     >;
@@ -89,6 +95,7 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
   const pub = heads.filter(isPublic);
 
   const byLogbook: Stats['published_reports']['by_logbook'] = {};
+  const guards = await placeGuards(db);
   for (const lb of await launchedLogbooks(db)) {
     const mine = pub.filter((r) => r.logbook_id === lb.id);
     const byQuestion: Stats['published_reports']['by_logbook'][string]['by_question'] = {};
@@ -109,7 +116,37 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
           counts[k] = (counts[k] ?? 0) + 1;
         }
       }
-      byQuestion[f.key] = { label: f.label, counts, unanswered };
+      const guard = guards.get(lb.id);
+      if (guard?.key !== f.key) {
+        byQuestion[f.key] = { label: f.label, counts, unanswered };
+        continue;
+      }
+      // THE MAP'S THRESHOLD, KEPT (board/places.ts): an area under it is
+      // named without its count, and the sum is given only for two or more.
+      const shown: Record<string, number> = {};
+      const areas: string[] = [];
+      let sum = 0;
+      for (const [area, n] of Object.entries(counts)) {
+        if (n >= guard.threshold) shown[area] = n;
+        else {
+          areas.push(area);
+          sum += n;
+        }
+      }
+      byQuestion[f.key] = {
+        label: f.label,
+        counts: shown,
+        unanswered,
+        ...(areas.length
+          ? {
+              withheld: {
+                threshold: guard.threshold,
+                areas: areas.sort((a, b) => a.localeCompare(b)),
+                reports: areas.length >= 2 ? sum : null,
+              },
+            }
+          : {}),
+      };
     }
     byLogbook[lb.slug] = { title: lb.title, published: mine.length, by_question: byQuestion };
   }

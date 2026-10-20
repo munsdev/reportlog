@@ -27,6 +27,7 @@ import { filterableFields, launchedLogbooks, logbookBySlug } from '../logbooks/l
 import { forForm } from '../logbooks/routes.ts';
 import { publicLinksFor, publicNoteFor, publicNotesForMany } from '../moderation/notes.ts';
 import type { PublicNote } from '../moderation/notes.ts';
+import { placeGuards, withheldReason } from './places.ts';
 import { publicArchiveAvailable } from './publication.ts';
 import { isPublic, publishedReportIds } from './published.ts';
 import {
@@ -150,12 +151,61 @@ function narrowing(query: BoardQuery, answers: [string, string][]): RawBuilder<b
 
 export type BoardPage =
   | { published: true; reports: PublicReport[]; total: number; page: number; page_size: number }
+  | { published: true; withheld: true; threshold: number; reason: string }
   | { published: false; reason: string };
+
+/**
+ * The threshold to keep, when this narrowing names a place question a heat
+ * map reads (board/places.ts), or null. Only an answer filter on that
+ * question counts: a board narrowed by anything else is not "one place".
+ */
+async function placeThreshold(
+  db: Kysely<DB>,
+  query: BoardQuery,
+  answers: [string, string][],
+): Promise<number | null> {
+  if (!answers.length || !query.logbook) return null;
+  const lb = await logbookBySlug(db, query.logbook);
+  if (!lb) return null;
+  const guard = (await placeGuards(db)).get(lb.id);
+  return guard && answers.some(([k]) => k === guard.key) ? guard.threshold : null;
+}
+
+/**
+ * How many published reports this narrowing matches, unless it is one place
+ * with fewer than the map's threshold: then null, and the caller sends
+ * neither the reports nor the count. Zero is not withheld: the map says
+ * "none counted" for an empty area too.
+ */
+async function countUnlessThin(
+  db: Kysely<DB>,
+  query: BoardQuery,
+  answers: [string, string][],
+): Promise<{ total: number } | { withheld: number }> {
+  const counted = await published(db)
+    .where(narrowing(query, answers))
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .executeTakeFirst();
+  const total = Number(counted?.n ?? 0);
+  const threshold = total > 0 ? await placeThreshold(db, query, answers) : null;
+  return threshold !== null && total < threshold ? { withheld: threshold } : { total };
+}
 
 /** The board: a page of published reports, newest first unless asked otherwise. */
 export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<BoardPage> {
   if (!(await publicArchiveAvailable(db))) return { ...OFF };
   const answers = await answerFilters(db, query);
+  // COUNTED FIRST, so a thin place sends nothing at all: not the reports, whose
+  // number is the count, and not the total.
+  const counted = await countUnlessThin(db, query, answers);
+  if ('withheld' in counted) {
+    return {
+      published: true,
+      withheld: true,
+      threshold: counted.withheld,
+      reason: withheldReason(counted.withheld),
+    };
+  }
   const page = Math.max(1, Math.trunc(query.page ?? 1));
   const dir = sortDirection(query.sort);
   const rows = await columns(published(db))
@@ -165,10 +215,6 @@ export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<Boar
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE)
     .execute();
-  const counted = await published(db)
-    .where(narrowing(query, answers))
-    .select((eb) => eb.fn.countAll<string>().as('n'))
-    .executeTakeFirst();
   const notes = await publicNotesForMany(
     db,
     rows.map((r) => r.thread_id),
@@ -176,7 +222,7 @@ export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<Boar
   return {
     published: true,
     reports: rows.map((r) => present(r, notes.get(r.thread_id))),
-    total: Number(counted?.n ?? 0),
+    total: counted.total,
     page,
     page_size: PAGE_SIZE,
   };
@@ -232,12 +278,17 @@ export async function boardLogbooks(
 export async function boardCsv(db: Kysely<DB>, query: BoardQuery): Promise<string | null> {
   if (!(await publicArchiveAvailable(db))) return null;
   const answers = await answerFilters(db, query);
-  const rows = await columns(published(db))
-    .where(narrowing(query, answers))
-    .orderBy('r.received_at', sortDirection(query.sort))
-    .orderBy('r.id', sortDirection(query.sort))
-    .limit(10000)
-    .execute();
+  // A thin place is withheld here as on the board: the header and no rows,
+  // which says nothing about how many there are.
+  const thin = 'withheld' in (await countUnlessThin(db, query, answers));
+  const rows = thin
+    ? []
+    : await columns(published(db))
+        .where(narrowing(query, answers))
+        .orderBy('r.received_at', sortDirection(query.sort))
+        .orderBy('r.id', sortDirection(query.sort))
+        .limit(10000)
+        .execute();
   const cols = [
     'public_ref',
     'received_at',

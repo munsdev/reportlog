@@ -221,6 +221,9 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
   if (query.isPending) return <p role="status">Reading the reports…</p>;
   if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
   if (!query.data.published) return <Alert>{query.data.reason}</Alert>;
+  // A thin place: the server sent no reports and no count, so there is
+  // nothing to draw but its sentence.
+  if ('withheld' in query.data) return <Alert>{query.data.reason}</Alert>;
   const { reports, total, page, page_size: size } = query.data;
   const narrowed =
     Boolean(search.q) || Boolean(search.logbook) || Object.keys(search.f ?? {}).length > 0;

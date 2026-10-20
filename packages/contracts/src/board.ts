@@ -107,6 +107,17 @@ export const listBoardReports = defineRoute({
       page: z.number().int(),
       page_size: z.number().int(),
     }),
+    /**
+     * Narrowed to one place a heat map reads, with fewer reports than the
+     * map's threshold: no reports and no total, because either is the count
+     * the map withholds (docs/decisions.md, decision 6).
+     */
+    z.object({
+      published: z.literal(true),
+      withheld: z.literal(true),
+      threshold: z.number().int(),
+      reason: z.string(),
+    }),
     PublicationOff,
   ]),
 });
@@ -159,6 +170,19 @@ export const Stats = z.object({
             label: z.string(),
             counts: z.record(z.string(), z.number().int()),
             unanswered: z.number().int(),
+            /**
+             * Present only for a place question a heat map reads, when some of
+             * its areas are under the map's threshold. Those are named here
+             * and absent from `counts`; `reports` is their sum only when there are two or
+             * more, since one area's sum is its count. As the map does.
+             */
+            withheld: z
+              .object({
+                threshold: z.number().int(),
+                areas: z.array(z.string()),
+                reports: z.number().int().nullable(),
+              })
+              .optional(),
           }),
         ),
       }),

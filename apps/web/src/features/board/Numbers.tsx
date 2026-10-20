@@ -73,6 +73,12 @@ export function NumbersPage() {
                           <dd className="text-right font-mono">{n}</dd>
                         </div>
                       ))}
+                    {q.withheld && q.withheld.reports !== null ? (
+                      <div className="contents">
+                        <dt>Places with fewer than {q.withheld.threshold}, together</dt>
+                        <dd className="text-right font-mono">{q.withheld.reports}</dd>
+                      </div>
+                    ) : null}
                     {q.unanswered ? (
                       <div className="contents">
                         <dt>Not answered</dt>
@@ -80,6 +86,12 @@ export function NumbersPage() {
                       </div>
                     ) : null}
                   </dl>
+                  {q.withheld ? (
+                    <p className="text-sm text-ink-alt">
+                      Fewer than {q.withheld.threshold} each, so not counted one by one, as on the
+                      map: {q.withheld.areas.join(', ')}.
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </section>
