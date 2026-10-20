@@ -1,10 +1,11 @@
 # ReportLog — notes for an assistant
 
 This branch is the **rebuild**: a pnpm monorepo in TypeScript, React and
-Tailwind. The previous JavaScript application is in `legacy/` as a
-**reference only**. Nothing imports from it, nothing builds it, and it is
-deleted when the rebuild reaches parity. Read it to learn what a feature
-does and why; do not copy its structure.
+Tailwind. It reached parity with the previous JavaScript application on
+2026-10-20 (`docs/parity.md`), and the old code was deleted. To read it, check
+out commit `3793861`, the last one with `legacy/` beside the rebuild, or see
+`main` and the `reportlog-archive` repository. Owner decisions are in
+`docs/decisions.md`.
 
 Read `docs/architecture.md` once, and `docs/workstreams.md` for which folders
 are yours.
@@ -18,7 +19,6 @@ packages/access     role ceiling and rank                                 (pure)
 packages/contracts  every API request and response, as zod schemas        (pure)
 apps/api            Fastify + PostgreSQL (Kysely). Node runs the .ts directly, no build step
 apps/web            Vite + React + Tailwind + TanStack Router/Query + shadcn/ui conventions
-legacy/             the old application. Reference only.
 ```
 
 `packages/*` must run in a browser: no `node:` imports. The boundary check

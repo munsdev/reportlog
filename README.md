@@ -4,10 +4,9 @@ A tamper-evident intake and record system for incident reports. Every report
 is fingerprinted and chained to the one before it, so any later change shows,
 and anybody can check a report without trusting the server that holds it.
 
-> **This branch is a rebuild in progress.** The working application it
-> replaces is in [`legacy/`](legacy/README.md) for reference. See
-> [`docs/workstreams.md`](docs/workstreams.md) for what is being built and in
-> what order.
+> **This branch is the rebuild.** It matches the application it replaces
+> ([`docs/parity.md`](docs/parity.md)). The old code was removed after parity;
+> commit `3793861` is the last one that still has it, in `legacy/`.
 
 ## What is here
 

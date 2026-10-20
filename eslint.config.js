@@ -8,7 +8,6 @@ import globals from 'globals';
 export default tseslint.config(
   {
     ignores: [
-      'legacy/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/.turbo/**',

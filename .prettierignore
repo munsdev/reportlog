@@ -1,4 +1,3 @@
-legacy/
 pnpm-lock.yaml
 **/fixtures/*.json
 **/gazetteer.json

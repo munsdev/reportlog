@@ -137,7 +137,7 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^legacy/|/dist/|routeTree\\.gen\\.ts$)' },
+    exclude: { path: '(/dist/|routeTree\\.gen\\.ts$)' },
     tsPreCompilationDeps: true,
     combinedDependencies: false,
     enhancedResolveOptions: {
