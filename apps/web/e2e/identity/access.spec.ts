@@ -9,8 +9,11 @@
  * Runs alone, after the rest of the suite (the `identity` project), because
  * it turns the site password on for everybody.
  */
-import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { devices, expect, test } from '@playwright/test';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
+import type { AxeResults, RunOptions } from 'axe-core';
 import {
   codeIn,
   countTo,
@@ -52,6 +55,33 @@ async function signInHere(page: Page, email: string) {
   await page.getByLabel('The code from the email').fill(code);
   await page.getByRole('button', { name: /^(Sign in|Become the owner)$/ }).click();
 }
+
+/**
+ * axe-core from node_modules, evaluated inside the page and never fetched, as
+ * e2e/accessibility.spec.ts runs it. That walk opens each page once, so it
+ * never sees the sign-in form's second step; this does.
+ */
+const AXE_SOURCE = readFileSync(
+  createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
+  'utf8',
+);
+const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'];
+async function axeViolations(page: Page): Promise<string[]> {
+  await page.evaluate(AXE_SOURCE);
+  const found = await page.evaluate(
+    (tags) =>
+      (
+        window as unknown as { axe: { run(d: Document, o: RunOptions): Promise<AxeResults> } }
+      ).axe.run(document, { runOnly: { type: 'tag', values: tags }, resultTypes: ['violations'] }),
+    AXE_TAGS,
+  );
+  return found.violations.map(
+    (v) => `${v.id}: ${v.help} (${v.nodes.map((n) => n.target.join(' ')).join(', ')})`,
+  );
+}
+
+/** Any six digits but these. */
+const wrongCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, '0');
 
 let ownerContext: BrowserContext;
 let owner: Page;
@@ -232,6 +262,68 @@ test("the installer's password is retired and the owner's opens the site", async
   await page.context().close();
 });
 
+test('a refused code is announced and tied to its field, and both steps pass axe on a phone', async ({
+  browser,
+}) => {
+  const SIGNER = `signer-${run}@example.org`;
+  // The phone project's device, in this project's browser.
+  const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } = devices['Pixel 7'];
+  const context = await browser.newContext({
+    viewport,
+    userAgent,
+    deviceScaleFactor,
+    isMobile,
+    hasTouch,
+  });
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  await page.goto('/access/sign-in');
+  await unlock(page, SITE_PW);
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+
+  const sideways = () =>
+    page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await sideways()).toBe(false);
+
+  const before = countTo(SIGNER);
+  await page.getByLabel('Your email address').fill(SIGNER);
+  await page.getByRole('button', { name: 'Send me a code' }).click();
+  const code = codeIn(await lastMessageTo(SIGNER, before));
+
+  // The code step: the second of the two, which a walk of pages never opens.
+  const field = page.getByLabel('The code from the email');
+  await expect(field).toBeVisible();
+  await expect(field).not.toHaveAttribute('aria-invalid');
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await sideways()).toBe(false);
+
+  await field.fill(wrongCode(code));
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  const alert = page.getByRole('alert');
+  // role="alert" is read out as it appears; and the field now says it was
+  // refused, and why, to somebody who goes back to it.
+  await expect(alert).toHaveText('That code is wrong or has expired. Ask for a new one.');
+  await expect(field).toHaveAttribute('aria-invalid', 'true');
+  await expect(field).toHaveAccessibleDescription(
+    'That code is wrong or has expired. Ask for a new one.',
+  );
+  // Refused, the step stays put, still signed out.
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
+  expect(await axeViolations(page)).toEqual([]);
+  expect(await sideways()).toBe(false);
+
+  // Use a different address: back to the first step, the refusal gone.
+  await page.getByRole('button', { name: 'Use a different address' }).click();
+  await expect(page.getByLabel('Your email address')).toBeVisible();
+  await expect(alert).toHaveCount(0);
+  expect(errors).toEqual([]);
+  await context.close();
+});
+
 test('a door: a logbook opened outside is offered, and only that page opens', async ({
   browser,
 }) => {
@@ -335,9 +427,13 @@ test('a digest is stopped from the link in its email, in front of the password, 
   // A stranger's browser: no session and not past the password.
   const page = await freshPage(browser);
   const outside: string[] = [];
+  const calls: string[] = [];
   page.on('request', (r) => {
-    const host = new URL(r.url()).hostname;
-    if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
+    const url = new URL(r.url());
+    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') outside.push(r.url());
+    else if (url.pathname.startsWith('/api/')) {
+      calls.push(`${r.method()} ${url.pathname.replace(/\/stop\/[^/]+$/, '/stop/:token')}`);
+    }
   });
   await page.goto(link);
   await expect(page.getByRole('heading', { level: 1, name: 'Stop these emails?' })).toBeVisible();
@@ -355,6 +451,21 @@ test('a digest is stopped from the link in its email, in front of the password, 
     page.getByRole('heading', { level: 1, name: 'These emails are stopped' }),
   ).toBeVisible();
   expect(subscriptionOf(READER)).toBe('none');
+
+  // Every call the door made, in front of the password: the gate asking
+  // whether the site is locked and which doors are open, error tracking's
+  // setting, and the two stop calls. Nothing else of the site (identity/gate.ts,
+  // IN_FRONT, names the same calls). The stop itself only by the button, once.
+  const NAMED = new Set([
+    'GET /api/site-access/status',
+    'GET /api/doors',
+    'GET /api/telemetry',
+    'GET /api/notifications/stop/:token',
+    'POST /api/notifications/stop/:token',
+  ]);
+  expect(calls.filter((c) => !NAMED.has(c))).toEqual([]);
+  expect(calls.filter((c) => c === 'GET /api/notifications/stop/:token')).toHaveLength(2);
+  expect(calls.filter((c) => c === 'POST /api/notifications/stop/:token')).toHaveLength(1);
 
   // Still a door: the rest of the site is behind the password.
   await page.goto('/organizations');
