@@ -36,4 +36,4 @@ Branch `claude/sa-site-ops`. Closes the rows named in `docs/parity.md` §7 R5, R
 ## Left
 
 - The form's progress bar (R4) is the one part of `nav.test.js` still open.
-- Results of the three suites are in the pull request.
+- Suites on the final code: `pnpm check` passed; `pnpm test:db` 1091 passed; browser suite 800 passed, 5 skipped.

@@ -762,7 +762,7 @@ all merged. Nothing is being built right now.
 
 ### R5 · Site shell and public pages: tests and small fixes (G4)
 
-> **Done** (`docs/status/SA-site-ops.md`).
+> **Done** (#35, `docs/status/SA-site-ops.md`).
 
 - **Owns:** `apps/web/src/routes/__root.tsx`, `apps/web/src/routes/index.tsx`,
   `apps/web/src/features/site-pages/`, `apps/web/src/components/ui/`, `apps/api/src/site/`,
@@ -785,7 +785,7 @@ all merged. Nothing is being built right now.
 
 ### R6 · Site builds that wait on rulings (G5; needs the owner)
 
-> **Done** (`docs/status/SA-site-ops.md`): the white-page fallback and the changelog link are built;
+> **Done** (#35, `docs/status/SA-site-ops.md`): the white-page fallback and the changelog link are built;
 > the rest of R6 is Dropped (decisions 22 to 29).
 
 - **Owns:** as R5, plus new route files. Start it after R5, or merge the two if the rulings are
@@ -841,7 +841,7 @@ all merged. Nothing is being built right now.
 
 ### R10 · Operations documentation and checks (H4)
 
-> **Done** (`docs/status/SA-site-ops.md`).
+> **Done** (#35, `docs/status/SA-site-ops.md`).
 
 - **Owns:** `deploy/`, `apps/api/src/jobs/doctor*.ts`, `apps/api/src/http/` (the error handler's
   test only), `U/deploy*.test.ts`, `U/doctor.test.ts`, `T/http.test.ts`.
