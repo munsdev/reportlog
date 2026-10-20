@@ -184,6 +184,8 @@ export const getThreadFiles = defineRoute({
     withdrawn: z.boolean(),
     files: z.array(ThreadFile),
     events: z.array(FileEvent),
+    /** Files sent with it and not accepted (decision 32): never in the record, noted here. */
+    refused: z.array(z.object({ name: z.string(), reason: z.string(), at: Timestamp })),
   }),
 });
 

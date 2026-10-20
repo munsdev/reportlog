@@ -26,7 +26,7 @@ import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
-import { recordFilePreview } from '../moderation/accessLog.ts';
+import { MAX_REASON, recordFilePreview } from '../moderation/accessLog.ts';
 import { permissionsFor, permissionsForMany } from '../permissions/log.ts';
 import { filesOn } from './context.ts';
 import type { Files } from './context.ts';
@@ -478,12 +478,23 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
         .where('thread_id', '=', params.threadId)
         .orderBy('id', 'desc')
         .execute();
+      const refused = await db
+        .selectFrom('refused_uploads')
+        .select(['name', 'reason', 'created_at'])
+        .where('thread_id', '=', params.threadId)
+        .orderBy('id')
+        .execute();
       return {
         may_publish: head.may_publish,
         withdrawn: head.withdrawn,
         files_permitted: (await permissionsFor(db, params.threadId)).attachment_publication,
         files,
         events: events.map((e) => ({ ...e, at: e.created_at.toISOString() })),
+        refused: refused.map((r) => ({
+          name: r.name,
+          reason: r.reason,
+          at: r.created_at.toISOString(),
+        })),
       };
     });
 
@@ -554,6 +565,15 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
             'no_reason',
             'Say why you are opening the original, for the record.',
           );
+        // Refused, not cut short (decision 31): a record that keeps only part
+        // of what somebody wrote is not what they wrote. The same limit as
+        // opening a reporter's contact details.
+        if (reason.length > MAX_REASON)
+          throw new HttpError(
+            400,
+            'reason_too_long',
+            `Please keep the reason under ${String(MAX_REASON)} characters.`,
+          );
         await db
           .insertInto('attachment_events')
           .values({
@@ -562,7 +582,7 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
             action: 'viewed_original',
             actor: 'moderator',
             actor_email: requireUser(request).email,
-            reason: reason.slice(0, 2000),
+            reason,
           })
           .execute();
       } else if (what === 'rendition' || what === 1) {

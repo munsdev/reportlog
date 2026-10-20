@@ -45,7 +45,7 @@ export function ReportFiles({
   const query = useQuery(threadFilesQuery(threadId));
   if (query.isPending) return <p role="status">Reading the files…</p>;
   if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
-  const { files, events, may_publish, files_permitted, withdrawn } = query.data;
+  const { files, events, refused, may_publish, files_permitted, withdrawn } = query.data;
   const consent = { may_publish, files_permitted, withdrawn };
   return (
     <section className="flex flex-col gap-4" aria-labelledby="report-files-heading">
@@ -73,6 +73,22 @@ export function ReportFiles({
           ))}
         </ul>
       )}
+      {refused.length ? (
+        <div className="flex flex-col gap-2">
+          <h3 className="font-bold">Sent and not accepted ({String(refused.length)})</h3>
+          <p className="text-sm text-ink-alt">
+            These never became part of the report. Whoever sent them was told each one, with the
+            same reason.
+          </p>
+          <ul className="list-disc pl-6" aria-label="Files sent and not accepted">
+            {refused.map((r, i) => (
+              <li key={i}>
+                {r.name}: {r.reason} ({new Date(r.at).toLocaleString()})
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -273,7 +289,8 @@ function OpenOriginal({
           label: 'Why do you need the original?',
           multiline: true,
           min: 10,
-          max: 2000,
+          // The server refuses a longer one (decision 31), as it does for contact details.
+          max: 500,
           tooShort: 'Say why in a sentence: it is kept on the file’s record.',
         },
       ]}

@@ -10,8 +10,8 @@
  *
  * Needs `moto_server` (MOTO_SERVER, or on PATH). Skipped without it on a
  * development machine, and fails without it in CI, which installs it.
- * Not tested here: virtual-hosted addressing (bucket.host), which needs DNS
- * for a name per bucket.
+ * Virtual-hosted addressing (bucket.host) needs DNS for a name per bucket,
+ * so it is tested in files-storage.test.ts, against the stand-in.
  */
 import { execFileSync, spawn, spawnSync } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
@@ -105,9 +105,9 @@ describe.skipIf(!hasMoto)('the storage check, against moto', () => {
     const r = check(settings());
     expect(r.out).toBe(
       [
-        'ok    staging: write, read, range, delete',
-        'ok    evidence: write, read, range, delete',
-        'ok    renditions: write, read, range, delete',
+        'ok    staging: write, read, range, delete, refuses an unsigned read',
+        'ok    evidence: write, read, range, delete, refuses an unsigned read',
+        'ok    renditions: write, read, range, delete, refuses an unsigned read',
         '',
       ].join('\n'),
     );
@@ -122,6 +122,55 @@ describe.skipIf(!hasMoto)('the storage check, against moto', () => {
     expect(r.out).toContain('ok    staging');
     expect(r.out).toContain('ok    evidence');
     expect(r.out).toMatch(/FAIL {2}renditions: storage PUT renditions failed: 404 .*NoSuchBucket/s);
+  });
+
+  it('fails a bucket that answers a read with no signature, and leaves nothing in it', async () => {
+    const res = await fetch(`${endpoint}/rl-public`, {
+      method: 'PUT',
+      headers: { 'x-amz-acl': 'public-read' },
+    });
+    expect(res.status).toBe(200);
+    // Objects in moto inherit nothing from the bucket's ACL; make the policy
+    // say what a careless provider console does: anyone may read.
+    const policy = JSON.stringify({
+      Version: '2012-10-17',
+      Statement: [
+        {
+          Effect: 'Allow',
+          Principal: '*',
+          Action: 's3:GetObject',
+          Resource: 'arn:aws:s3:::rl-public/*',
+        },
+      ],
+    });
+    const set = await fetch(`${endpoint}/rl-public?policy`, { method: 'PUT', body: policy });
+    expect(set.status).toBeLessThan(300);
+    const r = check({ ...settings(), S3_BUCKET_STAGING: 'rl-public' });
+    expect(r.status).toBe(1);
+    expect(r.out).toMatch(
+      /FAIL {2}staging: the bucket answers a read with no signature \(200\); it must not be public/,
+    );
+    expect(r.out).toContain('ok    evidence');
+    expect(await keys('rl-public')).toEqual([]);
+  });
+
+  it('names a setting wrapped in quotes or spaces, without printing it, before trying anything', () => {
+    const r = check({
+      ...settings(),
+      S3_ENDPOINT: `"${endpoint}"`,
+      S3_SECRET_KEY: 'check-secret ',
+      S3_BUCKET_EVIDENCE: "'rl-evidence'",
+    });
+    expect(r.status).toBe(1);
+    expect(r.out).toBe(
+      [
+        'FAIL  S3_ENDPOINT is wrapped in quotes (.env needs it bare)',
+        'FAIL  S3_SECRET_KEY has a space or line break at its start or end',
+        'FAIL  S3_BUCKET_EVIDENCE is wrapped in quotes (.env needs it bare)',
+        '',
+      ].join('\n'),
+    );
+    expect(r.out).not.toContain('check-secret');
   });
 
   it('says why when the endpoint cannot be reached, not only that it failed', async () => {

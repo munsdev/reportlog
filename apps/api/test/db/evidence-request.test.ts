@@ -190,6 +190,25 @@ describe('asking, the door, and spending it', () => {
     expect(await redeem(h.db, token)).toEqual({ ok: false, reason: 'used' });
   });
 
+  it('THE DATABASE KEEPS SPENT AND ITS REPORT TOGETHER: neither without the other', async () => {
+    // Each in its own transaction, so a refused UPDATE ends only that one.
+    const attempt = (set: Record<string, unknown>) =>
+      h.db.transaction().execute(async (trx) => {
+        await trx.updateTable('evidence_requests').set(set).where('id', '=', requestId).execute();
+      });
+    await expect(attempt({ used_report_id: null })).rejects.toThrow(
+      /evidence_requests_used_together/,
+    );
+    await expect(attempt({ used_at: null })).rejects.toThrow(/evidence_requests_used_together/);
+    const row = await h.db
+      .selectFrom('evidence_requests')
+      .select(['used_at', 'used_report_id'])
+      .where('id', '=', requestId)
+      .executeTakeFirstOrThrow();
+    expect(row.used_at).not.toBeNull();
+    expect(row.used_report_id).toBe(d.report.id);
+  });
+
   it('withdrawing an ask stops its link; an anonymous withdrawal is refused; every ask stays on the record', async () => {
     const again = await createRequest(h.db, d.threadId, {
       message: 'Sorry, one more thing if you can.',

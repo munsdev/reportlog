@@ -6,6 +6,8 @@
  *     report, with its reason, EXCEPT one the reporter removed or one that
  *     expired: those were never going to be in it, and naming them would
  *     read as a fault;
+ *   - a refused file is also noted for moderators against the report
+ *     (decision 32, legacy's 'upload_rejected'), append-only and unsealed;
  *   - Send gives the draft's files the confirmation link's expiry, so a file
  *     staged early does not expire under a link sent late, and a file and
  *     the report it belongs to expire together.
@@ -18,7 +20,7 @@ import { attach, filesHarness, jpegWithGps, toolsMissing } from './files-helpers
 import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
-import { address } from './identity-helpers.ts';
+import { address, as, seat, signIn } from './identity-helpers.ts';
 
 let h: FilesHarness;
 let lb: { id: number; slug: string };
@@ -211,5 +213,30 @@ describe.skipIf(toolsMissing)('the confirmation names what did not make it', () 
       .where('r.public_ref', '=', public_ref)
       .execute();
     expect(sealed).toHaveLength(1);
+
+    // And the moderators see that it was sent and turned away (decision 32),
+    // with the reason the reporter was given; the removed and expired ones
+    // are no more news to them than to the reporter.
+    const { thread_id } = await h.db
+      .selectFrom('reports')
+      .select('thread_id')
+      .where('public_ref', '=', public_ref)
+      .executeTakeFirstOrThrow();
+    const modEmail = address('outcomes-mod');
+    await seat(h.db, modEmail, 'moderator');
+    const mod = as(h, await signIn(h, modEmail));
+    const staff = await mod({ method: 'GET', url: `/api/moderate/files/${thread_id}` });
+    expect(staff.statusCode).toBe(200);
+    expect(staff.json<{ refused: { name: string; reason: string }[] }>().refused).toEqual([
+      {
+        name: 'fake.png',
+        reason: 'this is not a photo, video, sound recording or PDF this site can take',
+        at: expect.any(String) as string,
+      },
+    ]);
+    await expect(
+      h.db.updateTable('refused_uploads').set({ reason: 'rewritten' }).execute(),
+    ).rejects.toThrow();
+    await expect(h.db.deleteFrom('refused_uploads').execute()).rejects.toThrow();
   });
 });

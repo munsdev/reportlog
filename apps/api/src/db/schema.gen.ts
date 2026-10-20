@@ -558,6 +558,15 @@ export interface OwnershipTransfers {
   to_email: string;
 }
 
+export interface RefusedUploads {
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  name: string;
+  reason: string;
+  status: string;
+  thread_id: string;
+}
+
 export interface ReportAssessments {
   incident_id: string | null;
   severity: string | null;
@@ -805,6 +814,7 @@ export interface DB {
   organizations: Organizations;
   otp_codes: OtpCodes;
   ownership_transfers: OwnershipTransfers;
+  refused_uploads: RefusedUploads;
   report_assessments: ReportAssessments;
   report_attachments: ReportAttachments;
   report_contacts: ReportContacts;

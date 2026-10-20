@@ -379,7 +379,7 @@ export class Intake {
 
       const cache: LogbookCache = new Map();
       const forms = new Map<string, number>();
-      const filed: { ordinal: number; public_ref: string }[] = [];
+      const filed: { ordinal: number; public_ref: string; files_dropped?: string[] }[] = [];
       for (const draft of drafts) {
         const payload = (draft.payload ?? {}) as DraftPayload;
         if ((await this.problemsOf(payload, cache, trx, draft.id)).length) continue;
@@ -429,7 +429,12 @@ export class Intake {
           .set({ report_id: row.id, updated_at: new Date() })
           .where('id', '=', draft.id)
           .execute();
-        filed.push({ ordinal: draft.ordinal, public_ref: row.public_ref });
+        filed.push({
+          ordinal: draft.ordinal,
+          public_ref: row.public_ref,
+          // Frozen since they were attached (decision 19): filed without them, and said.
+          ...(sealed.dropped.length ? { files_dropped: sealed.dropped } : {}),
+        });
       }
 
       const remaining = drafts.length - filed.length;

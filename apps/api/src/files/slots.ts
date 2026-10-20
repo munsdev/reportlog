@@ -467,6 +467,43 @@ export async function inFlightSlots(db: Kysely<DB>, where: Source) {
     .execute();
 }
 
+/**
+ * The same drop for the two ways files reach a report without a Send
+ * (decision 19): a coordinator's intake account and an evidence answer. Their
+ * files are released at once, so they may be finished; whatever was staged
+ * is dropped if the logbook it was staged for has been frozen since, its
+ * bytes queued for deletion, and the names returned for the screen to say.
+ * `processing` is left to the worker (both callers wait for it first).
+ * Empty when the logbook takes files.
+ */
+export async function dropFrozenSlots(
+  db: Kysely<DB>,
+  source: { draft: string } | { evidenceRequestId: number },
+): Promise<string[]> {
+  const rows = await db
+    .updateTable('upload_slots')
+    .set({
+      status: 'rejected',
+      status_detail: FROZEN_DROP,
+      dek_wrapped: null,
+      meta_enc: null,
+      claimed_at: null,
+    })
+    .where(sourceIs(source))
+    .where('promoted_at', 'is', null)
+    .where('status', 'in', ['pending', 'uploaded', 'clean'])
+    .where('logbook_id', 'in', (q) =>
+      q.selectFrom('logbooks').select('id').where('files_frozen_at', 'is not', null),
+    )
+    .returning(['id', 'declared_name', 'staging_key', 'storage_key', 'page_count'])
+    .execute();
+  for (const r of rows) {
+    await queueDeletion(db, 'staging', r.staging_key);
+    if (r.storage_key) await queueEvidenceDeletion(db, r.storage_key, r.page_count);
+  }
+  return rows.sort((a, b) => a.id - b.id).map((r) => r.declared_name || 'A file');
+}
+
 /** The finished files ready to be sealed: what the manifest is made from. */
 export async function clearedSlots(db: Kysely<DB>, where: Source) {
   return db
@@ -475,6 +512,17 @@ export async function clearedSlots(db: Kysely<DB>, where: Source) {
     .where(sourceIs(where))
     .where('status', '=', 'clean')
     .where('promoted_at', 'is', null)
+    .orderBy('id')
+    .execute();
+}
+
+/** Files that were sent and not accepted, for the moderators' record (decision 32). */
+export async function refusedSlots(db: Kysely<DB>, where: Source) {
+  return db
+    .selectFrom('upload_slots')
+    .select(['declared_name', 'status', 'status_detail'])
+    .where(sourceIs(where))
+    .where('status', 'in', ['rejected', 'infected', 'unreadable'])
     .orderBy('id')
     .execute();
 }

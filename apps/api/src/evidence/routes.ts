@@ -30,6 +30,7 @@ import { uploadConfig } from '../files/routes.ts';
 import {
   createUploadSlot,
   discardSlot,
+  dropFrozenSlots,
   inFlightSlots,
   receiveUpload,
   slotStatuses,
@@ -62,6 +63,14 @@ export interface EvidenceRouteDeps {
   contactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
 }
+
+/** Decision 19: the reporter is told which files were not kept, by name. */
+const filesFrozen = (names: string[]) =>
+  new HttpError(
+    409,
+    'files_frozen',
+    `This logbook stopped taking files before you sent ${names.length === 1 ? 'this one' : 'these'}, so ${names.length === 1 ? 'it was' : 'they were'} not kept: ${names.join(', ')}. Nothing was added to your report.`,
+  );
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- the caller names the contract's body type
 const bodyOf = <B>(_contract: { body?: unknown }, request: FastifyRequest) => request.body as B;
@@ -304,6 +313,12 @@ export async function evidenceRoutes(app: FastifyInstance, deps: EvidenceRouteDe
         'Your files are still being prepared. Wait until each one says it is ready, then send.',
       );
     }
+    // A logbook frozen since these were staged drops them (decision 19). Its
+    // own statement, before the link is spent, so the drop stands and the
+    // link is not used up by an answer that added nothing. sealFiles checks
+    // again inside the transaction, for a freeze that lands in between.
+    const frozen = await dropFrozenSlots(db, { evidenceRequestId: r.id });
+    if (frozen.length) throw filesFrozen(frozen);
     const done = await db.transaction().execute(async (trx) => {
       // Spent FIRST: two presses at once create one version.
       if (!(await markUsed(trx, { requestId: r.id, reportId: r.currentReportId }))) return null;
@@ -313,6 +328,7 @@ export async function evidenceRoutes(app: FastifyInstance, deps: EvidenceRouteDe
         publicRefPrefix: prefix,
       });
       if (!out.ok) {
+        if (out.reason === 'files-frozen') throw filesFrozen(out.dropped);
         throw out.reason === 'nothing-sent'
           ? new HttpError(
               400,

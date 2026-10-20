@@ -366,6 +366,7 @@ export async function attachEvidence(
       attached: number;
     }
   | { ok: false; reason: 'no-report' | 'report-withdrawn' | 'nothing-sent' }
+  | { ok: false; reason: 'files-frozen'; dropped: string[] }
 > {
   // Locked: a correction or a withdrawal may have landed since the link opened.
   const head = await trx
@@ -408,7 +409,13 @@ export async function attachEvidence(
     input.threadId,
     inheritedManifest,
   );
-  if (!files.count) return { ok: false, reason: 'nothing-sent' };
+  if (!files.count) {
+    // Frozen since they were staged (decision 19): nothing to add, and the
+    // reporter is told which.
+    return files.dropped.length
+      ? { ok: false, reason: 'files-frozen', dropped: files.dropped }
+      : { ok: false, reason: 'nothing-sent' };
+  }
   const { row } = await appendReportVersion(trx, {
     logbookId: prev.logbook_id,
     threadId: input.threadId,
