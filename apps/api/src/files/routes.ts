@@ -233,6 +233,15 @@ export async function sendObject(
   return reply.send(body);
 }
 
+/**
+ * A page number as a page is addressed: digits, no leading zero. Anything
+ * else is 0, which no page has. `Number()` alone would let `2e0`, `0x2` and
+ * ` 2` each name page two, so one page had any number of addresses.
+ */
+export function pageNumber(raw: string): number {
+  return /^[1-9][0-9]{0,4}$/.test(raw) ? Number(raw) : 0;
+}
+
 /** A raw-body route. Its bytes are a stream, never parsed or buffered. */
 function rawPut(
   app: FastifyInstance,
@@ -365,13 +374,9 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
     servePublic(request, reply, (fh) => (fh.has_poster ? '.poster' : null)),
   );
   app.get('/api/files/public/:key/page/:n', (request, reply) => {
-    const n = Number((request.params as { n: string }).n);
+    const n = pageNumber((request.params as { n: string }).n);
     return servePublic(request, reply, (fh) =>
-      Number.isInteger(n) && n >= 1 && n <= (fh.page_count ?? 1)
-        ? n === 1
-          ? ''
-          : `.page${String(n)}`
-        : null,
+      n >= 1 && n <= (fh.page_count ?? 1) ? (n === 1 ? '' : `.page${String(n)}`) : null,
     );
   });
 
@@ -585,7 +590,7 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
     scope.get('/api/moderate/files/file/:id/poster', (q, r) => view(q, r, 'poster'));
     scope.get('/api/moderate/files/file/:id/original', (q, r) => view(q, r, 'original'));
     scope.get('/api/moderate/files/file/:id/page/:n', (q, r) =>
-      view(q, r, Number((q.params as { n: string }).n) || 0),
+      view(q, r, pageNumber((q.params as { n: string }).n)),
     );
     return Promise.resolve();
   });
