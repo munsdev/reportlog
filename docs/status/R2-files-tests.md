@@ -3,22 +3,25 @@
 For the coordinating session and the other workstreams. One file per workstream in `docs/status/`.
 The brief is R2 in `docs/parity.md` §7.
 
-- **Branch:** `claude/r2-files-tests`, based on `ccr-c9c93698-ev856l` at `6bd963a`, merged up to `2bdfe05` (R7)
+- **Branch:** `claude/r2-files-tests`, based on `ccr-c9c93698-ev856l` at `6bd963a`, merged up to `9a839fe` (R7 and R1)
 - **Pull request:** PR_LINK, into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing
 
-Run on the branch's head after merging the base at `2bdfe05` (R7). The `docs/parity.md` totals
-conflicted with R7's and were recounted from the tables: both branches' changes are in them.
+`pnpm check`, `pnpm test:db` and the browser suite were run after merging the base at `2bdfe05`
+(R7). The base then took R1 (`9a839fe`), which adds only tests in `packages/seal/test/` and
+`apps/api/test/db/chain-files.test.ts`; after merging it, `pnpm check` and `pnpm test:db` were run
+again (the numbers below) and the browser suite was not, since R1 changes nothing it runs. The
+`docs/parity.md` totals conflicted with R7's and R1's and were recounted from the tables.
 
 | Suite                                                                       | Result                                                                                                                     |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `pnpm check`                                                                | passes (format, lint, types, boundaries; unit tests: api 386 passed and 17 skipped, web 477, fields 69, seal 31, access 6) |
 | `pnpm test:db`                                                              | 73 files, 1089 tests, all passed (66 of them new here)                                                                     |
 | `db:types:check`                                                            | up to date (no migration)                                                                                                  |
-| Browser suite (`CI=1`, `CHROMIUM_PATH`, `pnpm --filter @reportlog/web e2e`) | 760 passed, 4 skipped, none failed (15.1 minutes)                                                                          |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`, `pnpm --filter @reportlog/web e2e`) | 761 passed, 4 skipped, none failed (13.3 minutes)                                                                          |
 
 - The first `pnpm check`, run while the browser suite was running, had two timeouts in P7's
   `deploy-install.test.ts` (it runs `install.sh`, which this branch does not touch). That file
@@ -84,6 +87,6 @@ deferral in the worker. Each made its test fail; each was put back.
 
 ## Changes outside R2's folders
 
-- `docs/parity.md`: the R2 rows and the totals at the top, with R7's (routes 124 Equivalent,
-  0 Partial; `selftest.js` groups 58 / 18 / 5; Missing rows 8, Partial rows 44).
+- `docs/parity.md`: the R2 rows and the totals at the top, with R7's and R1's (routes 124 Equivalent,
+  0 Partial; `selftest.js` groups 63 / 13 / 5; Missing rows 8, Partial rows 39).
 - This file.
