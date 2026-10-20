@@ -18,8 +18,8 @@ again (the numbers below) and the browser suite was not, since R1 changes nothin
 
 | Suite                                                                       | Result                                                                                                                     |
 | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                                                | passes (format, lint, types, boundaries; unit tests: api 386 passed and 17 skipped, web 477, fields 69, seal 31, access 6) |
-| `pnpm test:db`                                                              | 73 files, 1089 tests, all passed (66 of them new here)                                                                     |
+| `pnpm check`                                                                | passes (format, lint, types, boundaries; unit tests: api 386 passed and 17 skipped, web 477, fields 69, seal 46, access 6) |
+| `pnpm test:db`                                                              | 73 files, 1090 tests, all passed (66 of them new here)                                                                     |
 | `db:types:check`                                                            | up to date (no migration)                                                                                                  |
 | Browser suite (`CI=1`, `CHROMIUM_PATH`, `pnpm --filter @reportlog/web e2e`) | 761 passed, 4 skipped, none failed (13.3 minutes)                                                                          |
 
