@@ -747,7 +747,7 @@ all merged. Nothing is being built right now.
 
 ### R4 · Filing screens (C4)
 
-> **Done** (`docs/status/R4-filing-screens.md`): every row below now Equivalent, except §4c
+> **Done** (#34, `docs/status/R4-filing-screens.md`): every row below now Equivalent, except §4c
 > `nav.test.js`, whose progress-bar part is done and whose other parts are R5's and R0 k's.
 
 - **Owns:** `apps/web/src/features/form/`, `apps/web/src/features/files/EvidencePage.tsx`,

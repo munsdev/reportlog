@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. Brief: R4 in `docs/parit
 
 - **Branch:** `claude/r4-filing-screens`, based on `ccr-c9c93698-ev856l` at `9a839fe` (merged
   again before the last run; it had not moved)
-- **Pull request:** see the branch's PR, into `ccr-c9c93698-ev856l`
+- **Pull request:** [#34](https://github.com/munsdev/reportlog/pull/34), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
