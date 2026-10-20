@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 The brief is the owner's decisions 6, 10, 11 and 17 in `docs/decisions.md`.
 
 - **Branch:** `claude/q2-board-exports`, based on `ccr-c9c93698-ev856l` at `909179a` (the decisions)
-- **Pull request:** PR_LINE
+- **Pull request:** [#27](https://github.com/munsdev/reportlog/pull/27), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
