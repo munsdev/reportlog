@@ -41,6 +41,8 @@ answers them. Decided 2026-10-20 unless a line says otherwise.
 | 33  | The door rule's wording in `CLAUDE.md`                                          | "Only the calls named in front of the password for that door."                                                 |
 | 34  | Downloading the complete chain file                                             | Recorded in the access log.                                                                                    |
 | 35  | An audio-only MP4 under an isom or mp42 brand                                   | Stays refused, as legacy did.                                                                                  |
+| 38  | A filing that carries a file while uploads are off | Refused with a plain message, not filed with the file dropped. `ATTACHMENTS_ENABLED=false` is the deploy default (`install.sh`). |
+| 42  | Question kinds in a logbook | ReportLog stays general: a logbook keeps every kind, text included. ElectionLog simply asks no text question and no link. No site-wide ban on kinds; L3 is met by setup, L7 and choice validation, each tested. |
 
 Rows 19 to 35 decided 2026-10-20, answering `docs/parity.md` §7 R0 and R2's question.
 
