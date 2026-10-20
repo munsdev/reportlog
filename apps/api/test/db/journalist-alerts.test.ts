@@ -145,6 +145,8 @@ describe('the alert', () => {
   let refs: string[] = [];
 
   beforeAll(async () => {
+    // The window opens here, so reports other test files approved earlier are not in it.
+    const opened = (clock = Date.now());
     const lb = await launchedLogbook(db, WHERE);
     refs = [
       await approved(lb, 'US-AZ'),
@@ -154,7 +156,7 @@ describe('the alert', () => {
     ];
     await db
       .updateTable('journalist_subscribers')
-      .set({ last_sent_at: new Date(clock - 60 * 60 * 1000) })
+      .set({ last_sent_at: new Date(opened) })
       .execute();
   });
 
