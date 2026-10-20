@@ -240,15 +240,12 @@ describe('the cards', () => {
     expect(calls.filter((c) => c.includes('/api/uploads'))).toEqual([]);
   });
 
-  it('names the files the server dropped at Send because the logbook stopped taking files', async () => {
+  it('offers a tip after Send, and keeps the state and time in this browser only', async () => {
     const user = userEvent.setup();
-    onDoor(
-      [{ key: 'what', kind: 'short_text', label: 'What?', required: true, settings: {} }],
-      undefined,
-      { pending: true, files_dropped: ['queue.jpg', 'notes.pdf'] },
-    );
+    localStorage.clear();
+    onDoor([{ key: 'state', kind: 'short_text', label: 'State?', required: true, settings: {} }]);
     await user.click(await screen.findByRole('button', { name: 'Start' }));
-    await user.type(screen.getByRole('textbox', { name: 'What?' }), 'x');
+    await user.type(screen.getByRole('textbox', { name: 'State?' }), 'Ohio');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
@@ -256,10 +253,14 @@ describe('the cards', () => {
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
     await user.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
-    expect(screen.getByText('Your files were not sent with your report')).toBeInTheDocument();
-    expect(screen.getByText(/this logbook stopped taking files/)).toBeInTheDocument();
-    expect(screen.getByText('queue.jpg')).toBeInTheDocument();
-    expect(screen.getByText('notes.pdf')).toBeInTheDocument();
+    expect(
+      screen.getByText(/Have a link, photo or video\? Send it as a tip\./),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Send a tip' })).toHaveAttribute('href', '/list/tips');
+    const kept = JSON.parse(localStorage.getItem('reportlog:tip-prefill') ?? 'null') as {
+      values: Record<string, string>;
+    };
+    expect(kept.values).toEqual({ state: 'Ohio' });
   });
 
   describe('one history entry per card', () => {

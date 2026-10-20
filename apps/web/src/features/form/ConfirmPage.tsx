@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { TipOffer } from './tipOffer.tsx';
 
 const confirmationQuery = (token: string) =>
   queryOptions({
@@ -164,6 +165,7 @@ function Shown({
         it was filed.
       </p>
       {/* Behind the password, the rest of the site is not this page's to offer. */}
+      {onDoor ? null : <TipOffer />}
       {onDoor ? null : (
         <p className="flex flex-wrap gap-x-4">
           <Link to="/verify/$ref" params={{ ref: c.public_ref }} className="underline">
