@@ -178,11 +178,11 @@ the fix in this PR.
 All three suites were run here (not on CI) on this branch, after the fix and after merging
 `origin/ccr-c9c93698-ev856l` at `9a839fe` (R1).
 
-| Suite                                       | Result                                                                                                                                   |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | passes: format, lint, types, boundaries (666 modules); unit tests fields 69, seal 46, access 6, api 386 (+17 skipped, not R8's), web 558 |
-| `pnpm test:db`                              | 68 files, **1027 passed**                                                                                                                |
-| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | BROWSER_RESULT                                                                                                                           |
+| Suite                                       | Result                                                                                                                                                                                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | passes: format, lint, types, boundaries (666 modules); unit tests fields 69, seal 46, access 6, api 386 (+17 skipped, not R8's), web 558                                                                                          |
+| `pnpm test:db`                              | 68 files, **1027 passed**                                                                                                                                                                                                         |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | **768 passed**, 4 skipped (not R8's). One earlier run failed `files-door/door.spec.ts` (the photo still being prepared after 30 s); it passed on the rerun. That code is not R8's, and the failure is noted here as a timing risk |
 
 R8's own tests:
 
