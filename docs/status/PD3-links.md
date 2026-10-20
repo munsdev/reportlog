@@ -89,11 +89,11 @@
 
 ## Suites
 
-| Suite          | Result                                                          |
-| -------------- | --------------------------------------------------------------- |
-| `pnpm check`   | passes (api unit 406 passed, 19 skipped; web 566 and the rest). |
-| `pnpm test:db` | 78 files, 1139 passed.                                          |
-| Browser suite  | see the PR description.                                         |
+| Suite          | Result                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`   | passes (api unit 406 passed, 19 skipped; web 566 and the rest).                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `pnpm test:db` | 78 files, 1139 passed.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Browser suite  | 868 tests: 830 passed, 5 skipped, 32 did not run, 1 failed: `filing/permissions.spec.ts:123` [phone], "Response has been disposed" in its own route intercept. **Also fails on the base branch** (reproduced there 1 run in 3, alone and beside `lists.spec.ts`), and passes on this branch alone (twice). Not this branch's. `links.spec.ts`, `lists.spec.ts` and the permissions spec re-run together: 15 passed, 1 failed (the same flake). **The whole suite was not re-run.** |
 
 After the full `test:db` run, `rewrapLinkSecret` was added to the rotation. The rotation, links
 and lists files were re-run alone (72 passed). The whole suite was not re-run after that.
