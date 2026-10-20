@@ -8,7 +8,7 @@
  * Against the real provider, once chosen: `pnpm --filter @reportlog/api
  * files:storage-check`.
  */
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -26,6 +26,8 @@ import {
   newDek,
 } from '../../src/files/envelope.ts';
 import { signHeaders } from '../../src/files/sigv4.ts';
+import { loadConfig } from '../../src/config.ts';
+import { storageFrom } from '../../src/files/context.ts';
 import { diskStorage, randomKey, readAll, s3Storage } from '../../src/files/storage.ts';
 import type { Storage } from '../../src/files/storage.ts';
 
@@ -184,7 +186,9 @@ beforeAll(async () => {
         res.writeHead(403).end('<Code>SignatureDoesNotMatch</Code>');
         return;
       }
-      const id = req.url ?? '';
+      // Host and path together: with virtual-hosted addressing the bucket is
+      // in the host, and the path is the key alone.
+      const id = `${req.headers.host ?? ''}${req.url ?? ''}`;
       if (req.method === 'PUT') {
         const body = Buffer.concat(chunks);
         if (body.length !== Number(req.headers['content-length'])) return res.writeHead(400).end();
@@ -210,7 +214,10 @@ beforeAll(async () => {
           .end(part);
       }
       res.writeHead(200, { 'content-length': obj.length }).end(obj);
-    })();
+    })().catch(() => {
+      // A client that gave up half way (the body that fails, above).
+      res.destroy();
+    });
   });
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
   endpoint = `http://127.0.0.1:${String((server.address() as AddressInfo).port)}`;
@@ -229,6 +236,122 @@ contract('S3', () =>
     buckets: { staging: 'rl-staging', evidence: 'rl-evidence', renditions: 'rl-renditions' },
   }),
 );
+
+/**
+ * Virtual-hosted names (`rl-evidence.s3.test`) need DNS for every bucket.
+ * Instead, this fetch dials the stand-in on loopback and sends the host the
+ * driver asked for, so the stand-in checks the signature over that host.
+ */
+const viaLoopback: typeof fetch = (input, init) => {
+  const url = new URL(input instanceof Request ? input.url : String(input));
+  const port = Number(new URL(endpoint).port);
+  return new Promise((resolveRes, reject) => {
+    const req = request(
+      {
+        host: '127.0.0.1',
+        port,
+        method: init?.method ?? 'GET',
+        path: `${url.pathname}${url.search}`,
+        headers: { ...(init?.headers as Record<string, string>), host: url.host },
+      },
+      (res) => {
+        const headers = new Headers();
+        for (const [k, v] of Object.entries(res.headers))
+          if (typeof v === 'string') headers.set(k, v);
+        const status = res.statusCode ?? 500;
+        const empty = status === 204 || init?.method === 'HEAD';
+        if (empty) res.resume();
+        resolveRes(
+          new Response(empty ? null : (Readable.toWeb(res) as ReadableStream), { status, headers }),
+        );
+      },
+    );
+    req.on('error', reject);
+    const body = init?.body;
+    if (body === undefined || body === null) req.end();
+    else if (Buffer.isBuffer(body)) req.end(body);
+    // A body that fails half way aborts the request, as fetch would.
+    else pipeline(Readable.fromWeb(body as never), req).catch(reject);
+  });
+};
+
+contract('S3, virtual-hosted', () =>
+  s3Storage(
+    {
+      ...CREDS,
+      endpoint: `http://s3.test:${new URL(endpoint).port}`,
+      addressing: 'virtual',
+      buckets: { staging: 'rl-staging', evidence: 'rl-evidence', renditions: 'rl-renditions' },
+    },
+    viaLoopback,
+  ),
+);
+
+describe('virtual-hosted addressing', () => {
+  it('puts the bucket in the host and the key alone in the path', async () => {
+    const s = s3Storage(
+      {
+        ...CREDS,
+        endpoint: `http://s3.test:${new URL(endpoint).port}`,
+        addressing: 'virtual',
+        buckets: { staging: 'rl-staging', evidence: 'rl-evidence', renditions: 'rl-renditions' },
+      },
+      viaLoopback,
+    );
+    const key = randomKey('t');
+    await s.put('evidence', key, Buffer.from('v'), 1);
+    expect([...objects.keys()]).toContain(`rl-evidence.s3.test:${new URL(endpoint).port}/${key}`);
+    expect(s.unsignedUrl?.('evidence', key)).toBe(
+      `http://rl-evidence.s3.test:${new URL(endpoint).port}/${key}`,
+    );
+    await s.delete('evidence', key);
+  });
+
+  it('refuses a bucket name that is not one DNS label, and says why', () => {
+    const base = {
+      ...CREDS,
+      endpoint: 'https://s3.example.org',
+      addressing: 'virtual' as const,
+      buckets: { staging: 'rl-staging', evidence: 'rl-evidence', renditions: 'rl-renditions' },
+    };
+    for (const bad of ['rl.evidence', 'RL-Evidence', 'rl_evidence', 'rl-evidence-', 'rl', ''])
+      expect(
+        () => s3Storage({ ...base, buckets: { ...base.buckets, evidence: bad } }),
+        bad,
+      ).toThrow(/cannot be used with virtual-hosted addressing/);
+    // Path style puts the name in the path, where a dot is harmless.
+    expect(() =>
+      s3Storage({
+        ...base,
+        addressing: 'path',
+        buckets: { ...base.buckets, evidence: 'rl.evidence' },
+      }),
+    ).not.toThrow();
+    // At start, the configuration says so instead of the server starting.
+    expect(
+      storageFrom({
+        FILES_STORAGE: 's3',
+        S3_ENDPOINT: 'https://s3.example.org',
+        S3_ACCESS_KEY: 'k',
+        S3_SECRET_KEY: 's',
+        S3_BUCKET_STAGING: 'rl-staging',
+        S3_BUCKET_EVIDENCE: 'rl.evidence',
+        S3_BUCKET_RENDITIONS: 'rl-renditions',
+        S3_ADDRESSING: 'virtual',
+      }),
+    ).toMatch(/^the bucket name "rl\.evidence" cannot be used with virtual-hosted addressing/);
+  });
+});
+
+describe('the addressing setting', () => {
+  it('a misspelt mode stops the server, naming the setting, rather than falling back to path', () => {
+    // Path style against an endpoint that takes only virtual-hosted requests
+    // fails as a signature mismatch, which names nothing useful.
+    const env = { DATABASE_URL: 'postgres://unused@localhost/unused' };
+    expect(loadConfig(env).S3_ADDRESSING).toBe('path');
+    expect(() => loadConfig({ ...env, S3_ADDRESSING: 'virtualhosted' })).toThrow(/S3_ADDRESSING/);
+  });
+});
 
 describe('S3 credentials', () => {
   it('a wrong secret is refused by the provider, and said so', async () => {

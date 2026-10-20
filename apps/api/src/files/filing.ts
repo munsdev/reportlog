@@ -21,8 +21,10 @@ import {
   clearedSlots,
   draftFrom,
   dropFrozenDraft,
+  dropFrozenSlots,
   filesFrozen,
   inFlightSlots,
+  refusedSlots,
   releaseDraft,
   slotsOfSubmission,
 } from './slots.ts';
@@ -82,6 +84,8 @@ export async function stillPreparing(db: Kysely<DB>, submissionId: number): Prom
 export interface SealedFiles {
   /** For appendReportVersion's `attachments`: null when there are none. */
   manifest: AttachmentEntry[] | null;
+  /** Files dropped because the logbook stopped taking files (decision 19). */
+  dropped: string[];
   /** Write and link exactly the sealed files to the version just appended. */
   link(reportId: number): Promise<void>;
 }
@@ -97,12 +101,33 @@ export async function sealFiles(
   threadId: string,
   carried: readonly AttachmentEntry[] = [],
 ): Promise<SealedFiles & { count: number }> {
+  // A Send already dropped them (releaseForSubmission); an intake account and
+  // an evidence answer have no Send, so this is their one check.
+  const dropped = 'submissionId' in source ? [] : await dropFrozenSlots(trx, source);
   const slots = await clearedSlots(trx, source);
+  // Every file that was sent and not accepted is noted against the thread,
+  // so a moderator can see an upload was attempted (decision 32, legacy's
+  // 'upload_rejected'). In this transaction: a source is sealed once.
+  const refused = await refusedSlots(trx, source);
+  if (refused.length) {
+    await trx
+      .insertInto('refused_uploads')
+      .values(
+        refused.map((r) => ({
+          thread_id: threadId,
+          name: r.declared_name || 'A file',
+          status: r.status,
+          reason: notAttachedReason(r),
+        })),
+      )
+      .execute();
+  }
   const from = await nextOrdinal(trx, threadId);
   const fresh = manifestOf(slots, from);
   const all = [...carried, ...fresh];
   return {
     count: slots.length,
+    dropped,
     manifest: all.length ? all : null,
     async link(reportId) {
       await promote(trx, { slots, ordinalFrom: from, threadId, reportId });
@@ -119,6 +144,14 @@ const REASONS: Readonly<Record<string, string>> = {
   infected: 'it did not pass the virus check',
 };
 
+/** The words after a file's name ("photo.jpg: …") when it is not in the report. */
+function notAttachedReason(s: { status: string; status_detail: string | null }): string {
+  // An empty detail is no reason at all (and the moderators' record refuses one).
+  if (s.status === 'rejected')
+    return s.status_detail?.trim() ? s.status_detail : 'it was not accepted';
+  return REASONS[s.status] ?? s.status;
+}
+
 /** Which files made it into the report, and why any did not. Null when none were sent. */
 export async function fileOutcome(
   db: Kysely<DB>,
@@ -132,10 +165,7 @@ export async function fileOutcome(
       .filter((s) => !s.promoted_at && s.status !== 'withdrawn' && s.status !== 'expired')
       .map((s) => ({
         name: s.declared_name || 'A file',
-        reason:
-          s.status === 'rejected'
-            ? (s.status_detail ?? 'it was not accepted')
-            : (REASONS[s.status] ?? s.status),
+        reason: notAttachedReason(s),
       })),
   };
 }

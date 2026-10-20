@@ -14,7 +14,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { filesKeyring } from './envelope.ts';
 import type { FilesKeyring } from './envelope.ts';
 import { attachmentsEnabled, siteLayer } from './limits.ts';
-import { diskStorage, s3Storage } from './storage.ts';
+import { BUCKETS, bucketNameProblem, diskStorage, s3Storage } from './storage.ts';
 import type { Storage } from './storage.ts';
 
 export type FilesConfig = Partial<
@@ -63,17 +63,23 @@ export function storageFrom(c: FilesConfig): Storage | string {
     ).filter((k) => !c[k]);
     if (missing.length)
       return `FILES_STORAGE is s3 but ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not set`;
+    const buckets = {
+      staging: c.S3_BUCKET_STAGING ?? '',
+      evidence: c.S3_BUCKET_EVIDENCE ?? '',
+      renditions: c.S3_BUCKET_RENDITIONS ?? '',
+    };
+    const addressing = c.S3_ADDRESSING ?? 'path';
+    for (const b of BUCKETS) {
+      const problem = bucketNameProblem(addressing, buckets[b]);
+      if (problem) return problem;
+    }
     return s3Storage({
       endpoint: c.S3_ENDPOINT ?? '',
       region: c.S3_REGION ?? 'eu-central-1',
       accessKey: c.S3_ACCESS_KEY ?? '',
       secretKey: c.S3_SECRET_KEY ?? '',
-      addressing: c.S3_ADDRESSING ?? 'path',
-      buckets: {
-        staging: c.S3_BUCKET_STAGING ?? '',
-        evidence: c.S3_BUCKET_EVIDENCE ?? '',
-        renditions: c.S3_BUCKET_RENDITIONS ?? '',
-      },
+      addressing,
+      buckets,
     });
   }
   return 'FILES_STORAGE is not set';

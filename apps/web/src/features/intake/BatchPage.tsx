@@ -39,7 +39,11 @@ export function BatchPage({ id }: { id: number }) {
   const refresh = useIntakeRefresh();
   const [editing, setEditing] = useState<IntakeDraft | null>(null);
   const [filing, setFiling] = useState(false);
-  const [filed, setFiled] = useState<{ refs: string[]; staged: number } | null>(null);
+  const [filed, setFiled] = useState<{
+    refs: string[];
+    staged: number;
+    dropped: { ref: string; names: string[] }[];
+  } | null>(null);
 
   const add = useMutation({
     mutationFn: () => call(addIntakeDraft, { params: { id }, body: {} }),
@@ -90,6 +94,12 @@ export function BatchPage({ id }: { id: number }) {
           {filed.staged
             ? `${plural(filed.staged, 'account is', 'accounts are')} still staged. Fix them and file again.`
             : null}
+          {filed.dropped.map((d) => (
+            <p key={d.ref}>
+              {d.ref} was filed without {d.names.join(', ')}: this logbook stopped taking files
+              after they were attached, so they were not kept.
+            </p>
+          ))}
         </Alert>
       ) : null}
 
@@ -248,9 +258,9 @@ export function BatchPage({ id }: { id: number }) {
           onClose={() => {
             setFiling(false);
           }}
-          onFiled={async (refs, staged) => {
+          onFiled={async (refs, staged, dropped) => {
             setFiling(false);
-            setFiled({ refs, staged });
+            setFiled({ refs, staged, dropped });
             await refresh();
           }}
         />
@@ -264,7 +274,11 @@ function FileDialog(props: {
   organization: string;
   ready: number;
   onClose: () => void;
-  onFiled: (refs: string[], staged: number) => Promise<void>;
+  onFiled: (
+    refs: string[],
+    staged: number,
+    dropped: { ref: string; names: string[] }[],
+  ) => Promise<void>;
 }) {
   const [attested, setAttested] = useState(false);
   const submit = useMutation({
@@ -274,6 +288,9 @@ function FileDialog(props: {
       props.onFiled(
         out.filed.map((f) => f.public_ref),
         out.still_staged,
+        out.filed.flatMap((f) =>
+          f.files_dropped ? [{ ref: f.public_ref, names: f.files_dropped }] : [],
+        ),
       ),
   });
   return (

@@ -57,6 +57,11 @@ export interface Storage {
   head(bucket: Bucket, key: string): Promise<{ size: number } | null>;
   /** Idempotent: deleting what is not there is not an error. */
   delete(bucket: Bucket, key: string): Promise<void>;
+  /**
+   * S3 only: the object's address with no signature, for the storage check
+   * to prove a bucket refuses a stranger. Nothing else may use it.
+   */
+  unsignedUrl?(bucket: Bucket, key: string): string;
 }
 
 /**
@@ -169,8 +174,25 @@ export interface S3Settings extends Credentials {
   timeoutMs?: number;
 }
 
+/**
+ * With virtual-hosted addressing the bucket name becomes the leftmost label
+ * of a host name (`rl-evidence.fsn1.example.com`). A name with a dot in it
+ * makes two labels, which no wildcard certificate covers, and a name with an
+ * underscore or capital letter is not a host name at all. Say so at start
+ * rather than as a certificate error on the first reporter's upload.
+ */
+const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{1,61}[a-z0-9])$/;
+export function bucketNameProblem(addressing: 'path' | 'virtual', name: string): string | null {
+  if (addressing !== 'virtual' || DNS_LABEL.test(name)) return null;
+  return `the bucket name "${name}" cannot be used with virtual-hosted addressing: it must be 3 to 63 lowercase letters, digits and hyphens, with no dots (or set S3_ADDRESSING=path)`;
+}
+
 export function s3Storage(s: S3Settings, fetchImpl: typeof fetch = fetch): Storage {
   const endpoint = new URL(s.endpoint);
+  for (const b of BUCKETS) {
+    const problem = bucketNameProblem(s.addressing, s.buckets[b]);
+    if (problem) throw new StorageError(problem);
+  }
   const timeout = s.timeoutMs ?? 10 * 60 * 1000;
 
   const target = (bucket: Bucket, key: string) => {
@@ -264,6 +286,10 @@ export function s3Storage(s: S3Settings, fetchImpl: typeof fetch = fetch): Stora
       if (res.status === 404) return null;
       if (!res.ok) throw await fail(`HEAD ${bucket}`, res);
       return { size: Number(res.headers.get('content-length') ?? 0) };
+    },
+    unsignedUrl(bucket, key) {
+      const t = target(bucket, key);
+      return `${endpoint.protocol}//${t.host}${t.path}`;
     },
     async delete(bucket, key) {
       const res = await send('DELETE', bucket, key);

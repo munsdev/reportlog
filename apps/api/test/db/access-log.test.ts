@@ -183,6 +183,19 @@ describe.skipIf(toolsMissing)('opening a file', () => {
     ).rejects.toThrow();
   });
 
+  it('an over-long reason for the original is refused, not cut short, and nothing is recorded or sent (decision 31)', async () => {
+    const res = await mod({
+      method: 'GET',
+      url: `/api/moderate/files/file/${String(fileId)}/original?reason=${'x'.repeat(501)}`,
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ error: { code: string; message: string } }>().error).toEqual({
+      code: 'reason_too_long',
+      message: 'Please keep the reason under 500 characters.',
+    });
+    expect((await accessesOf(reporter, thread)).accesses).toEqual([]);
+  });
+
   it('the original, with a reason: the reporter sees it without who, and previews are not shown to them', async () => {
     const res = await mod({
       method: 'GET',

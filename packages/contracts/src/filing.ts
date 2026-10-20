@@ -397,7 +397,14 @@ export const submitIntakeBatch = defineRoute({
   params: BatchParams,
   body: z.object({ attested: z.boolean().optional() }),
   response: z.object({
-    filed: z.array(z.object({ ordinal: z.number().int(), public_ref: z.string() })),
+    filed: z.array(
+      z.object({
+        ordinal: z.number().int(),
+        public_ref: z.string(),
+        /** Files not kept: the logbook stopped taking files since they were attached (decision 19). */
+        files_dropped: z.array(z.string()).optional(),
+      }),
+    ),
     still_staged: z.number().int(),
     attested_at: Timestamp,
   }),

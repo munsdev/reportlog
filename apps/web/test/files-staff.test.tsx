@@ -80,6 +80,7 @@ const threadFiles = (over: Record<string, unknown> = {}, file: Partial<ThreadFil
     withdrawn: false,
     files: [{ ...FILE, ...file }],
     events: [],
+    refused: [],
     ...over,
   },
 });
@@ -120,6 +121,25 @@ describe('consent is the ceiling', () => {
     await screen.findByRole('heading', { name: /queue\.jpg/ });
     expect(screen.queryByRole('button', { name: /Publish/ })).toBeNull();
     expect(screen.getByText('The reporter withdrew this report')).toBeInTheDocument();
+  });
+
+  it('a file sent and not accepted is listed for the moderator, with its reason (decision 32)', async () => {
+    serve(
+      threadFiles({
+        refused: [
+          {
+            name: 'fake.png',
+            reason: 'it did not pass the virus check',
+            at: '2026-10-20T10:00:00.000Z',
+          },
+        ],
+      }),
+    );
+    wrap(<ReportFiles threadId={THREAD} />);
+    const list = await screen.findByRole('list', { name: 'Files sent and not accepted' });
+    expect(
+      within(list).getByText(/fake\.png: it did not pass the virus check/),
+    ).toBeInTheDocument();
   });
 
   it('a published file can still be taken down when the gates have since shut', async () => {

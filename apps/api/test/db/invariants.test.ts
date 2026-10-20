@@ -202,6 +202,10 @@ async function plantOneRowEach(): Promise<void> {
     .insertInto('attachment_events')
     .values({ attachment_id: att.id, thread_id: thread, action: 'erased', actor: 'system' })
     .execute();
+  await db
+    .insertInto('refused_uploads')
+    .values({ thread_id: thread, name: 'a.jpg', status: 'infected', reason: 'for the sweep' })
+    .execute();
 
   const anchor = await db
     .insertInto('chain_anchors')

@@ -388,6 +388,10 @@ describe("opening a reporter's contact details", () => {
     const r = await file('An account whose reporter we need to reach.');
     expect((await open(mod.call, r.thread)).statusCode).toBe(400);
     expect((await open(mod.call, r.thread, 'because')).statusCode).toBe(400);
+    // Too long is refused too, not cut short: 500 characters, and one more.
+    const long = await open(mod.call, r.thread, 'x'.repeat(501));
+    expect(long.statusCode).toBe(400);
+    expect(long.body).toMatch(/under 500 characters/);
     expect(await logged(r.thread)).toHaveLength(0);
   });
 
