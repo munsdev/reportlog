@@ -332,6 +332,7 @@ tracking and backups, are explained in their own sections above.
 | `LOG_LEVEL`                                                                      | How much the API logs. Logs never hold an address or a full link.                                 |
 | `PUBLIC_REF_PREFIX`                                                              | The letters every public reference starts with (`RL-`). Sealed into every report: chosen once.    |
 | `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                               |
+| `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                      |
 | `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.            |
 | `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise.                                    |
 | `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                 |
