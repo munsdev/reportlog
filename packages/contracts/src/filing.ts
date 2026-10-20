@@ -68,6 +68,12 @@ export const Confirmation = z.discriminatedUnion('state', [
     logbook_title: z.string(),
     public_ref: z.string(),
     files: FileOutcome.optional(),
+    /**
+     * Present while the site's public archive is switched off. The page then
+     * says a report "may be published", never "public" (decisions.md §5): an
+     * approved report is not public on a site that shows nothing.
+     */
+    archive_closed: z.literal(true).optional(),
   }),
   z.object({
     state: z.literal('public'),

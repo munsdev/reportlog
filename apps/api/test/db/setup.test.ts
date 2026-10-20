@@ -194,7 +194,7 @@ describe('the curtain password decision, which cannot be skipped', () => {
   it('lets the owner change the password, which ends setup and retires the installer’s cookie', async () => {
     const installer = cookieFrom(await unlock(INSTALL_PW), 'site_access') ?? '';
     const before = await call({ url: '/api/site-access/status' }, { site_access: installer });
-    expect(before.json()).toEqual({ locked: false });
+    expect(before.json()).toEqual({ locked: false, dev_mode_until: null });
     const res = await asOwner({
       method: 'POST',
       url: '/api/setup/curtain',
@@ -203,9 +203,12 @@ describe('the curtain password decision, which cannot be skipped', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ ok: true, changed: true });
     const after = await call({ url: '/api/site-access/status' }, { site_access: installer });
-    expect(after.json()).toEqual({ locked: true });
+    expect(after.json()).toMatchObject({ locked: true });
     // The owner, mid-wizard, is not thrown out.
-    expect((await behind({ url: '/api/site-access/status' })).json()).toEqual({ locked: false });
+    expect((await behind({ url: '/api/site-access/status' })).json()).toEqual({
+      locked: false,
+      dev_mode_until: null,
+    });
   });
 });
 

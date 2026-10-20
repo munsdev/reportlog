@@ -342,6 +342,7 @@ export const COPY_KEYS = [
   'how_intro',
   'alliance_intro',
   'standards',
+  'lock_intro',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

@@ -185,7 +185,8 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
               />
             )}
           </Field>
-          {slot.kind === 'block' ? (
+          {/* The password screen's paragraph takes no numbers (site/copy.ts). */}
+          {slot.kind === 'block' && slot.key !== 'lock_intro' ? (
             <div className="flex flex-col gap-2">
               <div>
                 <Button

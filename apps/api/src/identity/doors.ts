@@ -8,7 +8,9 @@
  *      themselves; the gate refuses to start if a route outside the list
  *      prefixes in `gate.ts` carries that mark.
  *   2. A logbook opened outside is FILING ONLY, through `outsidePass` below:
- *      an allow-list of exactly the calls the filing form makes. It only says
+ *      an allow-list of exactly the calls the filing form makes. Two links
+ *      emailed to a reporter pass the same way on their token alone: the
+ *      confirmation link and the evidence-request link. It only says
  *      "the password is not the reason to refuse"; every route still applies
  *      every rule it applies to anybody.
  *
@@ -19,6 +21,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { sha256Hex } from './secrets.ts';
 import { listDoors } from '../lists/manage.ts';
+import { evidenceTokenKnown } from '../evidence/requests.ts';
 import { anyTakesFilesOutside, namedTakesFilesOutside } from '../files/doors.ts';
 
 export const OUTSIDE_ACCESS = ['closed', 'link', 'door'] as const;
@@ -62,6 +65,16 @@ export async function doors(db: Kysely<DB>): Promise<Door[]> {
     .map((l): Door => ({ kind: 'logbook', slug: l.slug, title: l.title, href: `/file/${l.slug}` }));
   return [...logbooks, ...(await listDoors(db))];
 }
+
+/** Every call the evidence page makes, by route pattern. Each carries the token. */
+const EVIDENCE_ROUTES: readonly (readonly [string, string])[] = [
+  ['GET', '/api/evidence/:token'],
+  ['POST', '/api/evidence/:token/files'],
+  ['GET', '/api/evidence/:token/files'],
+  ['DELETE', '/api/evidence/:token/files/:slot'],
+  ['PUT', '/api/evidence/:token/files/:slot'],
+  ['POST', '/api/evidence/:token/send'],
+];
 
 /**
  * The calls the filing form makes, by route pattern (never by raw URL, which
@@ -125,6 +138,18 @@ const FILING_CALLS: readonly {
   { method: 'PUT', route: '/api/uploads/:slot', passes: anyTakesFilesOutside },
   { method: 'GET', route: '/api/uploads/status', passes: anyTakesFilesOutside },
   { method: 'DELETE', route: '/api/uploads/:slot', passes: anyTakesFilesOutside },
+  // The evidence-request link (decisions.md §4), for the same reason as the
+  // confirmation link: it was emailed to the reporter, who may never have had
+  // the password, and its token is the secret. Every call the page makes
+  // passes on a token that names a request, open or not; whether it is still
+  // open, and what it may do, is evidence/routes.ts's to say. A token naming
+  // nothing gets `locked`, like anything else.
+  ...EVIDENCE_ROUTES.map(([method, route]) => ({
+    method,
+    route,
+    passes: (db: Kysely<DB>, r: FastifyRequest) =>
+      evidenceTokenKnown(db, (r.params as Record<string, unknown>).token),
+  })),
 ];
 
 async function submissionExists(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {

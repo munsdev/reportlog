@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { ADMIN } from '../auth.ts';
 import { filesState, photoWithLocation } from '../files/helpers.ts';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
 
@@ -32,7 +33,8 @@ async function signIn(page: Page, email: string) {
 
 test('a photo attached to an account is filed with it, and nothing else is contacted', async ({
   page,
-}) => {
+  playwright,
+}, info) => {
   const id = stamp();
   const email = `coord-files-${id}@example.org`;
   const org = `Photo Forms Group ${id}`;
@@ -94,7 +96,13 @@ test('a photo attached to an account is filed with it, and nothing else is conta
     (await accounts.getByText(/Filed as RL-/).textContent()) ?? '',
   )?.[0];
   expect(ref).toBeTruthy();
-  const v = (await (await page.request.get(`/api/reports/${ref ?? ''}/verify`)).json()) as {
+  // The sealed fields come whole to staff only: verifying an unpublished
+  // report shows anybody else its fingerprints alone (decisions.md §1).
+  const staff = await playwright.request.newContext({
+    baseURL: info.project.use.baseURL ?? 'http://127.0.0.1:4173',
+    storageState: ADMIN,
+  });
+  const v = (await (await staff.get(`/api/reports/${ref ?? ''}/verify`)).json()) as {
     content: { ok: boolean };
     hashed_fields: {
       third_party?: boolean;
@@ -106,5 +114,6 @@ test('a photo attached to an account is filed with it, and nothing else is conta
   expect(v.hashed_fields.attachments).toEqual([
     expect.objectContaining({ ordinal: 1, media_type: 'image/jpeg' }),
   ]);
+  await staff.dispose();
   expect(outside).toEqual([]);
 });

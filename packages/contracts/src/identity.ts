@@ -7,6 +7,7 @@
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
+import { BrandPartSchema } from './site.ts';
 
 const Email = z.string().max(320);
 const Ok = z.object({ ok: z.literal(true) });
@@ -353,11 +354,32 @@ export const acceptInvitation = defineRoute({
 
 // ── the site password and its doors ─────────────────────────────────────
 
+/** The site's name and the operator's paragraph for the password screen. Nothing else. */
+export const LockScreenSite = z.object({
+  name_parts: z.array(BrandPartSchema).min(1),
+  plain_name: z.string(),
+  /** The operator's `lock_intro`, absent when unwritten. */
+  intro: z.string().optional(),
+});
+export type LockScreenSite = z.infer<typeof LockScreenSite>;
+
 export const getSiteAccessStatus = defineRoute({
   method: 'GET',
   path: '/api/site-access/status',
   summary: 'Whether this visitor still needs the site password. In front of the password.',
-  response: z.object({ locked: z.boolean() }),
+  response: z.object({
+    locked: z.boolean(),
+    /**
+     * Only while locked: everything the password screen shows of the site
+     * (decisions.md §3), so it needs no call behind the gate.
+     */
+    site: LockScreenSite.optional(),
+    /**
+     * When the development notice ends, or null. Here so the badge shows on
+     * the lock screen and on a door, where /api/site is not asked.
+     */
+    dev_mode_until: z.string().nullable(),
+  }),
 });
 
 export const unlockSite = defineRoute({
