@@ -5,7 +5,7 @@ For the coordinating session. Brief: `docs/parity.md` §7, "R3 · Files: storage
 
 - **Branch:** `claude/sb-storage-evidence`, based on `ccr-c9c93698-ev856l`, merged with it at
   `77bbaf3`
-- **Pull request:** see below
+- **Pull request:** #37
 - **Last updated:** 2026-10-20
 
 ## What was built
