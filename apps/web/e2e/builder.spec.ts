@@ -63,7 +63,7 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
 
   // A question cannot be moved in front of the one it depends on, and the
   // screen says why rather than doing nothing.
-  await page.getByRole('button', { name: 'Move “How were you hurt?” up' }).click();
+  await page.getByRole('button', { name: 'Move up: “How were you hurt?”' }).click();
   await expect(page.getByRole('alert')).toContainText('in front of the one it depends on');
 
   const launch = page.getByRole('region', { name: 'Launch' });
@@ -150,7 +150,7 @@ test('the front page is arranged by order, and the first button is the main one'
     expect(await rows.count()).toBeGreaterThan(1);
     second = (await rows.nth(1).locator('p.font-semibold').innerText()).trim();
 
-    await page.getByRole('button', { name: `Move “${second}” up` }).click();
+    await page.getByRole('button', { name: `Move up: “${second}”` }).click();
     await expect(rows.first()).toContainText(second);
     await expect(rows.first()).toContainText('(the main button)');
     await page.getByRole('button', { name: 'Save this order' }).click();

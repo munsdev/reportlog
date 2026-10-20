@@ -22,12 +22,15 @@ and off-site backups go to S3-compatible storage in the EU.
 | `/var/backups/reportlog`       | Local database dumps                                   | reportlog, 0700            |
 | `/usr/local/lib/reportlog`     | The copy of the deploy scripts that root runs          | root                       |
 | `/usr/local/bin/reportlog`     | The one command                                        | root                       |
+| `/opt/bugsink`                 | → Bugsink, if this server runs it (`/opt/bugsink-<v>`) | root                       |
+| `/etc/bugsink`                 | Bugsink's settings and its own key (`bugsink.env`)     | root:bugsink, 0750         |
+| `/var/lib/bugsink`             | Bugsink's database (SQLite) and what it received       | bugsink, 0750              |
 
 Services: `reportlog-api` (the API, on 127.0.0.1:3000), `reportlog-job@<name>`
 (one per scheduled job, started by `reportlog-<name>.timer`),
 `reportlog-alert@` (emails `OPS_ALERT_EMAIL` when a job fails),
 `reportlog-update-check` (root, daily: is there an update?), `caddy` and
-`postgresql`.
+`postgresql`. With error tracking: `bugsink` and `bugsink-snappea` (below).
 
 ## Setting up a server
 
@@ -56,12 +59,18 @@ Email, and an EU object storage bucket.
    `/etc/reportlog/reportlog.env` from `.env.example`. It is safe to run
    again, and never overwrites the settings file.
 
-4. **Settings.** Fill in `/etc/reportlog/reportlog.env`. Every setting is
-   explained in the file. At least: `SITE_ORIGIN`, `EMAIL_TRANSPORT=scaleway`
-   with `EMAIL_FROM_ADDRESS` and the two `SCALEWAY_` values,
-   `OPS_ALERT_EMAIL`, `ADMIN_EMAIL`, and the off-site backup settings
-   (below). `install.sh` has already set `TRUST_PROXY=1` (Caddy is one proxy
-   in front) and made `CONTACT_KEY`.
+4. **Settings: answer the installer's questions.** Nobody edits the settings
+   file by hand. `install.sh` makes the keys a machine can make
+   (`CONTACT_KEY`, `FILES_KEY`, the transparency log's deploy key), sets
+   `TRUST_PROXY=1` (Caddy is one proxy in front), and then asks, one at a
+   time, for what only you know: the site's address, the Scaleway email
+   account (the sending address, the project ID and the API key's secret
+   key), who gets alerts, the off-site backup bucket and its upload-only
+   key, storage for reporters' files, and where the transparency log is
+   pushed. Keys and passwords are not shown while you type them. Enter
+   skips a question; it ends by naming what is still empty, and running it
+   again asks only that. Have the accounts below ready (Email, Off-site
+   backups) before you start, or come back to them.
 5. **Deploy.** `sudo reportlog deploy`
 6. **Check.** `sudo reportlog doctor`, then
    `sudo reportlog mail-test you@example.org` and look for the message,
@@ -69,7 +78,38 @@ Email, and an EU object storage bucket.
 7. **Copy the settings file off the server**, once, to wherever you keep
    secrets. Backups deliberately do not include it (it holds keys, and a
    backup that carries its own keys protects nothing). Above all
-   `CONTACT_KEY`: see below.
+   `CONTACT_KEY` and `FILES_KEY`: see below.
+8. **Optional: error tracking**, with Bugsink on this server
+   (`sudo /root/reportlog/deploy/install-bugsink.sh`, below).
+
+### Keys and secrets
+
+Keys, passwords and tokens are part of setting up a server, never part of
+the repository (`docs/decisions.md`). On a server they are in
+`/etc/reportlog/reportlog.env` (root:reportlog, 0640) and nowhere else: the
+API, every job and every deploy step read that one file
+(`node --env-file=/etc/reportlog/reportlog.env`), and `.env.example` in the
+repository has every one of them blank.
+
+| Setting                                                  | Where it comes from                                                 |
+| -------------------------------------------------------- | ------------------------------------------------------------------- |
+| `CONTACT_KEY`, `FILES_KEY`                               | made by `install.sh` (32 random bytes); never changed, only rotated |
+| `TRANSPARENCY_LOG_SSH_KEY`                               | a key file made by `install.sh`; its public half is shown to add    |
+| `SCALEWAY_SECRET_KEY`                                    | asked by `install.sh`, from the Scaleway console                    |
+| `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | asked by `install.sh`, from the storage provider (upload-only key)  |
+| `S3_ACCESS_KEY`, `S3_SECRET_KEY`                         | asked by `install.sh`, once a files provider is chosen              |
+| `TRANSPARENCY_LOG_REMOTES`                               | asked by `install.sh` (an https address may carry a token)          |
+| `ERROR_TRACKING_DSN`                                     | written by `install-bugsink.sh`                                     |
+| `CONTACT_KEY_PREVIOUS`                                   | only while rotating the contact key, by a person (below)            |
+
+`apps/api/test/unit/secrets.test.ts` holds the code to this table. The
+one exception to "one file" is Bugsink's own key, which lives in
+`/etc/bugsink/bugsink.env`: Bugsink is a second application and must not be
+able to read the archive's keys.
+
+CI scans every commit of the repository for keys (gitleaks, pinned by
+version and checksum, with `.gitleaks.toml`). If it ever finds one, the key
+is leaked whatever happens next: **rotate it first**, then remove it.
 
 ### The contact key
 
@@ -129,19 +169,56 @@ message arrives.
 
 Optional, and off until you set it up. With it on, the API's unexpected
 errors, a scheduled job that crashes, and errors in visitors' browsers
-arrive in a [Bugsink](https://www.bugsink.com/) project you run yourself.
+arrive in [Bugsink](https://www.bugsink.com/), on this same server (the
+owner's decision, `docs/decisions.md` item 13).
 
-1. **Run Bugsink somewhere that is not this server**, in the EU: a small
-   Hetzner server of its own is enough (Bugsink's own guide installs it with
-   Docker or as a Python application). Not on this server: the archive's
-   server should not also hold a second application with its own database
-   and its own login.
-2. **Make a project** in Bugsink and copy its DSN
-   (`https://<key>@bugsink.example.org/<number>`).
-3. Put it in `ERROR_TRACKING_DSN=` in `/etc/reportlog/reportlog.env`. Set
-   `ERROR_TRACKING_ENVIRONMENT=staging` on a server that is not the real one.
-4. `sudo systemctl restart reportlog-api`. Jobs pick it up the next time
-   they run.
+1. **A domain for it**, such as `bugsink.reports.example.org`, with its DNS
+   (A and AAAA) pointed at this server like the site's.
+2. **Install it:**
+
+   ```sh
+   sudo /root/reportlog/deploy/install-bugsink.sh
+   ```
+
+   It asks for the domain (suggesting `bugsink.<the site's domain>`), then
+   installs Bugsink at the version in `deploy/versions.conf` into
+   `/opt/bugsink-<version>`, from `deploy/bugsink/requirements.txt`, where
+   every file pip may install is pinned by SHA-256 (downloaded from PyPI).
+   It runs as its own `bugsink` user with its own database (SQLite files in
+   `/var/lib/bugsink`, not the archive's PostgreSQL) and its own key
+   (`/etc/bugsink/bugsink.env`, made here). It asks for an email address and
+   password for Bugsink's own sign-in, makes a project called "ReportLog",
+   and writes `ERROR_TRACKING_DSN` into `/etc/reportlog/reportlog.env`,
+   pointing at `http://<key>@127.0.0.1:8000/<project>`: the API sends to
+   the local port, so its events never leave the machine. It starts the
+   services `bugsink` (on 127.0.0.1:8000, no access log) and
+   `bugsink-snappea` (its background worker), restarts the API, and adds
+   the domain to Caddy, which every later deploy keeps
+   (`BUGSINK_DOMAIN` in `/etc/reportlog/deploy.env`).
+
+3. **Sign in** at `https://<the domain>`.
+
+Set `ERROR_TRACKING_ENVIRONMENT=staging` on a server that is not the real
+one. Jobs pick up the DSN the next time they run.
+
+Bugsink is a second application with its own login on the archive's
+server, so it is kept apart: it cannot read `/etc/reportlog`, its units are
+confined like the archive's, it does not record visitors' addresses
+(`USE_X_REAL_IP = False`; Caddy keeps no access log for it either), it
+sends no email, and its anonymous daily report to bugsink.com is turned
+off (`deploy/bugsink/bugsink_conf.py`). An error is kept 30 days. Its
+database is not in the backups: it holds errors to fix, not a record.
+
+**Upgrading Bugsink:** change the version in `deploy/bugsink/requirements.in`
+and `BUGSINK_VERSION` in `deploy/versions.conf`, regenerate
+`requirements.txt` (the command is in `requirements.in`), merge, then run
+`install-bugsink.sh` again from an updated checkout. Its services apply
+Bugsink's own migrations when they start.
+
+**Moving Bugsink off this server later** needs only a new DSN: run Bugsink
+elsewhere, make a project, put its DSN in `ERROR_TRACKING_DSN`, restart the
+API, then `systemctl disable --now bugsink bugsink-snappea` here and empty
+`BUGSINK_DOMAIN` in `deploy.env`.
 
 What an event carries is an allowlist (`packages/contracts/src/telemetry.ts`):
 the error's type and message, its stack, the route's **pattern**
@@ -263,7 +340,10 @@ sudo reportlog deploy <commit>   # the only way one is installed
 `/etc/reportlog/deploy.env`) and says how far the running release is behind
 the branch, which releases lie between them, with their notes from the
 newest `CHANGELOG.md`, the commits, and the exact deploy command. It
-installs nothing.
+installs nothing. Releases are numbered (`"version"` in the root
+`package.json`, shown in every page's footer) and tagged `vX.Y.Z`; the
+repository's README says how one is cut. `sudo reportlog deploy v0.2.0`
+installs a tagged release.
 
 The same check runs **every morning around 06:00** as root
 (`reportlog-update-check.timer`). When it finds a commit it has not told you
@@ -467,13 +547,20 @@ everything except a real domain, Scaleway and real EU object storage. The
 commit messages on the branch that added this list what each run found;
 `docs/status/H-operations.md` summarizes them.
 
-On every CI run (`docs/status/P7-ops-tests.md` lists what each proves):
+On every CI run (`docs/status/P7-ops-tests.md` and `Q3-quality-ops.md` list
+what each proves):
 
-- `install.sh`, `deploy.sh`, `rollback.sh` and `reportlog` run against a
-  pretend server in a temporary directory, with systemd, apt, Caddy and the
-  build as stand-ins (`apps/api/test/unit/deploy-install.test.ts`,
-  `deploy-release.test.ts`);
-- this Caddyfile, in a real Caddy (`deploy-caddy.test.ts`);
+- `install.sh`, `install-bugsink.sh`, `deploy.sh`, `rollback.sh` and
+  `reportlog` run against a pretend server in a temporary directory, with
+  systemd, apt, pip, Caddy and the build as stand-ins, answering the
+  installers' questions on standard input
+  (`apps/api/test/unit/deploy-install.test.ts`, `deploy-release.test.ts`,
+  `deploy-bugsink.test.ts`);
+- the secret settings against `.env.example`, the units and the installers
+  (`secrets.test.ts`), and the secret scan against planted keys
+  (`secret-scan.test.ts`);
+- this Caddyfile, in a real Caddy (`deploy-caddy.test.ts`), and with
+  Bugsink's site added (`deploy-bugsink.test.ts`);
 - the storage check, against moto (`deploy-storage-check.test.ts`);
 - the doctor's migration check, against real databases in each drift state
   (`apps/api/test/db/deploy-schema-drift.test.ts`).

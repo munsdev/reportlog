@@ -1,6 +1,6 @@
 /**
  * The site settings: how it looks, what it is called, the words on its
- * pages, its legal notices and its front page. Administrators only: the
+ * pages, its legal notices, its front page and its starting points. Administrators only: the
  * server refuses everybody else, and StaffOnly says so before it has to.
  */
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router';
@@ -17,6 +17,7 @@ const SECTIONS = [
   { to: '/settings/words', label: 'Page wording' },
   { to: '/settings/legal', label: 'Legal notices' },
   { to: '/settings/development', label: 'Development notice' },
+  { to: '/settings/starting-points', label: 'Starting points' },
   // Arranged on the logbooks side, which knows when a logbook closes.
   { to: '/logbooks/front-page', label: 'Front page' },
   { to: '/settings/feedback', label: 'Feedback' },

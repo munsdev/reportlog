@@ -1,0 +1,14 @@
+# Bugsink and everything it needs, each file pinned by SHA-256 for every
+# platform it publishes (pip refuses anything else: --require-hashes).
+# Compiled into requirements.txt; installed by deploy/install-bugsink.sh into /opt/bugsink-<version>.
+#
+# Regenerate after changing the version below (BUGSINK_VERSION in
+# deploy/versions.conf must match; a test checks):
+#
+#   uv pip compile deploy/bugsink/requirements.in --generate-hashes --universal \
+#     --python-version 3.11 --only-binary :all: --exclude-newer <two weeks ago> \
+#     -o deploy/bugsink/requirements.txt
+#
+# One file serves Debian 12 (Python 3.11) and Ubuntu 24.04 (3.12), x86 and Arm:
+# compiled for 3.12 it comes out identical.
+bugsink==2.6.1

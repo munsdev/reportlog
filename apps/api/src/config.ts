@@ -72,13 +72,14 @@ const ConfigSchema = z.object({
    * Losing it makes every reporter's address unreadable; it is never sealed.
    * Without it the site runs but takes no reports, and says so.
    */
-  CONTACT_KEY: z
-    .string()
-    .refine(
-      (s) => Buffer.from(s, 'base64').length === 32,
-      'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
-    )
-    .optional(),
+  CONTACT_KEY: optional(
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'CONTACT_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+      ),
+  ),
   /**
    * Only while CONTACT_KEY is being rotated (workstream C2): the key being
    * rotated away from. Read with, never written with; removed once
@@ -101,24 +102,25 @@ const ConfigSchema = z.object({
    * stored file unreadable. Without it, or without storage, no file is taken
    * and the form does not offer the upload question.
    */
-  FILES_KEY: z
-    .string()
-    .refine(
-      (s) => Buffer.from(s, 'base64').length === 32,
-      'FILES_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
-    )
-    .optional(),
+  FILES_KEY: optional(
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'FILES_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+      ),
+  ),
   /** Where file bytes live: a directory (development, tests) or S3-compatible storage. */
   FILES_STORAGE: z.enum(['disk', 's3']).optional(),
   /** The directory, for FILES_STORAGE=disk. */
   FILES_DIR: z.string().min(1).default('.files'),
-  S3_ENDPOINT: z.url('S3_ENDPOINT looks like "https://fsn1.your-objectstorage.com"').optional(),
+  S3_ENDPOINT: optional(z.url('S3_ENDPOINT looks like "https://fsn1.your-objectstorage.com"')),
   S3_REGION: z.string().min(1).default('eu-central-1'),
-  S3_ACCESS_KEY: z.string().min(1).optional(),
-  S3_SECRET_KEY: z.string().min(1).optional(),
-  S3_BUCKET_STAGING: z.string().min(1).optional(),
-  S3_BUCKET_EVIDENCE: z.string().min(1).optional(),
-  S3_BUCKET_RENDITIONS: z.string().min(1).optional(),
+  S3_ACCESS_KEY: optional(z.string().min(1)),
+  S3_SECRET_KEY: optional(z.string().min(1)),
+  S3_BUCKET_STAGING: optional(z.string().min(1)),
+  S3_BUCKET_EVIDENCE: optional(z.string().min(1)),
+  S3_BUCKET_RENDITIONS: optional(z.string().min(1)),
   S3_ADDRESSING: z.enum(['path', 'virtual']).default('path'),
   /**
    * Whether files are taken when an administrator has not said. Their own

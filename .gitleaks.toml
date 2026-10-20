@@ -1,0 +1,88 @@
+# The secret scan CI runs over the whole history (.github/workflows/ci.yml,
+# "Secret scan"): gitleaks' own rules, plus one for ReportLog's settings.
+#
+# Keys, passwords and tokens belong on a server, in /etc/reportlog/reportlog.env,
+# never in this repository (docs/decisions.md, "Keys and secrets"). A finding
+# means a key was committed: rotate it first, then remove it. Taking a value
+# out of a later commit does not take it out of the history, which is why the
+# scan reads all of it.
+#
+# Every allowance below names one value or one file, and says why it is not a
+# secret. There is no blanket one. apps/api/test/unit/secret-scan.test.ts
+# plants real-looking keys and checks this file still catches each kind.
+
+title = "ReportLog"
+
+[extend]
+useDefault = true
+
+# A ReportLog secret setting written with a value, in any file: an env file,
+# a script, a unit, a test. On a server these are made or asked for by
+# deploy/install.sh and live only in the settings file.
+[[rules]]
+id = "reportlog-setting"
+description = "A ReportLog secret setting with a value"
+# The value: after `=` (an env file, a shell line, an assignment) or after
+# `:` in quotes (an object, JSON), and made of key characters only, so a name like
+# process.env.S3_ACCESS_KEY or opts.previousContactKey is not a value.
+regex = '''\b(?:CONTACT_KEY(?:_PREVIOUS)?|FILES_KEY|SCALEWAY_SECRET_KEY|S3_ACCESS_KEY|S3_SECRET_KEY|BACKUP_S3_ACCESS_KEY_ID|BACKUP_S3_SECRET_ACCESS_KEY)["'`]?(?:[ \t]*=[ \t]*["'`]?|[ \t]*:[ \t]*["'`])([A-Za-z0-9+/_-]{16,}={0,2})(?:["'`\s]|$)'''
+secretGroup = 1
+keywords = ["contact_key", "files_key", "secret_key", "access_key"]
+
+# A Bugsink (Sentry-protocol) address with a project key in it.
+[[rules]]
+id = "reportlog-error-tracking-dsn"
+description = "An error-tracking DSN with its project key"
+regex = '''\bERROR_TRACKING_DSN[ \t]*[=:][ \t]*["'`]?https?://([0-9a-f]{32})@'''
+secretGroup = 1
+keywords = ["error_tracking_dsn"]
+
+# --- allowances: values that are in the history and are not secrets ---------
+
+[[allowlists]]
+description = """The old application's self-tests (legacy/scripts/*-selftest.mjs, and the same
+files before they moved under legacy/) set this fixed key when none is given:
+base64 of the text "0123456789abcdef0123456789abcdef". No server uses it."""
+regexes = ['''^MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=$''']
+
+[[allowlists]]
+description = """The same fixed test key in hex, in the same self-tests."""
+regexes = ['''^0123456789abcdef0123456789abcdef$''']
+
+[[allowlists]]
+description = """Placeholders that say they are placeholders: the all-zero ID, and values
+containing "example", which older versions of .env.example and the old
+application's self-tests used. AWS's own documentation keys
+(AKIAIOSFODNN7EXAMPLE and its secret) are among them."""
+targetRules = ["reportlog-setting"]
+regexes = ['''^0{8}-0{4}-0{4}-0{4}-0{12}$''', '''(?i)example''']
+
+[[allowlists]]
+description = """The old application's self-test (scripts/selftest.js) checks that changing the
+storage secret is noticed, with this made-up second value."""
+targetRules = ["reportlog-setting"]
+regexes = ['''^a-completely-different-secret-key-value$''']
+
+[[allowlists]]
+description = """A made-up token the telemetry tests put in an error message, to check the
+scrubber cuts it out (apps/api/test/*/telemetry.test.ts, apps/web)."""
+regexes = ['''^k3Jd9QwPz7XvB2nM8rT5yL1aF4hS6uE0$''']
+
+[[allowlists]]
+description = """Signing keys' fingerprints in deploy/versions.conf: public, and pinned on
+purpose so a downloaded key can be checked against them."""
+condition = "AND"
+paths = ['''^deploy/versions\.conf$''']
+regexes = ['''^[0-9A-F]{40}$''']
+
+[[allowlists]]
+description = """age PUBLIC keys (the backups are encrypted to them). Only the private half,
+AGE-SECRET-KEY-1..., is secret, and nothing here allows that."""
+regexes = ['''^age1[0-9a-z]{58}$''']
+
+[[allowlists]]
+description = """The old transparency-log self-test checks that a key it GENERATES at run time
+starts with "-----BEGIN OPENSSH PRIVATE KEY-----". The file holds that
+header as a string to compare with, never a key."""
+targetRules = ["private-key"]
+paths = ['''^(legacy/)?scripts/translog-selftest\.mjs$''']

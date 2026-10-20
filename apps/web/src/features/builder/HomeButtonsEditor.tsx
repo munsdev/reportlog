@@ -139,7 +139,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     size="sm"
                     variant="secondary"
                     disabled={i === 0}
-                    aria-label={`Move “${name}” up`}
+                    aria-label={`Move up: “${name}”`}
                     onClick={() => {
                       move(i, -1);
                     }}
@@ -150,7 +150,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     size="sm"
                     variant="secondary"
                     disabled={i === rows.length - 1}
-                    aria-label={`Move “${name}” down`}
+                    aria-label={`Move down: “${name}”`}
                     onClick={() => {
                       move(i, 1);
                     }}
@@ -160,7 +160,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                   <Button
                     size="sm"
                     variant="secondary"
-                    aria-label={`Take “${name}” off the page`}
+                    aria-label={`Take off the page: “${name}”`}
                     onClick={() => {
                       setRows((now) => now.filter((_, j) => j !== i));
                     }}
@@ -207,7 +207,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                 <Button
                   size="sm"
                   variant="secondary"
-                  aria-label={`Add “${b.label}” to the page`}
+                  aria-label={`Add to the page: “${b.label}”`}
                   onClick={() => {
                     setRows((now) => [...now, { kind: b.kind, ref: b.ref, label: '' }]);
                   }}

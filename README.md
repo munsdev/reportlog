@@ -44,6 +44,40 @@ pnpm --filter @reportlog/web e2e  # browser tests
 All three must pass before anything merges. CI runs them on every pull
 request.
 
+## Versions and releases
+
+The version is `"version"` in the root `package.json`, and
+[`CHANGELOG.md`](CHANGELOG.md) says what each release changed, in plain
+language for the people who use and run a site. Every page's footer shows the
+version (and, on a server, the commit it was deployed from), and
+`sudo reportlog updates` on a server shows the notes of every release between
+the one it runs and the newest.
+
+While changes are being made, their notes go under `## Unreleased` at the top
+of the changelog, written for a person using the site, not as commit
+messages. To cut a release:
+
+1. Pick the number. While the version starts with `0.`, raise the middle
+   number for a release that adds something or migrates the database, and the
+   last for one that only fixes things.
+2. In one commit, named `Release vX.Y.Z`: rename `## Unreleased` to
+   `## vX.Y.Z — D Month YYYY` (today's date), put a new empty
+   `## Unreleased` above it, and set `"version"` in the root `package.json`
+   to `X.Y.Z`. `apps/api/test/unit/release.test.ts` fails if the two
+   disagree.
+3. Merge it into `main` with all three suites green.
+4. Tag that commit on `main` and push the tag:
+
+   ```sh
+   git tag -a vX.Y.Z -m "ReportLog vX.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+5. Servers see it the next morning (or at once with `sudo reportlog updates`)
+   and install it with `sudo reportlog deploy vX.Y.Z`.
+
+A release is never changed once tagged. A mistake in one is fixed by the next.
+
 ## Licence
 
 [AGPL-3.0-or-later](LICENSE).

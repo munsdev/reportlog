@@ -193,9 +193,11 @@ function Row({ r }: { r: QueueItem }) {
     <Link
       to="/moderate/$threadId"
       params={{ threadId: r.thread_id }}
-      aria-label={`Open ${r.public_ref}`}
       className="flex flex-col gap-1 rounded-card border border-line bg-surface p-4 hover:bg-paper-alt"
     >
+      {/* Named by everything it shows, "Open" first: an aria-label of its own
+          would hide the visible words from somebody who says them (WCAG 2.5.3). */}
+      <span className="sr-only">Open </span>
       <span className="text-sm text-ink-alt">
         <span className="font-mono">{r.public_ref}</span> · {r.logbook_title} ·{' '}
         {new Date(r.received_at).toLocaleString()}

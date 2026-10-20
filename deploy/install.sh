@@ -14,8 +14,17 @@
 #   3. Node.js at the exact version in versions.conf, checked by SHA-256
 #   4. Caddy from Caddy's apt repository
 #   5. the `reportlog` user, the directories, the database and its role
-#   6. /etc/reportlog/reportlog.env and deploy.env, from templates
-#   7. the `reportlog` command
+#   6. /etc/reportlog/reportlog.env and deploy.env, from templates, with
+#      the keys the machine makes itself (CONTACT_KEY, FILES_KEY, the
+#      transparency log's deploy key)
+#   7. the settings only a person knows, asked one at a time: the site's
+#      address, the mail and backup accounts' keys. Enter skips one; running
+#      the script again asks only what is still empty. Nobody edits the
+#      settings file by hand, and no secret is ever typed on a command line.
+#   8. the `reportlog` command
+#
+# Keys, passwords and tokens live in /etc/reportlog/reportlog.env and nowhere
+# else (docs/decisions.md, "Keys and secrets"). This script never prints one.
 #
 # It does not deploy any code: `sudo reportlog deploy` does that, once the
 # settings are filled in.
@@ -57,7 +66,7 @@ trusted_key() {
 
 say "1. Packages and unattended security updates"
 apt-get update -qq
-apt-get install -y -qq ca-certificates curl gnupg git xz-utils age \
+apt-get install -y -qq ca-certificates curl gnupg git xz-utils age openssh-client \
   unattended-upgrades apt-listchanges >/dev/null
 install -m 0644 "$HERE/apt/20auto-upgrades" /etc/apt/apt.conf.d/20auto-upgrades
 install -m 0644 "$HERE/apt/52reportlog-unattended-upgrades" /etc/apt/apt.conf.d/52reportlog-unattended-upgrades
@@ -118,7 +127,9 @@ runuser -u postgres -- psql -qtAc "SELECT 1 FROM pg_database WHERE datname = '$A
 note "database '$APP_USER' owned by role '$APP_USER' (peer authentication)"
 
 say "6. Settings"
+FRESH=""
 if [ ! -e "$ENV_FILE" ]; then
+  FRESH=1
   # The documented template, with the one value this script knows.
   # Behind Caddy, so one proxy hop: without it every visitor has Caddy's
   # address and the sign-in limits count the whole site as one person.
@@ -147,12 +158,110 @@ if [ -z "$(env_value CONTACT_KEY)" ] && [ ! -e "$STATE_DIR/contact-key.sha256" ]
 fi
 chown root:"$APP_USER" "$ENV_FILE"
 chmod 0640 "$ENV_FILE"
+
+# The files key: the same kind of key, for reporters' files, and the same
+# rule. Made by the machine on a new settings file. On an existing file
+# without one, it is made only when somebody says this server has never
+# taken a file: a key made over one that was lost would leave every stored
+# file unreadable.
+if [ -z "$(env_value FILES_KEY)" ]; then
+  make_files_key=$FRESH
+  if [ -z "$make_files_key" ]; then
+    note "FILES_KEY is empty. If this server has ever taken files, put the original key back instead."
+    case "$(ask "Has this server never taken a file, so a new FILES_KEY is safe? (yes/no)")" in
+      y | yes) make_files_key=1 ;;
+    esac
+  fi
+  if [ -n "$make_files_key" ]; then
+    set_env FILES_KEY "$(head -c 32 /dev/urandom | base64)"
+    note "made FILES_KEY (copy it off this server with the contact key)"
+  fi
+fi
+
+# The transparency log's deploy key: the anchor pushes the daily record
+# with it (deploy/README.md, "Scheduled jobs"). Made here, never copied from
+# anywhere; only its public half is shown, to be added to the log's
+# repository as a deploy key with write access.
+LOG_KEY=$STATE_DIR/transparency-log-key
+if [ -z "$(env_value TRANSPARENCY_LOG_SSH_KEY)" ] && [ ! -e "$LOG_KEY" ]; then
+  ssh-keygen -q -t ed25519 -N '' -C "reportlog anchor" -f "$LOG_KEY"
+  chown "$APP_USER:$APP_USER" "$LOG_KEY" "$LOG_KEY.pub"
+  chmod 0600 "$LOG_KEY"
+  set_env TRANSPARENCY_LOG_SSH_KEY "$LOG_KEY"
+  note "made the transparency log's deploy key ($LOG_KEY)"
+fi
+
 if [ ! -e "$DEPLOY_ENV" ]; then
   install -m 0644 "$HERE/deploy.env.example" "$DEPLOY_ENV"
   note "wrote $DEPLOY_ENV"
 fi
 
-say "7. The reportlog command"
+say "7. What only you know"
+note "Enter skips a question. Run this script again to answer it later."
+note "Keys and passwords are not shown on screen while you type them."
+URL='https://[A-Za-z0-9.-]+(:[0-9]+)?'
+EMAIL='[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+'
+UUID='[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}'
+TOKEN='[^[:space:]]{8,}'
+BUCKET='[a-z0-9.-]{3,63}'
+
+note "The site:"
+ask_setting SITE_ORIGIN "The address people will reach the site at (https://reports.example.org)" \
+  "$URL" "https:// and a domain"
+
+note "Email (Scaleway Transactional Email; deploy/README.md, \"Email\"):"
+ask_setting EMAIL_FROM_ADDRESS "The address mail is sent from, on your verified domain" "$EMAIL" "an email address"
+ask_setting SCALEWAY_PROJECT_ID "The Scaleway project's ID" "$UUID" "a Scaleway ID (8-4-4-4-12)"
+ask_setting SCALEWAY_SECRET_KEY "The Scaleway API key's secret key" "$UUID" "a Scaleway secret key (8-4-4-4-12)" secret
+if [ -n "$(env_value SCALEWAY_SECRET_KEY)" ] && [ -n "$(env_value SCALEWAY_PROJECT_ID)" ] \
+  && [ -n "$(env_value EMAIL_FROM_ADDRESS)" ] && [ "$(env_value EMAIL_TRANSPORT)" = off ]; then
+  set_env EMAIL_TRANSPORT scaleway
+  note "EMAIL_TRANSPORT set to scaleway."
+fi
+ask_setting OPS_ALERT_EMAIL "Who is emailed when a scheduled job fails" "$EMAIL" "an email address"
+ask_setting ADMIN_EMAIL "Where a list's new entries go when the list names nobody" "$EMAIL" "an email address"
+
+note "Off-site backups (deploy/README.md, \"Off-site backups\"):"
+ask_setting BACKUP_AGE_RECIPIENTS "The age public key backups are encrypted to (age1..., made on another machine)" \
+  'age1[0-9a-z]{58}([ ,]+age1[0-9a-z]{58})*' "an age public key (age1 and 58 more characters)"
+ask_setting BACKUP_S3_ENDPOINT "The backup bucket's endpoint (https://fsn1.your-objectstorage.com)" "$URL" "https:// and a host"
+# All five, or none: the rest are asked once there is somewhere to send to.
+if [ -n "$(env_value BACKUP_S3_ENDPOINT)" ]; then
+  ask_setting BACKUP_S3_REGION "Its region (fsn1)" '[a-z0-9-]+' "a region name"
+  ask_setting BACKUP_S3_BUCKET "The bucket's name" "$BUCKET" "a bucket name"
+  ask_setting BACKUP_S3_ACCESS_KEY_ID "The upload-only key's access key ID" "$TOKEN" "an access key ID" secret
+  ask_setting BACKUP_S3_SECRET_ACCESS_KEY "Its secret access key" "$TOKEN" "a secret key" secret
+fi
+
+note "Storage for reporters' files (skip until a provider is chosen):"
+ask_setting S3_ENDPOINT "The files storage endpoint (https://...)" "$URL" "https:// and a host"
+if [ -n "$(env_value S3_ENDPOINT)" ]; then
+  ask_setting S3_REGION "Its region" '[a-z0-9-]+' "a region name"
+  ask_setting S3_BUCKET_STAGING "The bucket for files not yet sent" "$BUCKET" "a bucket name"
+  ask_setting S3_BUCKET_EVIDENCE "The bucket for files with a report" "$BUCKET" "a bucket name"
+  ask_setting S3_BUCKET_RENDITIONS "The bucket for re-encoded copies" "$BUCKET" "a bucket name"
+  ask_setting S3_ACCESS_KEY "The files key's access key ID" "$TOKEN" "an access key ID" secret
+  ask_setting S3_SECRET_KEY "Its secret key" "$TOKEN" "a secret key" secret
+  if [ "$(env_value FILES_STORAGE)" != s3 ] && [ -n "$(env_value S3_SECRET_KEY)" ]; then
+    set_env FILES_STORAGE s3
+    set_env FILES_INLINE_WORKER false
+    note "FILES_STORAGE set to s3."
+  fi
+fi
+
+note "The transparency log (deploy/README.md, \"Scheduled jobs\"):"
+ask_setting TRANSPARENCY_LOG_REMOTES "Where the daily record is pushed (git@host:you/log.git)" \
+  '[^[:space:]]+' "a git address" secret
+
+# What a working site still needs, by name, never by value.
+MISSING=""
+for key in SITE_ORIGIN EMAIL_FROM_ADDRESS SCALEWAY_PROJECT_ID SCALEWAY_SECRET_KEY OPS_ALERT_EMAIL \
+  BACKUP_AGE_RECIPIENTS BACKUP_S3_ENDPOINT BACKUP_S3_REGION BACKUP_S3_BUCKET \
+  BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY; do
+  [ -n "$(env_value "$key")" ] || MISSING="$MISSING $key"
+done
+
+say "8. The reportlog command"
 install_tooling "$CHECKOUT"
 note "/usr/local/bin/reportlog"
 
@@ -171,12 +280,26 @@ if [ -n "$NEW_KEY" ]; then
 EOF
 fi
 
+if [ -e "$LOG_KEY.pub" ]; then
+  say "The transparency log's deploy key"
+  cat <<EOF
+  Add this public key to the transparency log's repository as a deploy key
+  WITH WRITE ACCESS (the private half stays on this server):
+
+      $(cat "$LOG_KEY.pub")
+EOF
+fi
+
 say "Done. Next:"
+if [ -n "$MISSING" ]; then
+  note "Still empty:$MISSING."
+  note "Run this script again to answer them; it asks for nothing else."
+fi
 cat <<EOF
   1. Point the domain's DNS (A and AAAA) at this server.
-  2. Fill in $ENV_FILE: SITE_ORIGIN, the EMAIL_ and SCALEWAY_ settings,
-     and the BACKUP_ settings. Every setting is explained in the file.
-  3. Check $DEPLOY_ENV (where code comes from).
-  4. sudo reportlog deploy
-  5. sudo reportlog doctor
+  2. Check $DEPLOY_ENV (where code comes from).
+  3. sudo reportlog deploy
+  4. sudo reportlog doctor
+  5. Optional: error tracking with Bugsink, on this server:
+     sudo $HERE/install-bugsink.sh
 EOF

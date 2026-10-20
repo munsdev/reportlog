@@ -26,6 +26,11 @@ RestartSec=5
 StateDirectory=reportlog
 StateDirectoryMode=0750
 ReadWritePaths=/var/lib/reportlog
+# An owner can start a backup from the administration screens (/backups), and
+# the API runs it, so the API may write dumps where the backup job does.
+# Change BACKUP_DIR, this and reportlog-job@backup.service.d/backup.conf
+# together.
+ReadWritePaths=/var/backups/reportlog
 
 # --- confinement ------------------------------------------------------
 # The whole file system is read-only to this process except the paths in

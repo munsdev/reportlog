@@ -229,7 +229,11 @@ describe('install.sh run again', () => {
     writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\n');
     expect(install(s).status).toBe(0);
     const env = s.read(ENV);
-    expect(env).toMatch(/^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\n$/);
+    // (and the transparency log's deploy key, which install.sh also makes;
+    // no FILES_KEY, since nobody answered that this server never took a file)
+    expect(env).toMatch(
+      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
+    );
   });
 });
 
@@ -310,5 +314,143 @@ describe('install.sh on Ubuntu 24.04 on Arm', () => {
     expect(s.index(/^curl .*node-v[\d.]+-linux-arm64\.tar\.xz/)).toBeGreaterThan(-1);
     expect(s.index(/linux-x64/)).toBe(-1);
     expect(readlinkSync(s.at('/usr/local/bin/node'))).toContain('-linux-arm64/bin/node');
+  });
+});
+
+describe('install.sh asks for what only a person knows (Q3)', () => {
+  const ask = (s: Sandbox, answers: string[]) =>
+    s.run(join(s.checkout, 'deploy/install.sh'), [], {
+      input: answers.map((a) => `${a}\n`).join(''),
+    });
+  const AGE = `age1${'q'.repeat(58)}`;
+  const SCALEWAY = '0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0';
+  const PROJECT = '11111111-2222-3333-4444-555555555555';
+  const BACKUP_SECRET = 'backup-secret-access-key-for-the-test';
+  const BACKUP_ID = 'BACKUPACCESSKEYID';
+  // In the order install.sh asks; Enter skips files storage and the log.
+  const ANSWERS = [
+    'https://reports.example.org',
+    'reports@example.org',
+    PROJECT,
+    SCALEWAY,
+    'ops@example.org',
+    'office@example.org',
+    AGE,
+    'https://fsn1.your-objectstorage.com',
+    'fsn1',
+    'example-backups',
+    BACKUP_ID,
+    BACKUP_SECRET,
+    '',
+    '',
+  ];
+
+  it('writes each answer into the settings file, and turns mail on once it can send', () => {
+    const s = machine();
+    const r = ask(s, ANSWERS);
+    expect(r.status, r.out).toBe(0);
+    const env = s.read(ENV);
+    for (const line of [
+      'SITE_ORIGIN=https://reports.example.org',
+      'EMAIL_FROM_ADDRESS=reports@example.org',
+      `SCALEWAY_PROJECT_ID=${PROJECT}`,
+      `SCALEWAY_SECRET_KEY=${SCALEWAY}`,
+      'EMAIL_TRANSPORT=scaleway',
+      'OPS_ALERT_EMAIL=ops@example.org',
+      'ADMIN_EMAIL=office@example.org',
+      `BACKUP_AGE_RECIPIENTS=${AGE}`,
+      'BACKUP_S3_ENDPOINT=https://fsn1.your-objectstorage.com',
+      'BACKUP_S3_REGION=fsn1',
+      'BACKUP_S3_BUCKET=example-backups',
+      `BACKUP_S3_ACCESS_KEY_ID=${BACKUP_ID}`,
+      `BACKUP_S3_SECRET_ACCESS_KEY=${BACKUP_SECRET}`,
+    ]) {
+      expect(env.split('\n'), line).toContain(line);
+    }
+    // Skipped, so still blank; and nothing was added: each answer took its
+    // placeholder's line.
+    expect(env).toMatch(/^S3_SECRET_KEY=$/m);
+    expect(env).toMatch(/^FILES_STORAGE=disk$/m);
+    const template = readFileSync(join(REPO, '.env.example'), 'utf8').split('\n');
+    expect(env.split('\n')).toHaveLength(template.length);
+    expect(statSync(s.at(ENV)).mode & 0o777).toBe(0o640);
+    expect(r.out).not.toContain('Still empty');
+  });
+
+  it('never shows a key it was given or made', () => {
+    const s = machine();
+    const r = ask(s, ANSWERS);
+    const env = s.read(ENV);
+    for (const key of ['CONTACT_KEY', 'FILES_KEY']) {
+      const v = new RegExp(`^${key}=(.+)$`, 'm').exec(env)?.[1] ?? '';
+      expect(Buffer.from(v, 'base64'), key).toHaveLength(32);
+      expect(r.out, key).not.toContain(v);
+    }
+    expect(r.out).not.toContain(SCALEWAY);
+    expect(r.out).not.toContain(BACKUP_SECRET);
+    expect(s.calls().join('\n')).not.toContain(BACKUP_SECRET);
+  });
+
+  it('makes the transparency log a deploy key, and shows only its public half', () => {
+    const s = machine();
+    const r = ask(s, ANSWERS);
+    expect(s.read(ENV)).toMatch(
+      /^TRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key$/m,
+    );
+    expect(statSync(s.at('/var/lib/reportlog/transparency-log-key')).mode & 0o777).toBe(0o600);
+    expect(r.out).toContain('ssh-ed25519 AAAAC3NzaStandIn reportlog anchor');
+    expect(r.out).not.toContain('stand-in private key');
+  });
+
+  it('asks again when an answer has the wrong shape, and Enter leaves it for later', () => {
+    const s = machine();
+    const r = ask(s, [
+      'http://reports.example.org',
+      'https://reports.example.org',
+      'not an address',
+      '',
+    ]);
+    expect(r.status, r.out).toBe(0);
+    expect(r.out).toContain('That does not look like https:// and a domain. Try again');
+    expect(s.read(ENV)).toMatch(/^SITE_ORIGIN=https:\/\/reports\.example\.org$/m);
+    expect(s.read(ENV)).not.toMatch(/^EMAIL_FROM_ADDRESS=\S/m);
+    expect(s.read(ENV)).toMatch(/^EMAIL_TRANSPORT=off$/m);
+  });
+
+  it('unattended, asks nothing it can wait for and says by name what is still empty', () => {
+    const s = machine();
+    const r = install(s);
+    expect(r.status, r.out).toBe(0);
+    expect(r.out).toContain(
+      'Still empty: SITE_ORIGIN EMAIL_FROM_ADDRESS SCALEWAY_PROJECT_ID SCALEWAY_SECRET_KEY OPS_ALERT_EMAIL BACKUP_AGE_RECIPIENTS BACKUP_S3_ENDPOINT BACKUP_S3_REGION BACKUP_S3_BUCKET BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY.',
+    );
+    // The backup bucket's details are asked only once there is a bucket.
+    expect(r.out).not.toContain('Its region (fsn1)');
+  });
+
+  it('run again, asks only what is still empty', () => {
+    const s = machine();
+    expect(ask(s, ANSWERS).status).toBe(0);
+    const r = ask(s, ['', '']);
+    expect(r.status, r.out).toBe(0);
+    expect(r.out).not.toContain('The address people will reach the site at');
+    expect(r.out).not.toContain('secret key');
+    expect(r.out).toContain('The files storage endpoint');
+  });
+
+  it('makes FILES_KEY on an existing file only when told this server never took a file', () => {
+    const s = machine();
+    mkdirSync(s.at('/etc/reportlog'), { recursive: true });
+    writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\nFILES_KEY=\n');
+    const r = ask(s, ['no']);
+    expect(r.out).toContain(
+      'If this server has ever taken files, put the original key back instead.',
+    );
+    expect(s.read(ENV)).toMatch(/^FILES_KEY=$/m);
+    const again = ask(s, ['yes']);
+    expect(again.status, again.out).toBe(0);
+    expect(Buffer.from(/^FILES_KEY=(.+)$/m.exec(s.read(ENV))?.[1] ?? '', 'base64')).toHaveLength(
+      32,
+    );
   });
 });

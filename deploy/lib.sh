@@ -59,6 +59,65 @@ env_value() {
   sed -n "s/^${key}=//p" "$file" | tail -1 | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'$/\1/"
 }
 
+# Write one setting into an env file: replaces the `KEY=` line, or the
+# commented `# KEY=` placeholder the template has for it, or adds a line.
+# The file keeps its owner and mode (it is rewritten in place). The value
+# reaches awk through its environment, never its arguments, so a secret is
+# not on a command line where `ps` would show it, and no character in it is
+# special.
+set_env() {
+  local key=$1 value=$2 file=${3:-$ENV_FILE} out
+  out=$(KEY="$key" VALUE="$value" awk '
+    BEGIN { k = ENVIRON["KEY"]; v = ENVIRON["VALUE"]; done = 0 }
+    !done && (index($0, k "=") == 1 || index($0, "# " k "=") == 1) { print k "=" v; done = 1; next }
+    { print }
+    END { if (!done) print k "=" v }
+  ' "$file")
+  printf '%s\n' "$out" >"$file"
+}
+
+# One answer from whoever runs the script, read from standard input. Empty
+# when nobody answers: no terminal and nothing piped in reads as end of
+# input, so an unattended run asks nothing and carries on. A secret is not
+# echoed while it is typed. The question goes to standard error.
+ask() {
+  local question=$1 kind=${2:-plain} answer=""
+  printf '  %s: ' "$question" >&2
+  if [ "$kind" = secret ] && [ -t 0 ]; then
+    IFS= read -r -s answer || true
+    printf '\n' >&2
+  else
+    IFS= read -r answer || true
+    [ -t 0 ] || printf '\n' >&2
+  fi
+  printf '%s' "$answer"
+}
+
+# Ask for a setting that is still empty in the env file, check its shape,
+# and write it. Enter (or no answer at all) leaves it empty for later:
+# running the installer again asks only what is still missing.
+#
+#   ask_setting KEY "question" <extended regex> "what it looks like" [secret]
+ask_setting() {
+  local key=$1 question=$2 shape=$3 hint=$4 kind=${5:-plain} value tries=0
+  [ -z "$(env_value "$key")" ] || return 0
+  while [ "$tries" -lt 3 ]; do
+    value=$(ask "$question" "$kind")
+    [ -n "$value" ] || {
+      note "$key left empty for now."
+      return 0
+    }
+    if printf '%s' "$value" | grep -Eq "^($shape)\$"; then
+      set_env "$key" "$value"
+      note "$key set."
+      return 0
+    fi
+    note "That does not look like $hint. Try again, or press Enter to skip."
+    tries=$((tries + 1))
+  done
+  note "$key left empty for now."
+}
+
 # Run something as the service user with a clean environment. Used for the
 # build (so package install scripts never run as root) and for anything
 # that executes the application's code.
@@ -155,17 +214,29 @@ install_units() {
 # The Caddyfile a release carries, with this server's domain written in.
 # Validated before it replaces the running one; reloaded only if it changed.
 install_caddyfile() {
-  local release=$1 origin domain acme tmp
+  local release=$1 origin domain acme bugsink tmp
   origin=$(env_value SITE_ORIGIN)
   [ -n "$origin" ] || die "SITE_ORIGIN is not set in $ENV_FILE. Caddy needs the domain."
   domain=${origin#*://}
   domain=${domain%%/*}
   acme=$(env_value ACME_EMAIL "$DEPLOY_ENV")
 
+  bugsink=$(env_value BUGSINK_DOMAIN "$DEPLOY_ENV")
+
   tmp=$(mktemp)
   sed -e "s|@SITE_DOMAIN@|$domain|" \
     -e "s|@ACME_EMAIL_LINE@|${acme:+email $acme}|" \
     "$release/deploy/caddy/Caddyfile" >"$tmp"
+  # Bugsink's site, on its own domain, when this server runs it. Taken from
+  # what install-bugsink.sh installed, not from the release, so a rollback to
+  # a release older than Bugsink does not take its site down.
+  if [ -n "$bugsink" ]; then
+    if [ -r /etc/bugsink/bugsink.caddy ]; then
+      { echo; sed -e "s|@BUGSINK_DOMAIN@|$bugsink|" /etc/bugsink/bugsink.caddy; } >>"$tmp"
+    else
+      note "WARNING: BUGSINK_DOMAIN is set but Bugsink is not installed (deploy/install-bugsink.sh)."
+    fi
+  fi
   if cmp -s "$tmp" /etc/caddy/Caddyfile; then
     rm -f "$tmp"
     note "Caddyfile unchanged"
