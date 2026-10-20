@@ -156,8 +156,19 @@ test('a reporter files a report card by card, and confirms it from the email', a
   const checks = inbox.getByRole('list', { name: 'Checks' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
-  // In the sealed bytes the page shows (folded away until opened).
-  await expect(inbox.locator('pre', { hasText: 'The doors were locked at nine.' })).toBeAttached();
+  // Not published, so the page shows its fingerprints and none of its words
+  // (decisions.md §1); the answer is in the sealed bytes staff can read.
+  await expect(inbox.getByText('What this report says is not shown')).toBeVisible();
+  await expect(inbox.getByText(/The doors were locked at nine/)).toHaveCount(0);
+  const staff = await playwright.request.newContext({
+    baseURL: info.project.use.baseURL ?? 'http://127.0.0.1:4173',
+    storageState: ADMIN,
+  });
+  const sealed = (await (await staff.get(`/api/reports/${ref}/verify`)).json()) as {
+    canonical_json?: string;
+  };
+  expect(sealed.canonical_json).toContain('The doors were locked at nine.');
+  await staff.dispose();
   await reader.close();
 });
 
