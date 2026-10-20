@@ -105,6 +105,9 @@ const OPEN = [
   '/organizations/',
   '/organizations/$id/listing',
   '/notifications_/stop/$token',
+  '/journalists_/alerts',
+  '/journalists_/confirm/$token',
+  '/journalists_/stop/$token',
 ] as const;
 
 const PARAMS: Record<string, string> = {
