@@ -3,6 +3,7 @@
 Branch `claude/plan-d-intake`. Rulings 38 and 42 are rows in `docs/decisions.md`.
 
 ## Done
+
 - **L7** `stageSubmission` refuses an answer key the logbook does not ask, in a sentence. The shared `buildAnswers` still drops (lists rely on it).
 - **L7 (choices)** an optional choice answer outside the options is refused.
 - **L3** tests: a logbook with only choice questions refuses text under another key or in a choice. No kind allowlist (ruling 42).
@@ -13,6 +14,7 @@ Branch `claude/plan-d-intake`. Rulings 38 and 42 are rows in `docs/decisions.md`
 - **Door/no-third-party (item 14)** `/submit` and `/file/confirm/$token` were already in `third-party.spec.ts`; no new page was added. `/submit` is not a door page (it already called `/api/logbooks`).
 
 ## Not done / assumed
+
 - `elections.json` still has a `short_text` `place` question. ElectionLog's use of that template was not checked; change it in setup or the template.
 - Pre-fill is per browser: a confirmation link opened on another device gets none. The confirm response carries no place or time, on purpose.
 - `ListForm.tsx` (tip workstream's folder) has a three-line change for the pre-fill.
