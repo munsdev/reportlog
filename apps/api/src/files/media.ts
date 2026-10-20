@@ -44,11 +44,33 @@ export class RejectFile extends Error {
   }
 }
 
+/**
+ * A failure that is ours: the tool is not on this server (any more). The
+ * file waits for it, as it would had the check before it said so; refusing
+ * it would destroy somebody's evidence over an unfinished install.
+ */
+export class MissingTool extends Error {
+  override name = 'MissingTool';
+  readonly bin: string;
+  constructor(bin: string) {
+    super(`${bin} is not installed`);
+    this.bin = bin;
+  }
+}
+
 async function tool(bin: string, args: string[], timeout = TRANSCODE_TIMEOUT_MS) {
   try {
     return await run(bin, args, { timeout, killSignal: 'SIGKILL', maxBuffer: 4 * 1024 * 1024 });
   } catch (e) {
-    const err = e as { killed?: boolean; signal?: string; stderr?: string; message: string };
+    const err = e as {
+      code?: unknown;
+      killed?: boolean;
+      signal?: string;
+      stderr?: string;
+      message: string;
+    };
+    // Gone between the check and the run (a package being upgraded, say).
+    if (err.code === 'ENOENT') throw new MissingTool(bin);
     if (err.killed || err.signal === 'SIGKILL') {
       throw new RejectFile(
         `${bin} ran out of time: the file may be damaged, or built to be slow to decode`,
@@ -87,28 +109,31 @@ export const PACKAGE_FOR: Readonly<Record<string, string>> = {
   pdftoppm: 'poppler-utils',
 };
 
-const found = new Map<string, boolean>();
+/**
+ * Asked for every file, never remembered: the worker loop runs for days, and
+ * an operator who installs the package the status named expects the waiting
+ * files to start, not to wait for a restart. A few stat calls per file.
+ */
 async function haveTool(bin: string): Promise<boolean> {
-  const known = found.get(bin);
-  if (known !== undefined) return known;
-  let ok = false;
   for (const dir of (process.env.PATH ?? '').split(delimiter)) {
     try {
       await access(join(dir, bin), constants.X_OK);
-      ok = true;
-      break;
+      return true;
     } catch {
       // not here
     }
   }
-  found.set(bin, ok);
-  return ok;
+  return false;
 }
 
-let heicDecoder: boolean | undefined;
-/** ImageMagick without libheif reads every format but HEIC. */
+let heicDecoder = false;
+/**
+ * ImageMagick without libheif reads every format but HEIC. Only a yes is
+ * remembered (it costs a child process to ask), for the same reason as
+ * above: a no can become a yes when libheif is installed.
+ */
 async function canDecodeHeic(): Promise<boolean> {
-  if (heicDecoder === undefined) {
+  if (!heicDecoder) {
     try {
       const { stdout } = await run('convert', ['-list', 'format'], { timeout: 20_000 });
       heicDecoder = /^\s*HEIC\*?\s+\S*\s+r/m.test(stdout);
