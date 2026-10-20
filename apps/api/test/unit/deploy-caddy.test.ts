@@ -66,12 +66,31 @@ function render(site: string, admin: number, dist: string, api: number): string 
   return out;
 }
 
+// S1 and S3, needing no Caddy: what the shipped file asks for.
+describe('the shipped Caddyfile, read as text', () => {
+  const directives = SHIPPED.split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith('#'));
+
+  it('asks for no access log (S1): a `log` directive would write every visitor’s address', () => {
+    expect(directives.filter((l) => /^log\b/.test(l))).toEqual([]);
+  });
+
+  it('has one catch-all route for the website (S3), so a new page needs no Caddy change', () => {
+    expect(directives.filter((l) => l.startsWith('try_files'))).toEqual([
+      'try_files {path} /index.html',
+    ]);
+  });
+});
+
 describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
   let dir: string;
   let base: string;
   let caddy: ChildProcess;
   let api: Server;
   const seenByApi: Record<string, string | string[] | undefined>[] = [];
+  // Everything Caddy itself writes while it runs, for the log test below.
+  let caddyOutput = '';
 
   beforeAll(async () => {
     dir = mkdtempSync(join(tmpdir(), 'rl-caddy-'));
@@ -103,8 +122,13 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
         XDG_CONFIG_HOME: join(dir, 'config'),
         HOME: dir,
       },
-      stdio: 'ignore',
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
+    for (const stream of [caddy.stdout, caddy.stderr]) {
+      stream?.on('data', (chunk: Buffer) => {
+        caddyOutput += chunk.toString('utf8');
+      });
+    }
     for (let i = 0; i < 100; i++) {
       try {
         await fetch(base);
@@ -200,5 +224,41 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
       expect(res.headers.get('x-content-type-options'), path).toBe('nosniff');
       expect(res.headers.get('server'), path).toBeNull();
     }
+  });
+
+  it('serves every page of the app from the one catch-all route, at any depth (S3)', async () => {
+    // The pages added with the moderation and EU items, and one that does not exist yet.
+    for (const path of [
+      '/terms',
+      '/illegal-content',
+      `/illegal-content/status/${'a'.repeat(64)}`,
+      `/file/erase/${'b'.repeat(64)}`,
+      '/some/page/nobody/has/written/yet',
+    ]) {
+      const res = await get(path);
+      expect(res.status, path).toBe(200);
+      expect(await res.text(), path).toContain(`/assets/${HASHED}`);
+    }
+  });
+
+  it('writes nothing about a visitor: no access log, no client address (S1)', async () => {
+    const visitor = '203.0.113.77';
+    for (const path of [
+      '/',
+      '/terms',
+      '/api/health',
+      '/assets/gone.js',
+      `/file/erase/${'c'.repeat(64)}`,
+    ]) {
+      await get(path, { 'x-forwarded-for': visitor, 'user-agent': 'a-distinctive-agent/9' });
+    }
+    // Caddy flushes its log lines as it writes them; give it a moment anyway.
+    await new Promise((r) => setTimeout(r, 300));
+    expect(caddyOutput).not.toContain(visitor);
+    expect(caddyOutput).not.toContain('a-distinctive-agent');
+    expect(caddyOutput).not.toContain('http.log.access');
+    expect(caddyOutput).not.toMatch(/remote_ip|client_ip|"request"/);
+    // And not the tokens in those paths either.
+    expect(caddyOutput).not.toContain('c'.repeat(64));
   });
 });

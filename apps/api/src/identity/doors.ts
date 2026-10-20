@@ -119,6 +119,13 @@ const FILING_CALLS: readonly {
   // anything else, so the gate says nothing about which tokens exist.
   { method: 'GET', route: '/api/reports/confirm/:token', passes: submissionExists },
   { method: 'POST', route: '/api/reports/confirm/:token', passes: submissionExists },
+  // The erase link in the same email (identity/eraseLink.ts). It passes on the
+  // same token, and its look changes nothing: only the POST does.
+  { method: 'GET', route: '/api/erase/:token', passes: submissionExists },
+  { method: 'POST', route: '/api/erase/:token', passes: submissionExists },
+  // The status link in a notice-of-illegal-content email (moderation/
+  // contentNotices.ts): the sender may never have had the password.
+  { method: 'GET', route: '/api/illegal-content/status/:token', passes: contentNoticeKnown },
   // Attaching files while filing (files workstream). They pass only while a
   // logbook open outside ASKS FOR FILES, as legacy conditioned them; the two
   // that name their logbook pass for that logbook only. The rest carry a free
@@ -151,6 +158,18 @@ const FILING_CALLS: readonly {
       evidenceTokenKnown(db, (r.params as Record<string, unknown>).token),
   })),
 ];
+
+async function contentNoticeKnown(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {
+  const token = (request.params as Record<string, unknown>).token;
+  if (typeof token !== 'string' || !token) return false;
+  const h = sha256Hex(token);
+  const row = await db
+    .selectFrom('content_notices')
+    .select('id')
+    .where((eb) => eb.or([eb('token_hash', '=', h), eb('decision_token_hash', '=', h)]))
+    .executeTakeFirst();
+  return row !== undefined;
+}
 
 async function submissionExists(db: Kysely<DB>, request: FastifyRequest): Promise<boolean> {
   const token = (request.params as Record<string, unknown>).token;

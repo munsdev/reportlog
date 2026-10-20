@@ -127,6 +127,8 @@ export const PublishedMap = z.object({
   blurb: z.string().nullable(),
   as_of: z.string(),
   note: z.string(),
+  /** The line that goes beside every number (platform.ts NOT_A_SAMPLE). */
+  not_a_sample: z.string(),
   threshold: z.number().int(),
   /** What is being counted, named by the server: an entry is not a report. */
   unit: z.object({ one: z.string(), many: z.string() }),

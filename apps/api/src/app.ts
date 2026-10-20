@@ -31,7 +31,9 @@ import { listRoutes } from './lists/routes.ts';
 import { linkKeySource } from './links/keys.ts';
 import { linkRoutes } from './links/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
+import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
+import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
@@ -192,7 +194,11 @@ export async function buildApp({
     db,
     contactKey: config.CONTACT_KEY,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
+    mailer: mail,
+    siteOrigin,
   });
+  await platformRoutes(app, { db, mailer: mail, siteOrigin });
+  eraseLinkRoutes(app, { db });
   journalistRoutes(app, {
     db,
     mailer: mail,

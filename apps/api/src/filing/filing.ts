@@ -90,13 +90,18 @@ export interface FilingDeps {
   publicRefPrefix: string;
 }
 
-export const confirmEmail = (logbookTitle: string, link: string) => ({
+export const confirmEmail = (logbookTitle: string, link: string, eraseLink?: string) => ({
   subject: 'Confirm your report',
   text:
     `You sent a report to “${logbookTitle}”. To file it, open this link and press “Confirm and file my report”:\n\n` +
     `${link}\n\n` +
     'Nothing is filed until you do. The link works for 24 hours to confirm, and after that it shows you where your report stands.\n\n' +
-    'If you did not send this, ignore this email. Nothing happens without the link.',
+    'If you did not send this, ignore this email. Nothing happens without the link.' +
+    (eraseLink
+      ? '\n\n' +
+        'Once your report is filed, you can have your email address erased at any time, without an account. ' +
+        `Open this link and press the button; it changes nothing until you do. Your report is not withdrawn:\n\n${eraseLink}`
+      : ''),
 });
 
 /**
@@ -197,7 +202,11 @@ export async function stageSubmission(
   });
   await deps.mailer.send({
     to: email,
-    ...confirmEmail(lb.title, `${deps.siteOrigin}/file/confirm/${token}`),
+    ...confirmEmail(
+      lb.title,
+      `${deps.siteOrigin}/file/confirm/${token}`,
+      `${deps.siteOrigin}/file/erase/${token}`,
+    ),
   });
   return { filesDropped: files.dropped };
 }

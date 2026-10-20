@@ -123,7 +123,7 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
           eb
             .selectFrom('reporter_actions as ra')
             .whereRef('ra.thread_id', '=', 'h.thread_id')
-            .where('ra.action', 'in', ['withdraw', 'erase']),
+            .where('ra.action', '=', 'withdraw'),
         )
         .as('reporter_withdrew'),
       eb
@@ -222,19 +222,23 @@ async function log(
     .execute();
 }
 
-/** Approve, decline, or mark unclear. Always with a reason; always revisitable. */
+/**
+ * Approve, decline, or mark unclear. Always with a reason; always revisitable.
+ * Says what it replaced, so a caller can tell a new decline (which emails the
+ * reporter, rejection.ts) from the same decline made twice.
+ */
 export async function decide(
   db: Kysely<DB>,
   threadId: string,
   status: unknown,
   comment: unknown,
   actor: string,
-): Promise<void> {
+): Promise<{ previous: string; report_id: number }> {
   if (!DECISIONS.includes(status as Decision)) {
     throw refuse(400, 'invalid_status', 'A decision is approve, decline or unclear.');
   }
   const why = reasonOf(comment);
-  await db.transaction().execute(async (trx) => {
+  return db.transaction().execute(async (trx) => {
     const head = await lockedHead(trx, threadId);
     await trx
       .updateTable('report_heads')
@@ -249,7 +253,55 @@ export async function decide(
       actor_email: actor,
       comment: why,
     });
+    return { previous: head.moderation_status, report_id: head.current_report_id };
   });
+}
+
+/** What a batch approval writes as each report's reason: the log says it was a batch. */
+export const BATCH_REASON = 'Approved in a batch.';
+
+/**
+ * Approve many reports at once (M2). Each report is its own transaction and
+ * writes its own moderation_log row, exactly the row a single approval
+ * writes, so the record cannot tell a batch from a hundred clicks except by
+ * the comment. No reason is asked: the moderator has read them, and the
+ * reason for approving is the standard.
+ *
+ * A report that cannot be approved here is skipped with the reason, never
+ * approved anyway: one withdrawn report must not stop the other ninety-nine,
+ * and must not be put back on the board by being in the same list.
+ */
+export async function decideBatch(db: Kysely<DB>, threadIds: readonly string[], actor: string) {
+  const approved: string[] = [];
+  const skipped: { thread_id: string; why: string }[] = [];
+  for (const threadId of new Set(threadIds)) {
+    try {
+      await db.transaction().execute(async (trx) => {
+        const head = await lockedHead(trx, threadId);
+        if (head.withdrawn) throw refuse(409, 'withdrawn', 'It is withdrawn.');
+        if (head.moderation_status === 'valid')
+          throw refuse(409, 'already', 'It is already approved.');
+        await trx
+          .updateTable('report_heads')
+          .set({ moderation_status: 'valid', updated_at: new Date() })
+          .where('thread_id', '=', threadId)
+          .execute();
+        await log(trx, {
+          thread_id: threadId,
+          report_id: head.current_report_id,
+          action: 'review',
+          new_status: 'valid',
+          actor_email: actor,
+          comment: BATCH_REASON,
+        });
+      });
+      approved.push(threadId);
+    } catch (e) {
+      if (!(e instanceof HttpError)) throw e;
+      skipped.push({ thread_id: threadId, why: e.message });
+    }
+  }
+  return { approved, skipped };
 }
 
 /**
@@ -281,9 +333,9 @@ export async function withdraw(db: Kysely<DB>, threadId: string, comment: unknow
  * pending for a fresh look, or straight to a decision).
  *
  * NEVER A REPORTER'S OWN WITHDRAWAL. Legacy let a moderator restore anything.
- * Here a report its reporter withdrew (or erased) stays withdrawn: putting it
+ * Here a report its reporter withdrew stays withdrawn: putting it
  * back on the board would be the operator overruling the one person whose
- * account it is.
+ * account it is. Erasing contact details is not a withdrawal (decision 39).
  */
 export async function restore(
   db: Kysely<DB>,
@@ -307,7 +359,7 @@ export async function restore(
       .selectFrom('reporter_actions')
       .select('id')
       .where('thread_id', '=', threadId)
-      .where('action', 'in', ['withdraw', 'erase'])
+      .where('action', '=', 'withdraw')
       .executeTakeFirst();
     if (byReporter) {
       throw refuse(

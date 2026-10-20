@@ -25,7 +25,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 import { filterableFields, launchedLogbooks, logbookBySlug } from '../logbooks/logbooks.ts';
 import { forForm } from '../logbooks/routes.ts';
-import { publicLinksFor, publicNoteFor, publicNotesForMany } from '../moderation/notes.ts';
+import { publicNoteFor, publicNotesForMany } from '../moderation/notes.ts';
 import type { PublicNote } from '../moderation/notes.ts';
 import { placeGuards, withheldReason } from './places.ts';
 import { publicArchiveAvailable } from './publication.ts';
@@ -231,8 +231,7 @@ export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<Boar
 const OFF = { published: false as const, reason: 'This site does not publish a public archive.' };
 
 export type OneReport =
-  | { published: true; report: PublicReport; links: Awaited<ReturnType<typeof publicLinksFor>> }
-  | { published: false; reason: string };
+  { published: true; report: PublicReport } | { published: false; reason: string };
 
 /** One published report. Anything else, in any state, is "not found". */
 export async function boardReport(db: Kysely<DB>, publicRef: string): Promise<OneReport | null> {
@@ -240,11 +239,8 @@ export async function boardReport(db: Kysely<DB>, publicRef: string): Promise<On
   const row = await columns(published(db)).where('r.public_ref', '=', publicRef).executeTakeFirst();
   if (!row) return null;
   const note = (await publicNoteFor(db, row.thread_id)) ?? undefined;
-  return {
-    published: true,
-    report: present(row, note),
-    links: note ? await publicLinksFor(db, row.thread_id) : [],
-  };
+  // No source links here (decision 37): they are for staff and vetted journalists.
+  return { published: true, report: present(row, note) };
 }
 
 /** Every logbook a report could have been filed to, with ONLY its operator's filters. */

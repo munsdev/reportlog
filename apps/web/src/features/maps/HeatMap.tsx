@@ -23,6 +23,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { OutlinePlane, Outlines } from './outlines.ts';
 import { pathOf } from './outlines.ts';
@@ -251,8 +252,11 @@ export function HeatMapView({
 
       <AreaList map={map} plane={plane} units={units} />
 
-      <figcaption className="max-w-prose text-sm text-muted">
-        {map.note} Counted {new Date(map.as_of).toLocaleString()}.
+      <figcaption className="flex max-w-prose flex-col gap-1 text-sm text-muted">
+        <NotASample line={map.not_a_sample} />
+        <span>
+          {map.note} Counted {new Date(map.as_of).toLocaleString()}.
+        </span>
       </figcaption>
     </figure>
   );

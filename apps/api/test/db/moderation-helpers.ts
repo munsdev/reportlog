@@ -112,8 +112,7 @@ export async function resetModerationSettings(db: Database): Promise<void> {
 // ── an app, and people signed in to it ──────────────────────────────────
 
 /** An app that can take reports and open contact details, with counts never cached. */
-export async function moderationHarness(): Promise<FilingHarness> {
-  const db = testDatabase();
+export async function moderationHarness(db: Database = testDatabase()): Promise<FilingHarness> {
   const mailer = capturingMailer();
   const logs: string[] = [];
   const app = await buildApp({

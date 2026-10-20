@@ -33,6 +33,23 @@ export type Numeric = ColumnType<string, number | string, number | string>;
 
 export type Timestamp = ColumnType<Date, Date | string, Date | string>;
 
+export interface AgreementAcceptances {
+  accepted_at: Generated<Timestamp>;
+  id: Generated<number>;
+  text_id: number;
+  user_email: string;
+}
+
+export interface AgreementTexts {
+  audience: string;
+  body: string;
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  digest: string;
+  id: Generated<number>;
+  version: number;
+}
+
 export interface AnchorRuns {
   anchor_date: string | null;
   detail: string;
@@ -134,6 +151,33 @@ export interface ContactKeys {
   thread_id: string;
 }
 
+export interface ContentNoticeEvents {
+  action: string;
+  actor: string;
+  created_at: Generated<Timestamp>;
+  detail: string | null;
+  id: Generated<number>;
+  notice_id: number;
+}
+
+export interface ContentNotices {
+  created_at: Generated<Timestamp>;
+  decided_at: Timestamp | null;
+  decided_by: string | null;
+  decision: string | null;
+  decision_reason: string | null;
+  decision_token_hash: string | null;
+  explanation: string;
+  good_faith: boolean;
+  id: Generated<number>;
+  receipt: string;
+  sender_email: string | null;
+  sender_name: string | null;
+  status: Generated<string>;
+  token_hash: string;
+  where_found: string;
+}
+
 export interface CoordinatorActions {
   action: string;
   comment: string;
@@ -141,6 +185,16 @@ export interface CoordinatorActions {
   created_at: Generated<Timestamp>;
   id: Generated<number>;
   organization_id: number;
+  report_id: number;
+  thread_id: string;
+}
+
+export interface DecisionNotices {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  outcome: string;
+  reason_code: string;
   report_id: number;
   thread_id: string;
 }
@@ -793,6 +847,16 @@ export interface StorageDeletions {
   last_error: string | null;
 }
 
+export interface ThreatEvents {
+  action: string;
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  note: string | null;
+  subject_kind: string;
+  subject_ref: string;
+}
+
 export interface UploadSlots {
   byte_size: number | null;
   claimed_at: Timestamp | null;
@@ -836,6 +900,8 @@ export interface Users {
 }
 
 export interface DB {
+  agreement_acceptances: AgreementAcceptances;
+  agreement_texts: AgreementTexts;
   anchor_runs: AnchorRuns;
   attachment_events: AttachmentEvents;
   attachment_heads: AttachmentHeads;
@@ -846,7 +912,10 @@ export interface DB {
   contact_access_log: ContactAccessLog;
   contact_key_rotations: ContactKeyRotations;
   contact_keys: ContactKeys;
+  content_notice_events: ContentNoticeEvents;
+  content_notices: ContentNotices;
   coordinator_actions: CoordinatorActions;
+  decision_notices: DecisionNotices;
   digest_stop_links: DigestStopLinks;
   digest_subscriptions: DigestSubscriptions;
   editorial_note_links: EditorialNoteLinks;
@@ -909,6 +978,7 @@ export interface DB {
   site_copy: SiteCopy;
   site_settings: SiteSettings;
   storage_deletions: StorageDeletions;
+  threat_events: ThreatEvents;
   upload_slots: UploadSlots;
   users: Users;
 }

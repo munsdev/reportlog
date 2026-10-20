@@ -141,6 +141,33 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     help: 'Shown to everybody who reaches the site while it needs a password, under its name. Who this site is for, or how to ask for the password. It is the only thing a stranger reads here, so say nothing you would not put on a public notice board. Left empty, nothing is shown.',
     fallback: '',
   },
+  {
+    // D4. The software's own part of the terms (what it does with a report, a
+    // tip and a link) is written on the page and is not a slot: an operator
+    // who could rewrite it could make the terms lie about what happens. This
+    // slot is the operator's part: who they are, what they will not host, and
+    // what they do beyond that.
+    key: 'terms_of_use',
+    kind: 'block',
+    label: 'Terms of use: your own part',
+    help: 'Added to the terms the software states itself (what happens to a report, a tip and a link). Who runs this site, what you will not host, and how a decision can be challenged.',
+    fallback:
+      'This deployment has not written its own part of the terms of use yet. The part above, about what happens to a report, a tip and a link, applies already.',
+  },
+  {
+    key: 'contact_users',
+    kind: 'block',
+    label: 'Contact point for people who use this site',
+    help: 'Where a reporter or a reader writes to you: a question, a complaint about a decision, a request to look again. An address a person reads.',
+    fallback: 'This deployment has not published a contact point for people who use it yet.',
+  },
+  {
+    key: 'contact_authorities',
+    kind: 'block',
+    label: 'Contact point for authorities',
+    help: 'Where a public authority writes to you: an order, a request for information. Name the address and the languages you can answer in.',
+    fallback: 'This deployment has not published a contact point for authorities yet.',
+  },
 ];
 
 const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s]));

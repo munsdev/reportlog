@@ -6,16 +6,16 @@
  * filters. A number quoted from here carries its own qualification, because
  * no unqualified number is on offer.
  *
- * THE DENOMINATOR IS VISIBLE. Declined, still-under-review, withdrawn and
- * not-permitted reports are counted beside the published ones, with no
- * content and no identity. Every confirmed report already holds a place in a
- * chain, so this exposes only what the chain records, and it turns "trust
- * our moderation" into "audit our moderation".
+ * ONLY WHAT IS PUBLISHED IS COUNTED (owner decision 36). Under review,
+ * declined, unclear, not-permitted and withdrawn reports appear in no public
+ * figure: a count of what has not been approved is a statement about
+ * reports the public may not see. The anchor's chain heads still carry every
+ * report, which is where that audit lives.
  *
- * Never-confirmed submissions are absent by design: they never entered the
- * record. One implementation serves the site's own page and anybody outside,
- * so the two figures can never disagree.
+ * One implementation serves the site's own page and anybody outside, so the
+ * two figures can never disagree.
  */
+import { NOT_A_SAMPLE } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
@@ -25,26 +25,6 @@ import { placeGuards } from './places.ts';
 
 export const STATS_NOTE =
   'Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.';
-
-type Head = Awaited<ReturnType<typeof everyHead>>[number];
-
-export type Disposition =
-  'published' | 'not_permitted' | 'under_review' | 'declined' | 'unclear' | 'withdrawn';
-
-/**
- * Checked in this order on purpose: withdrawn first, and "approved but its
- * reporter did not permit publishing" before "published". Consent is the
- * ceiling, moderation is the floor.
- */
-export function disposition(
-  r: Pick<Head, 'withdrawn' | 'moderation_status' | 'may_publish'>,
-): Disposition {
-  if (r.withdrawn) return 'withdrawn';
-  if (r.moderation_status === 'valid') return r.may_publish ? 'published' : 'not_permitted';
-  if (r.moderation_status === 'invalid') return 'declined';
-  if (r.moderation_status === 'unknown') return 'unclear';
-  return 'under_review';
-}
 
 /** One answer as the words a count is listed under. */
 export function answerText(kind: string, v: unknown): string {
@@ -57,10 +37,7 @@ export function answerText(kind: string, v: unknown): string {
 export interface Stats {
   as_of: string;
   note: string;
-  confirmed_reports: {
-    by_disposition: Record<Disposition, number>;
-    excludes: string;
-  };
+  not_a_sample: string;
   published_reports: {
     by_logbook: Record<
       string,
@@ -83,15 +60,6 @@ export interface Stats {
 
 export async function computeStats(db: Kysely<DB>): Promise<Stats> {
   const heads = await everyHead(db);
-  const by: Record<Disposition, number> = {
-    published: 0,
-    not_permitted: 0,
-    under_review: 0,
-    declined: 0,
-    unclear: 0,
-    withdrawn: 0,
-  };
-  for (const h of heads) by[disposition(h)] += 1;
   const pub = heads.filter(isPublic);
 
   const byLogbook: Stats['published_reports']['by_logbook'] = {};
@@ -154,11 +122,7 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
   return {
     as_of: new Date().toISOString(),
     note: STATS_NOTE,
-    confirmed_reports: {
-      by_disposition: by,
-      excludes:
-        'Submissions never confirmed by email are not counted: they never entered the record.',
-    },
+    not_a_sample: NOT_A_SAMPLE,
     published_reports: { by_logbook: byLogbook },
   };
 }

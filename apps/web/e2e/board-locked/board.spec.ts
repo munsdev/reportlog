@@ -206,7 +206,7 @@ test('with the password, a reader walks the board, a report, the numbers and the
 
   await v.page.goto('/board');
   await v.page.getByRole('link', { name: 'By the numbers' }).click();
-  await expect(v.page.getByRole('heading', { name: 'Every confirmed report' })).toBeVisible();
+  await expect(v.page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
   await v.page.goto('/board');
   await v.page.getByRole('link', { name: 'Press pack' }).click();
   await expect(v.page.getByRole('heading', { level: 1, name: 'Press pack' })).toBeVisible();

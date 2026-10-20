@@ -111,6 +111,12 @@ describe('only what the board would show', () => {
     text = mailer.lastTo(readerEmail)?.text ?? '';
   });
 
+  it('carries the line that goes beside every number (P3)', () => {
+    expect(text).toContain(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
+  });
+
   it('carries a report a moderator approved and the reporter permitted', () => {
     expect(text).toContain(refs.published);
   });

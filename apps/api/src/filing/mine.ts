@@ -246,32 +246,36 @@ export class Mine {
   }
 
   /**
-   * Erase the contact details and withdraw the report, together, in one
-   * transaction. What goes: the key the address was encrypted under, the
-   * digest that linked the report to this address, and the confirmation-link
-   * rows. The report itself never held the address and stays, verifiable.
+   * Erase the contact details. NOTHING ELSE (owner decision 39): the report is
+   * not withdrawn and stays as it was, public or not. What goes: the key the
+   * address was encrypted under, the digest that linked the report to this
+   * address, and the confirmation-link rows. The report itself never held the
+   * address and stays, verifiable. Withdrawing is its own choice, above.
    */
   async erase(email: string, threadId: string, confirm: boolean | undefined): Promise<void> {
     await this.owned(email, threadId);
     if (confirm !== true) {
       throw refused(400, 'incomplete', 'Confirm that you want your contact details erased.');
     }
-    await this.db.transaction().execute(async (trx) => {
-      await trx
-        .updateTable('report_heads')
-        .set({ withdrawn: true, updated_at: new Date() })
-        .where('thread_id', '=', threadId)
-        .execute();
-      await eraseContact(trx, threadId);
-      await takeDownForReporter(trx, threadId, 'the reporter withdrew the report');
-      await trx
-        .insertInto('reporter_actions')
-        .values({
-          thread_id: threadId,
-          action: 'erase',
-          comment: 'Withdrawn, and contact details erased, at the reporter’s request.',
-        })
-        .execute();
-    });
+    await eraseReporterContact(this.db, threadId);
   }
+}
+
+/**
+ * The erasure itself, for both ways in: a signed-in reporter (above), and the
+ * link in the confirmation email (identity/eraseLink.ts), which proves the
+ * right by the link and not by a session.
+ */
+export async function eraseReporterContact(db: Kysely<DB>, threadId: string): Promise<void> {
+  await db.transaction().execute(async (trx) => {
+    await eraseContact(trx, threadId);
+    await trx
+      .insertInto('reporter_actions')
+      .values({
+        thread_id: threadId,
+        action: 'erase',
+        comment: 'Contact details erased at the reporter’s request. The report was not withdrawn.',
+      })
+      .execute();
+  });
 }
