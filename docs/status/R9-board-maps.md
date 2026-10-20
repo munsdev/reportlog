@@ -5,7 +5,7 @@ The brief is R9 in `docs/parity.md` §7, plus the heat map tiles' names that R8 
 
 - **Branch:** `claude/r9-board-maps`, based on `ccr-c9c93698-ev856l` at `311abe4` (R2), merged up
   to the base's head with the owner's rulings 19 to 35
-- **Pull request:** see the pull request into `ccr-c9c93698-ev856l`
+- **Pull request:** [#36](https://github.com/munsdev/reportlog/pull/36), into `ccr-c9c93698-ev856l`
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
