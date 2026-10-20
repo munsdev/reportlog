@@ -9,7 +9,7 @@
 import { claimOwnership, requestSetupCode, requestSignInCode, signIn } from '@reportlog/contracts';
 import type { Me } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorText, TextField } from './ui.tsx';
@@ -26,6 +26,12 @@ export function SignInForm({
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const errorId = useId();
+  // A refusal is announced as it appears (role="alert"), and the field it is
+  // about is marked and points at it, so somebody who goes back to the field
+  // hears why it was refused rather than only that something was.
+  const refused = (error: unknown) =>
+    error ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {};
 
   const ask = useMutation({
     mutationFn: () =>
@@ -62,8 +68,9 @@ export function SignInForm({
           onChange={(e) => {
             setEmail(e.target.value);
           }}
+          {...refused(ask.error)}
         />
-        <ErrorText error={ask.error} />
+        <ErrorText error={ask.error} id={errorId} />
         <Button type="submit" disabled={ask.isPending}>
           Send me a code
         </Button>
@@ -93,8 +100,9 @@ export function SignInForm({
         onChange={(e) => {
           setCode(e.target.value.replace(/\D/g, ''));
         }}
+        {...refused(verify.error)}
       />
-      <ErrorText error={verify.error} />
+      <ErrorText error={verify.error} id={errorId} />
       <div className="flex flex-wrap items-center gap-4">
         <Button type="submit" disabled={verify.isPending}>
           {purpose === 'setup' ? 'Become the owner' : 'Sign in'}
