@@ -67,7 +67,7 @@ test.describe('the board', () => {
     await expect(
       page.getByRole('status').filter({ hasText: '1 published report match' }),
     ).toBeVisible();
-    await page.getByRole('link', { name: `Read ${ref} in full` }).click();
+    await page.getByRole('link', { name: `Read in full: ${ref}` }).click();
     await expect(page.getByRole('heading', { level: 1, name: `Report ${ref}` })).toBeVisible();
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
     await page.getByRole('link', { name: 'Check it has not been changed' }).click();

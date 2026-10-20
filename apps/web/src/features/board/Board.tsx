@@ -310,7 +310,9 @@ function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string
           to="/board/$ref"
           params={{ ref: r.public_ref }}
           className="self-start underline"
-          aria-label={`Read ${r.public_ref} in full`}
+          // The visible words first, then which report: an accessible name
+          // must start with what is on screen (WCAG 2.5.3).
+          aria-label={`Read in full: ${r.public_ref}`}
         >
           Read in full
         </Link>
