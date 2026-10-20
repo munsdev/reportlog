@@ -77,7 +77,7 @@ test('several open logbooks: each is offered, with what it is for, and opens its
   for (const lb of made) {
     const option = page.getByRole('radio', { name: lb.title });
     await expect(option).toBeVisible();
-    await expect(page.getByText(lb.blurb)).toBeVisible();
+    await expect(page.getByText(lb.blurb).first()).toBeVisible();
   }
   await expectAccessible(page, '/submit with several logbooks');
 

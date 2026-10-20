@@ -145,7 +145,8 @@ test('buttons, and the links in the header, footer and menus, are at least 44px 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const small = await page.evaluate(() => {
       const targets = document.querySelectorAll(
-        'button, input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, header a, footer nav a, nav a',
+        // A radio's words are its click target (RadioOption), as for a checkbox.
+        'button:not([role=radio]), input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, header a, footer nav a, nav a',
       );
       return (
         [...targets]
