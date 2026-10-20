@@ -11,7 +11,19 @@ The brief is R9 in `docs/parity.md` §7, plus the heat map tiles' names that R8 
 
 ## Checks, as last run before pushing
 
-CHECKS_TABLE
+All three were run once at the end, on `b608b13`, with the base merged at its head (`eb88f6c`,
+the rulings).
+
+| Suite                                                                       | Result                                                                                    |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `pnpm check`                                                                | passes (unit tests: api 386 passed and 17 skipped, web 478, fields 69, seal 46, access 6) |
+| `pnpm test:db`                                                              | 73 files, 1095 tests, all passed (5 of them new here)                                     |
+| `db:types`                                                                  | regenerated after the migration                                                           |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`, `pnpm --filter @reportlog/web e2e`) | 765 passed, 4 skipped, none failed (11.9 minutes)                                         |
+
+An earlier browser run of mine used `playwright test` directly, against the dev database I had
+filled with earlier runs. `builder.spec.ts` then failed: the front page had over 50 buttons. The
+run above used the documented command, with a database made for it.
 
 ## What was built, in the order asked
 
