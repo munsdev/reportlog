@@ -36,6 +36,8 @@ const LINKS = [
   { to: '/how', label: 'How to use this' },
   { to: '/standards', label: 'Moderation standard' },
   { to: '/legal', label: 'Imprint and privacy' },
+  { to: '/terms', label: 'Terms and contact' },
+  { to: '/illegal-content', label: 'Report illegal content' },
   { to: '/organizations', label: DIRECTORY_NAME },
   { to: '/public-api', label: 'Public API' },
 ] as const;

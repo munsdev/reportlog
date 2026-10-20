@@ -24,6 +24,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { moderatorGuard } from '../moderation/agreement.ts';
 import { limiter } from '../identity/limiter.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
 import { MAX_REASON, recordFilePreview } from '../moderation/accessLog.ts';
@@ -384,7 +385,7 @@ export async function fileRoutes(app: FastifyInstance, deps: FileRouteDeps): Pro
   // Administrators too, as on the moderation routes these sit beside and as
   // in legacy (routes/moderators.js): the moderation page shows them.
   await app.register((scope) => {
-    scope.addHook('preHandler', roleGuard(['moderator', 'admin']));
+    scope.addHook('preHandler', moderatorGuard(db));
 
     // The queue, or one report by its reference. The reference may be any
     // version's; what is shown is always the current version, because that is

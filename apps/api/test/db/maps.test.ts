@@ -718,6 +718,10 @@ describe('over HTTP', () => {
     ).toBe(200);
     const on = await anybody({ method: 'GET', url: `/api/maps/${slug}` });
     expect(on.statusCode).toBe(200);
+    // P3: the line beside every number, as the one constant.
+    expect(on.body).toContain(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
     // THE RAW BYTES. Wyoming has one published report; its count must not be
     // anywhere in what was sent, and neither must the staff-only numbers.
     expect(on.body).toContain('"US-WY"');

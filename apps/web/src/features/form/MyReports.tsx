@@ -5,7 +5,7 @@
  *   correct      answer the logbook again: a new version, the old one kept
  *   permissions  give or take back the three revocable permissions
  *   withdraw     take it off the public board; it stays in the archive
- *   erase        destroy the contact details and withdraw it
+ *   erase        destroy the contact details; the report is not withdrawn
  *
  * The publication answer given at filing is sealed and is not one of the
  * switches: a correction may take it back, never give it.
@@ -476,9 +476,9 @@ function Erase({ r }: { r: MyReportDetail }) {
   return (
     <Section title="Erase your contact details">
       <p className="text-ink-alt">
-        Your email address is destroyed and the report is withdrawn. The report itself stays,
-        sealed: it never held your address. Afterwards it no longer appears here, and nobody can
-        reach you about it.
+        Your email address is destroyed. Your report is not withdrawn: it stays as it is, sealed (it
+        never held your address), and is published or not exactly as before. Afterwards it no longer
+        appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
       <div className="flex items-start gap-3">
         <Checkbox

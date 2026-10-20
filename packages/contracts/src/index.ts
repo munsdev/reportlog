@@ -15,5 +15,6 @@ export * from './maps.ts';
 export * from './anchor.ts';
 export * from './telemetry.ts';
 export * from './templates.ts';
+export * from './platform.ts';
 export * from './journalists.ts';
 export * from './links.ts';

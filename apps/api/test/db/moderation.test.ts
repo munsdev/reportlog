@@ -44,7 +44,8 @@ const decide = (
   who({
     method: 'POST',
     url: `/api/moderation/reports/${thread}/decision`,
-    payload: { status, comment },
+    // A decline names the reason the reporter is told, from the fixed list.
+    payload: { status, comment, ...(status === 'invalid' ? { reason_code: 'cannot_assess' } : {}) },
   });
 
 beforeAll(async () => {

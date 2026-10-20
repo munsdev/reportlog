@@ -228,6 +228,26 @@ describe('My reports, on a report filed through a logbook', () => {
     expect(JSON.stringify(actions)).not.toContain(email);
   });
 
+  it('ERASING ALONE does not withdraw the report (decision 39)', async () => {
+    const keeper = address('keep');
+    const ref2 = await fileThroughRoutes(h, lb.slug, { what: 'Erase, keep' }, keeper);
+    const t2 = await threadOf(h.db, ref2);
+    await h.db
+      .updateTable('report_heads')
+      .set({ moderation_status: 'valid' })
+      .where('thread_id', '=', t2)
+      .execute();
+    const them = await signedInAs(keeper);
+    expect((await them.post(`/api/mine/reports/${t2}/erase`, { confirm: true })).status).toBe(200);
+    const head = await h.db
+      .selectFrom('report_heads')
+      .select(['withdrawn', 'moderation_status'])
+      .where('thread_id', '=', t2)
+      .executeTakeFirstOrThrow();
+    expect(head).toEqual({ withdrawn: false, moderation_status: 'valid' });
+    expect(await openContact(h.db, RING, t2)).toMatchObject({ erased: true, email: null });
+  });
+
   it('a contact key is never swapped, only destroyed', async () => {
     const other = await fileThroughRoutes(h, lb.slug, { what: 'Another' }, address('swap'));
     const t = await threadOf(h.db, other);

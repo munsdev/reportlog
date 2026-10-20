@@ -38,7 +38,8 @@ import {
 import { drainDeletions } from '../files/worker.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
-import { requireUser, roleGuard } from '../identity/guards.ts';
+import { requireUser } from '../identity/guards.ts';
+import { moderatorGuard } from '../moderation/agreement.ts';
 import { limiter } from '../identity/limiter.ts';
 import { recordContactUsed } from '../moderation/accessLog.ts';
 import {
@@ -134,7 +135,7 @@ export async function evidenceRoutes(app: FastifyInstance, deps: EvidenceRouteDe
   // Administrators too, as on the moderation routes these sit beside and as
   // in legacy (routes/moderators.js): the moderation page shows them.
   await app.register((scope) => {
-    scope.addHook('preHandler', roleGuard(['moderator', 'admin']));
+    scope.addHook('preHandler', moderatorGuard(db));
 
     route(scope, C.getEvidenceState, async ({ params }) => {
       const state = await askableState(db, params.threadId);

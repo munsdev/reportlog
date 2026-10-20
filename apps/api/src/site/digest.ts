@@ -14,6 +14,7 @@
  * switched off sends no digest at all.
  * Files are never in an email: only the answers.
  */
+import { NOT_A_SAMPLE } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
@@ -92,6 +93,9 @@ export function digestEmail(
       `${count.charAt(0).toUpperCase()}${count.slice(1)} published ${period}.`,
       '',
       reports.map(reportText).join('\n\n'),
+      '',
+      // A count appears in the subject and the first line: the line goes with it.
+      NOT_A_SAMPLE,
       '',
       `Read them on the board: ${siteOrigin}/board`,
       '',

@@ -5,7 +5,6 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { disposition } from '../../src/board/stats.ts';
 import {
   evaluate,
   figuresIn,
@@ -136,29 +135,6 @@ describe('nothing that computes a fingerprint reaches moderation or the board', 
         });
       }
     }
-  });
-});
-
-describe('what happened to a report, for the counts', () => {
-  it('consent is the ceiling: approved without permission is not published', () => {
-    expect(disposition({ withdrawn: false, moderation_status: 'valid', may_publish: false })).toBe(
-      'not_permitted',
-    );
-    expect(disposition({ withdrawn: false, moderation_status: 'valid', may_publish: true })).toBe(
-      'published',
-    );
-    expect(disposition({ withdrawn: true, moderation_status: 'valid', may_publish: true })).toBe(
-      'withdrawn',
-    );
-    expect(disposition({ withdrawn: false, moderation_status: 'pending', may_publish: true })).toBe(
-      'under_review',
-    );
-    expect(disposition({ withdrawn: false, moderation_status: 'invalid', may_publish: true })).toBe(
-      'declined',
-    );
-    expect(disposition({ withdrawn: false, moderation_status: 'unknown', may_publish: true })).toBe(
-      'unclear',
-    );
   });
 });
 

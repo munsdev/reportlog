@@ -3,14 +3,20 @@
  * admin does not imply moderator, so both are named). The settings page
  * narrows itself to administrators.
  */
-import { Link, Outlet, createFileRoute } from '@tanstack/react-router';
+import { Link, Outlet, createFileRoute, useLocation } from '@tanstack/react-router';
 import { StaffOnly } from '../../../features/identity/StaffOnly.tsx';
+import { AgreementGate } from '../../../features/platform/Agreement.tsx';
 
 export const Route = createFileRoute('/(staff)/moderate')({
   component: ModerateLayout,
 });
 
+// The administrator's own pages are not behind the agreement they publish.
+const NOT_GATED = ['/moderate/agreement', '/moderate/settings'];
+
 function ModerateLayout() {
+  const { pathname } = useLocation();
+  const gated = !NOT_GATED.some((p) => pathname.startsWith(p));
   return (
     <StaffOnly needs={['moderator', 'admin']}>
       <div className="flex flex-col gap-6">
@@ -19,6 +25,11 @@ function ModerateLayout() {
             <li>
               <Link to="/moderate" className="underline-offset-4 hover:underline">
                 Queue
+              </Link>
+            </li>
+            <li>
+              <Link to="/moderate/illegal-content" className="underline-offset-4 hover:underline">
+                Illegal content notices
               </Link>
             </li>
             <li>
@@ -31,9 +42,20 @@ function ModerateLayout() {
                 Settings
               </Link>
             </li>
+            <li>
+              <Link to="/moderate/agreement" className="underline-offset-4 hover:underline">
+                Agreement
+              </Link>
+            </li>
           </ul>
         </nav>
-        <Outlet />
+        {gated ? (
+          <AgreementGate audience="moderator">
+            <Outlet />
+          </AgreementGate>
+        ) : (
+          <Outlet />
+        )}
       </div>
     </StaffOnly>
   );

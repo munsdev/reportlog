@@ -385,6 +385,10 @@ describe('published counts', () => {
     // The tips template ticks no question as countable (owner ruling 42): an
     // operator who wants counts ticks them. Totals only, until then.
     expect(b.fields).toEqual([]);
+    // P3: the line beside every number, as the one constant.
+    expect(json<{ not_a_sample: string }>(r).not_a_sample).toBe(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
     expect(r.body).not.toMatch(/SECRET-WORDS-123|someone@example\.org/);
   });
 });

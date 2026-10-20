@@ -126,7 +126,7 @@ test('a map in each of the board’s slots, no count under the threshold, and no
 
     // With the numbers, below the counts.
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { name: 'Every confirmed report' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
     await expect(mapOf('board_numbers').getByRole('img')).toBeVisible();
     await expect(mapOf('board_reports')).toHaveCount(0);
 

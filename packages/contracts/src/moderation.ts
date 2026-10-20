@@ -77,6 +77,8 @@ export const QueueItem = z.object({
   corroboration: z.number().int(),
   /** Every report linked to its incident, public or not, itself included. 0 when none. */
   incident_size: z.number().int(),
+  /** A threat-to-life-or-safety flag is raised on it (platform.ts, D5). */
+  threat_open: z.boolean(),
 });
 export type QueueItem = z.infer<typeof QueueItem>;
 
@@ -180,8 +182,17 @@ export const decideReport = defineRoute({
   path: '/api/moderation/reports/:threadId/decision',
   summary: 'Approve (valid), decline (invalid) or mark unclear (unknown), with a reason.',
   params: ThreadParams,
-  body: z.object({ status: z.string().optional(), comment: z.string().optional() }),
-  response: Ok,
+  body: z.object({
+    status: z.string().optional(),
+    comment: z.string().optional(),
+    /** Required to decline: the reason from the fixed list that the reporter is emailed (platform.ts). */
+    reason_code: z.string().optional(),
+  }),
+  response: z.object({
+    ok: z.literal(true),
+    /** What happened to the email a decline sends. 'none' for approve and unclear. */
+    notice: z.enum(['sent', 'no_key', 'failed', 'not_configured', 'none']),
+  }),
 });
 
 export const withdrawReport = defineRoute({

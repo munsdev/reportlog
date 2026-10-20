@@ -47,6 +47,9 @@ function site(overrides: Partial<Site> = {}): Site {
       about_archive: 'We are the Munich archive.',
       submit_intro: '',
       lock_intro: '',
+      terms_of_use: '',
+      contact_users: '',
+      contact_authorities: '',
       board_intro: '',
       how_intro: '',
       alliance_intro: '',
@@ -119,6 +122,8 @@ describe('the footer', () => {
       '/how',
       '/standards',
       '/legal',
+      '/terms',
+      '/illegal-content',
       '/organizations',
       '/public-api',
     ]);
