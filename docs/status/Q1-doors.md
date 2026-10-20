@@ -11,11 +11,11 @@ leftovers from `P2-site-pages.md`.
 
 ## Checks, as last run before pushing
 
-| Suite                                   | Result     |
-| --------------------------------------- | ---------- |
-| `pnpm check`                            | CHECK_LINE |
-| `pnpm test:db`                          | DB_LINE    |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | E2E_LINE   |
+| Suite                                   | Result                                                                                                                                                           |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: format, lint, types, boundaries (640 modules); unit tests api 342 (11 skipped, not Q1's), web 468, seal 31, fields 69, access 6                          |
+| `pnpm test:db`                          | 65 files, 984 passed (Q1's: 20, in `q1-decisions.test.ts`)                                                                                                       |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 448 passed, 3 skipped (P2's desktop-only settings tests, skipped on the phone). Q1's: 2 in `in-front/in-front.spec.ts`, 1 new in `verify.spec.ts` on two devices |
 
 ## What was built
 
