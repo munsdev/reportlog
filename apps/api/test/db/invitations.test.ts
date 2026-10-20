@@ -9,7 +9,13 @@
  * Ported from legacy/scripts/invitations-selftest.mjs, check for check.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { MAX_OUTSTANDING_PER_ORG, MAX_PER_DAY_PER_EMAIL } from '../../src/identity/invitations.ts';
+import { ORG_ROLES } from '@reportlog/access';
+import {
+  INVITE_TTL_MS,
+  MAX_OUTSTANDING_PER_ORG,
+  MAX_PER_DAY_PER_EMAIL,
+  ROLE_DESCRIPTIONS,
+} from '../../src/identity/invitations.ts';
 import { sha256Hex } from '../../src/identity/secrets.ts';
 import { SITE, address, as, harness, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
@@ -183,6 +189,82 @@ describe('looking is not accepting', () => {
       .where('u.email', '=', inviteeEmail)
       .execute();
     expect(members).toEqual([]);
+  });
+});
+
+describe('an invitation says what it grants', () => {
+  // The invitee decides from these words alone, so a role that can be
+  // granted and has none would be accepted blind.
+  it.each(ORG_ROLES)('describes the %s role: a name, what it can do and what it cannot', (role) => {
+    const said = ROLE_DESCRIPTIONS[role];
+    expect(said.label.trim()).not.toBe('');
+    expect(said.can.length).toBeGreaterThan(0);
+    expect(said.cannot.length).toBeGreaterThan(0);
+    for (const line of [...said.can, ...said.cannot]) expect(line.trim()).not.toBe('');
+  });
+
+  it("tells a manager their reach stops at the organization's edge", () => {
+    expect(ROLE_DESCRIPTIONS.manager.cannot.join(' ')).toContain('outside this organization');
+  });
+
+  it('shows the manager wording to whoever opens a manager invitation', async () => {
+    const email = address('inv-mgr-words');
+    const res = await invite(asAdmin, email, 'manager');
+    expect(res.json()).toMatchObject({ ok: true, awaitingApproval: false });
+    const shown = await anon()({ method: 'GET', url: `/api/invitations/${linkFor(email) ?? ''}` });
+    expect(shown.statusCode).toBe(200);
+    expect(shown.json()).toMatchObject({ role: 'manager', permissions: ROLE_DESCRIPTIONS.manager });
+    expect(shown.body).toContain('outside this organization');
+  });
+});
+
+describe('an invitation lasts seven days', () => {
+  const email = address('inv-ttl');
+
+  it('is seven days: long enough for somebody who reads email at the weekend', () => {
+    expect(INVITE_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
+  });
+
+  it('expires seven days after it is sent, by the database row', async () => {
+    const sentAt = Date.now();
+    expect((await invite(asMgr, email, 'coordinator')).statusCode).toBe(200);
+    const row = await h.db
+      .selectFrom('organization_invites')
+      .select('expires_at')
+      .where('organization_id', '=', orgId)
+      .where('email', '=', email)
+      .executeTakeFirstOrThrow();
+    const ends = row.expires_at?.getTime() ?? 0;
+    expect(ends).toBeGreaterThanOrEqual(sentAt + INVITE_TTL_MS);
+    expect(ends).toBeLessThanOrEqual(Date.now() + INVITE_TTL_MS);
+  });
+
+  it('is shown and can be accepted until then, and neither a moment after', async () => {
+    const link = linkFor(email) ?? '';
+    const setEnd = (at: number) =>
+      h.db
+        .updateTable('organization_invites')
+        .set({ expires_at: new Date(at) })
+        .where('organization_id', '=', orgId)
+        .where('email', '=', email)
+        .execute();
+    // A minute before the end: still open.
+    await setEnd(Date.now() + 60_000);
+    expect((await anon()({ method: 'GET', url: `/api/invitations/${link}` })).statusCode).toBe(200);
+    // A second after: the same answer as a link that never existed.
+    await setEnd(Date.now() - 1_000);
+    expect((await anon()({ method: 'GET', url: `/api/invitations/${link}` })).statusCode).toBe(404);
+    const asTtl = as(h, await signIn(h, email));
+    const res = await asTtl({ method: 'POST', url: `/api/invitations/${link}/accept` });
+    expect(res.statusCode).toBe(404);
+    const joined = await h.db
+      .selectFrom('organization_memberships as m')
+      .innerJoin('users as u', 'u.id', 'm.user_id')
+      .select('m.id')
+      .where('m.organization_id', '=', orgId)
+      .where('u.email', '=', email)
+      .execute();
+    expect(joined).toEqual([]);
   });
 });
 

@@ -41,10 +41,10 @@ export function messageOf(error: unknown): string {
   return 'Something went wrong. Try again.';
 }
 
-export function ErrorText({ error }: { error: unknown }) {
+export function ErrorText({ error, id }: { error: unknown; id?: string }) {
   if (!error) return null;
   return (
-    <p role="alert" className="font-semibold text-serious">
+    <p {...(id ? { id } : {})} role="alert" className="font-semibold text-serious">
       {messageOf(error)}
     </p>
   );
