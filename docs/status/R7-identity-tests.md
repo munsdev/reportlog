@@ -11,11 +11,11 @@ For the coordinating session and the other workstreams. Brief: R7 in `docs/parit
 
 Against the base at `6bd963a` (the latest when this was written).
 
-| Suite                                   | Result                                                               |
-| --------------------------------------- | -------------------------------------------------------------------- |
-| `pnpm check`                            | passes (unit tests: api 386 + 17 skipped, web 477, fields 69, seal 31, access 6) |
-| `pnpm test:db`                          | 68 files, 1023 tests, all passed (29 in `invitations.test.ts`, 7 of them new)     |
-| Browser suite (`CHROMIUM_PATH`, `CI=1`) | E2E_RESULT                                                           |
+| Suite                                   | Result                                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes (unit tests: api 386 + 17 skipped, web 477, fields 69, seal 31, access 6)                    |
+| `pnpm test:db`                          | 68 files, 1023 tests, all passed (29 in `invitations.test.ts`, 7 of them new)                       |
+| Browser suite (`CHROMIUM_PATH`, `CI=1`) | 761 passed, 4 skipped (phone-only skips already in the suite), 0 failed; all 9 in `identity` passed |
 
 ## What was tested, in the order asked
 
