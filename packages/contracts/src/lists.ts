@@ -138,6 +138,8 @@ export const ListCounts = z.object({
   totals: ListTotals,
   definition: z.array(CountDefinition),
   fields: z.array(FieldCounts),
+  /** The line that goes beside every number (platform.ts NOT_A_SAMPLE). */
+  not_a_sample: z.string(),
 });
 export type ListCounts = z.infer<typeof ListCounts>;
 

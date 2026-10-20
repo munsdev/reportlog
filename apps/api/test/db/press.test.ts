@@ -32,6 +32,7 @@ const pack = async (app = withPack) =>
   (await app.inject({ method: 'GET', url: '/api/press' })).json<{
     state: string;
     version: string | null;
+    not_a_sample: string;
     files: { key: string; label: string; bytes: number | null; version: string | null }[];
   }>();
 
@@ -59,6 +60,7 @@ describe('the press pack', () => {
       commit: null,
       built_at: null,
       files: [],
+      not_a_sample: expect.stringContaining('not a sample') as unknown,
     });
     expect((await pack()).state).toBe('none');
     expect(
@@ -92,6 +94,10 @@ describe('the press pack', () => {
     });
     const p = await pack();
     expect(p.state).toBe('ready');
+    // P3: the line beside every number, as the one constant.
+    expect(p.not_a_sample).toBe(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
     expect(p.version).toBe('1.4.0');
     expect(p.files).toEqual([
       expect.objectContaining({ key: 'kit.pdf', label: 'Press kit', bytes: 20, version: null }),

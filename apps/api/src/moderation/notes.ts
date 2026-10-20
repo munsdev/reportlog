@@ -307,7 +307,11 @@ export async function removeLink(
   return out.numUpdatedRows > 0n;
 }
 
-/** The live citations on a note, for staff (with who added them). */
+/**
+ * The live citations on a note, for staff (with who added them). There is
+ * no public twin: sources are shown only to staff and vetted journalists
+ * (owner decision 37).
+ */
 export async function linksFor(db: Kysely<DB>, threadId: string) {
   return db
     .selectFrom('editorial_notes as n')
@@ -321,18 +325,6 @@ export async function linksFor(db: Kysely<DB>, threadId: string) {
       'l.added_by',
       'l.created_at',
     ])
-    .where('n.thread_id', '=', threadId)
-    .where('l.removed_at', 'is', null)
-    .orderBy('l.id')
-    .execute();
-}
-
-/** The live citations as the public sees them. Never who added them. */
-export async function publicLinksFor(db: Kysely<DB>, threadId: string) {
-  return db
-    .selectFrom('editorial_notes as n')
-    .innerJoin('editorial_note_links as l', 'l.note_id', 'n.id')
-    .select(['l.id', 'l.title', 'l.publisher', 'l.published_on', 'l.url'])
     .where('n.thread_id', '=', threadId)
     .where('l.removed_at', 'is', null)
     .orderBy('l.id')

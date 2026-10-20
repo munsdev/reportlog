@@ -78,14 +78,7 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
     const out = await boardReport(db, params.ref);
     if (!out) throw noReport();
     if (!out.published) return out;
-    return json({
-      published: true as const,
-      report: out.report,
-      links: out.links.map((l) => ({
-        ...l,
-        published_on: l.published_on,
-      })),
-    });
+    return json({ published: true as const, report: out.report });
   });
 
   // Not through `route()`: the response is CSV, and the contract serializer

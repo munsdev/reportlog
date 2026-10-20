@@ -28,7 +28,9 @@ import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
 import { listRoutes } from './lists/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
+import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
+import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
@@ -180,7 +182,11 @@ export async function buildApp({
     db,
     contactKey: config.CONTACT_KEY,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
+    mailer: mail,
+    siteOrigin,
   });
+  await platformRoutes(app, { db, mailer: mail, siteOrigin });
+  eraseLinkRoutes(app, { db });
   boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
   pressRoutes(app, { dir: config.PRESS_DIR });
   anchorRoutes(app, {

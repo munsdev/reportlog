@@ -35,6 +35,8 @@ function payload(over: Partial<PublishedMap> = {}): PublishedMap {
     blurb: null,
     as_of: '2026-10-19T12:00:00.000Z',
     note: 'Not a survey.',
+    not_a_sample:
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
     threshold: 3,
     unit: { one: 'published report', many: 'published reports' },
     planes: ['us'],

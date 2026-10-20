@@ -29,6 +29,10 @@ import { Mine } from '../filing/mine.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import type { Mailer } from '../email/mailer.ts';
+import { moderatorGuard } from './agreement.ts';
+import { sendRejectionNotice, requireReasonCode } from './rejection.ts';
+import { openThreats } from './threats.ts';
 import { launchedLogbooks, logbookBySlug } from '../logbooks/logbooks.ts';
 import {
   accessesForThreads,
@@ -64,6 +68,9 @@ export interface ModerationRouteDeps {
   /** The deployment's CONTACT_KEY: without it, contact details cannot be opened. */
   contactKey?: string | undefined;
   publicRefPrefix?: string | undefined;
+  /** For the email a decline sends (rejection.ts). */
+  mailer: Mailer;
+  siteOrigin: string;
 }
 
 /** The request body, already validated against the contract by Fastify. */
@@ -85,7 +92,7 @@ export async function moderationRoutes(
     const rows = await listQueue(db, { status: 'all', threadId });
     const row = rows[0];
     if (!row) throw notFound('There is no report with that reference.');
-    return present(row, archive);
+    return present(row, archive, await threatRefs());
   }
 
   async function assessment(
@@ -101,9 +108,17 @@ export async function moderationRoutes(
     };
   }
 
+  /** The reports with a threat flag raised, read once per request. */
+  async function threatRefs(): Promise<Set<string>> {
+    return new Set(
+      (await openThreats(db)).filter((t) => t.subject_kind === 'report').map((t) => t.subject_ref),
+    );
+  }
+
   function present(
     row: Awaited<ReturnType<typeof listQueue>>[number],
     archive: boolean,
+    threats: ReadonlySet<string>,
   ): C.QueueItem {
     return {
       thread_id: row.thread_id,
@@ -131,15 +146,18 @@ export async function moderationRoutes(
       severity: row.severity,
       corroboration: row.corroboration,
       incident_size: row.incident_size,
+      threat_open: threats.has(row.thread_id),
     };
   }
 
   // ── the queue: moderators and administrators ──────────────────────────
   await app.register((scope) => {
-    scope.addHook('preHandler', roleGuard(['moderator', 'admin']));
+    // The agreement is asked for here, once, with the role (agreement.ts).
+    scope.addHook('preHandler', moderatorGuard(db));
 
     route(scope, C.listQueue, async ({ query }) => {
       const archive = await publicArchiveAvailable(db);
+      const threats = await threatRefs();
       const rows = await listQueue(db, {
         status: query.status,
         q: query.q,
@@ -149,7 +167,7 @@ export async function moderationRoutes(
         sort: query.sort,
       });
       return {
-        reports: rows.map((r) => present(r, archive)),
+        reports: rows.map((r) => present(r, archive, threats)),
         open_flags: await openFlagCount(db),
         archive_published: archive,
       };
@@ -184,8 +202,24 @@ export async function moderationRoutes(
 
     route(scope, C.decideReport, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.decideReport>>(C.decideReport, request);
-      await decide(db, params.threadId, b.status, b.comment, me(request));
-      return { ok: true as const };
+      // A decline names the reason the reporter will be told, from the fixed
+      // list; asked before anything changes so a refusal changes nothing.
+      const code = b.status === 'invalid' ? requireReasonCode(b.reason_code) : null;
+      const out = await decide(db, params.threadId, b.status, b.comment, me(request));
+      // Only a NEW decline tells the reporter; declining twice does not email twice.
+      const notice =
+        code && out.previous !== 'invalid'
+          ? await sendRejectionNotice(
+              { db, mailer: deps.mailer, ring, siteOrigin: deps.siteOrigin },
+              {
+                threadId: params.threadId,
+                reportId: out.report_id,
+                reasonCode: code,
+                actor: me(request),
+              },
+            )
+          : ('none' as const);
+      return { ok: true as const, notice };
     });
 
     route(scope, C.withdrawReport, async ({ params, request }) => {

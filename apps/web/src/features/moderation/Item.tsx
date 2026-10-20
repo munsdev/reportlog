@@ -12,11 +12,14 @@
  */
 import { roleSatisfies } from '@reportlog/access';
 import {
+  REJECTION_REASONS,
   addNoteLink,
+  clearThreat,
   decideReport,
   linkReportIncident,
   markReportRead,
   openReportContact,
+  raiseThreat,
   removeNoteLink,
   restoreReport,
   setNoteState,
@@ -117,6 +120,7 @@ export function ItemPage({ threadId }: { threadId: string }) {
       {r.needs_review ? <SecondRead r={r} /> : null}
       {r.withdrawn ? null : <Decide r={r} />}
       <Severity r={r} a={assessment} />
+      <Threat r={r} />
       <Incident r={r} a={assessment} />
       {/* Workstream F2's components: one question per card, publishing offered
           only while the reporter's consent allows it. */}
@@ -171,13 +175,32 @@ function SecondRead({ r }: { r: QueueItem }) {
   );
 }
 
+/** What became of the email a decline sends. Said, so nobody assumes a reporter was told. */
+const NOTICE_WORDS: Record<string, string> = {
+  sent: 'The reporter was emailed the reason.',
+  no_key:
+    'The reporter erased their address, so nobody could be told. That is recorded; the decision stands.',
+  failed: 'The email could not be sent. That is recorded.',
+  not_configured: 'This site has no contact key set, so no email could be sent.',
+};
+
 function Decide({ r }: { r: QueueItem }) {
   const [status, setStatus] = useState(
     r.moderation_status === 'pending' ? '' : r.moderation_status,
   );
   const [comment, setComment] = useState('');
+  // M1: a decline names the reason the reporter is emailed, from a fixed list.
+  const [reasonCode, setReasonCode] = useState('');
+  const [notice, setNotice] = useState<string>('none');
   const decide = useAct(
-    () => call(decideReport, { params: { threadId: r.thread_id }, body: { status, comment } }),
+    async () => {
+      const out = await call(decideReport, {
+        params: { threadId: r.thread_id },
+        body: { status, comment, ...(status === 'invalid' ? { reason_code: reasonCode } : {}) },
+      });
+      setNotice(out.notice);
+      return out;
+    },
     () => {
       setComment('');
     },
@@ -205,6 +228,28 @@ function Decide({ r }: { r: QueueItem }) {
             <option value="unknown">Unclear for now</option>
           </Select>
         </Field>
+        {status === 'invalid' ? (
+          <Field>
+            <Label>The reason the reporter is told</Label>
+            <Select
+              value={reasonCode}
+              onChange={(e) => {
+                setReasonCode(e.target.value);
+              }}
+            >
+              <option value="">Choose…</option>
+              {REJECTION_REASONS.map((x) => (
+                <option key={x.code} value={x.code}>
+                  {x.label}
+                </option>
+              ))}
+            </Select>
+            <FieldDescription>
+              They are emailed this reason and a link to the terms, if their address can still be
+              read. They are never sent what you write below.
+            </FieldDescription>
+          </Field>
+        ) : null}
         <Field>
           <Label>Why</Label>
           <Textarea
@@ -219,7 +264,9 @@ function Decide({ r }: { r: QueueItem }) {
           </FieldDescription>
         </Field>
         <Problem error={decide.error} />
-        {decide.isSuccess ? <Alert tone="confirmed">Recorded.</Alert> : null}
+        {decide.isSuccess ? (
+          <Alert tone="confirmed">Recorded. {NOTICE_WORDS[notice] ?? ''}</Alert>
+        ) : null}
         <Button type="submit" className="self-start" disabled={decide.isPending}>
           Record the decision
         </Button>
@@ -763,5 +810,66 @@ function NoteState({ threadId, current }: { threadId: string; current: string })
         Change the state
       </Button>
     </form>
+  );
+}
+
+/**
+ * D5: a threat to life or safety. Its own flag, not the severity rating: this
+ * one emails the owner at once and is kept as a record (raising and clearing
+ * are both rows). It says what the threat is in a sentence the owner reads.
+ */
+function Threat({ r }: { r: QueueItem }) {
+  const [note, setNote] = useState('');
+  const [sent, setSent] = useState<boolean | null>(null);
+  const act = useAct(
+    async () => {
+      const body = { subject_kind: 'report' as const, subject_ref: r.thread_id, note };
+      if (r.threat_open) {
+        await call(clearThreat, { body });
+        return;
+      }
+      setSent((await call(raiseThreat, { body })).owner_emailed);
+    },
+    () => {
+      setNote('');
+    },
+  );
+  return (
+    <Section title="Threat to life or safety">
+      <p className="text-sm text-ink-alt">
+        {r.threat_open
+          ? 'This report is flagged. The owner was emailed when it was.'
+          : 'Flag it if what it describes puts somebody’s life or safety at risk now. The owner is emailed at once. This is not the severity rating.'}
+      </p>
+      <Field>
+        <Label>{r.threat_open ? 'Why is it no longer open?' : 'What is the threat?'}</Label>
+        <Textarea
+          rows={2}
+          value={note}
+          onChange={(e) => {
+            setNote(e.target.value);
+          }}
+        />
+        <FieldDescription>
+          {r.threat_open ? 'Kept on the record.' : 'The owner reads this. Keep it short.'}
+        </FieldDescription>
+      </Field>
+      <Problem error={act.error} />
+      {act.isSuccess && sent === false ? (
+        <Alert tone="serious">
+          The flag is raised, but the email to the owner could not be sent. Tell them another way.
+        </Alert>
+      ) : null}
+      <Button
+        variant={r.threat_open ? 'secondary' : 'primary'}
+        className="self-start"
+        disabled={act.isPending}
+        onClick={() => {
+          act.mutate(undefined);
+        }}
+      >
+        {r.threat_open ? 'Clear the flag' : 'Flag as a threat to life or safety'}
+      </Button>
+    </Section>
   );
 }

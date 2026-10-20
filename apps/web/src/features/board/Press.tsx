@@ -10,10 +10,11 @@ import { PRESS_FILE_PATH, getPressPack } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Alert } from '../../components/ui/alert.tsx';
+import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 
-const pressQuery = queryOptions({
+export const pressQuery = queryOptions({
   queryKey: ['board', 'press'],
   queryFn: ({ signal }) => call(getPressPack, { signal }),
 });
@@ -54,6 +55,7 @@ export function PressPage() {
             </p>
           ) : null}
           {d.files.length === 0 ? <p>Nothing has been published here yet.</p> : null}
+          <NotASample line={d.not_a_sample} />
           <ul className="flex flex-col gap-4" aria-label="Documents">
             {d.files.map((f) => (
               <li

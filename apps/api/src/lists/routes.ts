@@ -38,6 +38,7 @@ import {
   sendListEntry,
   triageListEntries,
   updateList,
+  NOT_A_SAMPLE,
 } from '@reportlog/contracts';
 import type { BodyOf, ListForm } from '@reportlog/contracts';
 import { LOCATION_TYPE, placeOptions } from '@reportlog/fields';
@@ -46,6 +47,7 @@ import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { roleGuard } from '../identity/guards.ts';
+import { moderatorGuard } from '../moderation/agreement.ts';
 import { limiter } from '../identity/limiter.ts';
 import { hasSiteAccess, locked } from '../identity/siteAccess.ts';
 import { summaryFor } from './aggregates.ts';
@@ -243,6 +245,7 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
         },
         definition: s.definition,
         fields: s.fields,
+        not_a_sample: NOT_A_SAMPLE,
       };
     },
     DECIDES_ITSELF,
@@ -392,7 +395,7 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
   // ── moderators: review, in bulk ──────────────────────────────────────
 
   void app.register((mods, _opts, done) => {
-    mods.addHook('preHandler', roleGuard(['moderator', 'admin']));
+    mods.addHook('preHandler', moderatorGuard(db));
 
     route(mods, listReviewQueues, async () => ({ queues: await reviewQueues(db) }));
 

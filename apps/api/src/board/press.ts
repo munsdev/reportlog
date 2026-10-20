@@ -119,7 +119,14 @@ export function pressRoutes(app: FastifyInstance, deps: PressRouteDeps): void {
   route(app, C.getPressPack, async () => {
     const pack = await readPack(deps.dir);
     if (pack.state !== 'ready') {
-      return { state: pack.state, version: null, commit: null, built_at: null, files: [] };
+      return {
+        state: pack.state,
+        version: null,
+        commit: null,
+        built_at: null,
+        files: [],
+        not_a_sample: C.NOT_A_SAMPLE,
+      };
     }
     const m = pack.manifest;
     const files = [];
@@ -147,6 +154,7 @@ export function pressRoutes(app: FastifyInstance, deps: PressRouteDeps): void {
       commit: m.commit ?? null,
       built_at: m.built_at ?? null,
       files,
+      not_a_sample: C.NOT_A_SAMPLE,
     };
   });
 

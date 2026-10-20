@@ -140,7 +140,7 @@ describe('THE BYLINE: the public shape carries no address', () => {
       const next = src.indexOf('\nexport ', start + 1);
       return src.slice(start, next < 0 ? undefined : next);
     };
-    for (const fn of ['publicNoteFor', 'publicNotesForMany', 'publicLinksFor']) {
+    for (const fn of ['publicNoteFor', 'publicNotesForMany']) {
       expect(body(fn).length).toBeGreaterThan(50);
       expect(body(fn)).not.toMatch(/author_email|added_by|selectAll/);
     }
@@ -212,10 +212,11 @@ describe('citations', () => {
       }),
     ).toEqual({ ok: false, reason: 'no-note' });
 
-    const links = await N.publicLinksFor(db, t.threadId);
+    // Sources are staff-only (decision 37): no public twin of `linksFor` exists.
+    expect('publicLinksFor' in N).toBe(false);
+    const links = await N.linksFor(db, t.threadId);
     expect(links).toHaveLength(1);
     expect(links[0]?.title).toMatch(/^County says/);
-    expect(links[0] && 'added_by' in links[0]).toBe(false);
 
     if (!add.ok) throw new Error('unreachable');
     expect(await N.removeLink(db, t.threadId, add.linkId)).toBe(true);

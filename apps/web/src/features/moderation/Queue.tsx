@@ -7,8 +7,9 @@
  * A flagged report says which words asked for a second read. That is a
  * reading list, not a finding, and it is never shown to the public.
  */
+import { batchApproveReports } from '@reportlog/contracts';
 import type { QueueItem } from '@reportlog/contracts';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
@@ -19,6 +20,7 @@ import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
+import { call } from '../../lib/api.ts';
 import { corroborationQuery, queueQuery } from './queries.ts';
 import type { QueueSearch, QueueSeverity, QueueStatus } from './queries.ts';
 import { SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
@@ -27,6 +29,17 @@ const STATUSES: QueueStatus[] = ['pending', 'valid', 'unknown', 'invalid', 'with
 
 export function QueuePage({ search }: { search: QueueSearch }) {
   const query = useQuery(queueQuery(search));
+  const client = useQueryClient();
+  // M2: batch approval. Only reports that can be approved are offered a box.
+  const [picked, setPicked] = useState<ReadonlySet<string>>(new Set());
+  const batch = useMutation({
+    mutationFn: () => call(batchApproveReports, { body: { thread_ids: [...picked] } }),
+    onSuccess: async () => {
+      setPicked(new Set());
+      await client.invalidateQueries({ queryKey: ['moderation'] });
+      await client.invalidateQueries({ queryKey: ['board'] });
+    },
+  });
   return (
     <Page
       title="Moderation"
@@ -51,10 +64,55 @@ export function QueuePage({ search }: { search: QueueSearch }) {
               ? ` · ${String(query.data.open_flags)} waiting for a second read across the queue`
               : ''}
           </p>
+          {picked.size ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                disabled={batch.isPending}
+                onClick={() => {
+                  batch.mutate();
+                }}
+              >
+                {`Approve ${String(picked.size)} selected`}
+              </Button>
+              <span className="text-sm text-ink-alt">
+                Each approval is recorded on its own report. No reason is asked: approving is the
+                standard applied.
+              </span>
+            </div>
+          ) : null}
+          {batch.isError ? <Alert tone="serious">{batch.error.message}</Alert> : null}
+          {batch.data ? (
+            <Alert tone={batch.data.skipped.length ? 'note' : 'confirmed'}>
+              {`Approved ${String(batch.data.approved.length)}.`}
+              {batch.data.skipped.length
+                ? ` Left alone: ${batch.data.skipped.map((x) => x.why).join(' ')}`
+                : ''}
+            </Alert>
+          ) : null}
           <ul className="flex flex-col gap-3" aria-label="Reports">
             {query.data.reports.map((r) => (
-              <li key={r.thread_id}>
-                <Row r={r} />
+              <li key={r.thread_id} className="flex items-start gap-3">
+                {r.moderation_status !== 'valid' && !r.withdrawn ? (
+                  <Checkbox
+                    aria-label={`Select ${r.public_ref} to approve`}
+                    className="mt-4"
+                    checked={picked.has(r.thread_id)}
+                    onCheckedChange={(on) => {
+                      setPicked((was) => {
+                        const next = new Set(was);
+                        if (on === true) next.add(r.thread_id);
+                        else next.delete(r.thread_id);
+                        return next;
+                      });
+                    }}
+                  />
+                ) : (
+                  <span className="mt-4 size-6 shrink-0" aria-hidden="true" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <Row r={r} />
+                </div>
               </li>
             ))}
           </ul>
@@ -209,6 +267,7 @@ function Row({ r }: { r: QueueItem }) {
         {r.public ? ' · on the board' : ''}
         {!r.may_publish ? ' · its reporter did not permit publishing' : ''}
         {r.needs_review ? ` · second read asked for: ${r.review_terms.join(', ')}` : ''}
+        {r.threat_open ? ' · FLAGGED: threat to life or safety' : ''}
       </span>
       {r.severity || r.incident_size > 1 ? (
         <span className="text-sm">

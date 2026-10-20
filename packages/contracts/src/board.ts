@@ -130,21 +130,14 @@ export const listBoardReports = defineRoute({
   ]),
 });
 
-export const PublicLink = z.object({
-  id: z.number().int(),
-  title: z.string(),
-  publisher: z.string().nullable(),
-  published_on: z.string().nullable(),
-  url: z.string(),
-});
-
 export const getBoardReport = defineRoute({
   method: 'GET',
   path: '/api/board/reports/:ref',
-  summary: 'One published report, with the archive’s note on it if there is one.',
+  summary:
+    'One published report, with the archive’s note on it if there is one. Editorial source links are staff-only (decision 37).',
   params: RefParams,
   response: z.union([
-    z.object({ published: z.literal(true), report: PublicReport, links: z.array(PublicLink) }),
+    z.object({ published: z.literal(true), report: PublicReport }),
     PublicationOff,
   ]),
 });
@@ -155,17 +148,8 @@ export const BOARD_CSV_PATH = '/api/board/reports.csv';
 export const Stats = z.object({
   as_of: Timestamp,
   note: z.string(),
-  confirmed_reports: z.object({
-    by_disposition: z.object({
-      published: z.number().int(),
-      not_permitted: z.number().int(),
-      under_review: z.number().int(),
-      declined: z.number().int(),
-      unclear: z.number().int(),
-      withdrawn: z.number().int(),
-    }),
-    excludes: z.string(),
-  }),
+  /** The line that goes beside every number (platform.ts NOT_A_SAMPLE). */
+  not_a_sample: z.string(),
   published_reports: z.object({
     by_logbook: z.record(
       z.string(),
@@ -303,6 +287,8 @@ export const getPressPack = defineRoute({
     commit: z.string().nullable(),
     built_at: z.string().nullable(),
     files: z.array(PressFile),
+    /** Documents carry numbers: the same line goes above them (platform.ts NOT_A_SAMPLE). */
+    not_a_sample: z.string(),
   }),
 });
 

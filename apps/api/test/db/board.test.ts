@@ -272,9 +272,8 @@ describe('the CSV', () => {
 });
 
 describe('the counts', () => {
-  it('break out every report by what happened to it, with the denominator, and no bare total', async () => {
+  it('break out the published reports only, and no bare total', async () => {
     const r = await get<{
-      confirmed_reports: { by_disposition: Record<string, number> };
       published_reports: {
         by_logbook: Record<
           string,
@@ -286,17 +285,12 @@ describe('the counts', () => {
       };
     }>('/api/board/stats');
     expect(r.status).toBe(200);
-    const d = r.body.confirmed_reports.by_disposition;
-    expect(Object.keys(d).sort()).toEqual([
-      'declined',
-      'not_permitted',
-      'published',
-      'unclear',
-      'under_review',
-      'withdrawn',
-    ]);
-    expect(d.under_review).toBeGreaterThanOrEqual(1);
-    expect(d.declined).toBeGreaterThanOrEqual(1);
+    // P3: the line beside every number, as the one constant.
+    expect((r.body as unknown as { not_a_sample: string }).not_a_sample).toBe(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
+    // Counts of unapproved reports are on no public surface (decision 36).
+    expect(r.text).not.toMatch(/confirmed_reports|by_disposition|under_review|declined|withdrawn/);
     expect(r.text).not.toMatch(/"total"/);
 
     const mine = r.body.published_reports.by_logbook[lb.slug];

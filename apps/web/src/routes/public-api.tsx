@@ -39,11 +39,6 @@ const FIELDS = [
   ['as_of', 'When these figures were computed (ISO 8601, UTC).'],
   ['note', 'What the figures count, in a sentence.'],
   [
-    'confirmed_reports.by_disposition',
-    'Every report that entered the record, by what happened to it: published, approved but not permitted to be published by the person who filed it, under review, declined, unclear, withdrawn.',
-  ],
-  ['confirmed_reports.excludes', 'What is not counted anywhere, and why.'],
-  [
     'published_reports.by_logbook',
     'For each logbook: its title, how many of its reports are published, and for each question an operator chose to count, how many published reports gave each answer, and how many left it unanswered. A report that ticked several choices counts under each, so these can add up to more than the reports.',
   ],

@@ -380,6 +380,10 @@ describe('published counts', () => {
       r,
     );
     expect(b.totals).toMatchObject({ received: 3, approved: 0 });
+    // P3: the line beside every number, as the one constant.
+    expect(json<{ not_a_sample: string }>(r).not_a_sample).toBe(
+      'These are reports people chose to file. They are not a sample and cannot be read as a rate.',
+    );
     expect(b.fields.map((f) => f.key).sort()).toEqual(['category', 'state']);
     expect(r.body).not.toMatch(/SECRET-WORDS-123|someone@example\.org/);
   });

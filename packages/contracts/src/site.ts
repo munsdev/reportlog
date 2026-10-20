@@ -343,6 +343,10 @@ export const COPY_KEYS = [
   'alliance_intro',
   'standards',
   'lock_intro',
+  // D4: the terms of use and the two contact points, linked from every page.
+  'terms_of_use',
+  'contact_users',
+  'contact_authorities',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

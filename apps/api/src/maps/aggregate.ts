@@ -15,7 +15,7 @@
  * the seal or the chain, and the boundary check keeps them from reading this.
  */
 import type { AreaCount, MapAggregate, MapPlane, MapView, Stance } from '@reportlog/contracts';
-import { MIN_AREA_FLOOR } from '@reportlog/contracts';
+import { MIN_AREA_FLOOR, NOT_A_SAMPLE } from '@reportlog/contracts';
 import { LOCATION_TYPE } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publishedReportIds } from '../board/published.ts';
@@ -304,6 +304,7 @@ export async function computeMap(
       blurb: row.blurb,
       as_of: now.toISOString(),
       note: NOTE,
+      not_a_sample: NOT_A_SAMPLE,
       threshold: k,
       unit: unitFor(placeKeys.length > 0 || listsCounted === 0, listsCounted > 0),
       planes: row.planes,

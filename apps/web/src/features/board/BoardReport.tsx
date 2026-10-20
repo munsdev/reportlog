@@ -44,7 +44,7 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
       </Page>
     );
   }
-  const { report: r, links } = query.data;
+  const { report: r } = query.data;
   return (
     <Page
       title={`Report ${r.public_ref}`}
@@ -78,24 +78,12 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
         ) : null}
         <PublishedFiles publicRef={r.public_ref} />
       </Section>
-      {r.editorial_note ? <Note note={r.editorial_note} links={links} /> : null}
+      {r.editorial_note ? <Note note={r.editorial_note} /> : null}
     </Page>
   );
 }
 
-function Note({
-  note,
-  links,
-}: {
-  note: PublicNote;
-  links: {
-    id: number;
-    title: string;
-    publisher: string | null;
-    published_on: string | null;
-    url: string;
-  }[];
-}) {
+function Note({ note }: { note: PublicNote }) {
   return (
     <Section title="A note from the archive">
       {note.state === 'published' ? (
@@ -110,22 +98,6 @@ function Note({
             Written {new Date(note.written_at).toLocaleDateString()} by the editors
             {note.revised ? `, revised (this is version ${String(note.versions)})` : ''}.
           </p>
-          {links.length ? (
-            <div>
-              <h3 className="font-semibold">Sources</h3>
-              <ul className="list-disc pl-5">
-                {links.map((l) => (
-                  <li key={l.id}>
-                    <a href={l.url} rel="noopener noreferrer nofollow" className="underline">
-                      {l.title}
-                    </a>
-                    {l.publisher ? `, ${l.publisher}` : ''}
-                    {l.published_on ? `, ${l.published_on}` : ''}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </>
       ) : (
         <p>{note.notice}</p>

@@ -275,6 +275,59 @@ async function plantOneRowEach(): Promise<void> {
     .values({ staff_email: 'm@example.org', kind: 'audit_log' })
     .execute();
 
+  // Plan D, moderation: the agreement, the decision notice, a notice of
+  // illegal content and the threat flag, each append-only.
+  const agreement = await db
+    .insertInto('agreement_texts')
+    .values({
+      audience: 'moderator',
+      version: 1,
+      body: 'A row for the sweep.',
+      digest: hex('d'),
+      created_by: 'a@example.org',
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('agreement_acceptances')
+    .values({ text_id: agreement.id, user_email: 'm@example.org' })
+    .execute();
+  await db
+    .insertInto('decision_notices')
+    .values({
+      thread_id: thread,
+      report_id: report.id,
+      reason_code: 'duplicate',
+      outcome: 'sent',
+      actor_email: 'm@example.org',
+    })
+    .execute();
+  const notice = await db
+    .insertInto('content_notices')
+    .values({
+      receipt: 'IC-ABCDEFGH',
+      token_hash: hex('e'),
+      where_found: 'a row for the sweep',
+      explanation: 'a row for the sweep',
+      good_faith: true,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('content_notice_events')
+    .values({ notice_id: notice.id, action: 'received', actor: 'sender' })
+    .execute();
+  await db
+    .insertInto('threat_events')
+    .values({
+      subject_kind: 'report',
+      subject_ref: thread,
+      action: 'raise',
+      actor_email: 'm@example.org',
+      note: 'A row for the sweep.',
+    })
+    .execute();
+
   const user = await db
     .insertInto('users')
     .values({ email: 'tester@example.org' })
@@ -602,6 +655,13 @@ const SIGNED_IN_ANYONE = ['GET /api/access/owner'] as const;
  * the gate's. Each area tests its own refusals.
  */
 const NOT_STAFF_PREFIXES = [
+  // Anybody signed in reads and accepts an agreement; the page cannot sit
+  // behind the agreement it asks for. Publishing one is under /api/admin/.
+  '/api/agreement/',
+  // The public form to report illegal content and its status link (D1), and
+  // the erase link in a confirmation email (I5): each proves itself by token.
+  '/api/illegal-content',
+  '/api/erase/',
   '/api/auth/',
   '/api/orgs',
   '/api/invitations/',

@@ -43,6 +43,10 @@ export const DOOR_PATHS: readonly RegExp[] = [
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
   // Stopping email somebody asked for never waits on a password (identity/digestStop.ts).
   /^\/notifications\/stop\/[^/]+$/,
+  // The erase link in the confirmation email, and the status link in a notice of
+  // illegal content: emailed to somebody who may never have had the password.
+  /^\/file\/erase\/[^/]+$/,
+  /^\/illegal-content\/status\/[^/]+$/,
 ];
 
 export function isDoorPath(pathname: string): boolean {

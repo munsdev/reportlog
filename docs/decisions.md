@@ -41,6 +41,11 @@ answers them. Decided 2026-10-20 unless a line says otherwise.
 | 33  | The door rule's wording in `CLAUDE.md`                                          | "Only the calls named in front of the password for that door."                                                 |
 | 34  | Downloading the complete chain file                                             | Recorded in the access log.                                                                                    |
 | 35  | An audio-only MP4 under an isom or mp42 brand                                   | Stays refused, as legacy did.                                                                                  |
+| 36  | Counts of unapproved reports on public surfaces                                 | Removed from every public surface, `/api/board/stats` included. Only published reports are counted.            |
+| 37  | Moderators' editorial Sources links and notes                                   | Staff and vetted journalists only, never public. Removed from the public page and API.                         |
+| 39  | Erasing your email address (I5)                                                 | No longer withdraws the report. An emailed link opens a page that changes nothing until a button is pressed.   |
+| 41  | A rejected report whose email key was destroyed                                 | No email; "couldn't notify" is recorded. A server decrypt only to send is logged as sent (I4).                 |
+| 43  | One catch-all route in Caddy (S3)                                               | Tested through a real Caddy. Caddy's log holds no client IP (S1), tested the same way.                         |
 
 Rows 19 to 35 decided 2026-10-20, answering `docs/parity.md` §7 R0 and R2's question.
 

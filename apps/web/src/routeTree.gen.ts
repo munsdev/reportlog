@@ -17,6 +17,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PublicApiRouteImport } from './routes/public-api'
 import { Route as StandardsRouteImport } from './routes/standards'
 import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as staffBackupsRouteImport } from './routes/(staff)/backups'
 import { Route as staffFilesRouteRouteImport } from './routes/(staff)/files/route'
 import { Route as staffIntakeRouteRouteImport } from './routes/(staff)/intake/route'
@@ -37,6 +38,7 @@ import { Route as EvidenceTokenRouteImport } from './routes/evidence/$token'
 import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
+import { Route as IllegalContentIndexRouteImport } from './routes/illegal-content/index'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MapSlugRouteImport } from './routes/map/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
@@ -62,6 +64,8 @@ import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/log
 import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
+import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/moderate/agreement'
+import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
 import { Route as staffSettingsDevelopmentRouteImport } from './routes/(staff)/settings/development'
@@ -72,6 +76,8 @@ import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings
 import { Route as staffSettingsStartingPointsRouteImport } from './routes/(staff)/settings/starting-points'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
+import { Route as FileEraseTokenRouteImport } from './routes/file/erase/$token'
+import { Route as IllegalContentStatusTokenRouteImport } from './routes/illegal-content/status.$token'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
@@ -122,6 +128,11 @@ const StandardsRoute = StandardsRouteImport.update({
 const SubmitRoute = SubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffBackupsRoute = staffBackupsRouteImport.update({
@@ -222,6 +233,11 @@ const FeedbackTestersRoute = FeedbackTestersRouteImport.update({
 const FileSlugRoute = FileSlugRouteImport.update({
   id: '/file/$slug',
   path: '/file/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IllegalContentIndexRoute = IllegalContentIndexRouteImport.update({
+  id: '/illegal-content/',
+  path: '/illegal-content/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ListSlugRoute = ListSlugRouteImport.update({
@@ -349,6 +365,17 @@ const staffModerateThreadIdRoute = staffModerateThreadIdRouteImport.update({
   path: '/$threadId',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
+const staffModerateAgreementRoute = staffModerateAgreementRouteImport.update({
+  id: '/agreement',
+  path: '/agreement',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
+const staffModerateIllegalContentRoute =
+  staffModerateIllegalContentRouteImport.update({
+    id: '/illegal-content',
+    path: '/illegal-content',
+    getParentRoute: () => staffModerateRouteRoute,
+  } as any)
 const staffModerateSettingsRoute = staffModerateSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -401,6 +428,17 @@ const FileConfirmTokenRoute = FileConfirmTokenRouteImport.update({
   path: '/file/confirm/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FileEraseTokenRoute = FileEraseTokenRouteImport.update({
+  id: '/file/erase/$token',
+  path: '/file/erase/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IllegalContentStatusTokenRoute =
+  IllegalContentStatusTokenRouteImport.update({
+    id: '/illegal-content/status/$token',
+    path: '/illegal-content/status/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MineDeclarationThreadIdRoute = MineDeclarationThreadIdRouteImport.update({
   id: '/mine/declaration/$threadId',
   path: '/mine/declaration/$threadId',
@@ -468,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/public-api': typeof PublicApiRoute
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
+  '/terms': typeof TermsRoute
   '/files': typeof staffFilesRouteRouteWithChildren
   '/intake': typeof staffIntakeRouteRouteWithChildren
   '/lists': typeof staffListsRouteRouteWithChildren
@@ -492,6 +531,7 @@ export interface FileRoutesByFullPath {
   '/board/': typeof BoardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/feedback/': typeof FeedbackIndexRoute
+  '/illegal-content/': typeof IllegalContentIndexRoute
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
@@ -506,6 +546,8 @@ export interface FileRoutesByFullPath {
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
+  '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -515,6 +557,8 @@ export interface FileRoutesByFullPath {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/file/erase/$token': typeof FileEraseTokenRoute
+  '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -544,6 +588,7 @@ export interface FileRoutesByTo {
   '/public-api': typeof PublicApiRoute
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
+  '/terms': typeof TermsRoute
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
@@ -562,6 +607,7 @@ export interface FileRoutesByTo {
   '/board': typeof BoardIndexRoute
   '/docs': typeof DocsIndexRoute
   '/feedback': typeof FeedbackIndexRoute
+  '/illegal-content': typeof IllegalContentIndexRoute
   '/mine': typeof MineIndexRoute
   '/organizations': typeof OrganizationsIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
@@ -576,6 +622,8 @@ export interface FileRoutesByTo {
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
+  '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -585,6 +633,8 @@ export interface FileRoutesByTo {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/file/erase/$token': typeof FileEraseTokenRoute
+  '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -615,6 +665,7 @@ export interface FileRoutesById {
   '/public-api': typeof PublicApiRoute
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
+  '/terms': typeof TermsRoute
   '/(staff)/files': typeof staffFilesRouteRouteWithChildren
   '/(staff)/intake': typeof staffIntakeRouteRouteWithChildren
   '/(staff)/lists': typeof staffListsRouteRouteWithChildren
@@ -639,6 +690,7 @@ export interface FileRoutesById {
   '/board/': typeof BoardIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/feedback/': typeof FeedbackIndexRoute
+  '/illegal-content/': typeof IllegalContentIndexRoute
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
@@ -653,6 +705,8 @@ export interface FileRoutesById {
   '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
   '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
+  '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
+  '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
   '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
   '/(staff)/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -662,6 +716,8 @@ export interface FileRoutesById {
   '/(staff)/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/file/erase/$token': typeof FileEraseTokenRoute
+  '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -693,6 +749,7 @@ export interface FileRouteTypes {
     | '/public-api'
     | '/standards'
     | '/submit'
+    | '/terms'
     | '/files'
     | '/intake'
     | '/lists'
@@ -717,6 +774,7 @@ export interface FileRouteTypes {
     | '/board/'
     | '/docs/'
     | '/feedback/'
+    | '/illegal-content/'
     | '/mine/'
     | '/organizations/'
     | '/access/audit'
@@ -731,6 +789,8 @@ export interface FileRouteTypes {
     | '/logbooks/$id'
     | '/logbooks/front-page'
     | '/moderate/$threadId'
+    | '/moderate/agreement'
+    | '/moderate/illegal-content'
     | '/moderate/settings'
     | '/settings/development'
     | '/settings/feedback'
@@ -740,6 +800,8 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/file/erase/$token'
+    | '/illegal-content/status/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -769,6 +831,7 @@ export interface FileRouteTypes {
     | '/public-api'
     | '/standards'
     | '/submit'
+    | '/terms'
     | '/backups'
     | '/transparency-log'
     | '/board/$ref'
@@ -787,6 +850,7 @@ export interface FileRouteTypes {
     | '/board'
     | '/docs'
     | '/feedback'
+    | '/illegal-content'
     | '/mine'
     | '/organizations'
     | '/access/audit'
@@ -801,6 +865,8 @@ export interface FileRouteTypes {
     | '/logbooks/$id'
     | '/logbooks/front-page'
     | '/moderate/$threadId'
+    | '/moderate/agreement'
+    | '/moderate/illegal-content'
     | '/moderate/settings'
     | '/settings/development'
     | '/settings/feedback'
@@ -810,6 +876,8 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/file/erase/$token'
+    | '/illegal-content/status/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -839,6 +907,7 @@ export interface FileRouteTypes {
     | '/public-api'
     | '/standards'
     | '/submit'
+    | '/terms'
     | '/(staff)/files'
     | '/(staff)/intake'
     | '/(staff)/lists'
@@ -863,6 +932,7 @@ export interface FileRouteTypes {
     | '/board/'
     | '/docs/'
     | '/feedback/'
+    | '/illegal-content/'
     | '/mine/'
     | '/organizations/'
     | '/(staff)/access/audit'
@@ -877,6 +947,8 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/$id'
     | '/(staff)/logbooks/front-page'
     | '/(staff)/moderate/$threadId'
+    | '/(staff)/moderate/agreement'
+    | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
     | '/(staff)/settings/development'
     | '/(staff)/settings/feedback'
@@ -886,6 +958,8 @@ export interface FileRouteTypes {
     | '/(staff)/settings/starting-points'
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
+    | '/file/erase/$token'
+    | '/illegal-content/status/$token'
     | '/mine/declaration/$threadId'
     | '/notifications_/stop/$token'
     | '/organizations/$id/listing'
@@ -916,6 +990,7 @@ export interface RootRouteChildren {
   PublicApiRoute: typeof PublicApiRoute
   StandardsRoute: typeof StandardsRoute
   SubmitRoute: typeof SubmitRoute
+  TermsRoute: typeof TermsRoute
   staffFilesRouteRoute: typeof staffFilesRouteRouteWithChildren
   staffIntakeRouteRoute: typeof staffIntakeRouteRouteWithChildren
   staffListsRouteRoute: typeof staffListsRouteRouteWithChildren
@@ -940,12 +1015,15 @@ export interface RootRouteChildren {
   BoardIndexRoute: typeof BoardIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   FeedbackIndexRoute: typeof FeedbackIndexRoute
+  IllegalContentIndexRoute: typeof IllegalContentIndexRoute
   MineIndexRoute: typeof MineIndexRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessRosterRoute: typeof staffAccessRosterRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
+  FileEraseTokenRoute: typeof FileEraseTokenRoute
+  IllegalContentStatusTokenRoute: typeof IllegalContentStatusTokenRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
@@ -1012,6 +1090,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/submit'
       preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/backups': {
@@ -1152,6 +1237,13 @@ declare module '@tanstack/react-router' {
       path: '/file/$slug'
       fullPath: '/file/$slug'
       preLoaderRoute: typeof FileSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/illegal-content/': {
+      id: '/illegal-content/'
+      path: '/illegal-content'
+      fullPath: '/illegal-content/'
+      preLoaderRoute: typeof IllegalContentIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/list/$slug': {
@@ -1329,6 +1421,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffModerateThreadIdRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
+    '/(staff)/moderate/agreement': {
+      id: '/(staff)/moderate/agreement'
+      path: '/agreement'
+      fullPath: '/moderate/agreement'
+      preLoaderRoute: typeof staffModerateAgreementRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
+    '/(staff)/moderate/illegal-content': {
+      id: '/(staff)/moderate/illegal-content'
+      path: '/illegal-content'
+      fullPath: '/moderate/illegal-content'
+      preLoaderRoute: typeof staffModerateIllegalContentRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
     '/(staff)/moderate/settings': {
       id: '/(staff)/moderate/settings'
       path: '/settings'
@@ -1397,6 +1503,20 @@ declare module '@tanstack/react-router' {
       path: '/file/confirm/$token'
       fullPath: '/file/confirm/$token'
       preLoaderRoute: typeof FileConfirmTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/file/erase/$token': {
+      id: '/file/erase/$token'
+      path: '/file/erase/$token'
+      fullPath: '/file/erase/$token'
+      preLoaderRoute: typeof FileEraseTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/illegal-content/status/$token': {
+      id: '/illegal-content/status/$token'
+      path: '/illegal-content/status/$token'
+      fullPath: '/illegal-content/status/$token'
+      preLoaderRoute: typeof IllegalContentStatusTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mine/declaration/$threadId': {
@@ -1553,12 +1673,16 @@ const staffLogbooksRouteRouteWithChildren =
 
 interface staffModerateRouteRouteChildren {
   staffModerateThreadIdRoute: typeof staffModerateThreadIdRoute
+  staffModerateAgreementRoute: typeof staffModerateAgreementRoute
+  staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
   staffModerateSettingsRoute: typeof staffModerateSettingsRoute
   staffModerateIndexRoute: typeof staffModerateIndexRoute
 }
 
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateThreadIdRoute: staffModerateThreadIdRoute,
+  staffModerateAgreementRoute: staffModerateAgreementRoute,
+  staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,
   staffModerateSettingsRoute: staffModerateSettingsRoute,
   staffModerateIndexRoute: staffModerateIndexRoute,
 }
@@ -1600,6 +1724,7 @@ const rootRouteChildren: RootRouteChildren = {
   PublicApiRoute: PublicApiRoute,
   StandardsRoute: StandardsRoute,
   SubmitRoute: SubmitRoute,
+  TermsRoute: TermsRoute,
   staffFilesRouteRoute: staffFilesRouteRouteWithChildren,
   staffIntakeRouteRoute: staffIntakeRouteRouteWithChildren,
   staffListsRouteRoute: staffListsRouteRouteWithChildren,
@@ -1624,12 +1749,15 @@ const rootRouteChildren: RootRouteChildren = {
   BoardIndexRoute: BoardIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   FeedbackIndexRoute: FeedbackIndexRoute,
+  IllegalContentIndexRoute: IllegalContentIndexRoute,
   MineIndexRoute: MineIndexRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessRosterRoute: staffAccessRosterRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
+  FileEraseTokenRoute: FileEraseTokenRoute,
+  IllegalContentStatusTokenRoute: IllegalContentStatusTokenRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   NotificationsStopTokenRoute: NotificationsStopTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,
