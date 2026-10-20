@@ -3,7 +3,7 @@
 For the coordinating session. Brief: `docs/parity.md` §7, "R8 · Invariant leftovers (tests only)".
 
 - **Branch:** `claude/r8-invariant-leftovers`, based on `ccr-c9c93698-ev856l` at `2bdfe05`
-- **Pull request:** see the PR into `ccr-c9c93698-ev856l`
+- **Pull request:** #33
 - **Last updated:** 2026-10-20
 
 ## Files
