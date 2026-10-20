@@ -273,3 +273,191 @@ export async function attach(
   if (put.statusCode !== 200) throw new Error(`upload refused: ${put.body}`);
   return slot;
 }
+
+/**
+ * Stage a file and press Send, without the routes: what the worker tests
+ * need, a released slot. Returns the slot row.
+ */
+export async function stageAndSend(
+  files: Files,
+  logbookId: number,
+  body: Buffer,
+  type: string,
+  name = 'file',
+) {
+  const { createUploadSlot, draftHash, newDraftToken, receiveUpload, releaseDraft } =
+    await import('../../src/files/slots.ts');
+  const { ensureFormVersion } = await import('../../src/chain/forms.ts');
+  const { questionsFor } = await import('../../src/chain/questions.ts');
+  const { sha256Hex } = await import('../../src/identity/secrets.ts');
+  const { Readable } = await import('node:stream');
+  const { db } = files;
+  const owner = { draft: draftHash(newDraftToken()) };
+  const { slot_token } = await createUploadSlot(files, owner, {
+    name,
+    type,
+    size: body.length,
+    logbookId,
+    email: 'worker@example.org',
+  });
+  await receiveUpload(files, owner, slot_token, Readable.from([body]));
+  const lb = await db
+    .selectFrom('logbooks')
+    .select(['id', 'slug', 'launched_at'])
+    .where('id', '=', logbookId)
+    .executeTakeFirstOrThrow();
+  const form = await ensureFormVersion(db, lb, await questionsFor(db, logbookId));
+  const sub = await db
+    .insertInto('report_submissions')
+    .values({
+      token_hash: sha256Hex(newDraftToken()),
+      logbook_id: logbookId,
+      form_id: form.id,
+      payload: '{}',
+      email: 'worker@example.org',
+      expires_at: new Date(Date.now() + 86_400_000),
+    })
+    .returning(['id', 'expires_at'])
+    .executeTakeFirstOrThrow();
+  await releaseDraft(db, {
+    draft: owner.draft,
+    submissionId: sub.id,
+    logbookId,
+    expiresAt: sub.expires_at,
+  });
+  return db
+    .selectFrom('upload_slots')
+    .selectAll()
+    .where('slot_token', '=', slot_token)
+    .executeTakeFirstOrThrow();
+}
+
+/** A slot as it is now. */
+export const slotRow = (files: Files, id: number) =>
+  files.db.selectFrom('upload_slots').selectAll().where('id', '=', id).executeTakeFirstOrThrow();
+
+/** An evidence object of a processed slot, decrypted with the slot's own key. */
+export async function evidenceOf(
+  files: Files,
+  slot: { dek_wrapped: Buffer | null; storage_key: string | null },
+  suffix = '',
+): Promise<Buffer> {
+  const { decryptBuffer } = await import('../../src/files/envelope.ts');
+  const { readAll } = await import('../../src/files/storage.ts');
+  if (!slot.dek_wrapped || !slot.storage_key) throw new Error('no key or no object');
+  const o = await files.storage.get('evidence', `${slot.storage_key}${suffix}`);
+  if (!o) throw new Error(`no evidence object ${suffix}`);
+  return decryptBuffer(files.ring.unwrap(slot.dek_wrapped), await readAll(o));
+}
+
+/** The EXIF segment (APP1) that `jpegWithGps` splices in: GPS, camera, SECRET. */
+export function exifPayload(dir: string): Buffer {
+  const jpg = jpegWithGps(dir);
+  const len = jpg.readUInt16BE(4);
+  // After the marker and length, past "Exif\0\0": the TIFF data itself.
+  return jpg.subarray(4 + 2 + 6, 4 + len);
+}
+
+/** A 64×48 WebP carrying EXIF (with GPS and SECRET) and XMP chunks, as a phone writes one. */
+export function webpWithExif(dir: string): Buffer {
+  const plain = join(dir, 'plain.webp');
+  execFileSync('convert', ['-size', '64x48', 'xc:green', '-strip', `webp:${plain}`]);
+  const simple = readFileSync(plain);
+  // The image chunk of the simple file (VP8 or VP8L), as it is.
+  const image = simple.subarray(12);
+  const chunk = (fourcc: string, payload: Buffer) => {
+    const head = Buffer.alloc(8);
+    head.write(fourcc, 0, 'latin1');
+    head.writeUInt32LE(payload.length, 4);
+    return Buffer.concat([head, payload, payload.length % 2 ? Buffer.alloc(1) : Buffer.alloc(0)]);
+  };
+  // VP8X: the extended header that says EXIF (0x08) and XMP (0x04) follow.
+  const vp8x = Buffer.alloc(10);
+  vp8x.writeUInt8(0x08 | 0x04, 0);
+  vp8x.writeUIntLE(64 - 1, 4, 3);
+  vp8x.writeUIntLE(48 - 1, 7, 3);
+  const xmp = Buffer.from(
+    `<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF><rdf:Description>${SECRET}</rdf:Description></rdf:RDF></x:xmpmeta>`,
+    'utf8',
+  );
+  const payload = Buffer.concat([
+    chunk('VP8X', vp8x),
+    image,
+    chunk('EXIF', exifPayload(dir)),
+    chunk('XMP ', xmp),
+  ]);
+  const header = Buffer.alloc(12);
+  header.write('RIFF', 0, 'latin1');
+  header.writeUInt32LE(payload.length + 4, 4);
+  header.write('WEBP', 8, 'latin1');
+  return Buffer.concat([header, payload]);
+}
+
+/** A short WebM, VP8 and Vorbis, with a title. */
+export function webmClip(dir: string): Buffer {
+  const out = join(dir, 'clip.webm');
+  execFileSync('ffmpeg', [
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'testsrc=duration=1:size=160x120:rate=10',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=duration=1',
+    '-metadata',
+    `title=${SECRET}`,
+    '-c:v',
+    'libvpx',
+    '-c:a',
+    'libvorbis',
+    '-shortest',
+    out,
+  ]);
+  return readFileSync(out);
+}
+
+/** Sound alone in an MP4 container, as a phone's voice memo writes it: brand `M4A `. */
+export function m4aMemo(dir: string): Buffer {
+  const out = join(dir, 'memo.m4a');
+  execFileSync('ffmpeg', [
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=duration=1',
+    '-metadata',
+    `artist=${SECRET}`,
+    '-c:a',
+    'aac',
+    '-f',
+    'ipod',
+    out,
+  ]);
+  return readFileSync(out);
+}
+
+/** Sound alone in an MP4 container branded `isom`, as a plain MP4 muxer writes it. */
+export function isomAudioOnly(dir: string): Buffer {
+  const out = join(dir, 'sound-only.mp4');
+  execFileSync('ffmpeg', [
+    '-v',
+    'error',
+    '-y',
+    '-f',
+    'lavfi',
+    '-i',
+    'sine=duration=1',
+    '-c:a',
+    'aac',
+    '-f',
+    'mp4',
+    out,
+  ]);
+  return readFileSync(out);
+}

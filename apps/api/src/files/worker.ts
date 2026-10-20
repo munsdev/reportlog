@@ -33,7 +33,7 @@ import type { Files } from './context.ts';
 import { OVERHEAD, decryptStream, encryptBuffer, encryptStream } from './envelope.ts';
 import { isAllowedType, kindFor, sniffType } from './kinds.ts';
 import { limitsFor, maxBytesForKind } from './limits.ts';
-import { PACKAGE_FOR, RejectFile, buildRendition, missingToolsFor } from './media.ts';
+import { MissingTool, PACKAGE_FOR, RejectFile, buildRendition, missingToolsFor } from './media.ts';
 import { evidenceKeys, queueDeletion } from './slots.ts';
 import { randomKey } from './storage.ts';
 import type { Bucket } from './storage.ts';
@@ -136,6 +136,10 @@ async function fail(
   log.info(`file ${String(slot.id)} ${status}: ${detail}`);
 }
 
+/** What a file waiting for tools says, naming the packages an operator installs. */
+const waitingFor = (bins: readonly string[]) =>
+  `waiting for ${[...new Set(bins.map((b) => PACKAGE_FOR[b] ?? b))].join(' and ')} to be installed on the server`;
+
 /** Back in the queue untouched: the problem is ours (a tool, a scanner), not the file's. */
 async function defer(files: Files, slot: Slot, detail: string, log: Log) {
   await files.db
@@ -205,13 +209,7 @@ export async function processSlot(files: Files, slotId: number, log: Log = quiet
     }
     const missing = await missingToolsFor(type);
     if (missing.length) {
-      const pkgs = [...new Set(missing.map((m) => PACKAGE_FOR[m] ?? m))];
-      await defer(
-        files,
-        slot,
-        `waiting for ${pkgs.join(' and ')} to be installed on the server`,
-        log,
-      );
+      await defer(files, slot, waitingFor(missing), log);
       return 'deferred';
     }
     if (files.clamav) {
@@ -235,6 +233,10 @@ export async function processSlot(files: Files, slotId: number, log: Log = quiet
       if (e instanceof RejectFile) {
         await fail(files, slot, e.status, e.message, log);
         return 'refused';
+      }
+      if (e instanceof MissingTool) {
+        await defer(files, slot, waitingFor([e.bin]), log);
+        return 'deferred';
       }
       throw e;
     }
