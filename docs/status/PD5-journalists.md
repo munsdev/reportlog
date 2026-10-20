@@ -60,7 +60,16 @@
 
 ## Suites
 
-See the table below, filled in after the runs.
+Each run once on the committed tree (latest `ccr-c9c93698-ev856l` merged: nothing new; types up to date).
+
+| Suite                                   | Result                                                               |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| `pnpm check`                            | passes (api 407 + 21 skipped, web 588, fields 69, seal 46, access 9) |
+| `pnpm test:db`                          | 82 files, 1182 passed                                                |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 956 passed, 5 skipped                                                |
+
+`pnpm check` ran before two lines were added (the access log labels in `moderation/Settings.tsx`); that
+file was then linted, format-checked and type-checked alone, and both other suites ran after it.
 
 ## Outside my folders (kept minimal)
 
