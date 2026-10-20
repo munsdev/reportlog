@@ -93,7 +93,17 @@
 
 ## Totals
 
-See the PR description for the final run.
+- `pnpm check`: green. Format, lint, types, and the boundary check (0 errors; the 1 warning was
+  there before this branch). Unit tests: fields 77, seal 46 (legacy vectors green, no fixture
+  touched), access 9, api 408 passed / 21 skipped, web 588.
+- `pnpm test:db`: 84 files, 1192 tests, all passed. Run on `8794bd1`. The next commit changed only
+  the template's title and the web picker; the db tests check slugs, not titles.
+- Browser suite (`CI=1`, chromium and phone): 964 passed, 5 skipped, 0 failed on `d4d78aa`. The
+  first run had 10 failures, and I fixed both causes:
+  - Inside a list `Field`, both county selects took the Field's one id, so neither label reached
+    its control. `FieldReset` in `components/ui/field.tsx` fixes that.
+  - The template's first title, "Send a link about the election", also matched the older tests'
+    `name: 'Send a link'`. It is now "Election tips".
 
 ## Left open
 
