@@ -26,6 +26,7 @@ import {
   newDek,
 } from '../../src/files/envelope.ts';
 import { signHeaders } from '../../src/files/sigv4.ts';
+import { loadConfig } from '../../src/config.ts';
 import { storageFrom } from '../../src/files/context.ts';
 import { diskStorage, randomKey, readAll, s3Storage } from '../../src/files/storage.ts';
 import type { Storage } from '../../src/files/storage.ts';
@@ -339,6 +340,16 @@ describe('virtual-hosted addressing', () => {
         S3_ADDRESSING: 'virtual',
       }),
     ).toMatch(/^the bucket name "rl\.evidence" cannot be used with virtual-hosted addressing/);
+  });
+});
+
+describe('the addressing setting', () => {
+  it('a misspelt mode stops the server, naming the setting, rather than falling back to path', () => {
+    // Path style against an endpoint that takes only virtual-hosted requests
+    // fails as a signature mismatch, which names nothing useful.
+    const env = { DATABASE_URL: 'postgres://unused@localhost/unused' };
+    expect(loadConfig(env).S3_ADDRESSING).toBe('path');
+    expect(() => loadConfig({ ...env, S3_ADDRESSING: 'virtualhosted' })).toThrow(/S3_ADDRESSING/);
   });
 });
 

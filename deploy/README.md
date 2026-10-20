@@ -279,9 +279,9 @@ deletes it, and checks it is gone. It leaves nothing behind. Every line
 should start with `ok`:
 
 ```
-ok    staging: write, read, range, delete
-ok    evidence: write, read, range, delete
-ok    renditions: write, read, range, delete
+ok    staging: write, read, range, delete, refuses an unsigned read
+ok    evidence: write, read, range, delete, refuses an unsigned read
+ok    renditions: write, read, range, delete, refuses an unsigned read
 ```
 
 | It says                                           | Usually                                                        |
@@ -291,13 +291,17 @@ ok    renditions: write, read, range, delete
 | `failed: 403 … SignatureDoesNotMatch` / `…Denied` | the key or secret is wrong, or the key may not use that bucket |
 | `fetch failed (ENOTFOUND)`                        | `S3_ENDPOINT` names a host that does not exist                 |
 | `fetch failed (ECONNREFUSED)` or a certificate    | the endpoint is wrong, or not reachable from the server        |
+| `answers a read with no signature`                | the bucket is public: make it private in the provider's panel  |
+| `… is wrapped in quotes` / `… a space`            | `.env` holds the value with quotes or spaces: write it bare    |
+| `cannot be used with virtual-hosted addressing`   | rename the bucket without dots or capitals, or use path style  |
 
 The files key needs read, write and delete on these three buckets (unlike
 the backup key, which may only upload). The check has been run against
 moto, a local S3-compatible server, by `apps/api/test/unit/deploy-storage-check.test.ts`
 on every CI run, with path-style addressing. Virtual-hosted addressing
-(`S3_ADDRESSING=virtual`) has never been run against anything: if the
-provider needs it, this check is the first thing that will.
+(`S3_ADDRESSING=virtual`) is tested only against the repository's own
+stand-in (`apps/api/test/unit/files-storage.test.ts`): if the provider
+needs it, this check is the first real thing that will run it.
 
 ## Deploying
 
