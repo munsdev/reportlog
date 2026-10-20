@@ -1,0 +1,62 @@
+# Bugsink, the error tracker, on 127.0.0.1:8000. Caddy serves it on its own
+# domain; the archive's API sends to the port directly.
+#
+# Installed by deploy/install-bugsink.sh, not by a deploy: Bugsink is set up
+# once per server, and moved to a new version by running that script again.
+# Edit this file in the repository, never in /etc.
+[Unit]
+Description=Bugsink error tracker
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bugsink
+Group=bugsink
+WorkingDirectory=/var/lib/bugsink
+# SECRET_KEY and BUGSINK_BASE_URL. Never /etc/reportlog/reportlog.env: this
+# process may not read the archive's keys.
+EnvironmentFile=/etc/bugsink/bugsink.env
+Environment=PYTHONPATH=/etc/bugsink DJANGO_SETTINGS_MODULE=bugsink_conf HOME=/var/lib/bugsink
+# Applies Bugsink's own migrations after an upgrade, and checks the settings.
+ExecStartPre=/opt/bugsink/bin/bugsink-manage check --deploy --fail-level ERROR
+ExecStartPre=/opt/bugsink/bin/bugsink-manage migrate --no-input
+ExecStartPre=/opt/bugsink/bin/bugsink-manage migrate snappea --database=snappea --no-input
+# NO access log (gunicorn writes none unless asked): it would be a list of
+# addresses. Errors only, to the journal.
+ExecStart=/opt/bugsink/bin/gunicorn --bind=127.0.0.1:8000 --workers=2 --no-control-socket --error-logfile=- bugsink.wsgi
+Restart=on-failure
+RestartSec=5
+StateDirectory=bugsink
+StateDirectoryMode=0750
+ReadWritePaths=/var/lib/bugsink
+
+# --- confinement, as for the archive's own units ------------------------
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+UMask=0077
+# MemoryDenyWriteExecute is deliberately absent: libffi (under cffi) may
+# need writable, executable memory, and a refusal there is a crash.
+
+[Install]
+WantedBy=multi-user.target

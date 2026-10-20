@@ -1,0 +1,50 @@
+# Bugsink's background worker ("snappea"): turns what was received into
+# issues. One foreman; systemd keeps it to one.
+#
+# Installed by deploy/install-bugsink.sh. Edit this file in the repository.
+[Unit]
+Description=Bugsink background worker
+After=bugsink.service
+Requires=bugsink.service
+
+[Service]
+Type=simple
+User=bugsink
+Group=bugsink
+WorkingDirectory=/var/lib/bugsink
+EnvironmentFile=/etc/bugsink/bugsink.env
+Environment=PYTHONPATH=/etc/bugsink DJANGO_SETTINGS_MODULE=bugsink_conf HOME=/var/lib/bugsink
+ExecStart=/opt/bugsink/bin/bugsink-runsnappea
+Restart=on-failure
+RestartSec=5
+ReadWritePaths=/var/lib/bugsink
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+# Snappea talks to nobody: local files and SQLite only.
+RestrictAddressFamilies=AF_UNIX
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+UMask=0077
+# MemoryDenyWriteExecute is deliberately absent: libffi (under cffi) may
+# need writable, executable memory, and a refusal there is a crash.
+
+[Install]
+WantedBy=multi-user.target

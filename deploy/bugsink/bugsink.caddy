@@ -1,0 +1,20 @@
+# Bugsink on its own domain. Appended to the rendered /etc/caddy/Caddyfile by
+# deploy/lib.sh when BUGSINK_DOMAIN is set in /etc/reportlog/deploy.env
+# (deploy/install-bugsink.sh sets it), so every deploy keeps it.
+#
+# NO ACCESS LOG, as for the archive. Caddy sends the visitor's address in
+# X-Forwarded-For, and Bugsink is told not to look at it (USE_X_REAL_IP and no
+# X-Forwarded-For setting in deploy/bugsink/bugsink_conf.py).
+@BUGSINK_DOMAIN@ {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:8000
+}

@@ -44,11 +44,13 @@ const MOVED = [
   '/var/cache/reportlog-build',
   '/var/backups/reportlog',
   '/var/lib/reportlog',
+  '/var/lib/bugsink',
   '/run/reportlog-deploy.lock',
   '/etc/systemd/system',
   '/etc/postgresql',
   '/etc/os-release',
   '/etc/reportlog',
+  '/etc/bugsink',
   '/etc/caddy',
   '/etc/apt',
   '/srv/reportlog',
@@ -105,7 +107,7 @@ const STUB_HEAD = (log: string, name: string) => `#!/bin/bash
 const STUBS: Record<string, string> = {
   id: `case "$1" in
   -u) if [ -e "$C/not-root" ]; then echo 1000; else echo 0; fi ;;
-  *) [ -e "$C/user-exists" ] ;;
+  *) [ -e "$C/user-$1" ] ;;
 esac`,
   runuser: `# runuser -u <user> -- <command...>
 while [ "$1" != "--" ]; do shift; done; shift
@@ -122,6 +124,7 @@ esac`,
     rev=$(cat "$R/srv/reportlog/current/REVISION" 2>/dev/null)
     [ ! -e "$C/unhealthy-all" ] && [ ! -e "$C/unhealthy-$rev" ]
     exit ;;
+  */accounts/login/) [ ! -e "$C/bugsink-down" ]; exit ;;
 esac; done
 # A download: curl -fsSL <url> -o <file>, served from control/downloads.
 url=""; out=""
@@ -138,7 +141,17 @@ case " $* " in
   *" --dearmor "*) while [ "$1" != "-o" ]; do shift; done; cp "$3" "$2" ;;
 esac`,
   uname: 'if [ -e "$C/arch" ]; then cat "$C/arch"; else echo x86_64; fi',
-  useradd: 'touch "$C/user-exists"',
+  useradd: 'for a in "$@"; do last=$a; done; touch "$C/user-$last"',
+  // ssh-keygen -q -t ed25519 -N '' -C <comment> -f <file>: a stand-in pair.
+  'ssh-keygen': `while [ "$1" != "-f" ]; do shift; done
+echo "stand-in private key" >"$2"
+echo "ssh-ed25519 AAAAC3NzaStandIn reportlog anchor" >"$2.pub"`,
+  // python3 -m venv <dir>: a "virtual environment" holding the stand-ins
+  // for what pip would install (VENV_STUBS), so the script can run them.
+  python3: `case "$*" in
+  "-m venv "*) mkdir -p "$3/bin" && cp "$C/../venv-bin/"* "$3/bin/" ;;
+  *) exit 1 ;;
+esac`,
   psql: `case "$*" in
   *pg_roles*) [ -e "$C/pg-role" ] && echo 1 ;;
   *pg_database*) [ -e "$C/pg-database" ] && echo 1 ;;
@@ -150,6 +163,22 @@ esac; exit 0`,
   install: `args=()
 while [ $# -gt 0 ]; do case "$1" in -o|-g) shift 2 ;; *) args+=("$1"); shift ;; esac; done
 exec /usr/bin/install "\${args[@]}"`,
+};
+
+/** Bugsink's commands, as pip would have installed them into a venv. */
+const VENV_STUBS: Record<string, string> = {
+  pip: '[ ! -e "$C/pip-fails" ] || { echo "ERROR: THESE PACKAGES DO NOT MATCH THE HASHES" >&2; exit 1; }',
+  'bugsink-manage': `echo "  (SECRET_KEY \${SECRET_KEY:+set}, BUGSINK_BASE_URL=\${BUGSINK_BASE_URL:-}, in $PWD)" >>"$L"
+case " $* " in
+  *" shell "*)
+    case "$*" in
+      *is_superuser*) if [ -e "$C/bugsink-admin" ]; then echo HAS_ADMIN; else echo NO_ADMIN; fi ;;
+      *PROJECT*) echo "34 objects imported automatically"; echo; echo "PROJECT 3 0123456789abcdef0123456789abcdef" ;;
+    esac ;;
+  *" createsuperuser "*) printf '%s' "\${DJANGO_SUPERUSER_PASSWORD:-}" >"$C/bugsink-admin" ;;
+esac`,
+  gunicorn: 'exit 0',
+  'bugsink-runsnappea': 'exit 0',
 };
 
 /** The application's own commands, run by the scripts as the service user. */
@@ -203,6 +232,9 @@ export class Sandbox {
     }
     writeFileSync(this.logFile, '');
     for (const [name, body] of Object.entries(STUBS)) this.stub(this.bin, name, body);
+    for (const [name, body] of Object.entries(VENV_STUBS)) {
+      this.stub(join(this.dir, 'venv-bin'), name, body);
+    }
     this.copyCheckout(this.checkout);
   }
 
@@ -232,7 +264,14 @@ export class Sandbox {
   copyCheckout(dest: string) {
     cpSync(join(REPO, 'deploy'), join(dest, 'deploy'), { recursive: true });
     copyFileSync(join(REPO, '.env.example'), join(dest, '.env.example'));
-    for (const f of ['deploy.sh', 'rollback.sh', 'install.sh', 'lib.sh', 'bin/reportlog']) {
+    for (const f of [
+      'deploy.sh',
+      'rollback.sh',
+      'install.sh',
+      'install-bugsink.sh',
+      'lib.sh',
+      'bin/reportlog',
+    ]) {
       const p = join(dest, 'deploy', f);
       writeFileSync(p, rewrite(readFileSync(p, 'utf8'), this.root));
     }
@@ -265,8 +304,12 @@ export class Sandbox {
     return -1;
   }
 
-  /** Run a program with only the stand-ins and the basic system tools on PATH. */
-  run(program: string, args: string[] = [], opts: { wrapper?: string } = {}): Run {
+  /**
+   * Run a program with only the stand-ins and the basic system tools on PATH.
+   * `input` is what a person would type, one answer per line; without it the
+   * program reads end of input at once, as an unattended run would.
+   */
+  run(program: string, args: string[] = [], opts: { wrapper?: string; input?: string } = {}): Run {
     const env = {
       PATH: `${this.bin}:/usr/bin:/bin`,
       HOME: join(this.dir, 'home'),
@@ -278,8 +321,12 @@ export class Sandbox {
       GIT_COMMITTER_EMAIL: 't@example.org',
     };
     const r = opts.wrapper
-      ? spawnSync('bash', ['-c', opts.wrapper, '_', program, ...args], { env, encoding: 'utf8' })
-      : spawnSync(program, args, { env, encoding: 'utf8' });
+      ? spawnSync('bash', ['-c', opts.wrapper, '_', program, ...args], {
+          env,
+          encoding: 'utf8',
+          input: opts.input ?? '',
+        })
+      : spawnSync(program, args, { env, encoding: 'utf8', input: opts.input ?? '' });
     const stdout = r.stdout;
     const stderr = r.stderr;
     // eslint-disable-next-line no-control-regex
