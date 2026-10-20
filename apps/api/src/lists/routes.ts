@@ -41,7 +41,7 @@ import {
   NOT_A_SAMPLE,
 } from '@reportlog/contracts';
 import type { BodyOf, ListForm } from '@reportlog/contracts';
-import { LOCATION_TYPE, placeOptions } from '@reportlog/fields';
+import { LOCATION_TYPE, depthOf, placeOptions } from '@reportlog/fields';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
@@ -177,6 +177,8 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
         options: Array.isArray(f.settings.options) ? f.settings.options : [],
         allow_other: f.settings.allowOther === true,
         ...(places ? { places: [...places.subdivisions, ...places.countries] } : {}),
+        // The county picker's own list is bundled in the page (@reportlog/fields).
+        ...(places && depthOf(f.settings) === 'county' ? { depth: 'county' as const } : {}),
         erased: f.retention === 'transient',
       };
     }),

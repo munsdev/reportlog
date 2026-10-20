@@ -26,6 +26,7 @@ const SENTENCES = {
   'key-taken': 'Another question in this logbook already uses that key. Choose a different one.',
   'location-scope':
     'A location question asks for a US state, a country, or either. Choose one of those three.',
+  'location-depth': 'A location question can ask for the county only when it asks for a US state.',
   'choice-options':
     'A list of choices needs at least one choice, each with some words in it, and no choice twice.',
   'max-length': 'The longest answer allowed must be a whole number from 1 to 100,000.',

@@ -32,6 +32,8 @@ export const QuestionSettingsInput = z.strictObject({
   min: z.number().nullable().optional(),
   max: z.number().nullable().optional(),
   scope: z.string().optional(),
+  /** `county` asks for the county after the state; absent means state only. */
+  depth: z.string().optional(),
 });
 export type QuestionSettingsInput = z.infer<typeof QuestionSettingsInput>;
 
@@ -107,6 +109,7 @@ export const LogbookFileQuestion = z.object({
   options: z.array(z.string()).optional(),
   allow_other: z.boolean().optional(),
   scope: z.string().optional(),
+  depth: z.string().optional(),
   max_length: z.number().optional(),
   min: z.number().optional(),
   max: z.number().optional(),

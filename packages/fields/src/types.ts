@@ -17,6 +17,7 @@ export type FieldKind =
   | 'file';
 
 export type LocationScope = 'us' | 'world' | 'both';
+export type LocationDepth = 'state' | 'county';
 
 /**
  * A question's settings. Loose on purpose: settings are stored as JSON and
@@ -29,6 +30,8 @@ export interface FieldSettings {
   min?: number | null;
   max?: number | null;
   scope?: LocationScope;
+  /** Written only as `county`; absent means state (gazetteer.ts). */
+  depth?: LocationDepth;
   [key: string]: unknown;
 }
 

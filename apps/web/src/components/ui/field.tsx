@@ -36,6 +36,16 @@ export function useField(): FieldContextValue | null {
   return useContext(FieldContext);
 }
 
+/**
+ * Controls inside this are not the surrounding Field's control. For a
+ * question answered by more than one control (CountyPicker), each with its
+ * own label: otherwise every control would take the Field's one id, and no
+ * label could point at its own control.
+ */
+export function FieldReset({ children }: { children: ReactNode }) {
+  return <FieldContext.Provider value={null}>{children}</FieldContext.Provider>;
+}
+
 export interface FieldControlProps {
   id?: string | undefined;
   'aria-describedby'?: string | undefined;

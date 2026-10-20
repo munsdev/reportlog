@@ -126,6 +126,7 @@ function settingsOf(q: LogbookFile['questions'][number]): QuestionSettingsInput 
     ...(q.options ? { options: q.options.map((o) => o.trim()) } : {}),
     ...(q.kind === 'place' ? { allowOther: q.allow_other !== false } : {}),
     ...(q.kind === 'location' && q.scope !== undefined ? { scope: q.scope } : {}),
+    ...(q.kind === 'location' && q.depth !== undefined ? { depth: q.depth } : {}),
     ...(TEXT_KINDS.has(q.kind) && q.max_length !== undefined ? { maxLength: q.max_length } : {}),
     ...(q.kind === 'number' && q.min !== undefined ? { min: q.min } : {}),
     ...(q.kind === 'number' && q.max !== undefined ? { max: q.max } : {}),
@@ -292,6 +293,8 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
         // Carried so a location question does not come back asking for US
         // states when it was made for countries. The old file format lost it.
         ...(f.kind === 'location' && typeof s.scope === 'string' ? { scope: s.scope } : {}),
+        // Only when it is `county`, so a state question's file is unchanged.
+        ...(f.kind === 'location' && s.depth === 'county' ? { depth: s.depth } : {}),
         ...(TEXT_KINDS.has(f.kind) && typeof s.maxLength === 'number'
           ? { max_length: s.maxLength }
           : {}),

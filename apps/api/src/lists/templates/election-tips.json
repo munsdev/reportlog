@@ -1,0 +1,76 @@
+{
+  "reportlog_list": 1,
+  "slug": "election-tips",
+  "title": "Election tips",
+  "blurb": "Links to posts, articles or video about something that happened at an election. Not your own account of what you saw, and no uploads.",
+  "email": "required",
+  "fields": [
+    {
+      "key": "links",
+      "kind": "url",
+      "label": "Link",
+      "help": "A post, article or video about something that happened. Up to three.",
+      "required": true,
+      "max_values": 3,
+      "retention": "durable"
+    },
+    {
+      "key": "where",
+      "kind": "location",
+      "label": "Where",
+      "help": "The state, and the county if you know it. Leave it blank if you are not sure.",
+      "required": false,
+      "retention": "durable",
+      "settings": {
+        "scope": "us",
+        "depth": "county"
+      }
+    },
+    {
+      "key": "day",
+      "kind": "date",
+      "label": "What day was it?",
+      "help": "Leave it blank if you are not sure.",
+      "required": false,
+      "retention": "durable"
+    },
+    {
+      "key": "category",
+      "kind": "choice_one",
+      "label": "What kind of thing is it",
+      "required": true,
+      "retention": "durable",
+      "settings": {
+        "options": [
+          "Voter turned away or denied a ballot",
+          "ID improperly demanded or refused",
+          "Language or disability access denied",
+          "Long lines or wait times",
+          "Late opening or early closing",
+          "Equipment failure or shortage",
+          "Insufficient or untrained staff",
+          "Voter or worker intimidation",
+          "Improper challenge of voters",
+          "Armed or uniformed presence",
+          "Law enforcement involvement",
+          "Disinformation at the site",
+          "Observer access denied or restricted",
+          "Observer expelled",
+          "Ballot secrecy or handling issue",
+          "Count not observable",
+          "Results or certification irregularity",
+          "Something else",
+          "Not sure"
+        ]
+      }
+    },
+    {
+      "key": "description",
+      "kind": "long_text",
+      "label": "Anything we should know about the link",
+      "help": "Optional. Context about the link, not an account of what you saw.",
+      "required": false,
+      "retention": "transient"
+    }
+  ]
+}

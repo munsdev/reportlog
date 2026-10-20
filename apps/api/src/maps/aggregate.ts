@@ -16,7 +16,7 @@
  */
 import type { AreaCount, MapAggregate, MapPlane, MapView, Stance } from '@reportlog/contracts';
 import { MIN_AREA_FLOOR, NOT_A_SAMPLE } from '@reportlog/contracts';
-import { LOCATION_TYPE } from '@reportlog/fields';
+import { LOCATION_TYPE, stateOfPlace } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publishedReportIds } from '../board/published.ts';
 import type { Database } from '../db/database.ts';
@@ -57,8 +57,10 @@ function publishedHeads(db: Database) {
  */
 export function areaOf(answer: unknown): string | null {
   if (typeof answer !== 'string') return null;
-  const m = /^[A-Z]{2}(-[A-Z0-9]{1,3})?$/.exec(answer);
-  return m ? m[0] : null;
+  // A COUNTY COUNTS TOWARD ITS STATE, by prefix (owner decision 44): heat maps
+  // stay state-level, so `US-AZ-04013` is one more for `US-AZ`.
+  const m = /^[A-Z]{2}(-[A-Z0-9]{1,3})?(-\d{5})?$/.exec(answer);
+  return m ? stateOfPlace(m[0]) : null;
 }
 
 /**

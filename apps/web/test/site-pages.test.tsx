@@ -113,7 +113,7 @@ describe('the footer', () => {
     expect(await screen.findByRole('link', { name: 'ReportLog' })).toBeInTheDocument();
   });
 
-  it('links the About, How-to, standard, legal, directory and API pages', async () => {
+  it('links the About, How-to, standard, legal, directory, API and journalist pages', async () => {
     await inRouter(() => <SiteFooter />);
     const nav = await screen.findByRole('navigation', { name: 'About this site' });
     const hrefs = [...nav.querySelectorAll('a')].map((a) => a.getAttribute('href'));
@@ -126,6 +126,7 @@ describe('the footer', () => {
       '/illegal-content',
       '/organizations',
       '/public-api',
+      '/journalists/alerts',
     ]);
   });
 

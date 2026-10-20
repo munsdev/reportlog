@@ -144,6 +144,21 @@ describe('questions are made, not built in', () => {
       L.addField(db, lb.id, { kind: 'location', label: 'Where', settings: { scope: 'mars' } }),
       'location-scope',
     );
+    await refused(
+      L.addField(db, lb.id, {
+        kind: 'location',
+        label: 'Where',
+        settings: { scope: 'world', depth: 'county' },
+      }),
+      'location-depth',
+    );
+    // `state` is what an absent depth means, so it is not stored (or sealed).
+    const state = await L.addField(db, lb.id, {
+      kind: 'location',
+      label: 'Where',
+      settings: { scope: 'us', depth: 'state' },
+    });
+    expect(state.settings).toEqual({ scope: 'us' });
     await refused(L.addField(db, lb.id, { kind: 'choice_one', label: 'Pick' }), 'choice-options');
     await refused(
       L.addField(db, lb.id, {

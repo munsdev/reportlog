@@ -64,7 +64,8 @@ export const FIELD_TYPES: readonly FieldTypeInfo[] = [
     id: 'location',
     label: 'Location on a map',
     description:
-      'A country, or a US state or territory, chosen from a list. ' +
+      'A country, or a US state or territory, chosen from a list; a US question ' +
+      'can ask for the county too. ' +
       'This is the question a heat map counts — pick this one rather than Place ' +
       'if the answers need to add up. Only one per logbook can feed a map.',
     settings: { scope: 'us' },

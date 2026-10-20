@@ -39,6 +39,7 @@ import {
 import { HttpError } from '../http/errors.ts';
 import { partlyHidden } from '../identity/digestStop.ts';
 import { addressFrom } from '../identity/http.ts';
+import { recordRoleChange } from '../identity/roles.ts';
 import { randomToken, sha256Hex } from '../identity/secrets.ts';
 
 export const CONFIRM_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -107,6 +108,52 @@ export function confirmationEmail(link: string): { subject: string; text: string
   };
 }
 
+/**
+ * TAKE SUBSCRIBERS OFF THE LIST, and with them any desk access (owner
+ * decision 46). Every delete of a subscriber goes through here, so no path
+ * can leave an approved journalist reading the desk after leaving the list.
+ *
+ * NOT `setSystemRole`. That refuses anyone but the owner for `journalist`,
+ * and must keep refusing: loosening it for this caller loosens it for all.
+ * This can do exactly one thing, journalist to user, for the account an
+ * approved request names, and the WHERE says so: it cannot touch any other
+ * role. role_audit records it as the owner's revoke is recorded, `revoke`
+ * of `journalist`, with the journalist's own address as the actor, because
+ * leaving is theirs (the stop link was emailed to them).
+ *
+ * The request itself goes with the row (ON DELETE CASCADE).
+ */
+export async function removeSubscribers(db: Kysely<DB>, ids: readonly number[]): Promise<void> {
+  if (!ids.length) return;
+  await db.transaction().execute(async (trx) => {
+    const ended = await trx
+      .updateTable('users')
+      .set({ role: 'user', updated_at: new Date() })
+      .where('role', '=', 'journalist')
+      .where('id', 'in', (q) =>
+        q
+          .selectFrom('journalist_access_requests')
+          .select('user_id')
+          .where('subscriber_id', 'in', ids)
+          .where('status', '=', 'approved')
+          .where('user_id', 'is not', null)
+          .$narrowType<{ user_id: number }>(),
+      )
+      .returning('email')
+      .execute();
+    for (const { email } of ended) {
+      await recordRoleChange(trx, {
+        actorEmail: email,
+        subjectEmail: email,
+        axis: 'system',
+        action: 'revoke',
+        detail: 'journalist',
+      });
+    }
+    await trx.deleteFrom('journalist_subscribers').where('id', 'in', ids).execute();
+  });
+}
+
 /** Place codes the form may send: US states, once each. */
 export function checkedStates(states: readonly string[]): string[] {
   const unique = [...new Set(states.map((s) => s.trim().toUpperCase()))];
@@ -128,7 +175,7 @@ export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<v
     .executeTakeFirst();
   // Already listed: say nothing different. Pending: the new details replace the old.
   if (known?.status === 'active') return;
-  if (known) await db.deleteFrom('journalist_subscribers').where('id', '=', known.id).execute();
+  if (known) await removeSubscribers(db, [known.id]);
 
   const dek = randomBytes(32);
   const row = await db
@@ -152,7 +199,7 @@ export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<v
       ...confirmationEmail(confirmLinkFor(deps.siteOrigin, token)),
     });
   } catch {
-    await db.deleteFrom('journalist_subscribers').where('id', '=', row.id).execute();
+    await removeSubscribers(db, [row.id]);
     throw new HttpError(
       503,
       'mail_failed',
@@ -236,6 +283,6 @@ export async function describeStop(
 export async function applyStop(db: Kysely<DB>, token: string): Promise<AlertLink> {
   const row = await linkOf(db, token, 'stop');
   if (!row) return { state: 'gone' };
-  await db.deleteFrom('journalist_subscribers').where('id', '=', row.id).execute();
+  await removeSubscribers(db, [row.id]);
   return { state: 'stopped' };
 }

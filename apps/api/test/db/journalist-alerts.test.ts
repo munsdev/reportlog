@@ -23,7 +23,8 @@ const ring = keyringFrom(CONTACT_KEY);
 let app: Awaited<ReturnType<typeof buildApp>>;
 
 const WHERE: FieldDefinition[] = [
-  { key: 'where', kind: 'location', label: 'Where?', settings: { scope: 'us' } },
+  // County depth, so one Arizona report below can be a county (decision 44).
+  { key: 'where', kind: 'location', label: 'Where?', settings: { scope: 'us', depth: 'county' } },
   { key: 'what', kind: 'long_text', label: 'What?' },
 ];
 const NAME = 'Pat Reporter';
@@ -150,7 +151,8 @@ describe('the alert', () => {
     const lb = await launchedLogbook(db, WHERE);
     refs = [
       await approved(lb, 'US-AZ'),
-      await approved(lb, 'US-AZ'),
+      // A county counts toward its state, as on the heat maps.
+      await approved(lb, 'US-AZ-04013'),
       await approved(lb, 'US-TX'),
       await approved(lb, 'US-AZ', 'pending'),
     ];

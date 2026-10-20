@@ -1,12 +1,17 @@
 /**
- * The three shipped starting points for a list: the Tip List, check-ins and a
- * contact form.
+ * The shipped starting points for a list: the Tip List, check-ins, a contact
+ * form, and election tips (owner decision 45). The Tip List stays general;
+ * election tips is the election-specific one beside it, as
+ * logbooks/templates/elections.json is for logbooks: it asks where (state,
+ * then county), what day, and which of the elections logbook's kinds of
+ * thing, so the journalist desk can show those beside a link. Counting is
+ * off, as on every template (decision 42).
  *
  * A TEMPLATE IS NOT A MODE. Applying one writes the ordinary rows an
  * administrator could have typed by hand, and then it is over. NOTHING READS
  * "WHICH TEMPLATE IS THIS" TO DECIDE ANYTHING: there is no column recording it
  * and no branch asking. Link handling happens because a list HAS a url
- * question, not because it is "a tip list". Delete this file and the three
+ * question, not because it is "a tip list". Delete this file and the
  * JSON files, and no list already made behaves differently.
  *
  * THE `email` DECLARATION IS CHECKED AND THEN DISCARDED. Whether a form asks
@@ -24,6 +29,7 @@ import { isRetention } from './retention.ts';
 import type { Retention } from './retention.ts';
 import checkIns from './templates/check-ins.json' with { type: 'json' };
 import contact from './templates/contact.json' with { type: 'json' };
+import electionTips from './templates/election-tips.json' with { type: 'json' };
 import tips from './templates/tips.json' with { type: 'json' };
 
 export const LIST_FILE_VERSION = 1;
@@ -115,7 +121,7 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
   };
 }
 
-const FILES = { tips, 'check-ins': checkIns, contact } as const;
+const FILES = { tips, 'election-tips': electionTips, 'check-ins': checkIns, contact } as const;
 
 /** Every shipped template, in the order the "make a list" screen offers them. */
 export function shippedTemplates(): ListTemplate[] {
