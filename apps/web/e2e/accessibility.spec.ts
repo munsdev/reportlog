@@ -54,23 +54,9 @@ interface Allowance {
   onlyWhenPresent?: string;
 }
 
-const ALLOWED: Allowance[] = [
-  // The board's links to a report in full: see `why`.
-  {
-    rule: 'label-content-name-mismatch',
-    page: '/board/',
-    visitor: 'stranger',
-    onlyWhenPresent: 'the board shows no report until another test has published one',
-    why: 'Q2\'s board (features/board/Board.tsx) names each report\'s "Read in full" link "Read RL-… in full", which does not contain the visible words. Q2\'s own specs click that name, and board/ is Q2\'s folder while Q2 is working in it, so the fix ("Read in full: RL-…") is theirs to make; reported to the coordinating session. Remove these two lines with it.',
-  },
-  {
-    rule: 'label-content-name-mismatch',
-    page: '/board/',
-    visitor: 'administrator',
-    onlyWhenPresent: 'the board shows no report until another test has published one',
-    why: 'Q2\'s board (features/board/Board.tsx) names each report\'s "Read in full" link "Read RL-… in full", which does not contain the visible words. Q2\'s own specs click that name, and board/ is Q2\'s folder while Q2 is working in it, so the fix ("Read in full: RL-…") is theirs to make; reported to the coordinating session. Remove these two lines with it.',
-  },
-];
+// Empty: nothing is excused. The board's "Read in full" link was the one
+// allowance; Q2 fixed it ("Read in full: RL-…").
+const ALLOWED: Allowance[] = [];
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
