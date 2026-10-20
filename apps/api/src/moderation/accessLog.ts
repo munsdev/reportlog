@@ -176,7 +176,9 @@ export async function recentAccesses(
   let looks = db
     .selectFrom('contact_access_log as a')
     .leftJoin('reports as r', 'r.id', 'a.report_id')
+    .leftJoin('logbooks as l', 'l.id', 'a.logbook_id')
     .select([
+      'l.slug as logbook',
       'a.id',
       'a.staff_email',
       'a.kind',
@@ -224,10 +226,27 @@ export async function recentAccesses(
       thread_id: e.thread_id,
       attachment_id: e.attachment_id,
       public_ref: e.public_ref,
+      logbook: null,
     })),
   ]
     .sort((x, y) => y.accessed_at.getTime() - x.accessed_at.getTime())
     .slice(0, limit);
+}
+
+/**
+ * A download of a logbook's complete chain file (decision 34): every
+ * version's sealed answers, published or not. Written BEFORE the file is
+ * built, so a download that was not recorded cannot happen.
+ */
+export async function recordChainFileDownload(
+  db: Kysely<DB>,
+  staffEmail: string,
+  logbookId: number,
+): Promise<void> {
+  await db
+    .insertInto('contact_access_log')
+    .values({ staff_email: staffEmail, kind: 'chain_file', logbook_id: logbookId })
+    .execute();
 }
 
 export async function recordAuditRead(db: Kysely<DB>, staffEmail: string): Promise<void> {

@@ -244,6 +244,7 @@ const LOOKED: Record<string, string> = {
   contact_used: 'had the address opened, to ask for files, of',
   file_original: 'opened a file’s original on',
   file_preview: 'looked at a file’s cleaned copy on',
+  chain_file: 'downloaded the complete chain file of',
 };
 
 function AccessLogEntries() {
@@ -258,7 +259,7 @@ function AccessLogEntries() {
       {entries.map((e) => (
         <li key={e.id}>
           <span className="font-semibold">{e.staff_email}</span> {LOOKED[e.kind] ?? 'opened'}{' '}
-          <span className="font-mono">{e.public_ref ?? 'a report'}</span>
+          <span className="font-mono">{e.public_ref ?? e.logbook ?? 'a report'}</span>
           {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`},{' '}
           {new Date(e.accessed_at).toLocaleString()}
           {e.reason ? `: ${e.reason}` : ''}

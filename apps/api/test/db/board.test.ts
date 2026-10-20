@@ -158,6 +158,57 @@ describe('search', () => {
   });
 });
 
+// Legacy's ownership-selftest ended with a block on how NULL behaves in
+// Postgres filters: a NULL location failed `&&` and a NULL date failed `>=`,
+// so a report that skipped an optional question silently fell out of a
+// search. Here an unanswered question is an ABSENT KEY (and a report with
+// nothing answered has no `answers` at all), so the risk is the same shape:
+// a NULL that makes a condition NULL rather than false-or-true.
+describe('a report with an unanswered optional question', () => {
+  const page = (query: string) => get<Page>(`/api/board/reports?${query}`);
+
+  it('is still found and counted by the search and by a filter on another question', async () => {
+    // t.d answered neither `when`, `where` nor `tags`.
+    expect(t.d?.answers).not.toHaveProperty('tags');
+    const words = await page(`logbook=${lb.slug}&q=coordinator`);
+    expect(words.body.reports.map((r) => r.public_ref)).toEqual([t.d?.publicRef]);
+    expect(words.body.total).toBe(1);
+    const filtered = await page(`logbook=${lb.slug}&a.station=Station%207`);
+    expect(filtered.body.reports.map((r) => r.public_ref)).toEqual([
+      t.d?.publicRef,
+      t.b?.publicRef,
+    ]);
+    expect(filtered.body.total).toBe(2);
+  });
+
+  it('with nothing answered at all, is found by its reference and counted in its logbook', async () => {
+    const optional: FieldDefinition[] = [
+      { key: 'note', kind: 'short_text', label: 'Anything to add?' },
+      { key: 'when', kind: 'date', label: 'When?' },
+    ];
+    const bare = await launchedLogbook(h.db, optional);
+    const empty = await fileThread(h.db, bare, optional, {});
+    const said = await fileThread(h.db, bare, optional, { note: 'Only this was said.' });
+    for (const x of [empty, said]) await approve(h.db, x.threadId);
+    // Sealed without an `answers` key, so the column is NULL: the case coalesce is for.
+    expect(empty.answers).toBeNull();
+
+    const byRef = await page(`q=${encodeURIComponent(empty.publicRef)}`);
+    expect(byRef.body.reports.map((r) => r.public_ref)).toEqual([empty.publicRef]);
+    expect(byRef.body.total).toBe(1);
+    const all = await page(`logbook=${bare.slug}`);
+    expect(all.body.total).toBe(2);
+    // A search that matches only the other report leaves the empty one out, and errors on nothing.
+    const words = await page(`logbook=${bare.slug}&q=said`);
+    expect(words.body.reports.map((r) => r.public_ref)).toEqual([said.publicRef]);
+
+    const stats = await get<{
+      published_reports: { by_logbook: Record<string, { published: number }> };
+    }>('/api/board/stats');
+    expect(stats.body.published_reports.by_logbook[bare.slug]?.published).toBe(2);
+  });
+});
+
 describe('NOTHING IS FILTERABLE UNLESS AN OPERATOR SAID SO', () => {
   it('the board offers only the questions the operator marked', async () => {
     const r = await get<{ logbooks: { slug: string; filters: { key: string }[] }[] }>('/api/board');

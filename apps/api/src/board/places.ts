@@ -23,6 +23,15 @@
  * display switch would be one nobody could see go. Where several maps feed
  * from one logbook, the highest threshold wins.
  *
+ * WHAT THIS DOES NOT HIDE, ACCEPTED (decisions 20 and 21). With one thin
+ * area, a logbook's published total, minus the areas shown, minus "not
+ * answered", is that area's count; the map's numbers allow the same sum. And
+ * a place's code is an answer like any other, so the board's search finds
+ * it. Both are accepted rather than closed, because each published report
+ * already shows its own place: a reader can count a thin area by reading its
+ * reports. The threshold protects the published counts. It does not hide
+ * where a published report came from.
+ *
  * Read live, never cached here: the stats cache above it is a minute, and a
  * threshold raised on the maps screen should not wait longer than that.
  */

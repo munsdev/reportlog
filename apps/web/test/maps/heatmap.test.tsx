@@ -70,11 +70,37 @@ describe('a heat map', () => {
     // A tile for a suppressed territory says "<3", never a number.
     const tiles = within(root).getByRole('list', { name: 'Alaska, Hawaii and the territories' });
     expect(
-      within(tiles).getByRole('button', { name: 'Guam: fewer than 3, not shown' }),
+      within(tiles).getByRole('button', { name: 'Guam <3: fewer than 3, not shown' }),
     ).toHaveTextContent('<3');
     expect(
-      within(tiles).getByRole('button', { name: 'Alaska: 3 published reports' }),
+      within(tiles).getByRole('button', { name: 'Alaska 3: 3 published reports' }),
     ).toHaveTextContent('3');
+  });
+
+  it('names each tile by what it shows first, so speech input can press it (WCAG 2.5.3)', () => {
+    const { container } = render(<HeatMapView map={payload()} outlines={outlines} />);
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    const tiles = within(root).getByRole('list', { name: 'Alaska, Hawaii and the territories' });
+    const buttons = within(tiles).getAllByRole('button');
+    expect(buttons.map((b) => b.getAttribute('aria-label'))).toEqual([
+      'Alaska 3: 3 published reports',
+      'Hawaii: none counted',
+      'Puerto Rico: none counted',
+      'US Virgin Is., US Virgin Islands: none counted',
+      'Guam <3: fewer than 3, not shown',
+      'N. Marianas, N. Mariana Islands: none counted',
+      'Am. Samoa, American Samoa: none counted',
+    ]);
+    // What axe's label-content-name-mismatch asks, said directly: axe itself
+    // cannot see text in jsdom, which has no layout, so it passes anything.
+    for (const b of buttons) {
+      const shown = [...b.querySelectorAll('span')]
+        .map((x) => x.textContent)
+        .filter((x) => x !== '—')
+        .join(' ');
+      expect(b.getAttribute('aria-label')?.startsWith(shown), shown).toBe(true);
+    }
   });
 
   it('says what is behind a colour, and for a suppressed area says only that it is under the threshold', () => {
@@ -106,7 +132,9 @@ describe('a heat map', () => {
         outlines={outlines}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Alaska: 3 approved entries' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Alaska 3: 3 approved entries' }),
+    ).toBeInTheDocument();
   });
 
   it('offers the operator’s planes and views and nothing else, and keeps a link from selecting a suppressed area', async () => {

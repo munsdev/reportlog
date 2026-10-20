@@ -38,6 +38,15 @@ function watchOutside(page: Page): string[] {
   return outside;
 }
 
+/** Every request this page makes for the map outlines (one file, about half a megabyte). */
+function watchOutlines(page: Page): string[] {
+  const asked: string[] = [];
+  page.on('request', (r) => {
+    if (/\/outlines[^/]*\.json(\?|$)/.test(new URL(r.url()).pathname)) asked.push(r.url());
+  });
+  return asked;
+}
+
 const unique = (stem: string) =>
   `${stem}-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
 
@@ -97,10 +106,10 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await expect(
     page.getByText(/Fewer than 3 published reports, so this area is not shaded/),
   ).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Guam: fewer than 3, not shown' })).toHaveText(
+  await expect(page.getByRole('button', { name: 'Guam <3: fewer than 3, not shown' })).toHaveText(
     /<3/,
   );
-  await expect(page.getByRole('button', { name: 'Alaska: 3 published reports' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Alaska 3: 3 published reports' })).toBeVisible();
 
   // Zooming redraws the same outlines; nothing is fetched to do it.
   await page.getByRole('button', { name: 'Zoom in' }).click();
@@ -155,6 +164,7 @@ test('two maps on the front page keep to themselves, and the page asks no other 
   }
   try {
     const outside = watchOutside(page);
+    const outlines = watchOutlines(page);
     await page.goto('/');
     const [strict, loose] = made.map((m) => page.getByRole('figure').filter({ hasText: m.title }));
     if (!strict || !loose) throw new Error('two maps expected');
@@ -177,7 +187,114 @@ test('two maps on the front page keep to themselves, and the page asks no other 
     await expect(loose.locator('path[data-selected="true"]')).toHaveAttribute('data-code', 'US-CA');
 
     expect(outside).toEqual([]);
+    // FETCHED ON FIRST USE AND SHARED: two maps, one download.
+    expect(outlines).toHaveLength(1);
   } finally {
     for (const m of made) await api.delete(`/api/admin/maps/${String(m.id)}`);
+  }
+});
+
+test('the staff screen says "No maps yet." when there are none, and draws no map, so it fetches no outlines', async ({
+  page,
+}) => {
+  const outlines = watchOutlines(page);
+  // Other tests leave maps behind in a shared database, so the empty list is
+  // the server's answer replaced, and only that one call.
+  await page.route('**/api/admin/maps', async (route) => {
+    if (route.request().method() !== 'GET') return route.fallback();
+    const real = await route.fetch();
+    const body = (await real.json()) as { slots: unknown };
+    return route.fulfill({ json: { maps: [], slots: body.slots } });
+  });
+  await page.goto('/maps');
+  await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
+  await expect(page.getByText('No maps yet.')).toBeVisible();
+  await page.unrouteAll({ behavior: 'wait' });
+
+  // With a map listed, its threshold is said in words, not as a bare number.
+  const slug = unique('words');
+  const made = await page.request.post('/api/admin/maps', {
+    data: { title: `Words ${slug}`, slug, min_area: 4 },
+  });
+  expect(made.ok(), await made.text()).toBe(true);
+  const { id } = (await made.json()) as { id: number };
+  try {
+    await page.reload();
+    const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+    await expect(card).toContainText('an area shows its number at 4 reports or more');
+    await expect(card).not.toContainText(/threshold 4/);
+    // The editor's preview is words too: nothing on this screen draws a map.
+    await page.waitForLoadState('networkidle');
+    expect(outlines).toEqual([]);
+  } finally {
+    await page.request.delete(`/api/admin/maps/${String(id)}`);
+  }
+});
+
+test('the map editor warns before unsaved changes are lost, and not after they are saved', async ({
+  page,
+}) => {
+  const slug = unique('unsaved');
+  const title = `Unsaved ${slug}`;
+  const made = await page.request.post('/api/admin/maps', { data: { title, slug } });
+  expect(made.ok(), await made.text()).toBe(true);
+  const { id } = (await made.json()) as { id: number };
+  const asked: string[] = [];
+  let answer = false;
+  page.on('dialog', (d) => {
+    asked.push(d.message());
+    void (answer ? d.accept() : d.dismiss());
+  });
+  try {
+    await page.goto('/maps');
+    const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+    await card.getByRole('button', { name: 'Change' }).click();
+    const form = card.getByRole('form', { name: `Change ${title}` });
+
+    // Ticking a box and unticking it again leaves nothing to lose.
+    const world = form.getByRole('checkbox', { name: 'The world, by country' });
+    await world.click();
+    await world.click();
+    await card.getByRole('button', { name: 'Close' }).click();
+    await expect(form).toHaveCount(0);
+    expect(asked).toEqual([]);
+
+    // A changed threshold is something to lose: closing the editor asks, and "no" keeps it.
+    await card.getByRole('button', { name: 'Change' }).click();
+    await form.getByLabel('Threshold').fill('5');
+    await card.getByRole('button', { name: 'Close' }).click();
+    await expect.poll(() => asked.length).toBe(1);
+    expect(asked[0]).toBe(
+      `You have changes to the map “${title}” that are not saved. Leave without saving them?`,
+    );
+    await expect(form.getByLabel('Threshold')).toHaveValue('5');
+
+    // So does leaving the screen, and "no" stays on it.
+    await page.getByRole('banner').getByRole('link').first().click();
+    await expect.poll(() => asked.length).toBe(2);
+    await expect(page).toHaveURL(/\/maps$/);
+    await expect(form.getByLabel('Threshold')).toHaveValue('5');
+
+    // Saved, there is nothing to lose, and leaving asks nothing.
+    await form.getByRole('button', { name: 'Save the map' }).click();
+    await expect(form.getByRole('status')).toHaveText('Saved.');
+    await expect(card).toContainText('at 5 reports or more');
+    await page.getByRole('banner').getByRole('link').first().click();
+    await expect(page).not.toHaveURL(/\/maps$/);
+    expect(asked).toHaveLength(2);
+
+    // And "yes" does leave, with the change not saved.
+    await page.goto('/maps');
+    await card.getByRole('button', { name: 'Change' }).click();
+    await form.getByLabel('Title').fill(`${title} renamed`);
+    answer = true;
+    await page.getByRole('banner').getByRole('link').first().click();
+    await expect(page).not.toHaveURL(/\/maps$/);
+    expect(asked).toHaveLength(3);
+    const after = await page.request.get('/api/admin/maps');
+    const maps = ((await after.json()) as { maps: { id: number; title: string }[] }).maps;
+    expect(maps.find((m) => m.id === id)?.title).toBe(title);
+  } finally {
+    await page.request.delete(`/api/admin/maps/${String(id)}`);
   }
 });

@@ -111,6 +111,7 @@ export interface ContactAccessLog {
   attachment_id: number | null;
   id: Generated<number>;
   kind: string;
+  logbook_id: number | null;
   reason: string | null;
   report_id: number | null;
   staff_email: string;

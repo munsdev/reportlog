@@ -53,6 +53,7 @@ let mailer: CapturingMailer;
 let tsa: StandInTsa;
 let tmp: string;
 let admin: string;
+let adminEmail: string;
 let moderator: string;
 let pass: string;
 let lb: { id: number; slug: string };
@@ -138,6 +139,7 @@ beforeAll(async () => {
   expect(pass).not.toBe('');
 
   const a = address('chain-admin');
+  adminEmail = a;
   await seat(db, a, 'admin');
   admin = await sessionFor(a);
   const m = address('chain-moderator');
@@ -212,6 +214,79 @@ describe('the complete chain file', () => {
     // Against the transparency log's own copy of the anchor.
     const checked = checkFiles(file, join(tmp, 'log', 'anchors'));
     expect(checked.problems).toEqual([]);
+  });
+});
+
+// Decision 34. The complete file holds every version's sealed answers,
+// published or not, so each download is a look recorded in the access log,
+// written before the file is built.
+describe('a download of the complete chain file is recorded', () => {
+  const downloads = () =>
+    db
+      .selectFrom('contact_access_log')
+      .select(['staff_email', 'logbook_id', 'thread_id', 'report_id'])
+      .where('kind', '=', 'chain_file')
+      .where('logbook_id', '=', lb.id)
+      .execute();
+
+  it('in the access log, naming who and which logbook, and nothing else is', async () => {
+    const before = (await downloads()).length;
+    expect(
+      (await get(`/api/admin/chain/${lb.slug}`, { site_access: pass, session_token: admin }))
+        .statusCode,
+    ).toBe(200);
+    const after = await downloads();
+    expect(after).toHaveLength(before + 1);
+    expect(after.at(-1)).toEqual({
+      staff_email: adminEmail,
+      logbook_id: lb.id,
+      thread_id: null,
+      report_id: null,
+    });
+
+    // A refused request, a logbook with no chain, and the published file are not recorded.
+    await get(`/api/admin/chain/${lb.slug}`, { site_access: pass, session_token: moderator });
+    await get(`/api/admin/chain/no-such-logbook`, { site_access: pass, session_token: admin });
+    await get(`/api/chain/${lb.slug}`, { site_access: pass });
+    expect(await downloads()).toHaveLength(before + 1);
+  });
+
+  it('and administrators see it in "Who opened what", by logbook', async () => {
+    const res = await get('/api/admin/moderation/access-log', {
+      site_access: pass,
+      session_token: admin,
+    });
+    expect(res.statusCode).toBe(200);
+    const mine = res
+      .json<{ entries: { kind: string; logbook: string | null; staff_email: string }[] }>()
+      .entries.filter((e) => e.kind === 'chain_file' && e.logbook === lb.slug);
+    expect(mine.length).toBeGreaterThan(0);
+    expect(mine[0]?.staff_email).toBe(adminEmail);
+  });
+
+  it('the database refuses a download that names no logbook, or names a report', async () => {
+    await expect(
+      db
+        .insertInto('contact_access_log')
+        .values({ staff_email: 'x@example.org', kind: 'chain_file' })
+        .execute(),
+    ).rejects.toThrow(/logbook_check/);
+    const report = await db
+      .selectFrom('reports')
+      .select(['id', 'thread_id'])
+      .executeTakeFirstOrThrow();
+    await expect(
+      db
+        .insertInto('contact_access_log')
+        .values({
+          staff_email: 'x@example.org',
+          kind: 'chain_file',
+          logbook_id: lb.id,
+          thread_id: report.thread_id,
+          report_id: report.id,
+        })
+        .execute(),
+    ).rejects.toThrow(/thread_check/);
   });
 });
 
