@@ -152,6 +152,27 @@ the fix in this PR.
     Manager, still see one organization.
   - The browser specs that visit these pages pass (below).
 
+## Gap found, allowed while it is reported
+
+**The heat map's inset tiles fail `label-content-name-mismatch`** (serious, WCAG 2.5.3).
+
+- **Where:** `apps/web/src/features/maps/HeatMap.tsx`. The tiles for Alaska, Hawaii and the
+  territories show a short code and a count ("AK 12"), but are named "Alaska: …". Somebody using
+  speech input who says what they see cannot press them.
+- **How it was found:** the second full browser run, on `/` as an administrator. The tiles are
+  drawn only when `e2e/maps.spec.ts` has a map in the front page's slot at the moment the walk
+  reaches `/`, which depends on the order the files run in. So the first full run passed.
+- **Reproduced deterministically:** a temporary spec placed a front-page map, then the walk of `/`
+  ran in one worker. It was red without an allowance and green with it. The temporary spec is not
+  in the branch.
+- **What was done:** an entry in `ALLOWED` (`accessibility.spec.ts`): `/`, both visitors,
+  `onlyWhenPresent`, with the reason. I reported it to the coordinating session.
+  - The allowance is per rule and page, so while it stands it would also cover any other
+    `label-content-name-mismatch` on `/`.
+  - The fix belongs to the maps folder (R9), which should remove the entry with it.
+- `ALLOWED` was empty before this. `docs/parity.md` now says so; Q3's status doc, a record of its
+  own time, is unchanged.
+
 ## Totals
 
 All three suites were run here (not on CI) on this branch, after the fix and after merging
