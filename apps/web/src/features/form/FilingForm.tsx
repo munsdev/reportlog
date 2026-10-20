@@ -51,7 +51,14 @@ import { ApiRequestError, call } from '@/lib/api.ts';
 import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { QuestionControl } from './QuestionControl.tsx';
-import { askedQuestions, cardProblem, shownAnswer, stillPossible, toSubmission } from './walk.ts';
+import {
+  askedQuestions,
+  cardProblem,
+  sealedAnswers,
+  shownAnswer,
+  stillPossible,
+  toSubmission,
+} from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
 
 export const publicLogbookQuery = (slug: string) =>
@@ -297,9 +304,14 @@ function Cards({
 
   // Measured against every question that could STILL be asked, so on the
   // way forward the bar only ever advances. No numbers: a total that changes
-  // as you answer reads as a trap.
+  // as you answer reads as a trap. The files card counts until the server
+  // has said the logbook takes none: its answer arriving late may only move
+  // the bar on, never back.
+  const sealed = sealedAnswers(questions, raw);
+  const mayTakeFiles = Boolean(fileQuestion) && uploadConfig.data?.enabled !== false;
   const possible =
-    questions.filter((q) => stillPossible(q, questions, raw)).length + (takesFiles ? 4 : 3);
+    questions.filter((q) => stillPossible(q, questions, raw, sealed)).length +
+    (mayTakeFiles ? 4 : 3);
   const progress = step === 'intro' ? null : Math.round((at / possible) * 100);
 
   return (
@@ -648,23 +660,25 @@ function ReviewRow({
   value: string | null;
   onChange: () => void;
 }) {
+  // A group in a <dl> may hold only its <dt> and <dd>, so the Change button
+  // is inside the answer, not beside it.
   return (
-    <div className="flex flex-col gap-1 p-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex flex-col gap-1">
-        <dt className="text-sm font-semibold text-ink-alt">{label}</dt>
-        <dd className="whitespace-pre-wrap">
+    <div className="flex flex-col gap-1 p-3">
+      <dt className="text-sm font-semibold text-ink-alt">{label}</dt>
+      <dd className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+        <span className="whitespace-pre-wrap">
           {value ?? <span className="font-semibold text-serious">Not answered</span>}
-        </dd>
-      </div>
-      <Button
-        type="button"
-        variant="quiet"
-        size="sm"
-        onClick={onChange}
-        aria-label={`Change: ${label}`}
-      >
-        Change
-      </Button>
+        </span>
+        <Button
+          type="button"
+          variant="quiet"
+          size="sm"
+          onClick={onChange}
+          aria-label={`Change: ${label}`}
+        >
+          Change
+        </Button>
+      </dd>
     </div>
   );
 }

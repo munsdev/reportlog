@@ -17,6 +17,7 @@ import {
   cardProblem,
   rawFromAnswers,
   shownAnswer,
+  stillPossible,
   toSubmission,
 } from '../src/features/form/walk.ts';
 import { SiteGate } from '../src/features/identity/gate.tsx';
@@ -77,6 +78,17 @@ describe('the walk', () => {
     expect(cardProblem(what, { what: 'Something' })).toBeNull();
     const how = question('how');
     expect(cardProblem(how, { how: 'Telepathy' })).toMatch(/not an answer/);
+  });
+
+  it('counts a follow-up of a follow-up as possible only while what it hangs off is', () => {
+    // For the progress bar: "how" hangs off "who", which hangs off "seen".
+    const possible = (raw: Record<string, string>) =>
+      QS.filter((q) => stillPossible(q, QS, raw)).map((q) => q.key);
+    expect(possible({})).toEqual(['what', 'seen', 'who', 'how', 'at']);
+    expect(possible({ seen: 'yes' })).toEqual(['what', 'seen', 'who', 'how', 'at']);
+    expect(possible({ seen: 'yes', who: 'y' })).toEqual(['what', 'seen', 'who', 'at']);
+    // Ruled out at the root: neither follow-up can come, so neither counts.
+    expect(possible({ seen: 'no' })).toEqual(['what', 'seen', 'at']);
   });
 
   it('shows answers in the words read, and reads sealed answers back into the boxes', () => {
