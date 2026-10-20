@@ -8,13 +8,13 @@ For the coordinating session and the other workstreams. Brief: R4 in `docs/parit
 - **State:** finished, waiting for review. Not merged.
 - **Last updated:** 2026-10-20
 
-## Checks, as last run before pushing
+## Checks, run once on the merged base (`ccr-c9c93698-ev856l` with R2)
 
-| Suite                                   | Result                                                                                                                    |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                            | passes: format, lint, types, boundaries; unit tests web 478, api 386 (17 skipped, not R4's), seal 46, fields 69, access 6 |
-| `pnpm test:db`                          | 69 files, 1028 passed (R4's: 3 in `mine-published-files.test.ts`, 1 in `intake.test.ts`)                                  |
-| Browser suite (`CI=1`, `CHROMIUM_PATH`) | E2E_RESULT                                                                                                                |
+- `pnpm check`: passes. Unit: web 478, api 386 (17 skipped, not R4's), seal 46, fields 69, access 6.
+- `pnpm test:db`: 74 files, 1094 passed (R4's: 3 in `mine-published-files.test.ts`, 1 in
+  `intake.test.ts`).
+- Browser suite (`CI=1`, `CHROMIUM_PATH`): 777 passed, 4 skipped (not R4's). R4's: 16, desktop and
+  phone.
 
 ## What was built, in the order asked
 
@@ -65,6 +65,11 @@ For the coordinating session and the other workstreams. Brief: R4 in `docs/parit
    that it can be switched back on). The existing test's setup moved into a helper, its body
    unchanged.
 
+7. **`FILING_CONFIRMS_PER_CLIENT`.** The confirmation-link limit was fixed at 60 per client per
+   15 minutes; with R4's tests the suite (all from 127.0.0.1) went over it, and
+   `behind-password/confirm.spec.ts` was told "tried too many times". Now a setting, same default,
+   raised to 400 for the test server only, like `FILING_SENDS_PER_CLIENT`.
+
 ## Changes outside R4's folders (named in the commit messages)
 
 - `packages/contracts/src/filing.ts`: `published_files` on `MyReportDetail`.
@@ -72,6 +77,8 @@ For the coordinating session and the other workstreams. Brief: R4 in `docs/parit
 - `apps/api/test/db/intake.test.ts`: one test, and a report filed before the switch closes.
 - `apps/api/test/db/mine-published-files.test.ts`: new. It imports R2's `files-helpers.ts`
   unchanged.
+- `apps/api/src/config.ts`, `app.ts`, `.env.example`, `apps/web/playwright.config.ts`: the new
+  setting, one line or comment each.
 - `docs/parity.md`: the rows below, the totals, and R4 marked done.
 
 ## Parity rows closed
