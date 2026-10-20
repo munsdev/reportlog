@@ -46,6 +46,8 @@ export interface FilingRouteDeps {
   publicRefPrefix?: string | undefined;
   /** FILING_SENDS_PER_CLIENT: reports one client may send in 15 minutes. */
   sendsPerClient?: number | undefined;
+  /** FILING_CONFIRMS_PER_CLIENT: confirmation links one client may open or use in 15 minutes. */
+  confirmsPerClient?: number | undefined;
   /** The files workstream's context, for taking published files down. */
   files?: Files | null;
 }
@@ -76,7 +78,10 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
   // codes, and the same kind of limit answers it. In memory, never logged.
   const sendsPerClient = limiter({ max: deps.sendsPerClient ?? 20, windowMs: 15 * 60 * 1000 });
   const sendsPerAddress = limiter({ max: 10, windowMs: 60 * 60 * 1000 });
-  const confirmsPerClient = limiter({ max: 60, windowMs: 15 * 60 * 1000 });
+  const confirmsPerClient = limiter({
+    max: deps.confirmsPerClient ?? 60,
+    windowMs: 15 * 60 * 1000,
+  });
 
   // ── public: the filing calls ──────────────────────────────────────────
   route(app, C.submitReport, async ({ request }) => {
