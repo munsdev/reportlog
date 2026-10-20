@@ -162,9 +162,9 @@ Rules in `CLAUDE.md` that are not counted above:
 - "Staff screens wrap their layout in `<StaffOnly>`": **Equivalent**, `WT/staff-guards.test.tsx`
   (R8). Every page in `routeTree.gen.ts` must be decided (staff or open); each staff screen is
   rendered by the real router signed out and signed in with no role, and its refusal must stand
-  inside `StaffOnly`, `OnlyFor` or `ReviewersOnly`. **Three gaps it found** (`KNOWN_GAPS`, skipped,
-  reported): `/access/audit`, `/access/orgs/` and `/access/orgs/$id` show the staff screen to a
-  signed-in account with no role. The server still refuses their data (I2).
+  inside `StaffOnly`, `OnlyFor` or `ReviewersOnly`. It found three access screens with no door
+  (`/access/audit`, `/access/orgs/`, `/access/orgs/$id`); R8 added doors matching the server's
+  `requireGranter` and `requireOrgAuthority`, and nothing is skipped.
 - Several of the owner's decisions read as invariants, and each is tested:
   - decisions 1, 2 and 4: `T/q1-decisions.test.ts`;
   - decision 6: `T/board-places.test.ts`;

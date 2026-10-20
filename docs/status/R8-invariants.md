@@ -19,7 +19,9 @@ For the coordinating session. Brief: `docs/parity.md` §7, "R8 · Invariant left
 | `apps/web/playwright.config.ts`                | outside the brief's list: one project, `accessibility-behind-password` |
 | `docs/parity.md`                               | I1, I5, the staff-guard row and decision 12's lock screen: Equivalent  |
 
-No feature code, migration or fixture was changed.
+No migration or fixture was changed. One feature change, at the coordinating session's request:
+doors on three access screens in A's folder (`apps/web/src/routes/(staff)/access/audit.tsx`,
+`orgs.index.tsx`, `orgs.$id.tsx`; see "Gaps found").
 
 The new project runs after `owner` and before `in-front-of-password`, which now depends on it and
 is still last. Its folder is added to the `chromium` and `phone` projects' ignore pattern.
@@ -114,7 +116,7 @@ Every plant was reverted with `git checkout`. None is in the branch.
 | `cli.ts` publishes under a fixed date (already published) instead of today            | the command's publish test                                                                                            |
 | `StaffOnly` removed from `/backups`                                                   | `/backups`, both states                                                                                               |
 | `ReviewersOnly` removed from `/lists/review/`                                         | `/lists/review/`, both states                                                                                         |
-| `StaffOnly` added around `AuditPage` (a gap fixed)                                    | "/access/audit is still a known gap (remove it from KNOWN_GAPS…)"                                                     |
+| (before the fix) `StaffOnly` added around `AuditPage`                                 | "/access/audit is still a known gap (remove it from KNOWN_GAPS…)", the check since removed with the gaps              |
 | `/about` taken out of `OPEN`                                                          | "every page is decided"                                                                                               |
 | `<img>` with no `alt` on the lock screen                                              | "bare, desktop": `image-alt (critical)`                                                                               |
 
@@ -122,41 +124,50 @@ The first try of the declaration plant went red for the wrong reason. That run u
 so the lock-screen project ran at the same time and turned the password on. Run alone, the plant
 went red as above. In the real suite the projects are serialised by their dependencies.
 
-## Gaps found
+## Gaps found, and fixed
 
-**Three staff screens have no door.** I reported this to the coordinating session when I found
-it.
+**Three staff screens had no door.** I reported this to the coordinating session, which asked for
+the fix in this PR.
 
 - **Which:** `/access/audit` (`AuditPage`), `/access/orgs/` (`OrganizationsPage`) and
-  `/access/orgs/$id` (`OrganizationPage`), all in `apps/web/src/features/identity/`.
-- **What happens:** each checks only that somebody is signed in, using a bare `SignInPrompt`. So a
-  signed-in account with no role is shown the staff screen ("Who changed what", or the
-  Organizations page with its form for making one), and the data calls then fail with 403.
-- **Nothing leaks:** the server refuses those routes (`requireGranter`, `requireOrgAuthority`). It
-  is the courtesy that is missing.
-- **In the test:** per the brief, their walk is `skip`ped, with the reason in `KNOWN_GAPS`. A test
-  checks that each gap is still open, and fails once a door is added, so the entry is removed with
-  the gap.
-- **The fix, in A's folder:** wrap the first two in `StaffOnly needs={['admin',
-'access_manager']}`. Wrap `orgs/$id` in `OnlyFor` with the `organization` audience plus the
-  granters, because a manager with no system role may open it.
+  `/access/orgs/$id` (`OrganizationPage`).
+- **What happened:** each checked only that somebody was signed in, using a bare `SignInPrompt`. So
+  a signed-in account with no role was shown the staff screen ("Who changed what", or the
+  Organizations page with its form for making one), and the data calls then failed with 403.
+- **Nothing leaked:** the server refuses those routes (`requireGranter`, `requireOrgAuthority`).
+  It was the courtesy that was missing.
+- **The fix**, in the route files, each matched to the server's rule:
+  - `/access/audit` and `/access/orgs/`: `StaffOnly needs={['admin', 'access_manager']}`. That is
+    `requireGranter`, and the owner satisfies admin.
+  - `/access/orgs/$id`: `OnlyFor` for `admin`, `access_manager` and `organization`. This is the
+    closest existing door to `requireOrgAuthority`, which admits granters and a manager of THIS
+    organization.
+  - **A remaining mismatch, said here and in a comment:** the door can only ask "in some
+    organization". So a coordinator, or a manager of another organization, gets past it, and then
+    sees the server's refusal on the page. A door that matched exactly would need a new guard.
+- **The test:**
+  - `KNOWN_GAPS` is gone and nothing is skipped.
+  - New tests: the owner, an administrator and an Access Manager still see the audit and the
+    organizations; a moderator is refused both; a manager with no system role, and an Access
+    Manager, still see one organization.
+  - The browser specs that visit these pages pass (below).
 
 ## Totals
 
-All three suites were run here (not on CI) on this branch. `origin/ccr-c9c93698-ev856l` had
-nothing new to merge (`2bdfe05`).
+All three suites were run here (not on CI) on this branch, after the fix and after merging
+`origin/ccr-c9c93698-ev856l` at `9a839fe` (R1).
 
-| Suite                                       | Result                                                                                                                                                                             |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | passes: format, lint, types, boundaries (663 modules); unit tests fields 69, seal 31, access 6, api 386 (+17 skipped, not R8's), web 549 (+6 skipped: the three gaps × two states) |
-| `pnpm test:db`                              | 68 files, **1026 passed**                                                                                                                                                          |
-| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | BROWSER_RESULT                                                                                                                                                                     |
+| Suite                                       | Result                                                                                                                                   |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | passes: format, lint, types, boundaries (666 modules); unit tests fields 69, seal 46, access 6, api 386 (+17 skipped, not R8's), web 558 |
+| `pnpm test:db`                              | 68 files, **1027 passed**                                                                                                                |
+| Browser suite (`CI=1`, `CHROMIUM_PATH` set) | BROWSER_RESULT                                                                                                                           |
 
 R8's own tests:
 
-| File                              | Tests                                                                                         |
-| --------------------------------- | --------------------------------------------------------------------------------------------- |
-| `anchor-reset.test.ts`            | 8 passed (5 before, 3 new)                                                                    |
-| `staff-guards.test.tsx`           | 72 passed, 6 skipped: the floor, 3 known-gap checks, 37 staff screens × 2 (3 screens skipped) |
-| `third-party.spec.ts`             | 2 new per browser project (chromium, phone)                                                   |
-| `a11y-locked/lock-screen.spec.ts` | 3 passed (4 states × 2 widths)                                                                |
+| File                              | Tests                                                                                               |
+| --------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `anchor-reset.test.ts`            | 8 passed (5 before, 3 new)                                                                          |
+| `staff-guards.test.tsx`           | 81 passed: the floor, 37 staff screens × 2, and 6 that the right roles still see the access screens |
+| `third-party.spec.ts`             | 2 new per browser project (chromium, phone)                                                         |
+| `a11y-locked/lock-screen.spec.ts` | 3 passed (4 states × 2 widths)                                                                      |
