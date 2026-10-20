@@ -27,7 +27,12 @@ import { publishedReportIds } from '../board/published.ts';
 import { openWithDek, keyringFrom } from '../filing/contactKeys.ts';
 import type { EmailJobDeps, JobOutcome } from '../site/job.ts';
 import { SETTLE_MS } from '../site/digest.ts';
-import { dekOf, issueLink, stopLinkFor } from './list.ts';
+import { dekOf, issueLink, removeSubscribers, stopLinkFor } from './list.ts';
+
+/* THE STATE A PLACE ANSWER ROLLS UP TO: a county code (`US-AZ-04013`, owner
+   decision 44) counts toward its state by prefix, as on the heat maps, and a
+   journalist signs up by state. The same rule as `stateOfPlace`, in SQL. */
+const stateSql = sql`regexp_replace(r.answers ->> f.key, '-[0-9]{5}$', '')`;
 
 export interface AlertCount {
   state: string;
@@ -69,11 +74,16 @@ export async function runJournalistAlerts(
     : ((await sql<{ now: Date }>`SELECT now() AS now`.execute(deps.db)).rows[0]?.now ?? new Date());
   const until = new Date(now.getTime() - SETTLE_MS);
   // Unconfirmed signups whose link has run out are not kept.
-  await deps.db
-    .deleteFrom('journalist_subscribers')
+  const lapsed = await deps.db
+    .selectFrom('journalist_subscribers')
+    .select('id')
     .where('status', '=', 'pending')
     .where('created_at', '<', new Date(now.getTime() - 8 * 24 * 60 * 60 * 1000))
     .execute();
+  await removeSubscribers(
+    deps.db,
+    lapsed.map((r) => r.id),
+  );
   await deps.db.deleteFrom('journalist_links').where('expires_at', '<', now).execute();
 
   const subscribers = await deps.db
@@ -102,14 +112,11 @@ export async function runJournalistAlerts(
       .innerJoin('logbook_fields as f', (j) =>
         j.onRef('f.logbook_id', '=', 'r.logbook_id').on('f.kind', '=', 'location'),
       )
-      .select([
-        sql<string>`r.answers ->> f.key`.as('place'),
-        sql<string>`count(distinct r.id)`.as('n'),
-      ])
+      .select([sql<string>`${stateSql}`.as('place'), sql<string>`count(distinct r.id)`.as('n')])
       .where('r.id', 'in', publishedReportIds(deps.db))
       .where('h.updated_at', '>', since)
       .where('h.updated_at', '<=', until)
-      .where(sql<boolean>`(r.answers ->> f.key) = any(${sub.states}::text[])`)
+      .where(sql<boolean>`${stateSql} = any(${sub.states}::text[])`)
       .groupBy('place')
       .orderBy('place')
       .execute();

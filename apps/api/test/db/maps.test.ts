@@ -396,6 +396,8 @@ describe('the pieces that need no rows but are easy to get wrong', () => {
   it('reads codes, and only codes', () => {
     expect(areaOf('US-AZ')).toBe('US-AZ');
     expect(areaOf('DE')).toBe('DE');
+    // A county counts toward its state, by prefix (decision 44).
+    expect(areaOf('US-AZ-04013')).toBe('US-AZ');
     expect(areaOf('Phoenix, Arizona')).toBeNull();
     expect(areaOf('us-az')).toBeNull();
     expect(areaOf(42)).toBeNull();

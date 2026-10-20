@@ -737,8 +737,29 @@ describe('one answer at a time', () => {
 describe('the shipped templates', () => {
   const by = Object.fromEntries(shippedTemplates().map((t) => [t.slug, t]));
 
-  it('three ship, and all three parse', () => {
-    expect(Object.keys(by).sort()).toEqual(['check-ins', 'contact', 'tips']);
+  it('four ship, and all four parse', () => {
+    expect(Object.keys(by).sort()).toEqual(['check-ins', 'contact', 'election-tips', 'tips']);
+  });
+
+  it('election tips ask where to the county, what day and what kind, and count nothing', () => {
+    const t = by['election-tips'];
+    // Owner ruling 45, with counting off by default (ruling 42).
+    expect(t?.fields.filter((f) => f.aggregatable)).toEqual([]);
+    expect(t?.fields.map((f) => [f.key, f.kind])).toEqual([
+      ['links', 'url'],
+      ['where', 'location'],
+      ['day', 'date'],
+      ['category', 'choice_one'],
+      ['description', 'long_text'],
+    ]);
+    expect(t?.fields[1]?.settings).toEqual({ scope: 'us', depth: 'county' });
+    const kinds = t?.fields[3]?.settings?.options ?? [];
+    // The elections logbook's eighteen, then "Not sure".
+    expect(kinds).toHaveLength(19);
+    expect(kinds.at(-1)).toBe('Not sure');
+    expect(t?.fields[4]?.retention).toBe('transient');
+    // The Tip List itself stays general.
+    expect(by.tips?.fields.some((f) => f.kind === 'location')).toBe(false);
   });
 
   it('the Tip List asks for an address, because it takes free text, and counts nothing', () => {

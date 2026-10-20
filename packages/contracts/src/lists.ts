@@ -55,6 +55,8 @@ export const ListFormQuestion = z.object({
   allow_other: z.boolean(),
   /** The places a location question offers. Only on a location question. */
   places: z.array(z.object({ code: z.string(), name: z.string() })).optional(),
+  /** Present, as `county`, when the state is followed by a county picker. */
+  depth: z.literal('county').optional(),
   /** Whether this answer is erased on the timer. The card says so. */
   erased: z.boolean(),
 });

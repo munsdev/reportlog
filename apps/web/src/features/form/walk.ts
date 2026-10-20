@@ -13,7 +13,13 @@
  * The server still decides: this only decides what somebody is shown.
  */
 import type { FormQuestion } from '@reportlog/contracts';
-import { FILE_TYPE, buildAnswers, conditionMet, normalizeAnswer } from '@reportlog/fields';
+import {
+  FILE_TYPE,
+  buildAnswers,
+  conditionMet,
+  normalizeAnswer,
+  placeLabel,
+} from '@reportlog/fields';
 import type { Answers, FieldDefinition } from '@reportlog/fields';
 
 /** What a control holds, before the server normalizes it. */
@@ -139,7 +145,8 @@ export function shownAnswer(q: FormQuestion, raw: RawAnswers): string | null {
   if (q.kind === 'location') {
     // THE NAME, NOT THE CODE: a code is not something a reporter can check.
     const all = [...(q.places?.subdivisions ?? []), ...(q.places?.countries ?? [])];
-    return all.find((p) => p.code === v)?.name ?? v;
+    // A county is not in that list; the gazetteer names it with its state.
+    return all.find((p) => p.code === v)?.name ?? placeLabel(v);
   }
   if (q.kind === 'datetime') {
     const d = new Date(v);

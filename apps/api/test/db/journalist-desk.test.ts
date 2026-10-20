@@ -15,6 +15,7 @@ import { emailDigest, keyringFrom } from '../../src/filing/contactKeys.ts';
 import { checkGroup, commentGroup } from '../../src/links/checks.ts';
 import type { LinkKeys } from '../../src/links/keys.ts';
 import { matchKey } from '../../src/links/keys.ts';
+import { issueLink } from '../../src/journalists/list.ts';
 import { fileEntry } from '../../src/lists/entries.ts';
 import { createFromTemplate } from '../../src/lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
@@ -149,6 +150,26 @@ beforeAll(async () => {
   // Two tips carry the checked link; one of them also sends an email.
   await tip(CHECKED, TIPSTER);
   await tip(CHECKED);
+  // And a third, from the election tips list (decision 45): a county and a
+  // day, which the desk shows by name and in words, never as codes.
+  const election = await createFromTemplate(db, 'election-tips', {
+    slug: uniqueSlug('etips'),
+  });
+  await fileEntry(
+    db,
+    election.slug,
+    {
+      answers: {
+        links: CHECKED,
+        where: 'US-AZ-04013',
+        day: '2026-11-03',
+        category: 'Long lines or wait times',
+        description: TIP_COMMENT,
+      },
+      email: address('etip'),
+    },
+    { settings: DEFAULT_LIST_SETTINGS, keys },
+  );
   for (const u of [WITHHELD, ILLEGAL, UNCHECKED]) await tip(u);
   await checkGroup(db, keys, await groupOf(CHECKED), { outcome: 'checked', actor: MOD });
   await commentGroup(db, await groupOf(CHECKED), { body: COMMENT, actor: MOD });
@@ -379,7 +400,7 @@ describe('J9 to J12 · the desk', () => {
     call = as(h, await signIn(h, journalist));
   });
 
-  it('J9 · one entry per checked link, its tip count, the comment and the tips’ choices', async () => {
+  it('J9 · one entry per checked link, its tip count, the comment and the tips’ answers', async () => {
     const r = await call({ method: 'GET', url: '/api/desk/links' });
     expect(r.statusCode, r.body).toBe(200);
     expect(r.json()).toEqual({
@@ -388,16 +409,30 @@ describe('J9 to J12 · the desk', () => {
       links: [
         {
           url: CHECKED,
-          tips: 2,
+          tips: 3,
           comment: COMMENT,
           checked_at: expect.any(String) as string,
           context: [
-            { question: 'Where', answers: [{ answer: 'Not sure', tips: 2 }] },
-            { question: 'What kind of thing is it', answers: [{ answer: 'Not sure', tips: 2 }] },
+            {
+              question: 'Where',
+              answers: [
+                { answer: 'Not sure', tips: 2 },
+                { answer: 'Maricopa County, Arizona', tips: 1 },
+              ],
+            },
+            {
+              question: 'What kind of thing is it',
+              answers: [
+                { answer: 'Not sure', tips: 2 },
+                { answer: 'Long lines or wait times', tips: 1 },
+              ],
+            },
+            { question: 'What day was it?', answers: [{ answer: 'November 3, 2026', tips: 1 }] },
           ],
         },
       ],
     });
+    expect(r.body).not.toContain('US-AZ-04013');
   });
 
   it('J9 · Sources links and notes on published reports only', async () => {
@@ -488,5 +523,61 @@ describe('J13 · the owner revokes, effective on the next request', () => {
       .where('subject_email', '=', journalist)
       .execute();
     expect(audit).toContainEqual({ action: 'revoke', detail: 'journalist' });
+  });
+});
+
+describe('decision 46 · leaving the alert list closes the desk', () => {
+  const leaver = address('leaver');
+
+  it('approve, accept, read; stop by the emailed link; the same session is refused', async () => {
+    await subscribe(leaver);
+    const sent = await h.app.inject({
+      method: 'POST',
+      url: `/api/journalists/access/${await askLink(leaver)}`,
+      payload: REQUEST,
+    });
+    expect(sent.json()).toMatchObject({ state: 'pending' });
+    const approve = await owner.call({
+      method: 'POST',
+      url: `/api/owner/journalists/${String(await requestId(leaver))}/approve`,
+    });
+    expect(approve.statusCode, approve.body).toBe(200);
+    const call = as(h, await signIn(h, leaver));
+    const state = await call({ method: 'GET', url: '/api/agreement/journalist' });
+    const digest = state.json<{ current: { digest: string } }>().current.digest;
+    await call({ method: 'POST', url: '/api/agreement/journalist/accept', payload: { digest } });
+    expect((await call({ method: 'GET', url: '/api/desk/links' })).statusCode).toBe(200);
+
+    // The stop link is the one an alert email carries.
+    const sub = await h.db
+      .selectFrom('journalist_subscribers')
+      .select('id')
+      .where('email_hmac', '=', emailDigest(ring, leaver))
+      .executeTakeFirstOrThrow();
+    const token = await issueLink(h.db, sub.id, 'stop');
+    const stop = await h.app.inject({ method: 'POST', url: `/api/journalists/stop/${token}` });
+    expect(stop.json()).toEqual({ state: 'stopped' });
+
+    const next = await call({ method: 'GET', url: '/api/desk/links' });
+    expect(next.statusCode).toBe(403);
+    expect(next.body).not.toContain(CHECKED);
+    expect(await roleOf(h.db, leaver)).toBe('user');
+    const audit = await h.db
+      .selectFrom('role_audit')
+      .select(['action', 'detail', 'actor_email'])
+      .where('subject_email', '=', leaver)
+      .orderBy('id')
+      .execute();
+    expect(audit.at(-1)).toEqual({ action: 'revoke', detail: 'journalist', actor_email: leaver });
+  });
+
+  it('a journalist role with no approved request behind it is refused by the guard', async () => {
+    // A role left behind by a path that forgot: the second line still holds.
+    const stray = address('stray-journalist');
+    await seat(h.db, stray, 'journalist');
+    const call = as(h, await signIn(h, stray));
+    const r = await call({ method: 'GET', url: '/api/desk/links' });
+    expect(r.statusCode).toBe(403);
+    expect(r.json<{ error: { code: string } }>().error.code).toBe('desk_access_ended');
   });
 });

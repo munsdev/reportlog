@@ -21,6 +21,7 @@
 import { LINK_FIELD_WORDING, sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { CountyPicker } from '../form/CountyPicker.tsx';
 import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
@@ -443,6 +444,16 @@ function Control({
           );
         })}
       </div>
+    );
+  }
+  if (q.kind === 'location' && q.depth === 'county') {
+    return (
+      <CountyPicker
+        states={q.places ?? []}
+        value={text}
+        onChange={onChange}
+        labelledBy={labelledBy}
+      />
     );
   }
   if (q.kind === 'location') {

@@ -528,7 +528,7 @@ const SETTING_KEYS: Record<string, readonly string[]> = {
   short_text: ['maxLength'],
   long_text: ['maxLength'],
   place: ['options', 'allowOther'],
-  location: ['scope'],
+  location: ['scope', 'depth'],
   choice_one: ['options'],
   choice_many: ['options'],
   number: ['min', 'max'],
@@ -578,6 +578,16 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
      The door is one-way, so this is the only moment it can be caught. */
   if (kind === LOCATION_TYPE && !(out.scope && LOCATION_SCOPES.includes(out.scope))) {
     refuse('location-scope');
+  }
+  /* DEPTH IS WRITTEN ONLY AS `county` (owner decision 44). Settings are
+     sealed, and `state` is what an absent depth already means, so storing it
+     would make two sealed forms for one behaviour. County is US-only: no
+     outline data names a county anywhere else. */
+  if (kind === LOCATION_TYPE && 'depth' in out) {
+    // Read as unknown: settings arrive as JSON, whatever the type says.
+    const depth: unknown = out.depth;
+    if (depth === 'state') delete out.depth;
+    else if (depth !== 'county' || out.scope !== 'us') refuse('location-depth');
   }
   return out;
 }

@@ -65,6 +65,7 @@ export function QuestionForm({
   const [scope, setScope] = useState(
     typeof initial?.settings.scope === 'string' ? initial.settings.scope : 'us',
   );
+  const [depth, setDepth] = useState(initial?.settings.depth === 'county' ? 'county' : 'state');
   const [whenField, setWhenField] = useState(initial?.shown_when?.field ?? '');
   const [whenValues, setWhenValues] = useState<string[]>(initial?.shown_when?.in ?? []);
   const [error, setError] = useState<Error | null>(null);
@@ -85,7 +86,10 @@ export function QuestionForm({
       .filter(Boolean);
     if (kind === 'choice_one' || kind === 'choice_many') return { options: list };
     if (kind === 'place') return { options: list, allowOther };
-    if (kind === LOCATION_TYPE) return { scope };
+    // Depth only as `county`: an absent depth IS state, and settings are sealed.
+    if (kind === LOCATION_TYPE) {
+      return { scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };
+    }
     return undefined;
   }
 
@@ -221,6 +225,25 @@ export function QuestionForm({
               <option value="us">A US state, DC or territory</option>
               <option value="world">A country</option>
               <option value="both">Either</option>
+            </Select>
+          )}
+        </Field>
+      )}
+      {kind === LOCATION_TYPE && scope === 'us' && (
+        <Field
+          label="How exact"
+          help="With the county, a reporter picks a state and then, if they know it, the county. Heat maps still count by state."
+        >
+          {(p) => (
+            <Select
+              {...p}
+              value={depth}
+              onChange={(e) => {
+                setDepth(e.target.value);
+              }}
+            >
+              <option value="state">The state</option>
+              <option value="county">The state, then the county</option>
             </Select>
           )}
         </Field>

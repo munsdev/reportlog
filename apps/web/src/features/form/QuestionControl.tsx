@@ -7,6 +7,7 @@
  * this card: if an answer changes what is asked, that happens on the next one.
  */
 import type { FormQuestion } from '@reportlog/contracts';
+import { depthOf } from '@reportlog/fields';
 import { useId } from 'react';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
+import { CountyPicker } from './CountyPicker.tsx';
 import type { RawValue } from './walk.ts';
 
 const INPUT_TYPES: Record<string, string> = {
@@ -78,6 +80,18 @@ export function QuestionControl(props: ControlProps) {
   if (q.kind === 'location') {
     // A PICKER, because the server seals a code (US-AZ, DE) and never a name.
     const places = q.places ?? { subdivisions: [], countries: [] };
+    if (depthOf(q.settings) === 'county') {
+      return (
+        <CountyPicker
+          states={places.subdivisions}
+          value={text}
+          onChange={onChange}
+          labelledBy={labelledBy}
+          describedBy={describedBy}
+          invalid={invalid}
+        />
+      );
+    }
     const both = places.subdivisions.length > 0 && places.countries.length > 0;
     const group = (label: string, list: { code: string; name: string }[]) =>
       both ? (

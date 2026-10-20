@@ -12,7 +12,9 @@
  *   - checked links, one entry per link group, from `checkedLinks` and
  *     nothing else in links/ (so an unchecked, withheld or illegal link can
  *     never come out), with how many tips carried it, the moderator's
- *     comment for journalists, and the tips' MULTIPLE-CHOICE answers;
+ *     comment for journalists, and the tips' answers to the questions
+ *     whose answers come from a fixed list: choices, a location (named,
+ *     state and county, never a bare code) and a date (owner decision 45);
  *   - moderators' Sources links and notes on PUBLISHED reports (owner
  *     decision 37: staff and vetted journalists only).
  *
@@ -26,6 +28,7 @@
  * unlogged look is impossible: if the insert fails, nothing is shown.
  */
 import { DESK_PAGE_SIZE } from '@reportlog/contracts';
+import { placeLabel } from '@reportlog/fields';
 import type { DeskLink, DeskReport } from '@reportlog/contracts';
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -37,8 +40,25 @@ import type { LinkKeys } from '../links/keys.ts';
 import { checkedLinks } from '../links/reads.ts';
 import { agreementRequired, hasAccepted, newestText } from '../moderation/agreement.ts';
 
-/** The kinds whose answers are a choice from the operator's own list. */
-const CHOICE_KINDS = ['choice_one', 'choice_many'] as const;
+/**
+ * The kinds whose answers come from a fixed list, so none can carry somebody's
+ * own words (J10): the operator's choices, a gazetteer code, a calendar date.
+ */
+const CONTEXT_KINDS = ['choice_one', 'choice_many', 'location', 'date'] as const;
+
+/** An answer as a journalist reads it: a place by name, a date in words. */
+function shown(kind: string, v: string): string {
+  if (kind === 'location') return placeLabel(v);
+  if (kind === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+    return new Date(`${v}T00:00:00Z`).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  return v;
+}
 
 export const deskClosed = () =>
   new HttpError(
@@ -47,10 +67,33 @@ export const deskClosed = () =>
     'The desk opens once the owner has published the journalist agreement.',
   );
 
-/** The desk scope's guard: the role, then the agreement. Checked on every request (J13). */
+export const accessEnded = () =>
+  new HttpError(
+    403,
+    'desk_access_ended',
+    'Your journalist access has ended. To read the desk again, join the alert list and ask for access.',
+  );
+
+/**
+ * The desk scope's guard: the role, an approved request behind it, then the
+ * agreement. Checked on every request (J13).
+ *
+ * THE APPROVED REQUEST IS A SECOND LINE (owner decision 46). Leaving the
+ * alert list ends the role (`removeSubscribers`) and deletes the request
+ * with the subscriber row; if a role were ever left behind without one, by a
+ * path that forgot, this still refuses it.
+ */
 export function deskGuard(db: Kysely<DB>): preHandlerAsyncHookHandler {
   return async (request: FastifyRequest) => {
     const user = requireRole(request, ['journalist']);
+    const approved = await db
+      .selectFrom('journalist_access_requests as q')
+      .innerJoin('users as u', 'u.id', 'q.user_id')
+      .select('q.id')
+      .where('u.email', '=', user.email)
+      .where('q.status', '=', 'approved')
+      .executeTakeFirst();
+    if (!approved) throw accessEnded();
     if (!(await newestText(db, 'journalist'))) throw deskClosed();
     if (!(await hasAccepted(db, 'journalist', user.email))) throw agreementRequired('journalist');
   };
@@ -117,7 +160,7 @@ interface Answered {
 }
 
 /**
- * Each tip's answers to its list's multiple-choice questions, by entry.
+ * Each tip's answers to its list's fixed-list questions, by entry.
  * Reads `answers` (the durable half) and the questions' kinds; never the
  * erasable half, the email or any other kind of question.
  */
@@ -132,9 +175,9 @@ async function choiceContext(db: Kysely<DB>, entryIds: number[]): Promise<Map<nu
   const listIds = [...new Set(entries.map((e) => e.list_id))];
   const fields = await db
     .selectFrom('list_fields')
-    .select(['list_id', 'key', 'label', 'position'])
+    .select(['list_id', 'key', 'kind', 'label', 'position'])
     .where('list_id', 'in', listIds)
-    .where('kind', 'in', CHOICE_KINDS)
+    .where('kind', 'in', CONTEXT_KINDS)
     .orderBy('position')
     .execute();
   for (const e of entries) {
@@ -143,7 +186,9 @@ async function choiceContext(db: Kysely<DB>, entryIds: number[]): Promise<Map<nu
     for (const f of fields) {
       if (f.list_id !== e.list_id) continue;
       const v = answers[f.key];
-      const values = (Array.isArray(v) ? v : [v]).filter((x): x is string => typeof x === 'string');
+      const values = (Array.isArray(v) ? v : [v])
+        .filter((x): x is string => typeof x === 'string')
+        .map((x) => shown(f.kind, x));
       if (values.length) mine.push({ question: f.label, answers: values });
     }
     out.set(e.id, mine);

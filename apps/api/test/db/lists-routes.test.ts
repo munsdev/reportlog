@@ -86,7 +86,12 @@ describe('who may build a list', () => {
     const r = await admin({ method: 'GET', url: '/api/admin/lists' });
     const b = json<{ templates: { slug: string }[]; kinds: { id: string }[] }>(r);
     expect(r.statusCode, say(r)).toBe(200);
-    expect(b.templates.map((t) => t.slug)).toEqual(['tips', 'check-ins', 'contact']);
+    expect(b.templates.map((t) => t.slug)).toEqual([
+      'tips',
+      'election-tips',
+      'check-ins',
+      'contact',
+    ]);
     expect(b.kinds.map((k) => k.id)).not.toContain('file');
     expect(b.kinds.map((k) => k.id)).not.toContain('evidence_declaration');
   });

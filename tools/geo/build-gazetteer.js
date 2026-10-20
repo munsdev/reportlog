@@ -97,11 +97,42 @@ if (!countries.US) {
   throw new Error('the world plane has no US, so the US subdivisions have no parent');
 }
 
+/* Counties: STATE|STATEFP|COUNTYFP|COUNTYNS|COUNTYNAME|CLASSFP|FUNCSTAT. */
+const counties = {};
+let dropped = 0;
+const census = readFileSync(here('data/census/national_county2020.txt'), 'utf8')
+  .split(/\r?\n/)
+  .filter(Boolean);
+for (const line of census.slice(1)) {
+  const [usps, statefp, countyfp, , name] = line.split('|');
+  if (!/^\d{2}$/.test(statefp) || !/^\d{3}$/.test(countyfp) || !name) {
+    throw new Error(`unreadable Census line: ${line}`);
+  }
+  const state = `US-${usps}`;
+  if (!us[state]) {
+    dropped += 1;
+    continue;
+  }
+  const code = `${state}-${statefp}${countyfp}`;
+  if (counties[code]) throw new Error(`two Census rows for ${code}`);
+  counties[code] = name;
+}
+// Every state the list offers has at least one county-equivalent, or a
+// county-depth question would offer that state and then nothing under it.
+for (const state of Object.keys(us)) {
+  if (!Object.keys(counties).some((c) => c.startsWith(`${state}-`))) {
+    throw new Error(`no Census county for ${state}`);
+  }
+}
+out.counties_from = 'tools/geo/data/census/national_county2020.txt';
+out.counties = sortKeys(counties);
+
 const OUT = here('../../packages/fields/src/gazetteer.json');
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(OUT, `${JSON.stringify(out, null, 2)}\n`);
 
 process.stdout.write(
   `packages/fields/src/gazetteer.json: ${Object.keys(out.countries).length} countries, ` +
-    `${Object.keys(out.subdivisions.US).length} US states and territories\n`,
+    `${Object.keys(out.subdivisions.US).length} US states and territories, ` +
+    `${Object.keys(out.counties).length} counties (${String(dropped)} outside them dropped)\n`,
 );
