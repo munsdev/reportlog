@@ -334,7 +334,7 @@ tracking and backups, are explained in their own sections above.
 | `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                               |
 | `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                      |
 | `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.            |
-| `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise.                                    |
+| `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise. `install.sh` writes `false`.       |
 | `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                 |
 | `FILES_DIR`, `FILES_INLINE_WORKER`                                               | Development only: where disk storage keeps files, and running the media worker inside the server. |
 | `FILES_STAGING_QUOTA_REPORTS`                                                    | How many reports' worth of files one address may have waiting. 0 is no limit.                     |

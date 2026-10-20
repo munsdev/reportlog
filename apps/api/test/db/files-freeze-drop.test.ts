@@ -1,13 +1,12 @@
 /**
- * Decision 17: files staged before a logbook's uploads were frozen are
- * dropped when the report is sent, as legacy did (it dropped the draft token
- * at Send), and the reporter is told which, in plain words, twice: in the
- * answer to Send ("check your email") and on the confirmation page.
+ * Decision 38 (replacing decision 17): while a logbook's uploads are frozen,
+ * or switched off, a filing that carries a file is REFUSED at Send, in plain
+ * words naming the files, rather than filed with the files dropped.
  *
  * Through the real routes, as the form calls them.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { FROZEN_DROP } from '../../src/files/slots.ts';
+import { setSiteLimits } from '../../src/files/limits.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
 import { attach, filesHarness } from './files-helpers.ts';
 import type { FilesHarness } from './files-helpers.ts';
@@ -36,14 +35,6 @@ interface Sent {
   pending: true;
   files_dropped?: string[];
 }
-interface Confirmed {
-  confirmation: {
-    state: string;
-    public_ref?: string;
-    files?: { attached: number; not_attached: { name: string; reason: string }[] };
-  };
-}
-
 /** A logbook, a draft with two files staged (one finished, one half-sent), and its reporter. */
 async function staged(stem: string) {
   const lb = await launchedLogbook(h.db, QS);
@@ -102,69 +93,41 @@ const slotsOf = (logbookId: number) =>
     .execute();
 
 describe('a logbook frozen while the report was written', () => {
-  it('Send drops the staged files, names them, and still sends the report', async () => {
-    const { lb, email, send } = await staged('frozen-drop');
+  it('Send REFUSES a filing that carries a file, names it, and sends nothing (decision 38)', async () => {
+    const { lb, email, send } = await staged('frozen-refused');
     await L.setFilesFrozen(h.db, lb.id, true);
 
     const sent = await send();
-    expect(sent.statusCode).toBe(200);
-    expect(sent.json<Sent>()).toEqual({
-      pending: true,
-      files_dropped: ['queue.jpg', 'notes.pdf'],
-    });
-    // The confirmation email went out: the report itself was sent.
-    expect(tokenFor(h.mailer, email)).toBeTruthy();
-
-    const slots = await slotsOf(lb.id);
-    expect(slots).toHaveLength(2);
-    for (const s of slots) {
-      // Tied to the submission so the confirmation page can name it, but never
-      // released: the worker claims released slots only, so it is never worked on.
-      expect(s.submission_id).not.toBeNull();
-      expect(s.released_at).toBeNull();
-      expect(s.status).toBe('rejected');
-      expect(s.status_detail).toBe(FROZEN_DROP);
-      expect(s.dek_wrapped).toBeNull();
-    }
-    // And the bytes that did arrive are queued for deletion now.
-    const queued = await h.db
-      .selectFrom('storage_deletions')
-      .select('key')
-      .where(
-        'key',
-        'in',
-        slots.map((s) => s.staging_key),
-      )
+    expect(sent.statusCode).toBe(409);
+    const err = sent.json<{ error: { code: string; message: string } }>().error;
+    expect(err.code).toBe('files_off');
+    expect(err.message).toContain('queue.jpg');
+    expect(err.message).toContain('notes.pdf');
+    // Neither filed nor kept for a link: no email, no submission.
+    expect(tokenFor(h.mailer, email)).toBeFalsy();
+    const subs = await h.db
+      .selectFrom('report_submissions')
+      .select('id')
+      .where('logbook_id', '=', lb.id)
       .execute();
-    expect(queued).toHaveLength(2);
+    expect(subs).toEqual([]);
+    // The files were not tied to anything or released to the worker.
+    const slots = await slotsOf(lb.id);
+    expect(slots.every((s) => s.submission_id === null && s.released_at === null)).toBe(true);
   });
 
-  it('the confirmation page files the report without them and says why, in words', async () => {
-    const { lb, email, send } = await staged('frozen-confirm');
-    await L.setFilesFrozen(h.db, lb.id, true);
-    await send();
-    const token = tokenFor(h.mailer, email) ?? '';
-    const done = (
-      await h.app.inject({ method: 'POST', url: `/api/reports/confirm/${token}` })
-    ).json<Confirmed>();
-    expect(done.confirmation.state).toBe('received');
-    expect(done.confirmation.files).toEqual({
-      attached: 0,
-      not_attached: [
-        { name: 'queue.jpg', reason: FROZEN_DROP },
-        { name: 'notes.pdf', reason: FROZEN_DROP },
-      ],
-    });
-    // Nothing of them was sealed.
-    const linked = await h.db
-      .selectFrom('report_attachments as ra')
-      .innerJoin('reports as r', 'r.id', 'ra.report_id')
-      .select('ra.report_id')
-      .where('r.public_ref', '=', done.confirmation.public_ref ?? '')
-      .execute();
-    expect(linked).toEqual([]);
-    // And it reads as a sentence a person says.
-    expect(`queue.jpg: ${FROZEN_DROP}.`).toMatch(/^queue\.jpg: this logbook stopped taking files/);
+  it('uploads switched off site-wide refuse the same filing', async () => {
+    const { lb, email, send } = await staged('site-off');
+    await setSiteLimits(h.db, { enabled: false });
+    try {
+      const sent = await send();
+      expect(sent.statusCode).toBe(409);
+      expect(sent.json<{ error: { code: string } }>().error.code).toBe('files_off');
+      expect(tokenFor(h.mailer, email)).toBeFalsy();
+      expect((await slotsOf(lb.id)).every((s) => s.released_at === null)).toBe(true);
+    } finally {
+      await setSiteLimits(h.db, { enabled: null });
+    }
   });
 
   it('a logbook that is not frozen sends its files as before, and says nothing of dropping', async () => {

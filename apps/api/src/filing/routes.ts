@@ -19,6 +19,7 @@ import type { Readable } from 'node:stream';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import type { Files } from '../files/context.ts';
+import { filesOn } from '../files/context.ts';
 import { afterCommit, takeDownForReporter } from '../files/publication.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
@@ -68,6 +69,7 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     siteOrigin: deps.siteOrigin,
     ring,
     publicRefPrefix: prefix,
+    filesOn: () => filesOn(deps.files ?? null),
   };
   const mine = new Mine(deps.db, ring, prefix);
   const intake = new Intake(deps.db, ring, prefix, deps.files ?? null);

@@ -400,6 +400,23 @@ export async function releaseDraft(
   return Number(out.numUpdatedRows);
 }
 
+/** The names of files staged under a draft for a logbook and not yet sent. */
+export async function stagedFileNames(
+  db: Kysely<DB>,
+  input: { draft: string; logbookId: number },
+): Promise<string[]> {
+  const rows = await db
+    .selectFrom('upload_slots')
+    .select(['id', 'declared_name'])
+    .where('draft_hash', '=', input.draft)
+    .where('logbook_id', '=', input.logbookId)
+    .where('released_at', 'is', null)
+    .where('status', 'in', ['pending', 'uploaded'])
+    .orderBy('id')
+    .execute();
+  return rows.map((r) => r.declared_name || 'A file');
+}
+
 /**
  * Why a dropped file is not in the report, in the words the confirmation
  * page puts after its name ("photo.jpg: …").

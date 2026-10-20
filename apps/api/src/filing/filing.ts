@@ -20,7 +20,8 @@
  * filing is a deliberate POST from the page the link opens.
  */
 import type { Confirmation } from '@reportlog/contracts';
-import { buildAnswers } from '@reportlog/fields';
+import { buildAnswers, conditionMet } from '@reportlog/fields';
+import type { FieldDefinition } from '@reportlog/fields';
 import { normalizeReportFields } from '@reportlog/seal';
 import type { Answers } from '@reportlog/fields';
 import { randomUUID } from 'node:crypto';
@@ -35,7 +36,7 @@ import { isPublic } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { fileOutcome, releaseForSubmission, sealFiles, stillPreparing } from '../files/filing.ts';
-import { draftFrom } from '../files/slots.ts';
+import { draftFrom, filesFrozen, stagedFileNames } from '../files/slots.ts';
 import { HttpError } from '../http/errors.ts';
 import { looksLikeEmail, normalizeEmail, randomToken, sha256Hex } from '../identity/secrets.ts';
 import { logbookBySlug } from '../logbooks/logbooks.ts';
@@ -88,6 +89,8 @@ export interface FilingDeps {
   siteOrigin: string;
   ring: ContactKeyring | null;
   publicRefPrefix: string;
+  /** Whether this site is taking files at all (the site-wide switch). */
+  filesOn?: () => Promise<boolean>;
 }
 
 export const confirmEmail = (logbookTitle: string, link: string) => ({
@@ -98,6 +101,51 @@ export const confirmEmail = (logbookTitle: string, link: string) => ({
     'Nothing is filed until you do. The link works for 24 hours to confirm, and after that it shows you where your report stands.\n\n' +
     'If you did not send this, ignore this email. Nothing happens without the link.',
 });
+
+/**
+ * L7: a key the logbook does not ask is REFUSED here, not dropped. The shared
+ * `buildAnswers` still drops it (a list's form left open in a tab must not
+ * fail), so this runs only for logbooks. It is the reason a logbook with no
+ * text question cannot be sent free text under some other name (L3).
+ */
+export function unknownAnswerKeys(
+  questions: readonly FieldDefinition[],
+  body: Record<string, unknown>,
+): string[] {
+  const asked = new Set(questions.map((q) => q.key));
+  const unknown = Object.keys(body).filter((k) => !asked.has(k));
+  return unknown.length
+    ? [
+        `This report has an answer the form did not ask for (${unknown.join(', ')}). Reload the page and try again.`,
+      ]
+    : [];
+}
+
+/**
+ * An answer to a choice question that is not one of its options. For a
+ * required question `buildAnswers` already says "is needed"; an OPTIONAL one
+ * would otherwise lose the answer without a word.
+ */
+export function badChoices(
+  questions: readonly FieldDefinition[],
+  body: Record<string, unknown>,
+  built: Answers,
+): string[] {
+  const out: string[] = [];
+  for (const q of questions) {
+    if (q.kind !== 'choice_one' && q.kind !== 'choice_many') continue;
+    if (q.shown_when && !conditionMet(q.shown_when, built)) continue;
+    const raw = body[q.key];
+    const sent = (Array.isArray(raw) ? raw : [raw]).filter(
+      (v) => v !== undefined && v !== null && v !== '',
+    );
+    const options = Array.isArray(q.settings?.options) ? q.settings.options : [];
+    if (sent.some((v) => typeof v !== 'string' || !options.includes(v))) {
+      out.push(`${q.label} must be one of the choices offered.`);
+    }
+  }
+  return out;
+}
 
 /**
  * Check a submission and keep it for confirmation. Every refusal is a
@@ -144,6 +192,8 @@ export async function stageSubmission(
   const questions = await questionsFor(db, lb.id);
   const form = await ensureFormVersion(db, lb, questions);
   const { answers, errors } = buildAnswers(questions, b.answers ?? {});
+  problems.push(...unknownAnswerKeys(questions, b.answers ?? {}));
+  problems.push(...badChoices(questions, b.answers ?? {}, answers ?? {}));
   problems.push(...errors.map((e) => `${e}.`));
   if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
 
@@ -168,7 +218,20 @@ export async function stageSubmission(
   // sealed is refused while the reporter is still here to hear it.
   normalizeReportFields({ logbook: lb.slug, ...payload });
 
-  if (b.draft_token !== undefined && b.draft_token !== '') draftFrom(b.draft_token);
+  if (b.draft_token !== undefined && b.draft_token !== '') {
+    // A FILING THAT CARRIES A FILE IS REFUSED WHILE UPLOADS ARE OFF (decision
+    // 38), not filed with the file quietly left out: the reporter would
+    // believe the evidence was in the record. Nothing has been stored yet,
+    // so they can send again without it.
+    const staged = await stagedFileNames(db, { draft: draftFrom(b.draft_token), logbookId: lb.id });
+    if (staged.length && ((await filesFrozen(db, lb.id)) || !(await (deps.filesOn?.() ?? false)))) {
+      throw refused(
+        409,
+        'files_off',
+        `This site is not taking files at the moment, so your report was not sent. Remove ${staged.join(', ')} and send it again.`,
+      );
+    }
+  }
 
   const token = randomToken();
   const expiresAt = new Date(Date.now() + LINK_TTL_MS);

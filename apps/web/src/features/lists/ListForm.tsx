@@ -21,6 +21,7 @@
 import { sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
@@ -93,7 +94,11 @@ function Cards({ form }: { form: Form }) {
     ...(form.asks_email ? [{ kind: 'email' } as const] : []),
   ];
   const [at, setAt] = useState(0);
-  const [values, setValues] = useState<Record<string, Value>>({});
+  // The tips form starts with the state, county and time of a report just
+  // filed in this browser (features/form/tipOffer.tsx). Browser only.
+  const [values, setValues] = useState<Record<string, Value>>(() =>
+    form.slug === 'tips' ? takeTipPrefill(form.fields) : {},
+  );
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState('');
@@ -127,6 +132,9 @@ function Cards({ form }: { form: Form }) {
   useEffect(() => {
     heading.current?.focus();
   }, [at, send.isSuccess]);
+  useEffect(() => {
+    if (send.isSuccess) clearTipPrefill();
+  }, [send.isSuccess]);
 
   if (send.isSuccess) {
     return (
