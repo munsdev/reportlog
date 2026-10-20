@@ -75,17 +75,17 @@ Paths are shortened as follows:
 | Invariants (both `CLAUDE.md` files)        | 42   | 41         | 1       | 0       | 0       | 34 / 7 / 1 / 0      |
 | Routes (`legacy/src/routes/`, `server.js`) | 131  | 124        | 0       | 1       | 6       | 106 / 7 / 12 / 6    |
 | Scripts (`legacy/scripts/`, not tests)     | 20   | 17         | 1       | 0       | 2       | 14 / 2 / 0 / 4      |
-| Self-test scripts                          | 36   | 32         | 2       | 0       | 2       | 26 / 8 / 0 / 2      |
+| Self-test scripts                          | 36   | 33         | 1       | 0       | 2       | 26 / 8 / 0 / 2      |
 | `selftest.js` groups                       | 84   | 63         | 13      | 5       | 3       | 34 / 31 / 12 / 7    |
-| Browser tests                              | 25   | 11         | 11      | 0       | 3       | 5 / 15 / 3 / 2      |
+| Browser tests                              | 25   | 12         | 10      | 0       | 3       | 5 / 15 / 3 / 2      |
 | Migrations                                 | 52   | 38         | 2       | 0       | 12      | 30 / 9 / 3 / 10     |
-| Screens (`public/js/`)                     | 37   | 22         | 10      | 2       | 3       | 16 / 14 / 5 / 2     |
+| Screens (`public/js/`)                     | 37   | 23         | 9       | 2       | 3       | 16 / 14 / 5 / 2     |
 
 These were counted by a script from the Status column of each table below. A row is a table row.
 Where one row covers several legacy paths or groups, it says so ("2 rows", "10 groups") and still
 counts once.
 
-**Missing rows: 8** (was 35). **Partial rows: 39** (was 86). Both counts leave out the invariants.
+**Missing rows: 8** (was 35). **Partial rows: 36** (was 86). Both counts leave out the invariants.
 **Invariants without a complete test: 1** (was 8).
 
 ---
@@ -823,8 +823,10 @@ all merged. Nothing is being built right now.
 
 > **Built** (`docs/status/R9-board-maps.md`): the first three items, and the heat map tiles' names
 > (WCAG 2.5.3, found by R8). §4a `ownership-selftest`, §4c `admin-maps.test.js` and §6
-> `admin-maps.js` now read Equivalent. §4b "the map" stays Partial until R0 l is ruled. b, c, l
-> and q still wait on the owner.
+> `admin-maps.js` now read Equivalent. b, c, l and q were left alone, as briefed. The owner ruled
+> them while R9 ran (decisions 20, 21, 30 and 34): b and l need no code, c needs its documentation,
+> and q (log the complete chain file's download) is still to build. §4b "the map" stays Partial
+> until l's drop (decision 30) is recorded against it.
 
 - **Owns:** `apps/api/src/board/`, `apps/web/src/features/board/`, `apps/web/src/features/maps/`,
   `apps/api/src/maps/`, `apps/api/src/anchor/routes.ts` (for q only), and one migration if R0 b
