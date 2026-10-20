@@ -329,13 +329,15 @@ export const getAccessLog = defineRoute({
         /** Unique across both logs this reads (contact_access_log and F's file events). */
         id: z.string(),
         staff_email: z.string(),
-        /** contact, contact_used, file_preview, file_original, or audit_log. */
+        /** contact, contact_used, file_preview, file_original, chain_file, or audit_log. */
         kind: z.string(),
         reason: z.string().nullable(),
         accessed_at: Timestamp,
         thread_id: z.string().nullable(),
         public_ref: z.string().nullable(),
         attachment_id: z.number().int().nullable(),
+        /** The logbook a chain_file download was of; null for every other kind. */
+        logbook: z.string().nullable(),
       }),
     ),
   }),

@@ -27,7 +27,8 @@ import { buildChainFile } from '../chain/chainFile.ts';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
-import { roleGuard } from '../identity/guards.ts';
+import { requireUser, roleGuard } from '../identity/guards.ts';
+import { recordChainFileDownload } from '../moderation/accessLog.ts';
 import { DEFAULT_MAX_AGE_HOURS, checkAnchor } from './health.ts';
 
 export interface AnchorRouteDeps {
@@ -37,7 +38,12 @@ export interface AnchorRouteDeps {
   maxAgeHours?: number;
 }
 
-async function chainFile(db: Database, slug: string, publishedOnly: boolean) {
+async function chainFile(
+  db: Database,
+  slug: string,
+  publishedOnly: boolean,
+  record?: (logbookId: number) => Promise<void>,
+) {
   // Launched logbooks only: a draft has no chain, and is 404 like a logbook
   // that does not exist, so the answer does not reveal which drafts exist.
   const lb = await db
@@ -46,6 +52,9 @@ async function chainFile(db: Database, slug: string, publishedOnly: boolean) {
     .where('slug', '=', slug)
     .where('launched_at', 'is not', null)
     .executeTakeFirst();
+  // The complete file is recorded before it is built (decision 34): if the
+  // record cannot be written, nothing goes out.
+  if (lb && record) await record(lb.id);
   const file = lb
     ? await buildChainFile(db, lb.id, publishedOnly ? { published: publishedReportIds(db) } : {})
     : null;
@@ -90,8 +99,10 @@ export function anchorRoutes(app: FastifyInstance, deps: AnchorRouteDeps): void 
   void app.register((staff, _opts, done) => {
     staff.addHook('preHandler', roleGuard(['admin']));
 
-    route(staff, getCompleteChainFile, async ({ params, reply }) => {
-      const file = await chainFile(db, params.slug, false);
+    route(staff, getCompleteChainFile, async ({ params, request, reply }) => {
+      const file = await chainFile(db, params.slug, false, (id) =>
+        recordChainFileDownload(db, requireUser(request).email, id),
+      );
       asDownload(reply, params.slug, 'complete');
       return file;
     });

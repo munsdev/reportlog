@@ -75,44 +75,41 @@ on this branch's base. The file is R8's, so this branch does not touch it. **Rem
 and its two `ALLOWED` entries once both have landed.** The check above says the walk of `/` is
 clean without it.
 
-## The owner's rulings that landed during this piece
+## The owner's rulings, added at the coordinator's request
 
-The base took `docs/decisions.md` rows 19 to 35 while R9 ran. As briefed, R9 leaves R0 b, c, l
-and q alone, but they are now ruled:
+The base took `docs/decisions.md` rows 19 to 35 while R9 ran, and the coordinator asked for two of
+them in this PR.
 
-| R0  | Decision | What it means for R9's folders                                                                                                                                                                      |
-| --- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| b   | 20       | Place codes stay searchable. No code.                                                                                                                                                               |
-| c   | 21       | The subtraction leak is accepted and documented. A sentence somewhere a reader or operator sees it, not code.                                                                                       |
-| l   | 30       | Clicking a board map to filter the board is dropped for now. §4b "the map" can then read Equivalent, with the click Dropped. It still reads Partial, because recording that is l's bookkeeping.     |
-| q   | 34       | **Still to build:** downloading the complete chain file is recorded in the access log (`apps/api/src/anchor/routes.ts`, which R9 owns for q only). A small follow-up; this branch did not start it. |
+6. **Decision 34: the complete chain file is recorded in the access log.**
+   - Migration `20261020112918_chain_file_access.sql` adds a `chain_file` kind and a `logbook_id`
+     column to `contact_access_log`. A download names its logbook, and no thread or report (all
+     three by CHECK). The other kinds' guards are unchanged. The table stays append-only.
+   - `anchor/routes.ts` writes the entry after finding the launched logbook and before building
+     the file, so if it cannot be written, nothing goes out. A refused request, a logbook with no
+     chain, and the published file write nothing.
+   - Administrators see it in "Who opened what" ("… downloaded the complete chain file of
+     <slug>"). It is not shown to reporters: it is a whole logbook, not their report.
+   - Tests in `T/chain-files.test.ts` (3). **Planted bug:** without the write, 2 went red.
+7. **Decision 21: the subtraction property is documented** where the board's thresholds are
+   described: the header of `api/board/places.ts` (with decision 20, for the same reason), and the
+   operator's threshold description on `/maps`. It is accepted because each published report
+   already shows its own place, so the threshold protects counts, not places.
 
-## Legacy tests and their equivalents
-
-| Legacy                                                       | Here                                                                    |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------- |
-| `ownership-selftest`, the NULL block                         | `T/board.test.ts` "a report with an unanswered optional question" (2)   |
-| `admin-maps.test.js` "says its threshold in words"           | `E/maps.spec.ts` "the staff screen says "No maps yet."…"                |
-| `admin-maps.test.js` "No maps yet"                           | the same test                                                           |
-| (§4b "the map": no unsaved warning, lazy fetch not asserted) | `E/maps.spec.ts` "the map editor warns…"; "two maps on the front page…" |
-| (R8's axe finding on `/`)                                    | `WT/maps/heatmap.test.tsx` "names each tile by what it shows first…"    |
+Decisions 20 and 30 need no code. R0 b, c, l and q are marked answered in `docs/parity.md`.
 
 ## Rows in `docs/parity.md`
 
-- §4a `ownership-selftest`: Partial → Equivalent.
-- §4c `admin-maps.test.js`: Partial → Equivalent.
-- §6 `admin-maps.js`: Partial → Equivalent.
-- §4b "the map": still Partial, now only for the click to filter (decision 30 drops it).
-- The totals: self-test scripts 33 / 1, browser tests 12 / 10, screens 23 / 9; Partial rows 36.
-  Recounted from the tables with a script.
-- §7 R9 is marked built, with the rulings above.
+- Now Equivalent: §4a `ownership-selftest`, §4b "the map" (the click is Dropped, decision 30),
+  §4c `admin-maps.test.js` and §6 `admin-maps.js`. The totals were recounted from the tables with
+  a script: 35 Partial rows.
 
 ## Changes outside R9's folders
 
-- `apps/web/e2e/maps.spec.ts`: three new tests, and the two tile names in the existing one. The
-  file is I's, now R9's through `features/maps/`.
-- `apps/web/test/maps/heatmap.test.tsx`: the new names, and one new test.
-- `docs/parity.md`, this file.
+- D's, for decision 34: `moderation/accessLog.ts` (`recordChainFileDownload`, and the logbook in
+  the admin view), one field in `packages/contracts/src/moderation.ts`, and one label in
+  `web/features/moderation/Settings.tsx`. Also `T/chain-files.test.ts`, and the regenerated
+  `schema.gen.ts`.
+- `apps/web/e2e/maps.spec.ts` and `apps/web/test/maps/heatmap.test.tsx`: tests.
 
-No migration, no contract change, nothing in `packages/`. `apps/api/src/board/published.ts`, the
-one rule for what is public, is unchanged and still the only place it is spelled.
+`apps/api/src/board/published.ts` is unchanged, and still the only place the rule for what is
+public is spelled.
