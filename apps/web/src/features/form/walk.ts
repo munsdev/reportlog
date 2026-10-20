@@ -87,19 +87,29 @@ export function askedQuestions(
 }
 
 /**
- * Has the answer that decides whether this question is asked been given?
- * For the progress bar only: a question nobody has ruled out still counts
- * towards what is left, so the bar never lurches backwards.
+ * Could this question still be asked, given the answers so far? For the
+ * progress bar only: a question nobody has ruled out still counts towards
+ * what is left, so on the way forward the bar never lurches backwards.
+ *
+ * Ruled out CASCADES, as being asked does: a question that hangs off a
+ * question nobody will be asked is no longer possible either. Without that,
+ * a form whose follow-ups hang off follow-ups ends with the bar short of the
+ * end, still counting cards that can never come.
  */
 export function stillPossible(
   q: FormQuestion,
   questions: readonly FormQuestion[],
   raw: RawAnswers,
+  answers: Answers = sealedAnswers(questions, raw),
 ): boolean {
   if (q.kind === FILE_TYPE) return false;
   if (!q.shown_when) return true;
-  const answers = sealedAnswers(questions, raw);
-  return answers[q.shown_when.field] === undefined || conditionMet(q.shown_when, answers);
+  // An answer is only ever in `answers` while its own question is asked.
+  if (answers[q.shown_when.field] !== undefined) return conditionMet(q.shown_when, answers);
+  // Conditions point at EARLIER questions only (normalizeCondition), so
+  // this ends.
+  const decider = questions.find((d) => d.key === q.shown_when?.field);
+  return decider ? stillPossible(decider, questions, raw, answers) : false;
 }
 
 const isEmpty = (v: RawValue | undefined) =>

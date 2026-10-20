@@ -289,9 +289,17 @@ describe('the intake switch', () => {
   const setSwitch = (open: boolean | null) =>
     call(asAdmin, 'PUT', '/api/admin/intake-switch', { open });
 
+  let filedBefore: string;
+
   beforeAll(async () => {
     await seat(h.db, admin, 'admin');
     asAdmin = as(h, await signIn(h, admin));
+    filedBefore = await fileThroughRoutes(
+      h,
+      lb.slug,
+      { what_happened: 'Before the switch closed' },
+      address('before-close'),
+    );
   });
 
   it('is open on a site that was never asked, and only an administrator may set it', async () => {
@@ -330,6 +338,31 @@ describe('the intake switch', () => {
     expect((await h.app.inject({ method: 'GET', url: '/api/publication-card' })).statusCode).toBe(
       200,
     );
+  });
+
+  it('closed, THE PUBLIC RECORD STILL ANSWERS: the board, the statistics, the legal page', async () => {
+    // A switch that shut the doors into the chain must not shut the archive
+    // with them (legacy's intake-switch-selftest, "the public record still
+    // answers"). Each of these is asked while the switch is still closed.
+    expect((await call(asAdmin, 'GET', '/api/admin/intake-switch')).body).toMatchObject({
+      open: false,
+    });
+    for (const url of [
+      '/api/v1',
+      '/api/v1/stats',
+      '/api/v1/consent-texts',
+      '/api/board',
+      '/api/board/reports',
+      '/api/board/stats',
+      '/api/legal',
+    ]) {
+      const r = await h.app.inject({ method: 'GET', url });
+      expect(r.statusCode, url).toBe(200);
+    }
+    // And a report filed before it closed still verifies.
+    const r = await h.app.inject({ method: 'GET', url: `/api/reports/${filedBefore}/verify` });
+    expect(r.statusCode).toBe(200);
+    expect(r.json<{ content: { ok: boolean } }>().content.ok).toBe(true);
   });
 
   it('reopened, an empty submission is judged on its own merits again', async () => {

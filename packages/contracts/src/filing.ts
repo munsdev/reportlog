@@ -195,6 +195,12 @@ export const MyReportDetail = MyReport.extend({
   chain_hash: z.string(),
   /** The logbook's questions as they are now: a correction answers these. */
   questions: z.array(FormQuestion),
+  /**
+   * How many of the report's files are on the public site now. Switching off
+   * file publication takes these down, so the page asks first when it is
+   * not 0.
+   */
+  published_files: z.number().int(),
   permission_history: z.array(
     z.object({
       permission: Permission,

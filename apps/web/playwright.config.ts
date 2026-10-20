@@ -190,6 +190,8 @@ export default defineConfig({
         // Every test files from 127.0.0.1, and the suite already sends about
         // as many reports as one client may in 15 minutes on a real site.
         FILING_SENDS_PER_CLIENT: '200',
+        // And each of those reports' confirmation links is opened and used.
+        FILING_CONFIRMS_PER_CLIENT: '400',
         // Files: a fixed key, a directory of its own, and the media worker
         // inside the server, so an attached photo is really re-encoded.
         FILES_KEY: Buffer.alloc(32, 8).toString('base64'),

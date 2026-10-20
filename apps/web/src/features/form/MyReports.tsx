@@ -26,6 +26,15 @@ import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
@@ -34,6 +43,7 @@ import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
 import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
+import { PERMISSION_WORDS } from './permissionWords.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { askedQuestions, cardProblem, rawFromAnswers, shownAnswer, toSubmission } from './walk.ts';
 import type { RawAnswers } from './walk.ts';
@@ -188,21 +198,6 @@ function Answers({ r }: { r: MyReportDetail }) {
   );
 }
 
-const PERMISSION_WORDS: Record<Permission, { label: string; hint: string }> = {
-  contact_passing: {
-    label: 'A moderator may pass my contact details to somebody who asks to follow up',
-    hint: 'For example a journalist or a lawyer. Off unless you switch it on.',
-  },
-  attachment_publication: {
-    label: 'The files I attached may be published',
-    hint: 'Separate from the report’s words. Switching it off takes published files down.',
-  },
-  evidence_request: {
-    label: 'An editor may contact me to ask for the evidence I said I have',
-    hint: 'What you said you have is part of the report. Whether you want to be asked about it is this.',
-  },
-};
-
 function useRefresh(threadId: string) {
   const client = useQueryClient();
   return async () => {
@@ -214,6 +209,10 @@ function useRefresh(threadId: string) {
 function Permissions({ r }: { r: MyReportDetail }) {
   const refresh = useRefresh(r.thread_id);
   const [status, setStatus] = useState<string | null>(null);
+  // Switching off file publication takes published files DOWN, at once, so
+  // while any are up it asks first. Until the answer is yes nothing is
+  // written and the box stays as the server says.
+  const [askTakeDown, setAskTakeDown] = useState(false);
   const set = useMutation({
     mutationFn: (v: { permission: Permission; granted: boolean }) =>
       call(setMyPermission, { params: { threadId: r.thread_id }, body: v }),
@@ -240,6 +239,10 @@ function Permissions({ r }: { r: MyReportDetail }) {
             checked={r.permissions[p]}
             disabled={set.isPending}
             onCheckedChange={(on) => {
+              if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
+                setAskTakeDown(true);
+                return;
+              }
               setStatus('Saving…');
               set.mutate({ permission: p, granted: on === true });
             }}
@@ -256,6 +259,35 @@ function Permissions({ r }: { r: MyReportDetail }) {
         </div>
       ))}
       {status ? <p role="status">{status}</p> : null}
+      <Dialog open={askTakeDown} onOpenChange={setAskTakeDown}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take your files down?</DialogTitle>
+            <DialogDescription>
+              {r.published_files === 1
+                ? 'One of your files is published on this site. Switching this off takes it down now. It stays part of your report, and nobody can publish it again unless you switch this back on.'
+                : `${String(r.published_files)} of your files are published on this site. Switching this off takes them down now. They stay part of your report, and nobody can publish them again unless you switch this back on.`}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" variant="secondary">
+                Leave it on
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={() => {
+                setAskTakeDown(false);
+                setStatus('Saving…');
+                set.mutate({ permission: 'attachment_publication', granted: false });
+              }}
+            >
+              Switch it off
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {r.permission_history.length ? (
         <details>
           <summary className="cursor-pointer underline">Every change you made</summary>

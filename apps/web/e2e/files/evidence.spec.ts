@@ -4,24 +4,37 @@
  * FOLLOWS THE LINK IN THE EMAIL, sends the photo, and it lands on the report
  * as a new version. The setup goes through the API (the moderator's screen
  * is the moderation workstream's); the reporter's side is the real page.
+ *
+ * Then what the page says when it cannot take anything (legacy's
+ * evidence.test.js): how to stop being asked at all, the site not taking
+ * files, an ask the moderator withdrew, and the reporter having switched
+ * being asked off.
  */
 import { expect, test } from '@playwright/test';
+import type { Browser, Page, PlaywrightWorkerArgs } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { expectAccessible } from '../filing/axe.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
-test('a moderator asks for the photo a reporter mentioned, and the reporter sends it from the email', async ({
-  browser,
-  playwright,
-}, info) => {
-  const baseURL = info.project.use.baseURL ?? 'http://127.0.0.1:4173';
+const ASKED = 'Could you send the photo of the queue you mentioned?';
 
+/**
+ * A confirmed report that says it has a photo, its reporter's permission to
+ * be asked, and a moderator's ask. Everything but the reporter's page goes
+ * through the API.
+ */
+async function askedForEvidence(
+  playwright: PlaywrightWorkerArgs['playwright'],
+  baseURL: string,
+  name: string,
+) {
   // A logbook that asks whether there is evidence.
   const admin = await playwright.request.newContext({ baseURL, storageState: ADMIN });
   const made = await admin.post('/api/admin/logbooks', {
-    data: { title: `Evidence ${info.project.name} ${run()}` },
+    data: { title: `Evidence ${name} ${run()}` },
   });
   const lb = (await made.json()) as { id: number; slug: string };
   const add = async (data: Record<string, unknown>) =>
@@ -69,29 +82,45 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
   };
   const thread =
     mine.reports.find((r) => r.public_ref === done.confirmation.public_ref)?.thread_id ?? '';
-  expect(
-    (
-      await reporter.post(`/api/mine/reports/${thread}/permissions`, {
-        data: { permission: 'evidence_request', granted: true },
-      })
-    ).ok(),
-  ).toBe(true);
-  await reporter.dispose();
+  const permit = async (granted: boolean) => {
+    const r = await reporter.post(`/api/mine/reports/${thread}/permissions`, {
+      data: { permission: 'evidence_request', granted },
+    });
+    expect(r.ok(), await r.text()).toBe(true);
+  };
+  await permit(true);
 
-  // A moderator asks.
+  // A moderator asks. Returns the link the email carried.
   const modEmail = `evidence-mod-${run()}@example.org`;
   identityState('seat', modEmail, 'moderator');
   const moderator = await signedIn(playwright, baseURL, modEmail);
-  before = countTo(reporterEmail);
-  const asked = await moderator.post(`/api/moderate/evidence/${thread}`, {
-    data: { message: 'Could you send the photo of the queue you mentioned?' },
-  });
-  expect(asked.ok(), await asked.text()).toBe(true);
-  await moderator.dispose();
+  const ask = async () => {
+    before = countTo(reporterEmail);
+    const asked = await moderator.post(`/api/moderate/evidence/${thread}`, {
+      data: { message: ASKED },
+    });
+    expect(asked.ok(), await asked.text()).toBe(true);
+    const link = linkIn(await lastMessageTo(reporterEmail, before));
+    expect(link).toMatch(/\/evidence\/[a-f0-9]{48}$/);
+    return link;
+  };
+  const link = await ask();
+  return {
+    what,
+    link,
+    thread,
+    ask,
+    permit,
+    moderator,
+    async dispose() {
+      await reporter.dispose();
+      await moderator.dispose();
+    },
+  };
+}
 
-  // The reporter follows the link in a fresh browser.
-  const link = linkIn(await lastMessageTo(reporterEmail, before));
-  expect(link).toMatch(/\/evidence\/[a-f0-9]{48}$/);
+/** A page in a browser with nobody signed in, that notes any other host it asks. */
+async function stranger(browser: Browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
   const outside: string[] = [];
@@ -99,11 +128,26 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
     const host = new URL(r.url()).hostname;
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
+  return { context, page, outside };
+}
+
+const requestPage = (page: Page) =>
+  page.getByRole('heading', { name: 'A request about your report' });
+
+test('a moderator asks for the photo a reporter mentioned, and the reporter sends it from the email', async ({
+  browser,
+  playwright,
+}, info) => {
+  const baseURL = info.project.use.baseURL ?? 'http://127.0.0.1:4173';
+  const asked = await askedForEvidence(playwright, baseURL, info.project.name);
+  const { what, link } = asked;
+  await asked.dispose();
+
+  // The reporter follows the link in a fresh browser.
+  const { context, page, outside } = await stranger(browser);
   await page.goto(link);
-  await expect(page.getByRole('heading', { name: 'A request about your report' })).toBeVisible();
-  await expect(
-    page.getByText('Could you send the photo of the queue you mentioned?'),
-  ).toBeVisible();
+  await expect(requestPage(page)).toBeVisible();
+  await expect(page.getByText(ASKED)).toBeVisible();
   // Nothing of what the report says is on this page.
   await expect(page.getByText('The queue was turned away.')).toHaveCount(0);
 
@@ -139,6 +183,70 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
   // Spent: the link does not open again.
   await page.goto(link);
   await expect(page.getByRole('heading', { name: 'This link is not open' })).toBeVisible();
+  await context.close();
+  expect(outside).toEqual([]);
+});
+
+test('the page says how to stop being asked, and says plainly why it cannot take anything', async ({
+  browser,
+  playwright,
+}, info) => {
+  const baseURL = info.project.use.baseURL ?? 'http://127.0.0.1:4173';
+  const asked = await askedForEvidence(playwright, baseURL, info.project.name);
+  const { context, page, outside } = await stranger(browser);
+
+  // Open: what was asked, that they need not answer, and how to stop being
+  // asked at all, in the words of the switch they will find.
+  await page.goto(asked.link);
+  await expect(requestPage(page)).toBeVisible();
+  await expect(page.getByText('You do not have to answer.')).toBeVisible();
+  await expect(page.getByText(/To stop being asked for evidence about this report/)).toContainText(
+    '“An editor may contact me to ask for the evidence I said I have”',
+  );
+  await expectAccessible(page, 'an open request');
+
+  // The site not taking files: no box that cannot work, and the reason.
+  const evidenceCall = (url: URL) => /^\/api\/evidence\/[a-f0-9]{48}$/.test(url.pathname);
+  await page.route(evidenceCall, async (route) => {
+    const real = await route.fetch();
+    const body = (await real.json()) as { uploads: Record<string, unknown> };
+    await route.fulfill({
+      response: real,
+      json: { ...body, uploads: { ...body.uploads, enabled: false } },
+    });
+  });
+  await page.reload();
+  await expect(requestPage(page)).toBeVisible();
+  await expect(page.getByText(ASKED)).toBeVisible();
+  await expect(page.getByText('Files cannot be taken at the moment')).toBeVisible();
+  await expect(page.locator('input[type=file]')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Send these files' })).toHaveCount(0);
+  await expectAccessible(page, 'a request while files are off');
+  await page.unroute(evidenceCall);
+
+  // The moderator withdraws the ask: closed, with what to do about it.
+  expect((await asked.moderator.delete(`/api/moderate/evidence/${asked.thread}`)).ok()).toBe(true);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'This link is not open' })).toBeVisible();
+  await expect(page.getByText(/no longer open/)).toBeVisible();
+  await expect(page.getByText(/can send you a new one/)).toBeVisible();
+  await expect(page.locator('input[type=file]')).toHaveCount(0);
+  await expect(page.getByText(ASKED)).toHaveCount(0);
+  await expectAccessible(page, 'a closed request');
+
+  // Asked again, then the reporter switches being asked off: the link sent
+  // closes, and the page says it was their switch, which they can undo.
+  const again = await asked.ask();
+  await page.goto(again);
+  await expect(requestPage(page)).toBeVisible();
+  await asked.permit(false);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'This link is not open' })).toBeVisible();
+  await expect(page.getByText(/You have switched off being asked for evidence/)).toBeVisible();
+  await expect(page.getByText(/switch it back on/)).toBeVisible();
+  await expect(page.locator('input[type=file]')).toHaveCount(0);
+
+  await asked.dispose();
   await context.close();
   expect(outside).toEqual([]);
 });

@@ -137,6 +137,7 @@ export class Mine {
       content_hash: row.content_hash,
       chain_hash: row.chain_hash,
       questions: (await fieldsFor(this.db, row.logbook_id)).map(forForm),
+      published_files: await this.publishedFiles(threadId),
       permission_history: await permissionHistory(this.db, threadId),
       actions: actions.map((a) => ({
         action: a.action,
@@ -144,6 +145,22 @@ export class Mine {
         at: a.created_at.toISOString(),
       })),
     };
+  }
+
+  /**
+   * The thread's files on the public site now: the ones switching off file
+   * publication would take down. "Published" in the files' own record; the
+   * gates read at each request (moderation, the archive switch) do not
+   * matter here, because the take-down acts on this state.
+   */
+  private async publishedFiles(threadId: string): Promise<number> {
+    const row = await this.db
+      .selectFrom('attachment_heads')
+      .select((eb) => eb.fn.countAll<string>().as('n'))
+      .where('thread_id', '=', threadId)
+      .where('publication', '=', 'published')
+      .executeTakeFirst();
+    return Number(row?.n ?? 0);
   }
 
   async correct(

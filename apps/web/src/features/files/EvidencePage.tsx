@@ -24,6 +24,7 @@ import { useEffect, useMemo } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Page } from '@/components/ui/page.tsx';
+import { PERMISSION_WORDS } from '@/features/form/permissionWords.ts';
 import { call } from '@/lib/api.ts';
 import { FilePicker } from './FilesCard.tsx';
 import { useUploader } from './uploader.ts';
@@ -108,9 +109,22 @@ export function EvidencePage({ token }: { token: string }) {
         This link works once, until {new Date(a.expires_at).toLocaleString()}. You do not have to
         answer.
       </p>
+      {/* Where they land, the way out of being asked at all. Words, not a
+          link: on a site behind its password "My reports" is behind it too,
+          and this page is a door that may call nothing else. */}
+      <p className="text-sm text-ink-alt">
+        To stop being asked for evidence about this report, sign in to “My reports” with the email
+        address you filed from and switch off “{PERMISSION_WORDS.evidence_request.label}”. That also
+        closes this link.
+      </p>
       {a.uploads.enabled ? (
         <>
-          <FilePicker config={a.uploads} uploader={uploader} />
+          {/* The picker's box is named by this heading: without it, a
+              screen reader announces an unnamed file control. */}
+          <h2 id="evidence-files-heading" className="font-display text-xl font-bold">
+            Send what you have
+          </h2>
+          <FilePicker config={a.uploads} uploader={uploader} labelledBy="evidence-files-heading" />
           {send.isError ? (
             <Alert tone="serious" title="Nothing was sent">
               {send.error.message}

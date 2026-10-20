@@ -52,6 +52,7 @@ export interface AppDeps {
         | 'CONTACT_KEY_PREVIOUS'
         | 'PUBLIC_REF_PREFIX'
         | 'FILING_SENDS_PER_CLIENT'
+        | 'FILING_CONFIRMS_PER_CLIENT'
         | 'ADMIN_EMAIL'
         | 'TRANSPARENCY_LOG_REMOTES'
         | 'ANCHOR_MAX_AGE_HOURS'
@@ -162,6 +163,7 @@ export async function buildApp({
     previousContactKey: config.CONTACT_KEY_PREVIOUS,
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     sendsPerClient: config.FILING_SENDS_PER_CLIENT,
+    confirmsPerClient: config.FILING_CONFIRMS_PER_CLIENT,
     files: typeof files === 'string' ? null : files,
   });
   await fileRoutes(app, { db, files });

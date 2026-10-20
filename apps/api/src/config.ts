@@ -239,6 +239,13 @@ const ConfigSchema = z.object({
    */
   FILING_SENDS_PER_CLIENT: z.coerce.number().int().min(1).max(1000).default(20),
 
+  /**
+   * Times one client may open or use confirmation links in 15 minutes. A
+   * link is a long random token, so this only slows a guesser down. The
+   * browser suite raises it, for the same reason as the one above.
+   */
+  FILING_CONFIRMS_PER_CLIENT: z.coerce.number().int().min(1).max(1000).default(60),
+
   /** Hours after which the newest anchor counts as stale (the job runs daily). */
   ANCHOR_MAX_AGE_HOURS: z.coerce
     .number()
