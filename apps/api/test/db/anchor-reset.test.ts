@@ -11,15 +11,18 @@
  * (so --new-chain), and publishes the reset from a fresh checkout. The log is
  * a bare git repository standing in for the real mirror.
  *
- * The command itself (`anchor reset-marker`) is not run here: its config
- * accepts only https://, ssh:// or git@ remotes, and these are local paths.
- * It is a thin wrapper over the two functions tested below.
+ * The last block runs the command itself (`anchor reset-marker`), as a child
+ * process with only the environment an operator would give it, against an
+ * https remote carrying a token, which git is told to find at the bare
+ * repository. So the wrapper's reading of its arguments and settings, its
+ * exit codes and what it prints are covered, not just the two functions.
  */
 import { headsDigest } from '@reportlog/seal';
 import { execFile } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
 import { runAnchor } from '../../src/anchor/anchor.ts';
@@ -230,6 +233,103 @@ describe('publishing it', () => {
       await expect(publishReset(other, settings(dir))).rejects.toThrow(/never replaced/);
     }
     expect(await atRemote(`resets/${RESET_DAY}.json`)).toBe(published);
+    expect(await head()).toBe(tip);
+  });
+});
+
+describe('the anchor reset-marker command', () => {
+  const API = fileURLToPath(new URL('../../', import.meta.url));
+  // The address a real deployment would configure, token and all. Git is
+  // told (insteadOf) that it lives at the bare repository, so the command
+  // pushes for real while its settings hold a remote it would accept anywhere.
+  const TOKEN = 's3cret-push-token';
+  const ADDRESS = `https://anchor:${TOKEN}@log.example.org/owner/log.git`;
+  let file: string;
+
+  /** `anchor <args>`, as an operator runs it: its own process, its own environment. */
+  async function anchor(...args: string[]) {
+    try {
+      const { stdout, stderr } = await exec('node', ['src/anchor/cli.ts', ...args], {
+        cwd: API,
+        env: {
+          PATH: process.env.PATH ?? '',
+          HOME: tmp,
+          DATABASE_URL: target.url,
+          TRANSPARENCY_LOG_DIR: join(tmp, 'command-checkout'),
+          TRANSPARENCY_LOG_REMOTES: ADDRESS,
+          GIT_CONFIG_NOSYSTEM: '1',
+          GIT_CONFIG_COUNT: '1',
+          GIT_CONFIG_KEY_0: `url.${remote}.insteadOf`,
+          GIT_CONFIG_VALUE_0: ADDRESS,
+        },
+      });
+      return { code: 0, stdout, stderr };
+    } catch (e) {
+      const { code, stdout, stderr } = e as { code: number; stdout: string; stderr: string };
+      return { code, stdout, stderr };
+    }
+  }
+
+  beforeAll(() => {
+    file = join(tmp, 'export.json');
+    writeFileSync(file, JSON.stringify(archive));
+  });
+
+  it('refuses without a reason, and with one too short, publishing nothing', async () => {
+    const tip = await head();
+    const bare = await anchor('reset-marker', file);
+    expect(bare.code).toBe(1);
+    expect(bare.stderr).toContain('Usage: anchor');
+    const short = await anchor('reset-marker', file, '--reason', 'rebuilt');
+    expect(short.code).toBe(1);
+    expect(short.stderr).toMatch(/reason/);
+    expect(await head()).toBe(tip);
+  });
+
+  it('publishes resets/<today>.json through the configured remote, adding that file and nothing else', async () => {
+    const before = await head();
+    const out = await anchor('reset-marker', file, '--reason', REASON);
+    expect(out.stderr).toBe('');
+    expect(out.code).toBe(0);
+    const day =
+      /^Published resets\/(\d{4}-\d{2}-\d{2})\.json: 1 anchor\(s\) no longer reconcile\.$/m.exec(
+        out.stdout,
+      )?.[1];
+    expect(day, out.stdout).toBeDefined();
+    expect(out.stdout).toContain('pushed to remote 1 (log.example.org)');
+    // The token is a secret: neither line it printed may carry it.
+    expect(out.stdout + out.stderr).not.toContain(TOKEN);
+
+    const published = await atRemote(`resets/${String(day)}.json`);
+    expect(published).not.toBeNull();
+    const record = JSON.parse(published ?? '') as ResetRecord;
+    expect(published).toBe(prettyFile(record));
+    expect(record).toMatchObject({
+      date: day,
+      kind: 'chain_reset',
+      reason: REASON,
+      reports_carried: archive.reports.length,
+      previous_chains: archive.previous_chain_list,
+      new_chains: await currentHeads(dst),
+      anchors_no_longer_reconciling: [
+        expect.objectContaining({ date: ANCHOR_DAY, public_log_ref: `anchors/${ANCHOR_DAY}.json` }),
+      ],
+    });
+
+    expect(await atRemote(`anchors/${ANCHOR_DAY}.json`)).toBe(anchorFile);
+    await expect(
+      git(tmp, '--git-dir', remote, 'merge-base', '--is-ancestor', before, 'main'),
+    ).resolves.toBe('');
+    const changed = await git(tmp, '--git-dir', remote, 'diff', '--name-status', before, 'main');
+    expect(changed).toBe(`A\tresets/${String(day)}.json`);
+  });
+
+  it('run again the same day, it refuses and exits 1, and the log is unchanged', async () => {
+    const tip = await head();
+    const again = await anchor('reset-marker', file, '--reason', `${REASON} Once more.`);
+    expect(again.code).toBe(1);
+    expect(again.stderr).toMatch(/never replaced/);
+    expect(again.stdout + again.stderr).not.toContain(TOKEN);
     expect(await head()).toBe(tip);
   });
 });

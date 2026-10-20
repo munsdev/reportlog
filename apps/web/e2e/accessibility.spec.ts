@@ -11,7 +11,11 @@
  * generates, so a page added tomorrow is checked without anybody remembering
  * to. Each is opened as a stranger and as an administrator.
  *
- * The rules are WCAG 2.0, 2.1 and 2.2 at levels A and AA. A violation fails
+ * The lock screen stands in front of every page once the site has a password,
+ * and this walk runs with the password off; it has its own pass with the
+ * password on (a11y-locked/lock-screen.spec.ts).
+ *
+ * The rules are WCAG 2.0, 2.1 and 2.2 at levels A and AA (e2e/a11y.ts). A violation fails
  * the test, naming the rule, the elements and axe's own explanation. The
  * only way past one is an entry in ALLOWED below: one rule on one page for
  * one visitor, with the reason written next to it. There is no blanket
@@ -19,19 +23,11 @@
  * cannot leave its allowance behind.
  */
 import { readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
-import type { AxeResults, Result, RunOptions } from 'axe-core';
+import { axe, describeViolation as describe } from './a11y.ts';
 import { ADMIN } from './auth.ts';
-
-const AXE_SOURCE = readFileSync(
-  createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
-  'utf8',
-);
-
-const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'];
 
 type Visitor = 'stranger' | 'administrator';
 
@@ -54,9 +50,19 @@ interface Allowance {
   onlyWhenPresent?: string;
 }
 
-// Empty: nothing is excused. The board's "Read in full" link was the one
-// allowance; Q2 fixed it ("Read in full: RL-…").
-const ALLOWED: Allowance[] = [];
+// The board's "Read in full" link was the first allowance; Q2 fixed it
+// ("Read in full: RL-…").
+const MAP_TILES = {
+  rule: 'label-content-name-mismatch',
+  page: '/',
+  why: 'The heat map\'s inset tiles (Alaska, Hawaii, the territories; HeatMap.tsx) show a short code and a count ("AK 12") but are named "Alaska: …", so somebody using speech input who says what they see cannot press them (WCAG 2.5.3). Found by R8\'s run, reported; the fix is in the maps folder (R9).',
+  onlyWhenPresent:
+    "Drawn only when e2e/maps.spec.ts has left a map in the front page's slot before the walk reaches /, which depends on the order the files run in.",
+};
+const ALLOWED: Allowance[] = [
+  { ...MAP_TILES, visitor: 'stranger' },
+  { ...MAP_TILES, visitor: 'administrator' },
+];
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
@@ -87,34 +93,6 @@ function address(path: string): string {
     if (value === undefined) throw new Error(`${path}: give $${name} a value in PARAMS`);
     return value;
   });
-}
-
-/** The part of axe the page has once its source is evaluated. */
-interface Axe {
-  run(context: Document, options: RunOptions): Promise<AxeResults>;
-}
-
-async function axe(page: Page): Promise<AxeResults> {
-  await page.evaluate(AXE_SOURCE);
-  return page.evaluate(
-    (tags) =>
-      (window as unknown as { axe: Axe }).axe.run(document, {
-        runOnly: { type: 'tag', values: tags },
-        resultTypes: ['violations'],
-      }),
-    TAGS,
-  );
-}
-
-function describe(v: Result): string {
-  const where = v.nodes
-    .slice(0, 5)
-    .map(
-      (n) =>
-        `    ${n.target.join(' ')}\n      ${n.failureSummary?.replace(/\n/g, '\n      ') ?? ''}`,
-    )
-    .join('\n');
-  return `${v.id} (${v.impact ?? 'no impact given'}): ${v.help}\n  ${v.helpUrl}\n${where}`;
 }
 
 async function check(page: Page, path: string, visitor: Visitor) {
