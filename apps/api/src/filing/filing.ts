@@ -105,7 +105,15 @@ export const confirmEmail = (logbookTitle: string, link: string) => ({
  * is missing when the site was never going to take their report is a lie
  * about why they were refused.
  */
-export async function stageSubmission(deps: FilingDeps, b: Submission): Promise<void> {
+/**
+ * Returns the names of any files dropped at Send because the logbook's
+ * uploads were frozen while the report was written (decision 17), so the
+ * reporter is told on the page that says "check your email".
+ */
+export async function stageSubmission(
+  deps: FilingDeps,
+  b: Submission,
+): Promise<{ filesDropped: string[] }> {
   const { db } = deps;
   if (!(await intakeIsOpen(db))) throw intakeClosed();
   if (!deps.ring) throw notConfigured();
@@ -163,7 +171,7 @@ export async function stageSubmission(deps: FilingDeps, b: Submission): Promise<
 
   const token = randomToken();
   const expiresAt = new Date(Date.now() + LINK_TTL_MS);
-  await db.transaction().execute(async (trx) => {
+  const files = await db.transaction().execute(async (trx) => {
     const sub = await trx
       .insertInto('report_submissions')
       .values({
@@ -177,8 +185,9 @@ export async function stageSubmission(deps: FilingDeps, b: Submission): Promise<
       .returning('id')
       .executeTakeFirstOrThrow();
     // Files staged while the report was written now belong to it, and the
-    // worker may start on them: nothing is worked on before Send.
-    await releaseForSubmission(trx, {
+    // worker may start on them: nothing is worked on before Send. On a
+    // logbook whose uploads were frozen meanwhile they are dropped instead.
+    return releaseForSubmission(trx, {
       draftToken: b.draft_token,
       submissionId: sub.id,
       logbookId: lb.id,
@@ -189,6 +198,7 @@ export async function stageSubmission(deps: FilingDeps, b: Submission): Promise<
     to: email,
     ...confirmEmail(lb.title, `${deps.siteOrigin}/file/confirm/${token}`),
   });
+  return { filesDropped: files.dropped };
 }
 
 const tokenLooksRight = (t: string) => /^[a-f0-9]{64}$/.test(t);

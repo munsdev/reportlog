@@ -84,8 +84,11 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     sendsPerClient.take(request.ip);
     const email = normalizeEmail(b.email);
     if (email) sendsPerAddress.take(email);
-    await stageSubmission(filing, b);
-    return { pending: true as const };
+    const { filesDropped } = await stageSubmission(filing, b);
+    return {
+      pending: true as const,
+      ...(filesDropped.length ? { files_dropped: filesDropped } : {}),
+    };
   });
 
   route(app, C.getConfirmation, async ({ params, request }) => {
