@@ -144,7 +144,8 @@ describe('the routes: who may do what is stated once per scope', () => {
 
   it('building is an administrator’s job, reviewing a moderator’s', () => {
     expect(src).toMatch(/staff\.addHook\('preHandler', roleGuard\(\['admin'\]\)\)/);
-    expect(src).toMatch(/mods\.addHook\('preHandler', roleGuard\(\['moderator', 'admin'\]\)\)/);
+    // The moderator guard is the role AND the agreement, in one line (moderation/agreement.ts).
+    expect(src).toMatch(/mods\.addHook\('preHandler', moderatorGuard\(db\)\)/);
   });
 
   it('nothing a visitor can call approves, edits or reads an entry', () => {

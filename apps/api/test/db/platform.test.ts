@@ -4,7 +4,11 @@
  * (D1), the threat flag (D5), the erase link (I5) and what the logs hold (I6).
  */
 import { REJECTION_REASONS } from '@reportlog/contracts';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
+import { createDatabase } from '../../src/db/database.ts';
+import { migrate } from '../../src/db/migrate.ts';
+import { createThrowawayDatabase } from '../../src/db/throwaway.ts';
+import type { Throwaway } from '../../src/db/throwaway.ts';
 import { openContact } from '../../src/filing/contactKeys.ts';
 import { keyringFrom } from '../../src/filing/contactKeys.ts';
 import type { FilingHarness } from './filing-helpers.ts';
@@ -41,8 +45,15 @@ const decision = (
     ...extra,
   });
 
+// ITS OWN DATABASE. A published agreement is global and append-only: in the
+// database every other file shares, it would shut every moderator route to
+// all of them, and it could never be taken back.
+let throwaway: Throwaway;
+
 beforeAll(async () => {
-  h = await moderationHarness();
+  throwaway = await createThrowawayDatabase(inject('serverUrl'), 'platform');
+  await migrate(throwaway.url);
+  h = await moderationHarness(createDatabase(throwaway.url, 10));
   await resetModerationSettings(h.db);
   lb = await launchedLogbook(h.db);
   mod = await staff(h, 'mod', 'moderator');
@@ -50,8 +61,8 @@ beforeAll(async () => {
   owner = await staff(h, 'owner', 'owner');
 });
 afterAll(async () => {
-  await resetModerationSettings(h.db);
   await h.close();
+  await throwaway.drop();
 });
 
 describe('M1 · a rejection emails the reporter a reason from the fixed list', () => {

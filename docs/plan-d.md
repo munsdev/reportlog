@@ -28,6 +28,17 @@ a Status cell differ, the Review wins. Nothing was run: no suite, only `pnpm che
 **Assumed** marks what I inferred without reading the code. Test names are quoted from titles
 unless the line says I read the assertion.
 
+**Closed by session 4b (moderation and EU items, branch `claude/plan-d-moderation`).** Details and
+tests are in `docs/status/PD4b-moderation.md`.
+
+- **Closed:** A5 (counts of unapproved reports removed; sweep of every registered public route),
+  M1, M2, M8, D1, D2 (reporter rejection), D3, D4, D5 (reports; the tip side is an API call, see the
+  status file), I5, I6, P3, S1, S3, and the K4/P2 half about moderators' public Sources links.
+- **Build-session items done:** 1, 2, 4, 12 (for the new tables), 14 (for the new pages), 15 (I5 and
+  D1; the journalist link belongs to session 5), 16, 17 (A5 and the Sources links; the tip-link half of
+  K4 is the links session's), 18, 19.
+- **Owner rulings recorded:** `docs/decisions.md` rows 36, 37, 39, 41, 43.
+
 ---
 
 ## The design change in one paragraph

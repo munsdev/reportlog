@@ -144,7 +144,12 @@ describe('every public GET route, with unapproved reports and a source link on f
       for (const ref of hidden) if (text.includes(ref)) leaks.push(`${r.url} shows ${ref}`);
       if (text.includes('sources-leak-marker') || text.includes(SOURCE_TITLE))
         leaks.push(`${r.url} shows the source link`);
-      if (/"(by_disposition|confirmed_reports|under_review|declined|not_permitted)"/.test(text))
+      // As a KEY, the way a count would be: a note's state is a value that may say under_review.
+      if (
+        /"(by_disposition|confirmed_reports|under_review|declined|unclear|not_permitted)"\s*:/.test(
+          text,
+        )
+      )
         leaks.push(`${r.url} counts unapproved reports`);
     }
     expect(leaks).toEqual([]);

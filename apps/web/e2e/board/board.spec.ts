@@ -81,11 +81,18 @@ test.describe('the board', () => {
     await expect(form.getByLabel(/date|when|where|place/i)).toHaveCount(0);
   });
 
-  test('the numbers come broken out, with the denominator', async ({ page }) => {
+  test('the numbers count published reports only, with the not-a-sample line beside them (decision 36, P3)', async ({
+    page,
+  }) => {
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { name: 'Every confirmed report' })).toBeVisible();
-    await expect(page.getByText('Under review')).toBeVisible();
-    await expect(page.getByText('Declined')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
+    await expect(
+      page.getByText(/They are not a sample and cannot be read as a rate\./),
+    ).toBeVisible();
+    // No count of what was not approved is anywhere on the page.
+    await expect(page.getByText('Under review')).toHaveCount(0);
+    await expect(page.getByText('Declined')).toHaveCount(0);
+    await expect(page.getByText('Every confirmed report')).toHaveCount(0);
   });
 
   test('no board page asks a third party for anything', async ({ page }) => {
@@ -99,7 +106,7 @@ test.describe('the board', () => {
     await page.goto(`/board/${ref}`);
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { name: 'Every confirmed report' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
     expect(outside).toEqual([]);
   });
 });
