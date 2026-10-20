@@ -17,6 +17,7 @@ import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PublicApiRouteImport } from './routes/public-api'
 import { Route as StandardsRouteImport } from './routes/standards'
 import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as staffBackupsRouteImport } from './routes/(staff)/backups'
 import { Route as staffFilesRouteRouteImport } from './routes/(staff)/files/route'
 import { Route as staffIntakeRouteRouteImport } from './routes/(staff)/intake/route'
 import { Route as staffListsRouteRouteImport } from './routes/(staff)/lists/route'
@@ -120,6 +121,11 @@ const StandardsRoute = StandardsRouteImport.update({
 const SubmitRoute = SubmitRouteImport.update({
   id: '/submit',
   path: '/submit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffBackupsRoute = staffBackupsRouteImport.update({
+  id: '/(staff)/backups',
+  path: '/backups',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffFilesRouteRoute = staffFilesRouteRouteImport.update({
@@ -461,6 +467,7 @@ export interface FileRoutesByFullPath {
   '/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/moderate': typeof staffModerateRouteRouteWithChildren
   '/settings': typeof staffSettingsRouteRouteWithChildren
+  '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/maps': typeof BoardMapsRoute
@@ -529,6 +536,7 @@ export interface FileRoutesByTo {
   '/public-api': typeof PublicApiRoute
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
+  '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/maps': typeof BoardMapsRoute
@@ -604,6 +612,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/(staff)/moderate': typeof staffModerateRouteRouteWithChildren
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
+  '/(staff)/backups': typeof staffBackupsRoute
   '/(staff)/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/maps': typeof BoardMapsRoute
@@ -680,6 +689,7 @@ export interface FileRouteTypes {
     | '/logbooks'
     | '/moderate'
     | '/settings'
+    | '/backups'
     | '/transparency-log'
     | '/board/$ref'
     | '/board/maps'
@@ -748,6 +758,7 @@ export interface FileRouteTypes {
     | '/public-api'
     | '/standards'
     | '/submit'
+    | '/backups'
     | '/transparency-log'
     | '/board/$ref'
     | '/board/maps'
@@ -822,6 +833,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks'
     | '/(staff)/moderate'
     | '/(staff)/settings'
+    | '/(staff)/backups'
     | '/(staff)/transparency-log'
     | '/board/$ref'
     | '/board/maps'
@@ -897,6 +909,7 @@ export interface RootRouteChildren {
   staffLogbooksRouteRoute: typeof staffLogbooksRouteRouteWithChildren
   staffModerateRouteRoute: typeof staffModerateRouteRouteWithChildren
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
+  staffBackupsRoute: typeof staffBackupsRoute
   staffTransparencyLogRoute: typeof staffTransparencyLogRoute
   BoardRefRoute: typeof BoardRefRoute
   BoardMapsRoute: typeof BoardMapsRoute
@@ -986,6 +999,13 @@ declare module '@tanstack/react-router' {
       path: '/submit'
       fullPath: '/submit'
       preLoaderRoute: typeof SubmitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/backups': {
+      id: '/(staff)/backups'
+      path: '/backups'
+      fullPath: '/backups'
+      preLoaderRoute: typeof staffBackupsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/files': {
@@ -1564,6 +1584,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffLogbooksRouteRoute: staffLogbooksRouteRouteWithChildren,
   staffModerateRouteRoute: staffModerateRouteRouteWithChildren,
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
+  staffBackupsRoute: staffBackupsRoute,
   staffTransparencyLogRoute: staffTransparencyLogRoute,
   BoardRefRoute: BoardRefRoute,
   BoardMapsRoute: BoardMapsRoute,

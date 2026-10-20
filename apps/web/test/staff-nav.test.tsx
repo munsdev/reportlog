@@ -49,8 +49,12 @@ describe('who sees which staff screen', () => {
     expect(entriesFor(as('admin'), modOnly)).toEqual([]);
   });
 
-  it('the owner satisfies administrator, and sees exactly what an administrator sees', () => {
-    expect(labels(as('owner'))).toEqual(labels(as('admin')));
+  it('the owner satisfies administrator, and sees what an administrator sees, plus the owner’s own', () => {
+    // Backups and exports are the whole archive in a file: the owner's alone.
+    const owner = labels(as('owner'));
+    expect(owner.filter((l) => l !== 'Backups and exports')).toEqual(labels(as('admin')));
+    expect(owner).toContain('Backups and exports');
+    expect(labels(as('admin'))).not.toContain('Backups and exports');
   });
 
   it('an Access Manager sees access, feedback and the guides', () => {
@@ -81,6 +85,7 @@ describe('who sees which staff screen', () => {
       '/moderate',
       '/moderate/settings',
       '/transparency-log',
+      '/backups',
       '/files',
       '/files/settings',
     ]) {

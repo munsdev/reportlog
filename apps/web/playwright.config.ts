@@ -8,6 +8,8 @@
  * already-installed Chromium instead of the build Playwright downloads.
  */
 import { defineConfig, devices } from '@playwright/test';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BUGSINK_PORT, BUGSINK_RECEIVED } from './e2e/bugsink.ts';
 
@@ -18,6 +20,9 @@ const chromium = process.env.CHROMIUM_PATH;
 const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 // Where the test server keeps files (files workstream).
 const FILES = fileURLToPath(new URL('./e2e/.files/', import.meta.url));
+// Where the owner's backups and exports are written (Q2). Outside the
+// repository: the server refuses a backup folder inside its own code.
+const COPIES = join(tmpdir(), `reportlog-e2e-copies-${String(process.pid)}`);
 // Error tracking is ON for the whole run, against a stand-in for Bugsink
 // (e2e/telemetry.spec.ts), so every page's no-third-party check runs with it on.
 
@@ -38,7 +43,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps|owner)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -47,7 +52,7 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps)\//,
+      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps|owner)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -124,6 +129,18 @@ export default defineConfig({
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
+    {
+      // Q2: the owner's backups and exports. It hands the owner's seat to a
+      // test address and back, which the whole site shares, so it runs
+      // alone and after everything else.
+      name: 'owner',
+      testMatch: /owner\/.*\.spec\.ts$/,
+      dependencies: ['board-maps'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
   ],
   webServer: [
     {
@@ -154,6 +171,8 @@ export default defineConfig({
         FILES_INLINE_WORKER: 'true',
         ERROR_TRACKING_DSN: `http://e2e@127.0.0.1:${BUGSINK_PORT}/1`,
         ERROR_TRACKING_ENVIRONMENT: 'e2e',
+        BACKUP_DIR: join(COPIES, 'dumps'),
+        STATE_DIR: join(COPIES, 'state'),
       },
     },
     {

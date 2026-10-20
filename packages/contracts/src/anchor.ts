@@ -94,3 +94,78 @@ export const getAnchorStatus = defineRoute({
     runs: z.array(AnchorRun),
   }),
 });
+
+// ── backups and archive exports, for the owner (decision 10) ────────────
+
+/**
+ * One finished file on the server: a database backup (pg_dump) or an
+ * archive export (every report replayable elsewhere). Named by the server,
+ * and fetched only by that name.
+ */
+export const CopyFile = z.object({
+  name: z.string(),
+  bytes: z.number().int(),
+  made_at: z.string(),
+});
+export type CopyFile = z.infer<typeof CopyFile>;
+
+const CopyKind = z.enum(['backup', 'export']);
+
+/** What is running now, or how the last one ended. Kept in memory: a restart forgets it. */
+export const CopyJob = z.object({
+  kind: CopyKind,
+  started_at: z.string(),
+  finished_at: z.string().nullable(),
+  /** Null while running. */
+  ok: z.boolean().nullable(),
+  /** One sentence: what happened, or why it did not. */
+  summary: z.string().nullable(),
+});
+
+export const CopiesState = z.object({
+  /** Null when this server has no backup settings it can use, with the reason. */
+  unavailable: z.string().nullable(),
+  backups: z.array(CopyFile),
+  exports: z.array(CopyFile),
+  backup_health: z.object({
+    state: z.enum(['none', 'ok', 'stale']),
+    max_age_hours: z.number(),
+  }),
+  /** The last off-site copy the backup job sent, if one is configured. */
+  offsite: z.object({ at: z.string(), bytes: z.number().int() }).nullable(),
+  /** The last backup that failed, from any start (the timer or this screen). */
+  failure: z.object({ at: z.string(), step: z.string(), why: z.string() }).nullable(),
+  running: CopyJob.nullable(),
+  last: CopyJob.nullable(),
+  /**
+   * Restoring is done at the server's command line, never from a page: this
+   * is the command, with this server's folder in it. Null when unavailable.
+   */
+  restore_command: z.string().nullable(),
+});
+export type CopiesState = z.infer<typeof CopiesState>;
+
+export const getCopies = defineRoute({
+  method: 'GET',
+  path: '/api/admin/copies',
+  summary:
+    'Backups and archive exports on this server, and whether one is being made. The owner only.',
+  response: CopiesState,
+});
+
+export const startCopy = defineRoute({
+  method: 'POST',
+  path: '/api/admin/copies',
+  summary:
+    'Start a backup or an archive export. One at a time; the screen asks again until it is done. The owner only.',
+  body: z.object({ kind: CopyKind }),
+  response: CopiesState,
+});
+
+/**
+ * Not JSON: the file itself, streamed, registered without a response schema.
+ * Each download is written to the audit trail before the first byte leaves.
+ */
+export const COPY_DOWNLOAD_PATH = '/api/admin/copies/:kind/:name';
+export const copyDownloadPath = (kind: 'backup' | 'export', name: string) =>
+  `/api/admin/copies/${kind}/${encodeURIComponent(name)}`;

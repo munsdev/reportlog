@@ -12,6 +12,7 @@ import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
+import { copyRoutes } from './anchor/copies.ts';
 import { anchorRoutes } from './anchor/routes.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
@@ -55,6 +56,19 @@ export interface AppDeps {
         | 'TRANSPARENCY_LOG_REMOTES'
         | 'ANCHOR_MAX_AGE_HOURS'
         | 'PRESS_DIR'
+        // The owner's backups and exports (anchor/copies.ts).
+        | 'DATABASE_URL'
+        | 'BACKUP_DIR'
+        | 'BACKUP_KEEP'
+        | 'BACKUP_MAX_AGE_HOURS'
+        | 'STATE_DIR'
+        | 'BACKUP_AGE_RECIPIENTS'
+        | 'BACKUP_S3_ENDPOINT'
+        | 'BACKUP_S3_REGION'
+        | 'BACKUP_S3_BUCKET'
+        | 'BACKUP_S3_PREFIX'
+        | 'BACKUP_S3_ACCESS_KEY_ID'
+        | 'BACKUP_S3_SECRET_ACCESS_KEY'
       >
     > &
     FilesConfig;
@@ -172,5 +186,6 @@ export async function buildApp({
     remotes: config.TRANSPARENCY_LOG_REMOTES?.length ?? 0,
     ...(config.ANCHOR_MAX_AGE_HOURS ? { maxAgeHours: config.ANCHOR_MAX_AGE_HOURS } : {}),
   });
+  copyRoutes(app, { db, config });
   return app;
 }
