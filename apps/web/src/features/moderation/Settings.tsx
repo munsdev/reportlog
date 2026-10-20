@@ -52,14 +52,15 @@ function Archive() {
   const qc = useQueryClient();
   const query = useQuery(archiveQuery);
   const set = useMutation({
-    mutationFn: (published: boolean | null) => call(setArchiveSwitch, { body: { published } }),
+    mutationFn: (body: { published?: boolean | null; distribution?: boolean | null }) =>
+      call(setArchiveSwitch, { body }),
     onSuccess: (d) => {
       qc.setQueryData(archiveQuery.queryKey, d);
       void qc.invalidateQueries({ queryKey: ['board'] });
     },
   });
   if (!query.data) return null;
-  const { published, stored } = query.data;
+  const { published, stored, distribution, distribution_stored } = query.data;
   return (
     <Section title="The public archive">
       <p>
@@ -78,10 +79,33 @@ function Archive() {
         className="self-start"
         disabled={set.isPending}
         onClick={() => {
-          set.mutate(!published);
+          set.mutate({ published: !published });
         }}
       >
         {published ? 'Stop publishing the archive' : 'Publish the archive'}
+      </Button>
+      <h3 className="font-semibold">Downloads of the whole archive</h3>
+      <p>
+        {distribution
+          ? 'Anybody who can read the board can also download it as a spreadsheet, and download each logbook’s published chain file.'
+          : !published && distribution_stored === true
+            ? 'Downloads are allowed, but nothing is offered while the archive is not published.'
+            : 'Nobody can download the board as a spreadsheet or a logbook’s published chain file. Reports are read on the board one page at a time.'}
+        {distribution_stored === null ? ' Nobody has chosen, which means no downloads.' : ''}
+      </p>
+      <p className="text-sm text-ink-alt">
+        A download is a copy that leaves this site for good, so this is off until somebody chooses
+        it. Your own backups and archive exports are not affected.
+      </p>
+      <Button
+        variant="secondary"
+        className="self-start"
+        disabled={set.isPending}
+        onClick={() => {
+          set.mutate({ distribution: distribution_stored !== true });
+        }}
+      >
+        {distribution_stored === true ? 'Stop offering downloads' : 'Offer downloads'}
       </Button>
     </Section>
   );

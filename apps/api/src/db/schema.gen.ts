@@ -484,6 +484,11 @@ export interface ModerationLog {
 }
 
 export interface ModerationSettings {
+  /**
+   * May the archive be copied in bulk (the spreadsheet, the published chain file). NULL = nobody chose, which is OFF. Never sealed. Asked after the public-archive switch, never instead of it.
+   */
+  distribution_enabled: boolean | null;
+  distribution_set_by: string | null;
   id: Generated<boolean>;
   public_archive_enabled: boolean | null;
   public_archive_set_by: string | null;

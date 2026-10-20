@@ -29,6 +29,9 @@
  * anchors are left behind, and the change has to be published beside them
  * (`reset-marker`).
  */
+import { createWriteStream } from 'node:fs';
+import { rename, rm, stat } from 'node:fs/promises';
+import { once } from 'node:events';
 import type { ChainHead, ReportFields, SealedReport } from '@reportlog/seal';
 import { sql } from 'kysely';
 import type { Transaction } from 'kysely';
@@ -201,7 +204,35 @@ async function insertOrder(db: Database, tables: readonly string[]): Promise<str
 
 // ── export ───────────────────────────────────────────────────────────────
 
-export async function exportArchive(db: Database): Promise<Archive> {
+const NOTE =
+  "A logical export of a ReportLog archive. Not a backup. Import it with the same deployment's CONTACT_KEY, or every stored address stays unreadable.";
+
+/** Rows read from the database at a time. Memory is this many rows, never the archive. */
+const BATCH = 500;
+
+/** Where the export's text goes, a piece at a time. Resolves when it may take more. */
+export type Sink = (chunk: string) => Promise<void>;
+
+export interface ArchiveSummary {
+  reports: number;
+  /** Rows of each carried table. */
+  tables: Record<string, number>;
+  anchors: number;
+  left_out: string[];
+}
+
+/**
+ * THE EXPORT, WRITTEN AS IT IS READ. An archive grows without limit, and an
+ * export built as one object in memory and stringified at the end needs the
+ * whole archive in memory twice: the day it matters most (moving a large
+ * archive off a failing server) is the day it would run out. So rows are
+ * read through a cursor, a batch at a time, and written straight out; the
+ * sink's promise is how a slow disk or a slow download holds the reading back.
+ *
+ * The text is exactly the JSON of an `Archive`: `importArchive` reads it
+ * unchanged, and `exportArchive` below is this, collected.
+ */
+export async function writeArchive(db: Database, write: Sink): Promise<ArchiveSummary> {
   const all = await tablesOf(db);
   // Read in one transaction, so the export is one moment of the archive.
   return db
@@ -212,34 +243,74 @@ export async function exportArchive(db: Database): Promise<Archive> {
         db,
         all.filter((t) => !(t in EXCLUDED)),
       );
-      const tables: Record<string, TableDump> = {};
+      const summary: ArchiveSummary = {
+        reports: 0,
+        tables: {},
+        anchors: 0,
+        left_out: Object.keys(EXCLUDED),
+      };
+      const j = (v: unknown) => JSON.stringify(v);
+      await write(
+        `{"reportlog_archive":${j(ARCHIVE_FORMAT)},"exported_at":${j(new Date().toISOString())},"note":${j(NOTE)},"order":${j(order)},"tables":{`,
+      );
+
+      let firstTable = true;
       for (const t of order.filter((x) => x !== 'reports')) {
         const columns = await columnsOf(trx, t);
         const pk = await primaryKey(trx, t);
-        const order = pk.length ? sql.raw(pk.map((c) => `"${c.name}"`).join(', ')) : sql.raw('1');
-        const rows = await sql<
-          Record<string, Value>
-        >`SELECT * FROM ${sql.table(t)} ORDER BY ${order}`.execute(trx);
-        tables[t] = { columns, rows: rows.rows.map(dumpRow) };
+        const by = pk.length ? sql.raw(pk.map((c) => `"${c.name}"`).join(', ')) : sql.raw('1');
+        await write(`${firstTable ? '' : ','}${j(t)}:{"columns":${j(columns)},"rows":[`);
+        firstTable = false;
+        let n = 0;
+        await sql`DECLARE archive_rows NO SCROLL CURSOR FOR SELECT * FROM ${sql.table(t)} ORDER BY ${by}`.execute(
+          trx,
+        );
+        for (;;) {
+          const batch = await sql<
+            Record<string, Value>
+          >`FETCH ${sql.raw(String(BATCH))} FROM archive_rows`.execute(trx);
+          if (!batch.rows.length) break;
+          let text = '';
+          for (const row of batch.rows) text += `${n++ ? ',' : ''}${j(dumpRow(row))}`;
+          await write(text);
+        }
+        await sql`CLOSE archive_rows`.execute(trx);
+        await write(']}');
+        summary.tables[t] = n;
       }
 
-      const reports: ArchivedReport[] = [];
-      const rows = await sealedReportRows(trx).orderBy('r.id').execute();
-      for (const row of rows) {
-        const sealed = rebuildSealedObject(toStoredRecord(row), await manifestFor(trx, row.id));
-        // The row as the reports table holds it, without the join's columns.
-        const own = without(row, ['logbook_slug', 'logbook_title', 'logbook_form']);
-        reports.push({
-          id: row.id,
-          logbook_id: row.logbook_id,
-          form_id: row.form_id,
-          content_hash: row.content_hash,
-          chain_hash: row.chain_hash,
-          sealed,
-          row: dumpRow(own),
-        });
+      // Reports by id, a batch at a time, each sealed object rebuilt the way
+      // the verifier rebuilds it.
+      await write('},"reports":[');
+      let after = 0;
+      for (;;) {
+        const rows = await sealedReportRows(trx)
+          .where('r.id', '>', after)
+          .orderBy('r.id')
+          .limit(BATCH)
+          .execute();
+        if (!rows.length) break;
+        let text = '';
+        for (const row of rows) {
+          const sealed = rebuildSealedObject(toStoredRecord(row), await manifestFor(trx, row.id));
+          // The row as the reports table holds it, without the join's columns.
+          const own = without(row, ['logbook_slug', 'logbook_title', 'logbook_form']);
+          const report: ArchivedReport = {
+            id: row.id,
+            logbook_id: row.logbook_id,
+            form_id: row.form_id,
+            content_hash: row.content_hash,
+            chain_hash: row.chain_hash,
+            sealed,
+            row: dumpRow(own),
+          };
+          text += `${summary.reports++ ? ',' : ''}${j(report)}`;
+          after = row.id;
+        }
+        await write(text);
       }
 
+      // The anchors are one row a day: small enough to hold.
       const anchors = await trx.selectFrom('chain_anchors').selectAll().orderBy('id').execute();
       const previous_chain_anchors: ArchivedAnchor[] = [];
       for (const a of anchors) {
@@ -250,23 +321,65 @@ export async function exportArchive(db: Database): Promise<Archive> {
           .execute();
         previous_chain_anchors.push({ anchor: dumpRow(a), heads: heads.map(dumpRow) });
       }
+      summary.anchors = previous_chain_anchors.length;
 
       const list = await currentHeads(trx);
-      return {
-        reportlog_archive: ARCHIVE_FORMAT,
-        exported_at: new Date().toISOString(),
-        note: "A logical export of a ReportLog archive. Not a backup. Import it with the same deployment's CONTACT_KEY, or every stored address stays unreadable.",
-        order,
-        tables,
-        reports,
-        left_out: { ...EXCLUDED },
-        previous_chain_heads: Object.fromEntries(
-          list.filter((h) => h.reports > 0).map((h) => [h.logbook, h.head]),
-        ),
-        previous_chain_list: list,
-        previous_chain_anchors,
-      };
+      await write(
+        `],"left_out":${j({ ...EXCLUDED })},"previous_chain_heads":${j(
+          Object.fromEntries(list.filter((h) => h.reports > 0).map((h) => [h.logbook, h.head])),
+        )},"previous_chain_list":${j(list)},"previous_chain_anchors":${j(previous_chain_anchors)}}\n`,
+      );
+      return summary;
     });
+}
+
+/** The export as one object, for tests and small archives. The same text, collected. */
+export async function exportArchive(db: Database): Promise<Archive> {
+  const parts: string[] = [];
+  await writeArchive(db, (chunk) => {
+    parts.push(chunk);
+    return Promise.resolve();
+  });
+  return JSON.parse(parts.join('')) as Archive;
+}
+
+/**
+ * The export to a file, written under a `.partial` name and renamed only
+ * once complete, so a half-written export never looks like a whole one.
+ * Readable by this user only: it holds every account and the contact details
+ * under their keys.
+ */
+export async function writeArchiveFile(
+  db: Database,
+  file: string,
+): Promise<ArchiveSummary & { bytes: number }> {
+  const partial = `${file}.partial`;
+  const out = createWriteStream(partial, { mode: 0o600 });
+  // A disk that fills or a file that cannot be written: every wait below
+  // races this, so the export's transaction stops rather than waiting for a
+  // 'drain' that will never come.
+  const failed = new Promise<never>((_resolve, reject) => {
+    out.once('error', reject);
+  });
+  failed.catch(() => undefined);
+  const sink: Sink = async (chunk) => {
+    if (!out.write(chunk)) await Promise.race([once(out, 'drain'), failed]);
+  };
+  try {
+    const summary = await Promise.race([writeArchive(db, sink), failed]);
+    await Promise.race([
+      new Promise<void>((resolve) => {
+        out.end(resolve);
+      }),
+      failed,
+    ]);
+    await rename(partial, file);
+    return { ...summary, bytes: (await stat(file)).size };
+  } catch (err) {
+    out.destroy();
+    await rm(partial, { force: true });
+    throw err;
+  }
 }
 
 // ── import ───────────────────────────────────────────────────────────────

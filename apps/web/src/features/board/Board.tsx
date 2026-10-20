@@ -63,7 +63,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             logbooks={meta.data.logbooks}
             search={search}
           />
-          <Results search={search} logbooks={meta.data.logbooks} />
+          <Results search={search} logbooks={meta.data.logbooks} downloads={meta.data.downloads} />
         </>
       ) : null}
     </Page>
@@ -215,12 +215,24 @@ function optionsOf(q: FormQuestion): { value: string; label: string }[] | null {
   return null;
 }
 
-function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLogbook[] }) {
+function Results({
+  search,
+  logbooks,
+  downloads,
+}: {
+  search: BoardSearch;
+  logbooks: BoardLogbook[];
+  /** The distribution switch: without it the server refuses the spreadsheet. */
+  downloads: boolean;
+}) {
   const navigate = useNavigate();
   const query = useQuery(boardReportsQuery(search));
   if (query.isPending) return <p role="status">Reading the reports…</p>;
   if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
   if (!query.data.published) return <Alert>{query.data.reason}</Alert>;
+  // A thin place: the server sent no reports and no count, so there is
+  // nothing to draw but its sentence.
+  if ('withheld' in query.data) return <Alert>{query.data.reason}</Alert>;
   const { reports, total, page, page_size: size } = query.data;
   const narrowed =
     Boolean(search.q) || Boolean(search.logbook) || Object.keys(search.f ?? {}).length > 0;
@@ -242,7 +254,7 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
                 total > size ? `, page ${String(page)} of ${String(Math.ceil(total / size))}` : ''
               }.`}
         </p>
-        {total > 0 ? (
+        {total > 0 && downloads ? (
           <a className="text-sm underline" href={`${BOARD_CSV_PATH}?${csv.toString()}`} download>
             Download these as a spreadsheet (CSV)
           </a>
@@ -298,7 +310,9 @@ function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string
           to="/board/$ref"
           params={{ ref: r.public_ref }}
           className="self-start underline"
-          aria-label={`Read ${r.public_ref} in full`}
+          // The visible words first, then which report: an accessible name
+          // must start with what is on screen (WCAG 2.5.3).
+          aria-label={`Read in full: ${r.public_ref}`}
         >
           Read in full
         </Link>

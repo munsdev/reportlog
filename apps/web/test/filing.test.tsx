@@ -104,7 +104,11 @@ describe('the cards', () => {
     max_document_pages: 40,
   };
 
-  function onDoor(fields: FormQuestion[] = QS, cards?: RouterHistory) {
+  function onDoor(
+    fields: FormQuestion[] = QS,
+    cards?: RouterHistory,
+    sent: Record<string, unknown> = { pending: true },
+  ) {
     // jsdom lays nothing out, so there is nowhere to scroll to.
     vi.stubGlobal('scrollTo', vi.fn());
     const answers: Record<string, unknown> = {
@@ -123,7 +127,7 @@ describe('the cards', () => {
       },
       'GET /api/publication-card': card,
       'GET /api/intake-switch': { open: true },
-      'POST /api/reports': { pending: true },
+      'POST /api/reports': sent,
       'GET /api/uploads/config': UPLOADS,
     };
     vi.stubGlobal(
@@ -222,6 +226,28 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByRole('heading', { name: 'Check your answers' })).toBeInTheDocument();
     expect(calls.filter((c) => c.includes('/api/uploads'))).toEqual([]);
+  });
+
+  it('names the files the server dropped at Send because the logbook stopped taking files', async () => {
+    const user = userEvent.setup();
+    onDoor(
+      [{ key: 'what', kind: 'short_text', label: 'What?', required: true, settings: {} }],
+      undefined,
+      { pending: true, files_dropped: ['queue.jpg', 'notes.pdf'] },
+    );
+    await user.click(await screen.findByRole('button', { name: 'Start' }));
+    await user.type(screen.getByRole('textbox', { name: 'What?' }), 'x');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
+    await user.click(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
+    expect(screen.getByText('Your files were not sent with your report')).toBeInTheDocument();
+    expect(screen.getByText(/this logbook stopped taking files/)).toBeInTheDocument();
+    expect(screen.getByText('queue.jpg')).toBeInTheDocument();
+    expect(screen.getByText('notes.pdf')).toBeInTheDocument();
   });
 
   describe('one history entry per card', () => {

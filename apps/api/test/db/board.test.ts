@@ -9,6 +9,7 @@
 import { createHash } from 'node:crypto';
 import type { FieldDefinition } from '@reportlog/fields';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { setDistribution } from '../../src/board/publication.ts';
 import { checkText, parseExpression, renderText, valueId } from '../../src/board/figures.ts';
 import { fileEntry } from '../../src/lists/entries.ts';
 import { createFromTemplate } from '../../src/lists/manage.ts';
@@ -59,6 +60,9 @@ const refs = async (query: string) =>
 beforeAll(async () => {
   h = await moderationHarness();
   await resetModerationSettings(h.db);
+  // The spreadsheet is a bulk download: it needs the distribution switch
+  // (decision 11), tested in publication-switch.test.ts.
+  await setDistribution(h.db, true, 'admin@example.org');
   lb = await launchedLogbook(h.db, Q);
   // The operator marks two questions as filters, after launch (allowed: it is
   // delivery, not meaning). `when` and `where` are deliberately NOT marked.

@@ -400,6 +400,47 @@ export async function releaseDraft(
   return Number(out.numUpdatedRows);
 }
 
+/**
+ * Why a dropped file is not in the report, in the words the confirmation
+ * page puts after its name ("photo.jpg: …").
+ */
+export const FROZEN_DROP =
+  'this logbook stopped taking files before the report was sent, so the file was not kept';
+
+/**
+ * SEND, ON A FROZEN LOGBOOK (decision 17, as legacy did): the files staged
+ * before the freeze are dropped rather than released. Each is tied to the
+ * submission all the same, marked refused with the reason, so the
+ * confirmation page names it (`fileOutcome`), and its bytes are queued for
+ * deletion now: a file the archive will never hold is not one to keep.
+ * Returns the names, for the answer to Send.
+ */
+export async function dropFrozenDraft(
+  db: Kysely<DB>,
+  input: { draft: string; submissionId: number; logbookId: number; expiresAt: Date },
+): Promise<string[]> {
+  const rows = await db
+    .updateTable('upload_slots')
+    .set({
+      submission_id: input.submissionId,
+      expires_at: input.expiresAt,
+      status: 'rejected',
+      status_detail: FROZEN_DROP,
+      dek_wrapped: null,
+      meta_enc: null,
+      claimed_at: null,
+    })
+    .where('draft_hash', '=', input.draft)
+    .where('logbook_id', '=', input.logbookId)
+    .where('released_at', 'is', null)
+    .where('promoted_at', 'is', null)
+    .where('status', 'in', ['pending', 'uploaded'])
+    .returning(['id', 'declared_name', 'staging_key'])
+    .execute();
+  for (const r of rows) await queueDeletion(db, 'staging', r.staging_key);
+  return rows.sort((a, b) => a.id - b.id).map((r) => r.declared_name || 'A file');
+}
+
 /** Whose files: a sent submission, an evidence request, or (an intake account's) a draft. */
 export type Source = { submissionId: number } | { evidenceRequestId: number } | { draft: string };
 const sourceIs = (where: Source) =>

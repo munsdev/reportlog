@@ -22,7 +22,12 @@ import { boardCsv, boardLogbooks, boardPage, boardReport } from './board.ts';
 import type { BoardQuery } from './board.ts';
 import { allConsentTexts } from './consentTexts.ts';
 import { catalogue } from './figures.ts';
-import { PUBLICATION_OFF, publicArchiveAvailable } from './publication.ts';
+import {
+  DISTRIBUTION_OFF,
+  PUBLICATION_OFF,
+  distributionAvailable,
+  publicArchiveAvailable,
+} from './publication.ts';
 import { cachedStats } from './stats.ts';
 
 export interface BoardRouteDeps {
@@ -57,7 +62,11 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
 
   route(app, C.getBoard, async () => {
     if (!(await publicArchiveAvailable(db))) return off();
-    return { published: true as const, logbooks: await boardLogbooks(db) };
+    return {
+      published: true as const,
+      logbooks: await boardLogbooks(db),
+      downloads: await distributionAvailable(db),
+    };
   });
 
   route(app, C.listBoardReports, async ({ query }) => {
@@ -84,6 +93,16 @@ export function boardRoutes(app: FastifyInstance, deps: BoardRouteDeps): void {
   // board's, by the same zod schema.
   app.get(C.BOARD_CSV_PATH, async (request, reply) => {
     const parsed = C.BoardQuery.safeParse(request.query);
+    if (!(await publicArchiveAvailable(db))) return reply.status(404).send(off());
+    // The whole board in one file is the archive carried off in bulk: it
+    // also needs the distribution switch, which is off until an
+    // administrator says yes (decision 11). Asked after the archive switch,
+    // so a closed archive still says that first.
+    if (!(await distributionAvailable(db))) {
+      return reply
+        .status(404)
+        .send({ error: { code: 'not_distributed', message: DISTRIBUTION_OFF } });
+    }
     const csv = await boardCsv(db, boardQuery(parsed.success ? parsed.data : {}));
     if (csv === null) return reply.status(404).send(off());
     return reply

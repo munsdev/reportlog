@@ -40,7 +40,14 @@ export const submitReport = defineRoute({
     /** From POST /api/uploads/draft: the files staged while this was written. */
     draft_token: z.string().optional(),
   }),
-  response: z.object({ pending: z.literal(true) }),
+  response: z.object({
+    pending: z.literal(true),
+    /**
+     * Files staged before the logbook's uploads were frozen, dropped at Send
+     * (decision 17). Present only when there were any. The report was sent.
+     */
+    files_dropped: z.array(z.string()).optional(),
+  }),
 });
 
 /**

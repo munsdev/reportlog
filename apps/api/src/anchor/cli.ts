@@ -13,10 +13,10 @@
  * Exit codes: 0 fine, 1 broken, 2 the anchor refused (a logbook vanished or a
  * chain got shorter: not something to retry, something to look at).
  */
-import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { loadConfig } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
-import { exportArchive, importArchive } from './archive.ts';
+import { importArchive, writeArchiveFile } from './archive.ts';
 import type { Archive } from './archive.ts';
 import { anchorDoctorCheck, anchorNow, logSettingsFrom } from './job.ts';
 import { publishReset, resetRecord } from './reset.ts';
@@ -48,17 +48,16 @@ async function main(argv: readonly string[]): Promise<number> {
       case 'export': {
         const file = args[0];
         if (!file) break;
-        const archive = await exportArchive(db);
-        writeFileSync(file, `${JSON.stringify(archive)}\n`, { mode: 0o600 });
-        say(`  reports      ${String(archive.reports.length)}`);
-        for (const [t, d] of Object.entries(archive.tables))
-          say(`  ${t.padEnd(26)} ${String(d.rows.length)}`);
+        // Streamed to the file as it is read: an archive of any size.
+        const out = await writeArchiveFile(db, file);
+        say(`  reports      ${String(out.reports)}`);
+        for (const [t, n] of Object.entries(out.tables)) say(`  ${t.padEnd(26)} ${String(n)}`);
         say(
-          `  anchors      ${String(archive.previous_chain_anchors.length)} (restored only if every fingerprint replays identically)`,
+          `  anchors      ${String(out.anchors)} (restored only if every fingerprint replays identically)`,
         );
-        say(`  left out    ${Object.keys(archive.left_out).join(', ')}`);
+        say(`  left out    ${out.left_out.join(', ')}`);
         say(
-          `\nwritten to ${file} (${String(Math.round(statSync(file).size / 1024))} KB). It holds the contact details`,
+          `\nwritten to ${file} (${String(Math.round(out.bytes / 1024))} KB). It holds the contact details`,
         );
         say('still under their keys, and every account: keep it like the database itself.');
         return 0;

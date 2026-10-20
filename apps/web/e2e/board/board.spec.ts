@@ -67,7 +67,7 @@ test.describe('the board', () => {
     await expect(
       page.getByRole('status').filter({ hasText: '1 published report match' }),
     ).toBeVisible();
-    await page.getByRole('link', { name: `Read ${ref} in full` }).click();
+    await page.getByRole('link', { name: `Read in full: ${ref}` }).click();
     await expect(page.getByRole('heading', { level: 1, name: `Report ${ref}` })).toBeVisible();
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
     await page.getByRole('link', { name: 'Check it has not been changed' }).click();
@@ -127,5 +127,38 @@ test.describe('the moderation screens', () => {
     await expect(
       page.getByRole('region', { name: 'Words that ask for a second read' }),
     ).toContainText(/Using the list that ships|this site’s own list|No keyword matching/);
+  });
+
+  test('downloads are off until an administrator offers them, and the board follows', async ({
+    page,
+  }, info) => {
+    // A site-wide switch: one project turns it, or desktop and phone would
+    // flip it under each other.
+    test.skip(info.project.name !== 'chromium', 'a site-wide switch, turned by one project');
+    const csvLink = page.getByRole('link', { name: 'Download these as a spreadsheet (CSV)' });
+    await page.goto('/moderate/settings');
+    const archive = page.getByRole('region', { name: 'The public archive' });
+    await expect(archive).toContainText('Nobody has chosen, which means no downloads.');
+    expect((await page.request.get('/api/board/reports.csv')).status()).toBe(404);
+    await page.goto('/board');
+    await expect(page.getByRole('status').filter({ hasText: 'published report' })).toBeVisible();
+    await expect(csvLink).toHaveCount(0);
+
+    await page.goto('/moderate/settings');
+    await archive.getByRole('button', { name: 'Offer downloads' }).click();
+    await expect(archive.getByRole('button', { name: 'Stop offering downloads' })).toBeVisible();
+    try {
+      await page.goto('/board');
+      await expect(csvLink).toBeVisible();
+      const csv = await page.request.get('/api/board/reports.csv');
+      expect(csv.status()).toBe(200);
+      expect(csv.headers()['content-type']).toMatch(/text\/csv/);
+    } finally {
+      // Put back as the run found it, so a retry starts from "nobody chose".
+      await page.request.put('/api/admin/moderation/archive', { data: { distribution: null } });
+    }
+    await page.goto('/board');
+    await expect(page.getByRole('status').filter({ hasText: 'published report' })).toBeVisible();
+    await expect(csvLink).toHaveCount(0);
   });
 });

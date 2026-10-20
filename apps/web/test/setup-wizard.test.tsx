@@ -116,10 +116,20 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
           logbook: { id: 1, slug: 'workplace', title: 'Workplace' },
         });
       case 'GET /api/admin/moderation/archive':
-        return ok({ published: state.published !== false, stored: state.published });
+        return ok({
+          published: state.published !== false,
+          stored: state.published,
+          distribution: false,
+          distribution_stored: null,
+        });
       case 'PUT /api/admin/moderation/archive':
         state.published = b.published as boolean;
-        return ok({ published: state.published, stored: state.published });
+        return ok({
+          published: state.published,
+          stored: state.published,
+          distribution: false,
+          distribution_stored: null,
+        });
       case 'GET /api/admin/files/settings':
         return ok(files());
       case 'PUT /api/admin/files/settings':

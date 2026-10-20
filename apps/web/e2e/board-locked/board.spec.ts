@@ -200,7 +200,7 @@ test('with the password, a reader walks the board, a report, the numbers and the
   await expect(
     v.page.getByRole('status').filter({ hasText: '1 published report match' }),
   ).toBeVisible();
-  await v.page.getByRole('link', { name: `Read ${ref} in full` }).click();
+  await v.page.getByRole('link', { name: `Read in full: ${ref}` }).click();
   await expect(v.page.getByRole('heading', { level: 1, name: `Report ${ref}` })).toBeVisible();
   await expect(v.page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
 

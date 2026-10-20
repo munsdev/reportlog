@@ -76,6 +76,14 @@ beforeAll(async () => {
   tsa = await standInTsa();
   tmp = mkdtempSync(join(tmpdir(), 'chain-files-'));
 
+  // The published chain file is a bulk download, so it needs the
+  // distribution switch on (decision 11); publication-switch.test.ts tests
+  // the switch itself.
+  await db
+    .updateTable('moderation_settings')
+    .set({ distribution_enabled: true })
+    .where('id', '=', true)
+    .execute();
   lb = await launchedLogbook(db);
   for (const [what, status, may] of [
     ['approved and public', 'valid', true],

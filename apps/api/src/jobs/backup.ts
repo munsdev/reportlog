@@ -27,6 +27,7 @@ import { mkdir, readdir, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import type { Config } from '../config.ts';
 import type { JobContext, JobOutcome } from './context.ts';
 import {
   ageRecipients,
@@ -44,6 +45,27 @@ const run = promisify(execFile);
 
 /** The repository root: dumps may not go anywhere under it. */
 export const CODE_ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
+
+/**
+ * What a backup reads: the job runner's context, or the owner's screen
+ * (anchor/copies.ts), which has no mailer and no command line of its own.
+ */
+export type BackupConfig = Pick<
+  Config,
+  | 'DATABASE_URL'
+  | 'BACKUP_DIR'
+  | 'BACKUP_KEEP'
+  | 'BACKUP_MAX_AGE_HOURS'
+  | 'STATE_DIR'
+  | 'BACKUP_AGE_RECIPIENTS'
+  | 'BACKUP_S3_ENDPOINT'
+  | 'BACKUP_S3_REGION'
+  | 'BACKUP_S3_BUCKET'
+  | 'BACKUP_S3_PREFIX'
+  | 'BACKUP_S3_ACCESS_KEY_ID'
+  | 'BACKUP_S3_SECRET_ACCESS_KEY'
+>;
+export type BackupContext = Pick<JobContext, 'log' | 'args' | 'now'> & { config: BackupConfig };
 
 export interface BackupState {
   local?: { at: string; name: string; bytes: number; objects: number };
@@ -81,7 +103,7 @@ const firstLine = (err: unknown) => {
   return text.trim().split('\n')[0] ?? '';
 };
 
-export async function runBackup(ctx: JobContext, uploader?: Uploader): Promise<JobOutcome> {
+export async function runBackup(ctx: BackupContext, uploader?: Uploader): Promise<JobOutcome> {
   const { config } = ctx;
   const where = checkDir(config.BACKUP_DIR, CODE_ROOT);
   if (!where.ok) return { ok: false, summary: `${where.why} Put the backups somewhere else.` };
@@ -199,7 +221,7 @@ export async function runBackup(ctx: JobContext, uploader?: Uploader): Promise<J
   };
 }
 
-async function check(ctx: JobContext, dir: string): Promise<JobOutcome> {
+async function check(ctx: BackupContext, dir: string): Promise<JobOutcome> {
   let names: string[] = [];
   try {
     names = await readdir(dir);

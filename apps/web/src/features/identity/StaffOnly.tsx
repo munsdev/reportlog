@@ -16,6 +16,7 @@ import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 
 const WHO: Partial<Record<SystemRole, string>> = {
+  owner: 'the owner',
   admin: 'an administrator',
   moderator: 'a moderator',
   access_manager: 'an access manager',

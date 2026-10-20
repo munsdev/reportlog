@@ -2,7 +2,8 @@
  * Files in the filing flow: what C's Send and confirmation call.
  *
  *   Send          `releaseForSubmission` ties the draft's files to the
- *                 submission and releases them to the worker
+ *                 submission and releases them to the worker, or, when the
+ *                 logbook's uploads were frozen since, drops them and says so
  *   the link      `stillPreparing` says whether to wait; `sealFiles` gives the
  *                 manifest for appendReportVersion and links exactly those
  *                 rows afterwards, in the same transaction
@@ -19,6 +20,8 @@ import { manifestOf, nextOrdinal, promote } from './promote.ts';
 import {
   clearedSlots,
   draftFrom,
+  dropFrozenDraft,
+  filesFrozen,
   inFlightSlots,
   releaseDraft,
   slotsOfSubmission,
@@ -26,19 +29,39 @@ import {
 import type { Source } from './slots.ts';
 import { CONFIRM_WAIT_MS } from './worker.ts';
 
-/** Send: the files staged under this draft now belong to this submission. */
+export interface Released {
+  /** Files handed to the worker. */
+  released: number;
+  /** The names of files dropped because the logbook's uploads are frozen. */
+  dropped: string[];
+}
+
+/**
+ * Send: the files staged under this draft now belong to this submission.
+ *
+ * UNLESS THE LOGBOOK'S UPLOADS WERE FROZEN while the report was written. The
+ * freeze stops new uploads (slots.ts); a file staged before it would
+ * otherwise ride in with a report sent after it, which is the one thing a
+ * freeze is for. So they are dropped here, at Send, as legacy dropped the
+ * draft token, and named, so the reporter is told rather than finding out.
+ * Asked inside the transaction that records the submission.
+ */
 export async function releaseForSubmission(
   db: Kysely<DB>,
   input: { draftToken: unknown; submissionId: number; logbookId: number; expiresAt: Date },
-): Promise<number> {
+): Promise<Released> {
   if (input.draftToken === undefined || input.draftToken === null || input.draftToken === '')
-    return 0;
-  return releaseDraft(db, {
+    return { released: 0, dropped: [] };
+  const which = {
     draft: draftFrom(input.draftToken),
     submissionId: input.submissionId,
     logbookId: input.logbookId,
     expiresAt: input.expiresAt,
-  });
+  };
+  if (await filesFrozen(db, input.logbookId)) {
+    return { released: 0, dropped: await dropFrozenDraft(db, which) };
+  }
+  return { released: await releaseDraft(db, which), dropped: [] };
 }
 
 /**
