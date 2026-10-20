@@ -153,93 +153,104 @@ describe.skipIf(toolsMissing)('a coordinator files a batch after the logbook fro
   });
 });
 
-describe.skipIf(toolsMissing)('a reporter answers an evidence request after the logbook froze', () => {
-  async function asked() {
-    const lb = await launchedLogbook(h.db, QS);
-    const { row } = await fileReport(h.db, lb, { what: 'Queue at six.', has: 'yes', of: 'a photo' });
-    await h.db
-      .insertInto('report_heads')
-      .values({ thread_id: row.thread_id, current_report_id: row.id })
-      .execute();
-    await h.db.transaction().execute((trx) =>
-      sealContact(trx, RING, {
+describe.skipIf(toolsMissing)(
+  'a reporter answers an evidence request after the logbook froze',
+  () => {
+    async function asked() {
+      const lb = await launchedLogbook(h.db, QS);
+      const { row } = await fileReport(h.db, lb, {
+        what: 'Queue at six.',
+        has: 'yes',
+        of: 'a photo',
+      });
+      await h.db
+        .insertInto('report_heads')
+        .values({ thread_id: row.thread_id, current_report_id: row.id })
+        .execute();
+      await h.db.transaction().execute((trx) =>
+        sealContact(trx, RING, {
+          threadId: row.thread_id,
+          email: address('freeze-rep'),
+          filedBy: 'reporter',
+        }),
+      );
+      await setPermission(h.db, {
         threadId: row.thread_id,
-        email: address('freeze-rep'),
-        filedBy: 'reporter',
-      }),
-    );
-    await setPermission(h.db, {
-      threadId: row.thread_id,
-      permission: 'evidence_request',
-      granted: true,
+        permission: 'evidence_request',
+        granted: true,
+      });
+      const ask = await createRequest(h.db, row.thread_id, {
+        message: 'Could you send the photo you mentioned?',
+        by: 'mod@example.org',
+      });
+      if (!ask.ok) throw new Error(ask.reason);
+      const slot = await h.app.inject({
+        method: 'POST',
+        url: `/api/evidence/${ask.token}/files`,
+        payload: { name: 'queue.jpg', type: 'image/jpeg', size: photo.length },
+      });
+      expect(slot.statusCode).toBe(200);
+      const put = await h.app.inject({
+        method: 'PUT',
+        url: `/api/evidence/${ask.token}/files/${slot.json<{ slot_token: string }>().slot_token}`,
+        headers: { 'content-type': 'image/jpeg' },
+        payload: photo,
+      });
+      expect(put.statusCode).toBe(200);
+      await workOnce(h.files);
+      return { lb, row, token: ask.token, requestId: ask.request.id };
+    }
+
+    it('nothing is added, the reporter is told which files, and the link is not spent', async () => {
+      const { lb, row, token, requestId } = await asked();
+      await L.setFilesFrozen(h.db, lb.id, true);
+
+      const sent = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
+      expect(sent.statusCode).toBe(409);
+      expect(sent.json<{ error: { code: string; message: string } }>().error).toEqual({
+        code: 'files_frozen',
+        message:
+          'This logbook stopped taking files before you sent this one, so it was not kept: queue.jpg. Nothing was added to your report.',
+      });
+
+      // No new version: the report's head is still the one asked about.
+      const head = await h.db
+        .selectFrom('report_heads')
+        .select('current_report_id')
+        .where('thread_id', '=', row.thread_id)
+        .executeTakeFirstOrThrow();
+      expect(head.current_report_id).toBe(row.id);
+      // Not spent by an answer that added nothing.
+      const req = await h.db
+        .selectFrom('evidence_requests')
+        .select(['used_at', 'used_report_id'])
+        .where('id', '=', requestId)
+        .executeTakeFirstOrThrow();
+      expect(req).toEqual({ used_at: null, used_report_id: null });
+      expect((await redeem(h.db, token)).ok).toBe(true);
+
+      // The drop stands, and the bytes go.
+      const after = await dropped({ logbookId: lb.id });
+      expect(after.slots).toEqual([
+        expect.objectContaining({
+          status: 'rejected',
+          status_detail: FROZEN_DROP,
+          dek_wrapped: null,
+        }),
+      ]);
+      expect(after.queued).toEqual(after.keys);
+
+      // Sending again finds nothing to send, rather than the dropped file.
+      const again = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
+      expect(again.statusCode).toBe(400);
+      expect(again.json<{ error: { code: string } }>().error.code).toBe('nothing_sent');
     });
-    const ask = await createRequest(h.db, row.thread_id, {
-      message: 'Could you send the photo you mentioned?',
-      by: 'mod@example.org',
+
+    it('a logbook that is not frozen takes the answer as before', async () => {
+      const { token } = await asked();
+      const sent = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
+      expect(sent.statusCode).toBe(200);
+      expect(sent.json<{ attached: number }>().attached).toBe(1);
     });
-    if (!ask.ok) throw new Error(ask.reason);
-    const slot = await h.app.inject({
-      method: 'POST',
-      url: `/api/evidence/${ask.token}/files`,
-      payload: { name: 'queue.jpg', type: 'image/jpeg', size: photo.length },
-    });
-    expect(slot.statusCode).toBe(200);
-    const put = await h.app.inject({
-      method: 'PUT',
-      url: `/api/evidence/${ask.token}/files/${slot.json<{ slot_token: string }>().slot_token}`,
-      headers: { 'content-type': 'image/jpeg' },
-      payload: photo,
-    });
-    expect(put.statusCode).toBe(200);
-    await workOnce(h.files);
-    return { lb, row, token: ask.token, requestId: ask.request.id };
-  }
-
-  it('nothing is added, the reporter is told which files, and the link is not spent', async () => {
-    const { lb, row, token, requestId } = await asked();
-    await L.setFilesFrozen(h.db, lb.id, true);
-
-    const sent = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
-    expect(sent.statusCode).toBe(409);
-    expect(sent.json<{ error: { code: string; message: string } }>().error).toEqual({
-      code: 'files_frozen',
-      message:
-        'This logbook stopped taking files before you sent this one, so it was not kept: queue.jpg. Nothing was added to your report.',
-    });
-
-    // No new version: the report's head is still the one asked about.
-    const head = await h.db
-      .selectFrom('report_heads')
-      .select('current_report_id')
-      .where('thread_id', '=', row.thread_id)
-      .executeTakeFirstOrThrow();
-    expect(head.current_report_id).toBe(row.id);
-    // Not spent by an answer that added nothing.
-    const req = await h.db
-      .selectFrom('evidence_requests')
-      .select(['used_at', 'used_report_id'])
-      .where('id', '=', requestId)
-      .executeTakeFirstOrThrow();
-    expect(req).toEqual({ used_at: null, used_report_id: null });
-    expect((await redeem(h.db, token)).ok).toBe(true);
-
-    // The drop stands, and the bytes go.
-    const after = await dropped({ logbookId: lb.id });
-    expect(after.slots).toEqual([
-      expect.objectContaining({ status: 'rejected', status_detail: FROZEN_DROP, dek_wrapped: null }),
-    ]);
-    expect(after.queued).toEqual(after.keys);
-
-    // Sending again finds nothing to send, rather than the dropped file.
-    const again = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
-    expect(again.statusCode).toBe(400);
-    expect(again.json<{ error: { code: string } }>().error.code).toBe('nothing_sent');
-  });
-
-  it('a logbook that is not frozen takes the answer as before', async () => {
-    const { token } = await asked();
-    const sent = await h.app.inject({ method: 'POST', url: `/api/evidence/${token}/send` });
-    expect(sent.statusCode).toBe(200);
-    expect(sent.json<{ attached: number }>().attached).toBe(1);
-  });
-});
+  },
+);

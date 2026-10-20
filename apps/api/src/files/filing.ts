@@ -147,7 +147,8 @@ const REASONS: Readonly<Record<string, string>> = {
 /** The words after a file's name ("photo.jpg: …") when it is not in the report. */
 function notAttachedReason(s: { status: string; status_detail: string | null }): string {
   // An empty detail is no reason at all (and the moderators' record refuses one).
-  if (s.status === 'rejected') return s.status_detail?.trim() ? s.status_detail : 'it was not accepted';
+  if (s.status === 'rejected')
+    return s.status_detail?.trim() ? s.status_detail : 'it was not accepted';
   return REASONS[s.status] ?? s.status;
 }
 

@@ -35,7 +35,8 @@ export function settingProblems(env: NodeJS.ProcessEnv): string[] {
     const raw = env[name];
     if (raw === undefined || raw === '') continue;
     const problems: string[] = [];
-    if (/^(["']).*\1$/s.test(raw.trim())) problems.push('is wrapped in quotes (.env needs it bare)');
+    if (/^(["']).*\1$/s.test(raw.trim()))
+      problems.push('is wrapped in quotes (.env needs it bare)');
     if (raw !== raw.trim()) problems.push('has a space or line break at its start or end');
     else if (/\s/.test(raw)) problems.push('contains a space');
     if (problems.length) out.push(`${name} ${problems.join(', and ')}`);
