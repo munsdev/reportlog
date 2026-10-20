@@ -65,11 +65,20 @@ module.exports = {
     {
       name: 'journalists-never-reach-the-chain',
       comment:
-        'The alert list holds people, not reports. Nothing under journalists may reach the ' +
-        'sealing code or the chain, and being listed grants no access (nothing there reads identity/ roles).',
+        'The alert list and the desk hold people and checked links, not reports. Nothing under journalists may reach the ' +
+        'sealing code or the chain. Being listed grants nothing; only the owner approving a request (vetting.ts) does.',
       severity: 'error',
       from: { path: '^apps/api/src/journalists/' },
       to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
+    },
+    {
+      name: 'journalist-screens-never-reach-the-seal',
+      comment:
+        'The desk and the access request screens show checked links and text, never a sealed ' +
+        'object (review item 13). Nothing under the web journalists feature may reach the seal.',
+      severity: 'error',
+      from: { path: '^apps/web/src/features/journalists/' },
+      to: { path: '^packages/seal/', reachable: true },
     },
     {
       name: 'revocable-permissions-stay-out-of-the-seal',

@@ -205,15 +205,20 @@ export interface CheckedLink {
  * whatever the caller asks. The desk decides who is a vetted journalist; this
  * decides which links one may see.
  */
-export async function checkedLinks(db: Db, keys: LinkKeys): Promise<CheckedLink[]> {
-  const rows = await db
+export async function checkedLinks(
+  db: Db,
+  keys: LinkKeys,
+  /** One page of the desk: these groups only (still checked ones only). */
+  { groupIds }: { groupIds?: readonly number[] } = {},
+): Promise<CheckedLink[]> {
+  if (groupIds && !groupIds.length) return [];
+  let q = db
     .selectFrom('links as l')
     .innerJoin('link_groups as g', 'g.id', 'l.group_id')
     .select(['l.group_id', 'l.entry_id', 'l.value_enc', 'l.value_key', 'g.comment', 'g.checked_at'])
-    .where('g.outcome', '=', 'checked')
-    .orderBy('g.checked_at', 'desc')
-    .orderBy('l.id')
-    .execute();
+    .where('g.outcome', '=', 'checked');
+  if (groupIds) q = q.where('g.id', 'in', groupIds);
+  const rows = await q.orderBy('g.checked_at', 'desc').orderBy('l.id').execute();
   const out = new Map<number, CheckedLink>();
   for (const r of rows) {
     const had = out.get(r.group_id);

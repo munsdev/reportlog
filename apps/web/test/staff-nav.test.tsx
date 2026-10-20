@@ -56,11 +56,17 @@ describe('who sees which staff screen', () => {
     expect(entriesFor(as('admin'), modOnly)).toEqual([]);
   });
 
+  it('a journalist sees the desk and no staff screen', () => {
+    expect(labels(as('journalist'))).toEqual(['Journalist desk']);
+  });
+
   it('the owner satisfies administrator, and sees what an administrator sees, plus the owner’s own', () => {
     // Backups and exports are the whole archive in a file: the owner's alone.
+    // So is vetting journalists (J7b).
     const owner = labels(as('owner'));
-    expect(owner.filter((l) => l !== 'Backups and exports')).toEqual(labels(as('admin')));
-    expect(owner).toContain('Backups and exports');
+    const ownersOwn = ['Backups and exports', 'Journalists'];
+    expect(owner.filter((l) => !ownersOwn.includes(l))).toEqual(labels(as('admin')));
+    for (const l of ownersOwn) expect(owner).toContain(l);
     expect(labels(as('admin'))).not.toContain('Backups and exports');
   });
 

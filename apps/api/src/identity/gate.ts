@@ -44,6 +44,9 @@ export const IN_FRONT: readonly string[] = [
   'POST /api/journalists/confirm/:token',
   'GET /api/journalists/stop/:token',
   'POST /api/journalists/stop/:token',
+  // The access request link (journalists/vetting.ts): the form it opens, and sending it.
+  'GET /api/journalists/access/:token',
+  'POST /api/journalists/access/:token',
 ];
 
 /**

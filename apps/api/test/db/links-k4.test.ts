@@ -49,6 +49,9 @@ const STAFF_PREFIXES = [
   '/api/intake/',
   '/api/list-review',
   '/api/link-checks',
+  // Plan D session 5: the owner's journalist queue, and the desk (journalists only).
+  '/api/owner/',
+  '/api/desk/',
 ];
 
 const CANARY = `k4-canary-${String(process.pid)}${String(Date.now() % 1e6)}.example.net`;

@@ -679,6 +679,9 @@ const STAFF_PREFIXES = [
   '/api/intake/',
   '/api/list-review',
   '/api/link-checks',
+  // Plan D session 5: the owner's journalist queue, and the desk (journalists only).
+  '/api/owner/',
+  '/api/desk/',
 ] as const;
 
 /**

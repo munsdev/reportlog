@@ -73,7 +73,7 @@ const OPEN_IN_STAFF = {
 } as const;
 
 /** Staff screens outside the `(staff)` folder. */
-const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers'] as const;
+const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers', '/desk'] as const;
 
 /** Every other page: for anybody, or for any signed-in person (not staff). */
 const OPEN = [
@@ -112,6 +112,8 @@ const OPEN = [
   '/journalists_/alerts',
   '/journalists_/confirm/$token',
   '/journalists_/stop/$token',
+  '/journalists_/access',
+  '/journalists_/access_/$token',
 ] as const;
 
 const PARAMS: Record<string, string> = {

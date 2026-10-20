@@ -6,7 +6,19 @@
  * granting path asks the same table.
  */
 
-export const SYSTEM_ROLES = ['user', 'moderator', 'access_manager', 'admin', 'owner'] as const;
+/**
+ * `journalist` is a vetted reader of the desk (plan D, J7 to J13). It outranks
+ * nothing, satisfies no staff scope and grants nothing; only the owner makes
+ * or removes one.
+ */
+export const SYSTEM_ROLES = [
+  'user',
+  'moderator',
+  'access_manager',
+  'admin',
+  'owner',
+  'journalist',
+] as const;
 export type SystemRole = (typeof SYSTEM_ROLES)[number];
 
 export const ORG_ROLES = ['manager', 'coordinator'] as const;
@@ -25,15 +37,17 @@ export function isSystemRole(v: unknown): v is SystemRole {
  *
  * THE OWNER'S SEAT IS UNGRANTABLE: 'owner' appears in no row, its own
  * included, so no grant can produce one. The seat moves only by the
- * two-party handover or the setup wizard. Exported so tests read the real
+ * two-party handover or the setup wizard. A journalist is vetted by the
+ * owner and nobody else, so 'journalist' is in the owner's row only. Exported so tests read the real
  * table instead of a copy.
  */
 export const MAY_GRANT: Readonly<Record<SystemRole, readonly SystemRole[]>> = {
-  owner: ['user', 'moderator', 'access_manager', 'admin'],
+  owner: ['user', 'moderator', 'access_manager', 'admin', 'journalist'],
   admin: ['user', 'moderator', 'access_manager'],
   access_manager: ['user', 'moderator'],
   moderator: [],
   user: [],
+  journalist: [],
 };
 
 export function canGrantSystemRole(actor: SystemRole, target: SystemRole): boolean {
@@ -43,11 +57,11 @@ export function canGrantSystemRole(actor: SystemRole, target: SystemRole): boole
 /**
  * Who may change somebody who already holds a role. The owner is untouchable
  * through this path, by anybody including themselves; only the owner may
- * change an administrator.
+ * change an administrator or a journalist (revoking one is the owner's, J13).
  */
 export function canChangeSubject(actor: SystemRole, subject: SystemRole): boolean {
   if (subject === 'owner') return false;
-  if (subject === 'admin') return actor === 'owner';
+  if (subject === 'admin' || subject === 'journalist') return actor === 'owner';
   if (subject === 'access_manager') return roleSatisfies(actor, 'admin');
   return true;
 }
@@ -92,6 +106,7 @@ const MAY_SET_FLAGS: Readonly<Record<SystemRole, readonly Flag[]>> = {
   access_manager: FLAGS,
   moderator: [],
   user: [],
+  journalist: [],
 };
 
 export function canSetFlag(actor: SystemRole | null | undefined, flag: Flag): boolean {

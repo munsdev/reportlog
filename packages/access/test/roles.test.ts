@@ -40,6 +40,34 @@ describe('rank', () => {
   });
 });
 
+describe('the journalist role', () => {
+  it('is a system role that only the owner grants or changes', () => {
+    expect(SYSTEM_ROLES).toContain('journalist');
+    for (const role of SYSTEM_ROLES) {
+      expect(canGrantSystemRole(role, 'journalist')).toBe(role === 'owner');
+      expect(canChangeSubject(role, 'journalist')).toBe(role === 'owner');
+    }
+    expect(MAY_GRANT.owner).toContain('journalist');
+    for (const role of SYSTEM_ROLES) {
+      if (role !== 'owner') expect(MAY_GRANT[role]).not.toContain('journalist');
+    }
+  });
+
+  it('grants nothing and sets no flag', () => {
+    expect(MAY_GRANT.journalist).toEqual([]);
+    for (const flag of FLAGS) expect(canSetFlag('journalist', flag)).toBe(false);
+  });
+
+  it('outranks nothing and satisfies no staff scope', () => {
+    for (const role of SYSTEM_ROLES) {
+      if (role !== 'journalist') expect(roleSatisfies('journalist', role)).toBe(false);
+      if (role !== 'journalist') expect(roleSatisfies(role, 'journalist')).toBe(false);
+    }
+    expect(roleSatisfies('journalist', 'journalist')).toBe(true);
+    expect(hasAdminAuthority('journalist')).toBe(false);
+  });
+});
+
 describe('flags', () => {
   it('are set by those who grant access, and by nobody else', () => {
     for (const flag of FLAGS) {

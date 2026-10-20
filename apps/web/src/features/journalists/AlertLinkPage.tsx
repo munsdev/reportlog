@@ -15,6 +15,7 @@ import {
 } from '@reportlog/contracts';
 import type { AlertLink } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
@@ -70,6 +71,13 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
         <p role="status">
           <strong>{s.address}</strong> will get an email when there are new approved reports in your
           states. Every email has a link to leave.
+        </p>
+        <p>
+          A journalist can also{' '}
+          <Link to="/journalists/access" className="underline">
+            ask for access to the journalist desk
+          </Link>
+          , where vetted journalists read links moderators have checked.
         </p>
       </Page>
     );

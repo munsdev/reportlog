@@ -13,7 +13,14 @@ const Email = z.string().max(320);
 const Ok = z.object({ ok: z.literal(true) });
 const Iso = z.string();
 
-export const SystemRoleName = z.enum(['user', 'moderator', 'access_manager', 'admin', 'owner']);
+export const SystemRoleName = z.enum([
+  'user',
+  'moderator',
+  'access_manager',
+  'admin',
+  'owner',
+  'journalist',
+]);
 export const OrgRoleName = z.enum(['manager', 'coordinator']);
 export type SystemRoleName = z.infer<typeof SystemRoleName>;
 export type OrgRoleName = z.infer<typeof OrgRoleName>;

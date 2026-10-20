@@ -128,6 +128,7 @@ export interface ContactAccessLog {
   attachment_id: number | null;
   id: Generated<number>;
   kind: string;
+  link_group_id: number | null;
   logbook_id: number | null;
   reason: string | null;
   report_id: number | null;
@@ -357,6 +358,19 @@ export interface IntakeSettings {
   intake_enabled: boolean | null;
   updated_at: Generated<Timestamp>;
   updated_by: string | null;
+}
+
+export interface JournalistAccessRequests {
+  created_at: Generated<Timestamp>;
+  decided_at: Timestamp | null;
+  decided_by: string | null;
+  details_enc: Buffer;
+  id: Generated<number>;
+  revoked_at: Timestamp | null;
+  revoked_by: string | null;
+  status: Generated<string>;
+  subscriber_id: number;
+  user_id: number | null;
 }
 
 export interface JournalistLinks {
@@ -931,6 +945,7 @@ export interface DB {
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
   intake_settings: IntakeSettings;
+  journalist_access_requests: JournalistAccessRequests;
   journalist_links: JournalistLinks;
   journalist_subscribers: JournalistSubscribers;
   link_block_log: LinkBlockLog;

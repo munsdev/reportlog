@@ -205,6 +205,7 @@ export async function buildApp({
     siteOrigin,
     contactKey: config.CONTACT_KEY,
     previousContactKey: config.CONTACT_KEY_PREVIOUS,
+    linkKeys,
   });
   boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
   pressRoutes(app, { dir: config.PRESS_DIR });
