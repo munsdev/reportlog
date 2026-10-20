@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front|a11y-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front|a11y-locked)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -144,12 +144,25 @@ export default defineConfig({
       },
     },
     {
+      // R8: the lock screen's accessibility check (decision 12), which the
+      // walk of every page cannot reach with the password off. Alone, for
+      // the same reason as the others: it turns on the password, renames the
+      // site and shows the development notice. Before Q1's, which stays last.
+      name: 'accessibility-behind-password',
+      testMatch: /a11y-locked\/.*\.spec\.ts$/,
+      dependencies: ['owner'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // Q1: the evidence link and the lock screen with the site password on.
       // Alone and last: it turns on the password, renames the site and shows
       // the development notice, all of which are the whole site's.
       name: 'in-front-of-password',
       testMatch: /in-front\/.*\.spec\.ts$/,
-      dependencies: ['owner'],
+      dependencies: ['accessibility-behind-password'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
