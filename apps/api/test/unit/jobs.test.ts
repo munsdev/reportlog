@@ -92,15 +92,16 @@ describe('the systemd units', () => {
   });
 
   it('lets the API, the jobs and the alert write their state directory and nothing else', () => {
-    for (const name of [
-      'reportlog-api.service',
-      'reportlog-job@.service',
-      'reportlog-alert@.service',
-    ]) {
+    for (const name of ['reportlog-job@.service', 'reportlog-alert@.service']) {
       expect(unit(name).match(/^ReadWritePaths=.*$/gm)).toEqual([
         'ReadWritePaths=/var/lib/reportlog',
       ]);
     }
+    // The API also writes dumps: an owner can start a backup from /backups (Q2).
+    expect(unit('reportlog-api.service').match(/^ReadWritePaths=.*$/gm)).toEqual([
+      'ReadWritePaths=/var/lib/reportlog',
+      'ReadWritePaths=/var/backups/reportlog',
+    ]);
     expect(unit('reportlog-job@backup.service.d/backup.conf')).toMatch(
       /^ReadWritePaths=\/var\/backups\/reportlog$/m,
     );
