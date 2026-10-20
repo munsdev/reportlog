@@ -119,6 +119,40 @@ export async function loadLinkKeys(
 }
 
 /**
+ * For `reportlog contact-key rotate` (filing/rotateContactKey.ts): re-wrap the
+ * link secret under the new key, inside the rotation's transaction. Returns 1
+ * if it moved, 0 if it was already under the new key or does not exist yet.
+ * Without this, a rotation finished before anything used the link keys would
+ * strand every link and every blocklist entry once the old key is removed.
+ */
+export async function rewrapLinkSecret(
+  db: Db,
+  contactKey: string,
+  previousContactKey: string,
+): Promise<number> {
+  const row = await db
+    .selectFrom('link_secrets')
+    .select('secret_wrapped')
+    .where('id', '=', 1)
+    .forUpdate()
+    .executeTakeFirst();
+  if (!row) return 0;
+  const current = fromContactKey(contactKey, 'CONTACT_KEY');
+  if (tryDecrypt(current, row.secret_wrapped)) return 0;
+  const old = tryDecrypt(
+    fromContactKey(previousContactKey, 'CONTACT_KEY_PREVIOUS'),
+    row.secret_wrapped,
+  );
+  if (!old) throw new Error('The link secret opens under neither key.');
+  await db
+    .updateTable('link_secrets')
+    .set({ secret_wrapped: encrypt(current, old) })
+    .where('id', '=', 1)
+    .execute();
+  return 1;
+}
+
+/**
  * Keys for whoever asks, loaded once per process. `null` when the site has
  * no CONTACT_KEY: then nothing that needs one is taken (lists/entries.ts).
  */

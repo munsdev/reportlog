@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { emailDigest, keyringFrom, openContact } from '../../src/filing/contactKeys.ts';
 import { rotateContactKey } from '../../src/filing/rotateContactKey.ts';
 import { fingerprint } from '../../src/jobs/contact-key.ts';
+import { loadLinkKeys, matchKey, rewrapLinkSecret } from '../../src/links/keys.ts';
 import { launchedLogbook } from './helpers.ts';
 import { CONTACT_KEY, fileThroughRoutes, filingHarness, threadOf } from './filing-helpers.ts';
 import type { FilingHarness } from './filing-helpers.ts';
@@ -192,9 +193,17 @@ describe('the rotation', () => {
   // The test database is shared by every file, so other files' threads are
   // here too, all under the old key. Counts are relative to what is here.
   let live: number;
+  let linkMatch = '';
   beforeAll(async () => {
     was = await snapshot(before);
     live = [...was.values()].filter((r) => r.dek).length;
+    // The tip links' secret (links/keys.ts), made under the old key, so the
+    // rotation has it to move: one more row re-wrapped.
+    linkMatch = matchKey(await loadLinkKeys(before.db, OLD), 'https://rotation.example/');
+  });
+  // Shared database: later files open the link secret under the old key.
+  afterAll(async () => {
+    await rewrapLinkSecret(before.db, OLD, NEW);
   });
 
   it('refuses a previous key that does not open the rows, and changes nothing', async () => {
@@ -208,8 +217,13 @@ describe('the rotation', () => {
 
   it('re-wraps every live key in one go, and leaves the one already on the new key', async () => {
     const out = await rotateContactKey(before.db, { current: NEW, previous: OLD });
-    // Everything but the window's filing, which was already on the new key.
-    expect(out).toEqual({ rewrapped: live - 1, already_current: 1 });
+    // Everything but the window's filing, which was already on the new key,
+    // and the link secret.
+    expect(out).toEqual({ rewrapped: live - 1 + 1, already_current: 1 });
+    // The link keys open under the new key alone, and match as before.
+    expect(matchKey(await loadLinkKeys(before.db, NEW), 'https://rotation.example/')).toBe(
+      linkMatch,
+    );
     expect(live - 1).toBeGreaterThanOrEqual(3);
     const now = await snapshot(before);
     for (const t of [threads.reporter, threads.reporter2, threads.coordinator]) {
@@ -276,7 +290,7 @@ describe('the rotation', () => {
     expect(rows[0]).toMatchObject({
       from_fingerprint: fingerprint(OLD),
       to_fingerprint: fingerprint(NEW),
-      rewrapped: live - 1,
+      rewrapped: live - 1 + 1,
     });
     expect(JSON.stringify(rows)).not.toContain(NEW);
     await expect(
