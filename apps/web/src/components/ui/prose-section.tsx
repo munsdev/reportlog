@@ -40,10 +40,13 @@ export function Contents({
   return (
     <nav aria-label={label} className="rounded-card border border-line bg-surface p-4">
       <p className="mb-2 font-semibold">{label}</p>
-      <ol className="flex list-decimal flex-col gap-1 pl-6">
+      <ol className="flex list-decimal flex-col pl-6">
         {items.map((i) => (
           <li key={i.id}>
-            <a href={`#${i.id}`} className="underline underline-offset-2">
+            <a
+              href={`#${i.id}`}
+              className="inline-flex min-h-11 items-center underline underline-offset-2"
+            >
               {i.title}
             </a>
           </li>

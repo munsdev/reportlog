@@ -58,6 +58,23 @@ describe('the HTTP API', () => {
     expect(nowhere.statusCode).toBe(404);
   });
 
+  it('answers a rejecting async handler with a 500 in the same shape, and does not leak why', async () => {
+    const failing = await buildApp({ config: { LOG_LEVEL: 'silent' }, db });
+    // Async on purpose: a handler that returns a rejected promise is the
+    // case that is easy to leave unhandled, and a thrown error is not it.
+    failing.get('/api/http-test-rejects', async () => {
+      await Promise.resolve();
+      throw new Error('relation "secret_table" does not exist');
+    });
+    const res = await failing.inject({ method: 'GET', url: '/api/http-test-rejects' });
+    await failing.close();
+    expect(res.statusCode).toBe(500);
+    expect(res.json()).toEqual({
+      error: { code: 'internal', message: 'Something went wrong on our side. It has been logged.' },
+    });
+    expect(res.body).not.toContain('secret_table');
+  });
+
   it('sends a strict content security policy and no referrer', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/health' });
     expect(res.headers['content-security-policy']).toContain("default-src 'self'");

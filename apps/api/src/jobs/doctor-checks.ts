@@ -199,6 +199,26 @@ export function assessJobUnit(u: UnitFacts, built: boolean): Finding {
   return f('ok', check, ran ? `last run ${u.lastRun}, succeeded` : 'scheduled, not run yet');
 }
 
+/**
+ * The lists sweep is what makes a list's promise true: it erases the
+ * personal half of an entry when its time is up. Every job needs its timer
+ * (assessJobUnit), but this one matters in a way the others do not once a
+ * list holds data, so it is said in those words and not as "a timer is off".
+ * Before any list holds an entry there is nothing to erase and no finding.
+ */
+export function assessListsSweep(u: UnitFacts, listEntries: number): Finding | undefined {
+  if (listEntries === 0) return undefined;
+  if (u.timerEnabled === 'enabled' && u.timerActive === 'active') return undefined;
+  return f(
+    'fail',
+    'lists',
+    `${String(listEntries)} list ${listEntries === 1 ? 'entry is' : 'entries are'} held, and ` +
+      `reportlog-${u.job}.timer is ${u.timerEnabled || 'missing'}/${u.timerActive || 'inactive'}, ` +
+      'so no list is erasing the personal details it promised to. ' +
+      `Start it: sudo systemctl enable --now reportlog-${u.job}.timer`,
+  );
+}
+
 /** /etc/apt/apt.conf.d/20auto-upgrades, as text. */
 export function assessUnattended(text: string | undefined, rebootRequired: boolean): Finding[] {
   const on = (key: string) => new RegExp(`${key}\\s+"1"`).test(text ?? '');

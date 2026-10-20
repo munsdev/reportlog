@@ -227,6 +227,7 @@ ask_setting BACKUP_AGE_RECIPIENTS "The age public key backups are encrypted to (
 ask_setting BACKUP_S3_ENDPOINT "The backup bucket's endpoint (https://fsn1.your-objectstorage.com)" "$URL" "https:// and a host"
 # All five, or none: the rest are asked once there is somewhere to send to.
 if [ -n "$(env_value BACKUP_S3_ENDPOINT)" ]; then
+  region_from_endpoint BACKUP_S3_ENDPOINT BACKUP_S3_REGION
   ask_setting BACKUP_S3_REGION "Its region (fsn1)" '[a-z0-9-]+' "a region name"
   ask_setting BACKUP_S3_BUCKET "The bucket's name" "$BUCKET" "a bucket name"
   ask_setting BACKUP_S3_ACCESS_KEY_ID "The upload-only key's access key ID" "$TOKEN" "an access key ID" secret
@@ -236,6 +237,7 @@ fi
 note "Storage for reporters' files (skip until a provider is chosen):"
 ask_setting S3_ENDPOINT "The files storage endpoint (https://...)" "$URL" "https:// and a host"
 if [ -n "$(env_value S3_ENDPOINT)" ]; then
+  region_from_endpoint S3_ENDPOINT S3_REGION
   ask_setting S3_REGION "Its region" '[a-z0-9-]+' "a region name"
   ask_setting S3_BUCKET_STAGING "The bucket for files not yet sent" "$BUCKET" "a bucket name"
   ask_setting S3_BUCKET_EVIDENCE "The bucket for files with a report" "$BUCKET" "a bucket name"

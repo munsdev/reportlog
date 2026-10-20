@@ -337,7 +337,6 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     'office@example.org',
     AGE,
     'https://fsn1.your-objectstorage.com',
-    'fsn1',
     'example-backups',
     BACKUP_ID,
     BACKUP_SECRET,
@@ -426,6 +425,44 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     );
     // The backup bucket's details are asked only once there is a bucket.
     expect(r.out).not.toContain('Its region (fsn1)');
+  });
+
+  it('reads the region off the endpoint, and asks only when the address does not say', () => {
+    // Endpoint, then the bucket and keys: no region question in between.
+    const named = machine();
+    const r = ask(named, [
+      'https://reports.example.org',
+      '',
+      '',
+      '',
+      '',
+      '',
+      AGE,
+      'https://s3.nl-ams.scw.cloud',
+      'example-backups',
+      BACKUP_ID,
+      BACKUP_SECRET,
+    ]);
+    expect(r.status, r.out).toBe(0);
+    expect(named.read(ENV)).toMatch(/^BACKUP_S3_REGION=nl-ams$/m);
+    expect(r.out).toContain('BACKUP_S3_REGION set to nl-ams, read off the endpoint.');
+    expect(r.out).not.toContain('Its region (fsn1)');
+
+    // An address of your own names no region: it is asked, as before.
+    const own = machine();
+    const asked = ask(own, [
+      'https://reports.example.org',
+      '',
+      '',
+      '',
+      '',
+      '',
+      AGE,
+      'https://storage.example.org',
+      'eu-west-9',
+    ]);
+    expect(asked.out).toContain('Its region (fsn1)');
+    expect(own.read(ENV)).toMatch(/^BACKUP_S3_REGION=eu-west-9$/m);
   });
 
   it('run again, asks only what is still empty', () => {
