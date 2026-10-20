@@ -721,6 +721,9 @@ folders do not overlap). P3 after P2. P5 after D3. P6 after C3.
 
 ## 8. Decisions this audit cannot make
 
+> **Decided 2026-10-20.** The owner's rulings are in [`decisions.md`](decisions.md),
+> numbered as below.
+
 Each of these is a difference from legacy, or between two status docs. None is a missing test, and
 each needs an owner's ruling before parity can be declared.
 
