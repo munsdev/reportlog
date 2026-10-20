@@ -12,10 +12,10 @@
  * can fail happens before the running release is touched.
  */
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { Server } from './deploy-sandbox.ts';
+import { REPO, Server } from './deploy-sandbox.ts';
 
 // Each test runs a few whole deploys: well under a second each, but many processes.
 vi.setConfig({ testTimeout: 30_000 });
@@ -151,6 +151,28 @@ describe('a first deploy', () => {
     expect(caddy).toMatch(/^\temail ops@example\.org$/m);
     expect(caddy).not.toContain('@SITE_DOMAIN@');
     expect(caddy).not.toContain('@ACME_EMAIL_LINE@');
+  });
+
+  it("lets the API write backups where the backup job does, for the owner's backup screen", () => {
+    const s = server();
+    s.commit('v1');
+    expect(s.reportlog('deploy').status).toBe(0);
+    const writable = (unit: string) =>
+      s
+        .read(unit)
+        .split('\n')
+        .filter((l) => l.startsWith('ReadWritePaths='))
+        .flatMap((l) => l.slice('ReadWritePaths='.length).split(/\s+/));
+    const api = writable('/etc/systemd/system/reportlog-api.service');
+    expect(api).toContain('/var/lib/reportlog');
+    expect(api).toContain('/var/backups/reportlog');
+    // The same directory the backup job is given, and the one the settings name.
+    expect(writable('/etc/systemd/system/reportlog-job@backup.service.d/backup.conf')).toEqual([
+      '/var/backups/reportlog',
+    ]);
+    expect(readFileSync(join(REPO, '.env.example'), 'utf8')).toMatch(
+      /^BACKUP_DIR=\/var\/backups\/reportlog$/m,
+    );
   });
 
   it('gives the certificate authority no email when ACME_EMAIL is empty', () => {
