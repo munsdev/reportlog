@@ -1,12 +1,22 @@
 # Plan D · session 4b · moderation and the EU platform items: status
 
 - **Branch:** `claude/plan-d-moderation`, into `ccr-c9c93698-ev856l` (latest origin merged, types regenerated)
-- **Pull request:** PR_NUMBER
+- **Pull request:** [#41](https://github.com/munsdev/reportlog/pull/41), into `ccr-c9c93698-ev856l`
 - **Last updated:** 2026-10-20
 
 ## Checks
 
-CHECKS_TABLE
+| Suite                                   | Result                                                                                                      |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes (format, lint, types, boundaries; unit: api 411 + 10 skipped, web 578, fields 69, seal 46, access 6) |
+| `pnpm test:db`                          | 79 files, 1148 tests, all passed                                                                            |
+| `db:types:check`                        | generated types up to date after merging the latest `ccr-c9c93698-ev856l`                                   |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 905 passed, 5 skipped (three projects)                                                                      |
+| Caddy tests                             | run against Caddy 2.10.2 (`CADDY_BIN`); the two S1/S3 tests fail if a `log` directive is added              |
+
+Each suite was run once on the merged tree, after two earlier partial runs found problems that were fixed: the agreement tests shared
+a database with every other file (an agreement is global and append-only, so they now have their own), and the old numbers-page
+browser tests still looked for the removed counts.
 
 ## What was built
 
