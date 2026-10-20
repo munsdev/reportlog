@@ -4,7 +4,7 @@
   and PD4b (`claude/plan-d-moderation`, PR #41) merged in**, because neither had reached the base yet:
   the desk reads `checkedLinks()` (PD3) and reuses the generic agreement (PD4b, M8). Once both merge,
   this PR's diff is only its own.
-- **State:** built; PR into `ccr-c9c93698-ev856l`.
+- **State:** built; PR [#44](https://github.com/munsdev/reportlog/pull/44) into `ccr-c9c93698-ev856l`.
 
 ## What was built
 
