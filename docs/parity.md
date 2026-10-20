@@ -85,7 +85,7 @@ These were counted by a script from the Status column of each table below. A row
 Where one row covers several legacy paths or groups, it says so ("2 rows", "10 groups") and still
 counts once.
 
-**Missing rows: 8** (was 35). **Partial rows: 31** (was 86). Both counts leave out the invariants.
+**Missing rows: 8** (was 35). **Partial rows: 33** (was 86; the sum of the table above). Both counts leave out the invariants.
 **Invariants without a complete test: 1** (was 8).
 
 ---
