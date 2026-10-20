@@ -39,6 +39,11 @@ export const IN_FRONT: readonly string[] = [
   'POST /api/telemetry/errors',
   'GET /api/notifications/stop/:token',
   'POST /api/notifications/stop/:token',
+  // The alert list's two email links (journalists/routes.ts): confirming and leaving.
+  'GET /api/journalists/confirm/:token',
+  'POST /api/journalists/confirm/:token',
+  'GET /api/journalists/stop/:token',
+  'POST /api/journalists/stop/:token',
 ];
 
 /**

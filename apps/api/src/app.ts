@@ -7,6 +7,7 @@ import Fastify from 'fastify';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { pressRoutes } from './board/press.ts';
+import { journalistRoutes } from './journalists/routes.ts';
 import { boardRoutes } from './board/routes.ts';
 import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
@@ -187,6 +188,13 @@ export async function buildApp({
   });
   await platformRoutes(app, { db, mailer: mail, siteOrigin });
   eraseLinkRoutes(app, { db });
+  journalistRoutes(app, {
+    db,
+    mailer: mail,
+    siteOrigin,
+    contactKey: config.CONTACT_KEY,
+    previousContactKey: config.CONTACT_KEY_PREVIOUS,
+  });
   boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
   pressRoutes(app, { dir: config.PRESS_DIR });
   anchorRoutes(app, {

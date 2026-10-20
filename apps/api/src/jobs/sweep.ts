@@ -86,6 +86,15 @@ export const SWEPT: readonly SweptTable[] = [
     expired: 'expires_at < now()',
   },
   {
+    // The confirm and stop links of the journalist alert list
+    // (journalists/list.ts). Past its time a link answers as if it never
+    // existed; the alert job deletes them too, this is the net.
+    table: 'journalist_links',
+    what: 'expired journalist alert links',
+    owner: 'J',
+    expired: 'expires_at < now()',
+  },
+  {
     // UNCONFIRMED only. Until confirmation the row holds the reporter's
     // address in the clear (docs/status/C-filing.md), so an unconfirmed one
     // past its link's expiry is exactly what should not be kept. A confirmed

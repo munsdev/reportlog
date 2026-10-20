@@ -1,0 +1,13 @@
+# Generated from apps/api/src/jobs/registry.ts. Edit the registry, then
+# regenerate: pnpm --filter @reportlog/api ops timers --write
+[Unit]
+Description=ReportLog job timer: journalist-alerts
+
+[Timer]
+OnCalendar=*-*-* 08:00:00
+RandomizedDelaySec=600
+Persistent=true
+Unit=reportlog-job@journalist-alerts.service
+
+[Install]
+WantedBy=timers.target

@@ -665,6 +665,8 @@ const NOT_STAFF_PREFIXES = [
   '/api/auth/',
   '/api/orgs',
   '/api/invitations/',
+  // The journalist alert list: signup and the two email links, public (journalists/routes.ts).
+  '/api/journalists/',
   '/api/intake-switch',
   '/api/site',
   '/api/setup/',

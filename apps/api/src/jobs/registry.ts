@@ -130,6 +130,15 @@ export const JOBS: readonly JobDefinition[] = [
     persistent: true,
     run: (ctx) => import('../site/jobs.ts').then((m) => m.runFeedbackDigestJob(ctx)),
   },
+  {
+    name: 'journalist-alerts',
+    what: 'Email each journalist on the alert list how many new approved reports there are in their states.',
+    owner: 'J',
+    onCalendar: '*-*-* 08:00:00',
+    randomizedDelaySec: 600,
+    persistent: true,
+    run: (ctx) => import('../journalists/jobs.ts').then((m) => m.runAlertsJob(ctx)),
+  },
 ];
 
 export function findJob(name: string): JobDefinition | undefined {
