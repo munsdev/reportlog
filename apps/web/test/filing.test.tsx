@@ -112,7 +112,7 @@ describe('the cards', () => {
     // jsdom lays nothing out, so there is nowhere to scroll to.
     vi.stubGlobal('scrollTo', vi.fn());
     const answers: Record<string, unknown> = {
-      'GET /api/site-access/status': { locked: true },
+      'GET /api/site-access/status': { locked: true, dev_mode_until: null },
       'GET /api/logbooks/demo': {
         slug: 'demo',
         title: 'Demo logbook',

@@ -106,7 +106,10 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
       (await mailPage.getByText(/Its reference is RL-/).textContent()) ?? '',
     )?.[0] ?? '';
 
-  const verified = await mailPage.request.get(`/api/reports/${ref}/verify`);
+  // The sealed fields come whole to staff only: verifying an unpublished
+  // report shows anybody else its fingerprints alone (decisions.md §1).
+  const staff = await playwright.request.newContext({ baseURL, storageState: ADMIN });
+  const verified = await staff.get(`/api/reports/${ref}/verify`);
   const v = (await verified.json()) as {
     content: { ok: boolean };
     hashed_fields: { attachments?: { media_type: string; ordinal: number }[] };
@@ -115,6 +118,7 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
   expect(v.hashed_fields.attachments).toEqual([
     expect.objectContaining({ ordinal: 1, media_type: 'image/jpeg' }),
   ]);
+  await staff.dispose();
   await inbox.close();
   expect(outside).toEqual([]);
 });

@@ -120,7 +120,10 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
       (await page.getByText(/Your files are part of report/).textContent()) ?? '',
     )?.[0] ?? '';
 
-  const v = (await (await page.request.get(`/api/reports/${ref}/verify`)).json()) as {
+  // The sealed fields come whole to staff only: verifying an unpublished
+  // report shows anybody else its fingerprints alone (decisions.md §1).
+  const staff = await playwright.request.newContext({ baseURL, storageState: ADMIN });
+  const v = (await (await staff.get(`/api/reports/${ref}/verify`)).json()) as {
     content: { ok: boolean };
     hashed_fields: { attachments?: unknown[]; answers?: Record<string, unknown> };
   };
@@ -128,6 +131,10 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
   expect(v.hashed_fields.attachments).toHaveLength(1);
   // The words carried forward untouched.
   expect(v.hashed_fields.answers?.[what]).toBe('The queue was turned away.');
+  // And the reporter, holding only the reference, is shown none of it.
+  const anyone = (await (await page.request.get(`/api/reports/${ref}/verify`)).json()) as object;
+  expect(anyone).not.toHaveProperty('hashed_fields');
+  await staff.dispose();
 
   // Spent: the link does not open again.
   await page.goto(link);

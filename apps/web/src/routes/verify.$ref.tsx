@@ -4,7 +4,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { CheckRow } from '../components/CheckRow.tsx';
 import { ApiRequestError, call } from '../lib/api.ts';
-import { recheckInBrowser } from '../lib/recheck.ts';
+import { recheckInBrowser, recheckPassed } from '../lib/recheck.ts';
 
 export const verificationQuery = (ref: string) =>
   queryOptions({
@@ -72,9 +72,13 @@ export function VerifyResult({ v }: { v: Verification }) {
           detail="The report this one follows is still the report it was filed after, in the same logbook."
         />
         <CheckRow
-          ok={browser.bytesMatchFields && browser.hashMatchesRecord}
+          ok={recheckPassed(browser)}
           title="Checked again in your browser"
-          detail="This page recomputed the fingerprint itself from the bytes shown below, without relying on the server's own answer."
+          detail={
+            browser.kind === 'text'
+              ? "This page recomputed the fingerprint itself from the bytes shown below, without relying on the server's own answer."
+              : "This page recombined the report's fingerprint with the one before it and got the recorded link, without relying on the server's own answer."
+          }
         />
       </ul>
 
@@ -84,18 +88,37 @@ export function VerifyResult({ v }: { v: Verification }) {
           : 'No outside timestamp covers this report yet. The chain is timestamped once a day, so a report filed today is not covered until tomorrow.'}
       </p>
 
-      <details className="rounded-card border border-line bg-surface p-4">
-        <summary className="cursor-pointer font-semibold">Check it yourself</summary>
-        <div className="mt-3 space-y-3 text-sm">
+      {v.canonical_json === undefined ? (
+        <div className="space-y-2 rounded-card border border-line bg-surface p-4 text-sm">
+          <p className="font-semibold">What this report says is not shown</p>
           <p>
-            These are the exact bytes that were fingerprinted (RFC 8785 canonical JSON). Their
-            SHA-256 should be <span className="font-mono break-all">{v.content.recorded}</span>.
+            It has not been published, so only its fingerprints are shown here. They are enough to
+            show the record has not changed since it was filed. Its text appears on this page once a
+            moderator publishes it.
           </p>
-          <pre className="overflow-x-auto rounded-card bg-paper-alt p-3 font-mono text-xs">
-            {v.canonical_json}
-          </pre>
+          <dl className="space-y-1 font-mono text-xs break-all">
+            <dt className="font-sans font-semibold">Fingerprint</dt>
+            <dd>{v.content.recorded}</dd>
+            <dt className="font-sans font-semibold">Link in the chain</dt>
+            <dd>{v.link.recorded}</dd>
+            <dt className="font-sans font-semibold">The link before it</dt>
+            <dd>{v.link.prev_chain_hash}</dd>
+          </dl>
         </div>
-      </details>
+      ) : (
+        <details className="rounded-card border border-line bg-surface p-4">
+          <summary className="cursor-pointer font-semibold">Check it yourself</summary>
+          <div className="mt-3 space-y-3 text-sm">
+            <p>
+              These are the exact bytes that were fingerprinted (RFC 8785 canonical JSON). Their
+              SHA-256 should be <span className="font-mono break-all">{v.content.recorded}</span>.
+            </p>
+            <pre className="overflow-x-auto rounded-card bg-paper-alt p-3 font-mono text-xs">
+              {v.canonical_json}
+            </pre>
+          </div>
+        </details>
+      )}
     </div>
   );
 }

@@ -9,8 +9,10 @@
  * Neutral colours: it is a notice, not a warning, and a status colour on a
  * button would be saying something about a report.
  */
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { useSite } from './site.tsx';
+import { siteStatusQuery, useGateMode } from '@/features/identity/gateMode.ts';
+import { siteQuery } from './site.tsx';
 import {
   Dialog,
   DialogContent,
@@ -38,8 +40,23 @@ export function useDevModeActive(until: string | null | undefined, now = Date.no
   return remaining > 0;
 }
 
+/**
+ * Past the password the site's settings say (and stay fresh); on the lock
+ * screen and on a door, where those are not asked, the password check's own
+ * answer does. It is asked on every page in any case.
+ */
+function useDevModeUntil(): string | null | undefined {
+  const status = useQuery(siteStatusQuery);
+  const onDoor = useGateMode() === 'door';
+  // Never asked while locked: on the lock screen a call behind the gate is
+  // refused, and asking at all is more than that screen may do.
+  const past = status.data?.locked !== true && !onDoor;
+  const site = useQuery({ ...siteQuery, enabled: past });
+  return past && site.data ? site.data.dev_mode_until : status.data?.dev_mode_until;
+}
+
 export function DevBadge() {
-  const until = useSite().data?.dev_mode_until;
+  const until = useDevModeUntil();
   const active = useDevModeActive(until);
   if (!active) return null;
   return (

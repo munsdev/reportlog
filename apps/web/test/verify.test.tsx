@@ -55,7 +55,31 @@ describe('the verification result', () => {
   it('catches a server that vouches for bytes which do not match the record', () => {
     const v = verification();
     // The server claims everything is fine, but the bytes it shows were edited.
-    v.canonical_json = v.canonical_json.replace('Something happened', 'Something else');
+    v.canonical_json = (v.canonical_json ?? '').replace('Something happened', 'Something else');
+    render(<VerifyResult v={v} />);
+    expect(screen.getByText('Checked again in your browser').closest('li')).toHaveTextContent(
+      /Fails:/,
+    );
+  });
+
+  it('without the text (an unpublished report) shows the fingerprints and nothing it says', () => {
+    const v: Verification = verification();
+    delete v.hashed_fields;
+    delete v.canonical_json;
+    render(<VerifyResult v={v} />);
+    expect(checks()).toHaveLength(4);
+    for (const item of checks()) expect(item).toHaveTextContent(/Holds:/);
+    expect(screen.getByText('What this report says is not shown')).toBeInTheDocument();
+    expect(screen.getByText(v.content.recorded)).toBeInTheDocument();
+    expect(screen.queryByText(/Something happened/)).toBeNull();
+    expect(screen.queryByText('Check it yourself')).toBeNull();
+  });
+
+  it('without the text, still catches a link that does not add up, in the browser', () => {
+    const v: Verification = verification();
+    delete v.hashed_fields;
+    delete v.canonical_json;
+    v.link.recorded = 'f'.repeat(64);
     render(<VerifyResult v={v} />);
     expect(screen.getByText('Checked again in your browser').closest('li')).toHaveTextContent(
       /Fails:/,

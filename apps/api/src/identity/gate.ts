@@ -5,7 +5,10 @@
  * In front of it, always: the lock screen's own calls, the health check and
  * the digest email's stop link.
  * Past it without the password: a list deciding for itself (by prefix), and
- * a logbook's filing calls through `outsidePass` (doors.ts). Nothing else.
+ * through `outsidePass` (doors.ts) a logbook's filing calls and the two links
+ * emailed to a reporter (confirmation, evidence request), each on its token.
+ * Nothing else. Not /api/v1 (decisions.md §2): an API other people build on
+ * is behind the password while the site is.
  *
  * It runs at preValidation, after the body is parsed and before it is
  * validated, so a stranger learns nothing from a validation error and the

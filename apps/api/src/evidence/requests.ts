@@ -244,6 +244,22 @@ export interface Redeemed {
   currentReportId: number;
 }
 
+/**
+ * Whether a token names a request at all, open or not. For the site password
+ * only (identity/doors.ts): the link passes on its token, as a confirmation
+ * link does, and every route behind it still checks every gate through
+ * `redeem`.
+ */
+export async function evidenceTokenKnown(db: Kysely<DB>, token: unknown): Promise<boolean> {
+  if (typeof token !== 'string' || !TOKEN.test(token)) return false;
+  const row = await db
+    .selectFrom('evidence_requests')
+    .select('id')
+    .where('token_hash', '=', hashToken(token))
+    .executeTakeFirst();
+  return row !== undefined;
+}
+
 /** What a link opens, checked through every gate, now. */
 export async function redeem(
   db: Kysely<DB>,

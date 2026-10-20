@@ -60,6 +60,7 @@ const routeTree = RootRoute.addChildren([
   createRoute({ getParentRoute: () => RootRoute, path: '/file/$slug', component: Page }),
   createRoute({ getParentRoute: () => RootRoute, path: '/file/confirm/$token', component: Page }),
   createRoute({ getParentRoute: () => RootRoute, path: '/list/$slug', component: Page }),
+  createRoute({ getParentRoute: () => RootRoute, path: '/evidence/$token', component: Page }),
   createRoute({
     getParentRoute: () => RootRoute,
     path: '/notifications/stop/$token',
@@ -98,6 +99,7 @@ describe('the frame around every page, on a door', () => {
     '/file/some-logbook',
     '/file/confirm/a-token',
     '/list/some-list',
+    '/evidence/a-token',
     '/notifications/stop/a-token',
   ];
 
@@ -114,7 +116,7 @@ describe('the frame around every page, on a door', () => {
     'on %s renders the header and footer and asks nothing beyond the gate',
     async (door) => {
       const asked = server({
-        '/api/site-access/status': { locked: true },
+        '/api/site-access/status': { locked: true, dev_mode_until: null },
         // Answered as if signed in, so nothing stays quiet for want of a session.
         '/api/auth/me': ADMIN_ME,
       });
@@ -136,7 +138,7 @@ describe('the frame around every page, on a door', () => {
 
   it('and the same frame past the password DOES ask, so the test above would see it', async () => {
     const asked = server({
-      '/api/site-access/status': { locked: false },
+      '/api/site-access/status': { locked: false, dev_mode_until: null },
       '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
       '/api/auth/me': ADMIN_ME,
     });

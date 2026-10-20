@@ -78,7 +78,10 @@ const get = (url: string, cookies: Record<string, string> = {}) =>
 describe('a gate with no password is not a gate', () => {
   it('lets people in when it is on with NO password, the state a fresh install starts in', async () => {
     await setPassword(null);
-    expect((await get('/api/site-access/status')).json()).toEqual({ locked: false });
+    expect((await get('/api/site-access/status')).json()).toEqual({
+      locked: false,
+      dev_mode_until: null,
+    });
     expect((await get('/api/auth/me')).statusCode).toBe(200);
     const live = await siteAccessSettings(db);
     expect(live.missing).toBeUndefined();
@@ -154,7 +157,7 @@ describe('with the password on', () => {
 
   it('keeps the lock screen’s own calls and the health check in front of it', async () => {
     expect((await get('/api/health')).statusCode).toBe(200);
-    expect((await get('/api/site-access/status')).json()).toEqual({ locked: true });
+    expect((await get('/api/site-access/status')).json()).toMatchObject({ locked: true });
     expect((await get('/api/doors')).statusCode).toBe(200);
   });
 
@@ -178,6 +181,7 @@ describe('with the password on', () => {
     });
     expect((await get('/api/site-access/status', { site_access: token })).json()).toEqual({
       locked: false,
+      dev_mode_until: null,
     });
     expect((await get('/api/auth/me', { site_access: token })).statusCode).toBe(200);
   });

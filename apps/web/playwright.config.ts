@@ -43,7 +43,8 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps|owner)\//,
+      testIgnore:
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -52,7 +53,8 @@ export default defineConfig({
     },
     {
       name: 'phone',
-      testIgnore: /(identity|behind-password|files-door|doors|board-locked|board-maps|owner)\//,
+      testIgnore:
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|in-front)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -132,10 +134,22 @@ export default defineConfig({
     {
       // Q2: the owner's backups and exports. It hands the owner's seat to a
       // test address and back, which the whole site shares, so it runs
-      // alone and after everything else.
+      // alone, after the board's projects and before Q1's last one.
       name: 'owner',
       testMatch: /owner\/.*\.spec\.ts$/,
       dependencies: ['board-maps'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // Q1: the evidence link and the lock screen with the site password on.
+      // Alone and last: it turns on the password, renames the site and shows
+      // the development notice, all of which are the whole site's.
+      name: 'in-front-of-password',
+      testMatch: /in-front\/.*\.spec\.ts$/,
+      dependencies: ['owner'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

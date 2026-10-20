@@ -30,6 +30,7 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
+import { publicArchiveAvailable } from '../board/publication.ts';
 import { isPublic } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
@@ -230,12 +231,20 @@ async function threadState(
     .where('h.thread_id', '=', threadId)
     .executeTakeFirstOrThrow();
   const files = submissionId === undefined ? null : await fileOutcome(db, submissionId);
-  return {
-    // The board's own rule (board/published.ts), so the two cannot disagree.
-    state: isPublic(head) ? 'public' : 'received',
+  const common = {
     logbook_title: logbookTitle,
     public_ref: head.public_ref,
     ...(files ? { files } : {}),
+  };
+  // The board's own rule (board/published.ts) AND its archive switch, so the
+  // two cannot disagree: with the archive off, nothing is public, approved or
+  // not (decisions.md §5).
+  const archiveOpen = await publicArchiveAvailable(db);
+  if (isPublic(head) && archiveOpen) return { state: 'public', ...common };
+  return {
+    state: 'received',
+    ...common,
+    ...(archiveOpen ? {} : { archive_closed: true as const }),
   };
 }
 
