@@ -21,7 +21,7 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type * as StaffOnlyModule from '../src/features/identity/StaffOnly.tsx';
@@ -70,23 +70,6 @@ const OPEN_IN_STAFF = {
     'an invitee with no account reads what they are invited to before signing in',
   '/(staff)/access/':
     'every signed-in person\'s own account page ("Your account"); its staff parts show only to those who grant access',
-} as const;
-
-/**
- * Staff screens with no door, found by this walk and reported (R8). Each
- * checks only that somebody is signed in, with a bare SignInPrompt, so a
- * signed-in account with no role is shown the staff screen and its calls
- * fail one by one. The server refuses them (requireGranter,
- * requireOrgAuthority), so nothing leaks; the courtesy is missing. Their
- * walk is skipped, and the test below fails once a door is added, so the
- * entry is removed with the gap.
- */
-const KNOWN_GAPS = {
-  '/(staff)/access/audit': 'AuditPage has no door: a signed-in account with no role sees it',
-  '/(staff)/access/orgs/':
-    'OrganizationsPage has no door: a signed-in account with no role sees it',
-  '/(staff)/access/orgs/$id':
-    'OrganizationPage has no door: a signed-in account with no role sees it',
 } as const;
 
 /** Staff screens outside the `(staff)` folder. */
@@ -168,7 +151,7 @@ const NO_ROLE = {
 };
 
 /** A server that knows who is asking and refuses everything else as a staff route would. */
-function server(me: unknown) {
+function server(me: unknown, more: Record<string, unknown> = {}) {
   vi.stubGlobal(
     'fetch',
     vi.fn((input: string | URL | Request) => {
@@ -178,6 +161,7 @@ function server(me: unknown) {
         '/api/auth/me': me,
         '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
         '/api/site-access/status': { locked: false, dev_mode_until: null },
+        ...more,
       };
       const body = answers[path];
       return Promise.resolve(
@@ -241,44 +225,99 @@ describe('the staff screens in the route tree', () => {
     );
     expect(undecided, 'decide whether each is a staff screen or open').toEqual([]);
     // And nothing named here has gone, so a list cannot outlive its pages.
-    for (const id of [
-      ...Object.keys(OPEN_IN_STAFF),
-      ...Object.keys(KNOWN_GAPS),
-      ...STAFF_ELSEWHERE,
-      ...OPEN,
-    ])
+    for (const id of [...Object.keys(OPEN_IN_STAFF), ...STAFF_ELSEWHERE, ...OPEN])
       expect(ids, id).toContain(id);
   });
 
-  it.each(STAFF.filter((p) => p.id in KNOWN_GAPS))(
-    '$path is still a known gap (remove it from KNOWN_GAPS once it has a door)',
-    async ({ path }) => {
-      server(NO_ROLE);
-      open(address(path));
-      // Settled: the page drew something of its own and is no longer loading.
-      await waitFor(() => {
-        expect(screen.getByRole('main').textContent).not.toBe('');
-        expect(screen.queryByText(/Loading…|Reading/)).toBeNull();
-      });
-      expect(screen.queryByRole('heading', { level: 1, name: 'Not for this account' })).toBeNull();
-    },
-  );
-
-  describe.each(STAFF)('$path', ({ id, path }) => {
-    const gap = (KNOWN_GAPS as Record<string, string>)[id];
-    // Skipped for the reason in KNOWN_GAPS: a real gap this walk found.
-    const it_ = gap ? it.skip : it;
-
-    it_('signed out, shows "Sign in first" behind a door', async () => {
+  describe.each(STAFF)('$path', ({ path }) => {
+    it('signed out, shows "Sign in first" behind a door', async () => {
       server(SIGNED_OUT);
       open(address(path));
       await refusedBehindADoor('Sign in first');
     });
 
-    it_('signed in with no role, shows "Not for this account" behind a door', async () => {
+    it('signed in with no role, shows "Not for this account" behind a door', async () => {
       server(NO_ROLE);
       open(address(path));
       await refusedBehindADoor('Not for this account');
     });
+  });
+});
+
+/**
+ * The three access screens this walk found with no door (R8). The doors
+ * were added to match the server: requireGranter for the audit and the
+ * organizations, requireOrgAuthority for one organization. So the people
+ * the server admits must still see the screen, not a refusal.
+ */
+describe('the access screens open for the people the server admits', () => {
+  const signedIn = (role: string, memberships: unknown[] = []) => ({
+    ...NO_ROLE,
+    role,
+    memberships,
+    grantsAccess: role === 'admin' || role === 'owner' || role === 'access_manager',
+  });
+  const ORG = {
+    organization: {
+      id: 1,
+      name: 'Harbour Residents',
+      details: null,
+      logo: null,
+      manager_count: 1,
+      coordinator_count: 0,
+    },
+    members: [],
+    youManageIt: true,
+    youGrantAccess: false,
+  };
+
+  it.each(['owner', 'admin', 'access_manager'])(
+    '/access/audit and /access/orgs/ open for the %s',
+    async (role) => {
+      server(signedIn(role), { '/api/access/audit': { entries: [] } });
+      open('/access/audit');
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Who changed what' }),
+      ).toBeInTheDocument();
+      cleanup();
+      server(signedIn(role), { '/api/orgs': { organizations: [] } });
+      open('/access/orgs/');
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Organizations' }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it.each(['moderator'])('/access/audit and /access/orgs/ refuse a %s', async (role) => {
+    server(signedIn(role));
+    open('/access/audit');
+    await refusedBehindADoor('Not for this account');
+    cleanup();
+    server(signedIn(role));
+    open('/access/orgs/');
+    await refusedBehindADoor('Not for this account');
+  });
+
+  it('/access/orgs/$id opens for a manager of that organization with no system role', async () => {
+    server(signedIn('user', [{ organization_id: 1, name: 'Harbour Residents', role: 'manager' }]), {
+      '/api/orgs/1': ORG,
+      '/api/orgs/1/invitations': { invitations: [] },
+    });
+    open('/access/orgs/1');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Harbour Residents' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Not for this account' })).toBeNull();
+  });
+
+  it('/access/orgs/$id opens for an Access Manager', async () => {
+    server(signedIn('access_manager'), {
+      '/api/orgs/1': { ...ORG, youManageIt: false, youGrantAccess: true },
+      '/api/orgs/1/invitations': { invitations: [] },
+    });
+    open('/access/orgs/1');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Harbour Residents' }),
+    ).toBeInTheDocument();
   });
 });
