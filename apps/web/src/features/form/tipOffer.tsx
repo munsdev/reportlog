@@ -1,0 +1,84 @@
+/**
+ * "Have a link, photo or video? Send it as a tip." shown after a report is
+ * filed, and the browser-only carry-over of where and when it happened.
+ *
+ * NOTHING HERE TELLS THE SERVER WHICH REPORT THE TIP FOLLOWS. The state,
+ * county and time are copied from the answers in this browser into this
+ * browser's storage when the report is sent, and the tip form reads them
+ * there as a head start. The tip filing carries only what the form's own
+ * cards hold, so no report reference, thread or token reaches it, and a tip
+ * is never connected to a report. localStorage, not sessionStorage, because
+ * the confirmation link is usually opened in another tab; it is removed as
+ * soon as the tip form has used it and expires with the confirmation link.
+ */
+
+const STORAGE_KEY = 'reportlog:tip-prefill';
+const KEYS = ['state', 'county', 'time'] as const;
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
+export type TipPrefill = Partial<Record<(typeof KEYS)[number], string>>;
+
+export function rememberForTip(answers: Record<string, unknown>): void {
+  const out: TipPrefill = {};
+  for (const k of KEYS) {
+    const v = answers[k];
+    if (typeof v === 'string' && v.trim()) out[k] = v.trim();
+  }
+  try {
+    if (Object.keys(out).length)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ at: Date.now(), values: out }));
+  } catch {
+    // Storage may be blocked; the tip form is then simply not pre-filled.
+  }
+}
+
+/** What the tip form may start with: only questions it has, and only offered choices. */
+export function takeTipPrefill(
+  fields: readonly { key: string; kind: string; options: readonly string[] }[],
+): Record<string, string> {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
+    if (typeof parsed !== 'object' || parsed === null) return {};
+    const { at, values } = parsed as { at?: unknown; values?: unknown };
+    if (typeof at !== 'number' || Date.now() - at > MAX_AGE_MS) {
+      localStorage.removeItem(STORAGE_KEY);
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const f of fields) {
+      const v = (values as Record<string, unknown> | null)?.[f.key];
+      if (typeof v !== 'string' || !(KEYS as readonly string[]).includes(f.key)) continue;
+      if (
+        (f.kind === 'choice_one' || f.kind === 'place') &&
+        f.options.length &&
+        !f.options.includes(v)
+      )
+        continue;
+      out[f.key] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+export function clearTipPrefill(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // Nothing to clear.
+  }
+}
+
+export function TipOffer() {
+  // A plain link: it must work in the unit tests' bare render and on a door,
+  // and a full page load costs nothing here.
+  return (
+    <p>
+      Have a link, photo or video? Send it as a tip.{' '}
+      <a href="/list/tips" className="underline">
+        Send a tip
+      </a>
+    </p>
+  );
+}

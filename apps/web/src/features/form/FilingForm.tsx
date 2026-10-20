@@ -35,6 +35,7 @@ import {
 import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
+import { TipOffer, rememberForTip } from './tipOffer.tsx';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
@@ -185,6 +186,9 @@ function Cards({
   const uploader = useUploader(takesFiles ? target : null);
   const draft = target.draft();
   const send = useMutation({
+    onSuccess: () => {
+      rememberForTip(toSubmission(questions, raw));
+    },
     mutationFn: () =>
       call(submitReport, {
         body: {
@@ -250,10 +254,7 @@ function Cards({
     return { card: instead, toReview: false };
   });
 
-  if (send.isSuccess)
-    return (
-      <SentReceipt email={email.trim()} title={title} dropped={send.data.files_dropped ?? []} />
-    );
+  if (send.isSuccess) return <SentReceipt email={email.trim()} title={title} />;
 
   const question = step.startsWith('q:') ? questions.find((q) => `q:${q.key}` === step) : undefined;
   const at = Math.max(0, steps.indexOf(step));
@@ -683,44 +684,15 @@ function ReviewRow({
   );
 }
 
-function SentReceipt({
-  email,
-  title,
-  dropped,
-}: {
-  email: string;
-  title: string;
-  /** Files the server dropped at Send: the logbook stopped taking files meanwhile. */
-  dropped: string[];
-}) {
+function SentReceipt({ email, title }: { email: string; title: string }) {
   return (
     <Page title="Check your email" width="prose">
       <Alert tone="confirmed" title={`We have sent a link to ${email}`}>
         Open it and press “Confirm and file my report”. Nothing is filed in “{title}” until you do.
         The link works for 24 hours.
       </Alert>
-      {dropped.length ? (
-        <Alert
-          tone="serious"
-          title={
-            dropped.length === 1
-              ? 'Your file was not sent with your report'
-              : 'Your files were not sent with your report'
-          }
-        >
-          <p>
-            While you were writing, this logbook stopped taking files. Your report was sent without{' '}
-            {dropped.length === 1 ? 'this file' : 'these files'}, and{' '}
-            {dropped.length === 1 ? 'it was' : 'they were'} not kept:
-          </p>
-          <ul className="list-disc pl-6">
-            {dropped.map((name, i) => (
-              <li key={`${name}-${String(i)}`}>{name}</li>
-            ))}
-          </ul>
-        </Alert>
-      ) : null}
       <p>If nothing arrives in a few minutes, look in your spam folder.</p>
+      <TipOffer />
     </Page>
   );
 }

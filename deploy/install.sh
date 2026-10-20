@@ -136,6 +136,7 @@ if [ ! -e "$ENV_FILE" ]; then
   sed -e "s|^DATABASE_URL=.*|DATABASE_URL=postgresql://$APP_USER@/$APP_USER?host=/var/run/postgresql|" \
     -e 's|^TEST_DATABASE_URL=|# TEST_DATABASE_URL=|' \
     -e 's|^TRUST_PROXY=.*|TRUST_PROXY=1|' \
+    -e 's|^# ATTACHMENTS_ENABLED=.*|ATTACHMENTS_ENABLED=false|' \
     "$CHECKOUT/.env.example" >"$ENV_FILE"
   note "wrote $ENV_FILE — fill it in before deploying"
 else

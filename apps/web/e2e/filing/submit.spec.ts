@@ -75,46 +75,69 @@ test('several open logbooks: each is offered, with what it is for, and opens its
   await page.goto('/submit');
   await expect(chooser(page)).toBeVisible();
   for (const lb of made) {
-    const item = page
-      .getByRole('main')
-      .getByRole('listitem')
-      .filter({ has: page.getByRole('link', { name: lb.title }) });
-    await expect(item).toBeVisible();
-    await expect(item).toContainText(lb.blurb);
+    const option = page.getByRole('radio', { name: lb.title });
+    await expect(option).toBeVisible();
+    await expect(page.getByText(lb.blurb).first()).toBeVisible();
   }
   await expectAccessible(page, '/submit with several logbooks');
 
   const second = made[1];
   if (!second) throw new Error('two logbooks were made');
-  await page.getByRole('link', { name: second.title }).click();
+  // Choosing moves nobody on: only the confirm button does.
+  await page.getByRole('radio', { name: second.title }).check();
+  await expect(page).toHaveURL(/\/submit$/);
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page).toHaveURL(new RegExp(`/file/${second.slug}$`));
   await expect(page.getByRole('heading', { level: 1, name: second.title })).toBeVisible();
   expect(outside).toEqual([]);
 });
 
-test('one open logbook and an intro written: the page stays, with the intro and the one link', async ({
+/** This page alone is told these are the lists open now. */
+async function openLists(page: Page, lists: { slug: string; title: string; blurb: string }[]) {
+  await page.route(
+    (url) => url.pathname === '/api/lists',
+    (route) => route.fulfill({ json: { lists } }),
+  );
+}
+
+test('one open logbook and an intro written: the intro and the one answer, and a button', async ({
   page,
 }) => {
   const words = 'Read this before you start: we never ask for your name.';
   await onlyOpen(page, [{ slug: 'demo', title: 'The only one open', blurb: 'What it is for.' }]);
+  await openLists(page, []);
   await intro(page, words);
   await page.goto('/submit');
   await expect(chooser(page)).toBeVisible();
   await expect(page.getByText(words)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'The only one open' })).toBeVisible();
-  // It waited for the wording, so it was drawn once: still here, not moved on.
-  await expect(page).toHaveURL(/\/submit$/);
   await expectAccessible(page, '/submit with an intro');
-  await page.getByRole('link', { name: 'The only one open' }).click();
+  await page.getByRole('radio', { name: 'The only one open' }).check();
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page).toHaveURL(/\/file\/demo$/);
 });
 
-test('one open logbook and no intro: straight to its form', async ({ page }) => {
+test('one open logbook and no intro: still a card, never a redirect (E2, E3)', async ({ page }) => {
   await onlyOpen(page, [{ slug: 'demo', title: 'The only one open', blurb: '' }]);
+  await openLists(page, []);
   await intro(page, '');
   await page.goto('/submit');
-  await expect(page).toHaveURL(/\/file\/demo$/);
-  await expect(chooser(page)).toHaveCount(0);
+  await expect(chooser(page)).toBeVisible();
+  await expect(page).toHaveURL(/\/submit$/);
+  // Nothing chosen: the button asks for an answer rather than guessing one.
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByText('Choose one of the answers to go on.')).toBeVisible();
+  await expect(page).toHaveURL(/\/submit$/);
+});
+
+test('a link or tip is the other answer, and goes to the tip form', async ({ page }) => {
+  await onlyOpen(page, [{ slug: 'demo', title: 'I was at a polling place', blurb: '' }]);
+  await openLists(page, [{ slug: 'tips', title: 'Send a link', blurb: 'A post or video.' }]);
+  await page.goto('/submit');
+  await expect(page.getByRole('radio')).toHaveCount(2);
+  await expectAccessible(page, '/submit with the tip answer');
+  await page.getByRole('radio', { name: 'I have a link or tip' }).check();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page).toHaveURL(/\/list\/tips$/);
 });
 
 test('nothing open: it says so, rather than showing an empty list', async ({ page }) => {
@@ -124,4 +147,86 @@ test('nothing open: it says so, rather than showing an empty list', async ({ pag
   await expect(page.getByText('Nothing is taking reports at the moment.')).toBeVisible();
   await expect(page.getByRole('main').getByRole('list')).toHaveCount(0);
   await expectAccessible(page, '/submit with nothing open');
+});
+
+/** The tips form as the API describes it: a state to choose and a time. */
+const TIPS_FORM = {
+  slug: 'tips',
+  title: 'Send a link',
+  blurb: null,
+  accepting: true,
+  opens_at: null,
+  closes_at: null,
+  asks_email: false,
+  email_when: 'never',
+  email_reason: 'erase',
+  personal_keys: [],
+  personal_days: null,
+  fields: [
+    {
+      key: 'state',
+      kind: 'choice_one',
+      label: 'Where',
+      help: null,
+      required: true,
+      max_values: 1,
+      options: ['Not sure', 'Ohio', 'Texas'],
+      allow_other: false,
+      erased: false,
+    },
+    {
+      key: 'time',
+      kind: 'time',
+      label: 'About when',
+      help: null,
+      required: false,
+      max_values: 1,
+      options: [],
+      allow_other: false,
+      erased: false,
+    },
+  ],
+};
+
+test('E5: the tip form starts with the filed report’s state and time, and sends no reference', async ({
+  page,
+}) => {
+  // What the filing form leaves in this browser when a report is sent.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'reportlog:tip-prefill',
+      JSON.stringify({ at: Date.now(), values: { state: 'Ohio', time: '07:30' } }),
+    );
+  });
+  await page.route(
+    (url) => url.pathname === '/api/lists/tips',
+    (route) => {
+      if (route.request().method() === 'GET') return route.fulfill({ json: TIPS_FORM });
+      return route.fulfill({ json: { ok: true } });
+    },
+  );
+  const sent: string[] = [];
+  page.on('request', (r) => {
+    if (r.method() === 'POST') sent.push(`${r.url()}\n${r.postData() ?? ''}`);
+  });
+  await page.goto('/list/tips');
+  await page
+    .getByRole('button', { name: /start|begin|next|continue/i })
+    .first()
+    .click();
+  await expect(page.getByRole('radio', { name: 'Ohio' })).toBeChecked();
+  await page
+    .getByRole('button', { name: /next|continue/i })
+    .first()
+    .click();
+  await expect(page.getByLabel('About when')).toHaveValue('07:30');
+  await page
+    .getByRole('button', { name: /^(send|file|submit)/i })
+    .first()
+    .click();
+  await expect.poll(() => sent.length).toBeGreaterThan(0);
+  const filing = sent.join('\n');
+  expect(filing).toContain('Ohio');
+  // Nothing says which report this follows.
+  expect(filing).not.toMatch(/RL-|public_ref|thread|token|report/i);
 });
