@@ -5,7 +5,7 @@ D was split in two: D1 does moderation and the board, D2 (this) the anchor, the 
 
 - **Branch:** `claude/d2-anchor`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, and H merged in at `09b08ce`)
 - **Pull request:** [#8](https://github.com/munsdev/reportlog/pull/8), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged. Nothing has been sent to the real
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`7898de3`). Nothing has been sent to the real
   transparency log or the real timestamp authority.
 - **Last updated:** 2026-10-19
 

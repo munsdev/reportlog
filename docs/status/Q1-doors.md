@@ -6,7 +6,7 @@ leftovers from `P2-site-pages.md`.
 - **Branch:** `claude/q1-doors-decisions`, based on `ccr-c9c93698-ev856l` (merged again before the
   last run; it had not moved)
 - **Pull request:** [#26](https://github.com/munsdev/reportlog/pull/26), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`b43b43a`).
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing

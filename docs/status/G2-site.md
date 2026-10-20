@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/g2-site-nav-feedback-digests`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G, and H merged in at `09b08ce`)
 - **Pull request:** [#7](https://github.com/munsdev/reportlog/pull/7), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`7048331`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

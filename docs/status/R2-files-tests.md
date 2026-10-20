@@ -5,7 +5,7 @@ The brief is R2 in `docs/parity.md` §7.
 
 - **Branch:** `claude/r2-files-tests`, based on `ccr-c9c93698-ev856l` at `6bd963a`, merged up to `9a839fe` (R7 and R1)
 - **Pull request:** [#32](https://github.com/munsdev/reportlog/pull/32), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`311abe4`).
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing

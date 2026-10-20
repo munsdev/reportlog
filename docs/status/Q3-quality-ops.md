@@ -6,7 +6,7 @@ For the coordinating session and the other workstreams. Brief: the owner's decis
 - **Branch:** `claude/q3-quality-ops`, based on `ccr-c9c93698-ev856l`; the base was merged in
   again at `b43b43a` (Q1 merged)
 - **Pull request:** [#28](https://github.com/munsdev/reportlog/pull/28), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`042efc0`).
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing

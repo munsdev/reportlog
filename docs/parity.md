@@ -6,23 +6,35 @@ the rebuild.
 
 ## Verdict
 
-**Close, but not there.** Of 385 rows outside the invariants, 9 are Missing and 52 Partial
-(down from 35 and 86). Every invariant in `CLAUDE.md` now has a test; one has a partial test. Every
-route but one has an equivalent. What is left is mostly **missing tests** for behaviour that
-exists, plus a few small screen behaviours. Nothing sealed, chained or guarded by the database is
-missing.
+**Parity is reached in the code, and not yet on paper.** Of 385 rows outside the invariants, 343
+are Equivalent, 34 Dropped, 5 Missing and 3 Partial (was 8 Missing and 31 Partial). Of the 42
+invariants, 41 are tested in full and one is Partial. Every legacy route has an equivalent or a
+recorded drop. All the pieces R1 to R10 have merged, and the status docs and test headers are
+corrected. Nothing sealed, chained or guarded by the database is missing.
+
+What is left is **nine rows whose text is stale, not code that is absent.** Each reads Missing or
+Partial because it says "no doc says so", and the owner's rulings in `decisions.md` (24, 25 and 33)
+have since said so. Flipping them is the coordinator's call, because no code contradicts them:
+
+| Row (section)                                 | Reads today | What it needs                                                                       |
+| --------------------------------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| A door page calls only the filing calls (§1b) | Partial     | Equivalent: decision 33 rewords the rule, and `CLAUDE.md` already carries the words |
+| media cache (§4b)                             | Missing     | Dropped: decision 24 (the renditions bucket replaced it)                            |
+| the frontend is modules, no build step (§4b)  | Missing     | Dropped: decision 24 (Vite)                                                         |
+| the panel owns its spacing (§4b)              | Missing     | Dropped: decision 24 (Tailwind)                                                     |
+| the filing form's card list (§4b)             | Missing     | Dropped: decision 24 (React)                                                        |
+| a name typed at the install prompt (§4b)      | Missing     | Dropped: decision 24 (the wizard asks, P3)                                          |
+| a deployment can carry its own name (§4b)     | Partial     | Dropped, in part: decision 24 (the installer's name layer)                          |
+| the doctor knows each kind of machine (§4b)   | Partial     | Dropped, in part: decision 24 (only Debian 12 and Ubuntu 24.04)                     |
+| `001_init`, `legal_hold` (§5)                 | Partial     | Dropped, in part: decision 25. `veracity` is already Dropped                        |
 
 Before `legacy/` can be deleted:
 
-1. **The owner rules on the open questions in §7 (piece R0).** These are Q2's three, the
-   style guide, `boot-guard`, legacy's `legal_hold` column, and a handful of "superseded, but no doc
-   says so" rows. Most of them are one line in `docs/decisions.md` each. Up to eight of the nine
-   Missing rows close by a ruling alone; the ninth needs a test.
-2. **Pieces R1 to R10 are built.** Each is one session or less, and most are tests only. They can
-   run largely in parallel, because their folders do not overlap.
-3. **The bookkeeping is corrected.** Twenty-two status docs still say "Not merged" for merged
-   work, and two test headers are out of date.
-4. **All three suites pass on the merged base.** No suite was run for this audit.
+1. **The coordinator flips those nine rows** to the statuses above, citing the decision in each,
+   and recounts the totals. Outside the invariants the eight rows would join Dropped (34 to 42) with 343
+   Equivalent, and no Missing and no Partial; the invariants would read 42 Equivalent.
+2. **All three suites pass on the merged base** (`pnpm check`, `pnpm test:db` and the browser
+   suite). This re-count ran only `pnpm check`; no row was re-verified against the code.
 
 Nothing outside `legacy/` reads a file inside it. The seal vectors are copied into
 `packages/seal/test/fixtures/`. Deleting it touches only the ignore lines in `eslint.config.js`,
@@ -72,21 +84,23 @@ Paths are shortened as follows:
 
 | Section                                    | Rows | Equivalent | Partial | Missing | Dropped | Was (E / P / M / D) |
 | ------------------------------------------ | ---- | ---------- | ------- | ------- | ------- | ------------------- |
-| Invariants (both `CLAUDE.md` files)        | 42   | 41         | 1       | 0       | 0       | 34 / 7 / 1 / 0      |
-| Routes (`legacy/src/routes/`, `server.js`) | 131  | 124        | 0       | 1       | 6       | 106 / 7 / 12 / 6    |
-| Scripts (`legacy/scripts/`, not tests)     | 20   | 18         | 0       | 0       | 2       | 14 / 2 / 0 / 4      |
-| Self-test scripts                          | 36   | 33         | 1       | 0       | 2       | 26 / 8 / 0 / 2      |
-| `selftest.js` groups                       | 84   | 66         | 10      | 5       | 3       | 34 / 31 / 12 / 7    |
-| Browser tests                              | 25   | 12         | 10      | 0       | 3       | 5 / 15 / 3 / 2      |
-| Migrations                                 | 52   | 39         | 1       | 0       | 12      | 30 / 9 / 3 / 10     |
-| Screens (`public/js/`)                     | 37   | 23         | 9       | 2       | 3       | 16 / 14 / 5 / 2     |
+| Invariants (both `CLAUDE.md` files)        | 42   | 41         | 1       | 0       | 0       | 41 / 1 / 0 / 0      |
+| Routes (`legacy/src/routes/`, `server.js`) | 131  | 124        | 0       | 0       | 7       | 124 / 0 / 1 / 6     |
+| Scripts (`legacy/scripts/`, not tests)     | 20   | 18         | 0       | 0       | 2       | 18 / 0 / 0 / 2      |
+| Self-test scripts                          | 36   | 34         | 0       | 0       | 2       | 33 / 1 / 0 / 2      |
+| `selftest.js` groups                       | 84   | 74         | 2       | 5       | 3       | 66 / 10 / 5 / 3     |
+| Browser tests                              | 25   | 21         | 0       | 0       | 4       | 12 / 10 / 0 / 3     |
+| Migrations                                 | 52   | 39         | 1       | 0       | 12      | 39 / 1 / 0 / 12     |
+| Screens (`public/js/`)                     | 37   | 33         | 0       | 0       | 4       | 23 / 9 / 2 / 3      |
+
+"Was" is the table as the re-audit at `a3a9acb` left it.
 
 These were counted by a script from the Status column of each table below. A row is a table row.
 Where one row covers several legacy paths or groups, it says so ("2 rows", "10 groups") and still
-counts once.
+counts once. Re-counted 2026-10-20 at `56168b4`, after R1, R2, R4, R7, R8, R9, S-A and S-B merged.
 
-**Missing rows: 8** (was 35). **Partial rows: 33** (was 86; the sum of the table above). Both counts leave out the invariants.
-**Invariants without a complete test: 1** (was 8).
+**Missing rows: 5** (was 8). **Partial rows: 3** (was 31, the sum of the previous table). Both counts leave out the invariants.
+**Invariants without a complete test: 1** (was 1; its wording is settled by decision 33).
 
 ---
 
@@ -884,9 +898,9 @@ real provider is left, and it waits on the owner choosing one.
 - Every row above reads Equivalent or Dropped.
 - Every R0 question is answered in `docs/decisions.md`.
 - The bookkeeping is corrected:
-  - The status docs of merged work stop saying "Not merged". Twenty-two still do, from A to Q3.
-  - Two test headers are corrected: `T/editorial-notes.test.ts` still says the file half is
-    "Not ported", and `T/invariants.test.ts` says "five callers" and lists six.
+  - The status docs of merged work stop saying "Not merged". Done: each names its merge commit.
+  - Two test headers are corrected. Done: `T/editorial-notes.test.ts` no longer says the file half
+    is "Not ported", and `T/invariants.test.ts` says six callers.
 - `pnpm check`, `pnpm test:db` and the browser suite pass on the merged base.
 - Then delete `legacy/` and its three ignore lines (`eslint.config.js`, `.prettierignore`,
   `.dependency-cruiser.cjs`). The tests that cite legacy files do so in comments only, and the

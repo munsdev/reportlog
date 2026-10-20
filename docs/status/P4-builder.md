@@ -5,7 +5,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 - **Branch:** `claude/p4-builder-freeze`, based on `ccr-c9c93698-ev856l`, merged up to `9771872` (A2
   and C3 included)
 - **Pull request:** [#21](https://github.com/munsdev/reportlog/pull/21), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`82ffa59`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

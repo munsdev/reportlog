@@ -5,7 +5,7 @@ D was split in two; D2 (the anchor, the transparency log, exports) has its own r
 
 - **Branch:** `claude/d1-moderation-board`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, G; H, G2, I, D2 and F merged in at `c93ae88`)
 - **Pull request:** [#10](https://github.com/munsdev/reportlog/pull/10), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`81a4c77`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

@@ -4,7 +4,7 @@ For the coordinating session. Brief: `docs/parity.md` §7, R1.
 
 - **Branch:** `claude/r1-seal-tests`, based on `ccr-c9c93698-ev856l` (R7 merged in before the last run of all three suites)
 - **Pull request:** [#31](https://github.com/munsdev/reportlog/pull/31), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`9a839fe`).
 - **Last updated:** 2026-10-20
 
 **Tests only. No code changed, no fixture touched.** Every new test passed against the real code

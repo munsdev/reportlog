@@ -5,7 +5,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/eloquent-dijkstra-b98fkw`, based on `ccr-c9c93698-ev856l` (foundation + A, B, G)
 - **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
-- **State:** finished, waiting for review, not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`77e7451`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

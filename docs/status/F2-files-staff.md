@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/f2-files-staff`, based on `ccr-c9c93698-ev856l`, merged up to `81a4c77` (C2 and D1 included)
 - **Pull request:** [#13](https://github.com/munsdev/reportlog/pull/13), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`221cb83`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing
