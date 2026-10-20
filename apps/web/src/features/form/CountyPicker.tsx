@@ -16,6 +16,7 @@
  */
 import { countyOptions, stateOfPlace } from '@reportlog/fields';
 import { useId } from 'react';
+import { FieldReset } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Select } from '@/components/ui/select.tsx';
 
@@ -39,46 +40,48 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
       aria-describedby={describedBy}
       className="flex flex-col gap-4"
     >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={`${id}-state`}>State</Label>
-        <Select
-          id={`${id}-state`}
-          value={state}
-          aria-invalid={invalid ? true : undefined}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        >
-          <option value="">Choose a state</option>
-          {states.map((p) => (
-            <option key={p.code} value={p.code}>
-              {p.name}
-            </option>
-          ))}
-        </Select>
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={`${id}-county`}>County, if you know it</Label>
-        <Select
-          id={`${id}-county`}
-          value={state ? value : ''}
-          disabled={!state}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        >
-          {state ? (
-            <option value={state}>Not sure which county</option>
-          ) : (
-            <option value="">Choose a state first</option>
-          )}
-          {counties.map((p) => (
-            <option key={p.code} value={p.code}>
-              {p.name}
-            </option>
-          ))}
-        </Select>
-      </div>
+      <FieldReset>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`${id}-state`}>State</Label>
+          <Select
+            id={`${id}-state`}
+            value={state}
+            aria-invalid={invalid ? true : undefined}
+            onChange={(e) => {
+              onChange(e.target.value);
+            }}
+          >
+            <option value="">Choose a state</option>
+            {states.map((p) => (
+              <option key={p.code} value={p.code}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={`${id}-county`}>County, if you know it</Label>
+          <Select
+            id={`${id}-county`}
+            value={state ? value : ''}
+            disabled={!state}
+            onChange={(e) => {
+              onChange(e.target.value);
+            }}
+          >
+            {state ? (
+              <option value={state}>Not sure which county</option>
+            ) : (
+              <option value="">Choose a state first</option>
+            )}
+            {counties.map((p) => (
+              <option key={p.code} value={p.code}>
+                {p.name}
+              </option>
+            ))}
+          </Select>
+        </div>
+      </FieldReset>
     </div>
   );
 }

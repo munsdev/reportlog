@@ -1,7 +1,7 @@
 {
   "reportlog_list": 1,
   "slug": "election-tips",
-  "title": "Send a link about the election",
+  "title": "Election tips",
   "blurb": "Links to posts, articles or video about something that happened at an election. Not your own account of what you saw, and no uploads.",
   "email": "required",
   "fields": [
