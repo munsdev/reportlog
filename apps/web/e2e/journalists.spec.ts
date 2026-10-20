@@ -58,8 +58,8 @@ test.describe.configure({ mode: 'serial' });
 test('signing up, confirming from the email, an alert, and leaving from it', async ({
   browser,
 }, testInfo) => {
-  // One state per project: the two projects share a database and run together.
-  const state = testInfo.project.name === 'phone' ? 'Nevada' : 'Arizona';
+  // One state per project, and states no other test files reports in: the two projects share a database and run together.
+  const state = testInfo.project.name === 'phone' ? 'Maine' : 'Vermont';
   const page = await (await browser.newContext()).newPage();
   const seen = watch(page);
 

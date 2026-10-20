@@ -1,7 +1,7 @@
 # Plan D session 2 · Journalist alert list (J1 to J6): status
 
 - **Branch:** `claude/plan-d-alerts`, from `ccr-c9c93698-ev856l` (nothing newer to merge at the time)
-- **State:** built; suite totals below are filled in from the runs before the PR.
+- **State:** built; PR into `ccr-c9c93698-ev856l`.
 
 ## What was built
 
@@ -24,6 +24,14 @@
   one in full (the pages show it partly hidden) and no moderator route reads the table.
 - **Grants nothing (J5):** no user, session or role is created; a boundary rule
   (`journalists-never-reach-the-chain`) keeps the folder away from the seal and chain.
+
+## Suites, each run once, then the failures re-run
+
+| Suite          | Result                                                                                                                                                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`   | passes (api 399 passed, 19 skipped; web 566; fields 69; seal 46; access 6)                                                                                                                                                                               |
+| `pnpm test:db` | 1118 passed, 3 failed: my test's window picked up other files' reports, the sweep did not name `journalist_links`, the invariants test did not know `/api/journalists/`. Fixed; those three files re-run: 62 passed. **The whole suite was not re-run.** |
+| Browser suite  | 820 passed, 5 skipped, 1 failed: my own spec counted Nevada reports other specs file. Moved to Vermont and Maine; the spec re-run alone: 4 passed. **The whole suite was not re-run.**                                                                   |
 
 ## Outside my folders (kept minimal)
 
