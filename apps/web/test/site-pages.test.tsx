@@ -46,6 +46,7 @@ function site(overrides: Partial<Site> = {}): Site {
       home_intro: 'i',
       about_archive: 'We are the Munich archive.',
       submit_intro: '',
+      lock_intro: '',
       board_intro: '',
       how_intro: '',
       alliance_intro: '',

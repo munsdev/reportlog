@@ -89,12 +89,19 @@ describe('the page wording', () => {
       }
     };
     // Routes and features: some slots sit in a feature's page (the board,
-    // the directory). Read either as `copy.key` or through <CopyText>.
+    // the directory). Read either as `copy.key` or through <CopyText>, or,
+    // for the lock screen's paragraph, which arrives on the password check
+    // rather than with the wording, drawn with its `data-copy` marker.
     walk(`${import.meta.dirname}/../../src/routes`);
     walk(`${import.meta.dirname}/../../src/features`);
     for (const key of COPY_KEYS) {
       expect(
-        files.some((f) => f.includes(`copy.${key}`) || f.includes(`<CopyText slot="${key}"`)),
+        files.some(
+          (f) =>
+            f.includes(`copy.${key}`) ||
+            f.includes(`<CopyText slot="${key}"`) ||
+            f.includes(`data-copy="${key}"`),
+        ),
         key,
       ).toBe(true);
     }

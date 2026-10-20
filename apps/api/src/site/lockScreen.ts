@@ -1,0 +1,34 @@
+/**
+ * What the password screen may show: the site's name, the operator's
+ * paragraph for it, and when the development notice ends (decisions.md §3).
+ *
+ * Read by the lock screen's own call, which is in front of the password
+ * (identity/curtainRoutes.ts), so a locked visitor gets these without any
+ * other call behind the gate. Nothing else of the site's settings is here on
+ * purpose: not the look, not the other wording, not a figure.
+ */
+import type { LockScreenSite } from '@reportlog/contracts';
+import { parseBrand, plainName } from '@reportlog/contracts';
+import type { Database } from '../db/database.ts';
+import { resolveCopy } from './copy.ts';
+import { getDevMode } from './devMode.ts';
+import { resolveSiteName } from './identity.ts';
+import { readCopy, readSettings } from './settings.ts';
+
+export async function lockScreenSite(db: Database): Promise<LockScreenSite> {
+  const [settings, rows] = await Promise.all([readSettings(db), readCopy(db)]);
+  const name = resolveSiteName(settings.site_name);
+  // Shown as written: never through renderCopy, whose figures are counts of
+  // the archive behind the password.
+  const intro = resolveCopy(rows).lock_intro;
+  return {
+    name_parts: parseBrand(name),
+    plain_name: plainName(name),
+    ...(intro ? { intro } : {}),
+  };
+}
+
+/** The development notice's end, for the badge on the lock screen and on a door. */
+export async function devModeUntil(db: Database): Promise<string | null> {
+  return (await getDevMode(db)).until;
+}

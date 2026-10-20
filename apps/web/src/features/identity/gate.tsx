@@ -9,7 +9,8 @@
  *
  * The one exception is a door: an address that works without the password
  * (a logbook's filing form, a list's form, a report's confirmation link, the
- * link in a digest email that stops it).
+ * link asking a reporter for evidence, the link in a digest email that stops
+ * it).
  * There the router is mounted for that one page with navigation blocked, so
  * leaving it means a full page load, which lands back here. WHETHER THE THING
  * BEHIND A DOOR IS ACTUALLY OPEN is the server's decision: if a call on that
@@ -18,14 +19,14 @@
  * After the password, a deployment that has not been set up shows the setup
  * wizard instead of the site.
  */
-import { getSetupStatus, getSiteAccessStatus } from '@reportlog/contracts';
+import { getSetupStatus } from '@reportlog/contracts';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { ApiRequestError, call } from '../../lib/api.ts';
-import { GateContext } from './gateMode.ts';
+import { GateContext, siteStatusQuery } from './gateMode.ts';
 import { LockScreen } from './LockScreen.tsx';
 import { SetupWizard } from './SetupWizard.tsx';
 
@@ -36,6 +37,9 @@ import { SetupWizard } from './SetupWizard.tsx';
 export const DOOR_PATHS: readonly RegExp[] = [
   /^\/file\/[a-z0-9][a-z0-9-]{0,62}$/,
   /^\/file\/confirm\/[^/]+$/,
+  // The evidence-request link: in front of the password like the
+  // confirmation link, its token guarding it (decisions.md §4).
+  /^\/evidence\/[^/]+$/,
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
   // Stopping email somebody asked for never waits on a password (identity/digestStop.ts).
   /^\/notifications\/stop\/[^/]+$/,
@@ -46,12 +50,6 @@ export function isDoorPath(pathname: string): boolean {
   return DOOR_PATHS.some((r) => r.test(p));
 }
 
-export const siteStatusQuery = queryOptions({
-  queryKey: ['site-access', 'status'],
-  queryFn: ({ signal }) => call(getSiteAccessStatus, { signal }),
-  staleTime: Infinity,
-});
-
 export const setupStatusQuery = queryOptions({
   queryKey: ['site-access', 'setup'],
   queryFn: ({ signal }) => call(getSetupStatus, { signal }),
@@ -59,7 +57,7 @@ export const setupStatusQuery = queryOptions({
 });
 
 // The context lives in gateMode.ts; re-exported for the pages that ask.
-export { useGateMode } from './gateMode.ts';
+export { siteStatusQuery, useGateMode } from './gateMode.ts';
 export type { GateMode } from './gateMode.ts';
 
 export const isLockedError = (e: unknown) => e instanceof ApiRequestError && e.code === 'locked';
@@ -153,6 +151,7 @@ export function SiteGate({
   if (locked && !door) {
     return (
       <LockScreen
+        site={status.data.site}
         onUnlocked={async () => {
           setDoorRefused(false);
           await client.resetQueries();

@@ -17,9 +17,13 @@ export const Verification = z.object({
   recipe: z.number().int(),
   received_at: z.string(),
   chain: z.object({ logbook: z.string(), logbook_title: z.string(), genesis: Hex64 }),
-  /** What was hashed, and the exact bytes it was hashed as. */
-  hashed_fields: z.record(z.string(), z.unknown()),
-  canonical_json: z.string(),
+  /**
+   * What was hashed, and the exact bytes it was hashed as. Both ABSENT while
+   * the report is not public (decisions.md §1): the fingerprints below still
+   * prove it has not changed, without saying what it says.
+   */
+  hashed_fields: z.record(z.string(), z.unknown()).optional(),
+  canonical_json: z.string().optional(),
   content: z.object({ recorded: Hex64, computed: Hex64, ok: z.boolean() }),
   link: z.object({ recorded: Hex64, computed: Hex64, prev_chain_hash: Hex64, ok: z.boolean() }),
   position: z.object({

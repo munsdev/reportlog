@@ -152,7 +152,11 @@ function Shown({
       <Alert tone="confirmed" title={`Its reference is ${c.public_ref}`}>
         {c.state === 'public'
           ? 'A moderator approved it, and it is on the public archive.'
-          : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
+          : // While the archive is off nothing is public, so the page never
+            // says the word (decisions.md §5).
+            c.archive_closed
+            ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
+            : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
       </Alert>
       {c.files ? <FilesFiled files={c.files} /> : null}
       <p>
