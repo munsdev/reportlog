@@ -21,14 +21,16 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryHistory, createRouter } from '@tanstack/react-router';
-import type { AnyRoute } from '@tanstack/react-router';
 import { render, screen, waitFor } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type * as StaffOnlyModule from '../src/features/identity/StaffOnly.tsx';
+import type * as ListAdminModule from '../src/features/lists/ListAdmin.tsx';
+import type * as OnlyForModule from '../src/features/staff-nav/OnlyFor.tsx';
 import { routeTree } from '../src/routeTree.gen.ts';
 
 vi.mock('../src/features/identity/StaffOnly.tsx', async (original) => {
-  const m = await original<typeof import('../src/features/identity/StaffOnly.tsx')>();
+  const m = await original<typeof StaffOnlyModule>();
   return {
     ...m,
     StaffOnly: (props: ComponentProps<typeof m.StaffOnly>) => (
@@ -39,7 +41,7 @@ vi.mock('../src/features/identity/StaffOnly.tsx', async (original) => {
   };
 });
 vi.mock('../src/features/staff-nav/OnlyFor.tsx', async (original) => {
-  const m = await original<typeof import('../src/features/staff-nav/OnlyFor.tsx')>();
+  const m = await original<typeof OnlyForModule>();
   return {
     ...m,
     OnlyFor: (props: ComponentProps<typeof m.OnlyFor>) => (
@@ -50,7 +52,7 @@ vi.mock('../src/features/staff-nav/OnlyFor.tsx', async (original) => {
   };
 });
 vi.mock('../src/features/lists/ListAdmin.tsx', async (original) => {
-  const m = await original<typeof import('../src/features/lists/ListAdmin.tsx')>();
+  const m = await original<typeof ListAdminModule>();
   return {
     ...m,
     ReviewersOnly: (props: ComponentProps<typeof m.ReviewersOnly>) => (
@@ -135,8 +137,13 @@ const queryClient = () => new QueryClient({ defaultOptions: { queries: { retry: 
 /** Every page (a route with no children) in the generated tree, by route id. */
 function everyPage(): { id: string; path: string }[] {
   const router = createRouter({ routeTree, context: { queryClient: queryClient() } });
-  return (Object.values(router.routesById) as AnyRoute[])
-    .filter((r) => r.id !== '__root__' && !(r.children as unknown[] | undefined)?.length)
+  const routes = Object.values(router.routesById) as {
+    id: string;
+    fullPath: string;
+    children?: unknown[];
+  }[];
+  return routes
+    .filter((r) => r.id !== '__root__' && !r.children?.length)
     .map((r) => ({ id: r.id, path: r.fullPath }));
 }
 

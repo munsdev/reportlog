@@ -146,9 +146,13 @@ test.describe('with a real token', () => {
 
     // Unconfirmed, then filed: both states of the one page.
     await page.goto(link, { waitUntil: 'networkidle' });
-    await expect(page.getByRole('heading', { level: 1, name: 'Confirm your report' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Confirm your report' }),
+    ).toBeVisible();
     await page.getByRole('button', { name: 'Confirm and file my report' }).click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Your report is filed' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Your report is filed' }),
+    ).toBeVisible();
     await page.waitForLoadState('networkidle');
     expect(outside, '/file/confirm/$token asked another host').toEqual([]);
 
