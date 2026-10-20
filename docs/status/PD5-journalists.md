@@ -1,9 +1,6 @@
 # Plan D session 5 · Journalist access (M5, J7a to J13, K7): status
 
-- **Branch:** `claude/plan-d-journalists`, from `ccr-c9c93698-ev856l`, with **PD3 (`claude/plan-d-links`)
-  and PD4b (`claude/plan-d-moderation`, PR #41) merged in**, because neither had reached the base yet:
-  the desk reads `checkedLinks()` (PD3) and reuses the generic agreement (PD4b, M8). Once both merge,
-  this PR's diff is only its own.
+- **Branch:** `claude/plan-d-journalists`, with the base at `eaff00b` (PD3, PD4b and 4a) merged in.
 - **State:** built; PR [#44](https://github.com/munsdev/reportlog/pull/44) into `ccr-c9c93698-ev856l`.
 
 ## What was built
@@ -60,16 +57,17 @@
 
 ## Suites
 
-Each run once on the committed tree (latest `ccr-c9c93698-ev856l` merged: nothing new; types up to date).
+Each run once on the tree with the base at `eaff00b` merged in (types regenerated: up to date).
 
 | Suite                                   | Result                                                               |
 | --------------------------------------- | -------------------------------------------------------------------- |
 | `pnpm check`                            | passes (api 407 + 21 skipped, web 588, fields 69, seal 46, access 9) |
-| `pnpm test:db`                          | 82 files, 1182 passed                                                |
-| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 956 passed, 5 skipped                                                |
+| `pnpm test:db`                          | 83 files, 1187 passed                                                |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 960 passed, 5 skipped                                                |
 
-`pnpm check` ran before two lines were added (the access log labels in `moderation/Settings.tsx`); that
-file was then linted, format-checked and type-checked alone, and both other suites ran after it.
+The desk uses its own guard (`deskGuard`) rather than `agreementGuard`, because the desk is closed
+until a journalist text exists. It reads Sources with its own query rather than `linksFor`, which is
+per thread and selects `added_by`.
 
 ## Outside my folders (kept minimal)
 
