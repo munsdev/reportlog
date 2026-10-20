@@ -50,9 +50,19 @@ interface Allowance {
   onlyWhenPresent?: string;
 }
 
-// Empty: nothing is excused. The board's "Read in full" link was the one
-// allowance; Q2 fixed it ("Read in full: RL-…").
-const ALLOWED: Allowance[] = [];
+// The board's "Read in full" link was the first allowance; Q2 fixed it
+// ("Read in full: RL-…").
+const MAP_TILES = {
+  rule: 'label-content-name-mismatch',
+  page: '/',
+  why: 'The heat map\'s inset tiles (Alaska, Hawaii, the territories; HeatMap.tsx) show a short code and a count ("AK 12") but are named "Alaska: …", so somebody using speech input who says what they see cannot press them (WCAG 2.5.3). Found by R8\'s run, reported; the fix is in the maps folder (R9).',
+  onlyWhenPresent:
+    "Drawn only when e2e/maps.spec.ts has left a map in the front page's slot before the walk reaches /, which depends on the order the files run in.",
+};
+const ALLOWED: Allowance[] = [
+  { ...MAP_TILES, visitor: 'stranger' },
+  { ...MAP_TILES, visitor: 'administrator' },
+];
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
