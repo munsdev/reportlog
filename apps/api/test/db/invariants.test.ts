@@ -916,7 +916,7 @@ describe('I3 · a sealed object is only ever rebuilt from a row sealedReportRows
     expect(unsealedRebuilds(files)).toEqual([]);
   });
 
-  it('and the walk really looks: the five callers today are all found', () => {
+  it('and the walk really looks: the six callers today are all found', () => {
     const files = everything();
     const callers = files.filter((f) => /\brebuildSealedObject\(/.test(readFileSync(f, 'utf8')));
     expect(callers.map((f) => relative(ROOT, f)).sort()).toEqual([

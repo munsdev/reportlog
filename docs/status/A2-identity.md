@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/a2-identity-leftovers`, based on `ccr-c9c93698-ev856l` at `81a4c77` (foundation + A–I, C2, D1, G2 merged)
 - **Pull request:** [#17](https://github.com/munsdev/reportlog/pull/17), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`9771872`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

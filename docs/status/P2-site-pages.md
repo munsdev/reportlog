@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. Brief: `docs/parity.md` 
 
 - **Branch:** `claude/p2-site-pages`, based on `ccr-c9c93698-ev856l`; the base was merged in again at `af9114b` (D3, P7, P1, P4, P6 merged)
 - **Pull request:** [#23](https://github.com/munsdev/reportlog/pull/23), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`dc2e2ca`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

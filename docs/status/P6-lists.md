@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/p6-lists`, based on `ccr-c9c93698-ev856l` at `9771872` (with C3 and A2)
 - **Pull request:** into `ccr-c9c93698-ev856l` (linked from the PR itself)
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`a8ea595`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

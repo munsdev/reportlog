@@ -5,7 +5,7 @@ D3 builds what D1 (`D1-board.md`) and D2 (`D2-anchor.md`) left.
 
 - **Branch:** `claude/d3-moderation-extras`, based on `ccr-c9c93698-ev856l` (F2 and its follow-up merged in at `3c4c865`)
 - **Pull request:** [#18](https://github.com/munsdev/reportlog/pull/18), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`96b3741`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

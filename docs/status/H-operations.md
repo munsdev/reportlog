@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/amazing-heisenberg-hvxrw0`, based on `ccr-c9c93698-ev856l` (foundation + A, B, C, E, merged in)
 - **Pull request:** [#4](https://github.com/munsdev/reportlog/pull/4), into `ccr-c9c93698-ev856l`
-- **State:** finished up to what needs the user's accounts (a server, a domain, Scaleway, EU storage). Not merged.
+- **State:** finished up to what needs the user's accounts (a server, a domain, Scaleway, EU storage). Merged into `ccr-c9c93698-ev856l` (`4accd56`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

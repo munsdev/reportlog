@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. One file per workstream 
 
 - **Branch:** `claude/beautiful-hawking-h3m3pn`, based on `ccr-c9c93698-ev856l` (foundation + A, B, G)
 - **Pull request:** [#6](https://github.com/munsdev/reportlog/pull/6), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`5e663be`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

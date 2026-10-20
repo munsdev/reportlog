@@ -6,7 +6,7 @@ This is for the coordinating session and the other workstreams. There is one fil
 
 - **Branch:** `ccr-b78522c6-nw0aj6`, based on `ccr-c9c93698-ev856l` (the foundation)
 - **Pull request:** [#3](https://github.com/munsdev/reportlog/pull/3), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review, not merged. The PR description has the full detail.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`50fd964`). The PR description has the full detail.
 - **Last updated:** 2026-10-19
 
 ## Checks

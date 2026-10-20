@@ -7,8 +7,9 @@
  *   - a withdrawn report's note is still there (if a note followed its report,
  *     pressuring a reporter would be a way to erase the editorial record).
  *
- * Not ported: the logbook FILE carrying the switch (legacy `toFile` /
- * `createFromFile`). The file format is workstream B's; see the status report.
+ * The logbook FILE carrying the switch (legacy `toFile` / `createFromFile`)
+ * is checked in `logbook-file-switches.test.ts`, which workstream B's file
+ * format made possible.
  */
 import type { FieldDefinition } from '@reportlog/fields';
 import { readFileSync } from 'node:fs';

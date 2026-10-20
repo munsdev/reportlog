@@ -4,7 +4,7 @@ For the coordinating session and the other workstreams. Brief: R7 in `docs/parit
 
 - **Branch:** `claude/r7-identity-tests`, based on `ccr-c9c93698-ev856l` at `6bd963a`
 - **Pull request:** [#30](https://github.com/munsdev/reportlog/pull/30), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`2bdfe05`).
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing

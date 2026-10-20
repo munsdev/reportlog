@@ -5,7 +5,7 @@ workstream in `docs/status/`, so these never conflict in a merge.
 
 - **Branch:** `ccr-a9827e7a-smcut3`, based on `ccr-c9c93698-ev856l` (the foundation)
 - **Pull request:** [#2](https://github.com/munsdev/reportlog/pull/2), into `ccr-c9c93698-ev856l`
-- **State:** finished and waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`e1d1f3f`).
 - **Last updated:** 2026-10-19
 
 ## Checks, as last run before pushing

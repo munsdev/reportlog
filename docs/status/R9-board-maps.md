@@ -6,7 +6,7 @@ The brief is R9 in `docs/parity.md` §7, plus the heat map tiles' names that R8 
 - **Branch:** `claude/r9-board-maps`, based on `ccr-c9c93698-ev856l` at `311abe4` (R2), merged up
   to the base's head with the owner's rulings 19 to 35
 - **Pull request:** [#36](https://github.com/munsdev/reportlog/pull/36), into `ccr-c9c93698-ev856l`
-- **State:** finished, waiting for review. Not merged.
+- **State:** finished and merged into `ccr-c9c93698-ev856l` (`acd191b`).
 - **Last updated:** 2026-10-20
 
 ## Checks, as last run before pushing
@@ -81,7 +81,7 @@ run above used the documented command, with a database made for it.
 
 ## R8's allowance: not removed yet
 
-**R8 had not merged when this was finished.** Its allowance for this rule on `/`
+**R8 had not merged when this was finished; it has since merged (`77bbaf3`).** Its allowance for this rule on `/`
 (`MAP_TILES` in `apps/web/e2e/accessibility.spec.ts`, on `claude/r8-invariant-leftovers`) is not
 on this branch's base. The file is R8's, so this branch does not touch it. **Remove `MAP_TILES`
 and its two `ALLOWED` entries once both have landed.** The check above says the walk of `/` is
