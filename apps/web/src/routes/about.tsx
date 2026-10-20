@@ -240,6 +240,13 @@ function AboutPage() {
           </a>
         </p>
         <p>
+          What changed in each release is in the{' '}
+          <a href={`${SOFTWARE_SOURCE}/blob/main/CHANGELOG.md`} rel="noopener" className={link}>
+            changelog
+          </a>
+          .
+        </p>
+        <p>
           Whoever runs this archive did not write the software, and cannot change what it does for
           the people using it without publishing that change too. That is what the licence is for.
         </p>

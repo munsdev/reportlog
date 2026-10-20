@@ -16,6 +16,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button.tsx';
 import { call } from '../../lib/api.ts';
+import { UnsavedChangesGuard, useUnsavedChanges } from '../../routes/(staff)/settings/-editor.tsx';
 import { Panel, Problem, TextInput } from './controls.tsx';
 import { homeButtonsAdminQuery } from './queries.ts';
 
@@ -24,30 +25,40 @@ export function HomeButtonsEditor() {
   // Out here, because the editor below starts again after every save.
   const [notice, setNotice] = useState('');
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <Link to="/logbooks" className="text-sm underline">
-          ← All logbooks
-        </Link>
-        <h1 className="font-display text-3xl font-bold">The front page’s buttons</h1>
-        <p className="max-w-prose text-ink-alt">
-          Every open logbook is a button on the front page. The first button is the main one; to
-          make a different button the main one, move it to the top.
-        </p>
-      </header>
-      {query.isPending && <p role="status">Reading the front page…</p>}
-      {query.isError && <Problem error={query.error} />}
-      {/* Keyed on what is stored, so a save or a reset starts the editor
+    // The same leave-without-saving question the settings screens ask.
+    <UnsavedChangesGuard>
+      <div className="space-y-6">
+        <header className="space-y-2">
+          <Link to="/logbooks" className="text-sm underline">
+            ← All logbooks
+          </Link>
+          <h1 className="font-display text-3xl font-bold">The front page’s buttons</h1>
+          <p className="max-w-prose text-ink-alt">
+            Every open logbook is a button on the front page. The first button is the main one; to
+            make a different button the main one, move it to the top.
+          </p>
+        </header>
+        {query.isPending && <p role="status">Reading the front page…</p>}
+        {query.isError && <Problem error={query.error} />}
+        {/* Keyed on what is stored, so a save or a reset starts the editor
           again from what the server now holds. */}
-      {query.isSuccess && (
-        <Arrange key={JSON.stringify(query.data.stored)} data={query.data} onDone={setNotice} />
-      )}
-      {notice && <p role="status">{notice}</p>}
-    </div>
+        {query.isSuccess && (
+          <Arrange key={JSON.stringify(query.data.stored)} data={query.data} onDone={setNotice} />
+        )}
+        {notice && <p role="status">{notice}</p>}
+      </div>
+    </UnsavedChangesGuard>
   );
 }
 
 type Row = ArrangementEntry & { label: string };
+
+const shown = (data: HomeButtonsAdmin): Row[] =>
+  data.buttons.map((b) => ({
+    kind: b.kind,
+    ref: b.ref,
+    label: b.label === b.title ? '' : b.label,
+  }));
 
 function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: string) => void }) {
   const qc = useQueryClient();
@@ -59,12 +70,12 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
   const find = (r: { kind: string; ref: string }) =>
     all.find((b) => b.kind === r.kind && b.ref === r.ref);
   // Start from what the page shows now: that is the arrangement to change.
-  const [rows, setRows] = useState<Row[]>(() =>
-    data.buttons.map((b) => ({
-      kind: b.kind,
-      ref: b.ref,
-      label: b.label === b.title ? '' : b.label,
-    })),
+  const [rows, setRows] = useState<Row[]>(() => shown(data));
+  // The editor starts again after every save (see the key above), so what
+  // the server holds is always what `data` shows.
+  useUnsavedChanges(
+    'the front page’s buttons',
+    JSON.stringify(rows) !== JSON.stringify(shown(data)),
   );
   const done = (notice: string) => (next: HomeButtonsAdmin) => {
     qc.setQueryData(homeButtonsAdminQuery().queryKey, next);

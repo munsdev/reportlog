@@ -118,6 +118,35 @@ ask_setting() {
   note "$key left empty for now."
 }
 
+# The region an S3-compatible endpoint's address already names, or nothing
+# when it does not (an address of your own, say): the installer then asks.
+#   https://fsn1.your-objectstorage.com -> fsn1
+#   https://s3.nl-ams.scw.cloud         -> nl-ams
+#   https://s3.eu-central-1.amazonaws.com -> eu-central-1
+region_of_endpoint() {
+  local host=${1#*://}
+  host=${host%%/*}
+  host=${host%%:*}
+  case "$host" in
+    s3.*.scw.cloud) host=${host#s3.}; printf '%s' "${host%.scw.cloud}" ;;
+    s3.*.amazonaws.com) host=${host#s3.}; printf '%s' "${host%.amazonaws.com}" ;;
+    *.your-objectstorage.com) printf '%s' "${host%%.*}" ;;
+  esac
+}
+
+# Fill REGION_KEY from ENDPOINT_KEY's address when that names a region, so
+# nobody is asked for what the address already says (and cannot type a
+# region that disagrees with it by accident). Does nothing once the region
+# has a value.
+region_from_endpoint() {
+  local endpoint_key=$1 region_key=$2 region
+  [ -z "$(env_value "$region_key")" ] || return 0
+  region=$(region_of_endpoint "$(env_value "$endpoint_key")")
+  [ -n "$region" ] || return 0
+  set_env "$region_key" "$region"
+  note "$region_key set to $region, read off the endpoint."
+}
+
 # Run something as the service user with a clean environment. Used for the
 # build (so package install scripts never run as root) and for anything
 # that executes the application's code.

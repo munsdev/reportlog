@@ -39,7 +39,12 @@ Arm), a domain whose DNS you control, a Scaleway project with Transactional
 Email, and an EU object storage bucket.
 
 1. **DNS.** Point the domain's A (and AAAA) record at the server. Caddy
-   needs this to get a certificate.
+   needs this to get a certificate. Check it from your own machine with
+   `dig +short reports.example.org`. A fresh Debian has no `dig`
+   (`dig: command not found`): use `host reports.example.org` or
+   `getent hosts reports.example.org` instead, which every machine has, or
+   `sudo apt install dnsutils` to get `dig`. Either way you should see the
+   server's address and nothing else.
 2. **Firewall.** In the Hetzner Cloud console, allow inbound 22, 80 and 443
    (443/udp too, for HTTP/3) and nothing else. PostgreSQL listens on no TCP
    port at all, so there is nothing else to protect, but a firewall at the
@@ -50,6 +55,14 @@ Email, and an EU object storage bucket.
    git clone https://github.com/munsdev/reportlog.git /root/reportlog
    sudo /root/reportlog/deploy/install.sh
    ```
+
+   A private repository needs a credential for that `git clone` and for
+   every later `reportlog updates` and `reportlog deploy`. **It is root's
+   credential**, set up in root's own git configuration (a deploy key in
+   `/root/.ssh`, or a token in `/root/.git-credentials`), because those
+   commands run as root. The `reportlog` user, which runs the website, never
+   holds it, and a credential that is missing or has expired shows up in the
+   doctor as a failed fetch, not as a network fault.
 
    It turns on unattended security updates and installs PostgreSQL 16 (from
    the PostgreSQL project's repository, socket only), Node at the exact
@@ -298,6 +311,43 @@ moto, a local S3-compatible server, by `apps/api/test/unit/deploy-storage-check.
 on every CI run, with path-style addressing. Virtual-hosted addressing
 (`S3_ADDRESSING=virtual`) has never been run against anything: if the
 provider needs it, this check is the first thing that will.
+
+### Every setting, by name
+
+`.env.example` is the list; this is what each setting is for, so nothing in
+the settings file is a mystery. The installer fills in the ones it can and
+asks for the ones only you know (above), and `sudo reportlog doctor` names
+anything still missing. A server's other settings, the keys, email, error
+tracking and backups, are explained in their own sections above.
+
+| Setting                                                                          | What it does                                                                                      |
+| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                   | The database. The installer writes it (a socket, no password).                                    |
+| `TEST_DATABASE_URL`                                                              | Development only: where the test suite makes throwaway databases. Never on a server.              |
+| `HOST`, `PORT`                                                                   | Where the API listens. Leave at `127.0.0.1` and `3000`: only Caddy is in front.                   |
+| `LOG_LEVEL`                                                                      | How much the API logs. Logs never hold an address or a full link.                                 |
+| `PUBLIC_REF_PREFIX`                                                              | The letters every public reference starts with (`RL-`). Sealed into every report: chosen once.    |
+| `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                               |
+| `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.            |
+| `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise.                                    |
+| `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                 |
+| `FILES_DIR`, `FILES_INLINE_WORKER`                                               | Development only: where disk storage keeps files, and running the media worker inside the server. |
+| `FILES_STAGING_QUOTA_REPORTS`                                                    | How many reports' worth of files one address may have waiting. 0 is no limit.                     |
+| `S3_REGION`                                                                      | The files storage region. The installer reads it off the endpoint where it can.                   |
+| `S3_BUCKET_STAGING`, `S3_BUCKET_EVIDENCE`, `S3_BUCKET_RENDITIONS`                | The three buckets for files not yet sent, files with a report, and re-encoded copies.             |
+| `EMAIL_TRANSPORT`                                                                | `off` or `scaleway`. The installer turns it on once it can send.                                  |
+| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain verified in Scaleway.                                                     |
+| `SCALEWAY_PROJECT_ID`, `SCALEWAY_REGION`                                         | The Scaleway project and region (`fr-par`) mail goes through.                                     |
+| `MAIL_OUTBOX`                                                                    | Browser tests only: write each email as a file. Never on a server.                                |
+| `LIST_PERSONAL_DAYS`, `LIST_SALT_DAYS`, `LIST_ERASURE_LINK_DAYS`                 | How long a list keeps the personal half of an entry, a day's hashing secret, and an erasure link. |
+| `LIST_KNOWN_HOSTS`                                                               | Link hosts a moderator knows; others are marked for a look.                                       |
+| `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_MAX_AGE_HOURS`                              | Where local dumps go, how many to keep, and how old the newest may be before the doctor fails it. |
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`, `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX` | The off-site bucket. The installer reads the region off the endpoint where it can.                |
+| `STATE_DIR`                                                                      | Where jobs record what they last did, for the doctor.                                             |
+| `TRANSPARENCY_LOG_DIR`, `TRANSPARENCY_LOG_BRANCH`                                | The checkout of the transparency log on this server, and its branch.                              |
+| `TRANSPARENCY_LOG_AUTHOR_NAME`, `TRANSPARENCY_LOG_AUTHOR_EMAIL`                  | Who the log's commits are by.                                                                     |
+| `TSA_URL`                                                                        | The RFC 3161 timestamp authority. Unset, DFN's, in Germany.                                       |
+| `PRESS_DIR`                                                                      | A folder with a press pack built ahead of time. Unset, the press page says there is none.         |
 
 ## Deploying
 

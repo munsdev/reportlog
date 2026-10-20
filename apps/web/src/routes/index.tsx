@@ -48,6 +48,37 @@ export function HomeButtons({ buttons }: { buttons: readonly HomeButton[] }) {
   );
 }
 
+/**
+ * What the front page offers when the buttons cannot be fetched. The page
+ * must never be a dead end because one call failed: these two are the
+ * software's own destinations, so they exist on every deployment, and their
+ * wording is the same as the built-ins' (api/src/logbooks/homeButtons.ts).
+ */
+export const FALLBACK_BUTTONS: readonly HomeButton[] = [
+  {
+    kind: 'builtin',
+    ref: 'submit',
+    label: 'Submit a Report',
+    title: 'Submit a Report',
+    href: '/submit',
+    action: null,
+    blurb: null,
+    help: null,
+    accent: true,
+  },
+  {
+    kind: 'builtin',
+    ref: 'board',
+    label: 'View Live Report Board',
+    title: 'View Live Report Board',
+    href: '/board',
+    action: null,
+    blurb: null,
+    help: null,
+    accent: false,
+  },
+];
+
 function CheckAReport() {
   const navigate = useNavigate();
   const [ref, setRef] = useState('');
@@ -58,8 +89,8 @@ function CheckAReport() {
       </CardHeader>
       <CardContent>
         <p className="max-w-prose text-ink-alt">
-          Every report has a reference like <span className="font-mono">RL-…</span>. Enter one to
-          check that it has not been changed since it was filed.
+          Every report has a reference, given when it was filed. Enter one to check that it has not
+          been changed since.
         </p>
         <form
           onSubmit={(e) => {
@@ -92,7 +123,8 @@ function CheckAReport() {
 
 function Home() {
   const site = useSite().data;
-  const buttons = useQuery(homeButtonsQuery).data?.buttons ?? [];
+  const query = useQuery(homeButtonsQuery);
+  const buttons = query.isError ? FALLBACK_BUTTONS : (query.data?.buttons ?? []);
   return (
     <Page title={site?.copy.home_headline ?? 'ReportLog'} lede={site?.copy.home_lede}>
       <HomeButtons buttons={buttons} />

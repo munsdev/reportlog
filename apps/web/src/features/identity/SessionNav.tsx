@@ -22,27 +22,39 @@ function SessionLinks() {
   if (!me.data) return null;
   if (!me.data.signedIn) {
     return (
-      <Link to="/access/sign-in" className="underline-offset-4 hover:underline">
+      <Link
+        to="/access/sign-in"
+        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+      >
         Sign in
       </Link>
     );
   }
   return (
-    <div className="flex items-center gap-4 text-sm">
-      <Link to="/mine" className="underline-offset-4 hover:underline">
+    <div className="flex min-w-0 items-center gap-4 overflow-x-auto whitespace-nowrap text-sm">
+      <Link
+        to="/mine"
+        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+      >
         My reports
       </Link>
-      <Link to="/notifications" className="underline-offset-4 hover:underline">
+      <Link
+        to="/notifications"
+        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+      >
         Email updates
       </Link>
-      <Link to="/access" className="underline-offset-4 hover:underline">
+      <Link
+        to="/access"
+        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
+      >
         {/* The same page for everybody; the staff menu (features/staff-nav)
             is where "Access" is offered to the people who grant it. */}
         Your account
       </Link>
       <button
         type="button"
-        className="underline-offset-4 hover:underline"
+        className="inline-flex min-h-11 items-center underline-offset-4 hover:underline"
         onClick={() => {
           out.mutate(undefined, {
             onSuccess: () => void navigate({ to: '/' }),

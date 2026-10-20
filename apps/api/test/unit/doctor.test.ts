@@ -6,6 +6,7 @@ import {
   assessCertificate,
   assessDisk,
   assessJobUnit,
+  assessListsSweep,
   assessListen,
   assessMigrations,
   assessNode,
@@ -100,6 +101,25 @@ describe('the doctor', () => {
       assessJobUnit({ ...on, result: 'exit-code', lastRun: 'Mon 2026-10-19 03:30:01 UTC' }, true)
         .status,
     ).toBe('fail');
+  });
+
+  it('asks for the lists sweep timer once a list holds an entry, and not before', () => {
+    const off = {
+      job: 'lists-sweep',
+      timerEnabled: 'disabled',
+      timerActive: 'inactive',
+      result: '',
+      lastRun: '',
+    };
+    expect(assessListsSweep(off, 0)).toBeUndefined();
+    const one = assessListsSweep(off, 1);
+    expect(one?.status).toBe('fail');
+    expect(one?.detail).toMatch(/1 list entry is held/);
+    expect(one?.detail).toMatch(/enable --now reportlog-lists-sweep\.timer/);
+    expect(assessListsSweep(off, 12)?.detail).toMatch(/12 list entries are held/);
+    expect(
+      assessListsSweep({ ...off, timerEnabled: 'enabled', timerActive: 'active' }, 12),
+    ).toBeUndefined();
   });
 
   it('fails a server without unattended updates and warns when a reboot is waiting', () => {

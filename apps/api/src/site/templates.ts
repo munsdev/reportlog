@@ -14,7 +14,9 @@
  * - A template sets only what is already a setting. `TEMPLATE_KEYS` is the
  *   whole permission surface, and a template naming anything else is refused
  *   whole rather than half applied. Legacy's `layout` (a retired axis) and
- *   `distribution` (a switch the rebuild does not have) are not in it.
+ *   `distribution` are not in it. The rebuild has the distribution switch
+ *   (decision 11), but it decides whether an archive may be released to
+ *   others, which no starting point should do for an operator.
  * - A key a template leaves out is LEFT ALONE, so a narrow template stays
  *   narrow. Clearing is said out loud instead (`clearCopy`, `siteName: ''`).
  * - It NEVER writes the imprint or the privacy policy. A template that did

@@ -46,10 +46,10 @@ export function SiteFooter() {
     <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted">
       <p>Every report is fingerprinted and chained, so any later change shows.</p>
       <nav aria-label="About this site" className="mt-2">
-        <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+        <ul className="flex flex-wrap justify-center gap-x-4">
           {LINKS.map((l) => (
             <li key={l.to}>
-              <Link to={l.to} className="underline">
+              <Link to={l.to} className="inline-flex min-h-11 items-center underline">
                 {l.label}
               </Link>
             </li>

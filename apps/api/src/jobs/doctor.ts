@@ -31,6 +31,7 @@ import {
   assessCertificate,
   assessDisk,
   assessJobUnit,
+  assessListsSweep,
   assessListen,
   assessMigrations,
   assessNode,
@@ -250,7 +251,16 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
   // --- scheduled jobs ------------------------------------------------------
   if (server) {
     for (const job of JOBS) {
-      out.push(assessJobUnit(await unitFacts(job.name), job.run !== undefined));
+      const facts = await unitFacts(job.name);
+      out.push(assessJobUnit(facts, job.run !== undefined));
+      if (job.name === 'lists-sweep' && dbUp) {
+        const held = await sql<{ n: string }>`SELECT count(*)::text AS n FROM list_entries`
+          .execute(db)
+          .then((r) => Number(r.rows[0]?.n ?? 0))
+          .catch(() => 0);
+        const finding = assessListsSweep(facts, held);
+        if (finding) out.push(finding);
+      }
     }
   } else {
     const slots = JOBS.filter((j) => !j.run).map((j) => `${j.name} (${j.owner})`);

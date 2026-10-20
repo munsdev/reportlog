@@ -5,7 +5,8 @@
  *   secondary everything else.
  *   quiet     a link that behaves like a button.
  *
- * There is deliberately no "danger" or "success" variant: those colours are
+ * Every button is at least 44px tall (min-h-11), as legacy's were: a thumb is
+ * not a mouse pointer. There is deliberately no "danger" or "success" variant: those colours are
  * status, and status colour is never put on a button.
  */
 import { cva } from 'class-variance-authority';
@@ -24,8 +25,8 @@ export const buttonVariants = cva(
         quiet: 'text-ink underline-offset-4 hover:underline',
       },
       size: {
-        md: 'px-5 py-2',
-        sm: 'px-3 py-1 text-sm',
+        md: 'min-h-11 px-5 py-2',
+        sm: 'min-h-11 px-3 py-1 text-sm',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },
