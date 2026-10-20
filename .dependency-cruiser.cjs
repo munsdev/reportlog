@@ -63,6 +63,15 @@ module.exports = {
       to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
     },
     {
+      name: 'journalists-never-reach-the-chain',
+      comment:
+        'The alert list holds people, not reports. Nothing under journalists may reach the ' +
+        'sealing code or the chain, and being listed grants no access (nothing there reads identity/ roles).',
+      severity: 'error',
+      from: { path: '^apps/api/src/journalists/' },
+      to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
+    },
+    {
       name: 'revocable-permissions-stay-out-of-the-seal',
       comment:
         'A permission a reporter can take back must never be able to reach the fingerprint, ' +

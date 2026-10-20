@@ -469,16 +469,17 @@ in `deploy/systemd/` are generated from it
 (`pnpm --filter @reportlog/api ops timers --write`; a test fails if they
 differ). All times are UTC.
 
-| Job               | When          | What                                                                                                      |
-| ----------------- | ------------- | --------------------------------------------------------------------------------------------------------- |
-| `backup`          | daily 03:00   | Dump, check, encrypt and send off-site                                                                    |
-| `sweep`           | daily 03:30   | **Delete** expired credentials from named tables                                                          |
-| `lists-sweep`     | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`)          |
-| `anchor`          | daily 04:00   | Timestamp the chain heads (DFN) and publish them to the transparency log (workstream D2's `runAnchorJob`) |
-| `anchor-watch`    | daily 09:00   | Check from outside the anchor that it ran; fails (and alerts) when the archive has not been anchored      |
-| `digest-hourly`   | hourly        | Email hourly subscribers what the board published since their last email                                  |
-| `digest-weekly`   | Mondays 07:00 | The same, for weekly subscribers                                                                          |
-| `feedback-digest` | Mondays 08:00 | Email `ADMIN_EMAIL` every open feedback issue, longest-untouched first                                    |
+| Job                 | When          | What                                                                                                          |
+| ------------------- | ------------- | ------------------------------------------------------------------------------------------------------------- |
+| `backup`            | daily 03:00   | Dump, check, encrypt and send off-site                                                                        |
+| `sweep`             | daily 03:30   | **Delete** expired credentials from named tables                                                              |
+| `lists-sweep`       | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`)              |
+| `anchor`            | daily 04:00   | Timestamp the chain heads (DFN) and publish them to the transparency log (workstream D2's `runAnchorJob`)     |
+| `anchor-watch`      | daily 09:00   | Check from outside the anchor that it ran; fails (and alerts) when the archive has not been anchored          |
+| `digest-hourly`     | hourly        | Email hourly subscribers what the board published since their last email                                      |
+| `digest-weekly`     | Mondays 07:00 | The same, for weekly subscribers                                                                              |
+| `journalist-alerts` | daily 08:00   | Email each journalist on the alert list how many new approved reports there are in their states (counts only) |
+| `feedback-digest`   | Mondays 08:00 | Email `ADMIN_EMAIL` every open feedback issue, longest-untouched first                                        |
 
 The anchor needs `git` on the server and the `TRANSPARENCY_LOG_*` settings
 in `/etc/reportlog/reportlog.env` (see `.env.example`): the checkout under

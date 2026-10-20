@@ -305,6 +305,29 @@ export interface IntakeSettings {
   updated_by: string | null;
 }
 
+export interface JournalistLinks {
+  created_at: Generated<Timestamp>;
+  expires_at: Timestamp;
+  purpose: string;
+  subscriber_id: number;
+  token_hash: string;
+  used_at: Timestamp | null;
+}
+
+export interface JournalistSubscribers {
+  confirmed_at: Timestamp | null;
+  created_at: Generated<Timestamp>;
+  dek_wrapped: Buffer;
+  email_enc: Buffer;
+  email_hmac: string;
+  id: Generated<number>;
+  last_sent_at: Timestamp | null;
+  name_enc: Buffer;
+  outlet_enc: Buffer;
+  states: string[];
+  status: Generated<string>;
+}
+
 export interface LinkBlocklist {
   added_by: string;
   created_at: Generated<Timestamp>;
@@ -839,6 +862,8 @@ export interface DB {
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
   intake_settings: IntakeSettings;
+  journalist_links: JournalistLinks;
+  journalist_subscribers: JournalistSubscribers;
   link_block_log: LinkBlockLog;
   link_blocklist: LinkBlocklist;
   link_checks: LinkChecks;

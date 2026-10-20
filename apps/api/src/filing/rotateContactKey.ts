@@ -25,6 +25,7 @@
  */
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { rotateSubscriberKeys } from '../journalists/rotate.ts';
 import { fingerprint } from '../jobs/contact-key.ts';
 import { emailDigest, keyringFrom, openWithDek, tryUnwrap, wrapDek } from './contactKeys.ts';
 
@@ -89,7 +90,13 @@ export async function rotateContactKey(
       }
       pending.push({ thread_id: row.thread_id, dek_wrapped: rewrapped, email_hmac: digest });
     }
-    if (!pending.length) return { rewrapped: 0, already_current: current };
+    // The journalist alert list's addresses are under the same key (journalists/rotate.ts).
+    const listed = await rotateSubscriberKeys(trx, next, prev).catch((e: unknown) => {
+      throw new RotationError(
+        `${e instanceof Error ? e.message : 'A subscriber key failed.'} Nothing was changed.`,
+      );
+    });
+    if (!pending.length && !listed) return { rewrapped: 0, already_current: current };
 
     const record = await trx
       .insertInto('contact_key_rotations')
@@ -108,9 +115,9 @@ export async function rotateContactKey(
     }
     await trx
       .updateTable('contact_key_rotations')
-      .set({ rewrapped: pending.length })
+      .set({ rewrapped: pending.length + listed })
       .where('id', '=', record.id)
       .execute();
-    return { rewrapped: pending.length, already_current: current };
+    return { rewrapped: pending.length + listed, already_current: current };
   });
 }

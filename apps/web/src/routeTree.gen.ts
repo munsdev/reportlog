@@ -37,6 +37,7 @@ import { Route as EvidenceTokenRouteImport } from './routes/evidence/$token'
 import { Route as FeedbackIndexRouteImport } from './routes/feedback/index'
 import { Route as FeedbackTestersRouteImport } from './routes/feedback/testers'
 import { Route as FileSlugRouteImport } from './routes/file/$slug'
+import { Route as JournalistsAlertsRouteImport } from './routes/journalists_.alerts'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MapSlugRouteImport } from './routes/map/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
@@ -73,6 +74,8 @@ import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings
 import { Route as staffSettingsStartingPointsRouteImport } from './routes/(staff)/settings/starting-points'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
+import { Route as JournalistsConfirmTokenRouteImport } from './routes/journalists_.confirm.$token'
+import { Route as JournalistsStopTokenRouteImport } from './routes/journalists_.stop.$token'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
@@ -223,6 +226,11 @@ const FeedbackTestersRoute = FeedbackTestersRouteImport.update({
 const FileSlugRoute = FileSlugRouteImport.update({
   id: '/file/$slug',
   path: '/file/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalistsAlertsRoute = JournalistsAlertsRouteImport.update({
+  id: '/journalists_/alerts',
+  path: '/journalists/alerts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ListSlugRoute = ListSlugRouteImport.update({
@@ -407,6 +415,16 @@ const FileConfirmTokenRoute = FileConfirmTokenRouteImport.update({
   path: '/file/confirm/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JournalistsConfirmTokenRoute = JournalistsConfirmTokenRouteImport.update({
+  id: '/journalists_/confirm/$token',
+  path: '/journalists/confirm/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalistsStopTokenRoute = JournalistsStopTokenRouteImport.update({
+  id: '/journalists_/stop/$token',
+  path: '/journalists/stop/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MineDeclarationThreadIdRoute = MineDeclarationThreadIdRouteImport.update({
   id: '/mine/declaration/$threadId',
   path: '/mine/declaration/$threadId',
@@ -491,6 +509,7 @@ export interface FileRoutesByFullPath {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -522,6 +541,8 @@ export interface FileRoutesByFullPath {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -562,6 +583,7 @@ export interface FileRoutesByTo {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -593,6 +615,8 @@ export interface FileRoutesByTo {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -640,6 +664,7 @@ export interface FileRoutesById {
   '/evidence/$token': typeof EvidenceTokenRoute
   '/feedback/testers': typeof FeedbackTestersRoute
   '/file/$slug': typeof FileSlugRoute
+  '/journalists_/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
@@ -671,6 +696,8 @@ export interface FileRoutesById {
   '/(staff)/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
+  '/journalists_/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists_/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -719,6 +746,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
     | '/mine/$threadId'
@@ -750,6 +778,8 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/journalists/confirm/$token'
+    | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -790,6 +820,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
     | '/mine/$threadId'
@@ -821,6 +852,8 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
+    | '/journalists/confirm/$token'
+    | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -867,6 +900,7 @@ export interface FileRouteTypes {
     | '/evidence/$token'
     | '/feedback/testers'
     | '/file/$slug'
+    | '/journalists_/alerts'
     | '/list/$slug'
     | '/map/$slug'
     | '/mine/$threadId'
@@ -898,6 +932,8 @@ export interface FileRouteTypes {
     | '/(staff)/settings/starting-points'
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
+    | '/journalists_/confirm/$token'
+    | '/journalists_/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications_/stop/$token'
     | '/organizations/$id/listing'
@@ -945,6 +981,7 @@ export interface RootRouteChildren {
   EvidenceTokenRoute: typeof EvidenceTokenRoute
   FeedbackTestersRoute: typeof FeedbackTestersRoute
   FileSlugRoute: typeof FileSlugRoute
+  JournalistsAlertsRoute: typeof JournalistsAlertsRoute
   ListSlugRoute: typeof ListSlugRoute
   MapSlugRoute: typeof MapSlugRoute
   MineThreadIdRoute: typeof MineThreadIdRoute
@@ -958,6 +995,8 @@ export interface RootRouteChildren {
   staffAccessRosterRoute: typeof staffAccessRosterRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
+  JournalistsConfirmTokenRoute: typeof JournalistsConfirmTokenRoute
+  JournalistsStopTokenRoute: typeof JournalistsStopTokenRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
@@ -1164,6 +1203,13 @@ declare module '@tanstack/react-router' {
       path: '/file/$slug'
       fullPath: '/file/$slug'
       preLoaderRoute: typeof FileSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journalists_/alerts': {
+      id: '/journalists_/alerts'
+      path: '/journalists/alerts'
+      fullPath: '/journalists/alerts'
+      preLoaderRoute: typeof JournalistsAlertsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/list/$slug': {
@@ -1418,6 +1464,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FileConfirmTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journalists_/confirm/$token': {
+      id: '/journalists_/confirm/$token'
+      path: '/journalists/confirm/$token'
+      fullPath: '/journalists/confirm/$token'
+      preLoaderRoute: typeof JournalistsConfirmTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journalists_/stop/$token': {
+      id: '/journalists_/stop/$token'
+      path: '/journalists/stop/$token'
+      fullPath: '/journalists/stop/$token'
+      preLoaderRoute: typeof JournalistsStopTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mine/declaration/$threadId': {
       id: '/mine/declaration/$threadId'
       path: '/mine/declaration/$threadId'
@@ -1638,6 +1698,7 @@ const rootRouteChildren: RootRouteChildren = {
   EvidenceTokenRoute: EvidenceTokenRoute,
   FeedbackTestersRoute: FeedbackTestersRoute,
   FileSlugRoute: FileSlugRoute,
+  JournalistsAlertsRoute: JournalistsAlertsRoute,
   ListSlugRoute: ListSlugRoute,
   MapSlugRoute: MapSlugRoute,
   MineThreadIdRoute: MineThreadIdRoute,
@@ -1651,6 +1712,8 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessRosterRoute: staffAccessRosterRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
+  JournalistsConfirmTokenRoute: JournalistsConfirmTokenRoute,
+  JournalistsStopTokenRoute: JournalistsStopTokenRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   NotificationsStopTokenRoute: NotificationsStopTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,
