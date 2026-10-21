@@ -299,6 +299,8 @@ test('the tip card: three rows of a link and its kind, and no email card', async
   for (const n of ['1', '2', '3'])
     await expect(v.getByRole('group', { name: new RegExp(`^Link ${n}`) })).toBeVisible();
   await expect(v.getByRole('button', { name: /Add another/ })).toHaveCount(0);
+  // Send waits for the spam puzzle; check the card once it can be sent.
+  await expect(v.getByRole('button', { name: 'Send' })).toBeEnabled();
   await expectAccessible(v, 'the tip card');
 
   const row = (n: string) => v.getByRole('group', { name: new RegExp(`^Link ${n}`) });

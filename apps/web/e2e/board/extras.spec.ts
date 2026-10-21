@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
+import { stepUp } from '../second-factor.ts';
 
 function watchOutside(page: Page): string[] {
   const outside: string[] = [];
@@ -39,6 +40,9 @@ test.describe('the transparency log', () => {
     const files = page.getByRole('region', { name: 'Complete chain files' });
     const demo = files.getByRole('link', { name: 'Demo logbook' });
     await expect(demo).toHaveAttribute('href', '/api/admin/chain/demo');
+    // The complete chain file asks for the second factor again (plan E, E3);
+    // without a fresh one the page opens the step-up dialog first.
+    await stepUp(page.request);
     const download = page.waitForEvent('download');
     await demo.click();
     expect((await download).suggestedFilename()).toMatch(
