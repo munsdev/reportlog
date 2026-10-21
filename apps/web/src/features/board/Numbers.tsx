@@ -62,8 +62,8 @@ export function NumbersPage() {
                   </dl>
                   {q.withheld ? (
                     <p className="text-sm text-ink-alt">
-                      Fewer than {q.withheld.threshold} each, so not counted one by one, as on the
-                      map: {q.withheld.areas.join(', ')}.
+                      Fewer than {q.withheld.threshold} published reports each, so these places are
+                      named without a number: {q.withheld.areas.join(', ')}.
                     </p>
                   ) : null}
                 </div>

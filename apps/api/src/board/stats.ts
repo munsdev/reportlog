@@ -12,6 +12,16 @@
  * reports the public may not see. The anchor's chain heads still carry every
  * report, which is where that audit lives.
  *
+ * ONE AMENDMENT (Plan E, owner 2026-10-21, a row of its own in
+ * docs/decisions.md): declined reports are counted publicly BY REASON, and
+ * only on `GET /api/board/declined` (board/counts.ts), never here and never
+ * beside these numbers. Nothing under review or unclear is counted on any
+ * public surface; staff see those totals on the flood screen.
+ *
+ * PLACES ARE COUNTED UNDER A THRESHOLD (board/places.ts, `countGuards`): a
+ * heat map's on the question it reads, and a counts-only logbook's own on
+ * every location question it asks.
+ *
  * One implementation serves the site's own page and anybody outside, so the
  * two figures can never disagree.
  */
@@ -21,7 +31,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { filterableFields, launchedLogbooks } from '../logbooks/logbooks.ts';
 import { everyHead, isPublic } from './board.ts';
-import { placeGuards } from './places.ts';
+import { countGuards } from './places.ts';
 
 export const STATS_NOTE =
   'Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.';
@@ -63,7 +73,7 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
   const pub = heads.filter(isPublic);
 
   const byLogbook: Stats['published_reports']['by_logbook'] = {};
-  const guards = await placeGuards(db);
+  const guards = await countGuards(db);
   for (const lb of await launchedLogbooks(db)) {
     const mine = pub.filter((r) => r.logbook_id === lb.id);
     const byQuestion: Stats['published_reports']['by_logbook'][string]['by_question'] = {};
@@ -85,12 +95,12 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
         }
       }
       const guard = guards.get(lb.id);
-      if (guard?.key !== f.key) {
+      if (!guard?.keys.has(f.key)) {
         byQuestion[f.key] = { label: f.label, counts, unanswered };
         continue;
       }
-      // THE MAP'S THRESHOLD, KEPT (board/places.ts): an area under it is
-      // named without its count, and the sum is given only for two or more.
+      // THE THRESHOLD, KEPT (board/places.ts): an area under it is named
+      // without its count, and the sum is given only for two or more.
       const shown: Record<string, number> = {};
       const areas: string[] = [];
       let sum = 0;

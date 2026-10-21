@@ -108,6 +108,67 @@ export async function floodScreen(db: Kysely<DB>) {
 }
 
 /**
+ * EVERY REPORT, BY WHERE IT STANDS: received, accepted, declined, waiting
+ * (pending or unclear) and withdrawn, overall and per logbook, plus what was
+ * sent and not yet confirmed. STAFF ONLY. Decision 36 keeps counts of what
+ * is not accepted off every public surface, and the one public exception is
+ * declined reports by reason (board/counts.ts); a moderator in a flood
+ * needs the whole picture, so it is here, behind the moderator guard.
+ */
+export async function staffTotals(db: Kysely<DB>) {
+  // Grouped by the moderator's status, NOT by what is public: "accepted" is
+  // a moderator's decision, whatever the reporter said about publishing
+  // (the public rule is board/published.ts, and only there).
+  const rows = await db
+    .selectFrom('report_heads as h')
+    .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+    .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
+    .select((eb) => [
+      'l.slug',
+      'l.title',
+      'h.moderation_status',
+      'h.withdrawn',
+      eb.fn.countAll<string>().as('n'),
+    ])
+    .groupBy(['l.slug', 'l.title', 'h.moderation_status', 'h.withdrawn'])
+    .orderBy('l.slug')
+    .execute();
+  type Row = Record<'received' | 'accepted' | 'declined' | 'waiting' | 'withdrawn', number>;
+  const zero = (): Row => ({ received: 0, accepted: 0, declined: 0, waiting: 0, withdrawn: 0 });
+  const all = zero();
+  const books = new Map<string, Row & { slug: string; title: string }>();
+  for (const r of rows) {
+    const n = Number(r.n);
+    const book = books.get(r.slug) ?? { slug: r.slug, title: r.title, ...zero() };
+    books.set(r.slug, book);
+    const column: keyof Row = r.withdrawn
+      ? 'withdrawn'
+      : r.moderation_status === 'valid'
+        ? 'accepted'
+        : r.moderation_status === 'invalid'
+          ? 'declined'
+          : 'waiting';
+    for (const t of [all, book]) {
+      t.received += n;
+      t[column] += n;
+    }
+  }
+  const by_logbook = [...books.values()];
+  const unconfirmed = await db
+    .selectFrom('report_submissions')
+    .select((eb) => eb.fn.countAll<string>().as('n'))
+    .where('confirmed_at', 'is', null)
+    .where('thread_id', 'is', null)
+    .where('expires_at', '>', new Date())
+    .executeTakeFirst();
+  return {
+    all,
+    by_logbook,
+    unconfirmed: Number(unconfirmed?.n ?? 0),
+  };
+}
+
+/**
  * Decline many reports with one reason, in one transaction: every report is
  * declined and logged, or none is. A withdrawn report, or one already
  * declined, is skipped with the reason rather than touched.

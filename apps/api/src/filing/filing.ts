@@ -34,6 +34,7 @@ import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
 import { publicArchiveAvailable } from '../board/publication.ts';
 import { isPublic } from '../board/published.ts';
+import { countsOnlyLogbooks } from '../moderation/switches.ts';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { fileOutcome, releaseForSubmission, sealFiles, stillPreparing } from '../files/filing.ts';
@@ -362,7 +363,7 @@ async function threadState(
   const head = await db
     .selectFrom('report_heads as h')
     .innerJoin('reports as r', 'r.id', 'h.current_report_id')
-    .select(['r.public_ref', 'r.may_publish', 'h.withdrawn', 'h.moderation_status'])
+    .select(['r.public_ref', 'r.may_publish', 'r.logbook_id', 'h.withdrawn', 'h.moderation_status'])
     .where('h.thread_id', '=', threadId)
     .executeTakeFirstOrThrow();
   const files = submissionId === undefined ? null : await fileOutcome(db, submissionId);
@@ -375,7 +376,12 @@ async function threadState(
   // two cannot disagree: with the archive off, nothing is public, approved or
   // not (decisions.md §5).
   const archiveOpen = await publicArchiveAvailable(db);
-  if (isPublic(head) && archiveOpen) return { state: 'public', ...common };
+  if (isPublic(head) && archiveOpen) {
+    // A counts-only logbook (Plan E) counts an accepted report and shows it
+    // nowhere, so it is "counted", never "public".
+    const counted = (await countsOnlyLogbooks(db)).has(head.logbook_id);
+    return { state: counted ? 'counted' : 'public', ...common };
+  }
   return {
     state: 'received',
     ...common,

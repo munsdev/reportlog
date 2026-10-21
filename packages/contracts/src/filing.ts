@@ -90,6 +90,16 @@ export const Confirmation = z.discriminatedUnion('state', [
     public_ref: z.string(),
     files: FileOutcome.optional(),
   }),
+  /**
+   * Accepted, in a logbook published as counts only (Plan E): counted in the
+   * public figures, its words shown nowhere. Never called "public".
+   */
+  z.object({
+    state: z.literal('counted'),
+    logbook_title: z.string(),
+    public_ref: z.string(),
+    files: FileOutcome.optional(),
+  }),
 ]);
 export type Confirmation = z.infer<typeof Confirmation>;
 

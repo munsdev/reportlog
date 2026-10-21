@@ -12,6 +12,9 @@
  *                  check (session PE2) reads `puzzleLevel`.
  *   counts only    per logbook: its published reports are counted, never
  *                  shown one by one (board/published.ts, listedReportIds).
+ *   small area     per logbook, while counts only: a place with fewer
+ *                  published reports than this is sent without its count
+ *                  (board/places.ts, countGuards). Session PE4.
  *
  * EVERY USE IS RECORDED, who and when, in site_switch_log (append-only), in
  * the same transaction as the change, and the log is public with its time
@@ -27,12 +30,13 @@
  * call `refuseWhilePaused`, and lists/ may not reach the seal or the chain
  * even transitively (.dependency-cruiser.cjs).
  */
+import { SMALL_AREA_DEFAULT, SMALL_AREA_FLOOR, SMALL_AREA_MAX } from '@reportlog/contracts';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 
 export type PuzzleLevel = 'normal' | 'harder';
-type SwitchName = 'pause_intake' | 'puzzle' | 'counts_only';
+type SwitchName = 'pause_intake' | 'puzzle' | 'counts_only' | 'small_area';
 
 /** What the forms and the site say when the operator wrote nothing. Operator copy. */
 export const PAUSED_FALLBACK =
@@ -205,4 +209,77 @@ export async function setCountsOnly(
       actor,
     });
   });
+}
+
+// ── the small-area threshold ────────────────────────────────────────────
+
+/**
+ * A stored threshold as it may be used: whole, and never under the floor,
+ * whatever the row says. The database has the same CHECK; the one setting
+ * whose wrong value is a disclosure is checked everywhere it is read, as
+ * the heat maps' is (maps/aggregate.ts).
+ */
+export const clampSmallArea = (n: number | null | undefined) =>
+  Math.max(SMALL_AREA_FLOOR, Math.trunc(n ?? SMALL_AREA_DEFAULT) || SMALL_AREA_DEFAULT);
+
+/**
+ * Each COUNTS-ONLY logbook, with its small-area threshold. A logbook
+ * published as entries is not in it: its reports each show their own place,
+ * so the threshold would protect nothing a reader cannot count by reading
+ * (decisions 20 and 21).
+ */
+export async function smallAreaThresholds(db: Kysely<DB>): Promise<Map<number, number>> {
+  const rows = await db
+    .selectFrom('logbook_publication')
+    .select(['logbook_id', 'small_area'])
+    .where('counts_only', '=', true)
+    .execute();
+  return new Map(rows.map((r) => [r.logbook_id, clampSmallArea(r.small_area)]));
+}
+
+/** Every logbook's setting, counts only or not, for the administrator's screen. */
+export async function smallAreaSettings(db: Kysely<DB>): Promise<Map<number, number>> {
+  const rows = await db
+    .selectFrom('logbook_publication')
+    .select(['logbook_id', 'small_area'])
+    .execute();
+  return new Map(rows.map((r) => [r.logbook_id, clampSmallArea(r.small_area)]));
+}
+
+/** Set it; the change is a public switch use, naming the logbook and the new value. */
+export async function setSmallArea(
+  db: Kysely<DB>,
+  logbook: { id: number; slug: string },
+  value: unknown,
+  actor: string,
+): Promise<number> {
+  const n = Number(value);
+  if (!Number.isInteger(n) || n < SMALL_AREA_FLOOR || n > SMALL_AREA_MAX) {
+    throw new HttpError(
+      400,
+      'small_area',
+      `The threshold is a whole number of at least ${String(SMALL_AREA_FLOOR)} and at most ${SMALL_AREA_MAX.toLocaleString('en-US')}. ` +
+        'Below 2, a single report would be counted by its place.',
+    );
+  }
+  await db.transaction().execute(async (trx) => {
+    const row = await trx
+      .selectFrom('logbook_publication')
+      .select('small_area')
+      .where('logbook_id', '=', logbook.id)
+      .forUpdate()
+      .executeTakeFirst();
+    if ((row?.small_area ?? SMALL_AREA_DEFAULT) === n) return;
+    await trx
+      .insertInto('logbook_publication')
+      // No row yet is "listed as entries": a threshold set ahead of time
+      // does not switch counts only on.
+      .values({ logbook_id: logbook.id, counts_only: false, small_area: n, set_by: actor })
+      .onConflict((oc) =>
+        oc.column('logbook_id').doUpdateSet({ small_area: n, set_by: actor, set_at: new Date() }),
+      )
+      .execute();
+    await record(trx, { switch: 'small_area', value: String(n), subject: logbook.slug, actor });
+  });
+  return n;
 }

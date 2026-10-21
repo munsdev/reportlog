@@ -13,7 +13,8 @@
  *   - moderators and administrators who accepted the agreement: the flood
  *     screen, bulk decline, tip links by time window, the two switches and
  *     the organization lane;
- *   - administrators: "publish as counts only", per logbook;
+ *   - administrators: "publish as counts only", per logbook, and its
+ *     small-area threshold (PE4);
  *   - anybody signed in: an organization's intake links (its managers, and
  *     those who grant access), and joining by one.
  *
@@ -41,7 +42,13 @@ import {
   listIntakeLinks,
 } from '../orglane/intakeLinks.ts';
 import { moderatorGuard } from './agreement.ts';
-import { bulkDecline, bulkDeclineLinks, floodScreen, organizationLane } from './flood.ts';
+import {
+  bulkDecline,
+  bulkDeclineLinks,
+  floodScreen,
+  organizationLane,
+  staffTotals,
+} from './flood.ts';
 import {
   countsOnlyLogbooks,
   intakePause,
@@ -49,6 +56,8 @@ import {
   setCountsOnly,
   setIntakePaused,
   setPuzzleLevel,
+  setSmallArea,
+  smallAreaSettings,
   switchUses,
 } from './switches.ts';
 
@@ -107,6 +116,7 @@ export async function floodRoutes(app: FastifyInstance, deps: FloodRouteDeps): P
       ...(await floodScreen(db)),
       pause: await intakePause(db),
       puzzle: await puzzleLevel(db),
+      totals: await staffTotals(db),
     }));
 
     route(scope, C.getSwitches, switchState);
@@ -165,13 +175,22 @@ export async function floodRoutes(app: FastifyInstance, deps: FloodRouteDeps): P
     scope.addHook('preHandler', roleGuard(['admin']));
     route(scope, C.listCountsOnly, async () => {
       const only = await countsOnlyLogbooks(db);
+      const small = await smallAreaSettings(db);
       return {
         logbooks: (await launchedLogbooks(db)).map((lb) => ({
           slug: lb.slug,
           title: lb.title,
           counts_only: only.has(lb.id),
+          small_area: small.get(lb.id) ?? C.SMALL_AREA_DEFAULT,
         })),
       };
+    });
+    route(scope, C.setSmallArea, async ({ params, request }) => {
+      const b = bodyOf<C.BodyOf<typeof C.setSmallArea>>(C.setSmallArea, request);
+      const lb = await logbookBySlug(db, params.slug);
+      if (!lb?.launched_at) throw notFound('There is no launched logbook with that name.');
+      const n = await setSmallArea(db, { id: lb.id, slug: lb.slug }, b.small_area, me(request));
+      return { slug: lb.slug, small_area: n };
     });
     route(scope, C.setCountsOnly, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.setCountsOnly>>(C.setCountsOnly, request);

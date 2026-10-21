@@ -2,11 +2,26 @@
  * "Publish as counts only", per logbook (Plan E, PE3). An administrator's
  * setting: its accepted reports are counted on every count, map and figure,
  * and shown as an entry nowhere. Each change is a public switch use.
+ *
+ * Beside it, the logbook's SMALL-AREA THRESHOLD (PE4): while it is counts
+ * only, a place with fewer accepted reports than this is published as a
+ * name with no number, on the counts, the numbers, the public API and any
+ * heat map reading it. Each change is a public switch use too.
  */
-import { listCountsOnly, setCountsOnly } from '@reportlog/contracts';
+import {
+  SMALL_AREA_DEFAULT,
+  SMALL_AREA_FLOOR,
+  listCountsOnly,
+  setCountsOnly,
+  setSmallArea,
+} from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
+import { Button } from '../../components/ui/button.tsx';
 import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
+import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { call } from '../../lib/api.ts';
 
@@ -41,22 +56,85 @@ export function CountsOnlySettings() {
         the daily snapshot or a digest. Every change is shown publicly with its time.
       </p>
       {query.data.logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-4">
         {query.data.logbooks.map((l) => (
-          <li key={l.slug} className="flex items-center gap-2">
-            <Checkbox
-              id={`counts-${l.slug}`}
-              checked={l.counts_only}
-              disabled={set.isPending}
-              onCheckedChange={(v) => {
-                set.mutate({ slug: l.slug, counts_only: v === true });
-              }}
-            />
-            <Label htmlFor={`counts-${l.slug}`}>{l.title} is published as counts only</Label>
+          <li key={l.slug} className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id={`counts-${l.slug}`}
+                checked={l.counts_only}
+                disabled={set.isPending}
+                onCheckedChange={(v) => {
+                  set.mutate({ slug: l.slug, counts_only: v === true });
+                }}
+              />
+              <Label htmlFor={`counts-${l.slug}`}>{l.title} is published as counts only</Label>
+            </div>
+            <SmallArea slug={l.slug} title={l.title} saved={l.small_area} />
           </li>
         ))}
       </ul>
       {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
     </section>
+  );
+}
+
+/** One logbook's threshold: typed, then saved with a button, never on each keystroke. */
+function SmallArea({ slug, title, saved }: { slug: string; title: string; saved: number }) {
+  const qc = useQueryClient();
+  const [value, setValue] = useState(String(saved));
+  const [done, setDone] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: (n: number) => call(setSmallArea, { params: { slug }, body: { small_area: n } }),
+    onSuccess: async (d) => {
+      setDone(
+        `Saved. Places with fewer than ${String(d.small_area)} are counted without a number.`,
+      );
+      await qc.invalidateQueries({ queryKey: ['moderation'] });
+      await qc.invalidateQueries({ queryKey: ['board'] });
+    },
+  });
+  return (
+    <form
+      aria-label={`The small-area threshold for ${title}`}
+      // The server's sentence, beside the field, not the browser's bubble.
+      noValidate
+      className="flex flex-col gap-2 pl-7"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setDone(null);
+        save.mutate(Number(value));
+      }}
+    >
+      <Field>
+        <Label>{`Smallest place count published for ${title}`}</Label>
+        <FieldDescription>
+          While this logbook is counts only, a place (a state, a county, any location answer) with
+          fewer accepted reports than this is listed by name with no number, on every public count
+          and on any heat map that reads it. The least is {SMALL_AREA_FLOOR}; the usual is{' '}
+          {SMALL_AREA_DEFAULT}. At {SMALL_AREA_FLOOR}, a place listed without a number holds one
+          report; a higher number says less about it. With only one such place, the logbook’s total
+          minus the places shown still gives its count.
+        </FieldDescription>
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={SMALL_AREA_FLOOR}
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setDone(null);
+          }}
+          className="max-w-32"
+        />
+        <FieldError>{save.error ? save.error.message : null}</FieldError>
+      </Field>
+      <div>
+        <Button type="submit" variant="secondary" disabled={save.isPending}>
+          {save.isPending ? 'Saving…' : 'Save the threshold'}
+        </Button>
+      </div>
+      {done ? <p role="status">{done}</p> : null}
+    </form>
   );
 }

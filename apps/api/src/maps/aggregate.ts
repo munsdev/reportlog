@@ -19,6 +19,7 @@ import { MIN_AREA_FLOOR, NOT_A_SAMPLE } from '@reportlog/contracts';
 import { LOCATION_TYPE, stateOfPlace } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publishedReportIds } from '../board/published.ts';
+import { smallAreaThresholds } from '../moderation/switches.ts';
 import type { Database } from '../db/database.ts';
 import type { HeatMapRow } from './rows.ts';
 
@@ -135,7 +136,7 @@ export async function computeMap(
   // CLAMPED AGAIN HERE, though the database has a CHECK: the one setting
   // whose wrong value is a disclosure rather than a broken page is checked
   // everywhere it is read.
-  const k = Math.max(MIN_AREA_FLOOR, Math.trunc(row.min_area) || MIN_AREA_FLOOR);
+  let k = Math.max(MIN_AREA_FLOOR, Math.trunc(row.min_area) || MIN_AREA_FLOOR);
   const drawsWorld = row.planes.includes('world');
 
   // EMPTY logbook_ids MEANS EVERY LOGBOOK. An id naming a logbook that no
@@ -154,6 +155,12 @@ export async function computeMap(
     .where('f.kind', '=', LOCATION_TYPE);
   if (scope.length) placeQuery = placeQuery.where('q.logbook_id', 'in', scope);
   const placeKeys = await placeQuery.execute();
+
+  // A COUNTS-ONLY LOGBOOK'S OWN THRESHOLD (Plan E, PE4): when one feeds this
+  // map, the higher of the two holds, so the map cannot give a place count
+  // the counts route withholds (board/places.ts, countGuards).
+  const small = await smallAreaThresholds(db);
+  for (const q of placeKeys) k = Math.max(k, small.get(q.logbook_id) ?? 0);
 
   // An outcome question is used only if it is in this map's feed.
   const outcome =

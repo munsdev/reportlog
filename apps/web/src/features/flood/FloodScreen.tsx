@@ -27,6 +27,7 @@ import {
   setIntakePause,
   setPuzzleLevel,
 } from '@reportlog/contracts';
+import type { ResponseOf } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
@@ -100,6 +101,7 @@ export function FloodScreen() {
       {flood.isError ? <Alert tone="serious">{flood.error.message}</Alert> : null}
       {flood.data ? (
         <>
+          <Totals totals={flood.data.totals} />
           <Section title="Submissions per hour, the last 24 hours">
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">Reports and tips that arrived, by hour</caption>
@@ -194,6 +196,68 @@ export function FloodScreen() {
       <Lane />
       <LinkWindow />
     </Page>
+  );
+}
+
+type TotalsData = ResponseOf<typeof getFloodScreen>['totals'];
+
+const TOTAL_COLUMNS: [keyof TotalsData['all'], string][] = [
+  ['received', 'Received'],
+  ['accepted', 'Accepted'],
+  ['declined', 'Declined'],
+  ['waiting', 'Waiting'],
+  ['withdrawn', 'Withdrawn'],
+];
+
+/**
+ * Every report by where it stands, unapproved included. STAFF ONLY: the
+ * public is told accepted reports, and declined ones by reason, nothing else
+ * (decision 36, as amended by Plan E).
+ */
+function Totals({ totals }: { totals: TotalsData }) {
+  const rows = [
+    { key: 'all', name: 'Every logbook', ...totals.all },
+    ...totals.by_logbook.map((l) => ({ key: l.slug, name: l.title, ...l })),
+  ];
+  return (
+    <Section title="Every report, by where it stands">
+      <p className="text-sm text-ink-alt">
+        For staff only: the public sees accepted reports, and declined ones counted by reason.
+        Waiting means not yet decided, or marked unclear. Received is the other four together.
+      </p>
+      <table className="w-full border-collapse text-sm">
+        <caption className="sr-only">Reports by logbook and where they stand</caption>
+        <thead>
+          <tr className="border-b border-line text-left">
+            <th scope="col" className="py-1 pr-4">
+              Logbook
+            </th>
+            {TOTAL_COLUMNS.map(([k, name]) => (
+              <th key={k} scope="col" className="py-1 pr-4 text-right">
+                {name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-b border-line">
+              <th scope="row" className="py-1 pr-4 text-left font-normal">
+                {r.name}
+              </th>
+              {TOTAL_COLUMNS.map(([k]) => (
+                <td key={k} className="py-1 pr-4 text-right font-mono">
+                  {r[k]}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="text-sm">
+        {`Sent and not yet confirmed from the emailed link: ${String(totals.unconfirmed)}.`}
+      </p>
+    </Section>
   );
 }
 

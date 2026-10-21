@@ -239,6 +239,7 @@ describe('publish as counts only', () => {
         counts_only: boolean;
         published: { organization: number; open_form: number };
         by_place: { place: string; label: string; organization: number; open_form: number }[];
+        withheld_places?: { threshold: number; areas: string[]; reports: number | null };
         by_day: unknown[];
         by_hour: unknown[];
       }[];
@@ -247,11 +248,15 @@ describe('publish as counts only', () => {
     const mine = counts.body.logbooks.find((l) => l.slug === hidden.slug);
     expect(mine?.counts_only).toBe(true);
     expect(mine?.published).toEqual({ organization: 1, open_form: 1 });
-    // A county counts as itself; a state answer as the state.
-    expect(mine?.by_place.map((p) => [p.place, p.organization, p.open_form])).toEqual([
-      ['US-AZ', 1, 0],
-      ['US-AZ-04013', 0, 1],
-    ]);
+    // A county counts as itself; a state answer as the state. One report
+    // each, under the logbook's small-area threshold (default 2, PE4): named,
+    // with no number (pe4-counts.test.ts tests the threshold itself).
+    expect(mine?.by_place).toEqual([]);
+    expect(mine?.withheld_places).toEqual({
+      threshold: 2,
+      areas: ['Arizona', 'Maricopa County, Arizona'],
+      reports: 2,
+    });
     expect(mine?.by_day.length).toBe(1);
     expect(mine?.by_hour.length).toBeGreaterThanOrEqual(1);
     // Counts only: no reference and no answer anywhere in it.

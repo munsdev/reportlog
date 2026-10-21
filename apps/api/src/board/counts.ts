@@ -4,16 +4,17 @@
  * reason given.
  *
  * COUNTS ONLY. No reference, no answer text, no time finer than the hour,
- * and nothing about who filed or who moderated. A place under a heat map's
- * threshold is named without its count, as on the numbers page
- * (board/places.ts).
+ * and nothing about who filed or who moderated. A place under the
+ * logbook's small-area threshold, or a heat map's, is named without its
+ * count, as on the numbers page (board/places.ts, `countGuards`).
  *
  * PUBLISHED MEANS THE BOARD'S RULE (`publishedReportIds`), counts-only
  * logbooks included: that setting changes how a report is shown, not
  * whether it is counted. Nothing pending or unclear is counted anywhere.
  *
  * DECLINED REPORTS ARE COUNTED BY REASON (Plan E, owner decisions of
- * 2026-10-21, which amend decision 36 for this one route): how many a
+ * 2026-10-21, which amend decision 36 for this one route, recorded as a
+ * decision row of its own in docs/decisions.md): how many a
  * moderator turned down and why, so a reader can see a flood was refused
  * rather than quietly dropped. Only the number and the reason from the
  * fixed list; never which report, never its words, never the moderator's
@@ -30,7 +31,7 @@ import { launchedLogbooks } from '../logbooks/logbooks.ts';
 import { countsOnlyLogbooks } from '../moderation/switches.ts';
 import { originLabels, originOf } from './origin.ts';
 import type { Origin } from './origin.ts';
-import { placeGuards } from './places.ts';
+import { countGuards } from './places.ts';
 import { publicArchiveAvailable } from './publication.ts';
 import { publishedReportIds } from './published.ts';
 
@@ -77,7 +78,7 @@ export async function publicCounts(db: Kysely<DB>) {
     .where('r.id', 'in', publishedReportIds(db))
     .execute();
   const countsOnly = await countsOnlyLogbooks(db);
-  const guards = await placeGuards(db);
+  const guards = await countGuards(db);
   const hourlyFrom = Date.now() - HOURLY_DAYS * 86_400_000;
 
   const logbooks = [];
@@ -117,9 +118,11 @@ export async function publicCounts(db: Kysely<DB>) {
       for (const p of places) add(byPlace, p, origin);
     }
 
-    // THE MAP'S THRESHOLD, KEPT, on every place question of a logbook a map
-    // reads: stricter than the numbers page, which guards the one question.
-    const guard = guards.get(lb.id);
+    // THE SMALL-AREA THRESHOLD, or the map's if higher, on every place
+    // question of a counts-only logbook (board/places.ts). A place under it
+    // travels as a name with no number. Only counts-only logbooks count by
+    // place here at all.
+    const guard = only ? guards.get(lb.id) : undefined;
     const shown: { place: string; label: string; organization: number; open_form: number }[] = [];
     const thin: string[] = [];
     let thinSum = 0;

@@ -602,6 +602,7 @@ export interface LogbookPublication {
   logbook_id: number;
   set_at: Generated<Timestamp>;
   set_by: string;
+  small_area: Generated<number>;
 }
 
 export interface Logbooks {

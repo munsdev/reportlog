@@ -4,7 +4,7 @@
  * OPENING THE LINK FILES NOTHING. Mail scanners open links, so looking is a
  * GET and filing is the button. The link keeps working afterwards and shows
  * where the report stands, in the only words a reporter is given: received,
- * or public. Which non-public state it is in is never said, because a
+ * public, or counted (accepted in a logbook published as counts only). Which non-public state it is in is never said, because a
  * moderator can always revisit a decision.
  *
  * On a door this page calls only the two confirmation calls.
@@ -146,18 +146,23 @@ function Shown({
           ? 'Your report is filed'
           : c.state === 'public'
             ? 'Your report is public'
-            : 'Your report is filed'
+            : c.state === 'counted'
+              ? 'Your report is counted'
+              : 'Your report is filed'
       }
       width="prose"
     >
       <Alert tone="confirmed" title={`Its reference is ${c.public_ref}`}>
         {c.state === 'public'
           ? 'A moderator approved it, and it is on the public archive.'
-          : // While the archive is off nothing is public, so the page never
-            // says the word (decisions.md §5).
-            c.archive_closed
-            ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
-            : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
+          : c.state === 'counted'
+            ? // A counts-only logbook (Plan E): counted, its words shown nowhere.
+              'A moderator approved it. This logbook publishes counts only, so your report is counted in the public figures, and its words are not shown on the site.'
+            : // While the archive is off nothing is public, so the page never
+              // says the word (decisions.md §5).
+              c.archive_closed
+              ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
+              : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
       </Alert>
       {c.files ? <FilesFiled files={c.files} /> : null}
       <p>

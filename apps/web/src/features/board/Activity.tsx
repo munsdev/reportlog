@@ -117,7 +117,7 @@ function LogbookTables({
       ) : null}
       {lb.withheld_places ? (
         <p className="text-sm text-ink-alt">
-          {`Fewer than ${String(lb.withheld_places.threshold)} each, so not counted one by one, as on the map: ${lb.withheld_places.areas.join(', ')}`}
+          {`Fewer than ${String(lb.withheld_places.threshold)} accepted reports each, so these places are named without a number: ${lb.withheld_places.areas.join(', ')}`}
           {lb.withheld_places.reports !== null
             ? ` (${String(lb.withheld_places.reports)} together).`
             : '.'}
@@ -212,7 +212,11 @@ const SWITCH_WORDS: Record<string, Record<string, string>> = {
 };
 
 export function switchWords(u: { switch: string; value: string; subject: string | null }) {
-  const what = SWITCH_WORDS[u.switch]?.[u.value] ?? `${u.switch}: ${u.value}`;
+  // Its value is the new threshold itself (Plan E, PE4).
+  const what =
+    u.switch === 'small_area'
+      ? `Places with fewer than ${u.value} accepted reports counted without a number`
+      : (SWITCH_WORDS[u.switch]?.[u.value] ?? `${u.switch}: ${u.value}`);
   return u.subject ? `${what}: ${u.subject}` : what;
 }
 

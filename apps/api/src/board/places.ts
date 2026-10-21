@@ -39,6 +39,7 @@ import { MIN_AREA_FLOOR } from '@reportlog/contracts';
 import { LOCATION_TYPE } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { smallAreaThresholds } from '../moderation/switches.ts';
 
 export interface PlaceGuard {
   /** The question key the map reads this logbook's place from. */
@@ -74,6 +75,70 @@ export async function placeGuards(db: Kysely<DB>): Promise<Map<number, PlaceGuar
       threshold = Math.max(threshold, MIN_AREA_FLOOR, Math.trunc(m.min_area) || MIN_AREA_FLOOR);
     }
     if (threshold) out.set(q.logbook_id, { key: q.field_key, threshold });
+  }
+  return out;
+}
+
+export interface CountGuard {
+  /** Every question whose answers are counted by place under this threshold. */
+  keys: ReadonlySet<string>;
+  /** Fewer published reports than this, and the place is named without its count. */
+  threshold: number;
+}
+
+/**
+ * WHAT EVERY PUBLIC COUNT BY PLACE KEEPS, per logbook (Plan E, PE4): the
+ * map's threshold on the question a map reads (above), and, on a logbook
+ * published as COUNTS ONLY, its own small-area threshold on EVERY location
+ * question, whether or not a map reads it. Where both apply, the higher.
+ *
+ * WHY COUNTS ONLY IS DIFFERENT. Decisions 20 and 21 left a thin area
+ * countable on a listed logbook because each published report shows its own
+ * place: a reader can count it by reading. A counts-only logbook shows no
+ * report, so its place counts are all a reader has, and they are the thing
+ * to protect. A place under the threshold is sent as a name without a
+ * number (never a number the page then hides), and "the rest together" only
+ * when two or more places are under it, as the map does.
+ *
+ * WHAT A TOTAL MINUS THE VISIBLE PLACES STILL REVEALS, documented as
+ * decision 21 documented it (decisions.md, the PE4 rows). On a counts-only
+ * logbook:
+ *   - with ONE place under the threshold, the logbook's published total,
+ *     minus the places shown, minus the reports that named no place (the
+ *     numbers page's "Not answered"), is that place's count. The same holds
+ *     per origin, from the counts route's two columns;
+ *   - a place under the threshold is named, so at the floor (2) its count
+ *     can only be 1. That is the map's rule (an area is drawn as "fewer
+ *     than k"); a higher threshold makes the name say less;
+ *   - a heat map is state-level (decision 44) and the counts route lists a
+ *     county apart from its state, so a state's map count minus its counties
+ *     shown, minus its state-only answers, is the sum of its thin counties.
+ * None of these is new with PE4: each was there, with no threshold at all,
+ * before it. Nothing here adds another figure to subtract from: no new
+ * total, no count by place crossed with anything else.
+ */
+export async function countGuards(db: Kysely<DB>): Promise<Map<number, CountGuard>> {
+  const out = new Map<number, CountGuard>();
+  for (const [id, g] of await placeGuards(db)) {
+    out.set(id, { keys: new Set([g.key]), threshold: g.threshold });
+  }
+  const small = await smallAreaThresholds(db);
+  if (!small.size) return out;
+  const fields = await db
+    .selectFrom('logbook_fields')
+    .select(['logbook_id', 'key'])
+    .where('logbook_id', 'in', [...small.keys()])
+    .where('kind', '=', LOCATION_TYPE)
+    .execute();
+  for (const [id, threshold] of small) {
+    const map = out.get(id);
+    out.set(id, {
+      keys: new Set([
+        ...(map?.keys ?? []),
+        ...fields.filter((f) => f.logbook_id === id).map((f) => f.key),
+      ]),
+      threshold: Math.max(threshold, map?.threshold ?? 0),
+    });
   }
   return out;
 }

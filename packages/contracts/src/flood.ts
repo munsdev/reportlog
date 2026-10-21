@@ -44,8 +44,9 @@ export const LogbookCounts = z.object({
   published: ByOrigin,
   /**
    * By place, for a counts-only logbook (empty otherwise: its reports show
-   * their own place). An area under a heat map's threshold is named without
-   * its count, as on the numbers page.
+   * their own place). An area under the logbook's small-area threshold (or a
+   * heat map's, whichever is higher) is named without its count, in
+   * `withheld_places`, never here.
    */
   by_place: z.array(PlaceCount),
   withheld_places: z
@@ -99,7 +100,7 @@ export const getDeclinedCounts = defineRoute({
 
 // ── public: the switches ────────────────────────────────────────────────
 
-export const SWITCHES = ['pause_intake', 'puzzle', 'counts_only'] as const;
+export const SWITCHES = ['pause_intake', 'puzzle', 'counts_only', 'small_area'] as const;
 export const SwitchName = z.enum(SWITCHES);
 export const PUZZLE_LEVELS = ['normal', 'harder'] as const;
 export const PuzzleLevel = z.enum(PUZZLE_LEVELS);
@@ -108,7 +109,7 @@ export type PuzzleLevel = z.infer<typeof PuzzleLevel>;
 export const PublicSwitchUse = z.object({
   switch: SwitchName,
   value: z.string(),
-  /** The logbook, for counts_only. */
+  /** The logbook, for counts_only and small_area. */
   subject: z.string().nullable(),
   at: Timestamp,
 });
@@ -138,6 +139,16 @@ export const getSwitchLog = defineRoute({
 
 // ── moderators: the flood screen ────────────────────────────────────────
 
+/** Reports by where they stand. Staff only. */
+export const StaffTotals = z.object({
+  received: Count,
+  accepted: Count,
+  declined: Count,
+  /** Not yet decided, or marked unclear. */
+  waiting: Count,
+  withdrawn: Count,
+});
+
 export const getFloodScreen = defineRoute({
   method: 'GET',
   path: '/api/moderation/flood',
@@ -161,6 +172,17 @@ export const getFloodScreen = defineRoute({
     ),
     pause: IntakePause,
     puzzle: PuzzleLevel,
+    /**
+     * Every report filed, by where it stands now: staff only, never public
+     * for what is not accepted (decision 36). `received` is every thread;
+     * the other four add up to it.
+     */
+    totals: z.object({
+      all: StaffTotals,
+      by_logbook: z.array(StaffTotals.extend({ slug: z.string(), title: z.string() })),
+      /** Sent and not yet confirmed by the emailed link, unexpired. */
+      unconfirmed: Count,
+    }),
   }),
 });
 
@@ -237,13 +259,42 @@ export const listOrganizationLane = defineRoute({
 
 // ── administrators: counts only ─────────────────────────────────────────
 
+/**
+ * THE SMALL-AREA THRESHOLD of a counts-only logbook (Plan E, PE4): a place
+ * with fewer published reports than this is sent without its count. The
+ * floor is the heat maps' (`MIN_AREA_FLOOR`), and the database has the same
+ * CHECK; the default is the floor.
+ */
+export const SMALL_AREA_FLOOR = 2;
+export const SMALL_AREA_DEFAULT = 2;
+export const SMALL_AREA_MAX = 100_000;
+
 export const listCountsOnly = defineRoute({
   method: 'GET',
   path: '/api/admin/moderation/counts-only',
-  summary: 'Each launched logbook, and whether it publishes as counts only.',
+  summary:
+    'Each launched logbook, whether it publishes as counts only, and its small-area threshold.',
   response: z.object({
-    logbooks: z.array(z.object({ slug: z.string(), title: z.string(), counts_only: z.boolean() })),
+    logbooks: z.array(
+      z.object({
+        slug: z.string(),
+        title: z.string(),
+        counts_only: z.boolean(),
+        small_area: z.number().int(),
+      }),
+    ),
   }),
+});
+
+export const setSmallArea = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/moderation/logbooks/:slug/small-area',
+  summary:
+    'The smallest count a place may be published with while this logbook is counts only. Below it, the place is named without its count.',
+  params: z.object({ slug: z.string().min(1).max(63) }),
+  /** Checked on the server, so a value below the floor is refused in a sentence. */
+  body: z.object({ small_area: z.number() }),
+  response: z.object({ slug: z.string(), small_area: z.number().int() }),
 });
 
 export const setCountsOnly = defineRoute({
