@@ -4,8 +4,8 @@
 - **State:** built; PR into `ccr-c9c93698-ev856l`.
 - **Scope:** the owner's answers (2026-10-21) to PE3's open questions 1 to 4
   (`docs/status/PE3-moderation.md`). Question 2 there (intake links' meaning) was not answered and
-  is untouched. Four decision rows at the end of `docs/decisions.md`, numbered `5x` for the
-  managing session to renumber.
+  is untouched. Four decision rows at the end of `docs/decisions.md`, numbered 51 to 54 at merge (`5x` while
+  the managing session renumbered them).
 
 ## What was built
 
