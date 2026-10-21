@@ -20,6 +20,7 @@ import type { AnswerValue } from '@reportlog/fields';
 import { REVIEW_STATES, TRIAGE_STATES } from './policy.ts';
 import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
+import { fieldsOf } from './rows.ts';
 import type { Db } from './rows.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { linksForEntries } from '../links/reads.ts';
@@ -43,6 +44,8 @@ export interface ReviewEntry {
     known_host: boolean;
     group_id: number;
     outcome: Outcome | null;
+    /** What kind of link the tip said it is, in words, where its form asked. */
+    kind?: string;
   }[];
 }
 
@@ -99,6 +102,14 @@ export async function reviewBatch(
     .execute();
   const ids = rows.map((r) => r.id);
   const links = keys ? await linksForEntries(db, keys, ids) : [];
+  // The words for each kind of link, from the question that asked it.
+  const fields = await fieldsOf(db, listId);
+  const kindOf = (l: { field_key: string; link_type: string | null }) =>
+    l.link_type
+      ? (fields
+          .find((f) => f.key === l.field_key)
+          ?.settings.link_types?.find((t) => t.code === l.link_type)?.label ?? l.link_type)
+      : undefined;
   const known = new Set(knownHosts.map((h) => h.trim().toLowerCase()));
 
   const entries: ReviewEntry[] = rows.map((r) => ({
@@ -114,14 +125,18 @@ export async function reviewBatch(
     erased: r.erased_at !== null,
     links: links
       .filter((l) => l.entry_id === r.id)
-      .map((l) => ({
-        field_key: l.field_key,
-        url: l.url,
-        host: l.host ?? '',
-        known_host: known.has((l.host ?? '').toLowerCase()),
-        group_id: l.group_id,
-        outcome: l.outcome,
-      })),
+      .map((l) => {
+        const kind = kindOf(l);
+        return {
+          field_key: l.field_key,
+          url: l.url,
+          host: l.host ?? '',
+          known_host: known.has((l.host ?? '').toLowerCase()),
+          group_id: l.group_id,
+          outcome: l.outcome,
+          ...(kind ? { kind } : {}),
+        };
+      }),
   }));
   return { entries, clusters: clustersIn(entries) };
 }

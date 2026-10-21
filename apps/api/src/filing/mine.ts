@@ -26,7 +26,7 @@ import { NONE_GRANTED, permissionHistory, permissionsForMany } from '../permissi
 import { emailDigests, eraseContact } from './contactKeys.ts';
 import { appendCorrection, lockHead } from './correction.ts';
 import type { ContactKeyring } from './contactKeys.ts';
-import { notConfigured, refused } from './filing.ts';
+import { answerRefusals, notConfigured, refused } from './filing.ts';
 
 const notYours = () => notFound('There is no report of yours with that reference.');
 
@@ -179,7 +179,7 @@ export class Mine {
     // one added since the report was filed.
     const questions = await questionsFor(this.db, owned.logbook_id);
     const { answers, errors } = buildAnswers(questions, b.answers ?? {});
-    const problems = errors.map((e) => `${e}.`);
+    const problems = [...answerRefusals(questions, b.answers ?? {}), ...errors.map((e) => `${e}.`)];
     if (!comment) problems.push('Say why you are correcting it.');
     if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
 

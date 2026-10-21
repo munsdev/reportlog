@@ -25,15 +25,40 @@ export type Condition = z.infer<typeof Condition>;
  * the form definition: a key nothing reads would still change the hash of
  * every report filed against it.
  */
+/**
+ * An offered answer: a plain string (its own code and label, as before), or
+ * a code that is sealed with a label that is shown (ruling 48).
+ */
+export const OptionInput = z.union([z.string(), z.object({ code: z.string(), label: z.string() })]);
+export type OptionInput = z.infer<typeof OptionInput>;
+
 export const QuestionSettingsInput = z.strictObject({
   maxLength: z.number().int().optional(),
-  options: z.array(z.string()).optional(),
+  options: z.array(OptionInput).optional(),
+  /** In place of `options`: which list is offered depends on an earlier answer. */
+  option_sets: z.array(z.object({ when: Condition, options: z.array(OptionInput) })).optional(),
+  /** Help in place of the question's own while an earlier answer holds. */
+  help_when: z.array(z.object({ when: Condition, help: z.string() })).optional(),
+  /** On the first of several questions sharing a card: the card's own question. */
+  card_question: z.string().optional(),
+  /** Shown on the card of the question before it. */
+  same_card: z.boolean().optional(),
   allowOther: z.boolean().optional(),
   min: z.number().nullable().optional(),
   max: z.number().nullable().optional(),
+  /** Whole numbers only. */
+  integer: z.boolean().optional(),
+  /** `hour`: the number is picked from the 24 hours. */
+  picker: z.string().optional(),
+  /** A yes/no asked as one tick box: true when ticked, nothing when not. */
+  checkbox: z.boolean().optional(),
   scope: z.string().optional(),
   /** `county` asks for the county after the state; absent means state only. */
   depth: z.string().optional(),
+  /** `postal` seals a state as AZ; `fips` seals a county as 04013 (with `within`). */
+  code: z.string().optional(),
+  /** On a `fips` county: the key of the earlier `postal` state question. */
+  within: z.string().optional(),
 });
 export type QuestionSettingsInput = z.infer<typeof QuestionSettingsInput>;
 
@@ -106,13 +131,22 @@ export const LogbookFileQuestion = z.object({
   required: z.boolean().optional(),
   filterable: z.boolean().optional(),
   shown_when: Condition.optional(),
-  options: z.array(z.string()).optional(),
+  options: z.array(OptionInput).optional(),
+  option_sets: z.array(z.object({ when: Condition, options: z.array(OptionInput) })).optional(),
+  help_when: z.array(z.object({ when: Condition, help: z.string() })).optional(),
+  card_question: z.string().optional(),
+  same_card: z.boolean().optional(),
   allow_other: z.boolean().optional(),
   scope: z.string().optional(),
   depth: z.string().optional(),
+  code: z.string().optional(),
+  within: z.string().optional(),
   max_length: z.number().optional(),
   min: z.number().optional(),
   max: z.number().optional(),
+  integer: z.boolean().optional(),
+  picker: z.string().optional(),
+  checkbox: z.boolean().optional(),
 });
 export const LogbookFile = z.looseObject({
   reportlog_logbook: z.number(),
@@ -218,7 +252,7 @@ export const updateQuestion = defineRoute({
   method: 'PATCH',
   path: '/api/admin/logbooks/:id/fields/:fieldId',
   summary:
-    'Change a question while the logbook is a draft. After launch, only whether it is a board filter.',
+    'Change a question while the logbook is a draft. After launch, only its wording and whether it is a board filter.',
   params: FieldParams,
   body: z.object({
     label: z.string().optional(),
@@ -346,6 +380,8 @@ export const getPublicLogbook = defineRoute({
     fields: z.array(FormQuestion),
     /** The board's filters: only what the operator marked. None is built in. */
     filters: z.array(FormQuestion),
+    /** The hash of the form version these questions are; sent back with a report. */
+    form: z.string().optional(),
   }),
 });
 

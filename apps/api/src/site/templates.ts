@@ -47,6 +47,8 @@ import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { createFromFile, validateLogbookFile } from '../logbooks/logbookFile.ts';
 import { isStartingPoint, startingPoints, templateLogbook } from '../logbooks/templates.ts';
+import { createFromTemplate } from '../lists/manage.ts';
+import { shippedTemplate } from '../lists/templates.ts';
 import type { StartingPointId } from '../logbooks/templates.ts';
 import { validateCopy } from './copy.ts';
 import { validateSiteName } from './identity.ts';
@@ -65,6 +67,7 @@ export const TEMPLATE_KEYS = [
   'copy',
   'clearCopy',
   'logbook',
+  'list',
 ] as const;
 type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
@@ -84,6 +87,13 @@ export interface TemplateSettings {
   clearCopy?: boolean;
   /** A logbook starting point (logbooks/templates/), made as a draft. */
   logbook?: string;
+  /**
+   * A list starting point (lists/templates/), made HIDDEN, as every new list
+   * is: an administrator lists it. `slug` is its address when it should not
+   * be the template's own; a taken address refuses the whole template.
+   * `title` is its name when it should not be the template's own.
+   */
+  list?: { template: string; slug?: string; title?: string };
 }
 
 export interface Template {
@@ -130,6 +140,32 @@ export const TEMPLATES: readonly Template[] = [
         home_headline: HOME_HEADLINE,
         home_intro:
           'Voted, worked a polling place or watched one? Say how it went, fine or not, in a minute, with nothing to type. A moderator reads every report before any of it is published.',
+      },
+    },
+  },
+  {
+    // THE OWNER'S QUESTIONNAIRES OF 21 OCTOBER 2026 (docs/electionlog-
+    // questionnaires.md), as ordinary settings: the one logbook, the tip list
+    // at /list/tips (where "Send it as a tip" points), and the choosing card's
+    // question. Nothing reads which template this was.
+    id: 'electionlog',
+    label: 'ElectionLog',
+    description:
+      'How voting went, for every voter in the US or abroad and every voting method, good and bad, asked as choices with nothing to type, plus a tip list that takes up to three links and nothing else. No files. Public archive on.',
+    settings: {
+      publicArchive: true,
+      attachments: false,
+      intake: true,
+      logbook: 'electionlog',
+      list: { template: 'electionlog-tips', slug: 'tips', title: 'Send a link' },
+      copy: {
+        home_headline: HOME_HEADLINE,
+        home_intro:
+          'Voted, or tried to? Log how it went, good or bad, in a few choices with nothing to type. Saw a post, a video or an article about the election? Send it as a link. A moderator reads every report before any of it is published, and links are never published.',
+        submit_question: 'What do you want to do?',
+        // The owner's send card (§03). True once reporters cannot correct or
+        // withdraw; today they can, from My reports (docs/status/PD8).
+        send_note: "This report can't be changed or withdrawn after you send it.",
       },
     },
   },
@@ -235,6 +271,7 @@ export interface TemplatePlan {
   clearCopy?: boolean;
   copy: { key: C.CopyKey; body: string | null }[];
   logbook?: StartingPointId;
+  list?: { template: string; slug?: string; title?: string };
 }
 
 /**
@@ -317,6 +354,25 @@ export function planTemplate(t: unknown): Checked<TemplatePlan> {
       else plan.logbook = s.logbook;
     }
   }
+  if (s.list !== undefined) {
+    const l: unknown = s.list;
+    const r = typeof l === 'object' && l !== null ? (l as Record<string, unknown>) : null;
+    const template = typeof r?.template === 'string' ? r.template : '';
+    if (!r || !shippedTemplate(template)) {
+      problems.push(`There is no list starting point called "${template || '?'}".`);
+    } else if (
+      (r.slug !== undefined && typeof r.slug !== 'string') ||
+      (r.title !== undefined && typeof r.title !== 'string')
+    ) {
+      problems.push('A list’s address and name have to be text.');
+    } else {
+      plan.list = {
+        template,
+        ...(typeof r.slug === 'string' ? { slug: r.slug } : {}),
+        ...(typeof r.title === 'string' ? { title: r.title } : {}),
+      };
+    }
+  }
   if (problems.length) return { ok: false, error: problems.join(' ') };
   return { ok: true, value: plan };
 }
@@ -357,6 +413,17 @@ export function describeSettings(s: TemplateSettings): string[] {
       );
     }
   }
+  if (s.list !== undefined) {
+    const t = shippedTemplate(s.list.template);
+    if (t) {
+      out.push(
+        `Makes a list, “${s.list.title ?? t.title}”, at /list/${s.list.slug ?? t.slug}, asking ${String(t.fields.length)} ` +
+          (t.fields.length === 1 ? 'question' : 'questions') +
+          (t.requiresEmail ? '' : ' and no email address') +
+          '. It starts hidden: you list it when you are ready.',
+      );
+    }
+  }
   if (s.copy) {
     const n = Object.keys(s.copy).length;
     out.push(`Writes ${String(n)} ${n === 1 ? 'piece' : 'pieces'} of page text`);
@@ -391,11 +458,7 @@ export async function appliedTemplate(db: Database): Promise<TemplateCatalogue['
  * first, which may already be launched. A logbook already there, and every
  * report in it, is never touched.
  */
-export async function applyTemplate(
-  db: Database,
-  id: string,
-  by: string,
-): Promise<{ applied: string; logbook?: { id: number; slug: string; title: string } }> {
+export async function applyTemplate(db: Database, id: string, by: string): Promise<Applied> {
   const template = templateById(id);
   if (!template) throw new HttpError(404, 'no_such_template', 'There is no such template.');
   return applyTemplateDefinition(db, template, by);
@@ -410,7 +473,7 @@ export async function applyTemplateDefinition(
   db: Database,
   template: Template,
   by: string,
-): Promise<{ applied: string; logbook?: { id: number; slug: string; title: string } }> {
+): Promise<Applied> {
   const id = template.id;
   const checked = planTemplate(template);
   if (!checked.ok) throw new HttpError(400, 'refused', checked.error);
@@ -449,14 +512,35 @@ export async function applyTemplateDefinition(
       logbook = { id: made.id, slug: made.slug, title: made.title };
     }
 
+    // The list, HIDDEN, as every new list starts (lists/manage.ts).
+    let list: { id: number; slug: string; title: string } | undefined;
+    if (plan.list !== undefined) {
+      const made = await createFromTemplate(trx, plan.list.template, {
+        slug: plan.list.slug,
+        title: plan.list.title,
+      });
+      list = { id: made.id, slug: made.slug, title: made.title };
+    }
+
     await trx
       .updateTable('site_settings')
       .set({ template_applied: id, template_applied_at: sql`now()`, updated_at: sql`now()` })
       .where('id', '=', true)
       .execute();
 
-    return { applied: id, ...(logbook ? { logbook } : {}) };
+    return { applied: id, ...(logbook ? { logbook } : {}), ...(list ? { list } : {}) };
   });
+}
+
+interface Made {
+  id: number;
+  slug: string;
+  title: string;
+}
+export interface Applied {
+  applied: string;
+  logbook?: Made;
+  list?: Made;
 }
 
 export interface TemplateRouteDeps {

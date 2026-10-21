@@ -92,6 +92,29 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback: '',
   },
   {
+    // The entry card's one question. A heading, so a line; it has an answer
+    // that ships, so the card always asks something.
+    key: 'submit_question',
+    kind: 'line',
+    figures: false,
+    label: 'The question on the choosing card',
+    help: 'The heading of the card where somebody chooses whether to report or send a link. One question.',
+    fallback: 'What are you reporting?',
+  },
+  {
+    // OPTIONAL, beside the Send button. What the operator says about sending
+    // (ElectionLog: "This report can't be changed or withdrawn after you send
+    // it."). Unwritten, nothing is shown. Not a statement this software
+    // makes: the operator's, about their own archive.
+    key: 'send_note',
+    kind: 'line',
+    optional: true,
+    figures: false,
+    label: 'Your own words beside Send',
+    help: 'One sentence on the last card of a report, just above the Send button. Left empty, nothing is shown. Say only what is true of this site.',
+    fallback: '',
+  },
+  {
     key: 'board_intro',
     kind: 'block',
     optional: true,

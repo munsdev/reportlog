@@ -36,7 +36,8 @@
  */
 import { LogbookFile } from '@reportlog/contracts';
 import type { LogbookDetail, QuestionSettingsInput } from '@reportlog/contracts';
-import { FILE_TYPE, isFieldKind } from '@reportlog/fields';
+import { FILE_TYPE, isFieldKind, optionArray, optionSetsOf } from '@reportlog/fields';
+import type { HelpWhen } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import {
@@ -102,16 +103,25 @@ export function validateLogbookFile(f: unknown): string[] {
       } else if (keys.has(q.key)) errors.push(`${n} repeats the key "${q.key}".`);
       else keys.add(q.key);
     }
-    if (NEEDS_OPTIONS.has(kind) && !(Array.isArray(q.options) && q.options.length)) {
+    const hasSets = Array.isArray(q.option_sets) && q.option_sets.length > 0;
+    if (NEEDS_OPTIONS.has(kind) && !hasSets && !(Array.isArray(q.options) && q.options.length)) {
       errors.push(`${n} needs a list of choices.`);
     }
-    if (
-      q.options !== undefined &&
-      !(Array.isArray(q.options) && q.options.every((o) => typeof o === 'string' && o.trim()))
-    ) {
-      errors.push(`${n} has choices that are not all plain text.`);
+    // A choice is plain text, or a code with a label (ruling 48).
+    const choiceOk = (o: unknown) =>
+      (typeof o === 'string' && o.trim()) ||
+      (isRecord(o) && typeof o.code === 'string' && typeof o.label === 'string' && o.label.trim());
+    if (q.options !== undefined && !(Array.isArray(q.options) && q.options.every(choiceOk))) {
+      errors.push(`${n} has choices that are neither plain text nor a code with a label.`);
     }
-    for (const flag of ['required', 'filterable', 'allow_other'] as const) {
+    for (const flag of [
+      'required',
+      'filterable',
+      'allow_other',
+      'same_card',
+      'integer',
+      'checkbox',
+    ] as const) {
       if (q[flag] !== undefined && typeof q[flag] !== 'boolean') {
         errors.push(`${n} says "${flag}" with something other than true or false.`);
       }
@@ -123,7 +133,16 @@ export function validateLogbookFile(f: unknown): string[] {
 /** The settings a file question describes, in the builder's terms. */
 function settingsOf(q: LogbookFile['questions'][number]): QuestionSettingsInput {
   return {
-    ...(q.options ? { options: q.options.map((o) => o.trim()) } : {}),
+    ...(q.options ? { options: q.options.map((o) => (typeof o === 'string' ? o.trim() : o)) } : {}),
+    ...(q.option_sets ? { option_sets: q.option_sets } : {}),
+    ...(q.help_when ? { help_when: q.help_when } : {}),
+    ...(q.card_question !== undefined ? { card_question: q.card_question } : {}),
+    ...(q.same_card ? { same_card: true } : {}),
+    ...(q.kind === 'location' && q.code !== undefined ? { code: q.code } : {}),
+    ...(q.kind === 'location' && q.within !== undefined ? { within: q.within } : {}),
+    ...(q.kind === 'number' && q.integer ? { integer: true } : {}),
+    ...(q.kind === 'number' && q.picker !== undefined ? { picker: q.picker } : {}),
+    ...(q.kind === 'yes_no' && q.checkbox ? { checkbox: true } : {}),
     ...(q.kind === 'place' ? { allowOther: q.allow_other !== false } : {}),
     ...(q.kind === 'location' && q.scope !== undefined ? { scope: q.scope } : {}),
     ...(q.kind === 'location' && q.depth !== undefined ? { depth: q.depth } : {}),
@@ -277,7 +296,7 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
     ...((await notesEnabled(db, lb.id)) ? { editorial_notes: true } : {}),
     questions: fields.map((f) => {
       const s = f.settings;
-      const options = Array.isArray(s.options) ? (s.options as string[]) : [];
+      const options = optionArray(s.options);
       return {
         key: f.key,
         kind: f.kind,
@@ -300,6 +319,17 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
           : {}),
         ...(f.kind === 'number' && typeof s.min === 'number' ? { min: s.min } : {}),
         ...(f.kind === 'number' && typeof s.max === 'number' ? { max: s.max } : {}),
+        // The settings ruling 48's forms carry, each only when it is there, so
+        // a file from a logbook without them is the file it always was.
+        ...(Array.isArray(s.option_sets) ? { option_sets: optionSetsOf(s) } : {}),
+        ...(Array.isArray(s.help_when) ? { help_when: s.help_when as HelpWhen[] } : {}),
+        ...(typeof s.card_question === 'string' ? { card_question: s.card_question } : {}),
+        ...(s.same_card === true ? { same_card: true } : {}),
+        ...(f.kind === 'location' && typeof s.code === 'string' ? { code: s.code } : {}),
+        ...(f.kind === 'location' && typeof s.within === 'string' ? { within: s.within } : {}),
+        ...(f.kind === 'number' && s.integer === true ? { integer: true } : {}),
+        ...(f.kind === 'number' && typeof s.picker === 'string' ? { picker: s.picker } : {}),
+        ...(f.kind === 'yes_no' && s.checkbox === true ? { checkbox: true } : {}),
       };
     }),
   };

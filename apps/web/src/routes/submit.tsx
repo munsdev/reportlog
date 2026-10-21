@@ -6,8 +6,12 @@
  * when there is only one to choose (nothing on a card changes underneath
  * somebody, and no card advances by itself).
  *
- * The operator's intro (`submit_intro`) is drawn above the question, and the
- * card waits for the wording to load, so the page is drawn once.
+ * THE QUESTION IS THE OPERATOR'S WORDING (`submit_question`, "What are you
+ * reporting?" until they write one; ElectionLog's is "What do you want to
+ * do?"), and each answer is named by what it opens: a logbook by its title,
+ * the tips list by its own title ("Send a link"), so renaming one renames its
+ * answer. The operator's intro (`submit_intro`) is drawn under the question,
+ * and the card waits for the wording to load, so the page is drawn once.
  */
 import { listOpenLists, listPublicLogbooks } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
@@ -53,9 +57,7 @@ function Submit() {
   const tips = lists.data?.lists.find((l) => l.slug === TIPS_SLUG);
   const choices = [
     ...open.map((l) => ({ value: `logbook:${l.slug}`, label: l.title, hint: l.blurb })),
-    ...(tips
-      ? [{ value: `list:${tips.slug}`, label: 'I have a link or tip', hint: tips.blurb }]
-      : []),
+    ...(tips ? [{ value: `list:${tips.slug}`, label: tips.title, hint: tips.blurb }] : []),
   ];
   const go = () => {
     const [kind, slug] = chosen.split(':');
@@ -67,7 +69,7 @@ function Submit() {
     else void navigate({ to: '/file/$slug', params: { slug } });
   };
   return (
-    <Page title="What are you reporting?" width="prose">
+    <Page title={site.data?.copy.submit_question ?? 'What are you reporting?'} width="prose">
       <CopyText slot="submit_intro" />
       {choices.length === 0 ? (
         <p>Nothing is taking reports at the moment. Please come back later.</p>

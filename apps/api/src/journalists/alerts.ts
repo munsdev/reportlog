@@ -34,8 +34,14 @@ import { dekOf, issueLink, removeSubscribers, settingsLinkFor, stopLinkFor } fro
 
 /* THE STATE A PLACE ANSWER ROLLS UP TO: a county code (`US-AZ-04013`, owner
    decision 44) counts toward its state by prefix, as on the heat maps, and a
-   journalist signs up by state. The same rule as `stateOfPlace`, in SQL. */
-const stateSql = sql`regexp_replace(r.answers ->> f.key, '-[0-9]{5}$', '')`;
+   journalist signs up by state. The same rule as `stateOfPlace`, in SQL.
+   A question that writes a state by postal code (`AZ`, ruling 48's forms) is
+   read as `US-AZ`, as `placeCodeOf` reads it; a county written by FIPS alone
+   is left to the state question beside it, which every such county has. */
+const stateSql = sql`CASE f.settings ->> 'code'
+  WHEN 'postal' THEN 'US-' || (r.answers ->> f.key)
+  WHEN 'fips' THEN NULL
+  ELSE regexp_replace(r.answers ->> f.key, '-[0-9]{5}$', '') END`;
 
 export interface AlertCount {
   state: string;

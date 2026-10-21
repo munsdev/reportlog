@@ -1,6 +1,8 @@
 /**
  * The shipped starting points for a list: the Tip List, check-ins, a contact
- * form, and election tips (owner decision 45). The Tip List stays general;
+ * form, election tips (owner decision 45), and ElectionLog's tip list (the
+ * owner's questionnaires of 21 October 2026, §04): three rows of a link and
+ * what kind of link it is, nothing else asked, strict, no email. The Tip List stays general;
  * election tips is the election-specific one beside it, as
  * logbooks/templates/elections.json is for logbooks: it asks where (state,
  * then county), what day, and which of the elections logbook's kinds of
@@ -30,6 +32,7 @@ import type { Retention } from './retention.ts';
 import checkIns from './templates/check-ins.json' with { type: 'json' };
 import contact from './templates/contact.json' with { type: 'json' };
 import electionTips from './templates/election-tips.json' with { type: 'json' };
+import electionlogTips from './templates/electionlog-tips.json' with { type: 'json' };
 import tips from './templates/tips.json' with { type: 'json' };
 
 export const LIST_FILE_VERSION = 1;
@@ -43,6 +46,8 @@ export interface ListTemplate {
   blurb: string | null;
   /** "ask_email": "always" asks everybody; anything else leaves it to the questions. */
   email_mode: 'auto' | 'required';
+  /** Refuse a key the form does not ask, rather than drop it (ruling 49). */
+  strict: boolean;
   requiresEmail: boolean;
   fields: (ListField & { retention: Retention })[];
 }
@@ -91,6 +96,9 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
       `${name} asks nothing, and a list that asks nothing collects nothing.`,
     );
   }
+  if (def.strict !== undefined && typeof def.strict !== 'boolean') {
+    throw new FieldRuleError(`${name} says "strict" with something other than true or false.`);
+  }
   const email = def.email;
   if (email !== undefined && !EMAIL_DECLARATIONS.includes(email as 'none')) {
     throw new FieldRuleError(`${name} declares an unknown email mode: ${JSON.stringify(email)}.`);
@@ -116,12 +124,19 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
     title,
     blurb: str(def.blurb) ?? null,
     email_mode: def.ask_email === 'always' ? 'required' : 'auto',
+    strict: def.strict === true,
     requiresEmail: derived.requiresEmail,
     fields: checked.fields,
   };
 }
 
-const FILES = { tips, 'election-tips': electionTips, 'check-ins': checkIns, contact } as const;
+const FILES = {
+  tips,
+  'election-tips': electionTips,
+  'electionlog-tips': electionlogTips,
+  'check-ins': checkIns,
+  contact,
+} as const;
 
 /** Every shipped template, in the order the "make a list" screen offers them. */
 export function shippedTemplates(): ListTemplate[] {

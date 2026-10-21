@@ -29,7 +29,8 @@ import {
   MIN_AREA_FLOOR,
   isMapSlot,
 } from '@reportlog/contracts';
-import { LOCATION_TYPE } from '@reportlog/fields';
+import { LOCATION_TYPE, allOptionCodes } from '@reportlog/fields';
+import type { FieldSettings } from '@reportlog/fields';
 import type { Database } from '../db/database.ts';
 import { HttpError } from '../http/errors.ts';
 import { allMaps, mapById, stancesOf, toAdmin } from './rows.ts';
@@ -76,8 +77,8 @@ function cleanIds(value: unknown, what: string): number[] {
 /** The answers a closed question can have, as the outcome reading names them. */
 export function answersOf(kind: string, settings: unknown): string[] {
   if (kind === 'yes_no' || kind === 'evidence_declaration') return ['yes', 'no'];
-  const options = (settings as { options?: unknown } | null)?.options;
-  return Array.isArray(options) ? options.filter((o): o is string => typeof o === 'string') : [];
+  // Codes, which is what is sealed; a plain string option is its own code.
+  return allOptionCodes(settings as FieldSettings | null);
 }
 
 interface Columns {

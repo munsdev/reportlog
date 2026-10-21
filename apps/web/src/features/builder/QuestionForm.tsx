@@ -6,7 +6,7 @@
  * server decides what is allowed; this form keeps out of the menu what it
  * would refuse, so an operator rarely has to meet a refusal at all.
  */
-import type { Condition, Question, QuestionSettingsInput } from '@reportlog/contracts';
+import type { Condition, OptionInput, Question, QuestionSettingsInput } from '@reportlog/contracts';
 import {
   CONDITIONABLE_KINDS,
   FIELD_TYPES,
@@ -16,6 +16,7 @@ import {
   canFilter,
   fieldType,
   matchableValues,
+  optionArray,
 } from '@reportlog/fields';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button.tsx';
@@ -43,8 +44,29 @@ interface Props {
   onCancel?: () => void;
 }
 
+/**
+ * The choices as the box shows them: one per line, and a choice with a code
+ * as `code | label`. A plain line is its own code and label, as before codes.
+ */
 const optionsOf = (q: Question | undefined): string[] =>
-  Array.isArray(q?.settings.options) ? (q.settings.options as string[]) : [];
+  optionArray(q?.settings.options).map((o) =>
+    typeof o === 'string' ? o : `${o.code} | ${o.label}`,
+  );
+
+/** The box back into choices. A line with a `|` is a code and its label. */
+function parseOptions(text: string): OptionInput[] {
+  return text
+    .split('\n')
+    .map((o) => o.trim())
+    .filter(Boolean)
+    .map((o) => {
+      const at = o.indexOf('|');
+      return at < 0 ? o : { code: o.slice(0, at).trim(), label: o.slice(at + 1).trim() };
+    });
+}
+
+/** The settings this form edits; anything else a question carries is kept as it is. */
+const EDITED = ['options', 'allowOther', 'scope', 'depth'];
 
 export function QuestionForm({
   earlier,
@@ -79,18 +101,24 @@ export function QuestionForm({
   const target = targets.find((f) => f.key === whenField);
   const values = matchableValues(target);
 
+  // WHAT THIS FORM DOES NOT EDIT IS KEPT: option sets, help that depends on
+  // an answer, a shared card, how a place is written. A save that dropped them
+  // would quietly change what the question asks.
+  const kept = Object.fromEntries(
+    Object.entries(initial?.settings ?? {}).filter(([k]) => !EDITED.includes(k)),
+  ) as QuestionSettingsInput;
+  const hasSets = Array.isArray(initial?.settings.option_sets);
+
   function settings(): QuestionSettingsInput | undefined {
-    const list = options
-      .split('\n')
-      .map((o) => o.trim())
-      .filter(Boolean);
-    if (kind === 'choice_one' || kind === 'choice_many') return { options: list };
-    if (kind === 'place') return { options: list, allowOther };
+    const list = parseOptions(options);
+    if (kind === 'choice_one' || kind === 'choice_many')
+      return hasSets ? kept : { ...kept, options: list };
+    if (kind === 'place') return { ...kept, options: list, allowOther };
     // Depth only as `county`: an absent depth IS state, and settings are sealed.
     if (kind === LOCATION_TYPE) {
-      return { scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };
+      return { ...kept, scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };
     }
-    return undefined;
+    return Object.keys(kept).length ? kept : undefined;
   }
 
   function condition(): Condition | null | undefined {
@@ -187,10 +215,14 @@ export function QuestionForm({
         )}
       </Field>
 
-      {LIST_KINDS.has(kind) && (
+      {LIST_KINDS.has(kind) && !hasSets && (
         <Field
           label="Choices, one per line"
-          help={kind === 'place' ? 'Leave empty to let people type any place.' : undefined}
+          help={
+            kind === 'place'
+              ? 'Leave empty to let people type any place.'
+              : 'To keep a code apart from the words, write code | words, for example fine | It went fine. The code is what is sealed; the words can be changed after launch.'
+          }
         >
           {(p) => (
             <TextArea

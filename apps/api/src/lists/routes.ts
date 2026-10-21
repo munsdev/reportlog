@@ -41,7 +41,14 @@ import {
   NOT_A_SAMPLE,
 } from '@reportlog/contracts';
 import type { BodyOf, ListForm } from '@reportlog/contracts';
-import { LOCATION_TYPE, depthOf, placeOptions } from '@reportlog/fields';
+import {
+  LOCATION_TYPE,
+  depthOf,
+  isCodedOption,
+  optionArray,
+  optionLabel,
+  placeOptions,
+} from '@reportlog/fields';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
@@ -53,7 +60,8 @@ import { hasSiteAccess, locked } from '../identity/siteAccess.ts';
 import { summaryFor } from './aggregates.ts';
 import { fileEntry } from './entries.ts';
 import { redeemErasureToken, TOKEN_PATTERN } from './erasure.ts';
-import { collectionRequirements } from './fields.ts';
+import { collectionRequirements, optionsOf } from './fields.ts';
+import { linkTypesOf } from './policy.ts';
 import {
   allLists,
   createFromTemplate,
@@ -174,7 +182,19 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
         help: f.help,
         required: f.required,
         max_values: f.max_values,
-        options: Array.isArray(f.settings.options) ? f.settings.options : [],
+        options: optionsOf(f),
+        ...(optionArray(f.settings.options).some(isCodedOption)
+          ? { option_labels: optionArray(f.settings.options).map(optionLabel) }
+          : {}),
+        ...(linkTypesOf(f).length
+          ? {
+              link_types: (f.settings.link_types ?? []).map((t) => ({
+                code: t.code,
+                label: t.label,
+              })),
+            }
+          : {}),
+        ...(f.settings.fixed_rows === true ? { fixed_rows: true } : {}),
         allow_other: f.settings.allowOther === true,
         ...(places ? { places: [...places.subdivisions, ...places.countries] } : {}),
         // The county picker's own list is bundled in the page (@reportlog/fields).

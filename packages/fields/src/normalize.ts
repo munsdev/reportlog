@@ -11,7 +11,17 @@
  */
 import { FILE_TYPE, LOCATION_TYPE } from './fieldTypes.ts';
 import { normalizeLocation } from './gazetteer.ts';
-import type { AnswerValue, FieldSettings } from './types.ts';
+import { offeredCodes } from './options.ts';
+import type { Answers, AnswerValue, FieldSettings } from './types.ts';
+
+/**
+ * What a question's answer may depend on: the answers to the questions
+ * before it (an option set, a county inside its state). Optional, and a
+ * caller without it gets the lenient reading (every code any set offers).
+ */
+export interface AnswerContext {
+  answers?: Partial<Answers> | undefined;
+}
 
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
 
@@ -66,6 +76,8 @@ function normalizeNumber(v: unknown, settings: FieldSettings): number | null {
     n = Number(s);
   }
   if (!Number.isFinite(n)) return null;
+  // Written only when true, so a number question made before it is unchanged.
+  if (settings.integer === true && !Number.isInteger(n)) return null;
   if (typeof settings.min === 'number' && n < settings.min) return null;
   if (typeof settings.max === 'number' && n > settings.max) return null;
   return n;
@@ -90,20 +102,32 @@ function normalizeEmail(v: unknown): string | null {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s) ? s : null;
 }
 
-function optionsOf(settings: FieldSettings): string[] {
-  return Array.isArray(settings.options) ? settings.options : [];
+/**
+ * The CODES a choice accepts. A plain string option is its own code, so a
+ * form with string options accepts and seals exactly what it always did.
+ */
+function optionsOf(settings: FieldSettings, context?: AnswerContext): string[] {
+  return offeredCodes(settings, context?.answers);
 }
 
-function normalizeChoice(v: unknown, settings: FieldSettings): string | null {
+function normalizeChoice(
+  v: unknown,
+  settings: FieldSettings,
+  context?: AnswerContext,
+): string | null {
   const s = str(v);
   if (!s) return null;
   // An answer outside the offered list is not an answer.
-  return optionsOf(settings).includes(s) ? s : null;
+  return optionsOf(settings, context).includes(s) ? s : null;
 }
 
-function normalizeChoiceMany(v: unknown, settings: FieldSettings): string[] | null {
+function normalizeChoiceMany(
+  v: unknown,
+  settings: FieldSettings,
+  context?: AnswerContext,
+): string[] | null {
   const list: unknown[] = Array.isArray(v) ? v : v === undefined || v === null ? [] : [v];
-  const options = optionsOf(settings);
+  const options = optionsOf(settings, context);
   const kept = [...new Set(list.map(str).filter((s) => options.includes(s)))];
   // ORDER IS THE OPERATOR'S, NOT THE REPORTER'S: the same boxes ticked in a
   // different order must produce the same seal.
@@ -119,8 +143,11 @@ function normalizePlace(v: unknown, settings: FieldSettings): string | null {
   return options.includes(s) ? s : null;
 }
 
-function normalizeYesNo(v: unknown): boolean | null {
+function normalizeYesNo(v: unknown, settings: FieldSettings = {}): boolean | null {
   if (v === true || v === 'true' || v === 'yes') return true;
+  // A TICK BOX SEALS TRUE OR NOTHING: unticked is "not ticked", never a
+  // sealed false, so its key exists only when the box was ticked.
+  if (settings.checkbox === true) return null;
   if (v === false || v === 'false' || v === 'no') return false;
   return null;
 }
@@ -140,6 +167,7 @@ export function normalizeAnswer(
   kind: string,
   value: unknown,
   settings: FieldSettings = {},
+  context?: AnswerContext,
 ): AnswerValue | null {
   switch (kind) {
     case 'short_text': {
@@ -159,14 +187,15 @@ export function normalizeAnswer(
     case 'place':
       return normalizePlace(value, settings);
     case LOCATION_TYPE:
-      return normalizeLocation(value, settings);
+      return normalizeLocation(value, settings, context?.answers);
     case 'choice_one':
-      return normalizeChoice(value, settings);
+      return normalizeChoice(value, settings, context);
     case 'choice_many':
-      return normalizeChoiceMany(value, settings);
+      return normalizeChoiceMany(value, settings, context);
     // The declaration seals a BOOLEAN exactly as yes_no does, through the same
     // call: two normalizers for one shape is how the two come to disagree.
     case 'yes_no':
+      return normalizeYesNo(value, settings);
     case 'evidence_declaration':
       return normalizeYesNo(value);
     case 'number':

@@ -14,7 +14,7 @@
  * than throwing, and callers show the bare code.
  */
 import data from './gazetteer.json' with { type: 'json' };
-import type { LocationDepth, LocationScope } from './types.ts';
+import type { LocationCode, LocationDepth, LocationScope } from './types.ts';
 
 interface Gazetteer {
   countries: Record<string, string>;
@@ -125,17 +125,91 @@ export function scopeAccepts(
 }
 
 /**
+ * How a question writes its answer: absent is the hierarchical code. `postal`
+ * and `fips` are read only on a US question at the matching depth; setup
+ * refuses any other combination, so here an unexpected one is simply absent.
+ */
+export function codeOf(
+  settings: { scope?: unknown; depth?: unknown; code?: unknown } | null | undefined,
+): LocationCode | null {
+  const c = settings?.code;
+  if (scopeOf(settings) !== 'us') return null;
+  if (c === 'postal' && depthOf(settings) === 'state') return 'postal';
+  if (c === 'fips' && depthOf(settings) === 'county') return 'fips';
+  return null;
+}
+
+let byFips: Map<string, string> | null = null;
+
+/**
+ * A county's full code from its five digits alone. FIPS codes are unique
+ * across the country (the first two digits are the state's), so this needs
+ * no state, and a sealed `04013` can always be named.
+ */
+export function countyCodeOfFips(fips: string): string | null {
+  if (!byFips) {
+    byFips = new Map();
+    for (const code of Object.keys(GAZETTEER.counties)) byFips.set(code.slice(-5), code);
+  }
+  return byFips.get(fips) ?? null;
+}
+
+/**
+ * Any written form of an answer back into the hierarchical code, so maps,
+ * alerts and labels have one thing to read: `AZ` under `postal` is `US-AZ`,
+ * `04013` under `fips` is `US-AZ-04013`. Null for what no form could seal.
+ */
+export function placeCodeOf(
+  value: unknown,
+  settings: { scope?: unknown; depth?: unknown; code?: unknown } | null | undefined,
+): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  switch (codeOf(settings)) {
+    case 'postal':
+      return /^[A-Z]{2}$/.test(value) ? `US-${value}` : null;
+    case 'fips':
+      return /^\d{5}$/.test(value) ? countyCodeOfFips(value) : null;
+    default:
+      return value;
+  }
+}
+
+/**
+ * A `postal` state or a `fips` county, checked. A county must lie in the
+ * state already answered under `within`; with no state answered there is no
+ * county to accept, which is what keeps the county box inactive until a state
+ * is picked from being only a matter of the screen.
+ */
+function normalizeCoded(
+  code: string,
+  how: LocationCode,
+  settings: { within?: unknown },
+  answers: Record<string, unknown> | undefined,
+): string | null {
+  if (how === 'postal') return isSubdivisionCode(`US-${code}`) ? code : null;
+  if (!/^\d{5}$/.test(code)) return null;
+  const full = countyCodeOfFips(code);
+  if (!full) return null;
+  if (typeof settings.within !== 'string') return code;
+  const state = answers?.[settings.within];
+  return typeof state === 'string' && full === `US-${state}-${code}` ? code : null;
+}
+
+/**
  * A raw value into the code that gets sealed, or null. UPPERCASED FIRST, so
  * `us-az` and `US-AZ` seal the same string. A place NAME is never accepted in
  * place of a code: that is a bug, and sealing a guess would hide it.
  */
 export function normalizeLocation(
   value: unknown,
-  settings?: { scope?: unknown; depth?: unknown } | null,
+  settings?: { scope?: unknown; depth?: unknown; code?: unknown; within?: unknown } | null,
+  answers?: Record<string, unknown>,
 ): string | null {
   if (typeof value !== 'string') return null;
   const code = value.trim().toUpperCase();
   if (!code) return null;
+  const how = codeOf(settings);
+  if (how) return normalizeCoded(code, how, settings ?? {}, answers);
   return scopeAccepts(scopeOf(settings), code, depthOf(settings)) ? code : null;
 }
 

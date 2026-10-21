@@ -21,17 +21,20 @@ import {
   LOCATION_SCOPES,
   LOCATION_TYPE,
   canFilter,
+  cardProblem,
   fieldType,
   isFieldKind,
   normalizeCondition,
+  optionArray,
+  withoutWording,
 } from '@reportlog/fields';
-import type { Condition, FieldDefinition, FieldSettings } from '@reportlog/fields';
+import type { Condition, FieldDefinition, FieldSettings, Option } from '@reportlog/fields';
 import { sql } from 'kysely';
 import type { Kysely, Selectable, Transaction } from 'kysely';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import type { DB, LogbookFields } from '../db/schema.gen.ts';
-import { refuse } from './refusals.ts';
+import { LogbookRefusal, refuse } from './refusals.ts';
 import type { RefusalCode } from './refusals.ts';
 
 export { LogbookRefusal } from './refusals.ts';
@@ -524,19 +527,45 @@ export async function setSchedule(
  * rather than stored: settings are SEALED into the form definition, so a key
  * nothing reads would still be in the hash of every report filed against it.
  */
+const SHARED_KEYS = ['help_when', 'card_question', 'same_card'] as const;
 const SETTING_KEYS: Record<string, readonly string[]> = {
   short_text: ['maxLength'],
   long_text: ['maxLength'],
   place: ['options', 'allowOther'],
-  location: ['scope', 'depth'],
-  choice_one: ['options'],
-  choice_many: ['options'],
-  number: ['min', 'max'],
+  location: ['scope', 'depth', 'code', 'within'],
+  choice_one: ['options', 'option_sets'],
+  choice_many: ['options', 'option_sets'],
+  number: ['min', 'max', 'integer', 'picker'],
+  yes_no: ['checkbox'],
 };
 const NEEDS_OPTIONS: ReadonlySet<string> = new Set(['choice_one', 'choice_many']);
+const OPTION_CODE_RE = /^[a-z0-9][a-z0-9_]{0,62}$/;
 
-function cleanOptions(raw: unknown, required: boolean): string[] {
+const isObj = (v: unknown): v is Record<string, unknown> =>
+  typeof v === 'object' && v !== null && !Array.isArray(v);
+
+/**
+ * A list of choices: all plain strings (each its own code, exactly as before
+ * codes existed) or all `{ code, label }` pairs. Not a mix: a list whose
+ * choices half have codes would be half rewordable after launch, and nobody
+ * reading the builder could tell which half.
+ */
+function cleanOptions(raw: unknown, required: boolean): Option[] {
   if (!Array.isArray(raw)) return required ? refuse('choice-options') : [];
+  if (raw.some((o) => isObj(o))) {
+    const out: Option[] = [];
+    for (const o of raw) {
+      if (!isObj(o) || Object.keys(o).some((k) => k !== 'code' && k !== 'label'))
+        return refuse('option-codes');
+      const code = typeof o.code === 'string' ? o.code.trim() : '';
+      const label = typeof o.label === 'string' ? o.label.trim() : '';
+      if (!OPTION_CODE_RE.test(code) || !label || label.length > 200) refuse('option-codes');
+      if (out.some((x) => typeof x !== 'string' && x.code === code)) refuse('option-codes');
+      out.push({ code, label });
+    }
+    if (out.length > 200) refuse('choice-options');
+    return out;
+  }
   const out: string[] = [];
   for (const o of raw) {
     if (typeof o !== 'string' || !o.trim() || o.trim().length > 200)
@@ -551,7 +580,7 @@ function cleanOptions(raw: unknown, required: boolean): string[] {
 
 /** The type's defaults, overlaid with what the operator set, checked. */
 export function settingsFor(kind: string, given: QuestionSettingsInput | undefined): FieldSettings {
-  const allowed = SETTING_KEYS[kind] ?? [];
+  const allowed = [...(SETTING_KEYS[kind] ?? []), ...(kind === FILE_TYPE ? [] : SHARED_KEYS)];
   const out: FieldSettings = { ...(fieldType(kind)?.settings ?? {}) };
   for (const [k, v] of Object.entries(given ?? {})) {
     if (v === undefined) continue;
@@ -562,13 +591,63 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
     const n = out.maxLength;
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 100_000) refuse('max-length');
   }
-  if (allowed.includes('options')) out.options = cleanOptions(out.options, NEEDS_OPTIONS.has(kind));
+  /* OPTION SETS REPLACE THE LIST, so a question with them has no `options`
+     key at all (not an empty one): one place says what is offered. Each
+     set's `when` is checked against the earlier questions by `checkSettingConditions`,
+     which needs the form around it. */
+  if (out.option_sets !== undefined) {
+    const sets: unknown = out.option_sets;
+    if (
+      !Array.isArray(sets) ||
+      !sets.length ||
+      sets.length > 20 ||
+      (given?.options !== undefined && optionArray(given.options).length > 0)
+    )
+      refuse('option-sets');
+    out.option_sets = sets.map((set: unknown) => {
+      if (!isObj(set) || !isObj(set.when)) return refuse('option-sets');
+      return { when: set.when as unknown as Condition, options: cleanOptions(set.options, true) };
+    });
+    delete out.options;
+  } else if (allowed.includes('options')) {
+    out.options = cleanOptions(out.options, NEEDS_OPTIONS.has(kind));
+  }
+  if (out.help_when !== undefined) {
+    const helps: unknown = out.help_when;
+    if (!Array.isArray(helps) || !helps.length || helps.length > 20) refuse('help-when');
+    out.help_when = helps.map((h: unknown) => {
+      const help = isObj(h) && typeof h.help === 'string' ? h.help.trim() : '';
+      if (!isObj(h) || !isObj(h.when) || !help || help.length > 1000) return refuse('help-when');
+      return { when: h.when as unknown as Condition, help };
+    });
+  }
+  if (out.card_question !== undefined) {
+    const q = typeof out.card_question === 'string' ? out.card_question.trim() : '';
+    if (!q || q.length > 160) refuse('card-question');
+    out.card_question = q;
+  }
+  // FLAGS ARE WRITTEN ONLY WHEN TRUE. Settings are sealed, and `false` is what
+  // an absent flag already means, so storing it would make two sealed forms
+  // for one behaviour.
+  for (const flag of ['same_card', 'integer', 'checkbox'] as const) {
+    if (out[flag] === undefined) continue;
+    if (typeof out[flag] !== 'boolean') refuse('setting-kind', `It was “${flag}”.`);
+    if (!out[flag]) Reflect.deleteProperty(out, flag);
+  }
   if (kind === 'number') {
     const { min, max } = out;
     const ok = (v: unknown) =>
       v === null || v === undefined || (typeof v === 'number' && Number.isFinite(v));
     if (!ok(min) || !ok(max) || (typeof min === 'number' && typeof max === 'number' && min > max)) {
       refuse('number-range');
+    }
+    // Read as unknown: settings arrive as JSON, whatever the type says.
+    const picker: unknown = out.picker;
+    if (
+      picker !== undefined &&
+      (picker !== 'hour' || out.integer !== true || min !== 0 || max !== 23)
+    ) {
+      refuse('number-picker');
     }
   }
   /* A LOCATION SCOPE THAT IS NOT ONE OF THE THREE is refused here rather than
@@ -589,7 +668,67 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
     if (depth === 'state') delete out.depth;
     else if (depth !== 'county' || out.scope !== 'us') refuse('location-depth');
   }
+  /* HOW A PLACE IS WRITTEN. `postal` (AZ) for a US state, `fips` (04013) for a
+     US county inside an earlier `postal` question (`within`, checked with the
+     form around it). Absent is the hierarchical code every earlier form seals. */
+  if (kind === LOCATION_TYPE && (out.code !== undefined || out.within !== undefined)) {
+    const code: unknown = out.code;
+    const fine =
+      out.scope === 'us' &&
+      ((code === 'postal' && out.depth === undefined && out.within === undefined) ||
+        (code === 'fips' && out.depth === 'county' && typeof out.within === 'string'));
+    if (!fine) refuse('location-code');
+  }
   return out;
+}
+
+/**
+ * The conditions inside a question's settings (its option sets, its help),
+ * each checked and normalized against the questions before it, as a
+ * `shown_when` is. Returns the settings with every `when` in its sealed order.
+ */
+function checkSettingConditions(
+  settings: FieldSettings,
+  earlier: readonly FieldDefinition[],
+): FieldSettings {
+  const norm = (when: unknown): Condition => {
+    const c = normalizeCondition(when, earlier);
+    if (!c.ok) return refuse(CONDITION_REFUSAL[c.reason]);
+    return c.condition ?? refuse('shown-when-no-values');
+  };
+  const out: FieldSettings = { ...settings };
+  if (Array.isArray(settings.option_sets)) {
+    out.option_sets = settings.option_sets.map((s) => ({ ...s, when: norm(s.when) }));
+  }
+  if (Array.isArray(settings.help_when)) {
+    out.help_when = settings.help_when.map((h) => ({ ...h, when: norm(h.when) }));
+  }
+  /* A COUNTY SITS INSIDE AN EARLIER STATE asked by postal code: that is what
+     the server checks a county against. */
+  if (settings.code === 'fips') {
+    const state = earlier.find((f) => f.key === settings.within);
+    if (state?.kind !== LOCATION_TYPE || state.settings?.code !== 'postal') refuse('location-code');
+  }
+  return out;
+}
+
+/**
+ * Everything about a whole question list that no single question can say:
+ * every condition still looks back at something that can be answered that
+ * way, every county still has its state before it, and the cards are shaped
+ * as cards may be (packages/fields/src/cards.ts).
+ */
+function checkForm(questions: readonly FieldDefinition[], code: RefusalCode = 'breaks-condition') {
+  checkConditions(questions, code);
+  questions.forEach((q, i) => {
+    try {
+      checkSettingConditions(q.settings ?? {}, questions.slice(0, i));
+    } catch (e) {
+      if (e instanceof LogbookRefusal) refuse(code, `It is “${q.label}”.`);
+      throw e;
+    }
+  });
+  if (cardProblem(questions)) refuse('card-shape');
 }
 
 const CONDITION_REFUSAL = {
@@ -688,10 +827,21 @@ export async function addField(db: Db, logbookId: number, spec: QuestionSpec): P
     }
     if (existing.some((f) => f.key === key)) refuse('key-taken');
 
-    const settings = settingsFor(kind, spec.settings);
+    const settings = checkSettingConditions(
+      settingsFor(kind, spec.settings),
+      toDefinitions(existing),
+    );
     // A NEW OPTIONAL QUESTION ON A LAUNCHED LOGBOOK MAY HAVE A CONDITION:
     // nobody has been asked it yet, so there is nothing for one to invalidate.
     const shown_when = conditionFor(kind, spec.shown_when, toDefinitions(existing));
+    // Where it lands among the cards: last, so only its own shape can be wrong.
+    if (
+      cardProblem([
+        ...toDefinitions(existing),
+        { key, kind, label, settings, ...(shown_when ? { shown_when } : {}) },
+      ])
+    )
+      refuse('card-shape');
     // A filter flag on a type with no filter control would be a setting that
     // silently does nothing.
     const filterable = Boolean(spec.filterable) && canFilter(kind);
@@ -752,7 +902,10 @@ export async function updateField(
 ): Promise<Question> {
   return inTransaction(db, async (trx) => {
     const lb = await lock(trx, logbookId);
-    const meaning = Object.entries(change).some(([k, v]) => k !== 'filterable' && v !== undefined);
+    // AFTER LAUNCH, WORDING ONLY (ruling 48): its label, its help, and in its
+    // settings only what `withoutWording` takes out. What it is asked under
+    // (`required`, `shown_when`) is meaning, and refused outright.
+    const meaning = change.required !== undefined || change.shown_when !== undefined;
     if (lb.launched_at && meaning) refuse('launched');
 
     const all = await fieldsFor(trx, logbookId);
@@ -769,9 +922,14 @@ export async function updateField(
     }
     if (change.filterable !== undefined)
       next.filterable = change.filterable && canFilter(current.kind);
-    if (change.settings !== undefined) next.settings = settingsFor(current.kind, change.settings);
     // Checked against the questions before this one, which excludes the
     // question itself, so it cannot be made to depend on its own answer.
+    if (change.settings !== undefined) {
+      next.settings = checkSettingConditions(
+        settingsFor(current.kind, change.settings),
+        toDefinitions(all.slice(0, index)),
+      );
+    }
     if (change.shown_when !== undefined) {
       next.shown_when = conditionFor(
         current.kind,
@@ -779,8 +937,14 @@ export async function updateField(
         toDefinitions(all.slice(0, index)),
       );
     }
+    if (
+      lb.launched_at &&
+      !sameJson(withoutWording(next.settings), withoutWording(current.settings))
+    ) {
+      refuse('launched-codes');
+    }
     // A change to this question's choices could strand a later condition.
-    checkConditions(toDefinitions(all.map((f) => (f.id === fieldId ? next : f))));
+    checkForm(toDefinitions(all.map((f) => (f.id === fieldId ? next : f))));
 
     const row = await trx
       .updateTable('logbook_fields')
@@ -796,8 +960,27 @@ export async function updateField(
       .where('logbook_id', '=', logbookId)
       .returningAll()
       .executeTakeFirstOrThrow();
+    // Reworded after launch: a new form version, recorded now, so the next
+    // reporter is asked it and every earlier report keeps the one it answered.
+    if (lb.launched_at) await ensureFormVersion(trx, lb, await questionsFor(trx, logbookId));
     return presentQuestion(row);
   });
+}
+
+/** Equal as JSON values, whatever order their keys came in. */
+function sameJson(a: unknown, b: unknown): boolean {
+  const canon = (v: unknown): unknown =>
+    Array.isArray(v)
+      ? v.map(canon)
+      : isObj(v)
+        ? Object.fromEntries(
+            Object.keys(v)
+              .sort()
+              .filter((k) => v[k] !== undefined)
+              .map((k) => [k, canon(v[k])]),
+          )
+        : v;
+  return JSON.stringify(canon(a)) === JSON.stringify(canon(b));
 }
 
 export async function removeField(db: Db, logbookId: number, fieldId: number): Promise<void> {
@@ -808,6 +991,13 @@ export async function removeField(db: Db, logbookId: number, fieldId: number): P
     if (!target) return refuse('no-field');
     const waiting = all.find((f) => f.shown_when?.field === target.key);
     if (waiting) refuse('depended-on', `It is “${waiting.label}”.`);
+    // Option sets, help and a county's state can hang on it too.
+    try {
+      checkForm(toDefinitions(all.filter((f) => f.id !== fieldId)));
+    } catch (e) {
+      if (e instanceof LogbookRefusal) refuse('depended-on');
+      throw e;
+    }
     await trx
       .deleteFrom('logbook_fields')
       .where('id', '=', fieldId)
@@ -838,7 +1028,7 @@ export async function reorderFields(
       refuse('order');
     }
     const ordered = ids.map((id) => byId.get(id)).filter((f): f is Question => f !== undefined);
-    checkConditions(toDefinitions(ordered), 'order-breaks-condition');
+    checkForm(toDefinitions(ordered), 'order-breaks-condition');
     for (const [position, id] of ids.entries()) {
       await trx.updateTable('logbook_fields').set({ position }).where('id', '=', id).execute();
     }

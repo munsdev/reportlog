@@ -29,6 +29,27 @@ const SENTENCES = {
   'location-depth': 'A location question can ask for the county only when it asks for a US state.',
   'choice-options':
     'A list of choices needs at least one choice, each with some words in it, and no choice twice.',
+  'option-codes':
+    'A choice with a code needs a code of lowercase letters, numbers and underscores and a label ' +
+    'of up to 200 characters, no code twice in one list, and either every choice in a list with ' +
+    'a code or none of them.',
+  'option-sets':
+    'Choices that depend on an earlier answer need between one and twenty lists, each with the ' +
+    'answers that bring it up and its own choices, and then the question has no list of its own.',
+  'help-when':
+    'Help that depends on an earlier answer needs the answers that bring it up and up to 1,000 characters of help.',
+  'card-question': 'A card’s own question needs 1 to 160 characters.',
+  'card-shape':
+    'Questions that share a card follow the question whose card they share, an upload question ' +
+    'has a card to itself, only the first question on a card says what the card asks, and no ' +
+    'question on a card may depend on another question on the same card: nothing on a card ' +
+    'changes underneath somebody.',
+  'number-picker':
+    'An hour picker asks for a whole number from 0 to 23, so it needs whole numbers, a smallest of 0 and a largest of 23.',
+  'checkbox-kind': 'Only a yes or no question can be asked as a tick box.',
+  'location-code':
+    'A location can be written as a postal code only for a US state, and as a county code only ' +
+    'for a US county inside an earlier question asking for the state by postal code.',
   'max-length': 'The longest answer allowed must be a whole number from 1 to 100,000.',
   'number-range':
     'The smallest and largest numbers must be numbers, and the smallest must not be larger than the largest.',
@@ -41,8 +62,14 @@ const SENTENCES = {
     'could tell whether it had been satisfied, and the form would refuse every report.',
   launched:
     'This logbook has launched, so its questions are fixed. That is what makes a sealed ' +
-    'answer worth anything: a question that could be reworded afterwards would leave every ' +
-    'answer to it meaning something nobody can check. You can still add a new optional question.',
+    'answer worth anything: a question whose answers could be changed afterwards would leave ' +
+    'every answer to it meaning something nobody can check. You can still reword a question ' +
+    'or a choice that has a code, and add a new optional question.',
+  'launched-codes':
+    'This logbook has launched, so only the wording of its questions may change: labels, help, ' +
+    'and the labels of choices that have a code. A key, a kind, the order, whether it is ' +
+    'required, when it is asked, and every code stay as they were, because sealed answers hold them. ' +
+    'A choice written as plain text is its own code, so it cannot be reworded.',
   'launched-required':
     'A question added after launch has to be optional. Reports already filed never answered ' +
     'it, and marking it required would have the form claim an answer the archive does not hold.',
@@ -103,6 +130,7 @@ const STATUS: Partial<Record<RefusalCode, number>> = {
   'no-field': 404,
   // The one-way door is a conflict with the logbook's state, not a bad request.
   launched: 409,
+  'launched-codes': 409,
   'launched-required': 409,
   'launched-not-deletable': 409,
   'already-launched': 409,

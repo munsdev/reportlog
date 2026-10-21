@@ -31,7 +31,7 @@ import type { SignedIn } from '../identity/sessions.ts';
 import { fieldsFor } from '../logbooks/logbooks.ts';
 import { forForm } from '../logbooks/routes.ts';
 import { appendCorrection, lockHead } from './correction.ts';
-import { refused } from './filing.ts';
+import { answerRefusals, refused } from './filing.ts';
 import { mayFileFor } from './intake.ts';
 
 const notYours = () => notFound('There is no account you filed with that reference.');
@@ -163,7 +163,7 @@ export class IntakeCorrection {
     const comment = b.comment?.trim() ?? '';
     const questions = await questionsFor(this.db, owned.logbook_id);
     const { answers, errors } = buildAnswers(questions, b.answers ?? {});
-    const problems = errors.map((e) => `${e}.`);
+    const problems = [...answerRefusals(questions, b.answers ?? {}), ...errors.map((e) => `${e}.`)];
     if (!comment) problems.push('Say why you are correcting it.');
     const method = b.intake_method ?? owned.intake_method ?? '';
     if (!INTAKE_METHODS.some((m) => m === method)) {

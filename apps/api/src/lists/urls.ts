@@ -22,7 +22,8 @@
  * EXACT BLOCKLIST ENTRY MATCHING, so it is a decision, not a tidy-up.
  */
 
-export const MAX_URL_LENGTH = 2048;
+/** At most 2,000 characters as sent (K1; the owner's questionnaires §04). */
+export const MAX_URL_LENGTH = 2000;
 
 /**
  * NAMED, NEVER DISCOVERED. A pattern would quietly acquire whatever matched it

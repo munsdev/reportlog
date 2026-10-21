@@ -40,11 +40,13 @@ export const applyTemplate = defineRoute({
   method: 'POST',
   path: '/api/admin/templates',
   summary:
-    'Apply a deployment template: its settings, and a draft logbook if it has one, in one transaction.',
+    'Apply a deployment template: its settings, a draft logbook and a hidden list if it has them, in one transaction.',
   body: z.object({ template: z.string().max(63) }),
   response: z.object({
     applied: z.string(),
     /** The draft it made, if it makes one. Never launched on anybody's behalf. */
     logbook: z.object({ id: z.number().int(), slug: z.string(), title: z.string() }).optional(),
+    /** The list it made, if it makes one. Hidden until an administrator lists it. */
+    list: z.object({ id: z.number().int(), slug: z.string(), title: z.string() }).optional(),
   }),
 });

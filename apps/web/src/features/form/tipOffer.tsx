@@ -1,6 +1,6 @@
 /**
- * "Have a link, photo or video? Send it as a tip." shown after a report is
- * filed, and the browser-only carry-over of where and when it happened.
+ * "Thank you. Have a link, photo or video? Send it as a tip." (the owner's
+ * wording, ElectionLog questionnaires §03) shown after a report is filed, and the browser-only carry-over of where and when it happened.
  *
  * NOTHING HERE TELLS THE SERVER WHICH REPORT THE TIP FOLLOWS. The state,
  * county and time are copied from the answers in this browser into this
@@ -75,10 +75,11 @@ export function TipOffer() {
   // and a full page load costs nothing here.
   return (
     <p>
-      Have a link, photo or video? Send it as a tip.{' '}
+      Thank you. Have a link, photo or video?{' '}
       <a href="/list/tips" className="underline">
-        Send a tip
+        Send it as a tip
       </a>
+      .
     </p>
   );
 }

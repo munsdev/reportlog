@@ -3,19 +3,17 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from "kysely";
+import type { ColumnType } from 'kysely';
 
-export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
-  ? U[]
-  : ArrayTypeImpl<T>;
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>;
 
-export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S[], I[], U[]>
-  : T[];
+export type ArrayTypeImpl<T> =
+  T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S[], I[], U[]> : T[];
 
-export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
-  ? ColumnType<S, I | undefined, U>
-  : ColumnType<T, T | undefined, T>;
+export type Generated<T> =
+  T extends ColumnType<infer S, infer I, infer U>
+    ? ColumnType<S, I | undefined, U>
+    : ColumnType<T, T | undefined, T>;
 
 export type Json = JsonValue;
 
@@ -457,6 +455,7 @@ export interface Links {
   field_key: string;
   group_id: number;
   id: Generated<number>;
+  link_type: string | null;
   value_enc: Buffer;
   value_key: Buffer;
 }
@@ -533,6 +532,7 @@ export interface Lists {
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
   slug: string;
+  strict: Generated<boolean>;
   title: string;
   updated_at: Generated<Timestamp>;
   visibility: Generated<string>;

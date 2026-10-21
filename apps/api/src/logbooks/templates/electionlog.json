@@ -1,0 +1,442 @@
+{
+  "reportlog_logbook": 1,
+  "title": "Log how voting went",
+  "slug": "electionlog",
+  "blurb": "One logbook for every voter in the US or abroad, every voting method, good and bad.",
+  "accepts_files": false,
+  "questions": [
+    {
+      "key": "outcome",
+      "kind": "choice_one",
+      "label": "How did it go?",
+      "required": true,
+      "filterable": true,
+      "options": [
+        {
+          "code": "fine",
+          "label": "It went fine"
+        },
+        {
+          "code": "problem",
+          "label": "Something went wrong"
+        }
+      ]
+    },
+    {
+      "key": "method",
+      "kind": "choice_one",
+      "label": "How did you vote, or try to vote?",
+      "required": true,
+      "filterable": true,
+      "options": [
+        {
+          "code": "election_day",
+          "label": "In person on election day"
+        },
+        {
+          "code": "early",
+          "label": "In person before election day"
+        },
+        {
+          "code": "mail",
+          "label": "By mail"
+        },
+        {
+          "code": "overseas",
+          "label": "From overseas or as a military voter"
+        }
+      ]
+    },
+    {
+      "key": "state",
+      "kind": "location",
+      "label": "State",
+      "required": true,
+      "filterable": true,
+      "scope": "us",
+      "code": "postal",
+      "card_question": "Which state and county?",
+      "help_when": [
+        {
+          "when": {
+            "field": "method",
+            "in": ["election_day", "early"]
+          },
+          "help": "The county where the polling place was."
+        },
+        {
+          "when": {
+            "field": "method",
+            "in": ["mail", "overseas"]
+          },
+          "help": "The county where you are registered."
+        }
+      ]
+    },
+    {
+      "key": "county",
+      "kind": "location",
+      "label": "County",
+      "required": true,
+      "scope": "us",
+      "depth": "county",
+      "code": "fips",
+      "within": "state",
+      "same_card": true
+    },
+    {
+      "key": "date",
+      "kind": "date",
+      "label": "Date",
+      "required": true,
+      "card_question": "When was it?"
+    },
+    {
+      "key": "hour",
+      "kind": "number",
+      "label": "Hour",
+      "help": "In local time at the polling place.",
+      "required": true,
+      "shown_when": {
+        "field": "method",
+        "in": ["election_day", "early"]
+      },
+      "min": 0,
+      "max": 23,
+      "integer": true,
+      "picker": "hour",
+      "same_card": true
+    },
+    {
+      "key": "hour_approx",
+      "kind": "yes_no",
+      "label": "Approximate",
+      "shown_when": {
+        "field": "method",
+        "in": ["election_day", "early"]
+      },
+      "checkbox": true,
+      "same_card": true
+    },
+    {
+      "key": "role",
+      "kind": "choice_one",
+      "label": "Were you there as",
+      "required": true,
+      "shown_when": {
+        "field": "method",
+        "in": ["election_day", "early"]
+      },
+      "options": [
+        {
+          "code": "voter",
+          "label": "A voter"
+        },
+        {
+          "code": "poll_worker",
+          "label": "A poll worker"
+        },
+        {
+          "code": "observer",
+          "label": "An observer"
+        },
+        {
+          "code": "assisting",
+          "label": "Helping someone vote"
+        }
+      ]
+    },
+    {
+      "key": "wait",
+      "kind": "choice_one",
+      "label": "How long did you wait?",
+      "required": true,
+      "shown_when": {
+        "field": "method",
+        "in": ["election_day", "early"]
+      },
+      "options": [
+        {
+          "code": "under_30",
+          "label": "Under 30 minutes"
+        },
+        {
+          "code": "30_60",
+          "label": "30 minutes to 1 hour"
+        },
+        {
+          "code": "60_120",
+          "label": "1 to 2 hours"
+        },
+        {
+          "code": "over_120",
+          "label": "More than 2 hours"
+        },
+        {
+          "code": "left",
+          "label": "I left before voting"
+        },
+        {
+          "code": "not_sure",
+          "label": "Not sure"
+        }
+      ]
+    },
+    {
+      "key": "problems",
+      "kind": "choice_many",
+      "label": "What went wrong? Tick everything that applies.",
+      "required": true,
+      "shown_when": {
+        "field": "outcome",
+        "in": ["problem"]
+      },
+      "option_sets": [
+        {
+          "when": {
+            "field": "method",
+            "in": ["election_day", "early"]
+          },
+          "options": [
+            {
+              "code": "polls_closed",
+              "label": "Polling place closed when it should have been open"
+            },
+            {
+              "code": "place_moved",
+              "label": "Polling place moved, or not where it was listed"
+            },
+            {
+              "code": "signs",
+              "label": "Signs missing or wrong"
+            },
+            {
+              "code": "access",
+              "label": "Hard to get in for someone with a disability"
+            },
+            {
+              "code": "not_on_list",
+              "label": "Not on the voter list"
+            },
+            {
+              "code": "id_problem",
+              "label": "Problem with ID"
+            },
+            {
+              "code": "told_provisional",
+              "label": "Told to vote a provisional ballot"
+            },
+            {
+              "code": "come_back",
+              "label": "Told to come back later"
+            },
+            {
+              "code": "turned_away",
+              "label": "Turned away without voting"
+            },
+            {
+              "code": "no_language_help",
+              "label": "No help available in my language"
+            },
+            {
+              "code": "machine_down",
+              "label": "Voting machine not working"
+            },
+            {
+              "code": "scanner_down",
+              "label": "Ballot scanner not working"
+            },
+            {
+              "code": "checkin_down",
+              "label": "Check-in system down"
+            },
+            {
+              "code": "out_of_ballots",
+              "label": "Ran out of ballots"
+            },
+            {
+              "code": "wrong_ballot",
+              "label": "Wrong ballot, or a ballot with errors"
+            },
+            {
+              "code": "campaigning",
+              "label": "Campaigning near the entrance"
+            },
+            {
+              "code": "recording",
+              "label": "People recording or photographing voters"
+            },
+            {
+              "code": "police",
+              "label": "Police, security or federal agents present"
+            },
+            {
+              "code": "intimidation",
+              "label": "I felt intimidated or harassed"
+            },
+            {
+              "code": "other",
+              "label": "Something not on this list"
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "method",
+            "in": ["mail"]
+          },
+          "options": [
+            {
+              "code": "not_arrived",
+              "label": "Ballot never arrived"
+            },
+            {
+              "code": "arrived_late",
+              "label": "Ballot arrived late"
+            },
+            {
+              "code": "wrong_ballot",
+              "label": "Wrong ballot, or a ballot with errors"
+            },
+            {
+              "code": "missing_parts",
+              "label": "Envelope or pages missing"
+            },
+            {
+              "code": "drop_box",
+              "label": "Drop box missing, full or closed"
+            },
+            {
+              "code": "return_late",
+              "label": "Couldn't send it back in time"
+            },
+            {
+              "code": "rejected",
+              "label": "Told my ballot was rejected, or my signature didn't match"
+            },
+            {
+              "code": "count_unknown",
+              "label": "Couldn't find out whether it was counted"
+            },
+            {
+              "code": "other",
+              "label": "Something not on this list"
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "method",
+            "in": ["overseas"]
+          },
+          "options": [
+            {
+              "code": "request_problem",
+              "label": "Problem registering or requesting a ballot"
+            },
+            {
+              "code": "not_arrived",
+              "label": "Ballot never arrived"
+            },
+            {
+              "code": "arrived_late",
+              "label": "Ballot arrived too late"
+            },
+            {
+              "code": "portal_down",
+              "label": "Email or online portal didn't work"
+            },
+            {
+              "code": "no_response",
+              "label": "Election office didn't respond"
+            },
+            {
+              "code": "return_late",
+              "label": "Couldn't send it back in time"
+            },
+            {
+              "code": "fwab",
+              "label": "Had to use the federal write-in ballot"
+            },
+            {
+              "code": "consulate",
+              "label": "Embassy or consulate couldn't help"
+            },
+            {
+              "code": "count_unknown",
+              "label": "Couldn't find out whether it was counted"
+            },
+            {
+              "code": "other",
+              "label": "Something not on this list"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "voted",
+      "kind": "choice_one",
+      "label": "Did you vote?",
+      "required": true,
+      "shown_when": {
+        "field": "outcome",
+        "in": ["problem"]
+      },
+      "option_sets": [
+        {
+          "when": {
+            "field": "method",
+            "in": ["election_day", "early"]
+          },
+          "options": [
+            {
+              "code": "yes",
+              "label": "Yes"
+            },
+            {
+              "code": "provisional",
+              "label": "Yes, a provisional ballot"
+            },
+            {
+              "code": "no",
+              "label": "No"
+            },
+            {
+              "code": "not_yet",
+              "label": "Not yet"
+            },
+            {
+              "code": "prefer_not",
+              "label": "I'd rather not say"
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "method",
+            "in": ["mail", "overseas"]
+          },
+          "options": [
+            {
+              "code": "yes",
+              "label": "Yes"
+            },
+            {
+              "code": "no",
+              "label": "No"
+            },
+            {
+              "code": "not_yet",
+              "label": "Not yet"
+            },
+            {
+              "code": "prefer_not",
+              "label": "I'd rather not say"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -28,7 +28,8 @@
  * unlogged look is impossible: if the insert fails, nothing is shown.
  */
 import { DESK_PAGE_SIZE } from '@reportlog/contracts';
-import { placeLabel } from '@reportlog/fields';
+import { describeAnswer, placeLabel } from '@reportlog/fields';
+import type { FieldSettings } from '@reportlog/fields';
 import type { DeskLink, DeskReport } from '@reportlog/contracts';
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -46,9 +47,13 @@ import { agreementRequired, hasAccepted, newestText } from '../moderation/agreem
  */
 const CONTEXT_KINDS = ['choice_one', 'choice_many', 'location', 'date'] as const;
 
-/** An answer as a journalist reads it: a place by name, a date in words. */
-function shown(kind: string, v: string): string {
-  if (kind === 'location') return placeLabel(v);
+/**
+ * An answer as a journalist reads it: a choice by its label, a place by name,
+ * a date in words. Never a code.
+ */
+function shown(kind: string, v: string, settings: FieldSettings): string {
+  if (kind === 'location' || kind === 'choice_one' || kind === 'choice_many')
+    return describeAnswer({ kind, settings }, v) || placeLabel(v);
   if (kind === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
     return new Date(`${v}T00:00:00Z`).toLocaleDateString('en-US', {
       timeZone: 'UTC',
@@ -137,6 +142,10 @@ export async function deskLinkPage(
 
   const groups = await checkedLinks(db, keys, { groupIds: ids });
   const context = await choiceContext(db, [...new Set(groups.flatMap((g) => g.entry_ids))]);
+  const kinds = await linkKinds(
+    db,
+    groups.flatMap((g) => g.types),
+  );
   const byId = new Map(groups.map((g) => [g.group_id, g]));
   const links = ids.flatMap((id) => {
     const g = byId.get(id);
@@ -147,7 +156,13 @@ export async function deskLinkPage(
         tips: g.entry_ids.length,
         comment: g.comment,
         checked_at: g.checked_at,
-        context: summarize(g.entry_ids.map((e) => context.get(e) ?? [])),
+        context: summarize(
+          g.entry_ids.map((e) => [
+            // THE KIND OF LINK EACH TIP SAID IT IS, first, beside the link (J9).
+            ...kinds(g.types.filter((t) => t.entry_id === e)),
+            ...(context.get(e) ?? []),
+          ]),
+        ),
       },
     ];
   });
@@ -175,7 +190,7 @@ async function choiceContext(db: Kysely<DB>, entryIds: number[]): Promise<Map<nu
   const listIds = [...new Set(entries.map((e) => e.list_id))];
   const fields = await db
     .selectFrom('list_fields')
-    .select(['list_id', 'key', 'kind', 'label', 'position'])
+    .select(['list_id', 'key', 'kind', 'label', 'position', 'settings'])
     .where('list_id', 'in', listIds)
     .where('kind', 'in', CONTEXT_KINDS)
     .orderBy('position')
@@ -188,12 +203,37 @@ async function choiceContext(db: Kysely<DB>, entryIds: number[]): Promise<Map<nu
       const v = answers[f.key];
       const values = (Array.isArray(v) ? v : [v])
         .filter((x): x is string => typeof x === 'string')
-        .map((x) => shown(f.kind, x));
+        .map((x) => shown(f.kind, x, f.settings as FieldSettings));
       if (values.length) mine.push({ question: f.label, answers: values });
     }
     out.set(e.id, mine);
   }
   return out;
+}
+
+/**
+ * The words for the kinds of link a group's copies were given, as one
+ * question named for the link question's own kinds. A code its list no
+ * longer names is shown as the code rather than hidden.
+ */
+async function linkKinds(
+  db: Kysely<DB>,
+  types: readonly { entry_id: number; field_key: string; type: string }[],
+): Promise<(t: readonly { entry_id: number; field_key: string; type: string }[]) => Answered[]> {
+  if (!types.length) return () => [];
+  const entries = await db
+    .selectFrom('list_entries as e')
+    .innerJoin('list_fields as f', 'f.list_id', 'e.list_id')
+    .select(['e.id', 'f.key', 'f.settings'])
+    .where('e.id', 'in', [...new Set(types.map((t) => t.entry_id))])
+    .where('f.kind', '=', 'url')
+    .execute();
+  const labelOf = (t: { entry_id: number; field_key: string; type: string }) => {
+    const f = entries.find((x) => x.id === t.entry_id && x.key === t.field_key);
+    const list = (f?.settings as FieldSettings | undefined)?.link_types ?? [];
+    return list.find((o) => o.code === t.type)?.label ?? t.type;
+  };
+  return (mine) => (mine.length ? [{ question: 'Kind of link', answers: mine.map(labelOf) }] : []);
 }
 
 /** Per question, each answer and how many of the link's tips gave it. */

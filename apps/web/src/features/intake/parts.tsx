@@ -5,7 +5,7 @@
  */
 import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { QuestionControl } from '@/features/form/QuestionControl.tsx';
-import { askedQuestions, cardProblem } from '@/features/form/walk.ts';
+import { askedQuestions, cardProblem, sealedAnswers } from '@/features/form/walk.ts';
 import type { RawAnswers, RawValue } from '@/features/form/walk.ts';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 
@@ -34,13 +34,14 @@ export function Questions({
   idPrefix: string;
   questions: readonly FormQuestion[];
   raw: RawAnswers;
-  onChange: (key: string, value: RawValue) => void;
+  onChange: (key: string, value: RawValue | undefined) => void;
   showProblems: boolean;
 }) {
+  const answers = sealedAnswers(questions, raw);
   return (
     <>
       {askedQuestions(questions, raw).map((q) => {
-        const err = showProblems ? cardProblem(q, raw) : null;
+        const err = showProblems ? cardProblem(q, raw, questions) : null;
         const id = `${idPrefix}-${q.key}`;
         return (
           <div key={q.key} className="flex flex-col gap-2">
@@ -57,6 +58,8 @@ export function Questions({
               }}
               labelledBy={id}
               invalid={Boolean(err)}
+              answers={answers}
+              raw={raw}
             />
             {err ? <p className="text-sm font-semibold text-serious">{err}</p> : null}
           </div>

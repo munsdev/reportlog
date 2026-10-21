@@ -30,6 +30,7 @@ import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
+import { optionArray } from '@reportlog/fields';
 import { call } from '../../lib/api.ts';
 import { listQuery, listsQuery } from './queries.ts';
 import { EMAIL_MODE, OUTSIDE, RETENTION, VISIBILITY } from './words.ts';
@@ -401,7 +402,10 @@ const toDraft = (q: ListQuestion): Draft => ({
   label: q.label,
   help: q.help ?? '',
   required: q.required,
-  options: Array.isArray(q.settings.options) ? (q.settings.options as string[]).join('\n') : '',
+  // A choice with a code shows as `code | words`, as in the logbook builder.
+  options: optionArray(q.settings.options)
+    .map((o) => (typeof o === 'string' ? o : `${o.code} | ${o.label}`))
+    .join('\n'),
   max_values: q.max_values,
   aggregatable: q.aggregatable,
   retention: q.retention,
@@ -423,7 +427,11 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
             const options = d.options
               .split('\n')
               .map((o) => o.trim())
-              .filter(Boolean);
+              .filter(Boolean)
+              .map((o) => {
+                const at = o.indexOf('|');
+                return at < 0 ? o : { code: o.slice(0, at).trim(), label: o.slice(at + 1).trim() };
+              });
             return {
               id: d.id,
               key: d.key,

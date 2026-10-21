@@ -156,6 +156,8 @@ export async function groupHistory(db: Db, groupId: number): Promise<HistoryItem
 export interface EntryLink {
   entry_id: number;
   field_key: string;
+  /** What kind of link the tip said it is, a code, where its form asked. */
+  link_type: string | null;
   url: string;
   host: string | null;
   group_id: number;
@@ -172,7 +174,15 @@ export async function linksForEntries(
   const rows = await db
     .selectFrom('links as l')
     .innerJoin('link_groups as g', 'g.id', 'l.group_id')
-    .select(['l.entry_id', 'l.field_key', 'l.value_enc', 'l.value_key', 'l.group_id', 'g.outcome'])
+    .select([
+      'l.entry_id',
+      'l.field_key',
+      'l.link_type',
+      'l.value_enc',
+      'l.value_key',
+      'l.group_id',
+      'g.outcome',
+    ])
     .where('l.entry_id', 'in', [...entryIds])
     .orderBy('l.id')
     .execute();
@@ -181,6 +191,7 @@ export async function linksForEntries(
     return {
       entry_id: r.entry_id,
       field_key: r.field_key,
+      link_type: r.link_type,
       url,
       host: hostOf(url),
       group_id: r.group_id,
@@ -197,6 +208,8 @@ export interface CheckedLink {
   checked_at: string;
   /** The entries that carry it, for the desk to show each tip's own context (J9). */
   entry_ids: number[];
+  /** What kind of link each copy said it is, where its form asked (a code). */
+  types: { entry_id: number; field_key: string; type: string }[];
 }
 
 /**
@@ -215,16 +228,29 @@ export async function checkedLinks(
   let q = db
     .selectFrom('links as l')
     .innerJoin('link_groups as g', 'g.id', 'l.group_id')
-    .select(['l.group_id', 'l.entry_id', 'l.value_enc', 'l.value_key', 'g.comment', 'g.checked_at'])
+    .select([
+      'l.group_id',
+      'l.entry_id',
+      'l.field_key',
+      'l.link_type',
+      'l.value_enc',
+      'l.value_key',
+      'g.comment',
+      'g.checked_at',
+    ])
     .where('g.outcome', '=', 'checked');
   if (groupIds) q = q.where('g.id', 'in', groupIds);
   const rows = await q.orderBy('g.checked_at', 'desc').orderBy('l.id').execute();
   const out = new Map<number, CheckedLink>();
   for (const r of rows) {
+    const type = r.link_type
+      ? [{ entry_id: r.entry_id, field_key: r.field_key, type: r.link_type }]
+      : [];
     const had = out.get(r.group_id);
     if (had) {
       had.copies += 1;
       if (!had.entry_ids.includes(r.entry_id)) had.entry_ids.push(r.entry_id);
+      had.types.push(...type);
       continue;
     }
     out.set(r.group_id, {
@@ -234,6 +260,7 @@ export async function checkedLinks(
       comment: r.comment,
       checked_at: iso(r.checked_at) ?? '',
       entry_ids: [r.entry_id],
+      types: type,
     });
   }
   return [...out.values()];

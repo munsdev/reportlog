@@ -737,8 +737,25 @@ describe('one answer at a time', () => {
 describe('the shipped templates', () => {
   const by = Object.fromEntries(shippedTemplates().map((t) => [t.slug, t]));
 
-  it('four ship, and all four parse', () => {
-    expect(Object.keys(by).sort()).toEqual(['check-ins', 'contact', 'election-tips', 'tips']);
+  it('five ship, and all five parse', () => {
+    expect(Object.keys(by).sort()).toEqual([
+      'check-ins',
+      'contact',
+      'election-tips',
+      'electionlog-tips',
+      'tips',
+    ]);
+  });
+
+  it('ElectionLog’s tip list asks three rows of a link and its kind, strictly, and no email', () => {
+    const t = by['electionlog-tips'];
+    expect(t?.strict).toBe(true);
+    expect(t?.requiresEmail).toBe(false);
+    expect(t?.email_mode).toBe('auto');
+    expect(t?.fields.map((f) => [f.key, f.kind, f.required, f.max_values])).toEqual([
+      ['links', 'url', true, 3],
+    ]);
+    expect(t?.fields[0]?.settings?.fixed_rows).toBe(true);
   });
 
   it('election tips ask where to the county, what day and what kind, and count nothing', () => {

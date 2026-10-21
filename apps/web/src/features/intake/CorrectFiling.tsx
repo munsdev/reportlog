@@ -20,7 +20,13 @@ import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
-import { askedQuestions, cardProblem, rawFromAnswers, toSubmission } from '@/features/form/walk.ts';
+import {
+  askedQuestions,
+  cardProblem,
+  rawFromAnswers,
+  toSubmission,
+  withChange,
+} from '@/features/form/walk.ts';
 import type { RawAnswers } from '@/features/form/walk.ts';
 import { call } from '@/lib/api.ts';
 import { CORRECTION_STATEMENT, PublicationChoice, Questions } from './parts.tsx';
@@ -111,7 +117,7 @@ function CorrectForm({
           questions={f.questions}
           raw={raw}
           onChange={(key, v) => {
-            setRaw((x) => ({ ...x, [key]: v }));
+            setRaw((x) => withChange(f.questions, x, key, v));
           }}
           showProblems={Boolean(problem)}
         />
@@ -189,7 +195,7 @@ function CorrectForm({
             disabled={send.isPending}
             onClick={() => {
               setDone(null);
-              const missing = asked.find((q) => cardProblem(q, raw));
+              const missing = asked.find((q) => cardProblem(q, raw, f.questions));
               if (missing) {
                 setProblem(`“${missing.label}” needs a different answer.`);
                 return;
