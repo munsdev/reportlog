@@ -181,6 +181,9 @@ test.describe('a logbook behind the password', () => {
     'GET /api/intake-switch',
     // Plan E (PE3): "Intake is paused", asked by the form itself.
     'GET /api/intake-pause',
+    // Plan E (PE2): the door's start token and puzzle, in front of the password.
+    'GET /api/door/start',
+    'GET /api/door/challenge',
   ]);
 
   test('filing only: the form works, Back included, and asks for nothing else', async ({
