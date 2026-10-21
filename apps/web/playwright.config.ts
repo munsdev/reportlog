@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -168,13 +168,25 @@ export default defineConfig({
       },
     },
     {
+      // Plan E (PE2): the door's minimum time on a form, set from the
+      // settings screen. Alone, after the flood: the minimum is the whole
+      // site's, and every other project files reports with it at 0.
+      name: 'door-settings',
+      testMatch: /door-settings\/.*\.spec\.ts$/,
+      dependencies: ['flood'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // R8: the lock screen's accessibility check (decision 12), which the
       // walk of every page cannot reach with the password off. Alone, for
       // the same reason as the others: it turns on the password, renames the
       // site and shows the development notice. Before Q1's, which stays last.
       name: 'accessibility-behind-password',
       testMatch: /a11y-locked\/.*\.spec\.ts$/,
-      dependencies: ['flood'],
+      dependencies: ['door-settings'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

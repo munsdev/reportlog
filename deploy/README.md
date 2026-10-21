@@ -350,8 +350,11 @@ needs it, this check is the first real thing that will run it.
 `.env.example` is the list; this is what each setting is for, so nothing in
 the settings file is a mystery. The installer fills in the ones it can and
 asks for the ones only you know (above), and `sudo reportlog doctor` names
-anything still missing. A server's other settings, the keys, email, error
-tracking and backups, are explained in their own sections above.
+anything still missing. A server installed before `DOOR_KEY` and
+`TWO_FACTOR_KEY` existed has neither: the doctor warns, and running
+`/root/reportlog/deploy/install.sh` again adds both and changes nothing else
+in the file. A server's other settings, the keys, email, error tracking and
+backups, are explained in their own sections above.
 
 | Setting                                                                          | What it does                                                                                      |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |

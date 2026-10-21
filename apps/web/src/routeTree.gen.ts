@@ -79,6 +79,7 @@ import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/mode
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
 import { Route as staffSettingsDevelopmentRouteImport } from './routes/(staff)/settings/development'
 import { Route as staffSettingsFeedbackRouteImport } from './routes/(staff)/settings/feedback'
+import { Route as staffSettingsFormsRouteImport } from './routes/(staff)/settings/forms'
 import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
 import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings/look'
 import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
@@ -457,6 +458,11 @@ const staffSettingsFeedbackRoute = staffSettingsFeedbackRouteImport.update({
   path: '/feedback',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
+const staffSettingsFormsRoute = staffSettingsFormsRouteImport.update({
+  id: '/forms',
+  path: '/forms',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
 const staffSettingsLegalRoute = staffSettingsLegalRouteImport.update({
   id: '/legal',
   path: '/legal',
@@ -652,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
+  '/settings/forms': typeof staffSettingsFormsRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
@@ -743,6 +750,7 @@ export interface FileRoutesByTo {
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
+  '/settings/forms': typeof staffSettingsFormsRoute
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
@@ -841,6 +849,7 @@ export interface FileRoutesById {
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
   '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
   '/(staff)/settings/feedback': typeof staffSettingsFeedbackRoute
+  '/(staff)/settings/forms': typeof staffSettingsFormsRoute
   '/(staff)/settings/legal': typeof staffSettingsLegalRoute
   '/(staff)/settings/look': typeof staffSettingsLookRoute
   '/(staff)/settings/name': typeof staffSettingsNameRoute
@@ -940,6 +949,7 @@ export interface FileRouteTypes {
     | '/moderate/settings'
     | '/settings/development'
     | '/settings/feedback'
+    | '/settings/forms'
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
@@ -1031,6 +1041,7 @@ export interface FileRouteTypes {
     | '/moderate/settings'
     | '/settings/development'
     | '/settings/feedback'
+    | '/settings/forms'
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
@@ -1128,6 +1139,7 @@ export interface FileRouteTypes {
     | '/(staff)/moderate/settings'
     | '/(staff)/settings/development'
     | '/(staff)/settings/feedback'
+    | '/(staff)/settings/forms'
     | '/(staff)/settings/legal'
     | '/(staff)/settings/look'
     | '/(staff)/settings/name'
@@ -1720,6 +1732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsFeedbackRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
+    '/(staff)/settings/forms': {
+      id: '/(staff)/settings/forms'
+      path: '/forms'
+      fullPath: '/settings/forms'
+      preLoaderRoute: typeof staffSettingsFormsRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
     '/(staff)/settings/legal': {
       id: '/(staff)/settings/legal'
       path: '/legal'
@@ -1998,6 +2017,7 @@ const staffModerateRouteRouteWithChildren =
 interface staffSettingsRouteRouteChildren {
   staffSettingsDevelopmentRoute: typeof staffSettingsDevelopmentRoute
   staffSettingsFeedbackRoute: typeof staffSettingsFeedbackRoute
+  staffSettingsFormsRoute: typeof staffSettingsFormsRoute
   staffSettingsLegalRoute: typeof staffSettingsLegalRoute
   staffSettingsLookRoute: typeof staffSettingsLookRoute
   staffSettingsNameRoute: typeof staffSettingsNameRoute
@@ -2009,6 +2029,7 @@ interface staffSettingsRouteRouteChildren {
 const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
   staffSettingsDevelopmentRoute: staffSettingsDevelopmentRoute,
   staffSettingsFeedbackRoute: staffSettingsFeedbackRoute,
+  staffSettingsFormsRoute: staffSettingsFormsRoute,
   staffSettingsLegalRoute: staffSettingsLegalRoute,
   staffSettingsLookRoute: staffSettingsLookRoute,
   staffSettingsNameRoute: staffSettingsNameRoute,

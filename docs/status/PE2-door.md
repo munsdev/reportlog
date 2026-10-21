@@ -153,8 +153,14 @@ automatic difficulty, single-use reporter codes, or anything tying a submission 
 - Rate limits are tested against the app, not a real Caddy (§08's last line): E2 put them in the
   app.
 - Polling hours per state remain a gap (E4).
-- The minimum time on a form has an admin API (`GET`/`PUT /api/admin/door`, administrators) and
-  no screen yet; the flood screen is the natural home.
+- (Done since, at the managing session's request.) The minimum time on a form has its screen:
+  Settings → Report and tip forms (`settings/forms.tsx`), which also says where the rest of the
+  door is set. No step-up: it is not one of plan E's listed actions. And `reportlog doctor` warns
+  (never fails) when `DOOR_KEY` or `TWO_FACTOR_KEY` is unset, naming the fix: "run
+  /root/reportlog/deploy/install.sh again; it adds missing keys and asks nothing else". The
+  installer test checks that a re-run on an older settings file (each key blank, or absent) adds
+  both and leaves every other line as it was. Browser test: `e2e/door-settings/` (its own
+  project, after the flood's, since the minimum is the whole site's).
 - `processHasher.onRotate` keeps one callback per app built; in a test run that is one per test
   app, in production one.
 
