@@ -14,6 +14,7 @@
  * answer to question 7 means something different depending on whether
  * question 7 was put to that reporter.
  */
+import { allOptionCodes } from './optionShape.ts';
 import type { Answers, Condition, FieldDefinition } from './types.ts';
 
 /**
@@ -37,8 +38,9 @@ export const NO = 'no';
 export function matchableValues(field: FieldDefinition | null | undefined): string[] {
   if (!field) return [];
   if (field.kind === 'yes_no' || field.kind === 'evidence_declaration') return [YES, NO];
-  const options = field.settings?.options;
-  return Array.isArray(options) ? options.slice() : [];
+  // CODES, NOT LABELS: a condition names what is sealed, so rewording a label
+  // can never strand one. A plain string option is its own code.
+  return allOptionCodes(field.settings);
 }
 
 /**

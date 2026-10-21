@@ -4,3 +4,6 @@ export * from './gazetteer.ts';
 export * from './conditions.ts';
 export * from './normalize.ts';
 export * from './answers.ts';
+export * from './options.ts';
+export * from './cards.ts';
+export * from './describe.ts';
