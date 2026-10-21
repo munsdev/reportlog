@@ -21,6 +21,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from './identity/mail.ts';
+import { stepUp } from './second-factor.ts';
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
@@ -191,6 +192,8 @@ test.describe('with a real token', () => {
     const tag = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
     const org = `Third-party walk ${tag}`;
     const invited = `third-party-invited-${tag}@example.org`;
+    // Making an organization and inviting are grants: a step-up first (plan E, E3).
+    await stepUp(staff.request);
     const made = await staff.request.post('/api/orgs', {
       data: { name: org, managerEmails: [`third-party-manager-${tag}@example.org`] },
     });

@@ -11,7 +11,7 @@ import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import { requireUser, roleGuard } from './guards.ts';
+import { notSignedIn, requireUser, roleGuard } from './guards.ts';
 import { addressFrom, bodyOf, iso, isoOrNull, refused, toMe } from './http.ts';
 import { limiter } from './limiter.ts';
 import {
@@ -31,12 +31,12 @@ import {
   confirmTotp,
   factorsOf,
   lockedOut,
-  markSecondFactor,
   markStepUp,
   newRecoveryCodes,
   removeTotp,
   resetSecondFactor,
   stepUpFresh,
+  upgradeSession,
 } from './secondFactor.ts';
 import { SESSION_COOKIE, setSessionCookie, userForSession } from './sessions.ts';
 import type { SignedIn } from './sessions.ts';
@@ -99,16 +99,20 @@ export function secondFactorRoutes(app: FastifyInstance, deps: SecondFactorDeps)
     return user;
   }
 
-  /** The session proved its factor: a 12-hour staff session, or a step-up. */
+  /**
+   * The session proved its factor: a step-up in a session that had already,
+   * or else a new 12-hour staff session in place of this one (upgradeSession
+   * says why it is a new one).
+   */
   async function proved(user: SignedIn, request: FastifyRequest, reply: FastifyReply) {
     if (user.secondFactor === 'done') {
       await markStepUp(db, user.sessionHash);
-    } else {
-      await markSecondFactor(db, user.sessionHash);
-      const token = request.cookies[SESSION_COOKIE];
-      if (token) setSessionCookie(reply, token, STAFF_SESSION_MS);
+      return toMe(await userForSession(db, request.cookies[SESSION_COOKIE]));
     }
-    return toMe(await userForSession(db, request.cookies[SESSION_COOKIE]));
+    const token = await upgradeSession(db, user.sessionHash);
+    if (!token) throw notSignedIn();
+    setSessionCookie(reply, token, STAFF_SESSION_MS);
+    return toMe(await userForSession(db, token));
   }
 
   /** The first factor set up also proves it, and gives the recovery codes. */
@@ -151,7 +155,13 @@ export function secondFactorRoutes(app: FastifyInstance, deps: SecondFactorDeps)
 
   route(app, C.verifySecondFactor, async ({ request, reply }) => {
     const user = holder(request);
-    if (user.secondFactor === 'set-up') throw verifyFirst();
+    if (user.secondFactor === 'set-up') {
+      throw refused(
+        409,
+        'second_factor_not_set_up',
+        'There is no second factor on this account yet. Set one up first.',
+      );
+    }
     guessesPerClient.take(request.ip);
     const out = await checkCode(
       db,

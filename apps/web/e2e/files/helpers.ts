@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import type { APIRequestContext, PlaywrightWorkerArgs } from '@playwright/test';
 import { expect } from '@playwright/test';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 
@@ -59,5 +60,6 @@ export async function signedIn(
   const code = codeIn(await lastMessageTo(email, before));
   const r = await ctx.post('/api/auth/sign-in', { data: { email, code } });
   expect(r.ok(), await r.text()).toBe(true);
+  await passSecondFactor(ctx, email);
   return ctx;
 }

@@ -178,7 +178,11 @@ describe('walking the wizard', () => {
     expect((await asOwner('POST', '/api/setup/curtain', { decision: 'keep' })).statusCode).toBe(
       403,
     );
-    const { recoveryCodes } = await setUpTotp(h, session, { site_access: curtain });
+    const set = await setUpTotp(h, session, { site_access: curtain });
+    const { recoveryCodes } = set;
+    // Proving the first factor gave the session a new token.
+    expect(set.session).not.toBe(session);
+    session = set.session;
     expect(recoveryCodes).toHaveLength(10);
     expect((await asOwner('GET', '/api/auth/me')).json()).toMatchObject({
       role: 'owner',

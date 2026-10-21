@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { MODERATOR } from '../auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { stepUp } from '../second-factor.ts';
 
 test.use({ storageState: MODERATOR });
 
@@ -77,6 +78,8 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   // Contact details: a reason first, and the reporter will see it.
   const contact = page.getByRole('region', { name: 'How to reach the reporter' });
   await contact.getByLabel('Why you need them').fill('To ask which door of the hall it was.');
+  // Opening a reporter's email asks for the second factor again (plan E, E3).
+  await stepUp(page.request);
   await contact.getByRole('button', { name: 'Open the contact details' }).click();
   await expect(contact).toContainText(email);
 

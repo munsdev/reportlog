@@ -7,7 +7,7 @@ import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fas
 import { buildApp } from '../../src/app.ts';
 import type { Database } from '../../src/db/database.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
-import { markSecondFactor } from '../../src/identity/secondFactor.ts';
+import { STAFF_SESSION_MS } from '../../src/identity/secondFactor.ts';
 import { sha256Hex } from '../../src/identity/secrets.ts';
 import { base32Decode, totpAt } from '../../src/identity/totp.ts';
 import type { CapturingMailer } from '../../src/email/mailer.ts';
@@ -80,8 +80,26 @@ export async function signIn(
   cookies: Record<string, string> = {},
 ): Promise<string> {
   const token = await signInByEmailOnly(h, email, cookies);
-  await markSecondFactor(h.db, sha256Hex(token));
+  await trustSession(h.db, token);
   return token;
+}
+
+/**
+ * A FIXTURE: this session proved a second factor (and a step-up) just now.
+ * Kept under the same token, unlike the real route (upgradeSession), so a
+ * test can go on using the cookie it has.
+ */
+export async function trustSession(db: Database, token: string): Promise<void> {
+  const now = new Date();
+  await db
+    .updateTable('sessions')
+    .set({
+      second_factor_at: now,
+      step_up_at: now,
+      expires_at: new Date(now.getTime() + STAFF_SESSION_MS),
+    })
+    .where('token_hash', '=', sha256Hex(token))
+    .execute();
 }
 
 /** The emailed code and nothing else: a role holder's session then acts with no role. */
@@ -153,14 +171,14 @@ export async function liftCurtain(db: Database): Promise<void> {
 
 /**
  * Set up an authenticator app through the real routes, as the website does,
- * computing the code from the secret it shows. Returns the secret (base32)
- * and the recovery codes shown once.
+ * computing the code from the secret it shows. Returns the secret (base32),
+ * the recovery codes shown once, and the session's new token.
  */
 export async function setUpTotp(
   h: Harness,
   session: string,
   cookies: Record<string, string> = {},
-): Promise<{ secret: string; recoveryCodes: string[] }> {
+): Promise<{ secret: string; recoveryCodes: string[]; session: string }> {
   const all = { ...cookies, session_token: session };
   const begun = await h.app.inject({
     method: 'POST',
@@ -176,5 +194,10 @@ export async function setUpTotp(
     cookies: all,
   });
   if (confirmed.statusCode !== 200) throw new Error(`confirm failed: ${confirmed.body}`);
-  return { secret, recoveryCodes: confirmed.json<{ recoveryCodes: string[] }>().recoveryCodes };
+  return {
+    secret,
+    recoveryCodes: confirmed.json<{ recoveryCodes: string[] }>().recoveryCodes,
+    // Proving the first factor replaces the session (secondFactor.ts, upgradeSession).
+    session: cookieFrom(confirmed, 'session_token') ?? session,
+  };
 }

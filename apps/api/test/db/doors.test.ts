@@ -15,11 +15,10 @@ import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../../src/app.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
-import { markSecondFactor } from '../../src/identity/secondFactor.ts';
-import { hashPassword, sha256Hex } from '../../src/identity/secrets.ts';
+import { hashPassword } from '../../src/identity/secrets.ts';
 import { gateApplies, siteAccessSettings } from '../../src/identity/siteAccess.ts';
 import { launchedLogbook, testDatabase, uniqueSlug } from './helpers.ts';
-import { address, cookieFrom, liftCurtain, seat } from './identity-helpers.ts';
+import { address, cookieFrom, liftCurtain, seat, trustSession } from './identity-helpers.ts';
 import { codeFor } from './identity-helpers.ts';
 
 const db = testDatabase();
@@ -315,7 +314,7 @@ describe('a logbook opened for filing without the password', () => {
     });
     const session = cookieFrom(res, 'session_token') ?? '';
     // A fixture: the second factor is tested in second-factor.test.ts.
-    await markSecondFactor(db, sha256Hex(session));
+    await trustSession(db, session);
     const set = await app.inject({
       method: 'POST',
       url: `/api/access/doors/logbooks/${shut.slug}`,

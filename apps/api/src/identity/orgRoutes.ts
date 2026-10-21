@@ -141,25 +141,6 @@ export function orgRoutes(
     };
   });
 
-  route(app, C.createOrganization, async ({ request }) => {
-    const actor = requireGranter(request);
-    const { name, details, managerEmails } = bodyOf(C.createOrganization, request);
-    const out = await createOrganization(db, {
-      actor,
-      name,
-      ...(details !== undefined ? { details } : {}),
-      managerEmails,
-    });
-    if (out.ok) return out;
-    const messages = {
-      'name-required': 'Give the organization a name.',
-      'manager-required': 'An organization needs at least one manager to run it.',
-      'name-taken': 'An organization with that name already exists.',
-      'bad-email': 'One of the managers’ addresses is not a valid email address.',
-    } as const;
-    throw refused(400, out.reason, messages[out.reason]);
-  });
-
   route(app, C.getOrganization, async ({ params, request }) => {
     const id = Number(params.id);
     const { granter, actorIsManager } = requireOrgAuthority(request, id);
@@ -186,13 +167,33 @@ export function orgRoutes(
 
   // Giving somebody a role in an organization, or taking it away, asks for
   // the second factor again (plan E, E3). Who may is still each route's to
-  // decide; the hook asks first only whether they could be anybody who may.
+  // decide; the hook asks first only whether they could be anybody who may
+  // (a route with no organization in its address admits only granters).
   void app.register((granting, _opts, done) => {
     granting.addHook('preHandler', (request) => {
       requireOrgAuthority(request, Number((request.params as { id?: unknown }).id));
       return Promise.resolve();
     });
     granting.addHook('preHandler', stepUpGuard());
+    // Making an organization names its first managers: a grant too.
+    route(granting, C.createOrganization, async ({ request }) => {
+      const actor = requireGranter(request);
+      const { name, details, managerEmails } = bodyOf(C.createOrganization, request);
+      const out = await createOrganization(db, {
+        actor,
+        name,
+        ...(details !== undefined ? { details } : {}),
+        managerEmails,
+      });
+      if (out.ok) return out;
+      const messages = {
+        'name-required': 'Give the organization a name.',
+        'manager-required': 'An organization needs at least one manager to run it.',
+        'name-taken': 'An organization with that name already exists.',
+        'bad-email': 'One of the managers’ addresses is not a valid email address.',
+      } as const;
+      throw refused(400, out.reason, messages[out.reason]);
+    });
     /**
      * Adding somebody without their agreeing. Administrators and Access
      * Managers only, since invitations exist: a manager who could do this

@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, Page } from '@playwright/test';
 import { codeIn, countTo, identityState, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor } from '../second-factor.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -80,6 +81,7 @@ test.beforeAll(async ({ playwright, baseURL }) => {
   expect((await admin.post('/api/auth/code', { data: { email } })).ok()).toBe(true);
   const code = codeIn(await lastMessageTo(email, before));
   expect((await admin.post('/api/auth/sign-in', { data: { email, code } })).ok()).toBe(true);
+  await passSecondFactor(admin, email);
 
   await makeList(DOOR, { visibility: 'listed', outside_access: 'door' });
   await makeList(SHUT, { visibility: 'listed' });

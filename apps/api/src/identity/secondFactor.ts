@@ -20,7 +20,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 import { recordRoleChange } from './roles.ts';
-import { sameHex, sha256Hex } from './secrets.ts';
+import { randomToken, sameHex, sha256Hex } from './secrets.ts';
 import { matchTotp, newTotpSecret, otpauthUri, base32Encode } from './totp.ts';
 import type { TwoFactorKey } from './twoFactorKey.ts';
 import { openTotpSecret, sealTotpSecret } from './twoFactorKey.ts';
@@ -88,19 +88,38 @@ export async function hasFactor(db: Kysely<DB>, userId: number): Promise<boolean
 // ── the session ────────────────────────────────────────────────────────
 
 /**
- * The session proved a factor just now: it becomes a staff session of 12
- * hours from now, and the proof counts as a step-up too (it is the same
- * factor, seconds ago).
+ * The session proved a factor just now: it is REPLACED by a staff session of
+ * 12 hours from now, under a new token, and the proof counts as a step-up
+ * too (it is the same factor, seconds ago).
+ *
+ * A new token, not the old one promoted: the old one was issued on the
+ * emailed code alone, and a copy of it taken before the factor was proved
+ * must not become a staff session when it is. Null if the old session is
+ * already gone (signed out, or reset, in between).
  */
-export async function markSecondFactor(db: Kysely<DB>, tokenHash: string): Promise<Date> {
+export async function upgradeSession(db: Kysely<DB>, oldHash: string): Promise<string | null> {
+  const token = randomToken();
   const now = new Date();
-  const expires = new Date(now.getTime() + STAFF_SESSION_MS);
-  await db
-    .updateTable('sessions')
-    .set({ second_factor_at: now, step_up_at: now, expires_at: expires })
-    .where('token_hash', '=', tokenHash)
-    .execute();
-  return expires;
+  return db.transaction().execute(async (trx) => {
+    const old = await trx
+      .deleteFrom('sessions')
+      .where('token_hash', '=', oldHash)
+      .where('expires_at', '>', now)
+      .returning('user_id')
+      .executeTakeFirst();
+    if (!old) return null;
+    await trx
+      .insertInto('sessions')
+      .values({
+        token_hash: sha256Hex(token),
+        user_id: old.user_id,
+        expires_at: new Date(now.getTime() + STAFF_SESSION_MS),
+        second_factor_at: now,
+        step_up_at: now,
+      })
+      .execute();
+    return token;
+  });
 }
 
 /** A step-up: the factor again, in a session that has already proved one. */
@@ -166,15 +185,6 @@ async function rightCode(db: Kysely<DB>, userId: number): Promise<void> {
     .where('user_id', '=', userId)
     .where((eb) => eb.or([eb('locked_until', 'is', null), eb('locked_until', '<=', new Date())]))
     .execute();
-}
-
-export async function isLocked(db: Kysely<DB>, userId: number): Promise<boolean> {
-  const row = await db
-    .selectFrom('two_factor_attempts')
-    .select('locked_until')
-    .where('user_id', '=', userId)
-    .executeTakeFirst();
-  return Boolean(row?.locked_until && row.locked_until.getTime() > Date.now());
 }
 
 // ── checking a code ────────────────────────────────────────────────────
@@ -410,6 +420,3 @@ export async function resetSecondFactor(
     });
   });
 }
-
-/** The session row's hash, for the routes that act on the asking session. */
-export const sessionHash = (token: string) => sha256Hex(token);

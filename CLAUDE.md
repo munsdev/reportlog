@@ -94,6 +94,11 @@ make a feature easier. Change the feature.
   Lists share answer normalizing through `packages/fields`, which is kept
   apart from sealing for exactly this reason.
 - **The transparency log is never rewritten**, not even to correct it.
+- **Every role holder proves a second factor** (decision 48, plan E E3). Until
+  a session has, `userForSession` hands every route a person with no role and
+  no memberships, so no guard needs to ask. The actions plan-e.md lists also
+  take `stepUpGuard()` (`apps/api/src/identity/stepUp.ts`) on a scope of their
+  own; a new one joins `LISTED` in `apps/api/test/db/second-factor.test.ts`.
 - **Nothing is filterable unless an operator said so.** No built-in date or
   location filter.
 - **No third-party requests from the site.** No CDN, no web fonts from

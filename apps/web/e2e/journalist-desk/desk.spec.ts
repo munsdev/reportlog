@@ -15,6 +15,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, BrowserContext, Page } from '@playwright/test';
 import { axe, describeViolation } from '../a11y.ts';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor, stepUp } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const OUTBOX = fileURLToPath(new URL('../.outbox/', import.meta.url));
@@ -46,6 +47,7 @@ async function signIn(request: APIRequestContext, email: string) {
   const code = codeIn(await lastMessageTo(email, before));
   const signed = await request.post('/api/auth/sign-in', { data: { email, code } });
   expect(signed.ok(), await signed.text()).toBe(true);
+  await passSecondFactor(request, email);
 }
 
 async function signedIn(browser: Browser, email: string): Promise<BrowserContext> {
@@ -134,6 +136,8 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   outside.push(...outsideRequests(owner));
   await owner.goto('/access/journalists/agreement');
   await owner.getByLabel('The new version').fill(`Use what you read here with care. ${run}`);
+  // Publishing an agreement and deciding a journalist ask for a step-up (plan E, E3).
+  await stepUp(owner.request);
   await owner.getByRole('button', { name: 'Publish this version' }).click();
   await expect(owner.getByText('Published.')).toBeVisible();
 
@@ -143,6 +147,7 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await expect(card.getByText('https://deskdaily.example.org/by/pat')).toBeVisible();
   await noViolations(owner);
   before = countTo(JOURNALIST);
+  await stepUp(owner.request);
   await card.getByRole('button', { name: 'Approve' }).click();
   await expect(card.getByRole('button', { name: 'Revoke access' })).toBeVisible();
 

@@ -65,6 +65,25 @@ const signInByEmailOnly = (hh: Harness, email: string) => {
 const code = (secret: string, offsetMs = 0) => totpAt(base32Decode(secret), Date.now() + offsetMs);
 
 type Call = ReturnType<typeof as>;
+/**
+ * Calls as one session, following it when the server replaces it: proving
+ * the first factor gives a new token (secondFactor.ts, upgradeSession).
+ */
+type Live = Call & { token: () => string; use: (token: string) => void };
+function live(token: string): Live {
+  let current = token;
+  const call = (async (opts: Parameters<Call>[0]) => {
+    const res = await as(h, current)(opts);
+    const next = res.cookies.find((c) => c.name === 'session_token')?.value;
+    if (next) current = next;
+    return res;
+  }) as Live;
+  call.token = () => current;
+  call.use = (t) => {
+    current = t;
+  };
+  return call;
+}
 const me = async (call: Call) =>
   (await call({ method: 'GET', url: '/api/auth/me' })).json<Record<string, unknown>>();
 const verify = (call: Call, c: string) =>
@@ -84,7 +103,16 @@ async function enrolled(role: string) {
     .where('user_id', '=', await userId(email))
     .execute();
   const session = await signInByEmailOnly(h, email);
-  return { email, secret, recoveryCodes, session, call: as(h, session) };
+  const call = live(session);
+  return {
+    email,
+    secret,
+    recoveryCodes,
+    call,
+    get session() {
+      return call.token();
+    },
+  };
 }
 
 async function userId(email: string): Promise<number> {
@@ -119,7 +147,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
       const email = address(`nofactor-${role}`);
       await seat(h.db, email, role);
       const session = await signInByEmailOnly(h, email);
-      const call = as(h, session);
+      const call = live(session);
       expect(await me(call)).toMatchObject({
         role: 'user',
         heldRole: role,
@@ -130,7 +158,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
       expect([401, 403]).toContain(refused.statusCode);
       expect(refused.json<{ error: { code: string } }>().error.code).toBe('forbidden');
 
-      await setUpTotp(h, session);
+      call.use((await setUpTotp(h, session)).session);
       expect(await me(call)).toMatchObject({ role, secondFactor: 'done' });
       const after = await call(behind);
       // Past the role: whatever the route says now, it is not "your role may not".
@@ -158,7 +186,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
         .values({ organization_id: org.id, user_id: user.id, role: orgRole })
         .execute();
       const session = await signInByEmailOnly(h, email);
-      const call = as(h, session);
+      const call = live(session);
       expect(await me(call)).toMatchObject({
         role: 'user',
         memberships: [],
@@ -170,7 +198,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
       expect(
         (await call({ method: 'GET', url: `/api/orgs/${String(org.id)}` })).statusCode,
       ).not.toBe(200);
-      await setUpTotp(h, session);
+      call.use((await setUpTotp(h, session)).session);
       expect((await me(call)).memberships).toHaveLength(1);
       expect((await call({ method: 'GET', url: '/api/intake/organizations' })).statusCode).toBe(
         200,
@@ -193,7 +221,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
   it('a plain user and an alert subscriber are untouched: no second factor, a 24-hour session', async () => {
     const email = address('plain');
     const session = await signInByEmailOnly(h, email);
-    expect(await me(as(h, session))).toMatchObject({ role: 'user', secondFactor: 'not-needed' });
+    expect(await me(live(session))).toMatchObject({ role: 'user', secondFactor: 'not-needed' });
     const row = await h.db
       .selectFrom('sessions')
       .select(['expires_at', 'created_at'])
@@ -203,7 +231,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
     expect(Math.abs(ttl - SESSION_TTL_MS)).toBeLessThan(10_000);
     // Nothing to set up and nothing to prove.
     expect(
-      (await as(h, session)({ method: 'POST', url: '/api/auth/second-factor/totp/begin' })).json(),
+      (await live(session)({ method: 'POST', url: '/api/auth/second-factor/totp/begin' })).json(),
     ).toMatchObject({ error: { code: 'second_factor_not_needed' } });
   });
 
@@ -211,7 +239,7 @@ describe('a role holder without a second factor reaches nothing behind the role'
     const email = address('promoted');
     const session = await signInByEmailOnly(h, email);
     await seat(h.db, email, 'moderator');
-    expect(await me(as(h, session))).toMatchObject({ role: 'user', secondFactor: 'set-up' });
+    expect(await me(live(session))).toMatchObject({ role: 'user', secondFactor: 'set-up' });
   });
 });
 
@@ -234,6 +262,21 @@ describe('sessions', () => {
     const cookie = res.cookies.find((c) => c.name === 'session_token');
     expect(cookie?.maxAge).toBe(STAFF_SESSION_MS / 1000);
   });
+
+  it('proving the factor replaces the session: the cookie from before it signs in nobody', async () => {
+    const a = await enrolled('admin');
+    const before = a.session;
+    expect((await verify(a.call, code(a.secret))).statusCode).toBe(200);
+    expect(a.session).not.toBe(before);
+    expect(await me(as(h, before))).toEqual({ signedIn: false });
+    expect(await me(a.call)).toMatchObject({ role: 'admin', secondFactor: 'done' });
+    // A step-up keeps the session it is in.
+    await staleStepUp(a.session);
+    const now = a.session;
+    await nextStep();
+    expect((await verify(a.call, code(a.secret))).statusCode).toBe(200);
+    expect(a.session).toBe(now);
+  }, 40_000);
 
   it('a proof older than 12 hours is no proof', async () => {
     const a = await enrolled('moderator');
@@ -266,7 +309,7 @@ describe('authenticator codes', () => {
     const a = await enrolled('moderator');
     const c = code(a.secret);
     expect((await verify(a.call, c)).statusCode).toBe(200);
-    const again = as(h, await signInByEmailOnly(h, a.email));
+    const again = live(await signInByEmailOnly(h, a.email));
     expect((await verify(again, c)).json()).toMatchObject({ error: { code: 'bad_code' } });
     // Nor an older one than the newest accepted.
     expect((await verify(again, code(a.secret, -30_000))).statusCode).toBe(401);
@@ -274,7 +317,7 @@ describe('authenticator codes', () => {
 
   it('two requests racing with one code: one wins', async () => {
     const a = await enrolled('moderator');
-    const other = as(h, await signInByEmailOnly(h, a.email));
+    const other = live(await signInByEmailOnly(h, a.email));
     const c = code(a.secret);
     const [x, y] = await Promise.all([verify(a.call, c), verify(other, c)]);
     expect([x.statusCode, y.statusCode].sort()).toEqual([200, 401]);
@@ -291,7 +334,7 @@ describe('authenticator codes', () => {
     expect(locked.statusCode).toBe(429);
     expect(locked.json()).toMatchObject({ error: { code: 'second_factor_locked' } });
     // A new session is no way round it: the lock is the person's.
-    expect((await verify(as(h, await signInByEmailOnly(h, a.email)), right)).statusCode).toBe(429);
+    expect((await verify(live(await signInByEmailOnly(h, a.email)), right)).statusCode).toBe(429);
     const status = await a.call({ method: 'GET', url: '/api/auth/second-factor' });
     const until = Date.parse(status.json<{ lockedUntil: string }>().lockedUntil);
     expect(Math.abs(until - (Date.now() + LOCK_MS))).toBeLessThan(10_000);
@@ -322,7 +365,7 @@ describe('authenticator codes', () => {
     expect(begun.statusCode).toBe(200);
     // Not confirmed: the old secret still signs in.
     await nextStep();
-    const other = as(h, await signInByEmailOnly(h, a.email));
+    const other = live(await signInByEmailOnly(h, a.email));
     expect((await verify(other, code(a.secret))).statusCode).toBe(200);
     const fresh = begun.json<{ secret: string; uri: string }>();
     expect(fresh.uri).toMatch(/^otpauth:\/\/totp\/reports\.example\.test:/);
@@ -335,7 +378,7 @@ describe('authenticator codes', () => {
     // Not the first factor: no new recovery codes.
     expect(confirmed.json()).toEqual({ recoveryCodes: null });
     await nextStep();
-    const third = as(h, await signInByEmailOnly(h, a.email));
+    const third = live(await signInByEmailOnly(h, a.email));
     expect((await verify(third, code(a.secret))).statusCode).toBe(401);
     expect((await verify(third, code(fresh.secret))).statusCode).toBe(200);
   }, 70_000);
@@ -396,7 +439,7 @@ describe('recovery codes', () => {
     const first = a.recoveryCodes[0] ?? '';
     // Typed as a person might: lower case, no hyphens.
     expect((await verify(a.call, first.toLowerCase().replace(/-/g, ''))).statusCode).toBe(200);
-    const again = as(h, await signInByEmailOnly(h, a.email));
+    const again = live(await signInByEmailOnly(h, a.email));
     expect((await verify(again, first)).statusCode).toBe(401);
     const status = await again({ method: 'GET', url: '/api/auth/second-factor' });
     expect(status.json()).toMatchObject({ recoveryLeft: 9 });
@@ -428,7 +471,7 @@ describe('recovery codes', () => {
     const made = await a.call({ method: 'POST', url: '/api/auth/second-factor/recovery-codes' });
     const fresh = made.json<{ recoveryCodes: string[] }>().recoveryCodes;
     expect(fresh).toHaveLength(10);
-    const other = as(h, await signInByEmailOnly(h, a.email));
+    const other = live(await signInByEmailOnly(h, a.email));
     expect((await verify(other, a.recoveryCodes[1] ?? '')).statusCode).toBe(401);
     expect((await verify(other, fresh[0] ?? '')).statusCode).toBe(200);
   }, 70_000);
@@ -461,7 +504,7 @@ describe('passkeys', () => {
   it('one set up as the first factor signs its person in, and gives the recovery codes', async () => {
     const email = address('passkey');
     await seat(h.db, email, 'moderator');
-    const first = as(h, await signInByEmailOnly(h, email));
+    const first = live(await signInByEmailOnly(h, email));
     const key = softPasskey();
     const options = (
       await first({ method: 'POST', url: '/api/auth/second-factor/passkeys/challenge' })
@@ -473,7 +516,7 @@ describe('passkeys', () => {
     expect(res.json<{ recoveryCodes: string[] }>().recoveryCodes).toHaveLength(10);
     expect(await me(first)).toMatchObject({ role: 'moderator', secondFactor: 'done' });
 
-    const later = as(h, await signInByEmailOnly(h, email));
+    const later = live(await signInByEmailOnly(h, email));
     expect(await me(later)).toMatchObject({ secondFactor: 'verify' });
     expect((await prove(later, key)).statusCode).toBe(200);
     expect(await me(later)).toMatchObject({ role: 'moderator', secondFactor: 'done' });
@@ -495,7 +538,7 @@ describe('passkeys', () => {
       'Phone',
     ]);
     for (const key of [laptop, phone]) {
-      const s = as(h, await signInByEmailOnly(h, a.email));
+      const s = live(await signInByEmailOnly(h, a.email));
       expect((await prove(s, key)).statusCode).toBe(200);
     }
     // And a passkey is a step-up too.
@@ -521,7 +564,7 @@ describe('passkeys', () => {
     await verify(mine.call, code(mine.secret));
     await stepUpNow(mine.session);
     expect((await register(mine.call, softPasskey())).statusCode).toBe(200);
-    const s = as(h, await signInByEmailOnly(h, mine.email));
+    const s = live(await signInByEmailOnly(h, mine.email));
     expect((await prove(s, key)).statusCode).toBe(401);
     expect(await me(s)).toMatchObject({ secondFactor: 'verify' });
   });
@@ -529,11 +572,11 @@ describe('passkeys', () => {
   it('refuses another origin, a spent challenge, and a registration without a challenge', async () => {
     const email = address('passkey-origin');
     await seat(h.db, email, 'moderator');
-    const first = as(h, await signInByEmailOnly(h, email));
+    const first = live(await signInByEmailOnly(h, email));
     expect((await register(first, softPasskey(), 'https://evil.example')).statusCode).toBe(400);
     const key = softPasskey();
     expect((await register(first, key)).statusCode).toBe(200);
-    const s = as(h, await signInByEmailOnly(h, email));
+    const s = live(await signInByEmailOnly(h, email));
     const options = (
       await s({ method: 'POST', url: '/api/auth/second-factor/passkey/challenge' })
     ).json<{ challenge: string }>();
@@ -548,7 +591,7 @@ describe('passkeys', () => {
     const answer = key.sign(fresh, SITE);
     expect((await send(s, answer)).statusCode).toBe(200);
     // Replayed in another session, which was issued no such challenge.
-    const t = as(h, await signInByEmailOnly(h, email));
+    const t = live(await signInByEmailOnly(h, email));
     await t({ method: 'POST', url: '/api/auth/second-factor/passkey/challenge' });
     expect((await send(t, answer)).statusCode).toBe(401);
   });
@@ -556,7 +599,7 @@ describe('passkeys', () => {
   it('the last factor cannot be removed; one of two can, after a step-up', async () => {
     const email = address('passkey-remove');
     await seat(h.db, email, 'moderator');
-    const call = as(h, await signInByEmailOnly(h, email));
+    const call = live(await signInByEmailOnly(h, email));
     expect((await register(call, softPasskey(), SITE, 'Only')).statusCode).toBe(200);
     const status = await call({ method: 'GET', url: '/api/auth/second-factor' });
     const only = status.json<{ passkeys: { id: number }[] }>().passkeys[0]?.id ?? 0;
@@ -664,6 +707,13 @@ describe('step-up before each listed action', () => {
       payload: () => ({ email: someone(), role: 'user' }),
     },
     {
+      what: 'making an organization, which names its first managers',
+      who: () => admin,
+      method: 'POST',
+      url: () => '/api/orgs',
+      payload: () => ({ name: `Org ${someone()}`, managerEmails: [someone()] }),
+    },
+    {
       what: 'adding somebody to an organization',
       who: () => admin,
       method: 'POST',
@@ -755,7 +805,7 @@ describe('step-up before each listed action', () => {
   for (const action of LISTED) {
     it(`${action.what}: refused without a step-up in the last 5 minutes`, async () => {
       const { session } = action.who();
-      const call = as(h, session);
+      const call = live(session);
       const send = () =>
         call({
           method: action.method,
@@ -774,7 +824,7 @@ describe('step-up before each listed action', () => {
   }
 
   it('the step-up itself: a code in a session that has proved its factor, good for 5 minutes', async () => {
-    const call = as(h, owner.session);
+    const call = live(owner.session);
     await staleStepUp(owner.session);
     expect((await me(call)).stepUpUntil).toBeNull();
     await nextStep();
@@ -798,7 +848,7 @@ describe('step-up before each listed action', () => {
   }, 40_000);
 
   it('a person without the role is told that, not asked for a code', async () => {
-    const plain = as(h, await signIn(h, address('stepup-plain')));
+    const plain = live(await signIn(h, address('stepup-plain')));
     for (const action of LISTED) {
       const res = await plain({
         method: action.method,
@@ -812,7 +862,7 @@ describe('step-up before each listed action', () => {
 
   it('ordinary moderation never asks again', async () => {
     await staleStepUp(moderator.session);
-    const call = as(h, moderator.session);
+    const call = live(moderator.session);
     for (const url of ['/api/moderation/reports', '/api/moderation/rejection-reasons']) {
       expect((await call({ method: 'GET', url })).body, url).not.toContain('step_up_required');
     }
@@ -862,7 +912,7 @@ describe("resetting somebody's second factor", () => {
       sql`UPDATE role_audit SET detail = 'nothing' WHERE id = ${audit[0]?.id ?? 0}`.execute(h.db),
     ).rejects.toThrow();
     // Their next sign-in sets one up again.
-    const back = as(h, await signInByEmailOnly(h, a.email));
+    const back = live(await signInByEmailOnly(h, a.email));
     expect(await me(back)).toMatchObject({ role: 'user', secondFactor: 'set-up' });
   });
 
@@ -871,7 +921,7 @@ describe("resetting somebody's second factor", () => {
     for (const role of ['admin', 'access_manager', 'moderator', 'journalist', 'user']) {
       const email = address(`resetter-${role}`);
       await seat(h.db, email, role);
-      const call = as(h, await signIn(h, email));
+      const call = live(await signIn(h, email));
       const res = await call({
         method: 'POST',
         url: '/api/access/second-factor/reset',
@@ -922,7 +972,7 @@ describe("resetting somebody's second factor", () => {
     expect(audit).toMatchObject([
       { actor_email: SERVER_ACTOR, action: 'revoke', detail: 'second factor reset, on the server' },
     ]);
-    const back = as(h, await signInByEmailOnly(h, o.email));
+    const back = live(await signInByEmailOnly(h, o.email));
     expect(await me(back)).toMatchObject({ heldRole: 'owner', secondFactor: 'set-up' });
     // An address with no account, or none at all, is said plainly.
     await expect(run(address('nobody'))).rejects.toMatchObject({ code: 1 });

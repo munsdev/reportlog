@@ -156,7 +156,7 @@ describe('walking the wizard', () => {
     });
     session = cookieFrom(res, 'session_token') ?? '';
     expect(session).toMatch(/^[a-f0-9]{64}$/);
-    await setUpTotp(h, session, { site_access: curtain });
+    session = (await setUpTotp(h, session, { site_access: curtain })).session;
     expect((await asOwner({ url: '/api/auth/me' })).json()).toMatchObject({ role: 'owner' });
   });
 
