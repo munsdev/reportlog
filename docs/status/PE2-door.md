@@ -195,11 +195,18 @@ address (their forms ask none); the list-route test of the old filters now expec
 refusal; the copy-slot test knows the one server-read slot; the invariants and sweep tests know the
 new prefix and table.
 
-| Suite                                   | Result |
-| --------------------------------------- | ------ |
-| `pnpm check`                            | TBD    |
-| `pnpm test:db`                          | TBD    |
-| Browser suite (`CI=1`, `CHROMIUM_PATH`) | TBD    |
+| Suite                                   | Result                                                                                                                                                                           |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: fields 123, seal 46 (legacy vectors green, no fixture touched), access 9, api 464 passed / 21 skipped, web 600; boundaries 0 errors (the 1 warning predates this branch) |
+| `pnpm test:db`                          | 89 files, 1352 passed                                                                                                                                                            |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 1035 passed, 5 skipped, 0 failed (15.3 min)                                                                                                                                      |
+
+`pnpm check` and `pnpm test:db` ran on `2a0165c`, before the last two commits, which change only two
+browser tests (`doors.spec.ts`, `flood.spec.ts`); those were formatted and linted, and the browser
+suite ran on the final commit. Earlier full runs failed, all mine and all fixed: PE3's pause test
+and flood test and the door page's list of calls sent nothing for the door; my door test left a
+logbook open outside for the next file; the deploy runbook, the installer's key list and the slot
+count did not yet know the door.
 
 ## Outside my folders (kept minimal)
 
