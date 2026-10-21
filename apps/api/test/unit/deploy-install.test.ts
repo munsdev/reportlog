@@ -381,7 +381,8 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
         2,
       );
     }
-  });
+    // Two full installer runs (one per shape): longer than vitest's default 5 s under load.
+  }, 30_000);
 
   it('writes each answer into the settings file, and turns mail on once it can send', () => {
     const s = machine();
