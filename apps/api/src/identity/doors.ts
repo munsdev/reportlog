@@ -111,6 +111,9 @@ const FILING_CALLS: readonly {
   // first card rather than after somebody has written everything. It answers
   // open or closed and nothing else.
   { method: 'GET', route: '/api/intake-switch' },
+  // Plan E (PE3): the report and tip forms say "Intake is paused" on a door
+  // too. A public notice about the site, nothing about any report.
+  { method: 'GET', route: '/api/intake-pause', passes: () => Promise.resolve(true) },
   // The confirmation link. The token is the secret: it was emailed to the
   // person who sent the report, and the logbook was checked when they sent
   // it. So the link passes on the token alone, whether or not any logbook is

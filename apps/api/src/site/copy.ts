@@ -191,6 +191,35 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     help: 'Where a public authority writes to you: an order, a request for information. Name the address and the languages you can answer in.',
     fallback: 'This deployment has not published a contact point for authorities yet.',
   },
+  // Plan E (PE3): what the public is told about where a report came from,
+  // beside every entry and on the counts. The software decides WHICH label
+  // a report gets (filed through an organization, or the open form); the
+  // operator only words it.
+  {
+    key: 'origin_open_form',
+    kind: 'line',
+    label: 'Label for reports from the open form',
+    help: 'Shown beside every report anybody could have sent through the public form, and on its counts. Plain words: these are not checked.',
+    figures: false,
+    fallback: 'Unverified public report',
+  },
+  {
+    key: 'origin_organization',
+    kind: 'line',
+    label: 'Label for reports filed by an organization',
+    help: 'Shown beside every report an organization filed (its name follows), and on its counts.',
+    figures: false,
+    fallback: 'Filed by an organization',
+  },
+  {
+    key: 'intake_paused_notice',
+    kind: 'block',
+    label: 'While intake is paused',
+    help: 'Shown on the report and tip forms and across the site while a moderator has paused intake. Say what is happening and when people can try again, if you know.',
+    figures: false,
+    fallback:
+      'Intake is paused. The moderators have stopped taking new reports and tips for now, usually because of a flood of submissions. Everything already sent is safe. Please try again later.',
+  },
 ];
 
 const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s]));

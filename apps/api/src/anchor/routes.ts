@@ -22,7 +22,7 @@ import {
   distributionAvailable,
   publicArchiveAvailable,
 } from '../board/publication.ts';
-import { publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import { buildChainFile } from '../chain/chainFile.ts';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
@@ -56,7 +56,7 @@ async function chainFile(
   // record cannot be written, nothing goes out.
   if (lb && record) await record(lb.id);
   const file = lb
-    ? await buildChainFile(db, lb.id, publishedOnly ? { published: publishedReportIds(db) } : {})
+    ? await buildChainFile(db, lb.id, publishedOnly ? { published: listedReportIds(db) } : {})
     : null;
   if (!file) throw notFound(`There is no logbook "${slug}" with a chain to download.`);
   // The sealed object goes out exactly as it is; the contract only says it is

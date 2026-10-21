@@ -26,6 +26,13 @@ export interface QueueSearch {
   logbook?: string | undefined;
   severity?: QueueSeverity | undefined;
   sort?: 'newest' | 'oldest' | undefined;
+  // Plan E (PE3): the flood filters.
+  from?: string | undefined;
+  to?: string | undefined;
+  place?: string | undefined;
+  answer_set?: string | undefined;
+  organization?: string | undefined;
+  lane?: 'organization' | 'open_form' | undefined;
 }
 
 export const queueQuery = (s: QueueSearch) =>
@@ -40,6 +47,12 @@ export const queueQuery = (s: QueueSearch) =>
           ...(s.logbook ? { logbook: s.logbook } : {}),
           ...(s.severity ? { severity: s.severity } : {}),
           ...(s.sort ? { sort: s.sort } : {}),
+          ...(s.from ? { from: s.from } : {}),
+          ...(s.to ? { to: s.to } : {}),
+          ...(s.place ? { place: s.place } : {}),
+          ...(s.answer_set ? { answer_set: s.answer_set } : {}),
+          ...(s.organization ? { organization: s.organization } : {}),
+          ...(s.lane ? { lane: s.lane } : {}),
         },
         signal,
       }),

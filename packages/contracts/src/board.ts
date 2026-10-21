@@ -57,6 +57,13 @@ export const PublicReport = z.object({
     })
     .optional(),
   editorial_note: PublicNote.optional(),
+  /**
+   * Where it came from: through an organization (its provenance above), or
+   * the open form. `label` is the operator's wording for that, shown beside
+   * every entry ("Unverified public report" unless they wrote otherwise).
+   */
+  origin: z.enum(['organization', 'open_form']),
+  label: z.string(),
 });
 export type PublicReport = z.infer<typeof PublicReport>;
 
@@ -66,6 +73,8 @@ export const BoardLogbook = z.object({
   blurb: z.string().nullable(),
   /** Only the questions its maker marked as filters. Nothing is built in. */
   filters: z.array(FormQuestion),
+  /** Its reports are published as counts by place and time, never one by one. */
+  counts_only: z.boolean(),
 });
 export type BoardLogbook = z.infer<typeof BoardLogbook>;
 

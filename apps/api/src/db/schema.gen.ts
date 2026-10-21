@@ -306,6 +306,13 @@ export interface FileSettings {
   updated_by: string | null;
 }
 
+export interface FloodSettings {
+  id: Generated<boolean>;
+  intake_paused_at: Timestamp | null;
+  puzzle_level: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface HeatMaps {
   blurb: string | null;
   created_at: Generated<Timestamp>;
@@ -349,6 +356,12 @@ export interface IntakeDrafts {
   payload: Generated<Json>;
   report_id: number | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeRefusalCounts {
+  check_name: string;
+  hour: Timestamp;
+  refusals: number;
 }
 
 export interface IntakeSettings {
@@ -582,6 +595,13 @@ export interface LogbookForms {
   logbook_id: number;
 }
 
+export interface LogbookPublication {
+  counts_only: boolean;
+  logbook_id: number;
+  set_at: Generated<Timestamp>;
+  set_by: string;
+}
+
 export interface Logbooks {
   blurb: string | null;
   closed_at: Timestamp | null;
@@ -612,13 +632,26 @@ export interface MapPlaceQuestions {
   marked_at: Generated<Timestamp>;
 }
 
-export interface ModerationLog {
+export interface ModerationBulkActions {
   action: string;
   actor_email: string;
   comment: string | null;
   created_at: Generated<Timestamp>;
+  filter: Generated<Json>;
+  id: Generated<number>;
+  reached: number;
+  reason_code: string | null;
+}
+
+export interface ModerationLog {
+  action: string;
+  actor_email: string;
+  bulk_id: number | null;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
   id: Generated<number>;
   new_status: string | null;
+  reason_code: string | null;
   report_id: number;
   thread_id: string;
 }
@@ -636,6 +669,25 @@ export interface ModerationSettings {
   review_keywords_set_at: Timestamp | null;
   review_keywords_set_by: string | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface OrganizationIntakeLinks {
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  disabled_at: Timestamp | null;
+  disabled_by: string | null;
+  id: Generated<number>;
+  label: string;
+  max_uses: number;
+  organization_id: number;
+  token_hash: string;
+}
+
+export interface OrganizationIntakeLinkUses {
+  id: Generated<number>;
+  link_id: number;
+  used_at: Generated<Timestamp>;
+  user_id: number;
 }
 
 export interface OrganizationInvites {
@@ -853,6 +905,15 @@ export interface SiteSettings {
   updated_at: Generated<Timestamp>;
 }
 
+export interface SiteSwitchLog {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  subject: string | null;
+  switch: string;
+  value: string;
+}
+
 export interface StorageDeletions {
   attempts: Generated<number>;
   bucket: string;
@@ -941,10 +1002,12 @@ export interface DB {
   feedback_comments: FeedbackComments;
   feedback_events: FeedbackEvents;
   file_settings: FileSettings;
+  flood_settings: FloodSettings;
   heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
+  intake_refusal_counts: IntakeRefusalCounts;
   intake_settings: IntakeSettings;
   journalist_access_requests: JournalistAccessRequests;
   journalist_links: JournalistLinks;
@@ -966,11 +1029,15 @@ export interface DB {
   logbook_fields: LogbookFields;
   logbook_file_limits: LogbookFileLimits;
   logbook_forms: LogbookForms;
+  logbook_publication: LogbookPublication;
   logbooks: Logbooks;
   map_list_place_questions: MapListPlaceQuestions;
   map_place_questions: MapPlaceQuestions;
+  moderation_bulk_actions: ModerationBulkActions;
   moderation_log: ModerationLog;
   moderation_settings: ModerationSettings;
+  organization_intake_link_uses: OrganizationIntakeLinkUses;
+  organization_intake_links: OrganizationIntakeLinks;
   organization_invite_sends: OrganizationInviteSends;
   organization_invites: OrganizationInvites;
   organization_memberships: OrganizationMemberships;
@@ -993,6 +1060,7 @@ export interface DB {
   site_access_tokens: SiteAccessTokens;
   site_copy: SiteCopy;
   site_settings: SiteSettings;
+  site_switch_log: SiteSwitchLog;
   storage_deletions: StorageDeletions;
   threat_events: ThreatEvents;
   upload_slots: UploadSlots;

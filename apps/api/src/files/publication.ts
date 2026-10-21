@@ -20,7 +20,7 @@
  */
 import type { Kysely, Transaction } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
-import { isPublic, publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 import { permissionsFor } from '../permissions/log.ts';
@@ -354,7 +354,8 @@ export async function servable(db: Kysely<DB>, renditionKey: string) {
     ])
     .where('fh.rendition_key', '=', renditionKey)
     .where('fh.publication', '=', 'published')
-    .where('r.id', 'in', publishedReportIds(db))
+    // Listed: a counts-only logbook's files are never public (board/published.ts).
+    .where('r.id', 'in', listedReportIds(db))
     .executeTakeFirst();
   if (!row) return null;
   const perms = await permissionsFor(db, row.thread_id);
@@ -367,10 +368,12 @@ export async function publicFilesOf(db: Kysely<DB>, publicRef: string) {
   const report = await db
     .selectFrom('reports as r')
     .innerJoin('report_heads as h', 'h.current_report_id', 'r.id')
-    .select(['r.id', 'r.thread_id', 'r.may_publish', 'h.moderation_status', 'h.withdrawn'])
+    .select(['r.id', 'r.thread_id'])
     .where('r.public_ref', '=', publicRef)
+    // The board's own rule, counts-only logbooks left out (board/published.ts).
+    .where('r.id', 'in', listedReportIds(db))
     .executeTakeFirst();
-  if (!report || !isPublic(report)) return null;
+  if (!report) return null;
   const perms = await permissionsFor(db, report.thread_id);
   const rows = await db
     .selectFrom('report_attachments as ra')

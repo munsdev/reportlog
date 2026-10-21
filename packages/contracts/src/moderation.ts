@@ -79,6 +79,12 @@ export const QueueItem = z.object({
   incident_size: z.number().int(),
   /** A threat-to-life-or-safety flag is raised on it (platform.ts, D5). */
   threat_open: z.boolean(),
+  /** Filed through an organization (sorted first), or through the open form. */
+  origin: z.enum(['organization', 'open_form']),
+  /** The organization it was filed for, when it was. */
+  organization_id: z.number().int().nullable(),
+  /** Reports with the same answers share this, so a flood of copies can be found. */
+  answer_set: z.string(),
 });
 export type QueueItem = z.infer<typeof QueueItem>;
 
@@ -94,6 +100,24 @@ export const listQueue = defineRoute({
     /** A rating, or `none` for the reports nobody has rated: the real backlog. */
     severity: z.union([Severity, z.literal('none')]).optional(),
     sort: z.enum(['newest', 'oldest']).optional(),
+    // Plan E (PE3): the flood filters. A time window on arrival, a place (a
+    // state `US-AZ` takes its counties; a county `US-AZ-04013` only itself),
+    // one identical answer set, and one organization's reports as a set.
+    from: z.string().max(40).optional(),
+    to: z.string().max(40).optional(),
+    place: z
+      .string()
+      .regex(/^[A-Z]{2}(-[A-Z0-9]{1,3}(-\d{5})?)?$/)
+      .optional(),
+    answer_set: z
+      .string()
+      .regex(/^[0-9a-f]{32}$/)
+      .optional(),
+    organization: z
+      .string()
+      .regex(/^[1-9]\d{0,15}$/)
+      .optional(),
+    lane: z.enum(['organization', 'open_form']).optional(),
   }),
   response: z.object({
     reports: z.array(QueueItem),

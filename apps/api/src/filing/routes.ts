@@ -35,6 +35,7 @@ import { IntakeCorrection } from './intakeCorrection.ts';
 import { IntakeFiles } from './intakeFiles.ts';
 import { intakeIsOpen, setIntakeSwitch, storedIntakeSwitch } from './intakeSwitch.ts';
 import { Mine } from './mine.ts';
+import { refuseWhilePaused } from '../moderation/switches.ts';
 
 export interface FilingRouteDeps {
   db: Kysely<DB>;
@@ -87,6 +88,8 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
 
   // ── public: the filing calls ──────────────────────────────────────────
   route(app, C.submitReport, async ({ request }) => {
+    // Plan E: a moderator's pause stops new reports (moderation/switches.ts).
+    await refuseWhilePaused(deps.db);
     const b = bodyOf<C.BodyOf<typeof C.submitReport>>(C.submitReport, request);
     sendsPerClient.take(request.ip);
     const email = normalizeEmail(b.email);

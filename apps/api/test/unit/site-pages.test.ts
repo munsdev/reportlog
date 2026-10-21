@@ -49,8 +49,8 @@ describe('the development notice', () => {
 });
 
 describe('the slots', () => {
-  it('are legacy’s nine, the lock screen’s paragraph, the three terms slots and the two on the filing cards, and the optional ones resolve to nothing', () => {
-    expect(COPY_SLOTS).toHaveLength(15);
+  it('are legacy’s nine, the lock screen’s paragraph, the three terms slots, the two on the filing cards and Plan E’s three, and the optional ones resolve to nothing', () => {
+    expect(COPY_SLOTS).toHaveLength(18);
     // The choosing card always asks something; the line beside Send is the operator's or nothing.
     expect(COPY_SLOTS.find((s) => s.key === 'submit_question')?.fallback).toBe(
       'What are you reporting?',

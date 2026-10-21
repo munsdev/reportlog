@@ -20,7 +20,7 @@ import { roleSatisfies } from '@reportlog/access';
 import { verifyReport as verifyContract } from '@reportlog/contracts';
 import type { Verification } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import { publicArchiveAvailable } from '../board/publication.ts';
 import { verifyReport } from '../chain/verify.ts';
 import type { Database } from '../db/database.ts';
@@ -36,7 +36,9 @@ async function textIsPublic(db: Database, publicRef: string): Promise<boolean> {
     .selectFrom('reports as r')
     .select('r.id')
     .where('r.public_ref', '=', publicRef)
-    .where('r.id', 'in', publishedReportIds(db))
+    // Listed, not merely published: a counts-only logbook's text is on no
+    // public page, this one included.
+    .where('r.id', 'in', listedReportIds(db))
     .executeTakeFirst();
   return row !== undefined;
 }

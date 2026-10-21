@@ -10,7 +10,8 @@
  * approved by a moderator, not withdrawn, and the reporter permitted
  * publication. The old digest once checked only the first two and emailed
  * reports whose reporters had said no. The rule is the board's own
- * (`publishedReportIds` in board/published.ts), and a site whose archive is
+ * (`listedReportIds` in board/published.ts, so a counts-only logbook sends
+ * none), and a site whose archive is
  * switched off sends no digest at all.
  * Files are never in an email: only the answers.
  */
@@ -18,7 +19,7 @@ import { NOT_A_SAMPLE } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
-import { publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import { stopLinkFor } from '../identity/digestStop.ts';
 import type { EmailJobDeps, JobOutcome } from './job.ts';
 
@@ -169,7 +170,7 @@ export async function runDigest(
       .innerJoin('reports as r', 'r.id', 'h.current_report_id')
       .innerJoin('logbooks as lb', 'lb.id', 'r.logbook_id')
       .select(['r.public_ref', 'r.answers', 'r.logbook_id', 'lb.title as logbook_title'])
-      .where('r.id', 'in', publishedReportIds(deps.db))
+      .where('r.id', 'in', listedReportIds(deps.db))
       .where('h.updated_at', '>', since)
       .where('h.updated_at', '<=', until)
       .orderBy('r.received_at')

@@ -64,6 +64,46 @@ export interface QueueFilter {
   sort?: 'newest' | 'oldest' | undefined;
   /** One thread, for its detail page. */
   threadId?: string | undefined;
+  // ── Plan E (PE3): the flood filters ──
+  /** Arrival of the current version, inclusive. */
+  from?: Date | undefined;
+  to?: Date | undefined;
+  /** A state (`US-AZ`, its counties too) or a county, in any location answer. */
+  place?: string | undefined;
+  /** One identical answer set (`answerSet` below). */
+  answerSet?: string | undefined;
+  /** One organization's reports, as a set. */
+  organization?: number | undefined;
+  lane?: 'organization' | 'open_form' | undefined;
+}
+
+/**
+ * Reports with the same answers in the same logbook share this. jsonb keeps
+ * its keys in one order, so two copies of one submission give one text, and
+ * so one hash, whatever order the client sent them in.
+ */
+export const answerSet = sql<string>`md5(r.logbook_id::text || ':' || coalesce(r.answers::text, ''))`;
+
+/**
+ * The organization a thread was filed for: its intake draft's batch. Read
+ * over `h`, the queue's own alias for report_heads.
+ */
+export const organizationOf = sql<number | null>`(
+  select ob.organization_id from intake_drafts od
+    join intake_batches ob on ob.id = od.batch_id
+    join reports ov on ov.id = od.report_id
+   where ov.thread_id = h.thread_id
+   limit 1)`;
+
+/**
+ * A place in any of the report's location answers. A state takes its
+ * counties by prefix (owner decision 44); a county is only itself.
+ */
+function inPlace(place: string) {
+  return sql<boolean>`exists (
+    select 1 from logbook_fields pf
+     where pf.logbook_id = r.logbook_id and pf.kind = 'location'
+       and (r.answers ->> pf.key = ${place} or r.answers ->> pf.key like ${`${place}-%`}))`;
 }
 
 /**
@@ -146,6 +186,8 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
         .whereRef('v.thread_id', '=', 'h.thread_id')
         .select((e) => e.fn.countAll<string>().as('n'))
         .as('versions'),
+      answerSet.as('answer_set'),
+      organizationOf.as('organization_id'),
     ]);
 
   const status = filter.status ?? 'all';
@@ -160,8 +202,21 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
   if (filter.severity === 'none') q = q.where('sev.severity', 'is', null);
   else if (filter.severity) q = q.where('sev.severity', '=', filter.severity);
   if (filter.threadId) q = q.where('h.thread_id', '=', filter.threadId);
+  if (filter.from) q = q.where('r.received_at', '>=', filter.from);
+  if (filter.to) q = q.where('r.received_at', '<=', filter.to);
+  if (filter.place) q = q.where(inPlace(filter.place));
+  if (filter.answerSet) q = q.where(sql<boolean>`${answerSet} = ${filter.answerSet}`);
+  if (filter.organization) {
+    q = q.where(sql<boolean>`${organizationOf} = ${filter.organization}`);
+  }
+  if (filter.lane === 'organization') q = q.where('r.third_party', 'is', true);
+  if (filter.lane === 'open_form') q = q.where('r.third_party', 'is not', true);
 
   const rows = await q
+    // THE ORGANIZATION LANE FIRST (Plan E): on a flood day, open-form reports
+    // wait behind the accounts an accountable organization filed. Within
+    // each lane, the order asked for.
+    .orderBy(sql`(r.third_party is true)`, 'desc')
     .orderBy('r.received_at', sortDirection(filter.sort))
     .orderBy('r.id', sortDirection(filter.sort))
     .limit(500)
@@ -183,6 +238,8 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
     has_note: Boolean(r.has_note),
     has_contact: Boolean(r.has_contact),
     reporter_withdrew: Boolean(r.reporter_withdrew),
+    origin: r.third_party === true ? ('organization' as const) : ('open_form' as const),
+    organization_id: r.organization_id,
   }));
 }
 
@@ -214,6 +271,8 @@ async function log(
     new_status?: string | null;
     actor_email: string;
     comment?: string | null;
+    reason_code?: string | null;
+    bulk_id?: number | null;
   },
 ): Promise<void> {
   await trx
@@ -233,6 +292,8 @@ export async function decide(
   status: unknown,
   comment: unknown,
   actor: string,
+  /** A decline's reason from the fixed list, kept on the decision (public counts by reason). */
+  reasonCode: string | null = null,
 ): Promise<{ previous: string; report_id: number }> {
   if (!DECISIONS.includes(status as Decision)) {
     throw refuse(400, 'invalid_status', 'A decision is approve, decline or unclear.');
@@ -252,6 +313,7 @@ export async function decide(
       new_status: status as Decision,
       actor_email: actor,
       comment: why,
+      reason_code: status === 'invalid' ? reasonCode : null,
     });
     return { previous: head.moderation_status, report_id: head.current_report_id };
   });

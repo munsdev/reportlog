@@ -38,6 +38,36 @@ export function publishedReportIds(db: Kysely<DB>) {
     .$asScalar();
 }
 
+/**
+ * PUBLISHED, AND SHOWN ONE BY ONE. A logbook set to "publish as counts only"
+ * (board/countsOnly.ts) has its published reports counted on every count,
+ * map and figure, and shown as an entry nowhere: not on the board, its
+ * spreadsheet, one report's page, the verify page's text, the published
+ * chain file, the daily snapshot, a digest or a published file. Every read
+ * that shows a report itself asks this; every read that counts asks
+ * `publishedReportIds`.
+ */
+export function listedReportIds(db: Kysely<DB>) {
+  return db
+    .selectFrom('report_heads as listed_h')
+    .innerJoin('reports as listed_r', 'listed_r.id', 'listed_h.current_report_id')
+    .select('listed_h.current_report_id')
+    .where('listed_h.withdrawn', '=', false)
+    .where('listed_h.moderation_status', '=', 'valid')
+    .where('listed_r.may_publish', '=', true)
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom('logbook_publication as listed_p')
+            .whereRef('listed_p.logbook_id', '=', 'listed_r.logbook_id')
+            .where('listed_p.counts_only', '=', true),
+        ),
+      ),
+    )
+    .$asScalar();
+}
+
 /** The same rule over a thread's head row already in hand. */
 export const isPublic = (r: {
   withdrawn: boolean;

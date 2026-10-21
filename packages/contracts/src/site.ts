@@ -349,6 +349,10 @@ export const COPY_KEYS = [
   'terms_of_use',
   'contact_users',
   'contact_authorities',
+  // Plan E (PE3): where a report came from, and the paused-intake notice.
+  'origin_open_form',
+  'origin_organization',
+  'intake_paused_notice',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

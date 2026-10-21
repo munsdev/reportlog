@@ -27,9 +27,12 @@ import { filterableFields, launchedLogbooks, logbookBySlug } from '../logbooks/l
 import { forForm } from '../logbooks/routes.ts';
 import { publicNoteFor, publicNotesForMany } from '../moderation/notes.ts';
 import type { PublicNote } from '../moderation/notes.ts';
+import { countsOnlyLogbooks } from '../moderation/switches.ts';
+import { originLabels, originOf } from './origin.ts';
+import type { Origin } from './origin.ts';
 import { placeGuards, withheldReason } from './places.ts';
 import { publicArchiveAvailable } from './publication.ts';
-import { isPublic, publishedReportIds } from './published.ts';
+import { isPublic, listedReportIds } from './published.ts';
 import {
   ANSWER_KEY,
   answerMatches,
@@ -41,13 +44,16 @@ import {
 export const PAGE_SIZE = 100;
 const MAX_ANSWER_FILTERS = 10;
 
-/** Published reports, joined the way every board read reads them. */
+/**
+ * Published reports, joined the way every board read reads them. LISTED ones
+ * only: a counts-only logbook's reports are on the numbers, never here.
+ */
 export function published(db: Kysely<DB>) {
   return db
     .selectFrom('report_heads as h')
     .innerJoin('reports as r', 'r.id', 'h.current_report_id')
     .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
-    .where('r.id', 'in', publishedReportIds(db));
+    .where('r.id', 'in', listedReportIds(db));
 }
 
 type Published = ReturnType<typeof published>;
@@ -82,11 +88,17 @@ export interface PublicReport {
   chain_hash: string;
   third_party?: { filed_via: string; intake_method: string; collected_on?: string };
   editorial_note?: PublicNote;
+  origin: Origin;
+  label: string;
 }
 
 const iso = (d: Date) => d.toISOString();
 
-function present(r: Row, note: PublicNote | undefined): PublicReport {
+function present(
+  r: Row,
+  note: PublicNote | undefined,
+  labels: Record<Origin, string>,
+): PublicReport {
   return {
     public_ref: r.public_ref,
     received_at: iso(r.received_at),
@@ -107,6 +119,10 @@ function present(r: Row, note: PublicNote | undefined): PublicReport {
         }
       : {}),
     ...(note ? { editorial_note: note } : {}),
+    // Beside every entry, so a reader never has to work out which kind of
+    // account they are looking at (Plan E).
+    origin: originOf(r),
+    label: labels[originOf(r)],
   };
 }
 
@@ -219,9 +235,10 @@ export async function boardPage(db: Kysely<DB>, query: BoardQuery): Promise<Boar
     db,
     rows.map((r) => r.thread_id),
   );
+  const labels = await originLabels(db);
   return {
     published: true,
-    reports: rows.map((r) => present(r, notes.get(r.thread_id))),
+    reports: rows.map((r) => present(r, notes.get(r.thread_id), labels)),
     total: counted.total,
     page,
     page_size: PAGE_SIZE,
@@ -240,20 +257,28 @@ export async function boardReport(db: Kysely<DB>, publicRef: string): Promise<On
   if (!row) return null;
   const note = (await publicNoteFor(db, row.thread_id)) ?? undefined;
   // No source links here (decision 37): they are for staff and vetted journalists.
-  return { published: true, report: present(row, note) };
+  return { published: true, report: present(row, note, await originLabels(db)) };
 }
 
 /** Every logbook a report could have been filed to, with ONLY its operator's filters. */
-export async function boardLogbooks(
-  db: Kysely<DB>,
-): Promise<{ slug: string; title: string; blurb: string | null; filters: FormQuestion[] }[]> {
+export async function boardLogbooks(db: Kysely<DB>): Promise<
+  {
+    slug: string;
+    title: string;
+    blurb: string | null;
+    filters: FormQuestion[];
+    counts_only: boolean;
+  }[]
+> {
   const out = [];
+  const countsOnly = await countsOnlyLogbooks(db);
   for (const lb of await launchedLogbooks(db)) {
     out.push({
       slug: lb.slug,
       title: lb.title,
       blurb: lb.blurb,
       filters: (await filterableFields(db, lb.id)).map(forForm),
+      counts_only: countsOnly.has(lb.id),
     });
   }
   return out;
@@ -294,6 +319,9 @@ export async function boardCsv(db: Kysely<DB>, query: BoardQuery): Promise<strin
     'collected_on',
     'corrected',
     'chain_hash',
+    // Where it came from, in the operator's words (Plan E): a spreadsheet is
+    // where an entry most often loses its context.
+    'origin',
   ];
   let keys: string[] | null = null;
   if (query.logbook) {
@@ -324,6 +352,7 @@ export async function boardCsv(db: Kysely<DB>, query: BoardQuery): Promise<strin
     if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return `"${s.replace(/"/g, '""')}"`;
   };
+  const labels = await originLabels(db);
   const lines = [header.join(',')];
   for (const r of rows) {
     const a = (r.answers ?? {}) as Record<string, unknown>;
@@ -337,6 +366,7 @@ export async function boardCsv(db: Kysely<DB>, query: BoardQuery): Promise<strin
         r.collected_on ? r.collected_on.slice(0, 10) : '',
         r.corrects_id !== null ? 'yes' : 'no',
         r.chain_hash,
+        labels[originOf(r)],
         ...(keys ? keys.map((k) => a[k]) : [r.answers ? JSON.stringify(r.answers) : '']),
       ]
         .map(cell)

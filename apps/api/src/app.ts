@@ -33,6 +33,7 @@ import { linkRoutes } from './links/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
+import { floodRoutes } from './moderation/floodRoutes.ts';
 import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
@@ -198,6 +199,7 @@ export async function buildApp({
     siteOrigin,
   });
   await platformRoutes(app, { db, mailer: mail, siteOrigin });
+  await floodRoutes(app, { db, siteOrigin, linkKeys });
   eraseLinkRoutes(app, { db });
   journalistRoutes(app, {
     db,

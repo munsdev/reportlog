@@ -139,6 +139,7 @@ describe('the cards', () => {
       },
       'GET /api/publication-card': card,
       'GET /api/intake-switch': { open: true },
+      'GET /api/intake-pause': { paused: false, since: null, notice: '' },
       'POST /api/reports': sent,
       'GET /api/uploads/config': UPLOADS,
     };
@@ -209,6 +210,7 @@ describe('the cards', () => {
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
 
     expect([...new Set(calls)].sort()).toEqual([
+      'GET /api/intake-pause',
       'GET /api/intake-switch',
       'GET /api/logbooks/demo',
       'GET /api/publication-card',
