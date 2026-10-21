@@ -584,6 +584,9 @@ describe('on a door', () => {
   });
   afterAll(async () => {
     await liftCurtain(h.db);
+    // Other files expect every logbook and list to be closed to outsiders.
+    await h.db.updateTable('logbooks').set({ outside_access: 'closed' }).execute();
+    await h.db.updateTable('lists').set({ outside_access: 'closed' }).execute();
   });
 
   it('the puzzle and the start token are in front of the password, and a report goes through', async () => {

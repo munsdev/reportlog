@@ -231,11 +231,11 @@ describe('install.sh run again', () => {
     writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\n');
     expect(install(s).status).toBe(0);
     const env = s.read(ENV);
-    // (and the two-factor key and the transparency log's deploy key, which
+    // (and the two-factor key, the door's key and the transparency log's deploy key, which
     // install.sh also makes; no FILES_KEY, since nobody answered that this
     // server never took a file)
     expect(env).toMatch(
-      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTWO_FACTOR_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
+      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTWO_FACTOR_KEY=\S{44}\nDOOR_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
     );
   });
 });

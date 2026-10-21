@@ -32,6 +32,7 @@ import {
   staff,
 } from './moderation-helpers.ts';
 import type { Thread } from './moderation-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 type Caller = Awaited<ReturnType<typeof staff>>['call'];
 
@@ -482,17 +483,20 @@ describe('pause intake', () => {
       payload: { visibility: 'listed' },
     });
     expect(patched.statusCode, patched.body).toBe(200);
-    const entry = () =>
+    // With the door's fields (door-pass.ts), so the only reason left to
+    // refuse is the pause.
+    const entry = async () =>
       h.app.inject({
         method: 'POST',
         url: `/api/lists/${listSlug}/entries`,
-        payload: { elapsed_ms: 9000, answers: {} },
+        payload: { ...(await doorPass(h.app)), answers: {} },
       });
-    const report = () =>
+    const report = async () =>
       h.app.inject({
         method: 'POST',
         url: '/api/reports',
         payload: {
+          ...(await doorPass(h.app)),
           logbook: listed.slug,
           answers: { what: 'during a pause' },
           email: address('pe3-paused'),
