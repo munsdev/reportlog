@@ -9,6 +9,7 @@
 #   reportlog backup [--check]   take a backup now (or report on them)
 #   reportlog mail-test <addr>   send one real message
 #   reportlog site-password      set the site password (asks twice)
+#   reportlog reset-2fa <email>  clear somebody's second factor (the owner's way back in)
 #   reportlog jobs               list scheduled jobs and their schedules
 #   reportlog job <name>         run one scheduled job now
 #   reportlog updates            is there an update, and what would it change?
@@ -56,6 +57,15 @@ case "$cmd" in
     cd "$CURRENT"
     app_node apps/api/src/identity/set-site-password.ts
     ;;
+  reset-2fa)
+    # The owner's own second factor is reset only here (plan E, E3): nobody
+    # on the site may, so whoever does must already hold the server. Clears
+    # it, signs them out everywhere, and records it in role_audit.
+    [ $# -eq 1 ] || die "usage: sudo reportlog reset-2fa <email>"
+    [ -e "$CURRENT" ] || die "nothing is deployed yet. Run: sudo reportlog deploy"
+    cd "$CURRENT"
+    app_node apps/api/src/identity/reset-two-factor.ts "$1"
+    ;;
   jobs) cli jobs ;;
   job) cli run "$@" ;;
   updates)
@@ -69,6 +79,6 @@ case "$cmd" in
     update_check
     cli updates "$@"
     ;;
-  help | -h | --help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help | -h | --help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "unknown command: $cmd (try: reportlog help)" ;;
 esac

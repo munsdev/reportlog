@@ -29,6 +29,7 @@ import { Mine } from '../filing/mine.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { moderatorGuard } from './agreement.ts';
 import { sendRejectionNotice, requireReasonCode } from './rejection.ts';
@@ -239,23 +240,28 @@ export async function moderationRoutes(
       cleared: await markRead(db, params.threadId, me(request)),
     }));
 
-    route(scope, C.openReportContact, async ({ params, request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.openReportContact>>(C.openReportContact, request);
-      if (!ring) {
-        throw refuse(
-          503,
-          'not_configured',
-          'This site has no contact key set, so contact details cannot be opened.',
-        );
-      }
-      const out = await openContactLogged(db, ring, {
-        threadId: params.threadId,
-        staffEmail: me(request),
-        reason: b.reason,
+    // Opening a reporter's email asks for the second factor again (plan E,
+    // E3), in a scope of its own so whatever joins it asks too.
+    void scope.register((reveal) => {
+      reveal.addHook('preHandler', stepUpGuard());
+      route(reveal, C.openReportContact, async ({ params, request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.openReportContact>>(C.openReportContact, request);
+        if (!ring) {
+          throw refuse(
+            503,
+            'not_configured',
+            'This site has no contact key set, so contact details cannot be opened.',
+          );
+        }
+        const out = await openContactLogged(db, ring, {
+          threadId: params.threadId,
+          staffEmail: me(request),
+          reason: b.reason,
+        });
+        if (!out.ok && out.reason === 'reason') throw refuse(400, 'reason_required', out.message);
+        if (!out.ok) throw notFound('There are no contact details on that report.');
+        return { contact: out.contact };
       });
-      if (!out.ok && out.reason === 'reason') throw refuse(400, 'reason_required', out.message);
-      if (!out.ok) throw notFound('There are no contact details on that report.');
-      return { contact: out.contact };
     });
 
     // ── editorial notes ──

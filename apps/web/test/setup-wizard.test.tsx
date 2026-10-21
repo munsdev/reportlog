@@ -82,6 +82,9 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
           tester: false,
           teamMember: false,
           desks: [],
+          secondFactor: 'done',
+          heldRole: 'owner',
+          stepUpUntil: null,
         });
       case 'GET /api/admin/site':
         return ok(editor());

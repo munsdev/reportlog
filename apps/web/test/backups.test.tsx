@@ -182,6 +182,9 @@ describe('the backups and exports screen', () => {
         teamMember: false,
         grantsAccess: true,
         desks: [],
+        secondFactor: 'done',
+        heldRole: 'admin',
+        stepUpUntil: null,
       },
     });
     wrap(

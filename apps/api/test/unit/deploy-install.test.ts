@@ -231,10 +231,11 @@ describe('install.sh run again', () => {
     writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\n');
     expect(install(s).status).toBe(0);
     const env = s.read(ENV);
-    // (and the transparency log's deploy key, which install.sh also makes;
-    // no FILES_KEY, since nobody answered that this server never took a file)
+    // (and the two-factor key and the transparency log's deploy key, which
+    // install.sh also makes; no FILES_KEY, since nobody answered that this
+    // server never took a file)
     expect(env).toMatch(
-      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
+      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTWO_FACTOR_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
     );
   });
 });
@@ -382,7 +383,7 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     const s = machine();
     const r = ask(s, ANSWERS);
     const env = s.read(ENV);
-    for (const key of ['CONTACT_KEY', 'FILES_KEY']) {
+    for (const key of ['CONTACT_KEY', 'FILES_KEY', 'TWO_FACTOR_KEY']) {
       const v = new RegExp(`^${key}=(.+)$`, 'm').exec(env)?.[1] ?? '';
       expect(Buffer.from(v, 'base64'), key).toHaveLength(32);
       expect(r.out, key).not.toContain(v);
@@ -475,6 +476,21 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     expect(r.out).not.toContain('The address people will reach the site at');
     expect(r.out).not.toContain('secret key');
     expect(r.out).toContain('The files storage endpoint');
+  });
+
+  it('makes TWO_FACTOR_KEY whenever the file has none, and never replaces one', () => {
+    const s = machine();
+    mkdirSync(s.at('/etc/reportlog'), { recursive: true });
+    const kept = Buffer.alloc(32, 5).toString('base64');
+    writeFileSync(s.at(ENV), `SITE_ORIGIN=https://reports.example.org\nTWO_FACTOR_KEY=${kept}\n`);
+    expect(install(s).status).toBe(0);
+    expect(s.read(ENV)).toContain(`\nTWO_FACTOR_KEY=${kept}\n`);
+    writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\nTWO_FACTOR_KEY=\n');
+    const r = install(s);
+    expect(r.status).toBe(0);
+    const made = /^TWO_FACTOR_KEY=(.+)$/m.exec(s.read(ENV))?.[1] ?? '';
+    expect(Buffer.from(made, 'base64')).toHaveLength(32);
+    expect(r.out).not.toContain(made);
   });
 
   it('makes FILES_KEY on an existing file only when told this server never took a file', () => {

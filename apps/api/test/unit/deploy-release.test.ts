@@ -535,6 +535,30 @@ describe('the reportlog command', () => {
     }
   });
 
+  it('resets a second factor as the service user, in the running release, and only for one address', () => {
+    const { s } = runningV1();
+    s.clearCalls();
+    const r = s.reportlog('reset-2fa', 'owner@example.org');
+    expect(r.status, r.out).toBe(0);
+    const calls = s.calls();
+    const i = calls.findIndex((c) => c.startsWith('node '));
+    expect(calls[i]).toBe(
+      `node --env-file=${s.at('/etc/reportlog/reportlog.env')} apps/api/src/identity/reset-two-factor.ts owner@example.org`,
+    );
+    expect(calls[i + 1]).toContain(
+      `(in ${s.at(`/srv/reportlog/releases/${String(s.release(CURRENT))}`)},`,
+    );
+    expect(calls[i - 1]).toMatch(/^runuser -u reportlog -- env -i /);
+    for (const args of [[], ['a@example.org', 'b@example.org']]) {
+      const bad = s.reportlog('reset-2fa', ...args);
+      expect(bad.status).toBe(1);
+      expect(bad.out).toContain('usage: sudo reportlog reset-2fa <email>');
+    }
+    expect(server().reportlog('reset-2fa', 'owner@example.org').out).toContain(
+      'nothing is deployed yet',
+    );
+  });
+
   it('says what to do when nothing is deployed, the command is unknown, or sudo is missing', () => {
     const s = server();
     expect(s.reportlog('doctor').out).toContain(
@@ -556,6 +580,7 @@ describe('the reportlog command', () => {
       'backup',
       'mail-test',
       'site-password',
+      'reset-2fa <email>',
       'jobs',
       'job <name>',
       'updates',

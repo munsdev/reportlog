@@ -22,7 +22,15 @@ import { storedPublicArchive } from '../../src/board/publication.ts';
 import { siteLayer } from '../../src/files/limits.ts';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
 import { readSettings } from '../../src/site/settings.ts';
-import { address, codeFor, cookieFrom, harness, liftCurtain, roleOf } from './identity-helpers.ts';
+import {
+  address,
+  codeFor,
+  cookieFrom,
+  harness,
+  liftCurtain,
+  roleOf,
+  setUpTotp,
+} from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
 let h: Harness;
@@ -156,6 +164,26 @@ describe('walking the wizard', () => {
     expect(res.statusCode).toBe(200);
     session = cookieFrom(res, 'session_token') ?? '';
     expect(await roleOf(h.db, OWNER)).toBe('owner');
+  });
+
+  it('and nothing behind the seat opens until the owner sets up a second factor (E3)', async () => {
+    expect((await asOwner('GET', '/api/auth/me')).json()).toMatchObject({
+      role: 'user',
+      heldRole: 'owner',
+      secondFactor: 'set-up',
+    });
+    expect((await asOwner('PUT', '/api/admin/site/name', { name: 'Too soon' })).statusCode).toBe(
+      403,
+    );
+    expect((await asOwner('POST', '/api/setup/curtain', { decision: 'keep' })).statusCode).toBe(
+      403,
+    );
+    const { recoveryCodes } = await setUpTotp(h, session, { site_access: curtain });
+    expect(recoveryCodes).toHaveLength(10);
+    expect((await asOwner('GET', '/api/auth/me')).json()).toMatchObject({
+      role: 'owner',
+      secondFactor: 'done',
+    });
   });
 
   it('a reloaded tab learns the owner exists and setup is not finished', async () => {

@@ -6,6 +6,7 @@ import type { FastifyRequest } from 'fastify';
 import type { z } from 'zod';
 import { HttpError } from '../http/errors.ts';
 import { grantsAccess } from './guards.ts';
+import { STEP_UP_MS, stepUpFresh } from './secondFactor.ts';
 import { looksLikeEmail, normalizeEmail } from './secrets.ts';
 import type { SignedIn } from './sessions.ts';
 
@@ -38,6 +39,12 @@ export function toMe(user: SignedIn | null): Me {
     tester: user.tester,
     teamMember: user.teamMember,
     desks: user.desks,
+    secondFactor: user.secondFactor,
+    heldRole: user.heldRole,
+    stepUpUntil:
+      user.stepUpAt && stepUpFresh(user.stepUpAt)
+        ? new Date(user.stepUpAt.getTime() + STEP_UP_MS).toISOString()
+        : null,
   };
 }
 

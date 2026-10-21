@@ -4,6 +4,7 @@ import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
 import { SessionNav } from '../features/identity/SessionNav.tsx';
+import { StepUpHost } from '../features/identity/StepUp.tsx';
 import { StaffNav } from '../features/staff-nav/StaffNav.tsx';
 
 export interface RouterContext {
@@ -46,6 +47,7 @@ function RootLayout() {
       </main>
       <SiteFooter />
       <DevBadge />
+      <StepUpHost />
     </div>
   );
 }

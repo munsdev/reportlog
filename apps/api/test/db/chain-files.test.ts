@@ -37,7 +37,8 @@ import { createThrowawayDatabase } from '../../src/db/throwaway.ts';
 import type { Throwaway } from '../../src/db/throwaway.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
 import type { CapturingMailer } from '../../src/email/mailer.ts';
-import { hashPassword } from '../../src/identity/secrets.ts';
+import { markSecondFactor } from '../../src/identity/secondFactor.ts';
+import { hashPassword, sha256Hex } from '../../src/identity/secrets.ts';
 import { GENERAL_DIGEST, fileReport, launchedLogbook } from './helpers.ts';
 import { address, codeFor, cookieFrom, seat } from './identity-helpers.ts';
 import { standInTsa } from './stand-in-tsa.ts';
@@ -70,6 +71,9 @@ async function sessionFor(email: string): Promise<string> {
   });
   const token = cookieFrom(res, 'session_token');
   if (!token) throw new Error(`sign-in failed: ${res.body}`);
+  // A fixture, as identity-helpers.ts's signIn: the second factor is tested
+  // in second-factor.test.ts.
+  await markSecondFactor(db, sha256Hex(token));
   return token;
 }
 

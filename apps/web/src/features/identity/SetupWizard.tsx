@@ -51,6 +51,7 @@ import { BrandName, applyLook } from '@/components/ui/site.tsx';
 import { cn } from '@/lib/utils.ts';
 import { call } from '../../lib/api.ts';
 import { meQuery } from './session.ts';
+import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInForm } from './SignInForm.tsx';
 import { ErrorText, TextField } from './ui.tsx';
 
@@ -122,37 +123,41 @@ export function SetupWizard({
         </p>
         <h1 className="font-display text-3xl font-bold">{TITLES[step]}</h1>
       </header>
-      {step === 'owner' &&
-        (status.hasOwner ? (
-          <section className="space-y-4">
-            <p>
-              This deployment already has an owner, who has not finished setting it up. Sign in as
-              the owner to finish.
-            </p>
+      {/* The owner, once seated, sets up a second factor before the rest
+          (plan E, E3): the server lets the seat do nothing until then. */}
+      <SecondFactorGate>
+        {step === 'owner' &&
+          (status.hasOwner ? (
+            <section className="space-y-4">
+              <p>
+                This deployment already has an owner, who has not finished setting it up. Sign in as
+                the owner to finish.
+              </p>
+              <SignInForm
+                onSignedIn={async () => {
+                  await me.refetch();
+                }}
+              />
+            </section>
+          ) : (
             <SignInForm
+              purpose="setup"
+              intro="The owner is the one person who appoints administrators and can hand the deployment on. We will email a code to prove the address is yours, and that email works here."
               onSignedIn={async () => {
+                setSeated(true);
                 await me.refetch();
               }}
             />
-          </section>
-        ) : (
-          <SignInForm
-            purpose="setup"
-            intro="The owner is the one person who appoints administrators and can hand the deployment on. We will email a code to prove the address is yours, and that email works here."
-            onSignedIn={async () => {
-              setSeated(true);
-              await me.refetch();
-            }}
-          />
-        ))}
-      {step === 'name' && <NameStep onDone={next} back={back} />}
-      {step === 'start' && <StartStep onDone={next} back={back} />}
-      {step === 'publication' && <PublicationStep onDone={next} back={back} />}
-      {step === 'files' && <FilesStep onDone={next} back={back} />}
-      {step === 'look' && <LookStep onDone={next} back={back} />}
-      {step === 'password' && (
-        <CurtainDecision minPassword={status.minPassword} onFinished={onFinished} back={back} />
-      )}
+          ))}
+        {step === 'name' && <NameStep onDone={next} back={back} />}
+        {step === 'start' && <StartStep onDone={next} back={back} />}
+        {step === 'publication' && <PublicationStep onDone={next} back={back} />}
+        {step === 'files' && <FilesStep onDone={next} back={back} />}
+        {step === 'look' && <LookStep onDone={next} back={back} />}
+        {step === 'password' && (
+          <CurtainDecision minPassword={status.minPassword} onFinished={onFinished} back={back} />
+        )}
+      </SecondFactorGate>
     </main>
   );
 }

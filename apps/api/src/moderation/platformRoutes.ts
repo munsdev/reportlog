@@ -21,6 +21,7 @@ import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import {
   accept,
@@ -87,9 +88,14 @@ export async function platformRoutes(app: FastifyInstance, deps: PlatformDeps): 
   // ── M8: administrators ─────────────────────────────────────────────────
   await app.register((scope) => {
     scope.addHook('preHandler', roleGuard(['admin']));
-    route(scope, C.publishAgreement, async ({ params, request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.publishAgreement>>(C.publishAgreement, request);
-      return { version: await publishAgreement(db, params.audience, b.body, me(request)) };
+    // Publishing an agreement asks for the second factor again (plan E, E3).
+    void scope.register((publish) => {
+      publish.addHook('preHandler', stepUpGuard());
+      route(publish, C.publishAgreement, async ({ params, request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.publishAgreement>>(C.publishAgreement, request);
+        return { version: await publishAgreement(db, params.audience, b.body, me(request)) };
+      });
+      return Promise.resolve();
     });
     route(scope, C.listAgreementAcceptances, async ({ params }) => ({
       acceptances: await acceptances(db, params.audience),

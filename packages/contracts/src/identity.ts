@@ -46,6 +46,15 @@ export const Me = z.discriminatedUnion('signedIn', [
     teamMember: z.boolean(),
     /** What they do on the team (DESKS ids). Display only: grants nothing. */
     desks: z.array(z.string()),
+    /**
+     * The second factor (plan E, E3). `set-up` and `verify` mean this session
+     * acts with no role (`role` is `user`, `memberships` empty) until it is
+     * done; `heldRole` is the role it will then have.
+     */
+    secondFactor: z.enum(['not-needed', 'set-up', 'verify', 'done']),
+    heldRole: SystemRoleName,
+    /** Until when a step-up proved in this session counts, if one does. */
+    stepUpUntil: Iso.nullable(),
   }),
 ]);
 export type Me = z.infer<typeof Me>;

@@ -134,6 +134,9 @@ const ADMIN_ME = {
   tester: false,
   teamMember: false,
   desks: [],
+  secondFactor: 'done',
+  heldRole: 'admin',
+  stepUpUntil: null,
 };
 
 function page(pathname: string) {
