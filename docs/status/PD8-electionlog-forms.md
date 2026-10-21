@@ -115,7 +115,60 @@ All in `packages/fields` (pure, browser-safe), with the server, the cards and li
 
 ## Tests
 
-TOTALS_PLACEHOLDER
+Added:
+
+- **Unit, `packages/fields/test/codes-and-cards.test.ts`** (35): plain string options exactly as
+  before; codes sealed and labels shown; conditions on codes; option sets, shared codes, order,
+  "not asked" when no set applies, per-set labels; conditional help; postal states (and not
+  UM, `US-AZ` or a country), FIPS counties inside their state (parishes, Alaska areas, Virginia
+  cities, PR and GU); the hour 0 to 23 whole; the tick box; strict refusals and blanks; cards and
+  their refusals; `withoutWording`.
+- **Unit, `apps/api/test/unit/electionlog-spec.test.ts`** (16): the presets against the owner's
+  document itself, read from the file: every card's question, code and label in order, every
+  "only if", card 7's three lists, card 8's provisional, the kinds of link, K2's words, the entry
+  card, the send card's line, uploads off and archive on.
+- **Unit:** the tip list template (`lists.test.ts`), the two new slots (`site-pages.test.ts`).
+- **Db, `apps/api/test/db/electionlog.test.ts`** (26): the site starting point applied (draft
+  logbook, hidden strict list, archive on, files off, the question slot) and refused whole when
+  its list address is taken; filing every path through the routes and verifying each seal (in
+  person fine, in person problem with the approximate hour, mail problem, overseas problem);
+  hidden-field refusals (hour, role, problems, approximate by mail); a code from another
+  method's list, provisional by mail, a county outside its state, hour 24, a label sent as a code,
+  an unknown key, a tick box sent false, a missing hour in person; after launch, a reworded
+  label and option label as a new form version with earlier reports still verifying, the
+  version the page showed sealed, and a changed code, removed option, required or condition
+  refused by the module; by the database, wording in an option set and help allowed, and a code,
+  a set's condition, a set's order, key, kind, required, position and deletion refused; SQL and
+  TypeScript agree on what is wording; the tip list's rows (kept with types on the link rows, no
+  email, no erasure token, nothing in the answers; shown with their kind in the moderators'
+  review), its seven refusals, strictness against any other field, a lenient list still dropping
+  a stray key, and the desk showing "Kind of link: Livestream" beside a checked link.
+- **Browser, `apps/web/e2e/electionlog.spec.ts`** (chromium and phone, 5 each): in person with a
+  problem through every card (county inactive until a state, cleared when the state changes; the
+  hour and tick box; the in-person lists; provisional; the review in words; the send card's
+  line; codes sent; the form version sent); by mail going fine (no clock, straight to the
+  publication card); by mail with a problem (the mail list, no provisional); the tip card's three
+  fixed rows, its two row refusals and the entry sent with no email; the entry card's question
+  and answers. Axe on every card; no request to another host on any page.
+- **Changed to the new behaviour:** rewording after launch is now allowed in `logbooks.test.ts`,
+  `logbooks-http.test.ts` and `guards.test.ts` (each now asserts a meaning change is still
+  refused), the builder test rewords a launched question, the list-template and slot counts, the
+  K2 wording (`links.test.ts`, `links.spec.ts`), the thank-you line (`filing.test.tsx`), and the
+  tip answer on `/submit` (`submit.spec.ts`).
+
+| Suite                                   | Result, on `366ee37`                                                                                                                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                            | passes: fields 112, seal 46 (legacy vectors green, no fixture touched), access 9, api 425 passed / 21 skipped, web 589; boundaries 0 errors (the 1 warning, `boot-guard.js`, predates this branch) |
+| `pnpm test:db`                          | 85 files, 1228 passed                                                                                                                                                                              |
+| Browser suite (`CI=1`, `CHROMIUM_PATH`) | 982 passed, 5 skipped, 0 failed (15.0 min)                                                                                                                                                         |
+
+The first full browser run had 18 failures, all mine, all fixed: a second list template titled
+"Send a link" made the older tests' `name: 'Send a link'` match two (the template is now
+"ElectionLog tips"; the starting point names the list it makes); the builder's banner wording;
+a tick box drawn as yes/no tiles; the tip rows' selects taking the list Field's id (now inside
+`FieldReset`, as PD6's county picker); and my own test reading a one-part card's control by the
+part's label. The first full db run had one failure, also mine: the ElectionLog test left the
+intake switch set for the next file. It now puts the site back as it found it.
 
 ## Outside my folders (kept minimal)
 
