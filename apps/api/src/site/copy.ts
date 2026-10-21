@@ -92,6 +92,16 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback: '',
   },
   {
+    // The entry card's one question. A heading, so a line; it has an answer
+    // that ships, so the card always asks something.
+    key: 'submit_question',
+    kind: 'line',
+    figures: false,
+    label: 'The question on the choosing card',
+    help: 'The heading of the card where somebody chooses whether to report or send a link. One question.',
+    fallback: 'What are you reporting?',
+  },
+  {
     key: 'board_intro',
     kind: 'block',
     optional: true,

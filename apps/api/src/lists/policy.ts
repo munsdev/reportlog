@@ -42,6 +42,24 @@ export interface PreparedLink {
   /** The normalized form (lists/urls.ts): what is encrypted and what is matched. */
   url: string;
   host: string;
+  /** What kind of link it is, a code from the question's `link_types`, when it has them. */
+  type?: string;
+}
+
+/** The kinds of link a link question asks for beside each link, when it does. */
+export function linkTypesOf(field: Pick<ListField, 'kind' | 'settings'>): string[] {
+  const t = field.settings?.link_types;
+  return field.kind === 'url' && Array.isArray(t)
+    ? t.filter((o) => typeof o?.code === 'string').map((o) => o.code)
+    : [];
+}
+
+/** One row as sent: a link and its kind. Anything else in it is not a row. */
+function rowOf(raw: unknown): { url: unknown; type: unknown } | null {
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  if (Object.keys(r).some((k) => k !== 'url' && k !== 'type')) return null;
+  return { url: r.url, type: r.type };
 }
 
 export type Prepared =
@@ -73,11 +91,22 @@ const blank = (v: unknown) =>
 export function prepareAnswers(
   fields: readonly ListField[],
   submitted: Record<string, unknown>,
+  { strict = false }: { strict?: boolean } = {},
 ): Prepared {
   const answers: Record<string, AnswerValue> = {};
   const erasable: Record<string, AnswerValue> = {};
   const links: PreparedLink[] = [];
   const missing: string[] = [];
+
+  // A STRICT FORM (lists.strict, ruling 49) refuses what the lenient one
+  // drops: a key it does not ask. Blank is not an answer, so never refused.
+  if (strict) {
+    const asked = new Set(fields.filter(isCollected).map((f) => f.key));
+    const stray = Object.entries(submitted).find(
+      ([k, v]) => !asked.has(k) && !blank(v) && !(Array.isArray(v) && v.every(blank)),
+    );
+    if (stray) return { ok: false, reason: 'not-asked', key: stray[0] };
+  }
 
   for (const field of fields) {
     if (!isCollected(field)) continue;
@@ -88,6 +117,41 @@ export function prepareAnswers(
     const raw = submitted[field.key];
     const cap = field.max_values ?? 1;
     let value: AnswerValue | undefined;
+
+    const types = linkTypesOf(field);
+    if (types.length) {
+      // ROWS OF A LINK AND ITS KIND (the tip list, §04). Positional: row 1 is
+      // the first row sent, so a required question needs row 1 filled, which
+      // is the row the form marks. Both or neither in every row.
+      const rows = Array.isArray(raw) ? raw : blank(raw) ? [] : [raw];
+      if (rows.length > cap) return { ok: false, reason: 'too-many-values', key: field.key };
+      const out: string[] = [];
+      const seen = new Set<string>();
+      for (const [i, item] of rows.entries()) {
+        const row = item === null || item === undefined ? { url: '', type: '' } : rowOf(item);
+        if (!row) return { ok: false, reason: 'not-a-link-row', key: field.key };
+        const noUrl = blank(row.url);
+        const noType = blank(row.type);
+        if (noUrl && noType) {
+          if (i === 0 && field.required) missing.push(field.key);
+          continue;
+        }
+        if (noUrl) return { ok: false, reason: 'type-without-link', key: field.key };
+        if (noType) return { ok: false, reason: 'link-without-type', key: field.key };
+        if (typeof row.type !== 'string' || !types.includes(row.type.trim()))
+          return { ok: false, reason: 'not-an-option', key: field.key };
+        const got = normalizeValue(field, row.url);
+        if (!got.ok) return { ok: false, reason: got.reason, key: field.key };
+        if (!got.url) continue;
+        if (seen.has(got.url.url)) continue;
+        seen.add(got.url.url);
+        out.push(got.url.url);
+        links.push({ ...linkOf(field.key, got.url), type: row.type.trim() });
+      }
+      if (missing.includes(field.key)) continue;
+      if (!out.length && field.required) missing.push(field.key);
+      continue;
+    }
 
     if (cap > 1 && field.kind !== 'choice_many') {
       // A repeated single-value question, such as a tip's up-to-three links.

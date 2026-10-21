@@ -84,7 +84,7 @@ export async function fileEntry(
   if (!list) return refuse('no-such-list');
   if (!isAccepting(list, now)) return refuse('closed');
 
-  const prepared = prepareAnswers(list.fields, input.answers);
+  const prepared = prepareAnswers(list.fields, input.answers, { strict: list.strict });
   if (!prepared.ok) return refuseAnswer(list, prepared.reason, prepared.key);
 
   const email = input.email ? input.email.trim().toLowerCase() : null;

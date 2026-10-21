@@ -175,7 +175,11 @@ export async function createFromTemplate(
   const useTitle = title?.trim() ? title.trim() : t.title;
   if (useTitle.length > 120) refuse('title');
 
-  const id = await db.transaction().execute(async (trx) => {
+  // A caller already inside a transaction (a deployment template) keeps it,
+  // so the list lands with everything else the caller writes, or not at all.
+  const inTransaction = <T>(fn: (trx: Db) => Promise<T>): Promise<T> =>
+    db.isTransaction ? fn(db) : db.transaction().execute(fn);
+  const id = await inTransaction(async (trx) => {
     const taken = await trx
       .selectFrom('lists')
       .select('id')
@@ -186,7 +190,13 @@ export async function createFromTemplate(
     if (taken) refuse('slug-taken');
     const row = await trx
       .insertInto('lists')
-      .values({ slug: useSlug, title: useTitle, blurb: t.blurb, email_mode: t.email_mode })
+      .values({
+        slug: useSlug,
+        title: useTitle,
+        blurb: t.blurb,
+        email_mode: t.email_mode,
+        strict: t.strict,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
     await insertQuestions(trx, row.id, t.fields);

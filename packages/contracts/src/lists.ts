@@ -51,7 +51,13 @@ export const ListFormQuestion = z.object({
   help: z.string().nullable(),
   required: z.boolean(),
   max_values: z.number().int(),
+  /** The codes offered, which is what is sent and kept. A plain option is its own code. */
   options: z.array(z.string()),
+  /** The words for each of `options`, in order. Only when some option has a code. */
+  option_labels: z.array(z.string()).optional(),
+  /** On a link question asking what kind each link is: the kinds, and every row shown. */
+  link_types: z.array(z.object({ code: z.string(), label: z.string() })).optional(),
+  fixed_rows: z.boolean().optional(),
   allow_other: z.boolean(),
   /** The places a location question offers. Only on a location question. */
   places: z.array(z.object({ code: z.string(), name: z.string() })).optional(),
@@ -411,6 +417,8 @@ export const ReviewLink = z.object({
   /** The link's group (one per distinct address) and how it was checked; null: not yet. */
   group_id: z.number().int(),
   outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
+  /** What kind of link the tip said it is, in words; only where its form asked. */
+  kind: z.string().optional(),
 });
 
 export const ReviewEntry = z.object({

@@ -135,7 +135,7 @@ test('a link or tip is the other answer, and goes to the tip form', async ({ pag
   await page.goto('/submit');
   await expect(page.getByRole('radio')).toHaveCount(2);
   await expectAccessible(page, '/submit with the tip answer');
-  await page.getByRole('radio', { name: 'I have a link or tip' }).check();
+  await page.getByRole('radio', { name: 'Send a link' }).check();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page).toHaveURL(/\/list\/tips$/);
 });

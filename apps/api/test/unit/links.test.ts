@@ -90,9 +90,9 @@ describe('the contract and the module agree', () => {
     expect(Object.keys(UNBLOCK_REASONS)).toEqual([...MODULE_UNBLOCK]);
   });
 
-  it('K2 · the wording above every link field is the spec’s, word for word', () => {
+  it('K2 · the wording above every link field is the owner’s (questionnaires §04), word for word', () => {
     expect(LINK_FIELD_WORDING).toBe(
-      "Any link you add here may be shared with vetted journalists after a moderator checks it. It is never published. Don't link to your own account if you want to stay anonymous.",
+      "Links you send here are never published. A moderator checks each one, and links that pass may be shared with vetted journalists. Don't link to your own account if you want to stay anonymous.",
     );
   });
 });

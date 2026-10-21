@@ -78,6 +78,13 @@ export interface FieldSettings {
   code?: LocationCode;
   /** On a `fips` county: the key of the `postal` state question it sits in. */
   within?: string;
+  /**
+   * On a list's repeated link question: each link is a row with a link and
+   * one of these kinds of link, both or neither (apps/api/src/lists/policy.ts).
+   */
+  link_types?: CodedOption[];
+  /** Every row of a repeated question shown from the start; none added or removed. */
+  fixed_rows?: boolean;
   [key: string]: unknown;
 }
 

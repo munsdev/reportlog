@@ -269,11 +269,13 @@ describe('the one-way door', () => {
     const [first] = fields;
     if (!first) throw new Error('no fields');
 
-    const r = await refused(L.updateField(db, lb.id, first.id, { label: 'Reworded' }), 'launched');
+    const r = await refused(L.updateField(db, lb.id, first.id, { required: true }), 'launched');
     expect(r.status).toBe(409);
     await refused(L.removeField(db, lb.id, first.id), 'launched');
-    await refused(L.updateField(db, lb.id, first.id, { required: true }), 'launched');
-    await refused(L.updateField(db, lb.id, first.id, { help: 'More words' }), 'launched');
+    await refused(
+      L.updateField(db, lb.id, first.id, { shown_when: { field: 'who', in: ['x'] } }),
+      'launched',
+    );
     await refused(L.reorderFields(db, lb.id, fields.map((f) => f.id).reverse()), 'launched');
 
     // THE ONE OPENING, and why it is safe: a key enters the sealed object only
@@ -288,6 +290,13 @@ describe('the one-way door', () => {
 
     const after = await L.fieldsFor(db, lb.id);
     expect(after.slice(0, fields.length)).toEqual(fields);
+
+    // WORDING MAY CHANGE (ruling 48): a label and a help, as a new form version.
+    const reworded = await L.updateField(db, lb.id, first.id, {
+      label: 'Were you hurt?',
+      help: 'More words',
+    });
+    expect([reworded.label, reworded.help]).toEqual(['Were you hurt?', 'More words']);
     expect(after.map((f) => f.key)).toEqual(['hurt', 'who', 'anything_else']);
 
     // Whether a question is a board filter is delivery, not meaning: it is not
@@ -300,8 +309,12 @@ describe('the one-way door', () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('dbdoor'), title: 'DB door' });
     const f = await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
     await L.launch(db, lb.id);
+    // Wording may change after launch (ruling 48); what it is may not.
     await expect(
-      db.updateTable('logbook_fields').set({ label: 'Sneaky' }).where('id', '=', f.id).execute(),
+      db.updateTable('logbook_fields').set({ label: 'Reworded' }).where('id', '=', f.id).execute(),
+    ).resolves.toBeDefined();
+    await expect(
+      db.updateTable('logbook_fields').set({ kind: 'long_text' }).where('id', '=', f.id).execute(),
     ).rejects.toThrow(/never changed/);
   });
 

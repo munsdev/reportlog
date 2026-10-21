@@ -1,0 +1,54 @@
+{
+  "reportlog_list": 1,
+  "slug": "electionlog-tips",
+  "title": "Send a link",
+  "email": "none",
+  "strict": true,
+  "fields": [
+    {
+      "key": "links",
+      "kind": "url",
+      "label": "Your links",
+      "required": true,
+      "max_values": 3,
+      "retention": "durable",
+      "settings": {
+        "fixed_rows": true,
+        "link_types": [
+          {
+            "code": "video",
+            "label": "Video"
+          },
+          {
+            "code": "photo",
+            "label": "Photo or image"
+          },
+          {
+            "code": "post",
+            "label": "Social media post"
+          },
+          {
+            "code": "article",
+            "label": "News article"
+          },
+          {
+            "code": "official",
+            "label": "Official notice or government page"
+          },
+          {
+            "code": "document",
+            "label": "Document or PDF"
+          },
+          {
+            "code": "livestream",
+            "label": "Livestream"
+          },
+          {
+            "code": "other",
+            "label": "Something else"
+          }
+        ]
+      }
+    }
+  ]
+}

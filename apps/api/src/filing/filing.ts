@@ -20,9 +20,10 @@
  * filing is a deliberate POST from the page the link opens.
  */
 import type { Confirmation } from '@reportlog/contracts';
-import { buildAnswers, conditionMet } from '@reportlog/fields';
-import type { FieldDefinition } from '@reportlog/fields';
-import { normalizeReportFields } from '@reportlog/seal';
+import { buildAnswers, strictProblems, withoutWording } from '@reportlog/fields';
+import type { FieldDefinition, FieldSettings } from '@reportlog/fields';
+import { formDefinition, normalizeReportFields } from '@reportlog/seal';
+import type { FormDefinition, FormQuestion } from '@reportlog/seal';
 import type { Answers } from '@reportlog/fields';
 import { randomUUID } from 'node:crypto';
 import { sql } from 'kysely';
@@ -81,6 +82,8 @@ export interface Submission {
   may_publish_digest?: string | undefined;
   /** The files workstream's draft: the files staged while this was written. */
   draft_token?: string | undefined;
+  /** The hash of the form version the page showed. */
+  form?: string | undefined;
 }
 
 export interface FilingDeps {
@@ -108,48 +111,109 @@ export const confirmEmail = (logbookTitle: string, link: string, eraseLink?: str
 });
 
 /**
- * L7: a key the logbook does not ask is REFUSED here, not dropped. The shared
- * `buildAnswers` still drops it (a list's form left open in a tab must not
- * fail), so this runs only for logbooks. It is the reason a logbook with no
- * text question cannot be sent free text under some other name (L3).
+ * THE STRICT READING, for every path that seals (ruling 49, the ElectionLog
+ * questionnaires §01). Refused, each in a sentence:
+ *
+ *   L7  a key the logbook does not ask. The shared `buildAnswers` still drops
+ *       it (a list's form left open in a tab must not fail), so this runs only
+ *       where a report is sealed. It is the reason a logbook with no text
+ *       question cannot be sent free text under some other name (L3).
+ *       an answer to a question whose "only if" does not hold, or whose option
+ *       sets offer this reporter nothing. The form never sends one; anything
+ *       that does is not the form.
+ *       a value the question does not take: a choice not in its (conditional)
+ *       list, a county outside its state, an hour that is not 0 to 23. For a
+ *       required question `buildAnswers` already says "is needed"; an OPTIONAL
+ *       one would otherwise lose the answer without a word.
+ *
+ * A blank value is not an answer and is never refused.
  */
-export function unknownAnswerKeys(
+export function answerRefusals(
   questions: readonly FieldDefinition[],
   body: Record<string, unknown>,
 ): string[] {
-  const asked = new Set(questions.map((q) => q.key));
-  const unknown = Object.keys(body).filter((k) => !asked.has(k));
-  return unknown.length
-    ? [
-        `This report has an answer the form did not ask for (${unknown.join(', ')}). Reload the page and try again.`,
-      ]
-    : [];
+  const problems = strictProblems(questions, body);
+  const label = (key: string) => questions.find((q) => q.key === key)?.label ?? key;
+  const unknown = problems.filter((p) => p.reason === 'unknown').map((p) => p.key);
+  const hidden = problems.filter((p) => p.reason === 'not-asked').map((p) => label(p.key));
+  const bad = problems.filter((p) => p.reason === 'not-accepted').map((p) => label(p.key));
+  return [
+    ...(unknown.length
+      ? [
+          `This report has an answer the form did not ask for (${unknown.join(', ')}). Reload the page and try again.`,
+        ]
+      : []),
+    ...(hidden.length
+      ? [
+          `This report answers a question that, given your other answers, is not asked (${hidden.join(', ')}). Reload the page and try again.`,
+        ]
+      : []),
+    ...bad.map((l) => `${l} must be one of the choices offered.`),
+  ];
 }
 
 /**
- * An answer to a choice question that is not one of its options. For a
- * required question `buildAnswers` already says "is needed"; an OPTIONAL one
- * would otherwise lose the answer without a word.
+ * THE VERSION THIS REPORTER WAS ACTUALLY ASKED. Normally the current one. But
+ * a launched logbook may be reworded (ruling 48), so the page that was open
+ * may have shown words that have since changed. When the page says which
+ * version it showed, and that version differs from today's ONLY IN WORDING
+ * (the same questions, in the same order, asked the same way, with the same
+ * codes), that version is sealed: it is the text the reporter read, and the
+ * answers checked against today's questions mean the same under it.
+ *
+ * Anything else (an unknown hash, a version with a question since added) seals
+ * today's version, as before: the answers were checked against today's.
  */
-export function badChoices(
+export async function formAsked(
+  db: Kysely<DB>,
+  lb: { id: number; slug: string; launched_at: Date | string | null },
   questions: readonly FieldDefinition[],
-  body: Record<string, unknown>,
-  built: Answers,
-): string[] {
-  const out: string[] = [];
-  for (const q of questions) {
-    if (q.kind !== 'choice_one' && q.kind !== 'choice_many') continue;
-    if (q.shown_when && !conditionMet(q.shown_when, built)) continue;
-    const raw = body[q.key];
-    const sent = (Array.isArray(raw) ? raw : [raw]).filter(
-      (v) => v !== undefined && v !== null && v !== '',
+  shown: string | undefined,
+): Promise<{ id: number; hash: string }> {
+  const current = await ensureFormVersion(db, lb, questions);
+  if (!shown || shown === current.hash || !/^[a-f0-9]{64}$/.test(shown)) return current;
+  const row = await db
+    .selectFrom('logbook_forms')
+    .select(['id', 'form_hash', 'definition'])
+    .where('logbook_id', '=', lb.id)
+    .where('form_hash', '=', shown)
+    .executeTakeFirst();
+  if (!row) return current;
+  const skeleton = (qs: readonly FormQuestion[]) =>
+    JSON.stringify(
+      canonical(
+        qs.map((q) => [
+          q.key,
+          q.kind,
+          q.required,
+          q.shown_when ?? null,
+          withoutWording(q.settings as FieldSettings),
+        ]),
+      ),
     );
-    const options = Array.isArray(q.settings?.options) ? q.settings.options : [];
-    if (sent.some((v) => typeof v !== 'string' || !options.includes(v))) {
-      out.push(`${q.label} must be one of the choices offered.`);
-    }
+  let then: FormDefinition;
+  try {
+    then = JSON.parse(row.definition) as FormDefinition;
+  } catch {
+    return current;
   }
-  return out;
+  const now = formDefinition(lb.slug, questions);
+  return skeleton(then.questions) === skeleton(now.questions)
+    ? { id: row.id, hash: row.form_hash }
+    : current;
+}
+
+/** Keys in one order, so two settings objects compare as values. */
+function canonical(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(canonical);
+  if (typeof v === 'object' && v !== null) {
+    return Object.fromEntries(
+      Object.keys(v)
+        .sort()
+        .map((k) => [k, canonical((v as Record<string, unknown>)[k])]),
+    );
+  }
+  return v;
 }
 
 /**
@@ -195,10 +259,9 @@ export async function stageSubmission(
   // The questions these answers are checked against, as a version. Sealed
   // at confirmation, so what is sealed is the form this person was asked.
   const questions = await questionsFor(db, lb.id);
-  const form = await ensureFormVersion(db, lb, questions);
+  const form = await formAsked(db, lb, questions, b.form);
   const { answers, errors } = buildAnswers(questions, b.answers ?? {});
-  problems.push(...unknownAnswerKeys(questions, b.answers ?? {}));
-  problems.push(...badChoices(questions, b.answers ?? {}, answers ?? {}));
+  problems.push(...answerRefusals(questions, b.answers ?? {}));
   problems.push(...errors.map((e) => `${e}.`));
   if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
 

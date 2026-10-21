@@ -15,7 +15,7 @@
  * starting points turned out to be the wrong idea, this file could be deleted
  * and no logbook would behave differently.
  *
- * IMPORTED, NOT READ FROM A PATH. The five files are bundled by name, so a
+ * IMPORTED, NOT READ FROM A PATH. The files are bundled by name, so a
  * starting point's id can never name a file outside the folder.
  */
 import { LogbookFile } from '@reportlog/contracts';
@@ -25,6 +25,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { createFromFile } from './logbookFile.ts';
 import { refuse } from './refusals.ts';
+import electionlog from './templates/electionlog.json' with { type: 'json' };
 import electionsChoices from './templates/elections-choices.json' with { type: 'json' };
 import elections from './templates/elections.json' with { type: 'json' };
 import professionalComplaint from './templates/professional-complaint.json' with { type: 'json' };
@@ -33,6 +34,7 @@ import workplace from './templates/workplace.json' with { type: 'json' };
 
 const FILES = {
   elections,
+  electionlog,
   'elections-choices': electionsChoices,
   workplace,
   'safety-log': safetyLog,

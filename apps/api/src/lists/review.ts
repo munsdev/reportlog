@@ -20,6 +20,7 @@ import type { AnswerValue } from '@reportlog/fields';
 import { REVIEW_STATES, TRIAGE_STATES } from './policy.ts';
 import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
+import { fieldsOf } from './rows.ts';
 import type { Db } from './rows.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { linksForEntries } from '../links/reads.ts';
@@ -99,6 +100,14 @@ export async function reviewBatch(
     .execute();
   const ids = rows.map((r) => r.id);
   const links = keys ? await linksForEntries(db, keys, ids) : [];
+  // The words for each kind of link, from the question that asked it.
+  const fields = await fieldsOf(db, listId);
+  const kindOf = (l: { field_key: string; link_type: string | null }) =>
+    l.link_type
+      ? (fields
+          .find((f) => f.key === l.field_key)
+          ?.settings.link_types?.find((t) => t.code === l.link_type)?.label ?? l.link_type)
+      : undefined;
   const known = new Set(knownHosts.map((h) => h.trim().toLowerCase()));
 
   const entries: ReviewEntry[] = rows.map((r) => ({
@@ -121,6 +130,7 @@ export async function reviewBatch(
         known_host: known.has((l.host ?? '').toLowerCase()),
         group_id: l.group_id,
         outcome: l.outcome,
+        ...(kindOf(l) ? { kind: kindOf(l) } : {}),
       })),
   }));
   return { entries, clusters: clustersIn(entries) };

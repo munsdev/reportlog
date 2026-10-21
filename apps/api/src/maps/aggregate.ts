@@ -176,7 +176,13 @@ export async function computeMap(
     .select([
       // NULL when the logbook has no place question, or this report did not
       // answer it.
-      sql<string | null>`r.answers ->> f.key`.as('place'),
+      // A state written by postal code (`AZ`) is the area `US-AZ`, as
+      // `placeCodeOf` reads it. Every other location answer is its own code.
+      sql<
+        string | null
+      >`CASE WHEN f.settings ->> 'code' = 'postal' THEN 'US-' || (r.answers ->> f.key) ELSE r.answers ->> f.key END`.as(
+        'place',
+      ),
       outcome
         ? sql`CASE WHEN r.logbook_id = ${outcome.logbookId} THEN r.answers -> ${outcome.key} END`.as(
             'outcome',

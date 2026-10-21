@@ -82,13 +82,14 @@ describe('who may build a list', () => {
     expect((await mod({ method: 'GET', url: '/api/admin/lists' })).statusCode).toBe(403);
   });
 
-  it('an administrator sees the three starting points, and no upload or evidence question', async () => {
+  it('an administrator sees the starting points, and no upload or evidence question', async () => {
     const r = await admin({ method: 'GET', url: '/api/admin/lists' });
     const b = json<{ templates: { slug: string }[]; kinds: { id: string }[] }>(r);
     expect(r.statusCode, say(r)).toBe(200);
     expect(b.templates.map((t) => t.slug)).toEqual([
       'tips',
       'election-tips',
+      'electionlog-tips',
       'check-ins',
       'contact',
     ]);

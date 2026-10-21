@@ -31,7 +31,7 @@ import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Select } from '@/components/ui/select.tsx';
-import { rawFromAnswers, toSubmission } from '@/features/form/walk.ts';
+import { rawFromAnswers, toSubmission, withChange } from '@/features/form/walk.ts';
 import type { RawAnswers } from '@/features/form/walk.ts';
 import { call } from '@/lib/api.ts';
 import { AccountFiles } from './AccountFiles.tsx';
@@ -127,7 +127,7 @@ export function AccountDialog({
           questions={questions}
           raw={shown}
           onChange={(key, v) => {
-            setRaw({ ...shown, [key]: v });
+            setRaw(withChange(questions, shown, key, v));
           }}
           showProblems={false}
         />

@@ -41,7 +41,7 @@ export function ReportAnswers({
   }
   const raw = rawFromAnswers(questions, answers);
   const shown = askedQuestions(questions, raw)
-    .map((q) => ({ q, text: shownAnswer(q, raw) }))
+    .map((q) => ({ q, text: shownAnswer(q, raw, questions) }))
     .filter((x) => x.text !== null)
     .slice(0, only);
   return (

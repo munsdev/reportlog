@@ -27,6 +27,7 @@ import { call } from '../../lib/api.ts';
 import { Check, Field, Panel, Problem, TextArea, TextInput } from './controls.tsx';
 import { logbookQuery, logbooksQuery } from './queries.ts';
 import { QuestionForm } from './QuestionForm.tsx';
+import { RewordForm } from './RewordForm.tsx';
 import type { QuestionBody } from './QuestionForm.tsx';
 import { FreezePanel, OutsidePanel } from './Switches.tsx';
 import { TypeToConfirm } from './TypeToConfirm.tsx';
@@ -82,10 +83,11 @@ function Editor({ lb }: { lb: LogbookDetail }) {
       <Panel title="Questions">
         {launched && (
           <p className="rounded-card border-l-4 border-brand bg-paper p-3">
-            This logbook has launched, so its questions are fixed: a question that could be reworded
-            afterwards would leave every answer to it meaning something nobody can check. You can
-            still add a new optional question at the end, and choose which questions the board
-            offers as filters.
+            This logbook has launched, so what its questions ask is fixed: a question whose answers
+            could change afterwards would leave every answer to it meaning something nobody can
+            check. You can still reword a question, and the words of a choice that has a code, add a
+            new optional question at the end, and choose which questions the board offers as
+            filters.
           </p>
         )}
         <QuestionList lb={lb} refresh={refresh} />
@@ -218,7 +220,20 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
       <ol className="space-y-3" aria-label="The questions, in order">
         {lb.fields.map((q, i) => (
           <li key={q.id} className="space-y-2 rounded-card border border-line p-3">
-            {editing === q.id ? (
+            {editing === q.id && launched ? (
+              <RewordForm
+                question={q}
+                earlier={defs(lb.fields.slice(0, i))}
+                onCancel={() => {
+                  setEditing(null);
+                }}
+                onSubmit={async (body) => {
+                  await call(updateQuestion, { params: { id: lb.id, fieldId: q.id }, body });
+                  setEditing(null);
+                  await refresh();
+                }}
+              />
+            ) : editing === q.id ? (
               <QuestionForm
                 earlier={lb.fields.slice(0, i)}
                 launched={launched}
@@ -247,6 +262,18 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                 {q.help && <p className="text-sm">{q.help}</p>}
                 {q.shown_when && (
                   <p className="text-sm">{describeCondition(q.shown_when, defs(lb.fields))}</p>
+                )}
+                {typeof q.settings.card_question === 'string' && (
+                  <p className="text-sm">Its card asks “{q.settings.card_question}”.</p>
+                )}
+                {q.settings.same_card === true && (
+                  <p className="text-sm">Asked on the same card as the question above it.</p>
+                )}
+                {Array.isArray(q.settings.option_sets) && (
+                  <p className="text-sm">
+                    Which choices it offers depends on an earlier answer (
+                    {String(q.settings.option_sets.length)} lists).
+                  </p>
                 )}
                 <div className="flex flex-wrap gap-2">
                   {!launched && (
@@ -292,6 +319,18 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         Remove
                       </Button>
                     </>
+                  )}
+                  {launched && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      aria-label={`Reword “${q.label}”`}
+                      onClick={() => {
+                        setEditing(q.id);
+                      }}
+                    >
+                      Reword
+                    </Button>
                   )}
                   {launched && canFilter(q.kind) && (
                     <Check

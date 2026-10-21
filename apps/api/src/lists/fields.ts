@@ -24,6 +24,7 @@
  *
  * Pure: no database.
  */
+import { allOptionCodes } from '@reportlog/fields';
 import type { FieldSettings } from '@reportlog/fields';
 import { CLASSES, isRetention } from './retention.ts';
 import type { Retention } from './retention.ts';
@@ -138,9 +139,12 @@ export function isCollected(field: ListField): boolean {
   return field.enabled !== false && field.retention !== CLASSES.ABSENT;
 }
 
+/**
+ * The CODES a question offers: what is stored and counted. A plain string
+ * option is its own code, so a list made before codes reads as it always did.
+ */
 export function optionsOf(field: Pick<ListField, 'settings'>): string[] {
-  const o = field.settings?.options;
-  return Array.isArray(o) ? o.filter((x): x is string => typeof x === 'string') : [];
+  return allOptionCodes(field.settings);
 }
 
 /**
@@ -226,6 +230,39 @@ export function assertFieldDefinition(field: ListField): ListField & { retention
   if (FORBIDDEN_KINDS.has(field.kind)) {
     throw new FieldRuleError(
       `A list cannot ask for ${field.kind === 'file' ? 'files' : 'an evidence declaration'}: uploads and evidence belong to a logbook.`,
+    );
+  }
+  // KINDS OF LINK, asked beside each link: a code and a label each, on a link
+  // question only. Codes because the desk and any count read them, and labels
+  // can then be reworded.
+  const types: unknown = field.settings?.link_types;
+  if (types !== undefined) {
+    const codes = Array.isArray(types)
+      ? types.map((t: unknown) =>
+          typeof t === 'object' &&
+          t !== null &&
+          typeof (t as { label?: unknown }).label === 'string'
+            ? (t as { code?: unknown }).code
+            : null,
+        )
+      : [];
+    if (
+      field.kind !== 'url' ||
+      !codes.length ||
+      codes.some((c) => typeof c !== 'string' || !/^[a-z0-9][a-z0-9_]{0,62}$/.test(c)) ||
+      new Set(codes).size !== codes.length
+    ) {
+      throw new FieldRuleError(
+        `“${field.label}”: kinds of link go on a link question, each with a code of lowercase letters, numbers and underscores and a label, no code twice.`,
+      );
+    }
+  }
+  if (
+    field.settings?.fixed_rows !== undefined &&
+    !(field.settings.fixed_rows === true && (field.max_values ?? 1) > 1)
+  ) {
+    throw new FieldRuleError(
+      `“${field.label}”: showing every row from the start is for a question that takes more than one answer.`,
     );
   }
   const retention = retentionOf(field);

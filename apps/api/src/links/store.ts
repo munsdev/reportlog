@@ -57,6 +57,8 @@ export async function storeLinks(
         group_id: group.id,
         value_enc: sealed.enc,
         value_key: sealed.key,
+        // What kind of link the tip said it is, when its form asks (J9).
+        link_type: l.type ?? null,
       })
       .execute();
     kept.push(l);

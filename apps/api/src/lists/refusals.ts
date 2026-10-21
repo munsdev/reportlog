@@ -30,6 +30,12 @@ const SENTENCES = {
   'no-contact-key':
     'This form cannot take an email address or a link yet, because the site is not fully set up. Tell whoever runs this site.',
   'not-an-answer': 'That answer could not be read.',
+  'not-asked': 'This form does not ask that. Reload the page and send it again.',
+  'not-a-link-row':
+    'Each row is a link and what kind of link it is. Reload the page and send it again.',
+  'type-without-link':
+    'A row says what kind of link it is but has no link. Add the link, or clear the row.',
+  'link-without-type': 'Say what kind of link each one is.',
   'unknown-field-kind': 'This form asks a question this software cannot read.',
   'kind-not-available-on-a-list': 'This form asks for something a list cannot take.',
   empty: 'A link is needed here.',

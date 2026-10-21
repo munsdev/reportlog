@@ -457,6 +457,7 @@ export interface Links {
   field_key: string;
   group_id: number;
   id: Generated<number>;
+  link_type: string | null;
   value_enc: Buffer;
   value_key: Buffer;
 }
@@ -533,6 +534,7 @@ export interface Lists {
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
   slug: string;
+  strict: Generated<boolean>;
   title: string;
   updated_at: Generated<Timestamp>;
   visibility: Generated<string>;

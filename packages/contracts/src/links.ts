@@ -42,10 +42,12 @@ export type UnblockReason = keyof typeof UNBLOCK_REASONS;
 
 /**
  * K2: directly above every link field, part of the field type, so every form
- * that asks for a link shows it. Logbooks ask for none (Plan D §2).
+ * that asks for a link shows it. Logbooks ask for none (Plan D §2). The
+ * owner's wording of 21 October 2026 (ElectionLog questionnaires §04),
+ * replacing the spec's first version.
  */
 export const LINK_FIELD_WORDING =
-  "Any link you add here may be shared with vetted journalists after a moderator checks it. It is never published. Don't link to your own account if you want to stay anonymous.";
+  "Links you send here are never published. A moderator checks each one, and links that pass may be shared with vetted journalists. Don't link to your own account if you want to stay anonymous.";
 
 /** The comment box's warning line (M4), shown above it wherever it is edited. */
 export const LINK_COMMENT_WARNING =

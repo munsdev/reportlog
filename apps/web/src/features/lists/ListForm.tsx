@@ -43,10 +43,35 @@ import { keptFor } from './words.ts';
 /** Kept in step with PERSONAL_KINDS on the server, only to word the address card. */
 const PERSONAL = new Set(['short_text', 'long_text', 'email', 'place']);
 
-type Value = string | string[] | undefined;
+/** A row of a link question that asks what kind each link is. */
+interface LinkRow {
+  url: string;
+  type: string;
+}
 
-const blank = (v: Value) =>
-  v === undefined || (Array.isArray(v) ? v.every((x) => !x.trim()) : !v.trim());
+type Value = string | string[] | LinkRow[] | undefined;
+
+const blankRow = (r: LinkRow) => !r.url.trim() && !r.type.trim();
+
+const blank = (v: Value): boolean =>
+  v === undefined ||
+  (Array.isArray(v)
+    ? v.every((x: string | LinkRow) => (typeof x === 'string' ? !x.trim() : blankRow(x)))
+    : !v.trim());
+
+/** What is wrong with a question's link rows, in a sentence, or null. */
+function rowProblem(q: ListFormQuestion, v: Value): string | null {
+  if (!q.link_types?.length) return null;
+  const rows = (Array.isArray(v) ? v : []) as LinkRow[];
+  for (const r of rows) {
+    if (r.url.trim() && !r.type) return 'Say what kind of link each one is.';
+    if (!r.url.trim() && r.type)
+      return 'A row says what kind of link it is but has no link. Add the link, or clear the row.';
+  }
+  const first = rows[0];
+  if (q.required && (!first || !first.url.trim())) return 'Row 1 needs a link.';
+  return null;
+}
 
 export function ListFormPage({ slug }: { slug: string }) {
   const query = useQuery(listFormQuery(slug));
@@ -162,8 +187,10 @@ function Cards({ form }: { form: Form }) {
   }
 
   const valid = (): string | null => {
-    if (step.kind === 'question' && step.q.required && blank(values[step.q.key])) {
-      return 'An answer is needed here.';
+    if (step.kind === 'question') {
+      const rows = rowProblem(step.q, values[step.q.key]);
+      if (rows) return rows;
+      if (step.q.required && blank(values[step.q.key])) return 'An answer is needed here.';
     }
     if (step.kind === 'email' && !email.trim()) {
       if (form.email_when === 'always') return 'This form needs your email address.';
@@ -362,8 +389,11 @@ function Control({
   const list = Array.isArray(value) ? value : [];
   const named = { 'aria-labelledby': labelledBy };
 
+  if (q.kind === 'url' && q.link_types?.length) {
+    return <LinkRows q={q} value={value} labelledBy={labelledBy} onChange={onChange} />;
+  }
   if (q.kind === 'url') {
-    const boxes = list.length ? list : [text];
+    const boxes = (list.length ? list : [text]) as string[];
     const put = (i: number, v: string) => {
       const all = [...boxes];
       all[i] = v;
@@ -414,11 +444,13 @@ function Control({
       </RadioGroup>
     );
   }
+  // The CODE is sent; the label, where there is one, is what is read.
+  const words = (o: string, i: number) => q.option_labels?.[i] ?? o;
   if ((q.kind === 'choice_one' || q.kind === 'place') && q.options.length && !q.allow_other) {
     return (
       <RadioGroup value={text} onValueChange={onChange} {...named}>
-        {q.options.map((o) => (
-          <RadioOption key={o} value={o} label={o} />
+        {q.options.map((o, i) => (
+          <RadioOption key={o} value={o} label={words(o, i)} />
         ))}
       </RadioGroup>
     );
@@ -426,19 +458,20 @@ function Control({
   if (q.kind === 'choice_many') {
     return (
       <div role="group" className="flex flex-col gap-3" {...named}>
-        {q.options.map((o) => {
+        {q.options.map((o, i) => {
           const id = `${labelledBy}-${o}`;
+          const ticked = list as string[];
           return (
             <div key={o} className="flex items-start gap-3">
               <Checkbox
                 id={id}
-                checked={list.includes(o)}
+                checked={ticked.includes(o)}
                 onCheckedChange={(on) => {
-                  onChange(on === true ? [...list, o] : list.filter((x) => x !== o));
+                  onChange(on === true ? [...ticked, o] : ticked.filter((x) => x !== o));
                 }}
               />
               <Label htmlFor={id} className="font-normal">
-                {o}
+                {words(o, i)}
               </Label>
             </div>
           );
@@ -504,6 +537,87 @@ function Control({
       }}
       {...named}
     />
+  );
+}
+
+/**
+ * ROWS OF A LINK AND WHAT KIND OF LINK IT IS (ElectionLog questionnaires §04).
+ * With `fixed_rows` every row is on the card from the start and none is added
+ * or removed, so nothing on the card moves. Row 1 is the one a required
+ * question needs. The fixed wording (K2) sits above the rows.
+ */
+function LinkRows({
+  q,
+  value,
+  labelledBy,
+  onChange,
+}: {
+  q: ListFormQuestion;
+  value: Value;
+  labelledBy: string;
+  onChange: (v: Value) => void;
+}) {
+  const given = (Array.isArray(value) ? value : []) as LinkRow[];
+  const count = q.fixed_rows ? q.max_values : Math.max(1, given.length);
+  const rows = Array.from({ length: count }, (_, i) => given[i] ?? { url: '', type: '' });
+  const put = (i: number, row: LinkRow) => {
+    onChange(rows.map((r, j) => (j === i ? row : r)));
+  };
+  return (
+    <div className="space-y-4" role="group" aria-labelledby={labelledBy}>
+      <p className="text-sm text-ink-alt" data-testid="link-wording">
+        {LINK_FIELD_WORDING}
+      </p>
+      {rows.map((row, i) => {
+        const n = String(i + 1);
+        const optional = !(q.required && i === 0);
+        return (
+          <fieldset
+            // Rows never move or go away, so a position is a stable key.
+            key={`row-${n}`}
+            className="space-y-2 rounded-card border border-line p-3"
+          >
+            <legend className="px-1 font-semibold">
+              Link {n}
+              {optional ? <span className="font-normal text-ink-alt"> (optional)</span> : null}
+            </legend>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
+              <Input
+                id={`${labelledBy}-url-${n}`}
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="https://"
+                maxLength={2000}
+                value={row.url}
+                onChange={(e) => {
+                  put(i, { ...row, url: e.target.value });
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of link it is</Label>
+              <Select
+                id={`${labelledBy}-type-${n}`}
+                value={row.type}
+                onChange={(e) => {
+                  put(i, { ...row, type: e.target.value });
+                }}
+              >
+                <option value="">Choose one</option>
+                {(q.link_types ?? []).map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </fieldset>
+        );
+      })}
+    </div>
   );
 }
 

@@ -52,13 +52,17 @@ import { ApiRequestError, call } from '@/lib/api.ts';
 import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { QuestionControl } from './QuestionControl.tsx';
+import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import {
+  askedCards,
   askedQuestions,
   cardProblem,
+  everyCardId,
   sealedAnswers,
   shownAnswer,
   stillPossible,
   toSubmission,
+  withChange,
 } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
 
@@ -142,6 +146,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       title={lb.title}
       blurb={lb.blurb}
       questions={lb.fields}
+      form={lb.form}
       card={card.data}
       cardError={card.isError}
       history={history}
@@ -154,6 +159,7 @@ function Cards({
   title,
   blurb,
   questions,
+  form,
   card,
   cardError,
   history,
@@ -162,6 +168,8 @@ function Cards({
   title: string;
   blurb: string | null;
   questions: FormQuestion[];
+  /** The version these questions are; sealed if only wording changes before Send. */
+  form?: string | undefined;
   card: PublicationCard | undefined;
   cardError: boolean;
   history: RouterHistory | undefined;
@@ -200,14 +208,22 @@ function Cards({
           may_publish: publish === 'yes',
           may_publish_digest: card?.digest ?? '',
           ...(draft && uploader.kept.length ? { draft_token: draft } : {}),
+          ...(form ? { form } : {}),
         },
       }),
   });
 
   const asked = useMemo(() => askedQuestions(questions, raw), [questions, raw]);
+  // ONE STEP PER CARD. Most cards ask one question; a card whose question has
+  // parts (a state and its county, a day and its hour) asks them together.
+  const cardOf = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of cardsOf(questions)) for (const q of c) m.set(q.key, c[0]?.key ?? q.key);
+    return m;
+  }, [questions]);
   const steps: Step[] = [
     'intro',
-    ...asked.map((q): Step => `q:${q.key}`),
+    ...askedCards(questions, raw).map((c): Step => `q:${c.id}`),
     'publish',
     'contact',
     ...(takesFiles ? (['files'] as Step[]) : []),
@@ -231,7 +247,7 @@ function Cards({
   // browser returns to a card the answers since have stopped asking.
   const everyStep: Step[] = [
     'intro',
-    ...questions.map((q): Step => `q:${q.key}`),
+    ...everyCardId(questions).map((id): Step => `q:${id}`),
     'publish',
     'contact',
     'files',
@@ -256,11 +272,19 @@ function Cards({
 
   if (send.isSuccess) return <SentReceipt email={email.trim()} title={title} />;
 
-  const question = step.startsWith('q:') ? questions.find((q) => `q:${q.key}` === step) : undefined;
+  const shownCard = step.startsWith('q:')
+    ? askedCards(questions, raw).find((c) => `q:${c.id}` === step)
+    : undefined;
   const at = Math.max(0, steps.indexOf(step));
 
   const problemHere = (): string | null => {
-    if (question) return cardProblem(question, raw);
+    if (shownCard) {
+      for (const part of shownCard.parts) {
+        const p = cardProblem(part, raw, questions);
+        if (p) return shownCard.parts.length > 1 ? `${part.label}: ${p}` : p;
+      }
+      return null;
+    }
     if (step === 'publish' && !card)
       return 'This question has not loaded yet. Try again in a moment.';
     if (step === 'contact' && !looksLikeEmail(email))
@@ -289,7 +313,7 @@ function Cards({
     // turned on is the next card.
     const now = [
       'intro',
-      ...askedQuestions(questions, raw).map((q) => `q:${q.key}`),
+      ...askedCards(questions, raw).map((c) => `q:${c.id}`),
       'publish',
       'contact',
       ...(takesFiles ? ['files'] : []),
@@ -311,8 +335,8 @@ function Cards({
   const sealed = sealedAnswers(questions, raw);
   const mayTakeFiles = Boolean(fileQuestion) && uploadConfig.data?.enabled !== false;
   const possible =
-    questions.filter((q) => stillPossible(q, questions, raw, sealed)).length +
-    (mayTakeFiles ? 4 : 3);
+    cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
+      .length + (mayTakeFiles ? 4 : 3);
   const progress = step === 'intro' ? null : Math.round((at / possible) * 100);
 
   return (
@@ -342,14 +366,22 @@ function Cards({
         </CardShell>
       ) : null}
 
-      {question ? (
+      {shownCard ? (
         <QuestionCard
-          key={question.key}
-          question={question}
-          value={raw[question.key]}
-          onChange={(v) => {
+          key={shownCard.id}
+          parts={shownCard.parts}
+          heading={cardHeading(
+            cardsOf(questions).find((c) => c[0]?.key === shownCard.id) ?? shownCard.parts,
+          )}
+          help={helpFor(
+            questions.find((q) => q.key === shownCard.id) ?? shownCard.parts[0] ?? { help: null },
+            sealed,
+          )}
+          raw={raw}
+          answers={sealed}
+          onChange={(key, v) => {
             setProblem(null);
-            setRaw((r) => ({ ...r, [question.key]: v }));
+            setRaw((r) => withChange(questions, r, key, v));
           }}
           problem={problem}
         />
@@ -416,9 +448,9 @@ function Cards({
               <ReviewRow
                 key={q.key}
                 label={q.label}
-                value={shownAnswer(q, raw) ?? (q.required ? null : '—')}
+                value={shownAnswer(q, raw, questions) ?? (q.required ? null : '—')}
                 onChange={() => {
-                  go(`q:${q.key}`, true);
+                  go(`q:${cardOf.get(q.key) ?? q.key}`, true);
                 }}
               />
             ))}
@@ -474,7 +506,7 @@ function Cards({
         </CardShell>
       ) : null}
 
-      {problem && step !== 'review' && step !== 'contact' && step !== 'files' && !question ? (
+      {problem && step !== 'review' && step !== 'contact' && step !== 'files' && !shownCard ? (
         <Alert tone="serious" title={problem} />
       ) : null}
 
@@ -495,7 +527,7 @@ function Cards({
                 setProblem('Confirm the statement above to send the report.');
                 return;
               }
-              const missing = asked.find((q) => cardProblem(q, raw));
+              const missing = asked.find((q) => cardProblem(q, raw, questions));
               if (missing) {
                 setProblem(`“${missing.label}” needs an answer. Press Change beside it.`);
                 return;
@@ -562,41 +594,103 @@ function CardShell({
   );
 }
 
+/**
+ * One card: one question, which may have parts on it (cards.ts in
+ * @reportlog/fields). With one part, the heading IS the question and names
+ * the control, as it always did. With several, the heading is the card's own
+ * question and each part is named by its own label beside its control.
+ */
 function QuestionCard({
-  question,
-  value,
+  parts,
+  heading,
+  help,
+  raw,
+  answers,
   onChange,
   problem,
 }: {
-  question: FormQuestion;
-  value: RawValue | undefined;
-  onChange: (v: RawValue) => void;
+  parts: FormQuestion[];
+  heading: string;
+  help: string | undefined;
+  raw: RawAnswers;
+  answers: Record<string, unknown>;
+  onChange: (key: string, v: RawValue | undefined) => void;
   problem: string | null;
 }) {
   const id = useId();
   const headingId = `${id}-q`;
   const helpId = `${id}-help`;
   const errorId = `${id}-error`;
+  const single = parts.length === 1 ? parts[0] : undefined;
+  const sealedSoFar = answers as Parameters<typeof QuestionControl>[0]['answers'];
   return (
     <CardShell
-      heading={question.label}
-      step={question.key}
+      heading={heading}
+      step={parts[0]?.key ?? ''}
       headingId={headingId}
       help={
         <div id={helpId} className="flex flex-col gap-1 text-ink-alt">
-          {question.help ? <p className="whitespace-pre-wrap">{question.help}</p> : null}
-          {question.required ? null : <p className="text-sm">Optional.</p>}
+          {help ? <p className="whitespace-pre-wrap">{help}</p> : null}
+          {single && !single.required ? <p className="text-sm">Optional.</p> : null}
         </div>
       }
     >
-      <QuestionControl
-        question={question}
-        value={value}
-        onChange={onChange}
-        labelledBy={headingId}
-        describedBy={[helpId, problem ? errorId : ''].filter(Boolean).join(' ')}
-        invalid={Boolean(problem)}
-      />
+      {single ? (
+        <QuestionControl
+          question={single}
+          value={raw[single.key]}
+          onChange={(v) => {
+            onChange(single.key, v);
+          }}
+          labelledBy={headingId}
+          describedBy={[helpId, problem ? errorId : ''].filter(Boolean).join(' ')}
+          invalid={Boolean(problem)}
+          answers={sealedSoFar}
+          raw={raw}
+        />
+      ) : (
+        <div className="flex flex-col gap-4" role="group" aria-labelledby={headingId}>
+          {parts.map((part, i) => {
+            const partId = `${id}-part-${String(i)}`;
+            // A tick box carries its own label beside the box.
+            const box = part.kind === 'yes_no' && part.settings.checkbox === true;
+            const partHelp = i === 0 ? undefined : part.help;
+            return (
+              <div key={part.key} className="flex flex-col gap-2">
+                {box ? null : (
+                  <p id={partId} className="font-semibold">
+                    {part.label}
+                    {part.required ? null : (
+                      <span className="font-normal text-ink-alt"> (optional)</span>
+                    )}
+                  </p>
+                )}
+                {partHelp ? (
+                  <p id={`${partId}-help`} className="text-sm text-ink-alt">
+                    {partHelp}
+                  </p>
+                ) : null}
+                <QuestionControl
+                  question={part}
+                  value={raw[part.key]}
+                  onChange={(v) => {
+                    onChange(part.key, v);
+                  }}
+                  labelledBy={box ? headingId : partId}
+                  describedBy={
+                    [partHelp ? `${partId}-help` : '', problem ? errorId : '']
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                  invalid={Boolean(problem)}
+                  answers={sealedSoFar}
+                  raw={raw}
+                />
+              </div>
+            );
+          })}
+        </div>
+      )}
       {problem ? (
         <p id={errorId} role="alert" className="flex gap-1.5 text-sm font-semibold text-serious">
           <span aria-hidden="true">!</span>

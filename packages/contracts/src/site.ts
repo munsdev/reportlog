@@ -338,6 +338,7 @@ export const COPY_KEYS = [
   'home_intro',
   'about_archive',
   'submit_intro',
+  'submit_question',
   'board_intro',
   'how_intro',
   'alliance_intro',

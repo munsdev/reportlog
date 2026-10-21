@@ -36,6 +36,8 @@ import {
 } from '@reportlog/contracts';
 import type { FormQuestion, Question } from '@reportlog/contracts';
 import { FILE_TYPE, LOCATION_TYPE, canFilter, placeOptions } from '@reportlog/fields';
+import { formText } from '@reportlog/seal';
+import { questionsFor } from '../chain/questions.ts';
 import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
@@ -137,6 +139,9 @@ export function logbookRoutes(
       asks_for_files: fields.some((f) => f.kind === FILE_TYPE),
       fields: fields.map(forForm),
       filters: fields.filter((f) => f.filterable && canFilter(f.kind)).map(forForm),
+      // The version these questions are, so a report sent from this page seals
+      // the wording its reporter read even if a label is reworded meanwhile.
+      form: formText(lb.slug, await questionsFor(db, lb.id)).hash,
     };
   });
 

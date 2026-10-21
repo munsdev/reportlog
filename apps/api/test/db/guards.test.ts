@@ -91,11 +91,20 @@ describe('launching a logbook is a one-way door', () => {
     await expect(
       db
         .updateTable('logbook_fields')
-        .set({ label: 'Reworded' })
+        .set({ required: false })
         .where('logbook_id', '=', lb.id)
         .where('key', '=', 'what')
         .execute(),
     ).rejects.toThrow(/never changed/);
+    // Rewording is the one change allowed in place (ruling 48).
+    await expect(
+      db
+        .updateTable('logbook_fields')
+        .set({ label: 'Reworded' })
+        .where('logbook_id', '=', lb.id)
+        .where('key', '=', 'what')
+        .execute(),
+    ).resolves.toBeDefined();
     await expect(
       db
         .deleteFrom('logbook_fields')

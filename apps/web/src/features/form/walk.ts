@@ -16,11 +16,14 @@ import type { FormQuestion } from '@reportlog/contracts';
 import {
   FILE_TYPE,
   buildAnswers,
+  cardsOf,
   conditionMet,
+  describeAnswer,
+  isAsked,
   normalizeAnswer,
   placeLabel,
 } from '@reportlog/fields';
-import type { Answers, FieldDefinition } from '@reportlog/fields';
+import type { Answers, FieldDefinition, FieldSettings } from '@reportlog/fields';
 
 /** What a control holds, before the server normalizes it. */
 export type RawValue = string | string[];
@@ -87,9 +90,38 @@ export function askedQuestions(
   raw: RawAnswers,
 ): FormQuestion[] {
   const answers = sealedAnswers(questions, raw);
-  return questions.filter(
-    (q) => q.kind !== FILE_TYPE && (!q.shown_when || conditionMet(q.shown_when, answers)),
-  );
+  // `isAsked` is the server's rule: its own "only if", and for a question
+  // whose options depend on an earlier answer, whether any list applies.
+  return questions.filter((q) => q.kind !== FILE_TYPE && isAsked(asDefinition(q), answers));
+}
+
+const asDefinition = (q: FormQuestion): FieldDefinition => ({
+  key: q.key,
+  kind: q.kind,
+  label: q.label,
+  ...(q.shown_when ? { shown_when: q.shown_when } : {}),
+  settings: q.settings,
+});
+
+/**
+ * The cards, in order, each the questions it asks right now (cards.ts in
+ * @reportlog/fields). A card is named by its FIRST question's key, asked or
+ * not, so a card keeps its place in the browser's history while a part of it
+ * comes and goes. A card none of whose questions is asked is not shown.
+ */
+export function askedCards(
+  questions: readonly FormQuestion[],
+  raw: RawAnswers,
+): { id: string; parts: FormQuestion[] }[] {
+  const asked = new Set(askedQuestions(questions, raw).map((q) => q.key));
+  return cardsOf(questions.filter((q) => q.kind !== FILE_TYPE))
+    .map((card) => ({ id: card[0]?.key ?? '', parts: card.filter((q) => asked.has(q.key)) }))
+    .filter((c) => c.parts.length > 0);
+}
+
+/** Every card there could be, by id, asked or not. */
+export function everyCardId(questions: readonly FormQuestion[]): string[] {
+  return cardsOf(questions.filter((q) => q.kind !== FILE_TYPE)).map((c) => c[0]?.key ?? '');
 }
 
 /**
@@ -125,21 +157,51 @@ const isEmpty = (v: RawValue | undefined) =>
  * What stops somebody leaving this card, in a sentence, or null. Required
  * means required OF THE PEOPLE ASKED: a hidden question is never checked.
  */
-export function cardProblem(q: FormQuestion, raw: RawAnswers): string | null {
+export function cardProblem(
+  q: FormQuestion,
+  raw: RawAnswers,
+  /** The whole form, so an answer that depends on an earlier one (a county in its state, a list chosen by method) is checked against it. */
+  questions?: readonly FormQuestion[],
+): string | null {
   const v = raw[q.key];
   if (isEmpty(v)) return q.required ? 'An answer is needed here.' : null;
-  if (normalizeAnswer(q.kind, toRawSubmission([q], raw)[q.key], q.settings) === null) {
+  const answers = questions ? sealedAnswers(questions, raw) : undefined;
+  if (
+    normalizeAnswer(
+      q.kind,
+      toRawSubmission([q], raw)[q.key],
+      q.settings,
+      answers ? { answers } : undefined,
+    ) === null
+  ) {
     return 'That is not an answer this question takes. Check it, or clear it.';
   }
   return null;
 }
 
 /** An answer in the words the reporter read: the review card's rows. */
-export function shownAnswer(q: FormQuestion, raw: RawAnswers): string | null {
+export function shownAnswer(
+  q: FormQuestion,
+  raw: RawAnswers,
+  questions?: readonly FormQuestion[],
+): string | null {
   const v = raw[q.key];
   if (isEmpty(v) || v === undefined) return null;
+  // A CHOICE BY ITS LABEL, never its code; from the list this reporter was
+  // offered when the question has several.
+  if (q.kind === 'choice_one' || q.kind === 'choice_many') {
+    const answers = questions ? sealedAnswers(questions, raw) : undefined;
+    return describeAnswer(asDefinition(q), v, answers);
+  }
   if (Array.isArray(v)) return v.join(', ');
   if (q.kind === 'yes_no') return v === 'yes' ? 'Yes' : 'No';
+  if (q.kind === 'number' && (q.settings as FieldSettings).picker === 'hour') {
+    return describeAnswer(asDefinition(q), Number(v));
+  }
+  // A state or county written by code alone (AZ, 04013) names itself.
+  if (q.kind === 'location' && typeof q.settings.code === 'string') {
+    return describeAnswer(asDefinition(q), v);
+  }
   if (q.kind === 'evidence_declaration')
     return v === 'yes' ? 'Yes, I have something' : 'No, I do not';
   if (q.kind === 'location') {
@@ -181,4 +243,25 @@ function localDateTime(iso: string): string {
   if (Number.isNaN(d.getTime())) return iso;
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * The controls after one answer changes. Undefined clears it (an unticked
+ * box). CHANGING A STATE CLEARS ITS COUNTY: a county is only ever an answer
+ * inside the state chosen beside it (`within`), so one left over from another
+ * state would be an answer nobody gave.
+ */
+export function withChange(
+  questions: readonly FormQuestion[],
+  raw: RawAnswers,
+  key: string,
+  value: RawValue | undefined,
+): RawAnswers {
+  const next: RawAnswers = { ...raw };
+  if (value === undefined) delete next[key];
+  else next[key] = value;
+  if (raw[key] !== value) {
+    for (const q of questions) if (q.settings.within === key) delete next[q.key];
+  }
+  return next;
 }

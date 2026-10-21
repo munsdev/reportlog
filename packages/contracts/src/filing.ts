@@ -39,6 +39,8 @@ export const submitReport = defineRoute({
     may_publish_digest: z.string().optional(),
     /** From POST /api/uploads/draft: the files staged while this was written. */
     draft_token: z.string().optional(),
+    /** The form version the page showed (getPublicLogbook's `form`). */
+    form: z.string().optional(),
   }),
   response: z.object({
     pending: z.literal(true),

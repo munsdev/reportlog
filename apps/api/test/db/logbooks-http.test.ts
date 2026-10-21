@@ -157,16 +157,21 @@ describe('building and launching over HTTP', () => {
 
     const first = launched.body.fields[0];
     if (!first) throw new Error('no fields');
+    // Rewording is allowed after launch (ruling 48); what a question asks is not.
     const reword = await api<ErrorBody>(
       'PATCH',
       `/api/admin/logbooks/${String(lb.id)}/fields/${String(first.id)}`,
-      {
-        label: 'Reworded',
-      },
+      { label: 'Reworded' },
     );
-    expect(reword.status).toBe(409);
-    expect(reword.body.error.code).toBe('launched');
-    expect(reword.body.error.message).toMatch(/questions are fixed/);
+    expect(reword.status).toBe(200);
+    const promote = await api<ErrorBody>(
+      'PATCH',
+      `/api/admin/logbooks/${String(lb.id)}/fields/${String(first.id)}`,
+      { required: true },
+    );
+    expect(promote.status).toBe(409);
+    expect(promote.body.error.code).toBe('launched');
+    expect(promote.body.error.message).toMatch(/questions are fixed/);
 
     const del = await api<ErrorBody>('DELETE', `/api/admin/logbooks/${String(lb.id)}`);
     expect(del.status).toBe(409);

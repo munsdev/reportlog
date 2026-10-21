@@ -35,7 +35,7 @@ async function sendTip(browser: Browser, slug: string, link: string): Promise<vo
   await v.goto(`/list/${slug}`);
   await v.getByRole('button', { name: 'Start' }).click();
   await expect(v.getByTestId('link-wording')).toHaveText(
-    "Any link you add here may be shared with vetted journalists after a moderator checks it. It is never published. Don't link to your own account if you want to stay anonymous.",
+    "Links you send here are never published. A moderator checks each one, and links that pass may be shared with vetted journalists. Don't link to your own account if you want to stay anonymous.",
   );
   await v.getByRole('textbox', { name: 'Link' }).fill(link);
   await v.getByRole('button', { name: 'Next' }).click();

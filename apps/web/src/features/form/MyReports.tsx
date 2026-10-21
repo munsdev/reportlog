@@ -45,7 +45,15 @@ import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { PERMISSION_WORDS } from './permissionWords.ts';
 import { QuestionControl } from './QuestionControl.tsx';
-import { askedQuestions, cardProblem, rawFromAnswers, shownAnswer, toSubmission } from './walk.ts';
+import {
+  askedQuestions,
+  cardProblem,
+  rawFromAnswers,
+  sealedAnswers,
+  shownAnswer,
+  toSubmission,
+  withChange,
+} from './walk.ts';
 import type { RawAnswers } from './walk.ts';
 
 const myReportsQuery = queryOptions({
@@ -186,7 +194,7 @@ function Answers({ r }: { r: MyReportDetail }) {
         {askedQuestions(r.questions, raw).map((q) => (
           <div key={q.key}>
             <dt className="text-sm font-semibold text-ink-alt">{q.label}</dt>
-            <dd className="whitespace-pre-wrap">{shownAnswer(q, raw) ?? '—'}</dd>
+            <dd className="whitespace-pre-wrap">{shownAnswer(q, raw, r.questions) ?? '—'}</dd>
           </div>
         ))}
         <div>
@@ -337,7 +345,7 @@ function Correct({ r }: { r: MyReportDetail }) {
         checked.
       </p>
       {asked.map((q) => {
-        const err = problem ? cardProblem(q, raw) : null;
+        const err = problem ? cardProblem(q, raw, r.questions) : null;
         return (
           <div key={q.key} className="flex flex-col gap-2">
             <p id={`correct-${q.key}`} className="font-semibold">
@@ -348,10 +356,12 @@ function Correct({ r }: { r: MyReportDetail }) {
               question={q}
               value={raw[q.key]}
               onChange={(v) => {
-                setRaw((x) => ({ ...x, [q.key]: v }));
+                setRaw((x) => withChange(r.questions, x, q.key, v));
               }}
               labelledBy={`correct-${q.key}`}
               invalid={Boolean(err)}
+              answers={sealedAnswers(r.questions, raw)}
+              raw={raw}
             />
             {err ? <p className="text-sm font-semibold text-serious">{err}</p> : null}
           </div>
@@ -397,7 +407,7 @@ function Correct({ r }: { r: MyReportDetail }) {
           disabled={send.isPending}
           onClick={() => {
             setDone(null);
-            const missing = asked.find((q) => cardProblem(q, raw));
+            const missing = asked.find((q) => cardProblem(q, raw, r.questions));
             if (missing) {
               setProblem(`“${missing.label}” needs a different answer.`);
               return;
