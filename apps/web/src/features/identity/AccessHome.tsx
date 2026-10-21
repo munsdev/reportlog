@@ -540,7 +540,7 @@ function ResetSecondFactor() {
         }}
       >
         <TextField
-          label="Whose second factor: their email address"
+          label="Whose second factor to reset (an email address)"
           type="email"
           required
           value={email}
