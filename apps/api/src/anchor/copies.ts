@@ -43,6 +43,7 @@ import type { Database } from '../db/database.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import { bodyOf } from '../identity/http.ts';
 import { backupHealth, backupTime, checkDir, ours } from '../jobs/backup-files.ts';
 import { CODE_ROOT, readState, runBackup } from '../jobs/backup.ts';
@@ -290,69 +291,76 @@ export function copyRoutes(app: FastifyInstance, deps: CopyRouteDeps): void {
 
     route(owner, C.getCopies, () => state());
 
-    route(owner, C.startCopy, async ({ request }) => {
-      const { kind } = bodyOf(C.startCopy, request);
-      const cfg = usable(deps.config);
-      if (typeof cfg === 'string') throw new HttpError(503, 'not_configured', cfg);
-      if (running) {
-        throw new HttpError(
-          409,
-          'busy',
-          `A ${running.kind === 'backup' ? 'backup' : 'export'} is already being made. Wait for it to finish.`,
-        );
-      }
-      start(kind, () => (kind === 'backup' ? backup(cfg) : exportNow(cfg)));
-      return state();
-    });
-
-    // Not through `route()`: the answer is the file, streamed, not JSON.
-    owner.get<{ Params: { kind: string; name: string } }>(
-      C.COPY_DOWNLOAD_PATH,
-      async (request, reply) => {
-        const user = requireUser(request);
+    // Making a copy and downloading one ask for the second factor again
+    // (plan E, E3). Not the list: the screen asks it again while a copy
+    // is being made, which can take longer than a step-up lasts.
+    void owner.register((copying, _o, copied) => {
+      copying.addHook('preHandler', stepUpGuard());
+      route(copying, C.startCopy, async ({ request }) => {
+        const { kind } = bodyOf(C.startCopy, request);
         const cfg = usable(deps.config);
         if (typeof cfg === 'string') throw new HttpError(503, 'not_configured', cfg);
-        const { kind, name } = request.params;
-        // ONLY A NAME THIS SERVER LISTS. Matched against the folder's own
-        // listing, never joined onto a path as given, so nothing in it can
-        // reach another file.
-        const dir = kind === 'backup' ? path.resolve(cfg.BACKUP_DIR) : exportsDir(cfg);
-        const pick = kind === 'backup' ? ours : kind === 'export' ? ourExports : () => [];
-        let names: string[] = [];
-        try {
-          names = pick(await readdir(dir));
-        } catch {
-          names = [];
+        if (running) {
+          throw new HttpError(
+            409,
+            'busy',
+            `A ${running.kind === 'backup' ? 'backup' : 'export'} is already being made. Wait for it to finish.`,
+          );
         }
-        if (!names.includes(name)) throw notFound('There is no such file on this server.');
-        const file = path.join(dir, name);
-        const { size } = await stat(file);
-        const what = kind === 'backup' ? 'the database backup' : 'the archive export';
-        await db
-          .insertInto('role_audit')
-          .values({
-            actor_email: user.email,
-            subject_email: user.email,
-            axis: 'archive',
-            action: 'download',
-            detail: `${what} ${name} (${mb(size)})`,
-          })
-          .execute();
-        return (
-          reply
-            .header(
-              'content-type',
-              kind === 'backup' ? 'application/octet-stream' : 'application/json',
-            )
-            .header('content-disposition', `attachment; filename="${name}"`)
-            .header('content-length', String(size))
-            // NEVER CACHED, by a browser or anything between: it is the whole
-            // archive, and a copy in a cache is a copy nobody decided to make.
-            .header('cache-control', 'no-store')
-            .send(createReadStream(file))
-        );
-      },
-    );
+        start(kind, () => (kind === 'backup' ? backup(cfg) : exportNow(cfg)));
+        return state();
+      });
+
+      // Not through `route()`: the answer is the file, streamed, not JSON.
+      copying.get<{ Params: { kind: string; name: string } }>(
+        C.COPY_DOWNLOAD_PATH,
+        async (request, reply) => {
+          const user = requireUser(request);
+          const cfg = usable(deps.config);
+          if (typeof cfg === 'string') throw new HttpError(503, 'not_configured', cfg);
+          const { kind, name } = request.params;
+          // ONLY A NAME THIS SERVER LISTS. Matched against the folder's own
+          // listing, never joined onto a path as given, so nothing in it can
+          // reach another file.
+          const dir = kind === 'backup' ? path.resolve(cfg.BACKUP_DIR) : exportsDir(cfg);
+          const pick = kind === 'backup' ? ours : kind === 'export' ? ourExports : () => [];
+          let names: string[] = [];
+          try {
+            names = pick(await readdir(dir));
+          } catch {
+            names = [];
+          }
+          if (!names.includes(name)) throw notFound('There is no such file on this server.');
+          const file = path.join(dir, name);
+          const { size } = await stat(file);
+          const what = kind === 'backup' ? 'the database backup' : 'the archive export';
+          await db
+            .insertInto('role_audit')
+            .values({
+              actor_email: user.email,
+              subject_email: user.email,
+              axis: 'archive',
+              action: 'download',
+              detail: `${what} ${name} (${mb(size)})`,
+            })
+            .execute();
+          return (
+            reply
+              .header(
+                'content-type',
+                kind === 'backup' ? 'application/octet-stream' : 'application/json',
+              )
+              .header('content-disposition', `attachment; filename="${name}"`)
+              .header('content-length', String(size))
+              // NEVER CACHED, by a browser or anything between: it is the whole
+              // archive, and a copy in a cache is a copy nobody decided to make.
+              .header('cache-control', 'no-store')
+              .send(createReadStream(file))
+          );
+        },
+      );
+      copied();
+    });
     done();
   });
 }

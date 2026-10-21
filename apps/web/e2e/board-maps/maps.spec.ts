@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { codeIn, countTo, identityState, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor } from '../second-factor.ts';
 
 /** A launched logbook with approved reports in six places (api/src/maps/dev-state.ts). */
 function fixture(): { id: number; slug: string; title: string } {
@@ -57,6 +58,7 @@ test('a map in each of the board’s slots, no count under the threshold, and no
   expect((await admin.post('/api/auth/code', { data: { email } })).ok()).toBe(true);
   const code = codeIn(await lastMessageTo(email, before));
   expect((await admin.post('/api/auth/sign-in', { data: { email, code } })).ok()).toBe(true);
+  await passSecondFactor(admin, email);
   const lb = fixture();
   const placed = await admin.put(`/api/admin/maps/places/logbooks/${String(lb.id)}`, {
     data: { key: 'where' },

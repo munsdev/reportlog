@@ -1,22 +1,19 @@
 /**
  * Sign staff in once, the way a person would (a code read from the email the
- * server wrote), and keep each session for the staff screens' tests
+ * server wrote, then a code from an authenticator app set up on the way:
+ * plan E, E3), and keep each session for the staff screens' tests
  * (`test.use({ storageState: ADMIN })`, or `MODERATOR`).
  */
 import { test as setup } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import { ADMIN, MODERATOR } from './auth.ts';
-import { codeIn, countTo, identityState, lastMessageTo } from './identity/mail.ts';
+import { identityState } from './identity/mail.ts';
+import { signInWithSecondFactor } from './second-factor.ts';
 
 async function signInAs(request: APIRequestContext, role: string, path: string) {
   const email = `e2e-${role}-${Date.now().toString(36)}@example.org`;
   identityState('seat', email, role);
-  const before = countTo(email);
-  const asked = await request.post('/api/auth/code', { data: { email } });
-  if (!asked.ok()) throw new Error(`asking for a code failed: ${await asked.text()}`);
-  const code = codeIn(await lastMessageTo(email, before));
-  const signed = await request.post('/api/auth/sign-in', { data: { email, code } });
-  if (!signed.ok()) throw new Error(`signing in failed: ${await signed.text()}`);
+  await signInWithSecondFactor(request, email);
   await request.storageState({ path });
 }
 

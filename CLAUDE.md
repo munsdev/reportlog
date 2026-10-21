@@ -58,7 +58,9 @@ make a feature easier. Change the feature.
 - **The slug is never edited, and a launched logbook is never deleted or
   unlaunched.** _Database trigger._
 - **Launching is a one-way door.** Afterwards a logbook may gain a new
-  OPTIONAL question and nothing else. _Database trigger on `logbook_fields`._
+  OPTIONAL question and have its wording (labels, help) changed, and nothing
+  else: keys, kinds, codes, order and conditions are frozen (decision 48).
+  _Database trigger on `logbook_fields`._
   Adding an optional question is safe only because of the absent-key rule.
 - **Write side and read side agree byte for byte.** `normalizeReportFields`
   and `rebuildSealedObject` live side by side in `packages/seal/src/report.ts`.
@@ -94,6 +96,11 @@ make a feature easier. Change the feature.
   Lists share answer normalizing through `packages/fields`, which is kept
   apart from sealing for exactly this reason.
 - **The transparency log is never rewritten**, not even to correct it.
+- **Every role holder proves a second factor** (decision 50, plan E E3). Until
+  a session has, `userForSession` hands every route a person with no role and
+  no memberships, so no guard needs to ask. The actions plan-e.md lists also
+  take `stepUpGuard()` (`apps/api/src/identity/stepUp.ts`) on a scope of their
+  own; a new one joins `LISTED` in `apps/api/test/db/second-factor.test.ts`.
 - **Nothing is filterable unless an operator said so.** No built-in date or
   location filter.
 - **No third-party requests from the site.** No CDN, no web fonts from

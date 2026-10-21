@@ -462,7 +462,7 @@ describe('bulk decline', () => {
     expect(r.status).toBe(403);
   });
 
-  it.todo('asks for the second factor again within 5 minutes (PE1 step-up, wired at merge)');
+  // Step-up on this route is tested with the others in second-factor.test.ts (LISTED).
 });
 
 // ── pause intake and the puzzle ─────────────────────────────────────────
@@ -577,12 +577,10 @@ describe('pause intake', () => {
     ).toEqual(['normal', 'harder']);
   });
 
+  // Step-up on both switches is tested in second-factor.test.ts (LISTED).
   it('the switch log cannot be rewritten', async () => {
     await expect(h.db.deleteFrom('site_switch_log').execute()).rejects.toThrow(/append-only/);
   });
-
-  it.todo('pause intake asks for the second factor again (PE1 step-up, wired at merge)');
-  it.todo('the puzzle switch asks for the second factor again (PE1 step-up, wired at merge)');
 });
 
 // ── the organization lane ───────────────────────────────────────────────

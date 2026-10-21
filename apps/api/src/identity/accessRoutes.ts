@@ -14,7 +14,15 @@ import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { setOutsideAccess } from './doors.ts';
-import { grantsAccess, notAllowed, requireGranter, requireRole, requireUser } from './guards.ts';
+import {
+  grantsAccess,
+  notAllowed,
+  requireGranter,
+  requireRole,
+  requireUser,
+  roleGuard,
+} from './guards.ts';
+import { stepUpGuard } from './stepUp.ts';
 import { addressFrom, bodyOf, iso, refused } from './http.ts';
 import { limiter } from './limiter.ts';
 import { CODE_TTL_MS, createCode, subjects, verifyCode } from './otp.ts';
@@ -75,20 +83,27 @@ export function accessRoutes(
 ): void {
   const handoverCodes = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
 
-  route(app, C.setSystemRole, async ({ request }) => {
-    const actor = requireGranter(request);
-    const { email, role } = bodyOf(C.setSystemRole, request);
-    // A journalist is made only by approving an access request (journalists/vetting.ts),
-    // so every one has a request, an agreement and a recorded approval behind it.
-    if (role === 'journalist') throw notAllowed(notPermittedMessage(role));
-    const out = await setSystemRole(db, { actor, email, role });
-    if (out.ok) return out.unchanged ? { ok: true as const, unchanged: true } : out;
-    if (out.reason === 'not-permitted') throw notAllowed(notPermittedMessage(role));
-    throw refused(
-      out.reason === 'unknown-role' || out.reason === 'bad-email' ? 400 : 403,
-      out.reason,
-      ROLE_REFUSALS[out.reason],
-    );
+  // Granting or removing a role asks for the second factor again (plan E,
+  // E3): a scope of its own, so a route added to it cannot forget.
+  void app.register((granting, _opts, done) => {
+    granting.addHook('preHandler', roleGuard(['admin', 'access_manager']));
+    granting.addHook('preHandler', stepUpGuard());
+    route(granting, C.setSystemRole, async ({ request }) => {
+      const actor = requireGranter(request);
+      const { email, role } = bodyOf(C.setSystemRole, request);
+      // A journalist is made only by approving an access request (journalists/vetting.ts),
+      // so every one has a request, an agreement and a recorded approval behind it.
+      if (role === 'journalist') throw notAllowed(notPermittedMessage(role));
+      const out = await setSystemRole(db, { actor, email, role });
+      if (out.ok) return out.unchanged ? { ok: true as const, unchanged: true } : out;
+      if (out.reason === 'not-permitted') throw notAllowed(notPermittedMessage(role));
+      throw refused(
+        out.reason === 'unknown-role' || out.reason === 'bad-email' ? 400 : 403,
+        out.reason,
+        ROLE_REFUSALS[out.reason],
+      );
+    });
+    done();
   });
 
   route(app, C.listPeople, async ({ request }) => {
@@ -174,50 +189,62 @@ export function accessRoutes(
     };
   });
 
-  /**
-   * A code to the OWNER'S OWN address before they may offer the seat. The
-   * session proves somebody signed in as the owner within the last day, on a
-   * laptop that may now be unattended; the code proves somebody holding the
-   * owner's mailbox is at the keyboard now. The recipient proves themselves
-   * by accepting.
-   */
-  route(app, C.requestHandoverCode, async ({ request }) => {
-    const user = requireUser(request);
-    if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
-    // Checked before a code is minted: a code for an address that can never
-    // receive the seat would fail at the last step for a reason nobody gave.
-    const to = addressFrom(bodyOf(C.requestHandoverCode, request).email);
-    if (to === user.email) throw refused(400, 'self', 'You already hold it.');
-    handoverCodes.take(user.email);
-    const code = await createCode(db, subjects.handover(user.email, to));
-    await mailer.send({ to: user.email, ...handoverCodeEmail(to, code) });
-    return { ok: true as const, sentTo: user.email };
-  });
+  // Handing the owner's seat on is granting a role: the second factor
+  // again, as above.
+  void app.register((handing, _opts, done) => {
+    handing.addHook('preHandler', (request) => {
+      if (requireUser(request).role !== 'owner') {
+        throw notAllowed('Only the owner can hand the deployment on.');
+      }
+      return Promise.resolve();
+    });
+    handing.addHook('preHandler', stepUpGuard());
+    /**
+     * A code to the OWNER'S OWN address before they may offer the seat. The
+     * session proves somebody signed in as the owner within the last day, on a
+     * laptop that may now be unattended; the code proves somebody holding the
+     * owner's mailbox is at the keyboard now. The recipient proves themselves
+     * by accepting.
+     */
+    route(handing, C.requestHandoverCode, async ({ request }) => {
+      const user = requireUser(request);
+      if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
+      // Checked before a code is minted: a code for an address that can never
+      // receive the seat would fail at the last step for a reason nobody gave.
+      const to = addressFrom(bodyOf(C.requestHandoverCode, request).email);
+      if (to === user.email) throw refused(400, 'self', 'You already hold it.');
+      handoverCodes.take(user.email);
+      const code = await createCode(db, subjects.handover(user.email, to));
+      await mailer.send({ to: user.email, ...handoverCodeEmail(to, code) });
+      return { ok: true as const, sentTo: user.email };
+    });
 
-  route(app, C.offerHandover, async ({ request }) => {
-    const user = requireUser(request);
-    // The role first, then the code, so nobody else can burn codes here.
-    if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
-    const { email, code } = bodyOf(C.offerHandover, request);
-    const to = addressFrom(email);
-    // Against THIS recipient, so the address in the owner's mailbox and the
-    // address the seat goes to cannot differ.
-    if (!(await verifyCode(db, subjects.handover(user.email, to), code))) {
-      throw refused(
-        401,
-        'bad_code',
-        'That code is wrong, has expired, or was sent for a different address. Ask for another for this one.',
-      );
-    }
-    const out = await proposeTransfer(db, { actor: user, email: to });
-    if (!out.ok) {
-      throw refused(
-        out.reason === 'not-owner' ? 403 : 400,
-        out.reason,
-        out.reason === 'self' ? 'You already hold it.' : 'Enter a valid email address.',
-      );
-    }
-    return { ok: true as const, to: out.to, expiresAt: iso(out.expiresAt) };
+    route(handing, C.offerHandover, async ({ request }) => {
+      const user = requireUser(request);
+      // The role first, then the code, so nobody else can burn codes here.
+      if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
+      const { email, code } = bodyOf(C.offerHandover, request);
+      const to = addressFrom(email);
+      // Against THIS recipient, so the address in the owner's mailbox and the
+      // address the seat goes to cannot differ.
+      if (!(await verifyCode(db, subjects.handover(user.email, to), code))) {
+        throw refused(
+          401,
+          'bad_code',
+          'That code is wrong, has expired, or was sent for a different address. Ask for another for this one.',
+        );
+      }
+      const out = await proposeTransfer(db, { actor: user, email: to });
+      if (!out.ok) {
+        throw refused(
+          out.reason === 'not-owner' ? 403 : 400,
+          out.reason,
+          out.reason === 'self' ? 'You already hold it.' : 'Enter a valid email address.',
+        );
+      }
+      return { ok: true as const, to: out.to, expiresAt: iso(out.expiresAt) };
+    });
+    done();
   });
 
   route(app, C.cancelHandover, async ({ request }) => {

@@ -10,6 +10,8 @@ import type { OrgRole, SystemRole } from '@reportlog/access';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { STAFF_SESSION_MS, hasFactor, needsSecondFactor } from './secondFactor.ts';
+import type { SecondFactorState } from './secondFactor.ts';
 import { randomToken, sha256Hex } from './secrets.ts';
 
 export const SESSION_COOKIE = 'session_token';
@@ -24,8 +26,20 @@ export interface Membership {
 export interface SignedIn {
   id: number;
   email: string;
+  /**
+   * The role this request may act with. A role holder whose session has not
+   * proved a second factor gets `user` here, and no memberships: every guard
+   * reads these, so none of them can forget to ask (secondFactor.ts).
+   */
   role: SystemRole;
   memberships: Membership[];
+  /** The role on their account, whatever this session has proved. For the website only. */
+  heldRole: SystemRole;
+  secondFactor: SecondFactorState;
+  /** When this session last proved the factor for a step-up (stepUp.ts). */
+  stepUpAt: Date | null;
+  /** The session row, for the routes that act on the asking session itself. */
+  sessionHash: string;
   /** The tester flag (workstream G2's feedback tracker). Grants nothing else. */
   tester: boolean;
   /** The team-member flag. Opens the team's pages; grants nothing else. */
@@ -54,21 +68,30 @@ export const cookieOptions = (maxAgeMs: number) =>
     maxAge: Math.floor(maxAgeMs / 1000),
   }) as const;
 
-export async function createSession(db: Kysely<DB>, userId: number): Promise<string> {
+/**
+ * `ttlMs` is SESSION_TTL_MS for somebody with no role, and PENDING_SESSION_MS
+ * for a role holder, whose session becomes a 12-hour one only when it proves
+ * a second factor (secondFactor.ts).
+ */
+export async function createSession(
+  db: Kysely<DB>,
+  userId: number,
+  ttlMs = SESSION_TTL_MS,
+): Promise<string> {
   const token = randomToken();
   await db
     .insertInto('sessions')
     .values({
       token_hash: sha256Hex(token),
       user_id: userId,
-      expires_at: new Date(Date.now() + SESSION_TTL_MS),
+      expires_at: new Date(Date.now() + ttlMs),
     })
     .execute();
   return token;
 }
 
-export function setSessionCookie(reply: FastifyReply, token: string): void {
-  reply.setCookie(SESSION_COOKIE, token, cookieOptions(SESSION_TTL_MS));
+export function setSessionCookie(reply: FastifyReply, token: string, ttlMs = SESSION_TTL_MS): void {
+  reply.setCookie(SESSION_COOKIE, token, cookieOptions(ttlMs));
 }
 
 export async function destroySession(db: Kysely<DB>, token: string): Promise<void> {
@@ -98,16 +121,43 @@ export async function userForSession(
   const row = await db
     .selectFrom('sessions as s')
     .innerJoin('users as u', 'u.id', 's.user_id')
-    .select(['u.id', 'u.email', 'u.role', 'u.is_tester', 'u.is_team_member', 'u.desks'])
+    .select([
+      'u.id',
+      'u.email',
+      'u.role',
+      'u.is_tester',
+      'u.is_team_member',
+      'u.desks',
+      's.token_hash',
+      's.second_factor_at',
+      's.step_up_at',
+    ])
     .where('s.token_hash', '=', sha256Hex(token))
     .where('s.expires_at', '>', new Date())
     .executeTakeFirst();
   if (!row || !isSystemRole(row.role)) return null;
+  const memberships = await membershipsFor(db, row.id);
+  const needed = needsSecondFactor(row.role, memberships);
+  // A proof older than a staff session is no proof, whatever expires_at says.
+  const proved =
+    row.second_factor_at !== null && Date.now() - row.second_factor_at.getTime() < STAFF_SESSION_MS;
+  const secondFactor: SecondFactorState = !needed
+    ? 'not-needed'
+    : proved
+      ? 'done'
+      : (await hasFactor(db, row.id))
+        ? 'verify'
+        : 'set-up';
+  const pending = secondFactor === 'set-up' || secondFactor === 'verify';
   return {
     id: row.id,
     email: row.email,
-    role: row.role,
-    memberships: await membershipsFor(db, row.id),
+    role: pending ? 'user' : row.role,
+    memberships: pending ? [] : memberships,
+    heldRole: row.role,
+    secondFactor,
+    stepUpAt: pending ? null : row.step_up_at,
+    sessionHash: row.token_hash,
     tester: row.is_tester,
     teamMember: row.is_team_member,
     desks: row.desks,

@@ -4,6 +4,8 @@
  *
  * This is courtesy, not security. The server refuses the same people on
  * every staff route regardless; this only saves them a screen of errors.
+ * Somebody who holds the role and has not yet proved a second factor (plan
+ * E, E3) is shown the way to it instead.
  * Rank comes from @reportlog/access, so `admin` admits the owner. Several
  * roles mean any of them: admin does not imply moderator, so a screen for
  * both names both.
@@ -12,6 +14,7 @@ import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
 import { useLocation } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { SecondFactorGate, pendingSecondFactor } from './secondFactor.tsx';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 
@@ -35,6 +38,11 @@ export function StaffOnly({
   const { pathname } = useLocation();
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next={pathname} />;
+  // Holding the role, without the second factor yet: the way to it, not a refusal.
+  const held = me.data.heldRole;
+  if (pendingSecondFactor(me.data) && roles.some((r) => roleSatisfies(held, r))) {
+    return <SecondFactorGate>{null}</SecondFactorGate>;
+  }
   const role = me.data.role;
   if (!roles.some((r) => roleSatisfies(role, r))) {
     return (
@@ -47,5 +55,5 @@ export function StaffOnly({
       </section>
     );
   }
-  return <>{children}</>;
+  return <SecondFactorGate>{children}</SecondFactorGate>;
 }

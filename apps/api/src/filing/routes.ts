@@ -24,6 +24,7 @@ import { afterCommit, takeDownForReporter } from '../files/publication.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { notAllowed, requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import { normalizeEmail } from '../identity/secrets.ts';
 import { isPermission, permissionsFor, setPermission } from '../permissions/log.ts';
@@ -121,10 +122,15 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
       return { open: stored !== false, stored };
     };
     route(scope, C.getIntakeSwitchAdmin, state);
-    route(scope, C.setIntakeSwitch, async ({ request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.setIntakeSwitch>>(C.setIntakeSwitch, request);
-      await setIntakeSwitch(deps.db, b.open, requireUser(request).email);
-      return state();
+    // Pausing intake asks for the second factor again (plan E, E3).
+    void scope.register((pause) => {
+      pause.addHook('preHandler', stepUpGuard());
+      route(pause, C.setIntakeSwitch, async ({ request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.setIntakeSwitch>>(C.setIntakeSwitch, request);
+        await setIntakeSwitch(deps.db, b.open, requireUser(request).email);
+        return state();
+      });
+      return Promise.resolve();
     });
     return Promise.resolve();
   });

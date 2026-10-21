@@ -12,6 +12,7 @@ import type { Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const filingState = (...args: string[]) =>
@@ -28,6 +29,7 @@ async function signIn(page: Page, email: string) {
   const code = codeIn(await lastMessageTo(email, before));
   const signed = await page.request.post('/api/auth/sign-in', { data: { email, code } });
   expect(signed.ok(), await signed.text()).toBe(true);
+  await passSecondFactor(page.request, email);
 }
 
 test('somebody who coordinates nothing is told so', async ({ page }) => {

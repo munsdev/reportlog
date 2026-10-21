@@ -17,10 +17,9 @@
  *   - anybody signed in: an organization's intake links (its managers, and
  *     those who grant access), and joining by one.
  *
- * TODO(PE1 step-up): bulk decline, pause intake and the puzzle switch each
- * need the second factor again within 5 minutes (docs/plan-e.md, Step-up).
- * Session PE1 builds the check; the managing session adds it to the three
- * routes marked STEP-UP below at merge. Nothing here builds its own.
+ * Bulk decline (reports and tip links), pause intake and the puzzle switch
+ * each ask for the second factor again within 5 minutes (docs/plan-e.md,
+ * Step-up), through `stepUpGuard` on a scope of their own.
  */
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
@@ -31,6 +30,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { grantsAccess, notAllowed, requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { launchedLogbooks, logbookBySlug } from '../logbooks/logbooks.ts';
 import {
@@ -109,46 +109,49 @@ export async function floodRoutes(app: FastifyInstance, deps: FloodRouteDeps): P
       puzzle: await puzzleLevel(db),
     }));
 
-    // STEP-UP (PE1): add the step-up check here at merge.
-    route(scope, C.bulkDeclineReports, async ({ request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.bulkDeclineReports>>(C.bulkDeclineReports, request);
-      return bulkDecline(db, {
-        threadIds: b.thread_ids,
-        reasonCode: b.reason_code,
-        comment: b.comment,
-        filter: b.filter,
-        actor: me(request),
-      });
-    });
-
-    route(scope, C.bulkDeclineLinks, async ({ request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.bulkDeclineLinks>>(C.bulkDeclineLinks, request);
-      if (!deps.linkKeys) {
-        throw new HttpError(
-          503,
-          'no_contact_key',
-          'This site has no CONTACT_KEY yet, so it keeps no links. Tell whoever runs the server.',
-        );
-      }
-      return bulkDeclineLinks(db, await deps.linkKeys(), {
-        from: when(b.from, 'start'),
-        to: when(b.to, 'end'),
-        actor: me(request),
-      });
-    });
-
     route(scope, C.getSwitches, switchState);
-    // STEP-UP (PE1): add the step-up check here at merge.
-    route(scope, C.setIntakePause, async ({ request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.setIntakePause>>(C.setIntakePause, request);
-      await setIntakePaused(db, b.paused, me(request));
-      return switchState();
-    });
-    // STEP-UP (PE1): add the step-up check here at merge.
-    route(scope, C.setPuzzleLevel, async ({ request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.setPuzzleLevel>>(C.setPuzzleLevel, request);
-      await setPuzzleLevel(db, b.level, me(request));
-      return switchState();
+    // Bulk declines and both switches ask for the second factor again
+    // (plan E, E3), in a scope of their own so whatever joins it asks too.
+    void scope.register((guarded) => {
+      guarded.addHook('preHandler', stepUpGuard());
+      route(guarded, C.bulkDeclineReports, async ({ request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.bulkDeclineReports>>(C.bulkDeclineReports, request);
+        return bulkDecline(db, {
+          threadIds: b.thread_ids,
+          reasonCode: b.reason_code,
+          comment: b.comment,
+          filter: b.filter,
+          actor: me(request),
+        });
+      });
+
+      route(guarded, C.bulkDeclineLinks, async ({ request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.bulkDeclineLinks>>(C.bulkDeclineLinks, request);
+        if (!deps.linkKeys) {
+          throw new HttpError(
+            503,
+            'no_contact_key',
+            'This site has no CONTACT_KEY yet, so it keeps no links. Tell whoever runs the server.',
+          );
+        }
+        return bulkDeclineLinks(db, await deps.linkKeys(), {
+          from: when(b.from, 'start'),
+          to: when(b.to, 'end'),
+          actor: me(request),
+        });
+      });
+
+      route(guarded, C.setIntakePause, async ({ request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.setIntakePause>>(C.setIntakePause, request);
+        await setIntakePaused(db, b.paused, me(request));
+        return switchState();
+      });
+      route(guarded, C.setPuzzleLevel, async ({ request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.setPuzzleLevel>>(C.setPuzzleLevel, request);
+        await setPuzzleLevel(db, b.level, me(request));
+        return switchState();
+      });
+      return Promise.resolve();
     });
 
     route(scope, C.listOrganizationLane, async () => ({

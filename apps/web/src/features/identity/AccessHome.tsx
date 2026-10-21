@@ -15,6 +15,7 @@ import {
   listPeople,
   offerHandover,
   requestHandoverCode,
+  resetSecondFactor,
   setSystemRole,
   updateSiteAccess,
 } from '@reportlog/contracts';
@@ -27,6 +28,7 @@ import { call } from '../../lib/api.ts';
 import { desksFor } from './desks.ts';
 import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
+import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInPrompt } from './SignInPrompt.tsx';
 import { Done, ErrorText, Panel, TextField } from './ui.tsx';
 
@@ -36,31 +38,34 @@ export function AccessHome() {
   if (!me.data?.signedIn) return <SignInPrompt next="/access" />;
   const user = me.data;
   return (
-    <div className="space-y-8">
-      <h1 className="font-display text-3xl font-bold">
-        {user.grantsAccess ? 'Access' : 'Your account'}
-      </h1>
-      <YourAccount me={user} />
-      <OwnerSeat me={user} />
-      {user.grantsAccess && (
-        <>
-          <nav aria-label="Access" className="flex flex-wrap gap-4">
-            <Link to="/access/orgs" className="underline">
-              Organizations
-            </Link>
-            <Link to="/access/roster" className="underline">
-              Roster
-            </Link>
-            <Link to="/access/audit" className="underline">
-              Who changed what
-            </Link>
-          </nav>
-          <GrantRole me={user} />
-          <People />
-        </>
-      )}
-      {hasAdminAuthority(user.role) && <SitePassword />}
-    </div>
+    <SecondFactorGate>
+      <div className="space-y-8">
+        <h1 className="font-display text-3xl font-bold">
+          {user.grantsAccess ? 'Access' : 'Your account'}
+        </h1>
+        <YourAccount me={user} />
+        <OwnerSeat me={user} />
+        {user.grantsAccess && (
+          <>
+            <nav aria-label="Access" className="flex flex-wrap gap-4">
+              <Link to="/access/orgs" className="underline">
+                Organizations
+              </Link>
+              <Link to="/access/roster" className="underline">
+                Roster
+              </Link>
+              <Link to="/access/audit" className="underline">
+                Who changed what
+              </Link>
+            </nav>
+            <GrantRole me={user} />
+            <People />
+          </>
+        )}
+        {user.role === 'owner' && <ResetSecondFactor />}
+        {hasAdminAuthority(user.role) && <SitePassword />}
+      </div>
+    </SecondFactorGate>
   );
 }
 
@@ -92,6 +97,15 @@ function YourAccount({ me }: { me: SignedInMe }) {
             </li>
           ))}
         </ul>
+      )}
+      {me.secondFactor === 'done' && (
+        <p>
+          Your role asks for a second factor when you sign in.{' '}
+          <Link to="/access/security" className="underline">
+            Your authenticator app, passkeys and recovery codes
+          </Link>
+          .
+        </p>
       )}
       {me.tester && <p>You are a tester: you can open the feedback tracker.</p>}
       {me.teamMember && <TeamDesks me={me} />}
@@ -488,6 +502,58 @@ function SitePassword() {
         <ErrorText error={save.error} />
         <Button type="submit" variant="secondary" disabled={save.isPending || !password}>
           Set the password
+        </Button>
+      </form>
+    </Panel>
+  );
+}
+
+/**
+ * The owner clears somebody else's second factor (plan E, E3): for the
+ * person who lost their phone and their recovery codes. Asks for the
+ * owner's own factor first, and is recorded in "Who changed what". The
+ * owner's own is reset only on the server.
+ */
+function ResetSecondFactor() {
+  const [email, setEmail] = useState('');
+  const [doneFor, setDoneFor] = useState<string | null>(null);
+  const reset = useMutation({
+    mutationFn: () => call(resetSecondFactor, { body: { email } }),
+    onSuccess: () => {
+      setDoneFor(email.trim());
+      setEmail('');
+    },
+  });
+  return (
+    <Panel title="Reset somebody's second factor">
+      <p>
+        For somebody who has lost their authenticator app, their passkeys and their recovery codes.
+        It signs them out everywhere; their next sign-in sets a new one up. Your own is reset only
+        on the server: <code>sudo reportlog reset-2fa</code> and your address.
+      </p>
+      <form
+        className="space-y-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setDoneFor(null);
+          reset.mutate();
+        }}
+      >
+        <TextField
+          label="Whose second factor to reset (an email address)"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+          }}
+        />
+        <ErrorText error={reset.error} />
+        {doneFor && (
+          <Done>Reset. {doneFor} sets a new second factor up when they next sign in.</Done>
+        )}
+        <Button type="submit" variant="secondary" disabled={reset.isPending}>
+          Reset their second factor
         </Button>
       </form>
     </Panel>

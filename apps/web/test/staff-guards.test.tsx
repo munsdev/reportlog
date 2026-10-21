@@ -70,6 +70,8 @@ const OPEN_IN_STAFF = {
     'an invitee with no account reads what they are invited to before signing in',
   '/(staff)/access/':
     'every signed-in person\'s own account page ("Your account"); its staff parts show only to those who grant access',
+  '/(staff)/access/security':
+    "every signed-in person's own second factor; it says so to an account that needs none (plan E, E3)",
 } as const;
 
 /** Staff screens outside the `(staff)` folder. */
@@ -162,6 +164,9 @@ const NO_ROLE = {
   tester: false,
   teamMember: false,
   desks: [],
+  secondFactor: 'not-needed',
+  heldRole: 'user',
+  stepUpUntil: null,
 };
 
 /** A server that knows who is asking and refuses everything else as a staff route would. */

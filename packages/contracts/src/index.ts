@@ -19,3 +19,4 @@ export * from './platform.ts';
 export * from './journalists.ts';
 export * from './links.ts';
 export * from './flood.ts';
+export * from './twoFactor.ts';

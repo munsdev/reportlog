@@ -24,6 +24,7 @@ import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
 import { identity } from './identity/index.ts';
 import { logoRoutes } from './identity/logoRoutes.ts';
+import { twoFactorKeyFrom } from './identity/twoFactorKey.ts';
 import { listButtons } from './lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
@@ -56,6 +57,7 @@ export interface AppDeps {
         | 'TRUST_PROXY'
         | 'CONTACT_KEY'
         | 'CONTACT_KEY_PREVIOUS'
+        | 'TWO_FACTOR_KEY'
         | 'PUBLIC_REF_PREFIX'
         | 'FILING_SENDS_PER_CLIENT'
         | 'FILING_CONFIRMS_PER_CLIENT'
@@ -146,7 +148,12 @@ export async function buildApp({
   const mail = mailer ?? stderrMailer();
   const siteOrigin = config.SITE_ORIGIN ?? 'http://127.0.0.1:5173';
   // First: its hooks must see every route registered after it.
-  await identity(app, { db, mailer: mail, siteOrigin });
+  await identity(app, {
+    db,
+    mailer: mail,
+    siteOrigin,
+    twoFactorKey: twoFactorKeyFrom(config.TWO_FACTOR_KEY),
+  });
   telemetryRoutes(app, { tracker: errors ?? offTracker });
   healthRoutes(app, db);
   publicationRoutes(app);

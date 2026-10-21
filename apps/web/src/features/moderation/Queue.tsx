@@ -162,8 +162,8 @@ const selectable = (r: QueueItem) => r.moderation_status !== 'valid' && !r.withd
  * flood's addresses are whatever the flood typed. Asked twice: a reason,
  * then "Decline N", so one click never declines a page.
  *
- * TODO(PE1 step-up): the server will ask for the second factor again; the
- * screen then shows PE1's step-up prompt before this goes.
+ * The server asks for the second factor again (step-up); the API client
+ * shows the prompt and sends this once more (lib/api.ts).
  */
 function BulkDecline({
   picked,

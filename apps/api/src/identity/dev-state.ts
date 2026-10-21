@@ -15,6 +15,10 @@
  *       Subscribe the address to hourly digests, approve the newest report
  *       that may be published, and run the hourly digest, so the email
  *       lands in MAIL_OUTBOX with its stop link (workstream A2).
+ *   node src/identity/dev-state.ts stale-step-up <email>
+ *       Age every session of the address's step-up past its five minutes
+ *       (plan E, E3), so a browser test meets the step-up dialog without
+ *       waiting for it.
  *   node src/identity/dev-state.ts subscription <email>
  *       Print how often the address hears about reports: hourly, weekly or
  *       none. How a browser test checks that opening a link changed nothing.
@@ -101,6 +105,14 @@ try {
       log: () => undefined,
       frequency: 'hourly',
     });
+  } else if (mode === 'stale-step-up' && password) {
+    await db
+      .updateTable('sessions')
+      .set({ step_up_at: sql<Date>`now() - interval '10 minutes'` })
+      .where('user_id', 'in', (eb) =>
+        eb.selectFrom('users').select('id').where('email', '=', password.toLowerCase()),
+      )
+      .execute();
   } else if (mode === 'subscription' && password) {
     const row = await db
       .selectFrom('digest_subscriptions as s')
@@ -111,7 +123,7 @@ try {
     process.stdout.write(`${row?.frequency ?? 'none'}\n`);
   } else {
     throw new Error(
-      'Usage: dev-state.ts set-up | fresh-install <password> | seat <email> <role> | digest-for <email> | subscription <email>',
+      'Usage: dev-state.ts set-up | fresh-install <password> | seat <email> <role> | digest-for <email> | stale-step-up <email> | subscription <email>',
     );
   }
 } finally {

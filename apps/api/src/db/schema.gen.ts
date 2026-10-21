@@ -3,17 +3,19 @@
  * Please do not edit it manually.
  */
 
-import type { ColumnType } from 'kysely';
+import type { ColumnType } from "kysely";
 
-export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[] ? U[] : ArrayTypeImpl<T>;
+export type ArrayType<T> = ArrayTypeImpl<T> extends (infer U)[]
+  ? U[]
+  : ArrayTypeImpl<T>;
 
-export type ArrayTypeImpl<T> =
-  T extends ColumnType<infer S, infer I, infer U> ? ColumnType<S[], I[], U[]> : T[];
+export type ArrayTypeImpl<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S[], I[], U[]>
+  : T[];
 
-export type Generated<T> =
-  T extends ColumnType<infer S, infer I, infer U>
-    ? ColumnType<S, I | undefined, U>
-    : ColumnType<T, T | undefined, T>;
+export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
+  ? ColumnType<S, I | undefined, U>
+  : ColumnType<T, T | undefined, T>;
 
 export type Json = JsonValue;
 
@@ -866,6 +868,8 @@ export interface RoleAudit {
 export interface Sessions {
   created_at: Generated<Timestamp>;
   expires_at: Timestamp;
+  second_factor_at: Timestamp | null;
+  step_up_at: Timestamp | null;
   token_hash: string;
   user_id: number;
 }
@@ -931,6 +935,48 @@ export interface ThreatEvents {
   note: string | null;
   subject_kind: string;
   subject_ref: string;
+}
+
+export interface TwoFactorAttempts {
+  failures: Generated<number>;
+  locked_until: Timestamp | null;
+  user_id: number;
+}
+
+export interface TwoFactorChallenges {
+  challenge: string;
+  expires_at: Timestamp;
+  purpose: string;
+  session_hash: string;
+}
+
+export interface TwoFactorPasskeys {
+  counter: Generated<number>;
+  created_at: Generated<Timestamp>;
+  credential_id: string;
+  id: Generated<number>;
+  last_used_at: Timestamp | null;
+  name: string;
+  public_key: Buffer;
+  transports: Generated<string[]>;
+  user_id: number;
+}
+
+export interface TwoFactorRecoveryCodes {
+  code_hash: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  used_at: Timestamp | null;
+  user_id: number;
+}
+
+export interface TwoFactorTotp {
+  confirmed_at: Timestamp | null;
+  last_step: number | null;
+  pending_at: Timestamp | null;
+  pending_secret_enc: Buffer | null;
+  secret_enc: Buffer | null;
+  user_id: number;
 }
 
 export interface UploadSlots {
@@ -1063,6 +1109,11 @@ export interface DB {
   site_switch_log: SiteSwitchLog;
   storage_deletions: StorageDeletions;
   threat_events: ThreatEvents;
+  two_factor_attempts: TwoFactorAttempts;
+  two_factor_challenges: TwoFactorChallenges;
+  two_factor_passkeys: TwoFactorPasskeys;
+  two_factor_recovery_codes: TwoFactorRecoveryCodes;
+  two_factor_totp: TwoFactorTotp;
   upload_slots: UploadSlots;
   users: Users;
 }

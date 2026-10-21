@@ -105,9 +105,9 @@ async function record(
  * Pause or resume. Saying what it already is records nothing: the log is of
  * uses, and a second "pause" is not a second pause.
  *
- * TODO(PE1 step-up): pausing and resuming need the second factor again,
- * within 5 minutes (docs/plan-e.md, "Step-up"). The managing session wires
- * PE1's step-up check into the route at merge (moderation/floodRoutes.ts).
+ * Pausing and resuming ask for the second factor again, within 5 minutes
+ * (docs/plan-e.md, "Step-up"): `stepUpGuard` on the route's scope in
+ * moderation/floodRoutes.ts.
  */
 export async function setIntakePaused(db: Kysely<DB>, paused: boolean, actor: string) {
   await db.transaction().execute(async (trx) => {
@@ -127,7 +127,7 @@ export async function setIntakePaused(db: Kysely<DB>, paused: boolean, actor: st
   });
 }
 
-/** TODO(PE1 step-up): as setIntakePaused. */
+/** Step-up guarded at the route, as setIntakePaused. */
 export async function setPuzzleLevel(db: Kysely<DB>, level: PuzzleLevel, actor: string) {
   await db.transaction().execute(async (trx) => {
     const row = await trx

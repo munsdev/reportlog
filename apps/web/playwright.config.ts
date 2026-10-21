@@ -219,6 +219,9 @@ export default defineConfig({
         // Files: a fixed key, a directory of its own, and the media worker
         // inside the server, so an attached photo is really re-encoded.
         FILES_KEY: Buffer.alloc(32, 8).toString('base64'),
+        // Staff authenticator apps (plan E, E3): the suite sets them up and
+        // signs in with them (e2e/second-factor.ts).
+        TWO_FACTOR_KEY: Buffer.alloc(32, 7).toString('base64'),
         FILES_STORAGE: 'disk',
         FILES_DIR: FILES,
         FILES_INLINE_WORKER: 'true',

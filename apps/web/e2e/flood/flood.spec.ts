@@ -12,7 +12,8 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { axe, describeViolation } from '../a11y.ts';
-import { codeIn, countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { signInWithSecondFactor, stepUp } from '../second-factor.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -37,12 +38,8 @@ async function administrator(browser: Browser): Promise<Page> {
   const email = `e2e-flood-admin-${unique()}@example.org`;
   identityState('seat', email, 'admin');
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
-  const before = countTo(email);
-  const asked = await context.request.post('/api/auth/code', { data: { email } });
-  expect(asked.ok(), await asked.text()).toBe(true);
-  const code = codeIn(await lastMessageTo(email, before));
-  const signed = await context.request.post('/api/auth/sign-in', { data: { email, code } });
-  expect(signed.ok(), await signed.text()).toBe(true);
+  // The emailed code, then the second factor (plan E, E3).
+  await signInWithSecondFactor(context.request, email);
   return context.newPage();
 }
 
@@ -113,6 +110,8 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
   await expect(form).toBeVisible();
   await noViolations(page);
   await form.getByLabel('The reason').selectOption('abusive_or_spam');
+  // A bulk decline asks for the second factor again (plan E, E3).
+  await stepUp(page.request);
   await form.getByRole('button', { name: 'Decline 2' }).click();
   await expect(page.getByText('Declined 2.')).toBeVisible();
   await page.goto(`/moderate?status=invalid&q=${word}`);
@@ -147,9 +146,11 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
   await page.goto('/moderate/flood');
   const switches = page.getByRole('region', { name: 'Switches' });
   try {
+    // Pausing asks for the second factor again (plan E, E3); the dialog
+    // itself is tested in two-factor.spec.ts.
+    await stepUp(page.request);
     await switches.getByRole('button', { name: 'Pause intake' }).click();
     await expect(switches).toContainText('Intake is paused since');
-    // TODO(PE1 step-up): the second factor is asked here once PE1 is merged.
 
     const v = await stranger(browser);
     await v.page.goto('/file/demo');
@@ -192,6 +193,7 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
     expect(v.outside).toEqual([]);
     await v.context.close();
 
+    await stepUp(page.request);
     await switches.getByRole('button', { name: 'Resume intake' }).click();
     await expect(switches).toContainText('Intake is open.');
     const after = await stranger(browser);
@@ -200,9 +202,7 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
     await after.context.close();
   } finally {
     // Whatever happened above, the site takes reports again for the projects after this one.
+    await stepUp(page.request);
     await page.request.post('/api/moderation/switches/pause', { data: { paused: false } });
   }
 });
-
-test.fixme('pause intake asks for the second factor again (PE1 step-up, wired at merge)', () =>
-  Promise.resolve());

@@ -95,6 +95,14 @@ export const SWEPT: readonly SweptTable[] = [
     expired: 'expires_at < now()',
   },
   {
+    // A passkey challenge never answered (identity/passkeys.ts). Spent when
+    // answered; an expired one is refused. Sessions cascade to these too.
+    table: 'two_factor_challenges',
+    what: 'unanswered passkey challenges',
+    owner: 'A',
+    expired: 'expires_at < now()',
+  },
+  {
     // UNCONFIRMED only. Until confirmation the row holds the reporter's
     // address in the clear (docs/status/C-filing.md), so an unconfirmed one
     // past its link's expiry is exactly what should not be kept. A confirmed

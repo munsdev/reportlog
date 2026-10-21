@@ -24,6 +24,7 @@ import {
   stopLinkIn,
   subscriptionOf,
 } from './mail.ts';
+import { rememberSecret, stepUp, totp } from '../second-factor.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -155,6 +156,29 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
   await expect(owner.getByRole('heading', { name: 'Who will own this deployment?' })).toBeVisible();
   await expect(owner.getByText('Setting up · step 1 of 7')).toBeVisible();
   await signInHere(owner, OWNER);
+
+  // The owner's seat opens nothing until a second factor is set up (plan E,
+  // E3): an authenticator app here, its code computed from the key shown.
+  await expect(
+    owner.getByRole('heading', { name: 'Set up a second way to sign in' }),
+  ).toBeVisible();
+  expect(await axeViolations(owner)).toEqual([]);
+  await owner.getByRole('button', { name: 'Use an authenticator app' }).click();
+  await expect(
+    owner.getByRole('img', { name: 'QR code to add this site to your authenticator app' }),
+  ).toBeVisible();
+  const secret = ((await owner.getByTestId('totp-secret').textContent()) ?? '').replace(/\s/g, '');
+  expect(secret).toMatch(/^[A-Z2-7]{32}$/);
+  rememberSecret(OWNER, secret);
+  expect(await axeViolations(owner)).toEqual([]);
+  await owner.getByLabel('The six-digit code the app shows now').fill(totp(secret));
+  await owner.getByRole('button', { name: 'Use this app' }).click();
+  await expect(owner.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
+  await expect(
+    owner.getByRole('listitem').filter({ hasText: /^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/ }),
+  ).toHaveCount(10);
+  expect(await axeViolations(owner)).toEqual([]);
+  await owner.getByRole('button', { name: 'I have kept them' }).click();
 
   // The name, required here.
   await expect(owner.getByRole('heading', { name: 'What is this archive called?' })).toBeVisible();
@@ -360,6 +384,9 @@ test('a door: a logbook opened outside is offered, and only that page opens', as
 
 test('an invitation, followed from its email, joins the invited address', async ({ browser }) => {
   await owner.goto('/access/orgs');
+  // Making an organization names its manager, and inviting is a grant too:
+  // a step-up first (the dialog itself is tested in e2e/two-factor.spec.ts).
+  await stepUp(owner.request);
   await owner.getByLabel('Its name').fill(ORG);
   await owner.getByLabel('Its first manager’s email address').fill(MANAGER);
   await owner.getByRole('button', { name: 'Make it' }).click();
@@ -407,6 +434,7 @@ test('an invitation, followed from its email, joins the invited address', async 
 
 test('the owner gives somebody a role, and it is on the record', async () => {
   await owner.goto('/access');
+  await stepUp(owner.request);
   await owner.getByLabel('Their email address').fill(MOD);
   await owner.getByLabel('Role').selectOption('moderator');
   await owner.getByRole('button', { name: 'Save' }).click();

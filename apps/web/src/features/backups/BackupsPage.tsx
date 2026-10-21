@@ -22,6 +22,7 @@ import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
+import { StepUpDownload } from '../identity/StepUp.tsx';
 
 const copiesQuery = queryOptions({
   queryKey: ['copies'],
@@ -72,9 +73,10 @@ function Files({
               {size(f.bytes)}, {when(f.made_at)}
             </span>
           </span>
-          <a className="underline" href={copyDownloadPath(kind, f.name)} download>
+          {/* A step-up first (plan E, E3): the server refuses the file without one. */}
+          <StepUpDownload className="underline" href={copyDownloadPath(kind, f.name)}>
             Download <span className="sr-only">{f.name}</span>
-          </a>
+          </StepUpDownload>
         </li>
       ))}
     </ul>

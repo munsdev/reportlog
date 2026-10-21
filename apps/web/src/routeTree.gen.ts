@@ -53,6 +53,7 @@ import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/in
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
 import { Route as staffAccessJournalistsRouteImport } from './routes/(staff)/access/journalists'
 import { Route as staffAccessRosterRouteImport } from './routes/(staff)/access/roster'
+import { Route as staffAccessSecurityRouteImport } from './routes/(staff)/access/security'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
 import { Route as staffFilesIndexRouteImport } from './routes/(staff)/files/index'
 import { Route as staffFilesRefRouteImport } from './routes/(staff)/files/$ref'
@@ -322,6 +323,11 @@ const staffAccessJournalistsRoute = staffAccessJournalistsRouteImport.update({
 const staffAccessRosterRoute = staffAccessRosterRouteImport.update({
   id: '/(staff)/access/roster',
   path: '/access/roster',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccessSecurityRoute = staffAccessSecurityRouteImport.update({
+  id: '/(staff)/access/security',
+  path: '/access/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
@@ -627,6 +633,7 @@ export interface FileRoutesByFullPath {
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
+  '/access/security': typeof staffAccessSecurityRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
   '/files/erase': typeof staffFilesEraseRoute
@@ -717,6 +724,7 @@ export interface FileRoutesByTo {
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
+  '/access/security': typeof staffAccessSecurityRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
   '/files/erase': typeof staffFilesEraseRoute
@@ -814,6 +822,7 @@ export interface FileRoutesById {
   '/(staff)/access/audit': typeof staffAccessAuditRoute
   '/(staff)/access/journalists': typeof staffAccessJournalistsRoute
   '/(staff)/access/roster': typeof staffAccessRosterRoute
+  '/(staff)/access/security': typeof staffAccessSecurityRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
   '/(staff)/files/$ref': typeof staffFilesRefRoute
   '/(staff)/files/erase': typeof staffFilesEraseRoute
@@ -912,6 +921,7 @@ export interface FileRouteTypes {
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
+    | '/access/security'
     | '/access/sign-in'
     | '/files/$ref'
     | '/files/erase'
@@ -1002,6 +1012,7 @@ export interface FileRouteTypes {
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
+    | '/access/security'
     | '/access/sign-in'
     | '/files/$ref'
     | '/files/erase'
@@ -1098,6 +1109,7 @@ export interface FileRouteTypes {
     | '/(staff)/access/audit'
     | '/(staff)/access/journalists'
     | '/(staff)/access/roster'
+    | '/(staff)/access/security'
     | '/(staff)/access/sign-in'
     | '/(staff)/files/$ref'
     | '/(staff)/files/erase'
@@ -1195,6 +1207,7 @@ export interface RootRouteChildren {
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessJournalistsRoute: typeof staffAccessJournalistsRoute
   staffAccessRosterRoute: typeof staffAccessRosterRoute
+  staffAccessSecurityRoute: typeof staffAccessSecurityRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   FileEraseTokenRoute: typeof FileEraseTokenRoute
@@ -1523,6 +1536,13 @@ declare module '@tanstack/react-router' {
       path: '/access/roster'
       fullPath: '/access/roster'
       preLoaderRoute: typeof staffAccessRosterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/access/security': {
+      id: '/(staff)/access/security'
+      path: '/access/security'
+      fullPath: '/access/security'
+      preLoaderRoute: typeof staffAccessSecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/access/sign-in': {
@@ -2044,6 +2064,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessJournalistsRoute: staffAccessJournalistsRoute,
   staffAccessRosterRoute: staffAccessRosterRoute,
+  staffAccessSecurityRoute: staffAccessSecurityRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   FileEraseTokenRoute: FileEraseTokenRoute,

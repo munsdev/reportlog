@@ -22,6 +22,7 @@ import { addressFrom, bodyOf, refused, toMe } from './http.ts';
 import { limiter } from './limiter.ts';
 import { CODE_TTL_MS, createCode, subjects, verifyCode } from './otp.ts';
 import { recordRoleChange } from './roles.ts';
+import { PENDING_SESSION_MS } from './secondFactor.ts';
 import { createSession, setSessionCookie, userForSession } from './sessions.ts';
 import { setupState } from './setup.ts';
 import {
@@ -160,8 +161,10 @@ export function curtainRoutes(
       });
       return user.id;
     });
-    const token = await createSession(db, userId);
-    setSessionCookie(reply, token);
+    // The new owner holds a role, so the session is a short one that acts
+    // with none until a second factor is set up (secondFactor.ts).
+    const token = await createSession(db, userId, PENDING_SESSION_MS);
+    setSessionCookie(reply, token, PENDING_SESSION_MS);
     return toMe(await userForSession(db, token));
   });
 

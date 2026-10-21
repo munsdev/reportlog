@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test';
 import { codeIn, countTo, identityState, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor, stepUp } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const run = Date.now().toString(36);
@@ -35,6 +36,7 @@ async function signIn(request: APIRequestContext, email: string) {
   const code = codeIn(await lastMessageTo(email, before));
   const signed = await request.post('/api/auth/sign-in', { data: { email, code } });
   expect(signed.ok(), await signed.text()).toBe(true);
+  await passSecondFactor(request, email);
 }
 
 async function contextFor(browser: Browser, email: string): Promise<BrowserContext> {
@@ -65,6 +67,8 @@ test('the owner makes an export and downloads it, and the trail says so', async 
   await expect(page.getByRole('heading', { level: 1, name: 'Backups and exports' })).toBeVisible();
   await expect(page.getByText(/Every download is recorded/)).toBeVisible();
 
+  // Making and downloading copies ask for a step-up (plan E, E3).
+  await stepUp(page.request);
   await page.getByRole('button', { name: 'Make an export' }).click();
   await expect(page.getByText('The export is ready')).toBeVisible({ timeout: 60_000 });
   const link = page.getByRole('link', { name: /^Download reportlog-archive-/ }).first();
@@ -88,6 +92,7 @@ test('the owner takes a backup and downloads the dump', async ({ browser }) => {
   const context = await contextFor(browser, OWNER);
   const page = await context.newPage();
   await page.goto('/backups');
+  await stepUp(page.request);
   await page.getByRole('button', { name: 'Take a backup now' }).click();
   await expect(page.getByText('The backup is ready')).toBeVisible({ timeout: 60_000 });
   const link = page.getByRole('link', { name: /^Download reportlog-.*\.dump$/ }).first();

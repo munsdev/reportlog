@@ -16,8 +16,8 @@
  * when "Read again" is pressed. A table that refreshes under somebody who is
  * reading it is a table they misread.
  *
- * TODO(PE1 step-up): pausing, the puzzle and the bulk declines will ask for
- * the second factor again; PE1's prompt goes in front of each at merge.
+ * Pausing, the puzzle and the bulk declines ask for the second factor again
+ * (step-up); the API client shows the prompt and retries (lib/api.ts).
  */
 import {
   bulkDeclineLinks,

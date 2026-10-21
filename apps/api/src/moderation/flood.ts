@@ -112,8 +112,8 @@ export async function floodScreen(db: Kysely<DB>) {
  * declined and logged, or none is. A withdrawn report, or one already
  * declined, is skipped with the reason rather than touched.
  *
- * TODO(PE1 step-up): a bulk decline needs the second factor again, within 5
- * minutes (docs/plan-e.md). Wired into the route at merge.
+ * A bulk decline asks for the second factor again, within 5 minutes
+ * (docs/plan-e.md): `stepUpGuard` on its route's scope.
  */
 export async function bulkDecline(
   db: Kysely<DB>,
