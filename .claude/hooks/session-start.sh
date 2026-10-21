@@ -37,6 +37,10 @@ fi
 if [ -f .env ] && ! grep -q '^CONTACT_KEY=.' .env; then
   printf 'CONTACT_KEY=%s\n' "$(openssl rand -base64 32)" >> .env
 fi
+# The door's key, so a form left open survives a restart of the dev server.
+if [ -f .env ] && ! grep -q '^DOOR_KEY=.' .env; then
+  printf 'DOOR_KEY=%s\n' "$(openssl rand -base64 32)" >> .env
+fi
 # And for files: a key, a directory to keep them in, and the worker inside the
 # server, so attaching a photo works locally.
 if [ -f .env ] && ! grep -q '^FILES_KEY=.' .env; then

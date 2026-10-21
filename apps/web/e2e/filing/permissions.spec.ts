@@ -19,6 +19,7 @@ import type { Page, PlaywrightWorkerArgs } from '@playwright/test';
 import { signedIn } from '../files/helpers.ts';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { expectAccessible } from './axe.ts';
+import { doorFields } from '../door.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
@@ -43,6 +44,7 @@ async function myReportWithPublishedFiles(
   const before = countTo(email);
   const sent = await anon.post('/api/reports', {
     data: {
+      ...(await doorFields(anon)),
       logbook: 'demo',
       email,
       consent: true,

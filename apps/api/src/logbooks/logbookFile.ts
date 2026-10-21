@@ -13,6 +13,8 @@
  *     "blurb": "…",                          optional
  *     "accepts_files": false,                optional, older files
  *     "editorial_notes": true,               optional, present only when on
+ *     "ask_email": "always",                 optional: ask for an email even
+ *                                            where the questions do not (E1)
  *     "questions": [
  *       { "key": "state", "kind": "place", "label": "Which state?",
  *         "help": "…", "required": true, "filterable": true,
@@ -36,7 +38,13 @@
  */
 import { LogbookFile } from '@reportlog/contracts';
 import type { LogbookDetail, QuestionSettingsInput } from '@reportlog/contracts';
-import { FILE_TYPE, isFieldKind, optionArray, optionSetsOf } from '@reportlog/fields';
+import {
+  FILE_TYPE,
+  LIMITED_KINDS,
+  isFieldKind,
+  optionArray,
+  optionSetsOf,
+} from '@reportlog/fields';
 import type { HelpWhen } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
@@ -81,6 +89,9 @@ export function validateLogbookFile(f: unknown): string[] {
   }
   if (f.editorial_notes !== undefined && typeof f.editorial_notes !== 'boolean') {
     errors.push('"editorial_notes" must be true or false.');
+  }
+  if (f.ask_email !== undefined && f.ask_email !== 'always') {
+    errors.push('"ask_email" is "always", or left out.');
   }
   if (!Array.isArray(f.questions) || !f.questions.length) {
     errors.push('A logbook needs at least one question.');
@@ -149,6 +160,8 @@ function settingsOf(q: LogbookFile['questions'][number]): QuestionSettingsInput 
     ...(TEXT_KINDS.has(q.kind) && q.max_length !== undefined ? { maxLength: q.max_length } : {}),
     ...(q.kind === 'number' && q.min !== undefined ? { min: q.min } : {}),
     ...(q.kind === 'number' && q.max !== undefined ? { max: q.max } : {}),
+    ...(LIMITED_KINDS.has(q.kind) && q.earliest !== undefined ? { earliest: q.earliest } : {}),
+    ...(LIMITED_KINDS.has(q.kind) && q.latest !== undefined ? { latest: q.latest } : {}),
   };
 }
 
@@ -265,6 +278,13 @@ export async function createFromFile(
     if (file.editorial_notes === true) {
       await setNotesEnabled(trx, made.id, true, overrides.by ?? 'a logbook file');
     }
+    if (file.ask_email === 'always') {
+      await trx
+        .updateTable('logbooks')
+        .set({ email_required: true })
+        .where('id', '=', made.id)
+        .execute();
+    }
     return made.id;
   });
   return logbookDetail(db, id);
@@ -294,6 +314,8 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
     ...(caps?.max_total_bytes != null ? { max_total_bytes: caps.max_total_bytes } : {}),
     // Only when on, so a file from a logbook without notes looks as it did.
     ...((await notesEnabled(db, lb.id)) ? { editorial_notes: true } : {}),
+    // Only when the operator asked for an address the questions do not need (E1).
+    ...(lb.email_required ? { ask_email: 'always' as const } : {}),
     questions: fields.map((f) => {
       const s = f.settings;
       const options = optionArray(s.options);
@@ -330,6 +352,11 @@ export async function toFile(db: Kysely<DB>, logbookId: number): Promise<Logbook
         ...(f.kind === 'number' && s.integer === true ? { integer: true } : {}),
         ...(f.kind === 'number' && typeof s.picker === 'string' ? { picker: s.picker } : {}),
         ...(f.kind === 'yes_no' && s.checkbox === true ? { checkbox: true } : {}),
+        // E4's limits, only when set, so a file without them is unchanged.
+        ...(LIMITED_KINDS.has(f.kind) && typeof s.earliest === 'string'
+          ? { earliest: s.earliest }
+          : {}),
+        ...(LIMITED_KINDS.has(f.kind) && typeof s.latest === 'string' ? { latest: s.latest } : {}),
       };
     }),
   };

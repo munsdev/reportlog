@@ -15,7 +15,7 @@
 #   4. Caddy from Caddy's apt repository
 #   5. the `reportlog` user, the directories, the database and its role
 #   6. /etc/reportlog/reportlog.env and deploy.env, from templates, with
-#      the keys the machine makes itself (CONTACT_KEY, FILES_KEY, the
+#      the keys the machine makes itself (CONTACT_KEY, FILES_KEY, DOOR_KEY, the
 #      transparency log's deploy key)
 #   7. the settings only a person knows, asked one at a time: the site's
 #      address, the mail and backup accounts' keys. Enter skips one; running
@@ -177,6 +177,15 @@ if [ -z "$(env_value FILES_KEY)" ]; then
     set_env FILES_KEY "$(head -c 32 /dev/urandom | base64)"
     note "made FILES_KEY (copy it off this server with the contact key)"
   fi
+fi
+
+# The door's key: puzzles and form start tokens are signed with it (Plan E,
+# apps/api/src/door/). Nothing signed with it lives longer than a day, so
+# unlike the two above it is always safe to make a new one: the only cost is
+# that forms open at that moment are asked to send again.
+if [ -z "$(env_value DOOR_KEY)" ]; then
+  set_env DOOR_KEY "$(head -c 32 /dev/urandom | base64)"
+  note "made DOOR_KEY"
 fi
 
 # The transparency log's deploy key: the anchor pushes the daily record

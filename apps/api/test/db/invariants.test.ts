@@ -715,6 +715,8 @@ const NOT_STAFF_PREFIXES = [
   '/api/site',
   '/api/setup/',
   '/api/doors',
+  // The puzzle and start token every report and tip form asks for (door/).
+  '/api/door/',
   '/api/directory',
   '/api/telemetry',
   '/api/health',

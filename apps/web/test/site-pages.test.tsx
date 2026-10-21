@@ -48,6 +48,7 @@ function site(overrides: Partial<Site> = {}): Site {
       submit_intro: '',
       submit_question: 'What are you reporting?',
       send_note: '',
+      refusal_message: 'Something went wrong. Please try again.',
       lock_intro: '',
       terms_of_use: '',
       contact_users: '',

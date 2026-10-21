@@ -97,11 +97,12 @@ All in `packages/fields` (pure, browser-safe), with the server, the cards and li
 
 ## Known gaps and things to decide
 
-- **The send card's line is not yet true.** "This report can't be changed or withdrawn after you
-  send it" is the owner's wording, set by the starting point in the operator's `send_note` slot
-  (agreed with the managing session). Today a reporter can still sign in and correct or withdraw
-  from My reports. The anonymous-filing redesign is expected to remove that; until then the line
-  overstates. Clearing the slot removes it.
+- **The send card's line is now true** (Plan E, session PE2, `docs/status/PE2-door.md`). "This
+  report can't be changed or withdrawn after you send it" was the owner's wording before it held.
+  The ElectionLog logbook asks no text question and takes no files, so under decision E1 it asks
+  for no email: a report is sealed on arrival with no contact row, so there is nothing to sign in
+  with, and My reports has nothing to correct or withdraw. Checked by
+  `apps/api/test/db/door.test.ts` (the starting point asks no email) and the browser test.
 - **Polling hours.** The hour is checked as 0 to 23 only (§05: the table does not exist).
 - **Identifying answers** (`poll_worker`, `observer`, `assisting`, `provisional`) are kept as the
   spec says; whether to keep them is open.

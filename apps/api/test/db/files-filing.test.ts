@@ -17,6 +17,7 @@ import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address, liftCurtain } from './identity-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 let h: FilesHarness;
 let lb: { id: number; slug: string };
@@ -29,8 +30,12 @@ const newDraft = async () => {
   const r = await h.app.inject({ method: 'POST', url: '/api/uploads/draft' });
   return r.json<{ draft_token: string }>().draft_token;
 };
-const sendReport = (body: Record<string, unknown>) =>
-  h.app.inject({ method: 'POST', url: '/api/reports', payload: body });
+const sendReport = async (body: Record<string, unknown>) =>
+  h.app.inject({
+    method: 'POST',
+    url: '/api/reports',
+    payload: { ...(await doorPass(h.app)), ...body },
+  });
 const confirm = async (token: string) =>
   (await h.app.inject({ method: 'POST', url: `/api/reports/confirm/${token}` })).json<{
     confirmation: {

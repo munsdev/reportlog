@@ -23,7 +23,10 @@ import {
   canFilter,
   cardProblem,
   fieldType,
+  formAsksEmail,
   isFieldKind,
+  LIMITED_KINDS,
+  limitsOf,
   normalizeCondition,
   optionArray,
   withoutWording,
@@ -103,6 +106,12 @@ function summaries(db: Db) {
     'logbooks.updated_at',
     'logbooks.files_frozen_at',
     'logbooks.outside_access',
+    'logbooks.email_required',
+    // What E1's email rule reads: each question's kind and settings.
+    sql<{ kind: string; settings: FieldSettings | null }[] | null>`(
+      SELECT json_agg(json_build_object('kind', f.kind, 'settings', f.settings))
+        FROM logbook_fields f WHERE f.logbook_id = logbooks.id
+    )`.as('question_shapes'),
     eb
       .selectFrom('logbook_fields as f')
       .whereRef('f.logbook_id', '=', 'logbooks.id')
@@ -139,6 +148,10 @@ function present(row: SummaryRow): LogbookSummary {
     asks_for_files: Boolean(row.asks_for_files),
     files_frozen_at: iso(row.files_frozen_at),
     outside_access: outsideAccess(row.outside_access),
+    email_required: row.email_required,
+    // DERIVED, like asks_for_files: a question somebody types into or files
+    // ask for an address; the operator's switch can only add one (E1).
+    asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
   };
 }
 
@@ -369,13 +382,25 @@ export async function createLogbook(
 export async function updateDetails(
   db: Db,
   id: number,
-  spec: { title?: string | undefined; blurb?: string | null | undefined },
+  spec: {
+    title?: string | undefined;
+    blurb?: string | null | undefined;
+    email_required?: boolean | undefined;
+  },
 ): Promise<LogbookSummary> {
-  const set: { title?: string; blurb?: string | null; updated_at: Date } = {
+  const set: {
+    title?: string;
+    blurb?: string | null;
+    email_required?: boolean;
+    updated_at: Date;
+  } = {
     updated_at: new Date(),
   };
   if (spec.title !== undefined) set.title = checkTitle(spec.title);
   if (spec.blurb !== undefined) set.blurb = blurbOf(spec.blurb);
+  // Not part of the form and never sealed, so it stays changeable after
+  // launch: it decides what the next report is asked (E1).
+  if (spec.email_required !== undefined) set.email_required = spec.email_required;
   const done = await db.updateTable('logbooks').set(set).where('id', '=', id).executeTakeFirst();
   if (!done.numUpdatedRows) refuse('no-logbook');
   return (await logbookById(db, id)) ?? refuse('no-logbook');
@@ -537,6 +562,10 @@ const SETTING_KEYS: Record<string, readonly string[]> = {
   choice_many: ['options', 'option_sets'],
   number: ['min', 'max', 'integer', 'picker'],
   yes_no: ['checkbox'],
+  // The earliest and latest answer taken (owner decision E4).
+  date: ['earliest', 'latest'],
+  time: ['earliest', 'latest'],
+  datetime: ['earliest', 'latest'],
 };
 const NEEDS_OPTIONS: ReadonlySet<string> = new Set(['choice_one', 'choice_many']);
 const OPTION_CODE_RE = /^[a-z0-9][a-z0-9_]{0,62}$/;
@@ -649,6 +678,33 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
     ) {
       refuse('number-picker');
     }
+  }
+  /* A DATE OR TIME LIMIT IS WRITTEN IN THE KIND'S OWN FORM (2026-11-03,
+     07:00:00, or a UTC moment), the form an answer is sealed in, so the two
+     compare as written. Only when set: settings are sealed into the form, and
+     a question without limits must hash as it always did. A limit that is not
+     a day, a time or a moment of the question's kind is refused, as is an
+     earliest after the latest. Absent-key rule: an empty limit is no key. */
+  if (LIMITED_KINDS.has(kind)) {
+    for (const k of ['earliest', 'latest'] as const) {
+      const v: unknown = out[k];
+      if (v === undefined) continue;
+      if (typeof v === 'string' && !v.trim()) {
+        Reflect.deleteProperty(out, k);
+        continue;
+      }
+      // A moment without its offset would mean whatever this server's clock says.
+      if (
+        kind === 'datetime' &&
+        !(typeof v === 'string' && /(Z|[+-]\d{2}:?\d{2})$/i.test(v.trim()))
+      )
+        refuse('date-limits');
+      const written = limitsOf(kind, { [k]: v })[k];
+      if (written === undefined) refuse('date-limits');
+      out[k] = written;
+    }
+    if (out.earliest !== undefined && out.latest !== undefined && out.earliest > out.latest)
+      refuse('date-limits');
   }
   /* A LOCATION SCOPE THAT IS NOT ONE OF THE THREE is refused here rather than
      tolerated downstream. `scopeOf` falls back to the default for an unknown

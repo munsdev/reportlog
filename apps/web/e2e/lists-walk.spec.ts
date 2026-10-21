@@ -21,6 +21,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { countTo, lastMessageTo, linkIn } from './identity/mail.ts';
+import { doorFields } from './door.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -118,7 +119,7 @@ test('every kind of list, as a visitor and as somebody signed in', async ({
   await v.page.goto(`/list/${closed.slug}`);
   await expect(v.page.getByText('This form is not taking anything at the moment.')).toBeVisible();
   const refused = await v.page.request.post(`/api/lists/${closed.slug}/entries`, {
-    data: { answers: {}, elapsed_ms: 9000 },
+    data: { ...(await doorFields(v.page.request)), answers: {} },
   });
   expect(refused.ok()).toBe(false);
   expect(((await refused.json()) as { error: { message: string } }).error.message).toMatch(

@@ -83,6 +83,13 @@ export interface FieldSettings {
    * one of these kinds of link, both or neither (apps/api/src/lists/policy.ts).
    */
   link_types?: CodedOption[];
+  /**
+   * On a date, time or date-and-time question: the earliest and latest answer
+   * it takes, in the kind's own form (2026-11-03, 07:00, or a moment with its
+   * offset). Written only when set, so a question without one is unchanged.
+   */
+  earliest?: string;
+  latest?: string;
   /** Every row of a repeated question shown from the start; none added or removed. */
   fixed_rows?: boolean;
   [key: string]: unknown;

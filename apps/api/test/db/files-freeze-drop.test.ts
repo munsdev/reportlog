@@ -13,6 +13,7 @@ import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address } from './identity-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 const WHAT = { key: 'what', kind: 'long_text', label: 'What happened', required: true };
 const QS = [WHAT, { key: 'photos', kind: 'file', label: 'Photos' }];
@@ -62,11 +63,12 @@ async function staged(stem: string) {
     },
   });
   expect(half.statusCode).toBe(200);
-  const send = () =>
+  const send = async () =>
     h.app.inject({
       method: 'POST',
       url: '/api/reports',
       payload: {
+        ...(await doorPass(h.app)),
         ...spine(email),
         logbook: lb.slug,
         answers: { what: 'Turned away at the door.' },

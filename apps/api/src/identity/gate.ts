@@ -37,6 +37,11 @@ export const IN_FRONT: readonly string[] = [
   // website reports its errors through. A lock screen can break too.
   'GET /api/telemetry',
   'POST /api/telemetry/errors',
+  // At the door (door/): the puzzle a report or tip form solves, and its start
+  // token. A form on a door needs both; a signed random puzzle and a signed
+  // moment say nothing of what is behind the password.
+  'GET /api/door/challenge',
+  'GET /api/door/start',
   'GET /api/notifications/stop/:token',
   'POST /api/notifications/stop/:token',
   // The alert list's email links (journalists/routes.ts): confirming and turning alerts off.

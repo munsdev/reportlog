@@ -15,6 +15,7 @@ import { doors } from '../../src/identity/doors.ts';
 import { hashPassword } from '../../src/identity/secrets.ts';
 import { mintErasureToken } from '../../src/lists/erasure.ts';
 import { uniqueSlug } from './helpers.ts';
+import { doorPass, startToken } from '../door-pass.ts';
 import { LINK_CONTACT_KEY, linkKeys } from './links-helpers.ts';
 import { emailDigest } from '../../src/links/keys.ts';
 import { SITE, address, as, harness, liftCurtain, seat, signIn } from './identity-helpers.ts';
@@ -62,11 +63,11 @@ afterAll(async () => {
 });
 
 let list: ListDetail;
-const send = (body: Record<string, unknown>, call: Call = anybody, slug = SLUG) =>
+const send = async (body: Record<string, unknown>, call: Call = anybody, slug = SLUG) =>
   call({
     method: 'POST',
     url: `/api/lists/${slug}/entries`,
-    payload: { elapsed_ms: 9000, ...body },
+    payload: { ...(await doorPass(h.app)), ...body },
   });
 const entries = async () =>
   (await h.db.selectFrom('list_entries').select('id').where('list_id', '=', list.id).execute())
@@ -306,7 +307,7 @@ describe('what a visitor can send', () => {
     expect(code(r)).toBe('not-an-option');
   });
 
-  it('the hidden box and a form filled faster than it can be read answer like success, and write nothing', async () => {
+  it('the hidden box and a form sent faster than it can be read are refused in one plain sentence, and write nothing', async () => {
     const n = await entries();
     const a = await send({
       answers: { links: ['https://example.org/d'], state: 'Ohio', category: 'Not sure' },
@@ -314,9 +315,13 @@ describe('what a visitor can send', () => {
     });
     const b = await send({
       answers: { links: ['https://example.org/e'], state: 'Ohio', category: 'Not sure' },
-      elapsed_ms: 100,
+      start: startToken(h.app, 100),
     });
-    expect([a.statusCode, b.statusCode]).toEqual([200, 200]);
+    expect([a.statusCode, b.statusCode]).toEqual([400, 400]);
+    expect([code(a), code(b)]).toEqual(['try_again', 'try_again']);
+    expect(json<{ error: { message: string } }>(a).error.message).toBe(
+      'Something went wrong. Please try again.',
+    );
     expect(await entries()).toBe(n);
   });
 });

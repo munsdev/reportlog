@@ -66,7 +66,18 @@ function parseOptions(text: string): OptionInput[] {
 }
 
 /** The settings this form edits; anything else a question carries is kept as it is. */
-const EDITED = ['options', 'allowOther', 'scope', 'depth'];
+const EDITED = ['options', 'allowOther', 'scope', 'depth', 'earliest', 'latest'];
+
+/** The kinds that may carry an earliest and a latest answer (E4), and how each is typed. */
+const LIMIT_INPUT: Record<string, { type: string; example: string }> = {
+  date: { type: 'date', example: '2026-11-03' },
+  time: { type: 'time', example: '07:00' },
+  datetime: { type: 'text', example: '2026-11-03T07:00-05:00' },
+};
+
+/** A stored limit as its box shows it: a time without seconds, anything else as written. */
+const limitShown = (kind: string, v: unknown): string =>
+  typeof v !== 'string' ? '' : kind === 'time' ? v.slice(0, 5) : v;
 
 export function QuestionForm({
   earlier,
@@ -88,6 +99,8 @@ export function QuestionForm({
     typeof initial?.settings.scope === 'string' ? initial.settings.scope : 'us',
   );
   const [depth, setDepth] = useState(initial?.settings.depth === 'county' ? 'county' : 'state');
+  const [earliest, setEarliest] = useState(limitShown(kind, initial?.settings.earliest));
+  const [latest, setLatest] = useState(limitShown(kind, initial?.settings.latest));
   const [whenField, setWhenField] = useState(initial?.shown_when?.field ?? '');
   const [whenValues, setWhenValues] = useState<string[]>(initial?.shown_when?.in ?? []);
   const [error, setError] = useState<Error | null>(null);
@@ -95,6 +108,7 @@ export function QuestionForm({
 
   const type = fieldType(kind);
   const isFile = kind === FILE_TYPE;
+  const limitInput = LIMIT_INPUT[kind];
   // Only kinds whose answers come from a fixed list can decide another
   // question; `place` lets a reporter type anything, so it cannot.
   const targets = earlier.filter((f) => CONDITIONABLE_KINDS.has(f.kind));
@@ -117,6 +131,16 @@ export function QuestionForm({
     // Depth only as `county`: an absent depth IS state, and settings are sealed.
     if (kind === LOCATION_TYPE) {
       return { ...kept, scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };
+    }
+    // ONLY WHEN WRITTEN: settings are sealed, and a question without limits
+    // must hash as it always did.
+    if (limitInput) {
+      const limits = {
+        ...kept,
+        ...(earliest.trim() ? { earliest: earliest.trim() } : {}),
+        ...(latest.trim() ? { latest: latest.trim() } : {}),
+      };
+      return Object.keys(limits).length ? limits : undefined;
     }
     return Object.keys(kept).length ? kept : undefined;
   }
@@ -279,6 +303,46 @@ export function QuestionForm({
             </Select>
           )}
         </Field>
+      )}
+
+      {limitInput && (
+        <fieldset className="space-y-2 rounded-card border border-line p-3">
+          <legend className="px-1 font-semibold">Earliest and latest answer (optional)</legend>
+          <p className="text-sm text-ink-alt">
+            An answer outside these is refused, and the form offers nothing outside them. Leave
+            either empty for no limit that way.
+            {kind === 'datetime'
+              ? ` Write a date and time with its offset from UTC, for example ${limitInput.example}.`
+              : ''}{' '}
+            Like the rest of the question, they cannot be changed after launch.
+          </p>
+          <Field label="Earliest">
+            {(p) => (
+              <TextInput
+                {...p}
+                type={limitInput.type}
+                value={earliest}
+                placeholder={limitInput.example}
+                onChange={(e) => {
+                  setEarliest(e.target.value);
+                }}
+              />
+            )}
+          </Field>
+          <Field label="Latest">
+            {(p) => (
+              <TextInput
+                {...p}
+                type={limitInput.type}
+                value={latest}
+                placeholder={limitInput.example}
+                onChange={(e) => {
+                  setLatest(e.target.value);
+                }}
+              />
+            )}
+          </Field>
+        </fieldset>
       )}
 
       <Check

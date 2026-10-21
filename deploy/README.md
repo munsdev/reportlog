@@ -74,7 +74,7 @@ Email, and an EU object storage bucket.
 
 4. **Settings: answer the installer's questions.** Nobody edits the settings
    file by hand. `install.sh` makes the keys a machine can make
-   (`CONTACT_KEY`, `FILES_KEY`, the transparency log's deploy key), sets
+   (`CONTACT_KEY`, `FILES_KEY`, `DOOR_KEY`, the transparency log's deploy key), sets
    `TRUST_PROXY=1` (Caddy is one proxy in front), and then asks, one at a
    time, for what only you know: the site's address, the Scaleway email
    account (the sending address, the project ID and the API key's secret
@@ -113,6 +113,7 @@ repository has every one of them blank.
 | Setting                                                  | Where it comes from                                                 |
 | -------------------------------------------------------- | ------------------------------------------------------------------- |
 | `CONTACT_KEY`, `FILES_KEY`                               | made by `install.sh` (32 random bytes); never changed, only rotated |
+| `DOOR_KEY`                                               | made by `install.sh` (32 random bytes); safe to replace at any time |
 | `TRANSPARENCY_LOG_SSH_KEY`                               | a key file made by `install.sh`; its public half is shown to add    |
 | `SCALEWAY_SECRET_KEY`                                    | asked by `install.sh`, from the Scaleway console                    |
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | asked by `install.sh`, from the storage provider (upload-only key)  |

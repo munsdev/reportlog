@@ -63,6 +63,46 @@ function normalizeDateTime(v: unknown): string | null {
   return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }
 
+/** A date, a time or a date and time, in its one written form, or null. */
+function momentOf(kind: string, v: unknown): string | null {
+  if (kind === 'date') return normalizeDate(v);
+  if (kind === 'time') return toTimeString(v);
+  return normalizeDateTime(v);
+}
+
+/** The kinds that may carry an earliest and a latest answer (owner decision E4). */
+export const LIMITED_KINDS: ReadonlySet<string> = new Set(['date', 'time', 'datetime']);
+
+/**
+ * A question's earliest and latest answers, each in the kind's own written
+ * form (a day, HH:MM:SS, or a UTC ISO moment), or absent. A limit that is
+ * not one of those is ignored here; the builder refuses it on the way in.
+ */
+export function limitsOf(
+  kind: string,
+  settings: FieldSettings = {},
+): { earliest?: string; latest?: string } {
+  if (!LIMITED_KINDS.has(kind)) return {};
+  const earliest = momentOf(kind, settings.earliest);
+  const latest = momentOf(kind, settings.latest);
+  return { ...(earliest ? { earliest } : {}), ...(latest ? { latest } : {}) };
+}
+
+/**
+ * AN ANSWER OUTSIDE ITS LIMITS IS NOT AN ANSWER, the way a number outside its
+ * bounds is not (owner decision E4). Each written form compares as text: a
+ * day and HH:MM:SS by construction, and a moment because both sides are UTC
+ * ISO with milliseconds. A question without limits reads exactly as before,
+ * so no earlier form, seal or vector changes.
+ */
+function withinLimits(kind: string, v: string | null, settings: FieldSettings): string | null {
+  if (v === null) return null;
+  const { earliest, latest } = limitsOf(kind, settings);
+  if (earliest !== undefined && v < earliest) return null;
+  if (latest !== undefined && v > latest) return null;
+  return v;
+}
+
 /**
  * A finite number within the operator's bounds. A blank box is NOT zero.
  * (The old implementation sealed `Number('')`, which is 0.)
@@ -179,11 +219,9 @@ export function normalizeAnswer(
       return s ? s.slice(0, lengthLimit(settings, 5000)) : null;
     }
     case 'date':
-      return normalizeDate(value);
     case 'time':
-      return toTimeString(value);
     case 'datetime':
-      return normalizeDateTime(value);
+      return withinLimits(kind, momentOf(kind, value), settings);
     case 'place':
       return normalizePlace(value, settings);
     case LOCATION_TYPE:

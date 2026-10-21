@@ -382,7 +382,7 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     const s = machine();
     const r = ask(s, ANSWERS);
     const env = s.read(ENV);
-    for (const key of ['CONTACT_KEY', 'FILES_KEY']) {
+    for (const key of ['CONTACT_KEY', 'FILES_KEY', 'DOOR_KEY']) {
       const v = new RegExp(`^${key}=(.+)$`, 'm').exec(env)?.[1] ?? '';
       expect(Buffer.from(v, 'base64'), key).toHaveLength(32);
       expect(r.out, key).not.toContain(v);

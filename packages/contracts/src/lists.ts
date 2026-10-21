@@ -20,6 +20,7 @@
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
+import { DoorFields } from './door.ts';
 
 const Id = z.coerce.number().int().positive();
 const Timestamp = z.string();
@@ -58,6 +59,9 @@ export const ListFormQuestion = z.object({
   /** On a link question asking what kind each link is: the kinds, and every row shown. */
   link_types: z.array(z.object({ code: z.string(), label: z.string() })).optional(),
   fixed_rows: z.boolean().optional(),
+  /** On a date, time or date-and-time question: its earliest and latest answer (E4). */
+  earliest: z.string().optional(),
+  latest: z.string().optional(),
   allow_other: z.boolean(),
   /** The places a location question offers. Only on a location question. */
   places: z.array(z.object({ code: z.string(), name: z.string() })).optional(),
@@ -168,10 +172,8 @@ export const sendListEntry = defineRoute({
     answers: z.record(z.string(), z.unknown()).optional(),
     email: z.string().nullable().optional(),
     email_consent: z.boolean().optional(),
-    /** A box nobody can see. Filled in means a script, answered like success. */
-    website: z.string().optional(),
-    /** How long the form was open. Faster than it can be read means a script. */
-    elapsed_ms: z.number().optional(),
+    /** The door's fields (door.ts): the hidden box, the start token, the puzzle. */
+    ...DoorFields,
   }),
   response: z.object({
     ok: z.literal(true),

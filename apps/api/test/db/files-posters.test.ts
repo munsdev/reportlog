@@ -28,6 +28,7 @@ import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address, as, seat, signIn } from './identity-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 let h: FilesHarness;
 let thread: string;
@@ -89,6 +90,7 @@ describe.skipIf(toolsMissing)('stills and pages', () => {
       method: 'POST',
       url: '/api/reports',
       payload: {
+        ...(await doorPass(h.app)),
         ...spine(email),
         logbook: lb.slug,
         answers: { what: 'At the door' },

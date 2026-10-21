@@ -340,6 +340,8 @@ export const COPY_KEYS = [
   'submit_intro',
   'submit_question',
   'send_note',
+  // Plan E: the one sentence a refusal at the door shows (apps/api/src/door/).
+  'refusal_message',
   'board_intro',
   'how_intro',
   'alliance_intro',

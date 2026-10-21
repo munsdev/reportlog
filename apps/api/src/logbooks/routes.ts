@@ -137,6 +137,7 @@ export function logbookRoutes(
       // and whether somebody froze this logbook's uploads, are the files
       // workstream's to add beside this, resolved on the server.
       asks_for_files: fields.some((f) => f.kind === FILE_TYPE),
+      asks_email: lb.asks_email,
       fields: fields.map(forForm),
       filters: fields.filter((f) => f.filterable && canFilter(f.kind)).map(forForm),
       // The version these questions are, so a report sent from this page seals
@@ -187,7 +188,11 @@ export function logbookRoutes(
     route(staff, getLogbook, ({ params }) => logbookDetail(db, Number(params.id)));
     route(staff, updateLogbook, async ({ params, request }) => {
       const id = Number(params.id);
-      await updateDetails(db, id, request.body as { title?: string; blurb?: string | null });
+      await updateDetails(
+        db,
+        id,
+        request.body as { title?: string; blurb?: string | null; email_required?: boolean },
+      );
       return logbookDetail(db, id);
     });
     route(staff, deleteLogbook, async ({ params }) => ({

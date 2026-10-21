@@ -134,6 +134,7 @@ describe('the cards', () => {
         closes_at: null,
         accepting: true,
         asks_for_files: fields.some((q) => q.kind === 'file'),
+        asks_email: true,
         fields,
         filters: [],
       },

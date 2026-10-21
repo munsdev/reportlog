@@ -39,6 +39,8 @@ const LB: LogbookDetail = {
   asks_for_files: true,
   files_frozen_at: null,
   outside_access: 'closed',
+  email_required: false,
+  asks_email: true,
   fields: [],
 };
 

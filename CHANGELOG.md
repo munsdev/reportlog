@@ -16,7 +16,31 @@ and `package.json` disagree. How a release is cut is in the README.
 
 ## Unreleased
 
-Nothing yet.
+**For somebody filing a report or sending a tip**
+
+- A form that asks only for choices (no box to type in, no files) no longer asks for an email
+  address. The report is filed the moment it is sent, and cannot be changed or withdrawn after.
+  A form that lets you type, or takes files, asks for an address and sends a confirmation link,
+  as before.
+- A small check runs in the background while you fill in a form, and Send works once it is done
+  (usually in under a second). Nothing about you is collected for it, and nothing is sent to any
+  other site.
+- If the site turns a form away, it says so in one plain sentence. Sending again is all it takes.
+- A date or time question may only take answers between two limits, and the picker offers
+  nothing outside them.
+
+**For somebody running a site**
+
+- The builder can require an email address on a form that would not otherwise ask for one, and
+  can set the earliest and latest answer a date or time question takes (before launch).
+- Reports and tips are checked at the door: a puzzle solved in the visitor's browser (ALTCHA,
+  served from your own site), a hidden box, a minimum time on the form, and limits per network
+  address per minute and per hour, with a higher limit on reading. Network addresses are kept only
+  in memory, as hashes under a key that changes daily. Refusals are counted by check, with nothing
+  of what was sent.
+- `install.sh` makes a new `DOOR_KEY`. The limits are `DOOR_SUBMITS_PER_MINUTE`,
+  `DOOR_SUBMITS_PER_HOUR` and `DOOR_REQUESTS_PER_MINUTE`; the wording of a refusal is a page
+  wording slot.
 
 ## v0.1.0 — 20 October 2026
 

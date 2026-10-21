@@ -26,6 +26,7 @@ type Source =
 const SECRETS: Record<string, Source> = {
   CONTACT_KEY: 'made by install.sh',
   FILES_KEY: 'made by install.sh',
+  DOOR_KEY: 'made by install.sh',
   // Typed by a person only while rotating the contact key, then removed
   // (deploy/README.md, "Rotating the contact key").
   CONTACT_KEY_PREVIOUS: 'rotation',

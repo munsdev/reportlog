@@ -35,6 +35,7 @@ import { IntakeCorrection } from './intakeCorrection.ts';
 import { IntakeFiles } from './intakeFiles.ts';
 import { intakeIsOpen, setIntakeSwitch, storedIntakeSwitch } from './intakeSwitch.ts';
 import { Mine } from './mine.ts';
+import type { Door } from '../door/index.ts';
 
 export interface FilingRouteDeps {
   db: Kysely<DB>;
@@ -51,6 +52,8 @@ export interface FilingRouteDeps {
   confirmsPerClient?: number | undefined;
   /** The files workstream's context, for taking published files down. */
   files?: Files | null;
+  /** The checks every report passes before it is read (door/). */
+  door: Door;
 }
 
 /** The request body, already validated against the contract by Fastify. */
@@ -77,7 +80,9 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
   const intakeCorrection = new IntakeCorrection(deps.db, prefix);
 
   // Anyone can make this site email any address they type, as with sign-in
-  // codes, and the same kind of limit answers it. In memory, never logged.
+  // codes, and the same kind of limit answers it. In memory, never logged,
+  // and keyed by the door's daily hash of the address, never the address
+  // itself (owner decision E2).
   const sendsPerClient = limiter({ max: deps.sendsPerClient ?? 20, windowMs: 15 * 60 * 1000 });
   const sendsPerAddress = limiter({ max: 10, windowMs: 60 * 60 * 1000 });
   const confirmsPerClient = limiter({
@@ -88,23 +93,27 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
   // ── public: the filing calls ──────────────────────────────────────────
   route(app, C.submitReport, async ({ request }) => {
     const b = bodyOf<C.BodyOf<typeof C.submitReport>>(C.submitReport, request);
-    sendsPerClient.take(request.ip);
+    // THE DOOR FIRST: a refusal there is one plain sentence and the report is
+    // not read at all, so nothing of it is stored.
+    await deps.door.pass(request, b);
+    sendsPerClient.take(deps.door.client(request));
     const email = normalizeEmail(b.email);
     if (email) sendsPerAddress.take(email);
-    const { filesDropped } = await stageSubmission(filing, b);
+    const out = await stageSubmission(filing, b);
+    if (out.filed) return { filed: true as const };
     return {
       pending: true as const,
-      ...(filesDropped.length ? { files_dropped: filesDropped } : {}),
+      ...(out.filesDropped.length ? { files_dropped: out.filesDropped } : {}),
     };
   });
 
   route(app, C.getConfirmation, async ({ params, request }) => {
-    confirmsPerClient.take(request.ip);
+    confirmsPerClient.take(deps.door.client(request));
     return { confirmation: await confirmationState(deps.db, params.token) };
   });
 
   route(app, C.confirmReport, async ({ params, request }) => {
-    confirmsPerClient.take(request.ip);
+    confirmsPerClient.take(deps.door.client(request));
     return confirmSubmission(filing, params.token);
   });
 

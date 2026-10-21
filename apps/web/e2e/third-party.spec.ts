@@ -21,6 +21,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from './identity/mail.ts';
+import { doorFields } from './door.ts';
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
@@ -132,6 +133,7 @@ test.describe('with a real token', () => {
     let before = countTo(email);
     const sent = await page.request.post('/api/reports', {
       data: {
+        ...(await doorFields(page.request)),
         logbook: 'demo',
         email,
         consent: true,

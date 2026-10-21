@@ -15,6 +15,7 @@
 import type { FormQuestion } from '@reportlog/contracts';
 import {
   FILE_TYPE,
+  LIMITED_KINDS,
   buildAnswers,
   cardsOf,
   conditionMet,
@@ -174,6 +175,13 @@ export function cardProblem(
       answers ? { answers } : undefined,
     ) === null
   ) {
+    // A real day or time outside the question's limits (E4), said as that.
+    if (
+      LIMITED_KINDS.has(q.kind) &&
+      normalizeAnswer(q.kind, toRawSubmission([q], raw)[q.key], {}) !== null
+    ) {
+      return 'That is outside the dates or times this question takes.';
+    }
     return 'That is not an answer this question takes. Check it, or clear it.';
   }
   return null;

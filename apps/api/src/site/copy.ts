@@ -115,6 +115,19 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback: '',
   },
   {
+    // A REFUSAL AT THE DOOR (Plan E): the puzzle, the hidden box, the minimum
+    // time or a rate limit. One sentence for all of them, on purpose: it must
+    // never say which check failed (apps/api/src/door/index.ts). The one error
+    // that is a slot, because what it must not say is fixed and what it does
+    // say is the operator's tone.
+    key: 'refusal_message',
+    kind: 'line',
+    figures: false,
+    label: 'When a form is turned away',
+    help: 'What somebody sees when the site turns a report or tip away before reading it (too fast, too many from one place, or the background check did not pass). Never say which: one plain sentence asking them to try again.',
+    fallback: 'Something went wrong. Please try again.',
+  },
+  {
     key: 'board_intro',
     kind: 'block',
     optional: true,

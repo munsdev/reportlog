@@ -114,6 +114,17 @@ export function normalizeValue(field: ListField, raw: unknown): ValueResult {
       const value = normalizeAnswer(kind, raw, settings);
       return value === null ? { ok: false, reason: 'out-of-range' } : { ok: true, value };
     }
+    case 'date':
+    case 'time':
+    case 'datetime': {
+      // A real day or time outside the question's limits (owner decision E4)
+      // is named as that, not as "not a date".
+      const value = normalizeAnswer(kind, raw, settings);
+      if (value === null && normalizeAnswer(kind, raw, {}) !== null)
+        return { ok: false, reason: 'outside-dates' };
+      if (value === null) return { ok: false, reason: REFUSED[kind] ?? 'not-an-answer' };
+      return { ok: true, value };
+    }
     default:
       break;
   }

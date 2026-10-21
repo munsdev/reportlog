@@ -45,6 +45,7 @@ import {
   LOCATION_TYPE,
   depthOf,
   isCodedOption,
+  limitsOf,
   optionArray,
   optionLabel,
   placeOptions,
@@ -100,6 +101,7 @@ import { searchEntries } from './search.ts';
 import { iso, isAccepting, listBySlug } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
 import type { LinkKeys } from '../links/keys.ts';
+import type { Door } from '../door/index.ts';
 
 export interface ListRouteDeps {
   db: Db;
@@ -109,13 +111,12 @@ export interface ListRouteDeps {
   settings: ListSettings;
   /** The link keys (links/keys.ts); null without CONTACT_KEY. */
   keys?: (() => Promise<LinkKeys>) | null;
+  /** The checks every entry passes before it is read (door/). */
+  door: Door;
 }
 
 /** The mark that lets a list route decide the site password for itself. */
 const DECIDES_ITSELF = { config: { curtain: 'decides-itself' as const } };
-
-/** A form filled in faster than this was not read. */
-export const MIN_FILL_MS = 2500;
 
 const days = (s: ListSettings) => (s.personalDays === NEVER ? null : s.personalDays);
 
@@ -195,6 +196,8 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
             }
           : {}),
         ...(f.settings.fixed_rows === true ? { fixed_rows: true } : {}),
+        // The question's limits (E4), only when it has them.
+        ...limitsOf(f.kind, f.settings),
         allow_other: f.settings.allowOther === true,
         ...(places ? { places: [...places.subdivisions, ...places.countries] } : {}),
         // The county picker's own list is bundled in the page (@reportlog/fields).
@@ -206,7 +209,7 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
 }
 
 export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
-  const { db, mailer, siteOrigin, settings, keys = null } = deps;
+  const { db, mailer, siteOrigin, settings, keys = null, door } = deps;
   const send = async (to: string, subject: string, text: string): Promise<boolean> => {
     try {
       await mailer.send({ to, subject, text });
@@ -283,14 +286,12 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
       const list = await listBySlug(db, params.slug);
       await pastCurtain(db, request, list);
       if (!list || !maySee(list, request)) throw notFound('There is no form at this address.');
-      filing.take(request.ip);
       const b = request.body as BodyOf<typeof sendListEntry>;
-
-      // Two cheap filters. Answered like success, so whatever filled in the
-      // hidden box learns nothing, and then dropped.
-      const ignored = { ok: true as const, erasure_mailed: false, erasable: false };
-      if (b.website?.trim()) return ignored;
-      if (typeof b.elapsed_ms === 'number' && b.elapsed_ms < MIN_FILL_MS) return ignored;
+      // THE DOOR FIRST (door/): the hidden box, the time on the form, the
+      // puzzle and the per-address limits. A refusal is one plain sentence
+      // that never names the check, and nothing of the entry is stored.
+      await door.pass(request, b);
+      filing.take(request.ip);
 
       const got = await fileEntry(
         db,

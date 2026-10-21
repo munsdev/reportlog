@@ -13,17 +13,24 @@
  *   the opening card       what this logbook is, and that it is a few questions
  *   the logbook's own      one per question being asked
  *   the publication card   its wording and digest come from the server
- *   where to reach you     the address the confirmation link goes to
+ *   where to reach you     the address the confirmation link goes to. ONLY
+ *                          where the logbook asks for one (owner decision
+ *                          E1: a question somebody types into, files, or
+ *                          the operator's switch). Without it the report is
+ *                          sealed on arrival and there is no link to follow
  *   files                  only when the logbook asks for files (files
  *                          workstream). AFTER the address wherever the
  *                          operator put the question, because the server's
  *                          staging quota is keyed on the address
  *   check your answers     every answer, each one changeable, and the statement
  *
+ * AT THE DOOR (features/door/): a start token as the form opens, a puzzle
+ * solved in the background before Send works, and a box nobody can see.
+ *
  * ON A DOOR this page may call only the filing calls: the logbook's form, the
- * publication card and sending, and, only for a logbook that asks for files,
- * the upload calls. It asks for nothing else, so it works on a
- * site behind its password for a logbook opened outside it.
+ * publication card and sending, the door's two reads, and, only for a logbook
+ * that asks for files, the upload calls. It asks for nothing else, so it works
+ * on a site behind its password for a logbook opened outside it.
  */
 import {
   getUploadConfig,
@@ -47,6 +54,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { DoorPuzzle, Honeypot, doorStatus, useDoor } from '@/features/door/useDoor.tsx';
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
@@ -148,6 +156,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       blurb={lb.blurb}
       questions={lb.fields}
       form={lb.form}
+      asksEmail={lb.asks_email}
       card={card.data}
       cardError={card.isError}
       history={history}
@@ -161,6 +170,7 @@ function Cards({
   blurb,
   questions,
   form,
+  asksEmail,
   card,
   cardError,
   history,
@@ -169,6 +179,8 @@ function Cards({
   title: string;
   blurb: string | null;
   questions: FormQuestion[];
+  /** Whether this logbook asks for an address at all (E1). */
+  asksEmail: boolean;
   /** The version these questions are; sealed if only wording changes before Send. */
   form?: string | undefined;
   card: PublicationCard | undefined;
@@ -194,15 +206,21 @@ function Cards({
   const target = useFilingTarget(slug, email);
   const uploader = useUploader(takesFiles ? target : null);
   const draft = target.draft();
+  const door = useDoor();
   const send = useMutation({
     onSuccess: () => {
       rememberForTip(toSubmission(questions, raw));
+    },
+    // A solution is good for one send, accepted or refused.
+    onError: () => {
+      door.renew();
     },
     mutationFn: () =>
       call(submitReport, {
         body: {
           logbook: slug,
-          email: email.trim(),
+          ...(asksEmail ? { email: email.trim() } : {}),
+          ...door.fields(),
           consent,
           answers: toSubmission(questions, raw),
           // Not answering is "no", and the card said so before anybody acted.
@@ -226,7 +244,7 @@ function Cards({
     'intro',
     ...askedCards(questions, raw).map((c): Step => `q:${c.id}`),
     'publish',
-    'contact',
+    ...(asksEmail ? (['contact'] as Step[]) : []),
     ...(takesFiles ? (['files'] as Step[]) : []),
     'review',
   ];
@@ -271,7 +289,13 @@ function Cards({
     return { card: instead, toReview: false };
   });
 
-  if (send.isSuccess) return <SentReceipt email={email.trim()} title={title} />;
+  if (send.isSuccess) {
+    return 'filed' in send.data ? (
+      <FiledReceipt title={title} />
+    ) : (
+      <SentReceipt email={email.trim()} title={title} />
+    );
+  }
 
   const shownCard = step.startsWith('q:')
     ? askedCards(questions, raw).find((c) => `q:${c.id}` === step)
@@ -316,7 +340,7 @@ function Cards({
       'intro',
       ...askedCards(questions, raw).map((c) => `q:${c.id}`),
       'publish',
-      'contact',
+      ...(asksEmail ? ['contact'] : []),
       ...(takesFiles ? ['files'] : []),
       'review',
     ] as Step[];
@@ -337,11 +361,15 @@ function Cards({
   const mayTakeFiles = Boolean(fileQuestion) && uploadConfig.data?.enabled !== false;
   const possible =
     cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
-      .length + (mayTakeFiles ? 4 : 3);
+      .length +
+    (mayTakeFiles ? 4 : 3) -
+    (asksEmail ? 0 : 1);
   const progress = step === 'intro' ? null : Math.round((at / possible) * 100);
 
   return (
-    <section className="mx-auto flex max-w-prose flex-col gap-6">
+    <section className="relative mx-auto flex max-w-prose flex-col gap-6">
+      <Honeypot door={door} />
+      <DoorPuzzle door={door} />
       <p className="text-sm font-semibold text-ink-alt">{title}</p>
       {progress !== null ? (
         <div
@@ -361,8 +389,10 @@ function Cards({
           {blurb ? <p className="whitespace-pre-wrap">{blurb}</p> : null}
           <p>
             A few questions, one at a time. How many depends on your answers. Most people take a few
-            minutes. Nothing is sent until the last card, and nothing is filed until you confirm it
-            from your email.
+            minutes. Nothing is sent until the last card
+            {asksEmail
+              ? ', and nothing is filed until you confirm it from your email.'
+              : '. This form does not ask for your email address, so once you send it, your report is filed as it is.'}
           </p>
         </CardShell>
       ) : null}
@@ -443,7 +473,11 @@ function Cards({
 
       {step === 'review' ? (
         <CardShell heading="Check your answers" step={step}>
-          <p>Nothing is filed until you confirm it from your email. Check it over first.</p>
+          <p>
+            {asksEmail
+              ? 'Nothing is filed until you confirm it from your email. Check it over first.'
+              : 'Your report is filed the moment you send it, and you cannot come back to it. Check it over first.'}
+          </p>
           <dl className="divide-y divide-line rounded-card border border-line">
             {asked.map((q) => (
               <ReviewRow
@@ -477,13 +511,15 @@ function Cards({
                 }}
               />
             ) : null}
-            <ReviewRow
-              label="Your email address"
-              value={email.trim() || null}
-              onChange={() => {
-                go('contact', true);
-              }}
-            />
+            {asksEmail ? (
+              <ReviewRow
+                label="Your email address"
+                value={email.trim() || null}
+                onChange={() => {
+                  go('contact', true);
+                }}
+              />
+            ) : null}
           </dl>
           <div className="flex items-start gap-3">
             <Checkbox
@@ -506,6 +542,11 @@ function Cards({
               {send.error.message}
             </Alert>
           ) : null}
+          {doorStatus(door) ? (
+            <p role="status" className="text-sm text-ink-alt">
+              {doorStatus(door)}
+            </p>
+          ) : null}
         </CardShell>
       ) : null}
 
@@ -524,7 +565,7 @@ function Cards({
         {step === 'review' ? (
           <Button
             type="button"
-            disabled={send.isPending}
+            disabled={send.isPending || !door.ready}
             onClick={() => {
               if (!consent) {
                 setProblem('Confirm the statement above to send the report.');
@@ -539,6 +580,7 @@ function Cards({
                 setProblem('Wait until your files have finished sending, then send the report.');
                 return;
               }
+              if (!door.ready) return;
               send.mutate();
             }}
           >
@@ -778,6 +820,23 @@ function ReviewRow({
         </Button>
       </dd>
     </div>
+  );
+}
+
+/**
+ * Sealed on arrival (E1): nothing to confirm and nothing to come back to. No
+ * reference is shown: a reporter is not handed a receipt for a report nobody
+ * has yet accepted, and this one has no address to send one to.
+ */
+function FiledReceipt({ title }: { title: string }) {
+  return (
+    <Page title="Thank you" width="prose">
+      <Alert tone="confirmed" title={`Your report to “${title}” was received`}>
+        It is filed as you sent it. A moderator reads every report before anything of it is
+        published.
+      </Alert>
+      <TipOffer />
+    </Page>
   );
 }
 

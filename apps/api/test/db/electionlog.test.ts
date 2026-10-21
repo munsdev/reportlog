@@ -36,10 +36,9 @@ import { createFromStartingPoint } from '../../src/logbooks/templates.ts';
 import { readCopy } from '../../src/site/settings.ts';
 import { applyTemplateDefinition, templateById } from '../../src/site/templates.ts';
 import type { Template } from '../../src/site/templates.ts';
-import { filingHarness, fileThroughRoutes, send, spine } from './filing-helpers.ts';
+import { filingHarness, fileOnArrival, send, spineWithoutEmail } from './filing-helpers.ts';
 import type { FilingHarness } from './filing-helpers.ts';
 import { uniqueSlug } from './helpers.ts';
-import { address } from './identity-helpers.ts';
 import { linkKeys } from './links-helpers.ts';
 
 let h: FilingHarness;
@@ -176,7 +175,7 @@ describe('the site starting point', () => {
 
 describe('every path through the logbook', () => {
   it('in person, fine: no problem cards, sealed codes, verifies', async () => {
-    const ref = await fileThroughRoutes(h, slug, IN_PERSON_FINE, address('el-ip-fine'));
+    const ref = await fileOnArrival(h, slug, IN_PERSON_FINE);
     expect(await answersOf(ref)).toEqual(IN_PERSON_FINE);
     expect(await verifies(ref)).toBe(true);
   });
@@ -193,7 +192,7 @@ describe('every path through the logbook', () => {
       problems: ['other', 'turned_away', 'wrong_ballot'],
       voted: 'provisional',
     };
-    const ref = await fileThroughRoutes(h, slug, answers, address('el-ip-problem'));
+    const ref = await fileOnArrival(h, slug, answers);
     // Sealed in the list's order, whatever order was sent.
     expect(await answersOf(ref)).toEqual({
       ...answers,
@@ -212,7 +211,7 @@ describe('every path through the logbook', () => {
       problems: ['arrived_late', 'rejected'],
       voted: 'no',
     };
-    const ref = await fileThroughRoutes(h, slug, answers, address('el-mail'));
+    const ref = await fileOnArrival(h, slug, answers);
     expect(await answersOf(ref)).toEqual(answers);
     expect(await verifies(ref)).toBe(true);
   });
@@ -227,15 +226,16 @@ describe('every path through the logbook', () => {
       problems: ['fwab', 'other'],
       voted: 'prefer_not',
     };
-    const ref = await fileThroughRoutes(h, slug, answers, address('el-overseas'));
+    const ref = await fileOnArrival(h, slug, answers);
     expect(await answersOf(ref)).toEqual(answers);
     expect(await verifies(ref)).toBe(true);
   });
 });
 
 describe('the server checks (§01)', () => {
-  const refused = async (answers: Record<string, unknown>, stem: string) => {
-    const r = await send(h, { ...spine(address(stem)), logbook: slug, answers });
+  // No address: this logbook asks for none (E1), so one would be refused too.
+  const refused = async (answers: Record<string, unknown>) => {
+    const r = await send(h, { ...spineWithoutEmail(), logbook: slug, answers });
     expect(r.status).toBe(400);
     return (r.body.error as { message: string }).message;
   };
@@ -248,14 +248,10 @@ describe('the server checks (§01)', () => {
       county: '04013',
       date: '2026-11-03',
     };
-    expect(await refused({ ...mail, hour: 9 }, 'el-hidden-hour')).toContain('is not asked (Hour)');
-    expect(await refused({ ...mail, role: 'voter' }, 'el-hidden-role')).toContain('is not asked');
-    expect(
-      await refused({ ...IN_PERSON_FINE, problems: ['other'] }, 'el-hidden-problems'),
-    ).toContain('is not asked');
-    expect(await refused({ ...mail, hour_approx: true }, 'el-hidden-approx')).toContain(
-      'is not asked',
-    );
+    expect(await refused({ ...mail, hour: 9 })).toContain('is not asked (Hour)');
+    expect(await refused({ ...mail, role: 'voter' })).toContain('is not asked');
+    expect(await refused({ ...IN_PERSON_FINE, problems: ['other'] })).toContain('is not asked');
+    expect(await refused({ ...mail, hour_approx: true })).toContain('is not asked');
   });
 
   it('refuses a code from another method’s list, and provisional by mail', async () => {
@@ -267,31 +263,27 @@ describe('the server checks (§01)', () => {
       date: '2026-11-03',
       voted: 'no',
     };
-    expect(await refused({ ...mail, problems: ['police'] }, 'el-other-list')).toContain(
+    expect(await refused({ ...mail, problems: ['police'] })).toContain(
       'What went wrong? Tick everything that applies. must be one of the choices offered',
     );
-    expect(
-      await refused({ ...mail, problems: ['other'], voted: 'provisional' }, 'el-provisional'),
-    ).toContain('Did you vote? must be one of the choices offered');
+    expect(await refused({ ...mail, problems: ['other'], voted: 'provisional' })).toContain(
+      'Did you vote? must be one of the choices offered',
+    );
   });
 
   it('refuses a county outside its state, an hour of 24, a label for a code, an unknown key', async () => {
-    expect(await refused({ ...IN_PERSON_FINE, state: 'NM' }, 'el-county')).toContain('County');
-    expect(await refused({ ...IN_PERSON_FINE, hour: 24 }, 'el-hour')).toContain('Hour');
-    expect(await refused({ ...IN_PERSON_FINE, outcome: 'It went fine' }, 'el-label')).toContain(
+    expect(await refused({ ...IN_PERSON_FINE, state: 'NM' })).toContain('County');
+    expect(await refused({ ...IN_PERSON_FINE, hour: 24 })).toContain('Hour');
+    expect(await refused({ ...IN_PERSON_FINE, outcome: 'It went fine' })).toContain(
       'How did it go?',
     );
-    expect(await refused({ ...IN_PERSON_FINE, note: 'hello' }, 'el-unknown')).toContain(
-      'did not ask for (note)',
-    );
-    expect(await refused({ ...IN_PERSON_FINE, hour_approx: false }, 'el-approx-false')).toContain(
-      'Approximate',
-    );
+    expect(await refused({ ...IN_PERSON_FINE, note: 'hello' })).toContain('did not ask for (note)');
+    expect(await refused({ ...IN_PERSON_FINE, hour_approx: false })).toContain('Approximate');
   });
 
   it('needs the hour in person, and does not need it by mail', async () => {
     const noHour = Object.fromEntries(Object.entries(IN_PERSON_FINE).filter(([k]) => k !== 'hour'));
-    expect(await refused(noHour, 'el-no-hour')).toContain('Hour is needed');
+    expect(await refused(noHour)).toContain('Hour is needed');
   });
 });
 
@@ -302,7 +294,7 @@ describe('after launch: wording may change, codes may not (ruling 48)', () => {
     };
 
   it('rewords a question and an option label, as a new form version; earlier reports keep theirs', async () => {
-    const before = await fileThroughRoutes(h, slug, IN_PERSON_FINE, address('el-before-reword'));
+    const before = await fileOnArrival(h, slug, IN_PERSON_FINE);
     const formOf = async (ref: string) =>
       (
         await h.db
@@ -332,7 +324,7 @@ describe('after launch: wording may change, codes may not (ruling 48)', () => {
     });
     expect(updated.label).toBe('How did voting go?');
     expect(await versions()).toBe(n + 1);
-    const after = await fileThroughRoutes(h, slug, IN_PERSON_FINE, address('el-after-reword'));
+    const after = await fileOnArrival(h, slug, IN_PERSON_FINE);
     expect(await formOf(after)).not.toBe(await formOf(before));
     expect(await verifies(before)).toBe(true);
     expect(await verifies(after)).toBe(true);
@@ -349,7 +341,7 @@ describe('after launch: wording may change, codes may not (ruling 48)', () => {
         ),
       },
     });
-    const ref = await fileThroughRoutes(h, slug, IN_PERSON_FINE, address('el-shown'), {
+    const ref = await fileOnArrival(h, slug, IN_PERSON_FINE, {
       form: shown,
     });
     const row = await h.db

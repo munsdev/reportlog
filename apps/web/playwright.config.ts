@@ -204,6 +204,12 @@ export default defineConfig({
         FILING_SENDS_PER_CLIENT: '200',
         // And each of those reports' confirmation links is opened and used.
         FILING_CONFIRMS_PER_CLIENT: '400',
+        // The door (apps/api/src/door/): a fixed key, and its per-address
+        // limits raised for the same reason. Its own tests set theirs.
+        DOOR_KEY: Buffer.alloc(32, 6).toString('base64'),
+        DOOR_SUBMITS_PER_MINUTE: '100000',
+        DOOR_SUBMITS_PER_HOUR: '100000',
+        DOOR_REQUESTS_PER_MINUTE: '1000000',
         // Files: a fixed key, a directory of its own, and the media worker
         // inside the server, so an attached photo is really re-encoded.
         FILES_KEY: Buffer.alloc(32, 8).toString('base64'),

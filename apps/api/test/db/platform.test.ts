@@ -16,6 +16,7 @@ import { CONTACT_KEY, fileThroughRoutes, threadOf } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address } from './identity-helpers.ts';
 import { moderationHarness, resetModerationSettings, staff } from './moderation-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 type Caller = Awaited<ReturnType<typeof staff>>['call'];
 
@@ -497,6 +498,7 @@ describe('I5 · the erase link in the confirmation email', () => {
       method: 'POST',
       url: '/api/reports',
       payload: {
+        ...(await doorPass(h.app)),
         logbook: lb.slug,
         email,
         consent: true,
