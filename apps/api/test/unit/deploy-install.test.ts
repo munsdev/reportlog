@@ -168,6 +168,8 @@ describe('install.sh on a fresh Debian 12', () => {
     expect(Buffer.from(key, 'base64')).toHaveLength(32);
     expect(env.match(/^CONTACT_KEY=/gm)).toHaveLength(1);
     expect(env).toMatch(/^CONTACT_KEY_PREVIOUS=$/m);
+    // Files on disk go where the service may write, never into a release.
+    expect(env).toMatch(new RegExp(`^FILES_DIR=${s.at('/var/lib/reportlog/files')}$`, 'm'));
     expect(statSync(s.at(ENV)).mode & 0o777).toBe(0o640);
     // Everything else in the template is carried over, comments and all.
     const template = readFileSync(join(REPO, '.env.example'), 'utf8').split('\n');

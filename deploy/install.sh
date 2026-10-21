@@ -251,6 +251,14 @@ if [ -n "$(env_value S3_ENDPOINT)" ]; then
     note "FILES_STORAGE set to s3."
   fi
 fi
+# Files on disk, until a provider is chosen. The default `.files` is relative
+# to the working directory, which on a server is a release under
+# /srv/reportlog: owned by root, read-only to the service, and replaced by
+# every deploy. The service may write only under /var/lib/reportlog.
+if [ "$(env_value FILES_STORAGE)" != s3 ] && [ "$(env_value FILES_DIR)" = .files ]; then
+  set_env FILES_DIR "$STATE_DIR/files"
+  note "FILES_DIR set to $STATE_DIR/files."
+fi
 
 note "The transparency log (deploy/README.md, \"Scheduled jobs\"):"
 ask_setting TRANSPARENCY_LOG_REMOTES "Where the daily record is pushed (git@host:you/log.git)" \
