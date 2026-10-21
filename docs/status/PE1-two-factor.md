@@ -139,7 +139,40 @@
 
 (Totals below are from the final runs on this branch.)
 
-TOTALS_PLACEHOLDER
+- **`pnpm check`:** passes. Unit: api 438 passed, 21 skipped; web 596; seal 46; fields 77;
+  access 9. New: `apps/api/test/unit/two-factor.test.ts` (28: RFC 4226 and 6238 vectors, the
+  ±1 window, base32 and the otpauth address, the sealed secret under the wrong key/person,
+  recovery-code typing, step-up freshness, the relying party); `apps/web/test/second-factor.test.tsx`
+  (7: the gate for set-up and verify, a refusal for somebody without the role, the QR drawn on the
+  page and the key written out, recovery codes kept on screen, the step-up retry and its refusal,
+  the dialog). Deploy: `reportlog reset-2fa` runs the script as the service user in the running
+  release and refuses no or two addresses; install.sh makes TWO_FACTOR_KEY and never replaces one;
+  `secrets.test.ts` names it.
+- **`pnpm test:db`:** 85 files, 1260 passed. New: `apps/api/test/db/second-factor.test.ts` (57):
+  owner, admin, access manager, moderator, journalist, an organization's coordinator and manager
+  each refused without a factor and let in after; a plain user untouched (24 hours); a role
+  granted mid-session not usable; pending 20 minutes, then 12 hours, under a NEW token (the old
+  cookie signs in nobody); a proof older than 12 hours is none; the window (±1 accepted, ±2 not);
+  replay in another session, and a race of one code; lockout after 5, per person, across
+  sessions, and parallel guesses; a replacement secret only once confirmed; the secret encrypted
+  and bound to its person; no key, a plain refusal; recovery codes (10, once each, hashed, made
+  again only after a step-up); passkeys through a software authenticator (first factor, several,
+  either factor, as a step-up, somebody else's refused, another origin refused, a spent challenge
+  refused, the last factor kept); **step-up refused on each of 20 listed routes and let through
+  after**, expiry after 5 minutes, no prompt for somebody without the role, none on ordinary
+  moderation; the owner's reset (factors and sessions gone, `role_audit` row that cannot be
+  edited), nobody else may, not the owner's own; the CLI on a real database; logs at `trace`
+  hold no code, secret, recovery code, token or client address. Existing setup and wizard tests
+  now set a factor up through the routes.
+- **Browser suite:** 986 passed, 5 skipped (the existing skips), 0 failed. New
+  `e2e/two-factor.spec.ts` (3 tests × desktop and phone): TOTP set up from the key on the page,
+  a wrong code refused and tied to its field, recovery codes, signing in again with the app; the
+  step-up dialog before granting a role (closed: refused; proved: granted); a passkey made and
+  used with Chromium's virtual authenticator on `localhost`; axe on every screen; no request to
+  another host. The setup wizard test sets the owner's app up in the page. Every staff sign-in in
+  the suite (`staff.setup.ts`'s ADMIN and MODERATOR, `files/helpers.ts`, and each spec's own)
+  now passes a second factor (`e2e/second-factor.ts`), and tests that perform a listed action
+  step up first.
 
 ## Assumed, not verified
 
