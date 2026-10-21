@@ -24,6 +24,7 @@ import { storedPublicArchive } from '../../src/board/publication.ts';
 import { verifyReport } from '../../src/chain/verify.ts';
 import { recordCardTexts } from '../../src/consent/cards.ts';
 import { siteLayer } from '../../src/files/limits.ts';
+import { storedIntakeSwitch } from '../../src/filing/intakeSwitch.ts';
 import { fileEntry } from '../../src/lists/entries.ts';
 import { ListRefusal } from '../../src/lists/refusals.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
@@ -32,6 +33,7 @@ import { checkedLinks, linksForEntries } from '../../src/links/reads.ts';
 import type { LinkKeys } from '../../src/links/keys.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
 import { createFromStartingPoint } from '../../src/logbooks/templates.ts';
+import { readCopy } from '../../src/site/settings.ts';
 import { applyTemplateDefinition, templateById } from '../../src/site/templates.ts';
 import type { Template } from '../../src/site/templates.ts';
 import { filingHarness, fileThroughRoutes, send, spine } from './filing-helpers.ts';
@@ -95,9 +97,17 @@ const answersOf = async (ref: string) =>
 
 describe('the site starting point', () => {
   it('makes the draft logbook and the hidden tip list, uploads off, archive on', async () => {
+    // Put back afterwards, so the files after this one find the site as it was.
     const before = {
       archive: await storedPublicArchive(h.db),
       files: (await siteLayer(h.db)).enabled,
+      intake: await storedIntakeSwitch(h.db),
+      copy: await readCopy(h.db),
+      record: await h.db
+        .selectFrom('site_settings')
+        .select(['template_applied', 'template_applied_at'])
+        .where('id', '=', true)
+        .executeTakeFirstOrThrow(),
     };
     const shipped = shippedElectionlog();
     // The shipped one names /list/tips; another test file may hold that
@@ -135,7 +145,10 @@ describe('the site starting point', () => {
         .set({ public_archive_enabled: before.archive })
         .execute();
       await h.db.updateTable('file_settings').set({ attachments_enabled: before.files }).execute();
-      await h.db.deleteFrom('site_copy').where('key', '=', 'submit_question').execute();
+      await h.db.updateTable('intake_settings').set({ intake_enabled: before.intake }).execute();
+      await h.db.deleteFrom('site_copy').execute();
+      if (before.copy.length) await h.db.insertInto('site_copy').values(before.copy).execute();
+      await h.db.updateTable('site_settings').set(before.record).where('id', '=', true).execute();
     }
   });
 
