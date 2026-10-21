@@ -85,6 +85,7 @@ import { Route as FileEraseTokenRouteImport } from './routes/file/erase/$token'
 import { Route as IllegalContentStatusTokenRouteImport } from './routes/illegal-content/status.$token'
 import { Route as JournalistsAccessTokenRouteImport } from './routes/journalists_.access_.$token'
 import { Route as JournalistsConfirmTokenRouteImport } from './routes/journalists_.confirm.$token'
+import { Route as JournalistsSettingsTokenRouteImport } from './routes/journalists_.settings.$token'
 import { Route as JournalistsStopTokenRouteImport } from './routes/journalists_.stop.$token'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
@@ -483,6 +484,12 @@ const JournalistsConfirmTokenRoute = JournalistsConfirmTokenRouteImport.update({
   path: '/journalists/confirm/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JournalistsSettingsTokenRoute =
+  JournalistsSettingsTokenRouteImport.update({
+    id: '/journalists_/settings/$token',
+    path: '/journalists/settings/$token',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const JournalistsStopTokenRoute = JournalistsStopTokenRouteImport.update({
   id: '/journalists_/stop/$token',
   path: '/journalists/stop/$token',
@@ -621,6 +628,7 @@ export interface FileRoutesByFullPath {
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/journalists/access/$token': typeof JournalistsAccessTokenRoute
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
@@ -706,6 +714,7 @@ export interface FileRoutesByTo {
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/journalists/access/$token': typeof JournalistsAccessTokenRoute
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
@@ -798,6 +807,7 @@ export interface FileRoutesById {
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
   '/journalists_/access_/$token': typeof JournalistsAccessTokenRoute
   '/journalists_/confirm/$token': typeof JournalistsConfirmTokenRoute
+  '/journalists_/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists_/stop/$token': typeof JournalistsStopTokenRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
@@ -891,6 +901,7 @@ export interface FileRouteTypes {
     | '/illegal-content/status/$token'
     | '/journalists/access/$token'
     | '/journalists/confirm/$token'
+    | '/journalists/settings/$token'
     | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
@@ -976,6 +987,7 @@ export interface FileRouteTypes {
     | '/illegal-content/status/$token'
     | '/journalists/access/$token'
     | '/journalists/confirm/$token'
+    | '/journalists/settings/$token'
     | '/journalists/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
@@ -1067,6 +1079,7 @@ export interface FileRouteTypes {
     | '/illegal-content/status/$token'
     | '/journalists_/access_/$token'
     | '/journalists_/confirm/$token'
+    | '/journalists_/settings/$token'
     | '/journalists_/stop/$token'
     | '/mine/declaration/$threadId'
     | '/notifications_/stop/$token'
@@ -1139,6 +1152,7 @@ export interface RootRouteChildren {
   IllegalContentStatusTokenRoute: typeof IllegalContentStatusTokenRoute
   JournalistsAccessTokenRoute: typeof JournalistsAccessTokenRoute
   JournalistsConfirmTokenRoute: typeof JournalistsConfirmTokenRoute
+  JournalistsSettingsTokenRoute: typeof JournalistsSettingsTokenRoute
   JournalistsStopTokenRoute: typeof JournalistsStopTokenRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
@@ -1685,6 +1699,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JournalistsConfirmTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/journalists_/settings/$token': {
+      id: '/journalists_/settings/$token'
+      path: '/journalists/settings/$token'
+      fullPath: '/journalists/settings/$token'
+      preLoaderRoute: typeof JournalistsSettingsTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/journalists_/stop/$token': {
       id: '/journalists_/stop/$token'
       path: '/journalists/stop/$token'
@@ -1946,6 +1967,7 @@ const rootRouteChildren: RootRouteChildren = {
   IllegalContentStatusTokenRoute: IllegalContentStatusTokenRoute,
   JournalistsAccessTokenRoute: JournalistsAccessTokenRoute,
   JournalistsConfirmTokenRoute: JournalistsConfirmTokenRoute,
+  JournalistsSettingsTokenRoute: JournalistsSettingsTokenRoute,
   JournalistsStopTokenRoute: JournalistsStopTokenRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   NotificationsStopTokenRoute: NotificationsStopTokenRoute,

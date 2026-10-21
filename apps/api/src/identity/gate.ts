@@ -39,11 +39,15 @@ export const IN_FRONT: readonly string[] = [
   'POST /api/telemetry/errors',
   'GET /api/notifications/stop/:token',
   'POST /api/notifications/stop/:token',
-  // The alert list's two email links (journalists/routes.ts): confirming and leaving.
+  // The alert list's email links (journalists/routes.ts): confirming and turning alerts off.
   'GET /api/journalists/confirm/:token',
   'POST /api/journalists/confirm/:token',
   'GET /api/journalists/stop/:token',
   'POST /api/journalists/stop/:token',
+  // The alert settings page an alert links to (decision 47): look, change, or remove.
+  'GET /api/journalists/settings/:token',
+  'POST /api/journalists/settings/:token',
+  'POST /api/journalists/settings/:token/remove',
   // The access request link (journalists/vetting.ts): the form it opens, and sending it.
   'GET /api/journalists/access/:token',
   'POST /api/journalists/access/:token',

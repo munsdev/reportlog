@@ -5,7 +5,8 @@
  * gate below, then the server's own guard on every call). Read-only, a page
  * at a time, with nothing to download: checked links with how many tips
  * carried each, the moderator's comment and the tips' multiple-choice
- * answers, and moderators' Sources links on published reports.
+ * answers, and moderators' Sources links on published reports. Below them,
+ * the journalist's own alert settings (decision 47).
  *
  * Every link is text, never an anchor: the site never fetches one, and a
  * journalist copies it into a browser on purpose. Every page shown is in the
@@ -21,6 +22,7 @@ import { Page } from '@/components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
+import { DeskAlerts } from './AlertSettings.tsx';
 
 export function DeskPage() {
   return (
@@ -36,6 +38,7 @@ export function DeskPage() {
           </Alert>
           <CheckedLinks />
           <Sources />
+          <DeskAlerts />
         </Page>
       </AgreementGate>
     </StaffOnly>

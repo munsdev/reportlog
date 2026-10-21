@@ -112,6 +112,7 @@ const OPEN = [
   '/journalists_/alerts',
   '/journalists_/confirm/$token',
   '/journalists_/stop/$token',
+  '/journalists_/settings/$token',
   '/journalists_/access',
   '/journalists_/access_/$token',
 ] as const;

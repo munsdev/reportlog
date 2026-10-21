@@ -1,6 +1,10 @@
 /**
- * Where the two links in the alert list's emails land:
+ * Where two links in the alert list's emails land:
  * /journalists/confirm/:token and /journalists/stop/:token.
+ *
+ * The stop link turns alerts off and keeps the person on the list, with any
+ * desk access (owner decision 47). Its page points to the change page, which
+ * is also where somebody removes themselves from the list entirely.
  *
  * OPENING A LINK CHANGES NOTHING. Mail scanners and link previews open every
  * link in a message, so looking is a GET and joining or leaving is the
@@ -60,7 +64,7 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
           It may have expired, been used already, or not been copied whole.{' '}
           {kind === 'confirm'
             ? 'To join the alert list, ask for a new confirmation email on the signup page.'
-            : 'If you already left the list, there is nothing more to do. Every alert carries its own link.'}
+            : 'If you removed yourself from the list, there is nothing more to do. Every alert carries its own link.'}
         </p>
       </Page>
     );
@@ -70,7 +74,7 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
       <Page title="You are on the alert list" width="prose">
         <p role="status">
           <strong>{s.address}</strong> will get an email when there are new approved reports in your
-          states. Every email has a link to leave.
+          states. Every email has a link to change or stop them.
         </p>
         <p>
           A journalist can also{' '}
@@ -89,9 +93,25 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
       </Page>
     );
   }
+  if (s.state === 'paused') {
+    return (
+      <Page title="Alerts are off" width="prose">
+        <p role="status">
+          No more alerts will be emailed to <strong>{s.address}</strong>. You are still on the list,
+          and any journalist desk access you have is unchanged.
+        </p>
+        <p>
+          <Link to="/journalists/settings/$token" params={{ token }} className="underline">
+            Change your alerts
+          </Link>{' '}
+          to turn them back on, choose different states, or remove yourself from the list entirely.
+        </p>
+      </Page>
+    );
+  }
   const joining = s.state === 'pending';
   return (
-    <Page title={joining ? 'Join the alert list?' : 'Leave the alert list?'} width="prose">
+    <Page title={joining ? 'Join the alert list?' : 'Stop these alerts?'} width="prose">
       <p>
         <strong>{s.address}</strong> {joining ? 'would get' : 'gets'} an email when there are new
         approved reports in: {s.states.join(', ')}.
@@ -100,7 +120,7 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
         Nothing has changed yet.{' '}
         {joining
           ? 'You join only when you press the button.'
-          : 'You leave only when you press the button.'}
+          : 'Alerts stop only when you press the button. You stay on the list, and keep any journalist desk access.'}
       </p>
       <div>
         <Button
@@ -110,10 +130,19 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
             press.mutate();
           }}
         >
-          {joining ? 'Join the alert list' : 'Leave the alert list'}
+          {joining ? 'Join the alert list' : 'Stop alerts'}
         </Button>
       </div>
       <ErrorText error={press.error} />
+      {joining ? null : (
+        <p>
+          Or{' '}
+          <Link to="/journalists/settings/$token" params={{ token }} className="underline">
+            change your alerts
+          </Link>{' '}
+          instead: choose different states, or remove yourself from the list entirely.
+        </p>
+      )}
     </Page>
   );
 }

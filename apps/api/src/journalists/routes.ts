@@ -1,9 +1,9 @@
 /**
  * The alert list's routes. Signing up is behind the site password like the
- * rest of the site; the two links that arrive by email (confirm, stop) are in
+ * rest of the site; the links that arrive by email (confirm, stop, settings) are in
  * front of it (identity/gate.ts, IN_FRONT), because a link in an email must
  * not depend on a password the person may not have. Opening either changes
- * nothing; only the POST does. The access request link is the third such link.
+ * nothing; only the POST does. The access request link is another such link.
  *
  * Two signed-in scopes, each guarded once, so a route added to one later
  * cannot forget to ask: the owner's queue (`roleGuard(['owner'])`) and the
@@ -22,7 +22,18 @@ import { requireUser, roleGuard } from '../identity/guards.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { deskGuard, deskLinkPage, deskSourcePage } from './desk.ts';
-import { applyConfirm, applyStop, describeConfirm, describeStop, signUp } from './list.ts';
+import {
+  applyConfirm,
+  applyStop,
+  changeDeskSettings,
+  changeSettings,
+  describeConfirm,
+  describeSettings,
+  describeStop,
+  deskSettings,
+  removeByLink,
+  signUp,
+} from './list.ts';
 import {
   approve,
   askForLink,
@@ -78,7 +89,14 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
   );
   route(app, C.confirmAlerts, ({ params }) => applyConfirm(deps.db, needRing(), params.token));
   route(app, C.describeAlertStop, ({ params }) => describeStop(deps.db, needRing(), params.token));
-  route(app, C.stopAlerts, ({ params }) => applyStop(deps.db, params.token));
+  route(app, C.stopAlerts, ({ params }) => applyStop(deps.db, needRing(), params.token));
+  route(app, C.describeAlertSettings, ({ params }) =>
+    describeSettings(deps.db, needRing(), params.token),
+  );
+  route(app, C.changeAlertSettings, ({ params, request }) =>
+    changeSettings(deps.db, needRing(), params.token, bodyOf(C.changeAlertSettings, request)),
+  );
+  route(app, C.leaveAlertList, ({ params }) => removeByLink(deps.db, params.token));
 
   const listDeps = () => ({
     db: deps.db,
@@ -150,6 +168,18 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
         deps.db,
         requireUser(request).email,
         query.page === undefined ? undefined : Number(query.page),
+      ),
+    );
+    // Their own alerts only: found by the signed-in account's address.
+    route(desk, C.deskAlertSettings, ({ request }) =>
+      deskSettings(deps.db, needRing(), requireUser(request).email),
+    );
+    route(desk, C.changeDeskAlerts, ({ request }) =>
+      changeDeskSettings(
+        deps.db,
+        needRing(),
+        requireUser(request).email,
+        bodyOf(C.changeDeskAlerts, request),
       ),
     );
     done();

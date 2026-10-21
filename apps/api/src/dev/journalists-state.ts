@@ -7,8 +7,8 @@
  *       Texas, and one in Arizona that is NOT approved), then run the
  *       journalist alert so the email lands in MAIL_OUTBOX with its unsubscribe link.
  *   node src/dev/journalists-state.ts listed <email>
- *       Print `pending`, `active` or `none`: how a test checks that opening
- *       a link changed nothing.
+ *       Print `pending`, `active`, `paused` (active, alerts off) or `none`:
+ *       how a test checks that opening a link changed nothing.
  *
  * Approving here stands in for a moderator, which is why this refuses to run
  * in production: nothing may approve a report except a moderator.
@@ -44,11 +44,11 @@ const db = createDatabase(config.DATABASE_URL, 2);
 try {
   const who = await db
     .selectFrom('journalist_subscribers')
-    .select(['id', 'status', 'states'])
+    .select(['id', 'status', 'states', 'alerts_paused_at'])
     .where('email_hmac', '=', emailDigest(ring, address))
     .executeTakeFirst();
   if (mode === 'listed') {
-    process.stdout.write(`${who?.status ?? 'none'}\n`);
+    process.stdout.write(`${who?.alerts_paused_at ? 'paused' : (who?.status ?? 'none')}\n`);
   } else {
     const outbox = process.env.MAIL_OUTBOX;
     if (!outbox) throw new Error('alert-for needs MAIL_OUTBOX: where the email is written.');

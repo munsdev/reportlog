@@ -4,9 +4,12 @@
  *
  * COUNTS ONLY. The email carries a number per state and nothing else: no
  * reference, no logbook, no answers, no link to a report or to the board, and
- * nothing about tips. The one link it holds is the one that takes the
- * address off the list. A journalist who wants the reports reads the public
- * board like anybody else.
+ * nothing about tips. Its two links are about the alerts themselves: change
+ * them, or turn them off (decision 47). A journalist who wants the reports
+ * reads the public board like anybody else.
+ *
+ * PAUSED SUBSCRIBERS ARE SKIPPED, and their window does not move while they
+ * are; turning alerts back on starts it again (list.ts, writeSettings).
  *
  * ONLY WHAT THE BOARD SHOWS. The reports counted are exactly the published
  * ones (`publishedReportIds`, board/published.ts), and a site whose public
@@ -27,7 +30,7 @@ import { publishedReportIds } from '../board/published.ts';
 import { openWithDek, keyringFrom } from '../filing/contactKeys.ts';
 import type { EmailJobDeps, JobOutcome } from '../site/job.ts';
 import { SETTLE_MS } from '../site/digest.ts';
-import { dekOf, issueLink, removeSubscribers, stopLinkFor } from './list.ts';
+import { dekOf, issueLink, removeSubscribers, settingsLinkFor, stopLinkFor } from './list.ts';
 
 /* THE STATE A PLACE ANSWER ROLLS UP TO: a county code (`US-AZ-04013`, owner
    decision 44) counts toward its state by prefix, as on the heat maps, and a
@@ -41,7 +44,7 @@ export interface AlertCount {
 
 export function alertEmail(
   counts: readonly AlertCount[],
-  stopLink: string,
+  links: { stop: string; settings: string },
 ): { subject: string; text: string } {
   const total = counts.reduce((sum, c) => sum + c.n, 0);
   const reports = (n: number) =>
@@ -55,7 +58,13 @@ export function alertEmail(
       '',
       'This alert says how many, and nothing more.',
       '',
-      `You asked for these alerts by joining the journalist alert list. To leave it, open this link (you do not need to sign in): ${stopLink}`,
+      'You asked for these alerts by joining the journalist alert list. Neither link below needs you to sign in.',
+      '',
+      `Change your alerts (which states, or turn them off for now): ${links.settings}`,
+      '',
+      `Stop these alerts: ${links.stop}`,
+      '',
+      'Stopping alerts keeps you on the list, and keeps journalist desk access if you have it. The first link also lets you remove yourself from the list entirely.',
     ].join('\n'),
   };
 }
@@ -90,10 +99,11 @@ export async function runJournalistAlerts(
     .selectFrom('journalist_subscribers')
     .select(['id', 'states', 'last_sent_at', 'dek_wrapped', 'email_enc'])
     .where('status', '=', 'active')
+    .where('alerts_paused_at', 'is', null)
     .orderBy('id')
     .execute();
   if (!subscribers.length)
-    return { ok: true, summary: 'journalist alerts: nobody is on the list.' };
+    return { ok: true, summary: 'journalist alerts: nobody on the list has alerts on.' };
   if (!deps.contactKey) {
     return {
       ok: false,
@@ -129,7 +139,10 @@ export async function runJournalistAlerts(
           to,
           ...alertEmail(
             rows.map((r) => ({ state: r.place, n: Number(r.n) })),
-            stopLinkFor(deps.siteOrigin, token),
+            {
+              stop: stopLinkFor(deps.siteOrigin, token),
+              settings: settingsLinkFor(deps.siteOrigin, token),
+            },
           ),
         });
         sent += 1;

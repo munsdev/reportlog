@@ -526,51 +526,162 @@ describe('J13 · the owner revokes, effective on the next request', () => {
   });
 });
 
-describe('decision 46 · leaving the alert list closes the desk', () => {
-  const leaver = address('leaver');
+/** Subscribe, ask, approve, sign in and accept: a journalist reading the desk. */
+async function deskJournalist(email: string) {
+  await subscribe(email);
+  const sent = await h.app.inject({
+    method: 'POST',
+    url: `/api/journalists/access/${await askLink(email)}`,
+    payload: REQUEST,
+  });
+  expect(sent.json()).toMatchObject({ state: 'pending' });
+  const approve = await owner.call({
+    method: 'POST',
+    url: `/api/owner/journalists/${String(await requestId(email))}/approve`,
+  });
+  expect(approve.statusCode, approve.body).toBe(200);
+  const call = as(h, await signIn(h, email));
+  const state = await call({ method: 'GET', url: '/api/agreement/journalist' });
+  const digest = state.json<{ current: { digest: string } }>().current.digest;
+  await call({ method: 'POST', url: '/api/agreement/journalist/accept', payload: { digest } });
+  expect((await call({ method: 'GET', url: '/api/desk/links' })).statusCode).toBe(200);
+  return call;
+}
 
-  it('approve, accept, read; stop by the emailed link; the same session is refused', async () => {
-    await subscribe(leaver);
-    const sent = await h.app.inject({
-      method: 'POST',
-      url: `/api/journalists/access/${await askLink(leaver)}`,
-      payload: REQUEST,
-    });
-    expect(sent.json()).toMatchObject({ state: 'pending' });
-    const approve = await owner.call({
-      method: 'POST',
-      url: `/api/owner/journalists/${String(await requestId(leaver))}/approve`,
-    });
-    expect(approve.statusCode, approve.body).toBe(200);
-    const call = as(h, await signIn(h, leaver));
-    const state = await call({ method: 'GET', url: '/api/agreement/journalist' });
-    const digest = state.json<{ current: { digest: string } }>().current.digest;
-    await call({ method: 'POST', url: '/api/agreement/journalist/accept', payload: { digest } });
-    expect((await call({ method: 'GET', url: '/api/desk/links' })).statusCode).toBe(200);
+/** The token an alert email carries, for this subscriber. */
+async function alertToken(email: string) {
+  const sub = await h.db
+    .selectFrom('journalist_subscribers')
+    .select('id')
+    .where('email_hmac', '=', emailDigest(ring, email))
+    .executeTakeFirstOrThrow();
+  return issueLink(h.db, sub.id, 'stop');
+}
 
-    // The stop link is the one an alert email carries.
-    const sub = await h.db
-      .selectFrom('journalist_subscribers')
-      .select('id')
-      .where('email_hmac', '=', emailDigest(ring, leaver))
-      .executeTakeFirstOrThrow();
-    const token = await issueLink(h.db, sub.id, 'stop');
+const subscriberOf = (email: string) =>
+  h.db
+    .selectFrom('journalist_subscribers')
+    .select(['status', 'states', 'alerts_paused_at'])
+    .where('email_hmac', '=', emailDigest(ring, email))
+    .executeTakeFirst();
+
+const auditOf = (email: string) =>
+  h.db
+    .selectFrom('role_audit')
+    .select(['action', 'detail', 'actor_email'])
+    .where('subject_email', '=', email)
+    .orderBy('id')
+    .execute();
+
+describe('decision 47 · alerts are a setting; turning them off keeps the desk', () => {
+  const pauser = address('pauser');
+  let call: Awaited<ReturnType<typeof deskJournalist>>;
+  let token = '';
+  beforeAll(async () => {
+    call = await deskJournalist(pauser);
+    token = await alertToken(pauser);
+  });
+
+  it('the stop link pauses alerts: the role, the request and the desk all stay', async () => {
+    const audit = await auditOf(pauser);
     const stop = await h.app.inject({ method: 'POST', url: `/api/journalists/stop/${token}` });
-    expect(stop.json()).toEqual({ state: 'stopped' });
+    expect(stop.json()).toMatchObject({ state: 'paused' });
+    expect(await subscriberOf(pauser)).toMatchObject({ status: 'active' });
+    expect((await subscriberOf(pauser))?.alerts_paused_at).toBeInstanceOf(Date);
+    expect(await roleOf(h.db, pauser)).toBe('journalist');
+    expect(await auditOf(pauser)).toEqual(audit);
+    expect((await call({ method: 'GET', url: '/api/desk/links' })).statusCode).toBe(200);
+    expect((await call({ method: 'GET', url: '/api/desk/sources' })).statusCode).toBe(200);
+    // The J7a access link still finds the approved request while paused.
+    const access = await h.app.inject({
+      method: 'GET',
+      url: `/api/journalists/access/${await askLink(pauser)}`,
+    });
+    expect(access.json()).toMatchObject({ state: 'approved' });
+  });
 
+  it('the desk shows their own settings, and GET changes nothing', async () => {
+    const before = await subscriberOf(pauser);
+    for (let i = 0; i < 2; i++) {
+      const r = await call({ method: 'GET', url: '/api/desk/alerts' });
+      expect(r.json()).toMatchObject({ state: 'open', states: ['US-AZ'], alerts: 'off' });
+    }
+    expect(await subscriberOf(pauser)).toEqual(before);
+  });
+
+  it('from the desk: resume and change states, checked as on signup; no email needed', async () => {
+    const mails = h.mailer.messages.length;
+    const bad = await call({
+      method: 'POST',
+      url: '/api/desk/alerts',
+      payload: { states: ['US-ZZ'], alerts: 'on' },
+    });
+    expect(bad.statusCode).toBe(400);
+    expect((await subscriberOf(pauser))?.alerts_paused_at).toBeInstanceOf(Date);
+    const r = await call({
+      method: 'POST',
+      url: '/api/desk/alerts',
+      payload: { states: ['US-NV', 'US-AZ'], alerts: 'on' },
+    });
+    expect(r.json()).toMatchObject({ state: 'open', states: ['US-AZ', 'US-NV'], alerts: 'on' });
+    expect(await subscriberOf(pauser)).toMatchObject({
+      states: ['US-AZ', 'US-NV'],
+      alerts_paused_at: null,
+    });
+    const off = await call({
+      method: 'POST',
+      url: '/api/desk/alerts',
+      payload: { states: ['US-AZ'], alerts: 'off' },
+    });
+    expect(off.json()).toMatchObject({ alerts: 'off' });
+    expect(await roleOf(h.db, pauser)).toBe('journalist');
+    expect(h.mailer.messages.length).toBe(mails);
+  });
+
+  it('no other role reaches the desk’s alert settings', async () => {
+    for (const role of ['moderator', 'admin', 'access_manager'] as const) {
+      const who = address(`desk-alerts-${role}`);
+      await seat(h.db, who, role);
+      const other = as(h, await signIn(h, who));
+      for (const method of ['GET', 'POST'] as const) {
+        const r = await other({
+          method,
+          url: '/api/desk/alerts',
+          ...(method === 'POST' ? { payload: { states: ['US-AZ'], alerts: 'on' } } : {}),
+        });
+        expect(r.statusCode, `${role} ${method}`).toBe(403);
+      }
+    }
+    expect((await h.app.inject({ method: 'GET', url: '/api/desk/alerts' })).statusCode).toBe(401);
+  });
+
+  it('opening the change link changes nothing; "remove me entirely" ends the desk (decision 46)', async () => {
+    const before = await subscriberOf(pauser);
+    const look = await h.app.inject({ method: 'GET', url: `/api/journalists/settings/${token}` });
+    expect(look.json()).toMatchObject({ state: 'open', alerts: 'off' });
+    expect(await subscriberOf(pauser)).toEqual(before);
+    expect(await roleOf(h.db, pauser)).toBe('journalist');
+
+    const gone = await h.app.inject({
+      method: 'POST',
+      url: `/api/journalists/settings/${token}/remove`,
+    });
+    expect(gone.json()).toEqual({ state: 'removed' });
+    expect(await subscriberOf(pauser)).toBeUndefined();
     const next = await call({ method: 'GET', url: '/api/desk/links' });
     expect(next.statusCode).toBe(403);
     expect(next.body).not.toContain(CHECKED);
-    expect(await roleOf(h.db, leaver)).toBe('user');
-    const audit = await h.db
-      .selectFrom('role_audit')
-      .select(['action', 'detail', 'actor_email'])
-      .where('subject_email', '=', leaver)
-      .orderBy('id')
-      .execute();
-    expect(audit.at(-1)).toEqual({ action: 'revoke', detail: 'journalist', actor_email: leaver });
+    expect((await call({ method: 'GET', url: '/api/desk/alerts' })).statusCode).toBe(403);
+    expect(await roleOf(h.db, pauser)).toBe('user');
+    expect((await auditOf(pauser)).at(-1)).toEqual({
+      action: 'revoke',
+      detail: 'journalist',
+      actor_email: pauser,
+    });
   });
+});
 
+describe('decision 46 · removing yourself from the alert list closes the desk', () => {
   it('a journalist role with no approved request behind it is refused by the guard', async () => {
     // A role left behind by a path that forgot: the second line still holds.
     const stray = address('stray-journalist');

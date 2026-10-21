@@ -383,6 +383,7 @@ export interface JournalistLinks {
 }
 
 export interface JournalistSubscribers {
+  alerts_paused_at: Timestamp | null;
   confirmed_at: Timestamp | null;
   created_at: Generated<Timestamp>;
   dek_wrapped: Buffer;

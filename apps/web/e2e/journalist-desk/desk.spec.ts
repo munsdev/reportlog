@@ -166,6 +166,21 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await expect(reader.locator(`a[href*="checked-${run}"]`)).toHaveCount(0);
   await noViolations(reader);
 
+  // Decision 47: their own alerts, changed from the desk with no email. Off keeps the desk.
+  const alerts = reader.getByRole('region', { name: 'Your alerts' });
+  await expect(alerts.getByRole('radio', { name: 'Send me alerts' })).toBeChecked();
+  await alerts.getByRole('radio', { name: /Turn alerts off for now/ }).click();
+  await alerts.getByRole('checkbox', { name: 'Nevada' }).click();
+  await alerts.getByRole('button', { name: 'Save my alert settings' }).click();
+  await expect(alerts.getByText('Your alert settings are saved.')).toBeVisible();
+  expect(node('src/dev/journalists-state.ts', 'listed', JOURNALIST)).toBe('paused');
+  await reader.reload();
+  await expect(reader.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
+  await expect(alerts.getByRole('radio', { name: /Turn alerts off for now/ })).toBeChecked();
+  await expect(alerts.getByRole('checkbox', { name: 'Nevada' })).toBeChecked();
+  await expect(entry).toBeVisible();
+  await noViolations(reader);
+
   // J13: revoked, and the next look is refused.
   await card.getByRole('button', { name: 'Revoke access' }).click();
   await expect(card.getByText('Revoked', { exact: true })).toBeVisible();

@@ -47,8 +47,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
   // illegal content: emailed to somebody who may never have had the password.
   /^\/file\/erase\/[^/]+$/,
   /^\/illegal-content\/status\/[^/]+$/,
-  // The alert list's two email links: joining and leaving (journalists/routes.ts).
-  /^\/journalists\/(confirm|stop)\/[^/]+$/,
+  // The alert list's email links: joining, turning alerts off, and changing them (journalists/routes.ts).
+  /^\/journalists\/(confirm|stop|settings)\/[^/]+$/,
   // The access request link (journalists/vetting.ts), emailed to a subscriber.
   /^\/journalists\/access\/[^/]+$/,
 ];

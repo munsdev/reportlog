@@ -1,9 +1,10 @@
 /**
  * The journalist alert list, as a stranger meets it (plan D, J1 to J6):
- * signing up, the confirmation link from the captured email, an alert, and
- * the unsubscribe link in it. Both links are followed from the emails the
- * server wrote, and each page is checked for third-party requests and
- * accessibility.
+ * signing up, the confirmation link from the captured email, an alert, the
+ * stop link in it (which turns alerts off, decision 47), and the "Change your
+ * alerts" link in it: changing them, then removing the address entirely.
+ * Every link is followed from the emails the server wrote, and each page is
+ * checked for third-party requests and accessibility.
  */
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -39,7 +40,7 @@ function watch(page: Page) {
     const url = new URL(r.url());
     if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') outside.push(r.url());
     else if (url.pathname.startsWith('/api/')) {
-      calls.push(`${r.method()} ${url.pathname.replace(/\/[a-f0-9]{64}$/, '/:token')}`);
+      calls.push(`${r.method()} ${url.pathname.replace(/\/[a-f0-9]{64}(?=\/|$)/, '/:token')}`);
     }
   });
   return { outside, calls };
@@ -50,12 +51,12 @@ async function noViolations(page: Page) {
   expect(found.violations.map(describeViolation)).toEqual([]);
 }
 
-const linkIn = (text: string, kind: 'confirm' | 'stop') =>
+const linkIn = (text: string, kind: 'confirm' | 'stop' | 'settings') =>
   new RegExp(`https?://\\S+/journalists/${kind}/[a-f0-9]{64}`).exec(text)?.[0] ?? '';
 
 test.describe.configure({ mode: 'serial' });
 
-test('signing up, confirming from the email, an alert, and leaving from it', async ({
+test('signing up, confirming from the email, an alert, and stopping, changing and leaving from it', async ({
   browser,
 }, testInfo) => {
   // One state per project, and states no other test files reports in: the two projects share a database and run together.
@@ -99,35 +100,78 @@ test('signing up, confirming from the email, an alert, and leaving from it', asy
   ).toBeVisible();
   expect(devState('listed', EMAIL)).toBe('active');
 
-  // J3, J4: an alert with counts only, and the one link in it.
+  // J3, J4: an alert with counts only, and its two links: change the alerts, or stop them.
   const mailBefore = countTo(EMAIL);
   devState('alert-for', EMAIL);
   const alert = await lastMessageTo(EMAIL, mailBefore);
   expect(alert.text).toContain(`${state}: 2`);
   expect(alert.text).not.toContain('Wyoming');
-  expect(alert.text.match(/https?:\/\/\S+/g)).toHaveLength(1);
+  expect(alert.text.match(/https?:\/\/\S+/g)).toHaveLength(2);
   const stop = linkIn(alert.text, 'stop');
   expect(stop).not.toBe('');
+  const change = linkIn(alert.text, 'settings');
+  expect(change).not.toBe('');
 
   const leaving = await (await browser.newContext()).newPage();
   const leavingSeen = watch(leaving);
   await leaving.goto(stop);
   await expect(
-    leaving.getByRole('heading', { level: 1, name: 'Leave the alert list?' }),
+    leaving.getByRole('heading', { level: 1, name: 'Stop these alerts?' }),
   ).toBeVisible();
   await noViolations(leaving);
   await leaving.reload();
   expect(devState('listed', EMAIL)).toBe('active');
-  await leaving.getByRole('button', { name: 'Leave the alert list' }).click();
+  await leaving.getByRole('button', { name: 'Stop alerts' }).click();
+  await expect(leaving.getByRole('heading', { level: 1, name: 'Alerts are off' })).toBeVisible();
+  await noViolations(leaving);
+  // Off, and still on the list.
+  expect(devState('listed', EMAIL)).toBe('paused');
+
+  // Decision 47: the "Change your alerts" link from the same email. Opening it changes nothing.
+  const changing = await (await browser.newContext()).newPage();
+  const changingSeen = watch(changing);
+  await changing.goto(change);
   await expect(
-    leaving.getByRole('heading', { level: 1, name: 'You are off the alert list' }),
+    changing.getByRole('heading', { level: 1, name: 'Change your alerts' }),
   ).toBeVisible();
+  await expect(changing.getByRole('checkbox', { name: state })).toBeChecked();
+  await expect(changing.getByRole('radio', { name: /Turn alerts off for now/ })).toBeChecked();
+  await noViolations(changing);
+  await changing.reload();
+  await expect(
+    changing.getByRole('heading', { level: 1, name: 'Change your alerts' }),
+  ).toBeVisible();
+  expect(devState('listed', EMAIL)).toBe('paused');
+  // Back on, with one more state.
+  await changing.getByRole('radio', { name: 'Send me alerts' }).click();
+  await changing.getByRole('checkbox', { name: 'New Hampshire' }).click();
+  await changing.getByRole('button', { name: 'Save my alert settings' }).click();
+  await expect(changing.getByText('Your alert settings are saved.')).toBeVisible();
+  expect(devState('listed', EMAIL)).toBe('active');
+  // Removing yourself entirely is its own button, and says what else it ends.
+  const removal = changing.getByRole('region', { name: 'Remove me from the list entirely' });
+  await expect(removal.getByText(/ends that too/)).toBeVisible();
+  await removal.getByRole('button', { name: 'Remove me from the list entirely' }).click();
+  await expect(
+    changing.getByRole('heading', { level: 1, name: 'You are off the alert list' }),
+  ).toBeVisible();
+  await noViolations(changing);
   expect(devState('listed', EMAIL)).toBe('none');
 
   // No page asked another host for anything. (That a door makes only its own calls is
   // checked with the password on: test/door-quiet.test.tsx and the gate's db test.)
-  expect([...seen.outside, ...linkSeen.outside, ...leavingSeen.outside]).toEqual([]);
-  // Joining and leaving each happened by one POST, from the button.
+  expect([
+    ...seen.outside,
+    ...linkSeen.outside,
+    ...leavingSeen.outside,
+    ...changingSeen.outside,
+  ]).toEqual([]);
+  // Joining and stopping each happened by one POST, from the button; changing
+  // and removing by one each, and opening any of the pages by none.
   expect(linkSeen.calls.filter((c) => c.startsWith('POST'))).toHaveLength(1);
   expect(leavingSeen.calls.filter((c) => c.startsWith('POST'))).toHaveLength(1);
+  expect(changingSeen.calls.filter((c) => c.startsWith('POST'))).toEqual([
+    'POST /api/journalists/settings/:token',
+    'POST /api/journalists/settings/:token/remove',
+  ]);
 });

@@ -1,5 +1,6 @@
 /**
- * The journalist alert list: sign up, confirm by link, leave by link.
+ * The journalist alert list: sign up, confirm by link, change or pause
+ * alerts by link or from the desk, and leave.
  *
  * Signing up collects a name, an outlet, an address and the states a
  * journalist covers, and nothing else. Being on the list grants no access
@@ -43,6 +44,8 @@ export const AlertLink = z.discriminatedUnion('state', [
     states: z.array(z.string()),
   }),
   z.object({ state: z.literal('confirmed'), address: z.string() }),
+  /** Alerts are off; the address is still on the list (decision 47). */
+  z.object({ state: z.literal('paused'), address: z.string() }),
   z.object({ state: z.literal('stopped') }),
   z.object({ state: z.literal('gone') }),
 ]);
@@ -69,7 +72,7 @@ export const confirmAlerts = defineRoute({
 export const describeAlertStop = defineRoute({
   method: 'GET',
   path: '/api/journalists/stop/:token',
-  summary: 'What the unsubscribe link in an alert would do. Changes nothing.',
+  summary: 'What the stop link in an alert would do. Changes nothing.',
   params: LinkParams,
   response: AlertLink,
 });
@@ -77,9 +80,76 @@ export const describeAlertStop = defineRoute({
 export const stopAlerts = defineRoute({
   method: 'POST',
   path: '/api/journalists/stop/:token',
-  summary: 'Take the address off the alert list. No sign-in needed.',
+  summary:
+    'Turn alerts off, in one POST. The address stays on the list, with any desk access. No sign-in needed.',
   params: LinkParams,
   response: AlertLink,
+});
+
+// ── Alert settings (owner decision 47) ───────────────────────────────────
+//
+// The link in every alert opens a page to change the states and turn alerts
+// off or on; a journalist on the desk changes the same two things there.
+
+export const AlertSettingsBody = z.object({
+  /** Place codes such as `US-AZ`, checked as on signup. */
+  states: z.array(z.string().max(12)).min(1).max(60),
+  alerts: z.enum(['on', 'off']),
+});
+export type AlertSettingsBody = z.infer<typeof AlertSettingsBody>;
+
+export const AlertSettings = z.discriminatedUnion('state', [
+  z.object({
+    state: z.literal('open'),
+    address: z.string(),
+    /** Place codes, so the page can show them as choices. */
+    states: z.array(z.string()),
+    alerts: z.enum(['on', 'off']),
+  }),
+  z.object({ state: z.literal('removed') }),
+  z.object({ state: z.literal('gone') }),
+]);
+export type AlertSettings = z.infer<typeof AlertSettings>;
+
+export const describeAlertSettings = defineRoute({
+  method: 'GET',
+  path: '/api/journalists/settings/:token',
+  summary: 'The alert settings the link in an alert opens. Changes nothing.',
+  params: LinkParams,
+  response: AlertSettings,
+});
+
+export const changeAlertSettings = defineRoute({
+  method: 'POST',
+  path: '/api/journalists/settings/:token',
+  summary: 'Change the states and turn alerts on or off. The address stays on the list.',
+  params: LinkParams,
+  body: AlertSettingsBody,
+  response: AlertSettings,
+});
+
+export const leaveAlertList = defineRoute({
+  method: 'POST',
+  path: '/api/journalists/settings/:token/remove',
+  summary:
+    'Remove the address from the list entirely. This also ends journalist desk access, if it was given.',
+  params: LinkParams,
+  response: AlertSettings,
+});
+
+export const deskAlertSettings = defineRoute({
+  method: 'GET',
+  path: '/api/desk/alerts',
+  summary: 'The signed-in journalist’s own alert settings.',
+  response: AlertSettings,
+});
+
+export const changeDeskAlerts = defineRoute({
+  method: 'POST',
+  path: '/api/desk/alerts',
+  summary: 'Change the signed-in journalist’s own states, or turn their alerts on or off.',
+  body: AlertSettingsBody,
+  response: AlertSettings,
 });
 
 // ── J7a: asking for vetted access ────────────────────────────────────────

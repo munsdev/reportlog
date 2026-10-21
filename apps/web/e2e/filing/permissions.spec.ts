@@ -75,7 +75,12 @@ async function myReportWithPublishedFiles(
     (url) => url.pathname === `/api/mine/reports/${thread}`,
     async (route) => {
       const real = await route.fetch();
-      const r = (await real.json()) as { permissions: Record<string, boolean> };
+      // The page can drop a request it has replaced (a refetch), and Playwright
+      // then disposes the response under us. Nothing reads that one: leave it.
+      const r = (await real.json().catch(() => null)) as {
+        permissions: Record<string, boolean>;
+      } | null;
+      if (!r) return;
       await route.fulfill({
         response: real,
         json: {

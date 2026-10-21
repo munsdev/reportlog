@@ -19,12 +19,23 @@
  * already listed, the visitor is told the same thing, so the form cannot be
  * used to learn who is on the list.
  *
+ * ALERTS ARE A SETTING, LEAVING IS SEPARATE (owner decision 47). The link in
+ * an alert, and the desk, change the states and turn alerts off or on
+ * (`alerts_paused_at`). Paused is not pending: `status` stays `active`, so a
+ * paused subscriber keeps their access request and their desk. Only removing
+ * yourself from the list entirely (`removeSubscribers`) ends those.
+ *
  * BEING LISTED GRANTS NOTHING. No role, session or permission is created
  * here, and nothing outside this folder reads the table to decide access.
  */
 import { isSubdivisionCode, placeLabel } from '@reportlog/fields';
-import type { AlertLink, JournalistSignup } from '@reportlog/contracts';
-import type { Kysely } from 'kysely';
+import type {
+  AlertLink,
+  AlertSettings,
+  AlertSettingsBody,
+  JournalistSignup,
+} from '@reportlog/contracts';
+import { sql, type Kysely } from 'kysely';
 import { randomBytes } from 'node:crypto';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
@@ -93,6 +104,11 @@ export const confirmLinkFor = (siteOrigin: string, token: string) =>
   `${siteOrigin}/journalists/confirm/${token}`;
 export const stopLinkFor = (siteOrigin: string, token: string) =>
   `${siteOrigin}/journalists/stop/${token}`;
+/* The change page takes the same token as the stop link: it can do no more
+   than the stop page already offers, and every stop link ever emailed then
+   opens it too. */
+export const settingsLinkFor = (siteOrigin: string, token: string) =>
+  `${siteOrigin}/journalists/settings/${token}`;
 
 export function confirmationEmail(link: string): { subject: string; text: string } {
   return {
@@ -213,7 +229,15 @@ async function linkOf(db: Kysely<DB>, token: string, purpose: LinkPurpose) {
   return db
     .selectFrom('journalist_links as l')
     .innerJoin('journalist_subscribers as s', 's.id', 'l.subscriber_id')
-    .select(['l.token_hash', 's.id', 's.status', 's.states', 's.email_enc', 's.dek_wrapped'])
+    .select([
+      'l.token_hash',
+      's.id',
+      's.status',
+      's.states',
+      's.email_enc',
+      's.dek_wrapped',
+      's.alerts_paused_at',
+    ])
     .where('l.token_hash', '=', sha256Hex(token))
     .where('l.purpose', '=', purpose)
     .where('l.expires_at', '>', new Date())
@@ -268,7 +292,7 @@ export async function applyConfirm(
   return { state: 'confirmed', address: addressOf(ring, row) };
 }
 
-/** What the unsubscribe link in an alert would do. Reads only. */
+/** What the stop link in an alert would do. Reads only. */
 export async function describeStop(
   db: Kysely<DB>,
   ring: ContactKeyring,
@@ -276,13 +300,143 @@ export async function describeStop(
 ): Promise<AlertLink> {
   const row = await linkOf(db, token, 'stop');
   if (!row) return { state: 'gone' };
-  return { state: 'active', address: addressOf(ring, row), states: namesOf(row.states) };
+  const address = addressOf(ring, row);
+  return row.alerts_paused_at
+    ? { state: 'paused', address }
+    : { state: 'active', address, states: namesOf(row.states) };
 }
 
-/** Take the address off the list: the row, and with it every link, is deleted. */
-export async function applyStop(db: Kysely<DB>, token: string): Promise<AlertLink> {
+/**
+ * Turn alerts off: one POST, so the link works as a one-click unsubscribe.
+ * It no longer takes the address off the list (decision 47): the person
+ * keeps any desk access, and the page offers full removal separately. A
+ * second press keeps the first time.
+ */
+export async function applyStop(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  token: string,
+): Promise<AlertLink> {
+  const row = await linkOf(db, token, 'stop');
+  if (!row) return { state: 'gone' };
+  await db
+    .updateTable('journalist_subscribers')
+    .set({ alerts_paused_at: new Date() })
+    .where('id', '=', row.id)
+    .where('status', '=', 'active')
+    .where('alerts_paused_at', 'is', null)
+    .execute();
+  return { state: 'paused', address: addressOf(ring, row) };
+}
+
+interface SettingsRow {
+  id: number;
+  states: string[];
+  email_enc: Buffer;
+  dek_wrapped: Buffer;
+  alerts_paused_at: Date | null;
+}
+
+const settingsOf = (ring: ContactKeyring, row: SettingsRow): AlertSettings => ({
+  state: 'open',
+  address: partlyHidden(openWithDek(dekOf(ring, row.dek_wrapped), row.email_enc)),
+  states: row.states,
+  alerts: row.alerts_paused_at ? 'off' : 'on',
+});
+
+/**
+ * Change the states and turn alerts on or off. Turning them back on starts
+ * the next window now, as confirming does: a resumed subscriber is not sent
+ * the backlog of the weeks they had them off.
+ */
+async function writeSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  id: number,
+  body: AlertSettingsBody,
+): Promise<AlertSettings> {
+  const states = checkedStates(body.states);
+  const row = await db
+    .updateTable('journalist_subscribers')
+    .set(
+      body.alerts === 'off'
+        ? { states, alerts_paused_at: sql<Date>`coalesce(alerts_paused_at, now())` }
+        : {
+            states,
+            alerts_paused_at: null,
+            last_sent_at: sql<Date>`CASE WHEN alerts_paused_at IS NULL THEN last_sent_at ELSE now() END`,
+          },
+    )
+    .where('id', '=', id)
+    .where('status', '=', 'active')
+    .returning(['id', 'states', 'email_enc', 'dek_wrapped', 'alerts_paused_at'])
+    .executeTakeFirst();
+  if (!row) return { state: 'gone' };
+  return settingsOf(ring, row);
+}
+
+/** The change page behind the link in an alert. Reads only. */
+export async function describeSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  token: string,
+): Promise<AlertSettings> {
+  const row = await linkOf(db, token, 'stop');
+  if (row?.status !== 'active') return { state: 'gone' };
+  return settingsOf(ring, row);
+}
+
+export async function changeSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  token: string,
+  body: AlertSettingsBody,
+): Promise<AlertSettings> {
+  const row = await linkOf(db, token, 'stop');
+  if (!row) return { state: 'gone' };
+  return writeSettings(db, ring, row.id, body);
+}
+
+/** Remove yourself from the list entirely: the row, every link and any desk access (decision 46). */
+export async function removeByLink(db: Kysely<DB>, token: string): Promise<AlertSettings> {
   const row = await linkOf(db, token, 'stop');
   if (!row) return { state: 'gone' };
   await removeSubscribers(db, [row.id]);
-  return { state: 'stopped' };
+  return { state: 'removed' };
+}
+
+/**
+ * The desk's own subscription, found by the account's address (its keyed
+ * digest), so a journalist changes theirs without an email round-trip and
+ * can reach nobody else's.
+ */
+async function ownSubscription(db: Kysely<DB>, ring: ContactKeyring, email: string) {
+  const row = await db
+    .selectFrom('journalist_subscribers')
+    .select(['id', 'states', 'email_enc', 'dek_wrapped', 'alerts_paused_at'])
+    .where('email_hmac', 'in', emailDigests(ring, email))
+    .where('status', '=', 'active')
+    .executeTakeFirst();
+  if (!row) {
+    throw new HttpError(404, 'not_listed', 'Your address is not on the journalist alert list.');
+  }
+  return row;
+}
+
+export async function deskSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  email: string,
+): Promise<AlertSettings> {
+  return settingsOf(ring, await ownSubscription(db, ring, email));
+}
+
+export async function changeDeskSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  email: string,
+  body: AlertSettingsBody,
+): Promise<AlertSettings> {
+  const { id } = await ownSubscription(db, ring, email);
+  return writeSettings(db, ring, id, body);
 }
