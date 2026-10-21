@@ -27,6 +27,7 @@ import { siteLayer } from '../../src/files/limits.ts';
 import { fileEntry } from '../../src/lists/entries.ts';
 import { ListRefusal } from '../../src/lists/refusals.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
+import { reviewBatch } from '../../src/lists/review.ts';
 import { checkedLinks, linksForEntries } from '../../src/links/reads.ts';
 import type { LinkKeys } from '../../src/links/keys.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
@@ -488,7 +489,6 @@ describe('the tip list (§04)', () => {
     expect(out.email).toBeNull();
     expect(out.erasureToken).toBeNull();
     // The moderators' review shows each link with its kind, in words.
-    const { reviewBatch } = await import('../../src/lists/review.ts');
     const batch = await reviewBatch(h.db, out.list.id, { keys });
     expect(batch.entries.find((e) => e.id === out.id)?.links.map((l) => l.kind)).toEqual([
       'Video',

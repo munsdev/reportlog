@@ -44,6 +44,8 @@ export interface ReviewEntry {
     known_host: boolean;
     group_id: number;
     outcome: Outcome | null;
+    /** What kind of link the tip said it is, in words, where its form asked. */
+    kind?: string;
   }[];
 }
 
@@ -123,15 +125,18 @@ export async function reviewBatch(
     erased: r.erased_at !== null,
     links: links
       .filter((l) => l.entry_id === r.id)
-      .map((l) => ({
-        field_key: l.field_key,
-        url: l.url,
-        host: l.host ?? '',
-        known_host: known.has((l.host ?? '').toLowerCase()),
-        group_id: l.group_id,
-        outcome: l.outcome,
-        ...(kindOf(l) ? { kind: kindOf(l) } : {}),
-      })),
+      .map((l) => {
+        const kind = kindOf(l);
+        return {
+          field_key: l.field_key,
+          url: l.url,
+          host: l.host ?? '',
+          known_host: known.has((l.host ?? '').toLowerCase()),
+          group_id: l.group_id,
+          outcome: l.outcome,
+          ...(kind ? { kind } : {}),
+        };
+      }),
   }));
   return { entries, clusters: clustersIn(entries) };
 }
