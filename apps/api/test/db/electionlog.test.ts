@@ -16,6 +16,7 @@
  *     row, and asks for no email.
  */
 import { withoutWording } from '@reportlog/fields';
+import type { Question } from '@reportlog/contracts';
 import type { FieldSettings } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -71,6 +72,12 @@ const IN_PERSON_FINE = {
   wait: 'under_30',
 };
 
+function shippedElectionlog(): Template {
+  const t = templateById('electionlog');
+  if (!t) throw new Error('the ElectionLog starting point does not ship');
+  return t;
+}
+
 const verifies = async (ref: string) => {
   const v = await verifyReport(h.db, ref);
   return v?.content.ok === true && v.link.ok && v.position.ok;
@@ -91,13 +98,16 @@ describe('the site starting point', () => {
       archive: await storedPublicArchive(h.db),
       files: (await siteLayer(h.db)).enabled,
     };
-    const shipped = templateById('electionlog') as Template;
+    const shipped = shippedElectionlog();
     // The shipped one names /list/tips; another test file may hold that
     // address, so this applies the same settings at an address of its own.
     const listSlug = uniqueSlug('tips');
     const t: Template = {
       ...shipped,
-      settings: { ...shipped.settings, list: { template: 'electionlog-tips', slug: listSlug } },
+      settings: {
+        ...shipped.settings,
+        list: { template: 'electionlog-tips', slug: listSlug, title: 'Send a link' },
+      },
     };
     try {
       const out = await applyTemplateDefinition(h.db, t, 'electionlog-test@example.org');
@@ -129,7 +139,7 @@ describe('the site starting point', () => {
   });
 
   it('refuses the whole template when /list/tips is taken, writing nothing', async () => {
-    const shipped = templateById('electionlog') as Template;
+    const shipped = shippedElectionlog();
     const taken = uniqueSlug('taken');
     await h.db.insertInto('lists').values({ slug: taken, title: 'Taken' }).execute();
     const drafts = async () =>
@@ -266,14 +276,14 @@ describe('the server checks (§01)', () => {
   });
 
   it('needs the hour in person, and does not need it by mail', async () => {
-    const { hour: _hour, ...noHour } = IN_PERSON_FINE;
+    const noHour = Object.fromEntries(Object.entries(IN_PERSON_FINE).filter(([k]) => k !== 'hour'));
     expect(await refused(noHour, 'el-no-hour')).toContain('Hour is needed');
   });
 });
 
 describe('after launch: wording may change, codes may not (ruling 48)', () => {
   const field = async (key: string) =>
-    (await L.fieldsFor(h.db, logbookId)).find((f) => f.key === key) as L.Question & {
+    (await L.fieldsFor(h.db, logbookId)).find((f) => f.key === key) as Question & {
       settings: FieldSettings;
     };
 
@@ -477,6 +487,13 @@ describe('the tip list (§04)', () => {
     ]);
     expect(out.email).toBeNull();
     expect(out.erasureToken).toBeNull();
+    // The moderators' review shows each link with its kind, in words.
+    const { reviewBatch } = await import('../../src/lists/review.ts');
+    const batch = await reviewBatch(h.db, out.list.id, { keys });
+    expect(batch.entries.find((e) => e.id === out.id)?.links.map((l) => l.kind)).toEqual([
+      'Video',
+      'Official notice or government page',
+    ]);
     const links = await linksForEntries(h.db, keys, [out.id]);
     expect(links.map((l) => [l.url, l.link_type])).toEqual([
       ['https://example.org/el/video', 'video'],

@@ -534,3 +534,25 @@ Roughly four to five sessions, one fewer than revision 2, with the seal untouche
     (a) intake rules: L3, L5, L6, L7, E2, E4, E5, §13; (b) moderation: M1, M2, M8, D1 to D5, I5, P3.
 21. **Spec changes to add** to the list above: L3 (text kinds are refused at setup, not "Setup"),
     P1 ("hour" comes from a choice question), and the tip `ip_hash` ruling.
+
+## ElectionLog's forms: known limitations (PD8, 21 October 2026)
+
+The owner's questionnaires (`docs/electionlog-questionnaires.md`) are built as the
+`electionlog` logbook, the `electionlog-tips` list and the ElectionLog site starting point
+(`docs/status/PD8-electionlog-forms.md`). What §05 of the questionnaires leaves open, and what
+building them found:
+
+- **E2** now reads as the questionnaires' entry card (§02): "What do you want to do?", answered
+  "Log how voting went" or "Send a link". Changed in `docs/plan-d-spec.md`.
+- **The hour is checked as 0 to 23 only.** "Within that state's polling hours" needs each
+  state's polling hours in the server, and that table does not exist. Until it does, any whole
+  hour is accepted in person.
+- **`poll_worker`, `observer`, `assisting` and `provisional`** are the answers most likely to
+  point at one person in a small county. They are kept, as the questionnaires say; whether to
+  keep them is not decided.
+- **Launch freezes the codes.** Labels can be reworded afterwards (ruling 48); codes, keys,
+  conditions and order cannot, and the database refuses them.
+- **The send card's line** ("This report can't be changed or withdrawn after you send it.") is
+  an operator slot (`send_note`) that the starting point fills. Today it is not yet true: a
+  reporter can sign in and correct or withdraw from My reports. The anonymous-filing redesign
+  is expected to remove that; until then the line overstates.

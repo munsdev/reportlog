@@ -91,8 +91,9 @@ export interface TemplateSettings {
    * A list starting point (lists/templates/), made HIDDEN, as every new list
    * is: an administrator lists it. `slug` is its address when it should not
    * be the template's own; a taken address refuses the whole template.
+   * `title` is its name when it should not be the template's own.
    */
-  list?: { template: string; slug?: string };
+  list?: { template: string; slug?: string; title?: string };
 }
 
 export interface Template {
@@ -156,12 +157,15 @@ export const TEMPLATES: readonly Template[] = [
       attachments: false,
       intake: true,
       logbook: 'electionlog',
-      list: { template: 'electionlog-tips', slug: 'tips' },
+      list: { template: 'electionlog-tips', slug: 'tips', title: 'Send a link' },
       copy: {
         home_headline: HOME_HEADLINE,
         home_intro:
           'Voted, or tried to? Log how it went, good or bad, in a few choices with nothing to type. Saw a post, a video or an article about the election? Send it as a link. A moderator reads every report before any of it is published, and links are never published.',
         submit_question: 'What do you want to do?',
+        // The owner's send card (§03). True once reporters cannot correct or
+        // withdraw; today they can, from My reports (docs/status/PD8).
+        send_note: "This report can't be changed or withdrawn after you send it.",
       },
     },
   },
@@ -267,7 +271,7 @@ export interface TemplatePlan {
   clearCopy?: boolean;
   copy: { key: C.CopyKey; body: string | null }[];
   logbook?: StartingPointId;
-  list?: { template: string; slug?: string };
+  list?: { template: string; slug?: string; title?: string };
 }
 
 /**
@@ -351,14 +355,22 @@ export function planTemplate(t: unknown): Checked<TemplatePlan> {
     }
   }
   if (s.list !== undefined) {
-    const l = s.list as { template?: unknown; slug?: unknown } | null;
-    const template = typeof l?.template === 'string' ? l.template : '';
-    if (!l || typeof l !== 'object' || !shippedTemplate(template)) {
+    const l: unknown = s.list;
+    const r = typeof l === 'object' && l !== null ? (l as Record<string, unknown>) : null;
+    const template = typeof r?.template === 'string' ? r.template : '';
+    if (!r || !shippedTemplate(template)) {
       problems.push(`There is no list starting point called "${template || '?'}".`);
-    } else if (l.slug !== undefined && typeof l.slug !== 'string') {
-      problems.push('A list’s address has to be text.');
+    } else if (
+      (r.slug !== undefined && typeof r.slug !== 'string') ||
+      (r.title !== undefined && typeof r.title !== 'string')
+    ) {
+      problems.push('A list’s address and name have to be text.');
     } else {
-      plan.list = { template, ...(typeof l.slug === 'string' ? { slug: l.slug } : {}) };
+      plan.list = {
+        template,
+        ...(typeof r.slug === 'string' ? { slug: r.slug } : {}),
+        ...(typeof r.title === 'string' ? { title: r.title } : {}),
+      };
     }
   }
   if (problems.length) return { ok: false, error: problems.join(' ') };
@@ -405,8 +417,8 @@ export function describeSettings(s: TemplateSettings): string[] {
     const t = shippedTemplate(s.list.template);
     if (t) {
       out.push(
-        `Makes a list, “${t.title}”, at /list/${s.list.slug ?? t.slug}, asking ${String(t.fields.length)} ` +
-          `${t.fields.length === 1 ? 'question' : 'questions'}` +
+        `Makes a list, “${s.list.title ?? t.title}”, at /list/${s.list.slug ?? t.slug}, asking ${String(t.fields.length)} ` +
+          (t.fields.length === 1 ? 'question' : 'questions') +
           (t.requiresEmail ? '' : ' and no email address') +
           '. It starts hidden: you list it when you are ready.',
       );
@@ -503,7 +515,10 @@ export async function applyTemplateDefinition(
     // The list, HIDDEN, as every new list starts (lists/manage.ts).
     let list: { id: number; slug: string; title: string } | undefined;
     if (plan.list !== undefined) {
-      const made = await createFromTemplate(trx, plan.list.template, { slug: plan.list.slug });
+      const made = await createFromTemplate(trx, plan.list.template, {
+        slug: plan.list.slug,
+        title: plan.list.title,
+      });
       list = { id: made.id, slug: made.slug, title: made.title };
     }
 
@@ -517,7 +532,11 @@ export async function applyTemplateDefinition(
   });
 }
 
-type Made = { id: number; slug: string; title: string };
+interface Made {
+  id: number;
+  slug: string;
+  title: string;
+}
 export interface Applied {
   applied: string;
   logbook?: Made;

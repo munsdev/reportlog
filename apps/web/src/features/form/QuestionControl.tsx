@@ -75,20 +75,6 @@ export function QuestionControl(props: ControlProps) {
     'aria-invalid': invalid || undefined,
   };
 
-  // Either/or answers are tiles, never a checkbox: a checkbox cannot tell
-  // "no" from "did not answer", and these can be either.
-  if (q.kind === 'yes_no' || q.kind === 'evidence_declaration') {
-    // The declaration's words say what is being answered: "Yes" alone on a
-    // card asking whether somebody has footage reads as agreeing to send it.
-    const [yes, no] =
-      q.kind === 'yes_no' ? ['Yes', 'No'] : ['Yes, I have something', 'No, I do not'];
-    return (
-      <RadioGroup value={text} onValueChange={onChange} {...common}>
-        <RadioOption value="yes" label={yes} />
-        <RadioOption value="no" label={no} />
-      </RadioGroup>
-    );
-  }
   // A TICK BOX: ticked answers yes, unticked answers nothing at all.
   if (q.kind === 'yes_no' && q.settings.checkbox === true) {
     const id = `${labelledBy}-box`;
@@ -106,6 +92,21 @@ export function QuestionControl(props: ControlProps) {
           {q.label}
         </Label>
       </div>
+    );
+  }
+  // Either/or answers are tiles, never a checkbox: a checkbox cannot tell
+  // "no" from "did not answer", and these can be either. (The tick box above
+  // is the one yes/no whose "no" IS "did not answer", by its setting.)
+  if (q.kind === 'yes_no' || q.kind === 'evidence_declaration') {
+    // The declaration's words say what is being answered: "Yes" alone on a
+    // card asking whether somebody has footage reads as agreeing to send it.
+    const [yes, no] =
+      q.kind === 'yes_no' ? ['Yes', 'No'] : ['Yes, I have something', 'No, I do not'];
+    return (
+      <RadioGroup value={text} onValueChange={onChange} {...common}>
+        <RadioOption value="yes" label={yes} />
+        <RadioOption value="no" label={no} />
+      </RadioGroup>
     );
   }
   const options = optionsOf(q, props.answers);
@@ -162,7 +163,8 @@ export function QuestionControl(props: ControlProps) {
     // A county by its five digits, from the state chosen beside it. Inactive
     // until a state is chosen; the card clears it when the state changes.
     const within = typeof q.settings.within === 'string' ? q.settings.within : '';
-    const state = typeof props.raw?.[within] === 'string' ? (props.raw[within] as string) : '';
+    const given = props.raw?.[within];
+    const state = typeof given === 'string' ? given : '';
     const counties = state ? countyOptions(`US-${state}`) : [];
     return (
       <Select

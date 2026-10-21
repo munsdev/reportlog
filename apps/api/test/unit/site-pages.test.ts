@@ -49,8 +49,13 @@ describe('the development notice', () => {
 });
 
 describe('the slots', () => {
-  it('are legacy’s nine, the lock screen’s paragraph and the three terms slots, and the optional ones resolve to nothing', () => {
-    expect(COPY_SLOTS).toHaveLength(13);
+  it('are legacy’s nine, the lock screen’s paragraph, the three terms slots and the two on the filing cards, and the optional ones resolve to nothing', () => {
+    expect(COPY_SLOTS).toHaveLength(15);
+    // The choosing card always asks something; the line beside Send is the operator's or nothing.
+    expect(COPY_SLOTS.find((s) => s.key === 'submit_question')?.fallback).toBe(
+      'What are you reporting?',
+    );
+    expect(COPY_SLOTS.find((s) => s.key === 'send_note')).toMatchObject({ optional: true });
     expect(COPY_SLOTS.find((s) => s.key === 'lock_intro')).toMatchObject({ optional: true });
     const copy = resolveCopy([]);
     for (const s of COPY_SLOTS) {

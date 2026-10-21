@@ -49,16 +49,14 @@ export function optionArray(raw: unknown): Option[] {
 
 /** The sets a question's options depend on, as stored. */
 export function optionSetsOf(settings: { option_sets?: unknown } | null | undefined): OptionSet[] {
-  const raw = settings?.option_sets;
+  // Read as unknown: settings arrive as JSON, whatever the type says.
+  const raw: unknown = settings?.option_sets;
   if (!Array.isArray(raw)) return [];
-  return raw.filter(
-    (s): s is OptionSet =>
-      typeof s === 'object' &&
-      s !== null &&
-      typeof (s as OptionSet).when === 'object' &&
-      (s as OptionSet).when !== null &&
-      Array.isArray((s as OptionSet).options),
-  );
+  return raw.filter((s: unknown): s is OptionSet => {
+    if (typeof s !== 'object' || s === null) return false;
+    const r = s as Record<string, unknown>;
+    return typeof r.when === 'object' && r.when !== null && Array.isArray(r.options);
+  });
 }
 
 /**

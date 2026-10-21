@@ -113,7 +113,7 @@ export function QuestionForm({
     const list = parseOptions(options);
     if (kind === 'choice_one' || kind === 'choice_many')
       return hasSets ? kept : { ...kept, options: list };
-    if (kind === 'place') return { ...kept, options: list as string[], allowOther };
+    if (kind === 'place') return { ...kept, options: list, allowOther };
     // Depth only as `county`: an absent depth IS state, and settings are sealed.
     if (kind === LOCATION_TYPE) {
       return { ...kept, scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };

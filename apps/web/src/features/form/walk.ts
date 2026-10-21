@@ -257,11 +257,12 @@ export function withChange(
   key: string,
   value: RawValue | undefined,
 ): RawAnswers {
-  const next: RawAnswers = { ...raw };
-  if (value === undefined) delete next[key];
-  else next[key] = value;
-  if (raw[key] !== value) {
-    for (const q of questions) if (q.settings.within === key) delete next[q.key];
-  }
-  return next;
+  const cleared = new Set(
+    raw[key] !== value ? questions.filter((q) => q.settings.within === key).map((q) => q.key) : [],
+  );
+  if (value === undefined) cleared.add(key);
+  return Object.fromEntries([
+    ...Object.entries(raw).filter(([k]) => !cleared.has(k) && k !== key),
+    ...(value === undefined ? [] : [[key, value] as const]),
+  ]);
 }

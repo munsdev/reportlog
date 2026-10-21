@@ -632,7 +632,7 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
   for (const flag of ['same_card', 'integer', 'checkbox'] as const) {
     if (out[flag] === undefined) continue;
     if (typeof out[flag] !== 'boolean') refuse('setting-kind', `It was “${flag}”.`);
-    if (!out[flag]) delete out[flag];
+    if (!out[flag]) Reflect.deleteProperty(out, flag);
   }
   if (kind === 'number') {
     const { min, max } = out;
@@ -641,9 +641,11 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
     if (!ok(min) || !ok(max) || (typeof min === 'number' && typeof max === 'number' && min > max)) {
       refuse('number-range');
     }
+    // Read as unknown: settings arrive as JSON, whatever the type says.
+    const picker: unknown = out.picker;
     if (
-      out.picker !== undefined &&
-      (out.picker !== 'hour' || out.integer !== true || min !== 0 || max !== 23)
+      picker !== undefined &&
+      (picker !== 'hour' || out.integer !== true || min !== 0 || max !== 23)
     ) {
       refuse('number-picker');
     }
@@ -705,8 +707,7 @@ function checkSettingConditions(
      the server checks a county against. */
   if (settings.code === 'fips') {
     const state = earlier.find((f) => f.key === settings.within);
-    if (!state || state.kind !== LOCATION_TYPE || state.settings?.code !== 'postal')
-      refuse('location-code');
+    if (state?.kind !== LOCATION_TYPE || state.settings?.code !== 'postal') refuse('location-code');
   }
   return out;
 }

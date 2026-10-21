@@ -341,15 +341,12 @@ describe('cards', () => {
     ...extra,
   });
   it('gather same_card questions onto the card before them', () => {
-    const fields = [
-      q('a'),
-      q('b', { card_question: 'B and C?' }),
-      q('c', { same_card: true }),
-      q('d'),
-    ];
+    const first = q('a');
+    const second = q('b', { card_question: 'B and C?' });
+    const fields = [first, second, q('c', { same_card: true }), q('d')];
     expect(cardsOf(fields).map((c) => c.map((f) => f.key))).toEqual([['a'], ['b', 'c'], ['d']]);
-    expect(cardHeading([fields[1] as FieldDefinition])).toBe('B and C?');
-    expect(cardHeading([fields[0] as FieldDefinition])).toBe('a');
+    expect(cardHeading([second])).toBe('B and C?');
+    expect(cardHeading([first])).toBe('a');
     expect(cardProblem(fields)).toBeNull();
   });
   it('refuse a part that depends on another part of its own card', () => {

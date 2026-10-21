@@ -73,7 +73,7 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await go.click();
 
   await expect(
-    page.getByText('This logbook has launched, so its questions are fixed'),
+    page.getByText('This logbook has launched, so what its questions ask is fixed'),
   ).toBeVisible();
   await expect(page.getByText(/^Open, and taking reports/)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Move/ })).toHaveCount(0);
@@ -85,6 +85,12 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await expect(panel.getByLabel('An answer is needed')).toBeDisabled();
   await addQuestion(page, 'Long text', 'Anything else?');
   await expect(list.getByRole('listitem')).toHaveCount(3);
+
+  // REWORDING IS ALLOWED (ruling 48): the words change, the key does not.
+  await list.getByRole('button', { name: 'Reword “Were you hurt?”' }).click();
+  await list.getByLabel('The question, as the reporter will read it').fill('Were you hurt at all?');
+  await list.getByRole('button', { name: 'Save the wording' }).click();
+  await expect(list.getByText('1. Were you hurt at all?')).toBeVisible();
 
   // The public form now exists, and has the condition on it.
   const slug = (await page.locator('header p.font-mono').innerText()).replace('/file/', '');

@@ -29,7 +29,7 @@ import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
 import { Checkbox } from '../../components/ui/checkbox.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
+import { Field, FieldDescription, FieldError, FieldReset } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
@@ -69,7 +69,7 @@ function rowProblem(q: ListFormQuestion, v: Value): string | null {
       return 'A row says what kind of link it is but has no link. Add the link, or clear the row.';
   }
   const first = rows[0];
-  if (q.required && (!first || !first.url.trim())) return 'Row 1 needs a link.';
+  if (q.required && !first?.url.trim()) return 'Row 1 needs a link.';
   return null;
 }
 
@@ -568,55 +568,58 @@ function LinkRows({
       <p className="text-sm text-ink-alt" data-testid="link-wording">
         {LINK_FIELD_WORDING}
       </p>
-      {rows.map((row, i) => {
-        const n = String(i + 1);
-        const optional = !(q.required && i === 0);
-        return (
-          <fieldset
-            // Rows never move or go away, so a position is a stable key.
-            key={`row-${n}`}
-            className="space-y-2 rounded-card border border-line p-3"
-          >
-            <legend className="px-1 font-semibold">
-              Link {n}
-              {optional ? <span className="font-normal text-ink-alt"> (optional)</span> : null}
-            </legend>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
-              <Input
-                id={`${labelledBy}-url-${n}`}
-                type="url"
-                inputMode="url"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="https://"
-                maxLength={2000}
-                value={row.url}
-                onChange={(e) => {
-                  put(i, { ...row, url: e.target.value });
-                }}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of link it is</Label>
-              <Select
-                id={`${labelledBy}-type-${n}`}
-                value={row.type}
-                onChange={(e) => {
-                  put(i, { ...row, type: e.target.value });
-                }}
-              >
-                <option value="">Choose one</option>
-                {(q.link_types ?? []).map((t) => (
-                  <option key={t.code} value={t.code}>
-                    {t.label}
-                  </option>
-                ))}
-              </Select>
-            </div>
-          </fieldset>
-        );
-      })}
+      {/* Each row's two controls carry their own labels, not the card's one id. */}
+      <FieldReset>
+        {rows.map((row, i) => {
+          const n = String(i + 1);
+          const optional = !(q.required && i === 0);
+          return (
+            <fieldset
+              // Rows never move or go away, so a position is a stable key.
+              key={`row-${n}`}
+              className="space-y-2 rounded-card border border-line p-3"
+            >
+              <legend className="px-1 font-semibold">
+                Link {n}
+                {optional ? <span className="font-normal text-ink-alt"> (optional)</span> : null}
+              </legend>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
+                <Input
+                  id={`${labelledBy}-url-${n}`}
+                  type="url"
+                  inputMode="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="https://"
+                  maxLength={2000}
+                  value={row.url}
+                  onChange={(e) => {
+                    put(i, { ...row, url: e.target.value });
+                  }}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of link it is</Label>
+                <Select
+                  id={`${labelledBy}-type-${n}`}
+                  value={row.type}
+                  onChange={(e) => {
+                    put(i, { ...row, type: e.target.value });
+                  }}
+                >
+                  <option value="">Choose one</option>
+                  {(q.link_types ?? []).map((t) => (
+                    <option key={t.code} value={t.code}>
+                      {t.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </fieldset>
+          );
+        })}
+      </FieldReset>
     </div>
   );
 }

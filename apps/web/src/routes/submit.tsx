@@ -69,7 +69,7 @@ function Submit() {
     else void navigate({ to: '/file/$slug', params: { slug } });
   };
   return (
-    <Page title={site.data?.copy.submit_question || 'What are you reporting?'} width="prose">
+    <Page title={site.data?.copy.submit_question ?? 'What are you reporting?'} width="prose">
       <CopyText slot="submit_intro" />
       {choices.length === 0 ? (
         <p>Nothing is taking reports at the moment. Please come back later.</p>

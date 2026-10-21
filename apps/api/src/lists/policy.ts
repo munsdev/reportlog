@@ -50,7 +50,7 @@ export interface PreparedLink {
 export function linkTypesOf(field: Pick<ListField, 'kind' | 'settings'>): string[] {
   const t = field.settings?.link_types;
   return field.kind === 'url' && Array.isArray(t)
-    ? t.filter((o) => typeof o?.code === 'string').map((o) => o.code)
+    ? t.filter((o) => typeof o.code === 'string').map((o) => o.code)
     : [];
 }
 

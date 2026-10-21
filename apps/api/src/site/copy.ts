@@ -102,6 +102,19 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback: 'What are you reporting?',
   },
   {
+    // OPTIONAL, beside the Send button. What the operator says about sending
+    // (ElectionLog: "This report can't be changed or withdrawn after you send
+    // it."). Unwritten, nothing is shown. Not a statement this software
+    // makes: the operator's, about their own archive.
+    key: 'send_note',
+    kind: 'line',
+    optional: true,
+    figures: false,
+    label: 'Your own words beside Send',
+    help: 'One sentence on the last card of a report, just above the Send button. Left empty, nothing is shown. Say only what is true of this site.',
+    fallback: '',
+  },
+  {
     key: 'board_intro',
     kind: 'block',
     optional: true,

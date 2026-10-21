@@ -100,16 +100,14 @@ export function labelForCode(
 }
 
 function helpSets(settings: FieldSettings | null | undefined): HelpWhen[] {
-  const raw = settings?.help_when;
-  return Array.isArray(raw)
-    ? raw.filter(
-        (h): h is HelpWhen =>
-          typeof h === 'object' &&
-          h !== null &&
-          typeof (h as HelpWhen).help === 'string' &&
-          typeof (h as HelpWhen).when === 'object',
-      )
-    : [];
+  // Read as unknown: settings arrive as JSON, whatever the type says.
+  const raw: unknown = settings?.help_when;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((h: unknown): h is HelpWhen => {
+    if (typeof h !== 'object' || h === null) return false;
+    const r = h as Record<string, unknown>;
+    return typeof r.help === 'string' && typeof r.when === 'object' && r.when !== null;
+  });
 }
 
 /** The help shown, given the answers so far: the first `help_when` that holds, else `help`. */
@@ -119,7 +117,7 @@ export function helpFor(
 ): string | undefined {
   const hit = helpSets(field.settings).find((h) => conditionMet(h.when, answers));
   if (hit) return hit.help;
-  return field.help ? field.help : undefined;
+  return field.help ?? undefined;
 }
 
 /**
@@ -165,8 +163,9 @@ export function withoutWording(
   if (Array.isArray(out.help_when)) {
     out.help_when = (out.help_when as unknown[]).map((h) => {
       if (typeof h !== 'object' || h === null) return h;
-      const { help: _help, ...rest } = h as Record<string, unknown>;
-      return rest;
+      return Object.fromEntries(
+        Object.entries(h as Record<string, unknown>).filter(([k]) => k !== 'help'),
+      );
     });
   }
   delete out.card_question;

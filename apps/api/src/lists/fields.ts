@@ -259,7 +259,7 @@ export function assertFieldDefinition(field: ListField): ListField & { retention
   }
   if (
     field.settings?.fixed_rows !== undefined &&
-    !(field.settings.fixed_rows === true && (field.max_values ?? 1) > 1)
+    !(field.settings.fixed_rows && (field.max_values ?? 1) > 1)
   ) {
     throw new FieldRuleError(
       `“${field.label}”: showing every row from the start is for a question that takes more than one answer.`,

@@ -39,6 +39,7 @@ import { TipOffer, rememberForTip } from './tipOffer.tsx';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
+import { CopyText } from '@/components/ui/copy-text.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
@@ -497,6 +498,8 @@ function Cards({
               {STATEMENT}
             </Label>
           </div>
+          {/* The operator's own line about sending, when they wrote one. */}
+          <CopyText slot="send_note" className="font-semibold" />
           {problem ? <Alert tone="serious" title={problem} /> : null}
           {send.isError ? (
             <Alert tone="serious" title="The report was not sent">
