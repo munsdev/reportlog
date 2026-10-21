@@ -114,6 +114,7 @@ repository has every one of them blank.
 | -------------------------------------------------------- | ------------------------------------------------------------------- |
 | `CONTACT_KEY`, `FILES_KEY`                               | made by `install.sh` (32 random bytes); never changed, only rotated |
 | `DOOR_KEY`                                               | made by `install.sh` (32 random bytes); safe to replace at any time |
+| `TWO_FACTOR_KEY`                                         | made by `install.sh` (32 random bytes); a new one resets staff apps |
 | `TRANSPARENCY_LOG_SSH_KEY`                               | a key file made by `install.sh`; its public half is shown to add    |
 | `SCALEWAY_SECRET_KEY`                                    | asked by `install.sh`, from the Scaleway console                    |
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | asked by `install.sh`, from the storage provider (upload-only key)  |
@@ -175,6 +176,27 @@ an operator who held it leaves. The site keeps running throughout.
 
 Every rotation is recorded in the database (`contact_key_rotations`, by
 fingerprint, never the key). The code is `apps/api/src/filing/rotateContactKey.ts`.
+
+### Two-factor login
+
+Everybody with a role (the owner, administrators, access managers,
+moderators, journalists and anybody in an organization) proves a second
+factor after the emailed code: an authenticator app or a passkey (plan E,
+decision E3). Staff sessions last 12 hours. Authenticator-app secrets are
+encrypted under `TWO_FACTOR_KEY`, which `install.sh` makes. It is not the
+contact key and has none of its rules: if it is lost or replaced, each
+staff member sets their app up again after signing in with a passkey or a
+recovery code, or after a reset. Passkeys and recovery codes are not under it.
+
+The owner resets anybody else's second factor from the Access screen. The
+owner's own is reset only here, on the server:
+
+    sudo reportlog reset-2fa owner@example.org
+
+It clears that person's authenticator app, passkeys and recovery codes and
+signs them out everywhere. Their next sign-in, after the emailed code, sets
+a new one up. Each reset is recorded in the role audit, which nobody can
+edit. The code is `apps/api/src/identity/reset-two-factor.ts`.
 
 ### Email (Scaleway)
 
@@ -582,6 +604,7 @@ the Node version. Each line says what to do.
 | The site is down  | `systemctl status reportlog-api caddy`, `journalctl -u reportlog-api -n 50` |
 | No certificate    | `journalctl -u caddy`: DNS not pointing here, or 80/443 closed              |
 | Mail not arriving | `sudo reportlog mail-test you@example.org`                                  |
+| Owner locked out  | `sudo reportlog reset-2fa <the owner's address>` (Two-factor login, above)  |
 | A job failed      | `journalctl -u reportlog-job@<name> -n 50`                                  |
 | An error, in code | Bugsink, if `ERROR_TRACKING_DSN` is set; otherwise the journal              |
 | Disk filling      | `du -sh /srv/reportlog/releases/* /var/backups/reportlog`                   |

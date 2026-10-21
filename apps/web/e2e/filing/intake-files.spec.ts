@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { ADMIN } from '../auth.ts';
 import { filesState, photoWithLocation } from '../files/helpers.ts';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { passSecondFactor } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const filingState = (...args: string[]) =>
@@ -29,6 +30,7 @@ async function signIn(page: Page, email: string) {
   const code = codeIn(await lastMessageTo(email, before));
   const signed = await page.request.post('/api/auth/sign-in', { data: { email, code } });
   expect(signed.ok(), await signed.text()).toBe(true);
+  await passSecondFactor(page.request, email);
 }
 
 test('a photo attached to an account is filed with it, and nothing else is contacted', async ({

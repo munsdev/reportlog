@@ -17,13 +17,17 @@ import { curtainRoutes } from './curtainRoutes.ts';
 import { installGate } from './gate.ts';
 import { orgRoutes } from './orgRoutes.ts';
 import { installSessions } from './sessions.ts';
+import { secondFactorRoutes } from './secondFactorRoutes.ts';
 import { teamRoutes } from './teamRoutes.ts';
+import type { TwoFactorKey } from './twoFactorKey.ts';
 
 export interface IdentityDeps {
   db: Kysely<DB>;
   mailer: Mailer;
-  /** Where the website is, for links in emails. */
+  /** Where the website is, for links in emails, and the passkeys' relying party. */
   siteOrigin: string;
+  /** Authenticator-app secrets are encrypted under it. Null: apps cannot be set up. */
+  twoFactorKey: TwoFactorKey | null;
 }
 
 export async function identity(app: FastifyInstance, deps: IdentityDeps): Promise<void> {
@@ -31,6 +35,7 @@ export async function identity(app: FastifyInstance, deps: IdentityDeps): Promis
   installSessions(app, deps.db);
   installGate(app, deps.db);
   authRoutes(app, deps);
+  secondFactorRoutes(app, deps);
   accessRoutes(app, deps);
   orgRoutes(app, deps);
   curtainRoutes(app, deps);

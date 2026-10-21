@@ -20,6 +20,7 @@ import { useId } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
+import { StepUpDownload } from '../identity/StepUp.tsx';
 
 const anchorQuery = queryOptions({
   queryKey: ['anchor', 'status'],
@@ -157,13 +158,13 @@ function ChainFiles() {
       <ul className="flex flex-col gap-1 text-sm">
         {launched.map((l) => (
           <li key={l.slug}>
-            <a
+            {/* A step-up first (plan E, E3): the server refuses the file without one. */}
+            <StepUpDownload
               className="underline"
               href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(l.slug))}
-              download
             >
               {l.title}
-            </a>
+            </StepUpDownload>
           </li>
         ))}
       </ul>

@@ -11,7 +11,7 @@ const labels = (v: Viewer) => entriesFor(v).map((e) => e.label);
 describe('who sees the intake screens', () => {
   it('a coordinator or manager of an organization, whatever their system role', () => {
     expect(labels({ role: 'user', tester: false, memberships: [{ role: 'coordinator' }] })).toEqual(
-      ['Intake'],
+      ['Intake', 'Volunteer links'],
     );
     expect(
       labels({ role: 'moderator', tester: false, memberships: [{ role: 'manager' }] }),

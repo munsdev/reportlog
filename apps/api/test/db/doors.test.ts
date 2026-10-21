@@ -18,7 +18,7 @@ import { capturingMailer } from '../../src/email/mailer.ts';
 import { hashPassword } from '../../src/identity/secrets.ts';
 import { gateApplies, siteAccessSettings } from '../../src/identity/siteAccess.ts';
 import { launchedLogbook, testDatabase, uniqueSlug } from './helpers.ts';
-import { address, cookieFrom, liftCurtain, seat } from './identity-helpers.ts';
+import { address, cookieFrom, liftCurtain, seat, trustSession } from './identity-helpers.ts';
 import { codeFor } from './identity-helpers.ts';
 
 const db = testDatabase();
@@ -313,6 +313,8 @@ describe('a logbook opened for filing without the password', () => {
       payload: { email: adminEmail, code: codeFor(mailer, adminEmail) },
     });
     const session = cookieFrom(res, 'session_token') ?? '';
+    // A fixture: the second factor is tested in second-factor.test.ts.
+    await trustSession(db, session);
     const set = await app.inject({
       method: 'POST',
       url: `/api/access/doors/logbooks/${shut.slug}`,

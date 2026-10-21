@@ -25,6 +25,7 @@ import { filingRoutes } from './filing/routes.ts';
 import { doorRoutes, makeDoor } from './door/index.ts';
 import { identity } from './identity/index.ts';
 import { logoRoutes } from './identity/logoRoutes.ts';
+import { twoFactorKeyFrom } from './identity/twoFactorKey.ts';
 import { listButtons } from './lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from './lists/retention.ts';
 import type { ListSettings } from './lists/retention.ts';
@@ -34,6 +35,7 @@ import { linkRoutes } from './links/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
+import { floodRoutes } from './moderation/floodRoutes.ts';
 import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { healthRoutes } from './routes/health.ts';
@@ -56,6 +58,7 @@ export interface AppDeps {
         | 'TRUST_PROXY'
         | 'CONTACT_KEY'
         | 'CONTACT_KEY_PREVIOUS'
+        | 'TWO_FACTOR_KEY'
         | 'PUBLIC_REF_PREFIX'
         | 'FILING_SENDS_PER_CLIENT'
         | 'FILING_CONFIRMS_PER_CLIENT'
@@ -167,7 +170,12 @@ export async function buildApp({
   });
   doorRoutes(app, door, db);
   // First: its hooks must see every route registered after it.
-  await identity(app, { db, mailer: mail, siteOrigin });
+  await identity(app, {
+    db,
+    mailer: mail,
+    siteOrigin,
+    twoFactorKey: twoFactorKeyFrom(config.TWO_FACTOR_KEY),
+  });
   telemetryRoutes(app, { tracker: errors ?? offTracker });
   healthRoutes(app, db);
   publicationRoutes(app);
@@ -222,6 +230,7 @@ export async function buildApp({
     siteOrigin,
   });
   await platformRoutes(app, { db, mailer: mail, siteOrigin });
+  await floodRoutes(app, { db, siteOrigin, linkKeys });
   eraseLinkRoutes(app, { db });
   journalistRoutes(app, {
     db,

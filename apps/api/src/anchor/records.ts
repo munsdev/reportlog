@@ -16,7 +16,7 @@ import {
   sha256Hex,
 } from '@reportlog/seal';
 import type { ChainHead, SealedReport } from '@reportlog/seal';
-import { publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import type { Database } from '../db/database.ts';
 import { manifestFor, sealedReportRows, toStoredRecord } from '../chain/record.ts';
 import type { snapshotDocument } from '../lists/aggregates.ts';
@@ -68,8 +68,9 @@ export const prettyFile = (value: unknown): string => `${JSON.stringify(value, n
  */
 export function publishedReportRows(db: Database) {
   // The rule itself lives in board/published.ts, shared with the board, the
-  // published chain file and the maps.
-  return sealedReportRows(db).where('r.id', 'in', publishedReportIds(db));
+  // published chain file and the maps. Listed ones only: a counts-only
+  // logbook's reports are counted, never published one by one.
+  return sealedReportRows(db).where('r.id', 'in', listedReportIds(db));
 }
 
 export interface SnapshotReport {

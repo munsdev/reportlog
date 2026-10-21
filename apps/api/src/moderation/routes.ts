@@ -29,6 +29,7 @@ import { Mine } from '../filing/mine.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { moderatorGuard } from './agreement.ts';
 import { sendRejectionNotice, requireReasonCode } from './rejection.ts';
@@ -78,6 +79,15 @@ export interface ModerationRouteDeps {
 const bodyOf = <B>(_contract: { body?: unknown }, request: FastifyRequest) => request.body as B;
 const refuse = (status: number, code: string, message: string) =>
   new HttpError(status, code, message);
+
+/** A filter's time, or a sentence saying it is not one. */
+function timeOf(raw: string): Date {
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) {
+    throw refuse(400, 'invalid_time', 'That is not a date and time this site can read.');
+  }
+  return d;
+}
 
 export async function moderationRoutes(
   app: FastifyInstance,
@@ -147,6 +157,9 @@ export async function moderationRoutes(
       corroboration: row.corroboration,
       incident_size: row.incident_size,
       threat_open: threats.has(row.thread_id),
+      origin: row.origin,
+      organization_id: row.organization_id,
+      answer_set: row.answer_set,
     };
   }
 
@@ -165,6 +178,12 @@ export async function moderationRoutes(
         logbook: query.logbook,
         severity: query.severity,
         sort: query.sort,
+        from: query.from ? timeOf(query.from) : undefined,
+        to: query.to ? timeOf(query.to) : undefined,
+        place: query.place,
+        answerSet: query.answer_set,
+        organization: query.organization ? Number(query.organization) : undefined,
+        lane: query.lane,
       });
       return {
         reports: rows.map((r) => present(r, archive, threats)),
@@ -205,7 +224,7 @@ export async function moderationRoutes(
       // A decline names the reason the reporter will be told, from the fixed
       // list; asked before anything changes so a refusal changes nothing.
       const code = b.status === 'invalid' ? requireReasonCode(b.reason_code) : null;
-      const out = await decide(db, params.threadId, b.status, b.comment, me(request));
+      const out = await decide(db, params.threadId, b.status, b.comment, me(request), code);
       // Only a NEW decline tells the reporter; declining twice does not email twice.
       const notice =
         code && out.previous !== 'invalid'
@@ -239,23 +258,28 @@ export async function moderationRoutes(
       cleared: await markRead(db, params.threadId, me(request)),
     }));
 
-    route(scope, C.openReportContact, async ({ params, request }) => {
-      const b = bodyOf<C.BodyOf<typeof C.openReportContact>>(C.openReportContact, request);
-      if (!ring) {
-        throw refuse(
-          503,
-          'not_configured',
-          'This site has no contact key set, so contact details cannot be opened.',
-        );
-      }
-      const out = await openContactLogged(db, ring, {
-        threadId: params.threadId,
-        staffEmail: me(request),
-        reason: b.reason,
+    // Opening a reporter's email asks for the second factor again (plan E,
+    // E3), in a scope of its own so whatever joins it asks too.
+    void scope.register((reveal) => {
+      reveal.addHook('preHandler', stepUpGuard());
+      route(reveal, C.openReportContact, async ({ params, request }) => {
+        const b = bodyOf<C.BodyOf<typeof C.openReportContact>>(C.openReportContact, request);
+        if (!ring) {
+          throw refuse(
+            503,
+            'not_configured',
+            'This site has no contact key set, so contact details cannot be opened.',
+          );
+        }
+        const out = await openContactLogged(db, ring, {
+          threadId: params.threadId,
+          staffEmail: me(request),
+          reason: b.reason,
+        });
+        if (!out.ok && out.reason === 'reason') throw refuse(400, 'reason_required', out.message);
+        if (!out.ok) throw notFound('There are no contact details on that report.');
+        return { contact: out.contact };
       });
-      if (!out.ok && out.reason === 'reason') throw refuse(400, 'reason_required', out.message);
-      if (!out.ok) throw notFound('There are no contact details on that report.');
-      return { contact: out.contact };
     });
 
     // ── editorial notes ──

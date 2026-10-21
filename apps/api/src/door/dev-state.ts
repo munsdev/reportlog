@@ -5,14 +5,12 @@
  *       The minimum time a form must be open before it is sent. The suite
  *       sets 0: a script fills in a one-card form faster than any person, and
  *       the minimum is tested where its clock can be set (test/db/door.test.ts).
- *   node src/door/dev-state.ts puzzle <normal|harder>
  *
  * Refuses to run in production.
  */
 import { loadConfig } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
-import { PUZZLE_LEVEL_IDS, writeDoorSettings } from './settings.ts';
-import type { PuzzleLevel } from './settings.ts';
+import { writeDoorSettings } from './settings.ts';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('dev-state does not run in production.');
@@ -23,10 +21,8 @@ const db = createDatabase(loadConfig().DATABASE_URL, 2);
 try {
   if (mode === 'min-form' && a && /^\d{1,3}$/.test(a)) {
     await writeDoorSettings(db, { minFormMs: Number(a) * 1000 });
-  } else if (mode === 'puzzle' && (PUZZLE_LEVEL_IDS as readonly string[]).includes(a ?? '')) {
-    await writeDoorSettings(db, { puzzle: a as PuzzleLevel });
   } else {
-    throw new Error('Usage: dev-state.ts min-form <seconds> | puzzle <normal|harder>');
+    throw new Error('Usage: dev-state.ts min-form <seconds>');
   }
 } finally {
   await db.destroy();

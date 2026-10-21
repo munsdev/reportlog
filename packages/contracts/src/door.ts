@@ -56,27 +56,21 @@ export const DOOR_REFUSAL_CODE = 'try_again';
 export const DoorSettings = z.object({
   /** A form sent sooner than this many seconds after it opened is refused. */
   min_form_seconds: z.number(),
-  /** How hard the puzzle is. The moderators' "Harder puzzle" switch sets `harder`. */
-  puzzle: z.enum(['normal', 'harder']),
 });
 export type DoorSettings = z.infer<typeof DoorSettings>;
 
+/** The puzzle's difficulty and the refusal counts are the flood screen's (flood.ts). */
 export const getDoorSettings = defineRoute({
   method: 'GET',
   path: '/api/admin/door',
-  summary: 'The door’s settings, and refusals at it in the last 24 hours, by hour and check.',
-  response: DoorSettings.extend({
-    refusals: z.array(z.object({ hour: z.string(), check: z.string(), count: z.number() })),
-  }),
+  summary: 'The minimum time a report or tip form must be open before it is sent.',
+  response: DoorSettings,
 });
 
 export const setDoorSettings = defineRoute({
   method: 'PUT',
   path: '/api/admin/door',
-  summary: 'Change the minimum time on a form, or the puzzle’s difficulty.',
-  body: z.object({
-    min_form_seconds: z.number().optional(),
-    puzzle: z.string().optional(),
-  }),
+  summary: 'Change the minimum time on a form.',
+  body: z.object({ min_form_seconds: z.number().optional() }),
   response: DoorSettings,
 });

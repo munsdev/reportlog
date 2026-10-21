@@ -19,6 +19,7 @@ import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { bodyOf } from '../identity/http.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { deskGuard, deskLinkPage, deskSourcePage } from './desk.ts';
@@ -124,20 +125,26 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
     route(owner, C.listAccessRequests, async () => ({
       requests: await requestsForOwner(listDeps()),
     }));
-    route(owner, C.approveAccessRequest, async ({ params, request }) => {
-      await approve(listDeps(), Number(params.id), requireUser(request).email);
-      return { ok: true as const };
-    });
-    route(owner, C.rejectAccessRequest, async ({ params }) => {
-      await reject(listDeps(), Number(params.id));
-      return { ok: true as const };
-    });
-    route(owner, C.revokeJournalist, async ({ params, request }) => {
-      await revoke(listDeps(), Number(params.id), {
-        email: requireUser(request).email,
-        role: 'owner',
+    // Approving, rejecting or removing a journalist asks for the second
+    // factor again (plan E, E3): a scope of their own, so none can forget.
+    void owner.register((decide, _o, decided) => {
+      decide.addHook('preHandler', stepUpGuard());
+      route(decide, C.approveAccessRequest, async ({ params, request }) => {
+        await approve(listDeps(), Number(params.id), requireUser(request).email);
+        return { ok: true as const };
       });
-      return { ok: true as const };
+      route(decide, C.rejectAccessRequest, async ({ params }) => {
+        await reject(listDeps(), Number(params.id));
+        return { ok: true as const };
+      });
+      route(decide, C.revokeJournalist, async ({ params, request }) => {
+        await revoke(listDeps(), Number(params.id), {
+          email: requireUser(request).email,
+          role: 'owner',
+        });
+        return { ok: true as const };
+      });
+      decided();
     });
     done();
   });

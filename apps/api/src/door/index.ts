@@ -43,10 +43,9 @@ import type { ClientHasher } from './clients.ts';
 import { rateLimiter } from './limits.ts';
 import type { DoorLimits, RateLimiter } from './limits.ts';
 import { issueChallenge, spendSolution } from './puzzle.ts';
-import { countRefusal, refusalsSince } from './refusals.ts';
-import type { RefusalCheck } from './refusals.ts';
-import { doorSettings, PUZZLE_LEVEL_IDS, puzzleLevel, writeDoorSettings } from './settings.ts';
-import type { PuzzleLevel } from './settings.ts';
+import { countRefusal } from '../moderation/refusals.ts';
+import { puzzleLevel } from '../moderation/switches.ts';
+import { doorSettings, writeDoorSettings } from './settings.ts';
 import { checkStart, issueStart } from './start.ts';
 
 export interface Door {
@@ -60,6 +59,22 @@ export interface Door {
   /** Count a refusal made after the door (a strict reading of the answers, say). */
   count(check: RefusalCheck): Promise<void>;
 }
+
+/**
+ * Every check the door can refuse on, by the name it is counted under
+ * (moderation/refusals.ts, the flood screen's "refusals per hour").
+ */
+export type RefusalCheck =
+  | 'honeypot'
+  | 'start_missing'
+  | 'too_fast'
+  | 'puzzle_missing'
+  | 'puzzle_wrong'
+  | 'puzzle_expired'
+  | 'puzzle_reused'
+  | 'rate_minute'
+  | 'rate_hour'
+  | 'requests';
 
 export interface DoorBody {
   website?: string | undefined;
@@ -109,8 +124,16 @@ export function makeDoor(deps: DoorDeps): Door & {
   const hasher = deps.hasher ?? processHasher;
   const limiter = rateLimiter(hasher, deps.limits, now);
 
+  // Counting never turns a refusal into an error, nor answers differently.
+  const count = async (check: RefusalCheck) => {
+    try {
+      await countRefusal(db, check);
+    } catch {
+      // See above.
+    }
+  };
   const refuse = async (check: RefusalCheck): Promise<never> => {
-    await countRefusal(db, check, now());
+    await count(check);
     throw new HttpError(
       check.startsWith('rate_') ? 429 : 400,
       DOOR_REFUSAL_CODE,
@@ -124,7 +147,7 @@ export function makeDoor(deps: DoorDeps): Door & {
     secrets,
     keyWasMade: !deps.key,
     client: (request) => hasher.of(request.ip),
-    count: (check) => countRefusal(db, check, now()),
+    count,
     async pass(request, body) {
       const rate = limiter.submit(request.ip);
       if (rate) await refuse(rate);
@@ -201,14 +224,13 @@ export function doorRoutes(
     staff.addHook('preHandler', roleGuard(['admin']));
     const present = async () => {
       const s = await doorSettings(db);
-      return { min_form_seconds: s.minFormMs / 1000, puzzle: s.puzzle };
+      return { min_form_seconds: s.minFormMs / 1000 };
     };
-    route(staff, getDoorSettings, async () => ({
-      ...(await present()),
-      refusals: await refusalsSince(db, new Date(Date.now() - 24 * 3_600_000)),
-    }));
+    // The puzzle's difficulty and the refusal counts are the moderators' flood
+    // screen (moderation/floodRoutes.ts), with its step-up and its record.
+    route(staff, getDoorSettings, present);
     route(staff, setDoorSettings, async ({ request }) => {
-      const b = request.body as { min_form_seconds?: number; puzzle?: string };
+      const b = request.body as { min_form_seconds?: number };
       if (
         b.min_form_seconds !== undefined &&
         !(
@@ -219,14 +241,10 @@ export function doorRoutes(
       ) {
         throw new HttpError(400, 'min_form', 'The minimum time on a form is 0 to 600 seconds.');
       }
-      if (b.puzzle !== undefined && !(PUZZLE_LEVEL_IDS as readonly string[]).includes(b.puzzle)) {
-        throw new HttpError(400, 'puzzle', 'The puzzle is “normal” or “harder”.');
-      }
       await writeDoorSettings(db, {
         ...(b.min_form_seconds === undefined
           ? {}
           : { minFormMs: Math.round(b.min_form_seconds * 1000) }),
-        ...(b.puzzle === undefined ? {} : { puzzle: b.puzzle as PuzzleLevel }),
       });
       return present();
     });

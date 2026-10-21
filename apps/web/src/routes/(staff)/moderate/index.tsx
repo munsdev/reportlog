@@ -33,6 +33,21 @@ export const Route = createFileRoute('/(staff)/moderate/')({
       out.severity = s.severity as QueueSeverity;
     }
     if (s.sort === 'oldest') out.sort = 'oldest';
+    // Plan E: the flood filters, checked again by the server.
+    const text = (v: unknown, max: number) =>
+      typeof v === 'string' && v ? v.slice(0, max) : undefined;
+    const from = text(s.from, 40);
+    if (from) out.from = from;
+    const to = text(s.to, 40);
+    if (to) out.to = to;
+    const place = text(s.place, 16);
+    if (place && /^[A-Z]{2}(-[A-Z0-9]{1,3}(-\d{5})?)?$/.test(place)) out.place = place;
+    const set = text(s.answer_set, 32);
+    if (set && /^[0-9a-f]{32}$/.test(set)) out.answer_set = set;
+    const org =
+      typeof s.organization === 'number' ? String(s.organization) : text(s.organization, 16);
+    if (org && /^[1-9]\d*$/.test(org)) out.organization = org;
+    if (s.lane === 'organization' || s.lane === 'open_form') out.lane = s.lane;
     return out;
   },
   component: function Queue() {

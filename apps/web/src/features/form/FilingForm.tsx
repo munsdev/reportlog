@@ -59,6 +59,7 @@ import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { useCardHistory } from './cardHistory.ts';
+import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import type { CardEntry } from './cardHistory.ts';
 import { QuestionControl } from './QuestionControl.tsx';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
@@ -107,6 +108,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   // Asked on a door too: the door lets this one call through, so the form
   // can say the site is closed before anybody starts writing.
   const intake = useQuery(intakeSwitchQuery);
+  const paused = useIntakePaused();
 
   if (logbook.isPending) return <p role="status">Loading the form…</p>;
   if (logbook.isError) {
@@ -140,6 +142,8 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       </Page>
     );
   }
+  // Plan E: a moderator paused intake (features/flood).
+  if (paused) return <PausedForm title={lb.title} />;
   if (intake.data?.open === false) {
     return (
       <Page title={lb.title} width="prose">

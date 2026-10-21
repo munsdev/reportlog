@@ -15,6 +15,7 @@ import { Page } from '../../components/ui/page.tsx';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
 import { ReportAnswers } from './ReportAnswers.tsx';
+import { OriginLabel } from './Board.tsx';
 
 const INTAKE: Record<string, string> = {
   paper: 'on paper',
@@ -61,6 +62,7 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
       <Link to="/board" className="underline">
         Back to the board
       </Link>
+      <OriginLabel r={r} />
       <Section title="What the reporter said">
         <ReportAnswers slug={r.logbook_slug} answers={r.answers} />
         {r.corrected ? (

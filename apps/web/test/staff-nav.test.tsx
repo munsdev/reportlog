@@ -26,6 +26,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Link checks',
       'Moderation',
+      'Flood screen',
       'Files',
       'Guides',
     ]);
@@ -41,6 +42,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Link checks',
       'Moderation',
+      'Flood screen',
       'Moderation settings',
       'Transparency log',
       'Files',
@@ -80,6 +82,7 @@ describe('who sees which staff screen', () => {
       'List review',
       'Link checks',
       'Moderation',
+      'Flood screen',
       'Files',
       'Feedback',
       'Guides',
@@ -134,6 +137,9 @@ const ADMIN_ME = {
   tester: false,
   teamMember: false,
   desks: [],
+  secondFactor: 'done',
+  heldRole: 'admin',
+  stepUpUntil: null,
 };
 
 function page(pathname: string) {

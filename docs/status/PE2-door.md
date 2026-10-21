@@ -1,6 +1,7 @@
 # Plan E session 2 · At the door: status
 
-- **Branch:** `claude/plan-e-door`, from `ccr-c9c93698-ev856l` at `7bc3059` (PD8 merged).
+- **Branch:** `claude/plan-e-door`, from `ccr-c9c93698-ev856l` at `7bc3059` (PD8), with the base
+  merged again at `3fb70a7` (PE1 two-factor, PE3 moderation).
 - **State:** built; PR into `ccr-c9c93698-ev856l`.
 - **Brief:** `docs/plan-e.md` (E1, E2, E4, "At the door"), `docs/electionlog-spam-prevention.md`
   §01, §02, §07, §08. Ruling 42 holds: every piece is a general capability; nothing reads "is this
@@ -64,11 +65,9 @@ Every report and tip route runs `door.pass` first: `POST /api/reports` and
     this site; `humanInteractionSignature` off (it collects pointer movement); logo and footer
     (links to altcha.org) hidden. Checked in the browser: the worker's URL is 127.0.0.1, and no
     request leaves the site.
-  - **Difficulty** is read in one function, `puzzleLevel(db)` (`door/settings.ts`), from
-    `door_settings.puzzle`, `normal` unless set. **PE3 is not on the base**, so this is the "sane
-    default behind one small function": PE3's "Harder puzzle" switch replaces that function or
-    writes the column. Measured in headless Chromium on 4 cores: normal 0.7–0.9 s from page load
-    (mostly the widget's half-second minimum), harder 1–14 s.
+  - **Difficulty** is PE3's "Harder puzzle" switch: `puzzleLevel(db)` (`moderation/switches.ts`),
+    mapped here to `PUZZLE_LEVELS`. Measured in headless Chromium on 4 cores: normal 0.7–0.9 s
+    from page load (mostly the widget's half-second minimum), harder 1–14 s.
 - **Honeypot**: `website`, hidden by CSS (off-screen), `aria-hidden`, `tabindex=-1`,
   `autocomplete=off`. One shared component for the report and tip forms.
 - **Minimum time**: `GET /api/door/start` issues `<ms>.<HMAC>` under a subkey of `DOOR_KEY`:
@@ -84,11 +83,10 @@ Every report and tip route runs `door.pass` first: `POST /api/reports` and
   `FILING_CALLS` and the list routes are unchanged and still work on a door (tested).
 - **Refusals** (`door/index.ts`): status 400 (429 for a rate limit), code `try_again`, and one
   sentence from the new copy slot `refusal_message` ("Something went wrong. Please try again." until
-  the operator words it). Never names the check. Counted by check and hour in `door_refusals`
-  (`door/refusals.ts`, `countRefusal(db, check)`), with no content, logbook, list, minute or client.
-  **PE3's counter is not on the base, so this is the minimal module PE3 can replace**;
-  `refusalsSince` is the read, and `GET /api/admin/door` shows the last 24 hours. The page shows the
-  sentence and solves a fresh puzzle at once.
+  the operator words it). Never names the check. Counted by check through PE3's
+  `countRefusal(db, check)` (`moderation/refusals.ts`, shown on the flood screen), with no content,
+  logbook, list, minute or client. The page shows the sentence and solves a fresh puzzle at once.
+- **PE3's `refuseWhilePaused`** stays first in both routes: a paused site says so before the door.
 - **The list form's old filters** (a hidden box and a client-reported `elapsed_ms`, both answered
   like success) are replaced by the door: refused plainly, and counted.
 
@@ -155,9 +153,8 @@ automatic difficulty, single-use reporter codes, or anything tying a submission 
 - Rate limits are tested against the app, not a real Caddy (§08's last line): E2 put them in the
   app.
 - Polling hours per state remain a gap (E4).
-- The door's settings have an admin API (`GET`/`PUT /api/admin/door`, administrators) but no
-  screen; PE3's flood screen is the intended home. Plan E puts "the puzzle switch" behind step-up:
-  PE1's step-up is not on the base, so `PUT /api/admin/door` has none yet.
+- The minimum time on a form has an admin API (`GET`/`PUT /api/admin/door`, administrators) and
+  no screen yet; the flood screen is the natural home.
 - `processHasher.onRotate` keeps one callback per app built; in a test run that is one per test
   app, in production one.
 

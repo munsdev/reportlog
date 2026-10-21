@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { stepUp } from './second-factor.ts';
 
 const run = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -60,6 +61,8 @@ test.describe('an administrator', () => {
     browser,
   }) => {
     const name = `Logo E2E ${run}`;
+    // Making an organization names its manager: a step-up first (plan E, E3).
+    await stepUp(page.request);
     const made = await page.request.post('/api/orgs', {
       data: { name, managerEmails: [`logo-manager-${run}@example.org`] },
     });

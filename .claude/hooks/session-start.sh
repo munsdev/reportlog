@@ -48,6 +48,11 @@ if [ -f .env ] && ! grep -q '^FILES_KEY=.' .env; then
     "$(openssl rand -base64 32)" "$PWD/.files" >> .env
 fi
 
+# And for staff authenticator apps (two-factor login), so they can be set up locally.
+if [ -f .env ] && ! grep -q '^TWO_FACTOR_KEY=.' .env; then
+  printf 'TWO_FACTOR_KEY=%s\n' "$(openssl rand -base64 32)" >> .env
+fi
+
 # --- the briefing -------------------------------------------------------------
 echo "=== ReportLog · session briefing ==="
 echo "BRANCH    $(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"

@@ -17,6 +17,7 @@ import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { grantsAccess, notAllowed, requireGranter, requireUser } from './guards.ts';
+import { stepUpGuard } from './stepUp.ts';
 import { bodyOf, iso, isoOrNull, refused } from './http.ts';
 import {
   INVITE_TTL_MS,
@@ -140,25 +141,6 @@ export function orgRoutes(
     };
   });
 
-  route(app, C.createOrganization, async ({ request }) => {
-    const actor = requireGranter(request);
-    const { name, details, managerEmails } = bodyOf(C.createOrganization, request);
-    const out = await createOrganization(db, {
-      actor,
-      name,
-      ...(details !== undefined ? { details } : {}),
-      managerEmails,
-    });
-    if (out.ok) return out;
-    const messages = {
-      'name-required': 'Give the organization a name.',
-      'manager-required': 'An organization needs at least one manager to run it.',
-      'name-taken': 'An organization with that name already exists.',
-      'bad-email': 'One of the managers’ addresses is not a valid email address.',
-    } as const;
-    throw refused(400, out.reason, messages[out.reason]);
-  });
-
   route(app, C.getOrganization, async ({ params, request }) => {
     const id = Number(params.id);
     const { granter, actorIsManager } = requireOrgAuthority(request, id);
@@ -183,57 +165,146 @@ export function orgRoutes(
     };
   });
 
-  /**
-   * Adding somebody without their agreeing. Administrators and Access
-   * Managers only, since invitations exist: a manager who could do this
-   * would never have to ask. It stays for seating an organization's first
-   * manager, who has nobody to invite them, and for repairs.
-   */
-  route(app, C.addMember, async ({ params, request }) => {
-    const actor = requireGranter(request);
-    const { email, role } = bodyOf(C.addMember, request);
-    const out = await addMember(db, {
-      actor,
-      actorIsManager: false,
-      organizationId: Number(params.id),
-      email,
-      role,
+  // Giving somebody a role in an organization, or taking it away, asks for
+  // the second factor again (plan E, E3). Who may is still each route's to
+  // decide; the hook asks first only whether they could be anybody who may
+  // (a route with no organization in its address admits only granters).
+  void app.register((granting, _opts, done) => {
+    granting.addHook('preHandler', (request) => {
+      requireOrgAuthority(request, Number((request.params as { id?: unknown }).id));
+      return Promise.resolve();
     });
-    if (out.ok) return out;
-    const messages = {
-      'manager-cannot-promote':
-        'A manager cannot appoint another manager. Ask an administrator or an Access Manager.',
-      'bad-email': 'Enter a valid email address.',
-      'unknown-role': 'There is no such role in an organization.',
-      'no-such-organization': 'There is no such organization.',
-      'last-manager':
-        'That is this organization’s only manager. Appoint another before changing their role.',
-    } as const;
-    throw refused(
-      out.reason === 'no-such-organization' ? 404 : 400,
-      out.reason,
-      messages[out.reason],
-    );
-  });
+    granting.addHook('preHandler', stepUpGuard());
+    // Making an organization names its first managers: a grant too.
+    route(granting, C.createOrganization, async ({ request }) => {
+      const actor = requireGranter(request);
+      const { name, details, managerEmails } = bodyOf(C.createOrganization, request);
+      const out = await createOrganization(db, {
+        actor,
+        name,
+        ...(details !== undefined ? { details } : {}),
+        managerEmails,
+      });
+      if (out.ok) return out;
+      const messages = {
+        'name-required': 'Give the organization a name.',
+        'manager-required': 'An organization needs at least one manager to run it.',
+        'name-taken': 'An organization with that name already exists.',
+        'bad-email': 'One of the managers’ addresses is not a valid email address.',
+      } as const;
+      throw refused(400, out.reason, messages[out.reason]);
+    });
+    /**
+     * Adding somebody without their agreeing. Administrators and Access
+     * Managers only, since invitations exist: a manager who could do this
+     * would never have to ask. It stays for seating an organization's first
+     * manager, who has nobody to invite them, and for repairs.
+     */
+    route(granting, C.addMember, async ({ params, request }) => {
+      const actor = requireGranter(request);
+      const { email, role } = bodyOf(C.addMember, request);
+      const out = await addMember(db, {
+        actor,
+        actorIsManager: false,
+        organizationId: Number(params.id),
+        email,
+        role,
+      });
+      if (out.ok) return out;
+      const messages = {
+        'manager-cannot-promote':
+          'A manager cannot appoint another manager. Ask an administrator or an Access Manager.',
+        'bad-email': 'Enter a valid email address.',
+        'unknown-role': 'There is no such role in an organization.',
+        'no-such-organization': 'There is no such organization.',
+        'last-manager':
+          'That is this organization’s only manager. Appoint another before changing their role.',
+      } as const;
+      throw refused(
+        out.reason === 'no-such-organization' ? 404 : 400,
+        out.reason,
+        messages[out.reason],
+      );
+    });
 
-  route(app, C.removeMember, async ({ params, request }) => {
-    const id = Number(params.id);
-    const { user, actorIsManager } = requireOrgAuthority(request, id);
-    const out = await removeMember(db, {
-      actor: user,
-      actorIsManager,
-      organizationId: id,
-      email: params.email,
+    route(granting, C.removeMember, async ({ params, request }) => {
+      const id = Number(params.id);
+      const { user, actorIsManager } = requireOrgAuthority(request, id);
+      const out = await removeMember(db, {
+        actor: user,
+        actorIsManager,
+        organizationId: id,
+        email: params.email,
+      });
+      if (out.ok) return out;
+      const messages = {
+        'last-manager':
+          'An organization must always have a manager. Appoint another before removing this one.',
+        'manager-cannot-remove-manager':
+          'A manager cannot remove another manager. Ask an administrator or an Access Manager.',
+        'not-a-member': 'That address is not in this organization.',
+      } as const;
+      throw refused(out.reason === 'not-a-member' ? 404 : 403, out.reason, messages[out.reason]);
     });
-    if (out.ok) return out;
-    const messages = {
-      'last-manager':
-        'An organization must always have a manager. Appoint another before removing this one.',
-      'manager-cannot-remove-manager':
-        'A manager cannot remove another manager. Ask an administrator or an Access Manager.',
-      'not-a-member': 'That address is not in this organization.',
-    } as const;
-    throw refused(out.reason === 'not-a-member' ? 404 : 403, out.reason, messages[out.reason]);
+
+    route(granting, C.createInvitation, async ({ params, request }) => {
+      const id = Number(params.id);
+      const { user, actorIsManager } = requireOrgAuthority(request, id);
+      const { email, role } = bodyOf(C.createInvitation, request);
+      // The ceiling at the route as well as in the module: this is a new door
+      // into granting, and two checks for one rule is the discipline here.
+      if (!isOrgRole(role)) throw refused(400, 'unknown-role', INVITE_REFUSALS['unknown-role']);
+      const out = await createInvitation(db, {
+        actor: user,
+        actorIsManager,
+        organizationId: id,
+        email,
+        role,
+      });
+      if (!out.ok)
+        throw refused(
+          out.reason === 'no-such-organization' ? 404 : 400,
+          out.reason,
+          INVITE_REFUSALS[out.reason],
+        );
+      if (!out.token) {
+        return {
+          ok: true as const,
+          awaitingApproval: true,
+          message:
+            'Inviting another manager needs an administrator to approve it. Nothing has been emailed yet.',
+        };
+      }
+      await mailInvitation({
+        email: out.email,
+        token: out.token,
+        role: out.role,
+        organizationId: id,
+        invitedBy: user.email,
+      });
+      return {
+        ok: true as const,
+        awaitingApproval: false,
+        message: `An invitation is on its way to ${out.email}.`,
+      };
+    });
+
+    // The leadership grant the approval step exists for: a granter's, never a manager's.
+    route(granting, C.approveInvitation, async ({ params, request }) => {
+      const actor = requireGranter(request);
+      const id = Number(params.id);
+      const out = await approveInvitation(db, { actor, organizationId: id, email: params.email });
+      if (!out.ok) throw refused(400, out.reason, INVITE_REFUSALS[out.reason]);
+      await mailInvitation({
+        email: out.email,
+        token: out.token,
+        role: out.role,
+        organizationId: id,
+        invitedBy: actor.email,
+      });
+      return { ok: true as const };
+    });
+    done();
   });
 
   route(app, C.setOrganizationDetails, async ({ params, request }) => {
@@ -279,48 +350,6 @@ export function orgRoutes(
     };
   });
 
-  route(app, C.createInvitation, async ({ params, request }) => {
-    const id = Number(params.id);
-    const { user, actorIsManager } = requireOrgAuthority(request, id);
-    const { email, role } = bodyOf(C.createInvitation, request);
-    // The ceiling at the route as well as in the module: this is a new door
-    // into granting, and two checks for one rule is the discipline here.
-    if (!isOrgRole(role)) throw refused(400, 'unknown-role', INVITE_REFUSALS['unknown-role']);
-    const out = await createInvitation(db, {
-      actor: user,
-      actorIsManager,
-      organizationId: id,
-      email,
-      role,
-    });
-    if (!out.ok)
-      throw refused(
-        out.reason === 'no-such-organization' ? 404 : 400,
-        out.reason,
-        INVITE_REFUSALS[out.reason],
-      );
-    if (!out.token) {
-      return {
-        ok: true as const,
-        awaitingApproval: true,
-        message:
-          'Inviting another manager needs an administrator to approve it. Nothing has been emailed yet.',
-      };
-    }
-    await mailInvitation({
-      email: out.email,
-      token: out.token,
-      role: out.role,
-      organizationId: id,
-      invitedBy: user.email,
-    });
-    return {
-      ok: true as const,
-      awaitingApproval: false,
-      message: `An invitation is on its way to ${out.email}.`,
-    };
-  });
-
   route(app, C.withdrawInvitation, async ({ params, request }) => {
     const id = Number(params.id);
     requireOrgAuthority(request, id);
@@ -338,22 +367,6 @@ export function orgRoutes(
       role: out.role,
       organizationId: id,
       invitedBy: user.email,
-    });
-    return { ok: true as const };
-  });
-
-  // The leadership grant the approval step exists for: a granter's, never a manager's.
-  route(app, C.approveInvitation, async ({ params, request }) => {
-    const actor = requireGranter(request);
-    const id = Number(params.id);
-    const out = await approveInvitation(db, { actor, organizationId: id, email: params.email });
-    if (!out.ok) throw refused(400, out.reason, INVITE_REFUSALS[out.reason]);
-    await mailInvitation({
-      email: out.email,
-      token: out.token,
-      role: out.role,
-      organizationId: id,
-      invitedBy: actor.email,
     });
     return { ok: true as const };
   });

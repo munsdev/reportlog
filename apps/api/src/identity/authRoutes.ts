@@ -12,10 +12,13 @@ import { limiter } from './limiter.ts';
 import { claimWaitingMemberships } from './organizations.ts';
 import { CODE_TTL_MS, createCode, subjects, verifyCode } from './otp.ts';
 import { ensureUser } from './roles.ts';
+import { PENDING_SESSION_MS, needsSecondFactor } from './secondFactor.ts';
 import {
   SESSION_COOKIE,
+  SESSION_TTL_MS,
   createSession,
   destroySession,
+  membershipsFor,
   setSessionCookie,
   userForSession,
 } from './sessions.ts';
@@ -62,15 +65,20 @@ export function authRoutes(
     // address from the environment on every sign-in, which silently reversed
     // any later demotion and wrote no audit row. A role is granted, on the
     // record, or not at all.
-    const userId = await db.transaction().execute(async (trx) => {
+    const user = await db.transaction().execute(async (trx) => {
       const user = await ensureUser(trx, email);
       // An administrator who added this address to an organization before it
       // had an account: the membership attaches now.
       await claimWaitingMemberships(trx, user.id, email);
-      return user.id;
+      return user;
     });
-    const token = await createSession(db, userId);
-    setSessionCookie(reply, token);
+    // A role holder's session is short until it proves a second factor
+    // (secondFactor.ts); until then it acts with no role at all.
+    const ttl = needsSecondFactor(user.role, await membershipsFor(db, user.id))
+      ? PENDING_SESSION_MS
+      : SESSION_TTL_MS;
+    const token = await createSession(db, user.id, ttl);
+    setSessionCookie(reply, token, ttl);
     return toMe(await userForSession(db, token));
   });
 

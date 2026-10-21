@@ -15,6 +15,7 @@ import { BOARD_CSV_PATH } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
@@ -25,6 +26,7 @@ import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
+import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardMapsButton } from './Maps.tsx';
 import { boardMetaQuery, boardReportsQuery } from './queries.ts';
 import type { BoardSearch } from './queries.ts';
@@ -42,6 +44,9 @@ export function BoardPage({ search }: { search: BoardSearch }) {
         <>
           <Button asChild variant="secondary">
             <Link to="/board/numbers">By the numbers</Link>
+          </Button>
+          <Button asChild variant="secondary">
+            <Link to="/board/activity">Arrivals and declines</Link>
           </Button>
           <Button asChild variant="secondary">
             <Link to="/board/press">Press pack</Link>
@@ -63,10 +68,45 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             logbooks={meta.data.logbooks}
             search={search}
           />
-          <Results search={search} logbooks={meta.data.logbooks} downloads={meta.data.downloads} />
+          <CountsOnlyOr search={search} logbooks={meta.data.logbooks}>
+            <Results
+              search={search}
+              logbooks={meta.data.logbooks}
+              downloads={meta.data.downloads}
+            />
+          </CountsOnlyOr>
         </>
       ) : null}
     </Page>
+  );
+}
+
+/**
+ * A logbook published as counts only shows its counts in place of entries
+ * (Plan E). With no logbook chosen, the board says which ones are counted
+ * rather than listed, so their absence from the list is not a mystery.
+ */
+function CountsOnlyOr({
+  search,
+  logbooks,
+  children,
+}: {
+  search: BoardSearch;
+  logbooks: BoardLogbook[];
+  children: ReactNode;
+}) {
+  const chosen = logbooks.find((l) => l.slug === search.logbook);
+  if (chosen?.counts_only) return <CountsOnlyPanel slug={chosen.slug} title={chosen.title} />;
+  const counted = logbooks.filter((l) => l.counts_only);
+  return (
+    <>
+      {!chosen && counted.length ? (
+        <p className="text-sm">
+          {`Published as counts only, not listed here: ${counted.map((l) => l.title).join(', ')}. Choose one above to see its counts.`}
+        </p>
+      ) : null}
+      {children}
+    </>
   );
 }
 
@@ -293,6 +333,20 @@ function Results({
   );
 }
 
+/** Where it came from, in the operator's words, on every entry (Plan E). */
+export function OriginLabel({ r }: { r: Pick<PublicReport, 'origin' | 'label'> }) {
+  return (
+    <p className="self-start rounded-card border border-line px-2 text-sm font-semibold">
+      {/* The operator's words for each origin (site copy), sent with the report. */}
+      {r.origin === 'organization' ? (
+        <span data-copy="origin_organization">{r.label}</span>
+      ) : (
+        <span data-copy="origin_open_form">{r.label}</span>
+      )}
+    </p>
+  );
+}
+
 function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string }) {
   return (
     <Card>
@@ -302,6 +356,7 @@ function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string
           {r.corrected ? ' · corrected by its reporter' : ''}
           {r.third_party ? ` · collected by ${r.third_party.filed_via}` : ''}
         </p>
+        <OriginLabel r={r} />
         <ReportAnswers slug={r.logbook_slug} answers={r.answers} only={4} />
         {r.editorial_note ? (
           <p className="text-sm font-semibold">The archive has a note on this report.</p>

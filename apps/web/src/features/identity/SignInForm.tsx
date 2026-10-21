@@ -5,13 +5,19 @@
  * Used by the sign-in page and by the setup wizard's resume step, with the
  * routes to call passed in, because the wizard's first code seats the owner
  * and an ordinary one never changes anybody's role.
+ *
+ * Somebody with a role then proves a second factor, or sets the first one
+ * up (plan E, E3), before `onSignedIn` is called: the email code alone signs
+ * a role holder in to nothing.
  */
 import { claimOwnership, requestSetupCode, requestSignInCode, signIn } from '@reportlog/contracts';
 import type { Me } from '@reportlog/contracts';
-import { useMutation } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { call } from '../../lib/api.ts';
+import { SecondFactorGate, pendingSecondFactor } from './secondFactor.tsx';
+import { meQuery, useMe } from './session.ts';
 import { ErrorText, TextField } from './ui.tsx';
 
 export function SignInForm({
@@ -41,13 +47,30 @@ export function SignInForm({
       setCode('');
     },
   });
+  const client = useQueryClient();
+  const [secondStep, setSecondStep] = useState(false);
   const verify = useMutation({
     mutationFn: () =>
       call(purpose === 'setup' ? claimOwnership : signIn, {
         body: { email: sentTo ?? email, code },
       }),
-    onSuccess: onSignedIn,
+    onSuccess: async (me) => {
+      if (pendingSecondFactor(me)) {
+        client.setQueryData(meQuery.queryKey, me);
+        setSecondStep(true);
+        return;
+      }
+      await onSignedIn(me);
+    },
   });
+
+  if (secondStep) {
+    return (
+      <SecondFactorGate>
+        <WhenSignedIn onSignedIn={onSignedIn} />
+      </SecondFactorGate>
+    );
+  }
 
   if (!sentTo) {
     return (
@@ -120,4 +143,16 @@ export function SignInForm({
       </div>
     </form>
   );
+}
+
+/** Past the second factor: hands on who is now signed in, once. */
+function WhenSignedIn({ onSignedIn }: { onSignedIn: (me: Me) => void | Promise<void> }) {
+  const me = useMe();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || !me.data?.signedIn || pendingSecondFactor(me.data)) return;
+    done.current = true;
+    void onSignedIn(me.data);
+  }, [me.data, onSignedIn]);
+  return <p role="status">Signed in.</p>;
 }

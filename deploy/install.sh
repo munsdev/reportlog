@@ -15,8 +15,8 @@
 #   4. Caddy from Caddy's apt repository
 #   5. the `reportlog` user, the directories, the database and its role
 #   6. /etc/reportlog/reportlog.env and deploy.env, from templates, with
-#      the keys the machine makes itself (CONTACT_KEY, FILES_KEY, DOOR_KEY, the
-#      transparency log's deploy key)
+#      the keys the machine makes itself (CONTACT_KEY, FILES_KEY,
+#      TWO_FACTOR_KEY, DOOR_KEY, the transparency log's deploy key)
 #   7. the settings only a person knows, asked one at a time: the site's
 #      address, the mail and backup accounts' keys. Enter skips one; running
 #      the script again asks only what is still empty. Nobody edits the
@@ -177,6 +177,16 @@ if [ -z "$(env_value FILES_KEY)" ]; then
     set_env FILES_KEY "$(head -c 32 /dev/urandom | base64)"
     note "made FILES_KEY (copy it off this server with the contact key)"
   fi
+fi
+
+# The two-factor key: staff authenticator-app secrets are encrypted under it
+# (apps/api/src/identity/twoFactorKey.ts). Unlike the two above, a new one
+# over a lost one costs nothing stored for good: each staff member sets their
+# app up again (passkeys and recovery codes are not under it). So it is made
+# whenever the file has none, without asking.
+if [ -z "$(env_value TWO_FACTOR_KEY)" ]; then
+  set_env TWO_FACTOR_KEY "$(head -c 32 /dev/urandom | base64)"
+  note "made TWO_FACTOR_KEY"
 fi
 
 # The door's key: puzzles and form start tokens are signed with it (Plan E,

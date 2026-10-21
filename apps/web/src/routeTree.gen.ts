@@ -29,6 +29,7 @@ import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/setting
 import { Route as staffTransparencyLogRouteImport } from './routes/(staff)/transparency-log'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
+import { Route as BoardActivityRouteImport } from './routes/board/activity'
 import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as BoardPressRouteImport } from './routes/board/press'
@@ -52,6 +53,7 @@ import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/in
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
 import { Route as staffAccessJournalistsRouteImport } from './routes/(staff)/access/journalists'
 import { Route as staffAccessRosterRouteImport } from './routes/(staff)/access/roster'
+import { Route as staffAccessSecurityRouteImport } from './routes/(staff)/access/security'
 import { Route as staffAccessSignInRouteImport } from './routes/(staff)/access/sign-in'
 import { Route as staffFilesIndexRouteImport } from './routes/(staff)/files/index'
 import { Route as staffFilesRefRouteImport } from './routes/(staff)/files/$ref'
@@ -59,6 +61,7 @@ import { Route as staffFilesEraseRouteImport } from './routes/(staff)/files/eras
 import { Route as staffFilesSettingsRouteImport } from './routes/(staff)/files/settings'
 import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/index'
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
+import { Route as staffIntakeLinksRouteImport } from './routes/(staff)/intake/links'
 import { Route as staffListsIndexRouteImport } from './routes/(staff)/lists/index'
 import { Route as staffListsIdRouteImport } from './routes/(staff)/lists/$id'
 import { Route as staffListsLinksRouteImport } from './routes/(staff)/lists/links'
@@ -70,6 +73,7 @@ import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
 import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/moderate/agreement'
+import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderate/flood'
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
@@ -90,6 +94,7 @@ import { Route as JournalistsStopTokenRouteImport } from './routes/journalists_.
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
+import { Route as OrganizationsJoinTokenRouteImport } from './routes/organizations/join.$token'
 import { Route as staffAccessInvitationTokenRouteImport } from './routes/(staff)/access/invitation.$token'
 import { Route as staffAccessJournalistsAgreementRouteImport } from './routes/(staff)/access/journalists_.agreement'
 import { Route as staffAccessOrgsIndexRouteImport } from './routes/(staff)/access/orgs.index'
@@ -198,6 +203,11 @@ const BoardIndexRoute = BoardIndexRouteImport.update({
 const BoardRefRoute = BoardRefRouteImport.update({
   id: '/board/$ref',
   path: '/board/$ref',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardActivityRoute = BoardActivityRouteImport.update({
+  id: '/board/activity',
+  path: '/board/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardMapsRoute = BoardMapsRouteImport.update({
@@ -315,6 +325,11 @@ const staffAccessRosterRoute = staffAccessRosterRouteImport.update({
   path: '/access/roster',
   getParentRoute: () => rootRouteImport,
 } as any)
+const staffAccessSecurityRoute = staffAccessSecurityRouteImport.update({
+  id: '/(staff)/access/security',
+  path: '/access/security',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffAccessSignInRoute = staffAccessSignInRouteImport.update({
   id: '/(staff)/access/sign-in',
   path: '/access/sign-in',
@@ -348,6 +363,11 @@ const staffIntakeIndexRoute = staffIntakeIndexRouteImport.update({
 const staffIntakeIdRoute = staffIntakeIdRouteImport.update({
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => staffIntakeRouteRoute,
+} as any)
+const staffIntakeLinksRoute = staffIntakeLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
   getParentRoute: () => staffIntakeRouteRoute,
 } as any)
 const staffListsIndexRoute = staffListsIndexRouteImport.update({
@@ -403,6 +423,11 @@ const staffModerateThreadIdRoute = staffModerateThreadIdRouteImport.update({
 const staffModerateAgreementRoute = staffModerateAgreementRouteImport.update({
   id: '/agreement',
   path: '/agreement',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
+const staffModerateFloodRoute = staffModerateFloodRouteImport.update({
+  id: '/flood',
+  path: '/flood',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
 const staffModerateIllegalContentRoute =
@@ -510,6 +535,11 @@ const OrganizationsIdListingRoute = OrganizationsIdListingRouteImport.update({
   path: '/organizations/$id/listing',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrganizationsJoinTokenRoute = OrganizationsJoinTokenRouteImport.update({
+  id: '/organizations/join/$token',
+  path: '/organizations/join/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffAccessInvitationTokenRoute =
   staffAccessInvitationTokenRouteImport.update({
     id: '/(staff)/access/invitation/$token',
@@ -579,6 +609,7 @@ export interface FileRoutesByFullPath {
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/activity': typeof BoardActivityRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -602,11 +633,13 @@ export interface FileRoutesByFullPath {
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
+  '/access/security': typeof staffAccessSecurityRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
   '/files/erase': typeof staffFilesEraseRoute
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
+  '/intake/links': typeof staffIntakeLinksRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -614,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
@@ -633,6 +667,7 @@ export interface FileRoutesByFullPath {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
+  '/organizations/join/$token': typeof OrganizationsJoinTokenRoute
   '/access/': typeof staffAccessIndexRoute
   '/files/': typeof staffFilesIndexRoute
   '/intake/': typeof staffIntakeIndexRoute
@@ -665,6 +700,7 @@ export interface FileRoutesByTo {
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/activity': typeof BoardActivityRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -688,11 +724,13 @@ export interface FileRoutesByTo {
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
+  '/access/security': typeof staffAccessSecurityRoute
   '/access/sign-in': typeof staffAccessSignInRoute
   '/files/$ref': typeof staffFilesRefRoute
   '/files/erase': typeof staffFilesEraseRoute
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
+  '/intake/links': typeof staffIntakeLinksRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -700,6 +738,7 @@ export interface FileRoutesByTo {
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
@@ -719,6 +758,7 @@ export interface FileRoutesByTo {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
+  '/organizations/join/$token': typeof OrganizationsJoinTokenRoute
   '/access': typeof staffAccessIndexRoute
   '/files': typeof staffFilesIndexRoute
   '/intake': typeof staffIntakeIndexRoute
@@ -758,6 +798,7 @@ export interface FileRoutesById {
   '/(staff)/backups': typeof staffBackupsRoute
   '/(staff)/transparency-log': typeof staffTransparencyLogRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/activity': typeof BoardActivityRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -781,11 +822,13 @@ export interface FileRoutesById {
   '/(staff)/access/audit': typeof staffAccessAuditRoute
   '/(staff)/access/journalists': typeof staffAccessJournalistsRoute
   '/(staff)/access/roster': typeof staffAccessRosterRoute
+  '/(staff)/access/security': typeof staffAccessSecurityRoute
   '/(staff)/access/sign-in': typeof staffAccessSignInRoute
   '/(staff)/files/$ref': typeof staffFilesRefRoute
   '/(staff)/files/erase': typeof staffFilesEraseRoute
   '/(staff)/files/settings': typeof staffFilesSettingsRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
+  '/(staff)/intake/links': typeof staffIntakeLinksRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
   '/(staff)/lists/links': typeof staffListsLinksRoute
   '/(staff)/lists/search': typeof staffListsSearchRoute
@@ -793,6 +836,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
+  '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
   '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
@@ -812,6 +856,7 @@ export interface FileRoutesById {
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
+  '/organizations/join/$token': typeof OrganizationsJoinTokenRoute
   '/(staff)/access/': typeof staffAccessIndexRoute
   '/(staff)/files/': typeof staffFilesIndexRoute
   '/(staff)/intake/': typeof staffIntakeIndexRoute
@@ -852,6 +897,7 @@ export interface FileRouteTypes {
     | '/backups'
     | '/transparency-log'
     | '/board/$ref'
+    | '/board/activity'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -875,11 +921,13 @@ export interface FileRouteTypes {
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
+    | '/access/security'
     | '/access/sign-in'
     | '/files/$ref'
     | '/files/erase'
     | '/files/settings'
     | '/intake/$id'
+    | '/intake/links'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -887,6 +935,7 @@ export interface FileRouteTypes {
     | '/logbooks/front-page'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
     | '/settings/development'
@@ -906,6 +955,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
+    | '/organizations/join/$token'
     | '/access/'
     | '/files/'
     | '/intake/'
@@ -938,6 +988,7 @@ export interface FileRouteTypes {
     | '/backups'
     | '/transparency-log'
     | '/board/$ref'
+    | '/board/activity'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -961,11 +1012,13 @@ export interface FileRouteTypes {
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
+    | '/access/security'
     | '/access/sign-in'
     | '/files/$ref'
     | '/files/erase'
     | '/files/settings'
     | '/intake/$id'
+    | '/intake/links'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -973,6 +1026,7 @@ export interface FileRouteTypes {
     | '/logbooks/front-page'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
     | '/settings/development'
@@ -992,6 +1046,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
+    | '/organizations/join/$token'
     | '/access'
     | '/files'
     | '/intake'
@@ -1030,6 +1085,7 @@ export interface FileRouteTypes {
     | '/(staff)/backups'
     | '/(staff)/transparency-log'
     | '/board/$ref'
+    | '/board/activity'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -1053,11 +1109,13 @@ export interface FileRouteTypes {
     | '/(staff)/access/audit'
     | '/(staff)/access/journalists'
     | '/(staff)/access/roster'
+    | '/(staff)/access/security'
     | '/(staff)/access/sign-in'
     | '/(staff)/files/$ref'
     | '/(staff)/files/erase'
     | '/(staff)/files/settings'
     | '/(staff)/intake/$id'
+    | '/(staff)/intake/links'
     | '/(staff)/lists/$id'
     | '/(staff)/lists/links'
     | '/(staff)/lists/search'
@@ -1065,6 +1123,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/front-page'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/agreement'
+    | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
     | '/(staff)/settings/development'
@@ -1084,6 +1143,7 @@ export interface FileRouteTypes {
     | '/mine/declaration/$threadId'
     | '/notifications_/stop/$token'
     | '/organizations/$id/listing'
+    | '/organizations/join/$token'
     | '/(staff)/access/'
     | '/(staff)/files/'
     | '/(staff)/intake/'
@@ -1123,6 +1183,7 @@ export interface RootRouteChildren {
   staffBackupsRoute: typeof staffBackupsRoute
   staffTransparencyLogRoute: typeof staffTransparencyLogRoute
   BoardRefRoute: typeof BoardRefRoute
+  BoardActivityRoute: typeof BoardActivityRoute
   BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
   BoardPressRoute: typeof BoardPressRoute
@@ -1146,6 +1207,7 @@ export interface RootRouteChildren {
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessJournalistsRoute: typeof staffAccessJournalistsRoute
   staffAccessRosterRoute: typeof staffAccessRosterRoute
+  staffAccessSecurityRoute: typeof staffAccessSecurityRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   FileEraseTokenRoute: typeof FileEraseTokenRoute
@@ -1157,6 +1219,7 @@ export interface RootRouteChildren {
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
+  OrganizationsJoinTokenRoute: typeof OrganizationsJoinTokenRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
   staffMapsIndexRoute: typeof staffMapsIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
@@ -1305,6 +1368,13 @@ declare module '@tanstack/react-router' {
       path: '/board/$ref'
       fullPath: '/board/$ref'
       preLoaderRoute: typeof BoardRefRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/board/activity': {
+      id: '/board/activity'
+      path: '/board/activity'
+      fullPath: '/board/activity'
+      preLoaderRoute: typeof BoardActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board/maps': {
@@ -1468,6 +1538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffAccessRosterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(staff)/access/security': {
+      id: '/(staff)/access/security'
+      path: '/access/security'
+      fullPath: '/access/security'
+      preLoaderRoute: typeof staffAccessSecurityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/access/sign-in': {
       id: '/(staff)/access/sign-in'
       path: '/access/sign-in'
@@ -1515,6 +1592,13 @@ declare module '@tanstack/react-router' {
       path: '/$id'
       fullPath: '/intake/$id'
       preLoaderRoute: typeof staffIntakeIdRouteImport
+      parentRoute: typeof staffIntakeRouteRoute
+    }
+    '/(staff)/intake/links': {
+      id: '/(staff)/intake/links'
+      path: '/links'
+      fullPath: '/intake/links'
+      preLoaderRoute: typeof staffIntakeLinksRouteImport
       parentRoute: typeof staffIntakeRouteRoute
     }
     '/(staff)/lists/': {
@@ -1592,6 +1676,13 @@ declare module '@tanstack/react-router' {
       path: '/agreement'
       fullPath: '/moderate/agreement'
       preLoaderRoute: typeof staffModerateAgreementRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
+    '/(staff)/moderate/flood': {
+      id: '/(staff)/moderate/flood'
+      path: '/flood'
+      fullPath: '/moderate/flood'
+      preLoaderRoute: typeof staffModerateFloodRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
     '/(staff)/moderate/illegal-content': {
@@ -1734,6 +1825,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganizationsIdListingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/organizations/join/$token': {
+      id: '/organizations/join/$token'
+      path: '/organizations/join/$token'
+      fullPath: '/organizations/join/$token'
+      preLoaderRoute: typeof OrganizationsJoinTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/access/invitation/$token': {
       id: '/(staff)/access/invitation/$token'
       path: '/access/invitation/$token'
@@ -1824,12 +1922,14 @@ const staffFilesRouteRouteWithChildren = staffFilesRouteRoute._addFileChildren(
 
 interface staffIntakeRouteRouteChildren {
   staffIntakeIdRoute: typeof staffIntakeIdRoute
+  staffIntakeLinksRoute: typeof staffIntakeLinksRoute
   staffIntakeIndexRoute: typeof staffIntakeIndexRoute
   staffIntakeReportsThreadIdRoute: typeof staffIntakeReportsThreadIdRoute
 }
 
 const staffIntakeRouteRouteChildren: staffIntakeRouteRouteChildren = {
   staffIntakeIdRoute: staffIntakeIdRoute,
+  staffIntakeLinksRoute: staffIntakeLinksRoute,
   staffIntakeIndexRoute: staffIntakeIndexRoute,
   staffIntakeReportsThreadIdRoute: staffIntakeReportsThreadIdRoute,
 }
@@ -1877,6 +1977,7 @@ const staffLogbooksRouteRouteWithChildren =
 interface staffModerateRouteRouteChildren {
   staffModerateThreadIdRoute: typeof staffModerateThreadIdRoute
   staffModerateAgreementRoute: typeof staffModerateAgreementRoute
+  staffModerateFloodRoute: typeof staffModerateFloodRoute
   staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
   staffModerateSettingsRoute: typeof staffModerateSettingsRoute
   staffModerateIndexRoute: typeof staffModerateIndexRoute
@@ -1885,6 +1986,7 @@ interface staffModerateRouteRouteChildren {
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateThreadIdRoute: staffModerateThreadIdRoute,
   staffModerateAgreementRoute: staffModerateAgreementRoute,
+  staffModerateFloodRoute: staffModerateFloodRoute,
   staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,
   staffModerateSettingsRoute: staffModerateSettingsRoute,
   staffModerateIndexRoute: staffModerateIndexRoute,
@@ -1938,6 +2040,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffBackupsRoute: staffBackupsRoute,
   staffTransparencyLogRoute: staffTransparencyLogRoute,
   BoardRefRoute: BoardRefRoute,
+  BoardActivityRoute: BoardActivityRoute,
   BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
   BoardPressRoute: BoardPressRoute,
@@ -1961,6 +2064,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessJournalistsRoute: staffAccessJournalistsRoute,
   staffAccessRosterRoute: staffAccessRosterRoute,
+  staffAccessSecurityRoute: staffAccessSecurityRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   FileEraseTokenRoute: FileEraseTokenRoute,
@@ -1972,6 +2076,7 @@ const rootRouteChildren: RootRouteChildren = {
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   NotificationsStopTokenRoute: NotificationsStopTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,
+  OrganizationsJoinTokenRoute: OrganizationsJoinTokenRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
   staffMapsIndexRoute: staffMapsIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,

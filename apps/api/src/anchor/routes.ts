@@ -22,12 +22,13 @@ import {
   distributionAvailable,
   publicArchiveAvailable,
 } from '../board/publication.ts';
-import { publishedReportIds } from '../board/published.ts';
+import { listedReportIds } from '../board/published.ts';
 import { buildChainFile } from '../chain/chainFile.ts';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { stepUpGuard } from '../identity/stepUp.ts';
 import { recordChainFileDownload } from '../moderation/accessLog.ts';
 import { DEFAULT_MAX_AGE_HOURS, checkAnchor } from './health.ts';
 
@@ -56,7 +57,7 @@ async function chainFile(
   // record cannot be written, nothing goes out.
   if (lb && record) await record(lb.id);
   const file = lb
-    ? await buildChainFile(db, lb.id, publishedOnly ? { published: publishedReportIds(db) } : {})
+    ? await buildChainFile(db, lb.id, publishedOnly ? { published: listedReportIds(db) } : {})
     : null;
   if (!file) throw notFound(`There is no logbook "${slug}" with a chain to download.`);
   // The sealed object goes out exactly as it is; the contract only says it is
@@ -99,12 +100,18 @@ export function anchorRoutes(app: FastifyInstance, deps: AnchorRouteDeps): void 
   void app.register((staff, _opts, done) => {
     staff.addHook('preHandler', roleGuard(['admin']));
 
-    route(staff, getCompleteChainFile, async ({ params, request, reply }) => {
-      const file = await chainFile(db, params.slug, false, (id) =>
-        recordChainFileDownload(db, requireUser(request).email, id),
-      );
-      asDownload(reply, params.slug, 'complete');
-      return file;
+    // The complete chain file is an export: the second factor again first
+    // (plan E, E3).
+    void staff.register((exporting, _o, exported) => {
+      exporting.addHook('preHandler', stepUpGuard());
+      route(exporting, getCompleteChainFile, async ({ params, request, reply }) => {
+        const file = await chainFile(db, params.slug, false, (id) =>
+          recordChainFileDownload(db, requireUser(request).email, id),
+        );
+        asDownload(reply, params.slug, 'complete');
+        return file;
+      });
+      exported();
     });
 
     route(staff, getAnchorStatus, async () => {

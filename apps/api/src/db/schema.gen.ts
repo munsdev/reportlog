@@ -216,16 +216,9 @@ export interface DigestSubscriptions {
   user_id: number;
 }
 
-export interface DoorRefusals {
-  check_id: string;
-  count: Generated<number>;
-  hour: Timestamp;
-}
-
 export interface DoorSettings {
   id: Generated<boolean>;
   min_form_ms: Generated<number>;
-  puzzle: Generated<string>;
   updated_at: Generated<Timestamp>;
 }
 
@@ -326,6 +319,13 @@ export interface FileSettings {
   updated_by: string | null;
 }
 
+export interface FloodSettings {
+  id: Generated<boolean>;
+  intake_paused_at: Timestamp | null;
+  puzzle_level: Generated<string>;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface HeatMaps {
   blurb: string | null;
   created_at: Generated<Timestamp>;
@@ -369,6 +369,12 @@ export interface IntakeDrafts {
   payload: Generated<Json>;
   report_id: number | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface IntakeRefusalCounts {
+  check_name: string;
+  hour: Timestamp;
+  refusals: number;
 }
 
 export interface IntakeSettings {
@@ -602,6 +608,13 @@ export interface LogbookForms {
   logbook_id: number;
 }
 
+export interface LogbookPublication {
+  counts_only: boolean;
+  logbook_id: number;
+  set_at: Generated<Timestamp>;
+  set_by: string;
+}
+
 export interface Logbooks {
   blurb: string | null;
   closed_at: Timestamp | null;
@@ -633,13 +646,26 @@ export interface MapPlaceQuestions {
   marked_at: Generated<Timestamp>;
 }
 
-export interface ModerationLog {
+export interface ModerationBulkActions {
   action: string;
   actor_email: string;
   comment: string | null;
   created_at: Generated<Timestamp>;
+  filter: Generated<Json>;
+  id: Generated<number>;
+  reached: number;
+  reason_code: string | null;
+}
+
+export interface ModerationLog {
+  action: string;
+  actor_email: string;
+  bulk_id: number | null;
+  comment: string | null;
+  created_at: Generated<Timestamp>;
   id: Generated<number>;
   new_status: string | null;
+  reason_code: string | null;
   report_id: number;
   thread_id: string;
 }
@@ -657,6 +683,25 @@ export interface ModerationSettings {
   review_keywords_set_at: Timestamp | null;
   review_keywords_set_by: string | null;
   updated_at: Generated<Timestamp>;
+}
+
+export interface OrganizationIntakeLinks {
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  disabled_at: Timestamp | null;
+  disabled_by: string | null;
+  id: Generated<number>;
+  label: string;
+  max_uses: number;
+  organization_id: number;
+  token_hash: string;
+}
+
+export interface OrganizationIntakeLinkUses {
+  id: Generated<number>;
+  link_id: number;
+  used_at: Generated<Timestamp>;
+  user_id: number;
 }
 
 export interface OrganizationInvites {
@@ -835,6 +880,8 @@ export interface RoleAudit {
 export interface Sessions {
   created_at: Generated<Timestamp>;
   expires_at: Timestamp;
+  second_factor_at: Timestamp | null;
+  step_up_at: Timestamp | null;
   token_hash: string;
   user_id: number;
 }
@@ -874,6 +921,15 @@ export interface SiteSettings {
   updated_at: Generated<Timestamp>;
 }
 
+export interface SiteSwitchLog {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  subject: string | null;
+  switch: string;
+  value: string;
+}
+
 export interface StorageDeletions {
   attempts: Generated<number>;
   bucket: string;
@@ -891,6 +947,48 @@ export interface ThreatEvents {
   note: string | null;
   subject_kind: string;
   subject_ref: string;
+}
+
+export interface TwoFactorAttempts {
+  failures: Generated<number>;
+  locked_until: Timestamp | null;
+  user_id: number;
+}
+
+export interface TwoFactorChallenges {
+  challenge: string;
+  expires_at: Timestamp;
+  purpose: string;
+  session_hash: string;
+}
+
+export interface TwoFactorPasskeys {
+  counter: Generated<number>;
+  created_at: Generated<Timestamp>;
+  credential_id: string;
+  id: Generated<number>;
+  last_used_at: Timestamp | null;
+  name: string;
+  public_key: Buffer;
+  transports: Generated<string[]>;
+  user_id: number;
+}
+
+export interface TwoFactorRecoveryCodes {
+  code_hash: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  used_at: Timestamp | null;
+  user_id: number;
+}
+
+export interface TwoFactorTotp {
+  confirmed_at: Timestamp | null;
+  last_step: number | null;
+  pending_at: Timestamp | null;
+  pending_secret_enc: Buffer | null;
+  secret_enc: Buffer | null;
+  user_id: number;
 }
 
 export interface UploadSlots {
@@ -954,7 +1052,6 @@ export interface DB {
   decision_notices: DecisionNotices;
   digest_stop_links: DigestStopLinks;
   digest_subscriptions: DigestSubscriptions;
-  door_refusals: DoorRefusals;
   door_settings: DoorSettings;
   door_spent_puzzles: DoorSpentPuzzles;
   editorial_note_links: EditorialNoteLinks;
@@ -965,10 +1062,12 @@ export interface DB {
   feedback_comments: FeedbackComments;
   feedback_events: FeedbackEvents;
   file_settings: FileSettings;
+  flood_settings: FloodSettings;
   heat_maps: HeatMaps;
   home_buttons: HomeButtons;
   intake_batches: IntakeBatches;
   intake_drafts: IntakeDrafts;
+  intake_refusal_counts: IntakeRefusalCounts;
   intake_settings: IntakeSettings;
   journalist_access_requests: JournalistAccessRequests;
   journalist_links: JournalistLinks;
@@ -990,11 +1089,15 @@ export interface DB {
   logbook_fields: LogbookFields;
   logbook_file_limits: LogbookFileLimits;
   logbook_forms: LogbookForms;
+  logbook_publication: LogbookPublication;
   logbooks: Logbooks;
   map_list_place_questions: MapListPlaceQuestions;
   map_place_questions: MapPlaceQuestions;
+  moderation_bulk_actions: ModerationBulkActions;
   moderation_log: ModerationLog;
   moderation_settings: ModerationSettings;
+  organization_intake_link_uses: OrganizationIntakeLinkUses;
+  organization_intake_links: OrganizationIntakeLinks;
   organization_invite_sends: OrganizationInviteSends;
   organization_invites: OrganizationInvites;
   organization_memberships: OrganizationMemberships;
@@ -1017,8 +1120,14 @@ export interface DB {
   site_access_tokens: SiteAccessTokens;
   site_copy: SiteCopy;
   site_settings: SiteSettings;
+  site_switch_log: SiteSwitchLog;
   storage_deletions: StorageDeletions;
   threat_events: ThreatEvents;
+  two_factor_attempts: TwoFactorAttempts;
+  two_factor_challenges: TwoFactorChallenges;
+  two_factor_passkeys: TwoFactorPasskeys;
+  two_factor_recovery_codes: TwoFactorRecoveryCodes;
+  two_factor_totp: TwoFactorTotp;
   upload_slots: UploadSlots;
   users: Users;
 }

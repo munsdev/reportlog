@@ -43,6 +43,23 @@ export function pathFor(path: string, params: Record<string, unknown> | undefine
   });
 }
 
+/**
+ * Who asks for the second factor again when the server says a step-up is
+ * needed (plan E, E3): the step-up dialog (features/identity/StepUp.tsx)
+ * sets this. It resolves true once the person has proved it, and false if
+ * they closed the dialog instead.
+ */
+let stepUpHandler: (() => Promise<boolean>) | null = null;
+
+export function setStepUpHandler(handler: (() => Promise<boolean>) | null): void {
+  stepUpHandler = handler;
+}
+
+/**
+ * A step-up asked for and given is followed by the same call once more, so
+ * no screen needs to know which of its actions ask for one. Once only: a
+ * second refusal is shown like any other.
+ */
 export async function call<
   P extends z.ZodType,
   Q extends z.ZodType,
@@ -52,6 +69,31 @@ export async function call<
   contract: RouteContract<P, Q, B, R>,
   input: CallInput<P, Q, B> = {},
   fetchImpl: typeof fetch = fetch,
+): Promise<z.infer<R>> {
+  try {
+    return await callOnce(contract, input, fetchImpl);
+  } catch (error) {
+    if (
+      error instanceof ApiRequestError &&
+      error.code === 'step_up_required' &&
+      stepUpHandler &&
+      (await stepUpHandler())
+    ) {
+      return callOnce(contract, input, fetchImpl);
+    }
+    throw error;
+  }
+}
+
+async function callOnce<
+  P extends z.ZodType,
+  Q extends z.ZodType,
+  B extends z.ZodType,
+  R extends z.ZodType,
+>(
+  contract: RouteContract<P, Q, B, R>,
+  input: CallInput<P, Q, B>,
+  fetchImpl: typeof fetch,
 ): Promise<z.infer<R>> {
   let url = pathFor(contract.path, input.params as Record<string, unknown> | undefined);
   if (input.query) {

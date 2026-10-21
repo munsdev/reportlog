@@ -407,6 +407,31 @@ async function plantOneRowEach(): Promise<void> {
       actor_email: actor,
     })
     .execute();
+
+  // Plan E (PE3): bulk actions, the switch log, intake link uses.
+  await db
+    .insertInto('moderation_bulk_actions')
+    .values({ action: 'decline', reason_code: 'duplicate', reached: 0, actor_email: actor })
+    .execute();
+  await db
+    .insertInto('site_switch_log')
+    .values({ switch: 'pause_intake', value: 'on', actor_email: actor })
+    .execute();
+  const link = await db
+    .insertInto('organization_intake_links')
+    .values({
+      organization_id: org.id,
+      token_hash: hex('a'),
+      label: 'for the sweep',
+      max_uses: 5,
+      created_by: actor,
+    })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('organization_intake_link_uses')
+    .values({ link_id: link.id, user_id: user.id })
+    .execute();
 }
 
 /** Run a statement and roll it back whatever happens; resolve to its error, or null. */
@@ -712,6 +737,10 @@ const NOT_STAFF_PREFIXES = [
   // The journalist alert list: signup and the two email links, public (journalists/routes.ts).
   '/api/journalists/',
   '/api/intake-switch',
+  // Plan E (PE3): whether intake is paused (public, in front of the
+  // password), and joining an organization by its intake link (signed in).
+  '/api/intake-pause',
+  '/api/intake-links/',
   '/api/site',
   '/api/setup/',
   '/api/doors',

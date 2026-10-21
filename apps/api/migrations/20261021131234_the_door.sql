@@ -20,24 +20,12 @@ CREATE TABLE door_spent_puzzles (
 );
 CREATE INDEX door_spent_puzzles_expires_idx ON door_spent_puzzles (expires_at);
 
--- THE DOOR'S SETTINGS, one row. How long somebody must have had the form open
--- before it may be sent, and how hard the puzzle is. The moderator screen's
--- "Harder puzzle" switch (session PE3) writes `puzzle`.
+-- THE DOOR'S SETTING, one row: how long somebody must have had the form open
+-- before it may be sent. (How hard the puzzle is, and the refusal counts, are
+-- the moderators' flood switches: flood_settings and intake_refusal_counts.)
 CREATE TABLE door_settings (
   id             boolean PRIMARY KEY DEFAULT true CHECK (id),
   min_form_ms    integer NOT NULL DEFAULT 3000 CHECK (min_form_ms BETWEEN 0 AND 600000),
-  puzzle         text NOT NULL DEFAULT 'normal' CHECK (puzzle IN ('normal', 'harder')),
   updated_at     timestamptz NOT NULL DEFAULT now()
 );
 INSERT INTO door_settings (id) VALUES (true);
-
--- REFUSALS, COUNTED BY CHECK AND HOUR, AND NOTHING ELSE: no content, no time
--- finer than the hour, nothing about who. The moderator screen's "refusals per
--- hour" reads this (session PE3 may replace the module that writes it).
-CREATE TABLE door_refusals (
-  -- The start of the hour (UTC), as the module writes it.
-  hour     timestamptz NOT NULL,
-  check_id text NOT NULL CHECK (check_id ~ '^[a-z_]{2,40}$'),
-  count    integer NOT NULL DEFAULT 0 CHECK (count >= 0),
-  PRIMARY KEY (hour, check_id)
-);

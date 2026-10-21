@@ -94,6 +94,21 @@ const ConfigSchema = z.object({
       .optional(),
   ),
   /**
+   * Authenticator-app secrets (two-factor login, decision E3) are encrypted
+   * under it: 32 random bytes, base64, made by install.sh. Its own key, not
+   * CONTACT_KEY: losing or replacing it costs each staff member setting
+   * their app up again (identity/twoFactorKey.ts). Without it passkeys still
+   * work and the app cannot be set up.
+   */
+  TWO_FACTOR_KEY: optional(
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'TWO_FACTOR_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+      ),
+  ),
+  /**
    * Files (apps/api/src/files/). The key every file's own key is wrapped
    * under: 32 random bytes, base64. NOT the same as CONTACT_KEY: the media
    * worker holds this one and parses hostile files. Losing it makes every

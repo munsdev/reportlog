@@ -76,18 +76,20 @@ beforeAll(async () => {
   choices = await launchedLogbook(h.db, CHOICES);
 });
 afterAll(async () => {
-  await writeDoorSettings(h.db, { minFormMs: 3000, puzzle: 'normal' });
+  await writeDoorSettings(h.db, { minFormMs: 3000 });
+  await h.db.updateTable('flood_settings').set({ puzzle_level: 'normal' }).execute();
   await h.close();
 });
 beforeEach(async () => {
-  await writeDoorSettings(h.db, { minFormMs: 3000, puzzle: 'normal' });
+  await writeDoorSettings(h.db, { minFormMs: 3000 });
+  await h.db.updateTable('flood_settings').set({ puzzle_level: 'normal' }).execute();
 });
 
 const refusals = async (check: string) => {
   const rows = await h.db
-    .selectFrom('door_refusals')
-    .select((eb) => eb.fn.sum<string>('count').as('n'))
-    .where('check_id', '=', check)
+    .selectFrom('intake_refusal_counts')
+    .select((eb) => eb.fn.sum<string>('refusals').as('n'))
+    .where('check_name', '=', check)
     .executeTakeFirst();
   return Number(rows?.n ?? 0);
 };
@@ -223,8 +225,10 @@ describe('the puzzle', () => {
     expect(r.status).toBe(200);
   });
 
-  it('the harder puzzle asks more of the browser', async () => {
-    await writeDoorSettings(h.db, { puzzle: 'harder' });
+  it('the moderators’ “Harder puzzle” switch asks more of the browser', async () => {
+    // The switch's own value (moderation/switches.ts reads it), set without
+    // writing the public switch record other tests read.
+    await h.db.updateTable('flood_settings').set({ puzzle_level: 'harder' }).execute();
     const res = await h.app.inject({ method: 'GET', url: '/api/door/challenge' });
     const p = res.json<Challenge>().parameters;
     expect(p.keyPrefix.length).toBeGreaterThan(3);

@@ -11,7 +11,14 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
-import { address, codeFor, cookieFrom, harness, liftCurtain } from './identity-helpers.ts';
+import {
+  address,
+  codeFor,
+  cookieFrom,
+  harness,
+  liftCurtain,
+  setUpTotp,
+} from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
 let h: Harness;
@@ -139,9 +146,18 @@ describe('walking the wizard', () => {
       payload: { email: OWNER, code: codeFor(h.mailer, OWNER) },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toMatchObject({ signedIn: true, email: OWNER, role: 'owner' });
+    // Seated, and signed in with no role until a second factor is set up (E3).
+    expect(res.json()).toMatchObject({
+      signedIn: true,
+      email: OWNER,
+      role: 'user',
+      heldRole: 'owner',
+      secondFactor: 'set-up',
+    });
     session = cookieFrom(res, 'session_token') ?? '';
     expect(session).toMatch(/^[a-f0-9]{64}$/);
+    session = (await setUpTotp(h, session, { site_access: curtain })).session;
+    expect((await asOwner({ url: '/api/auth/me' })).json()).toMatchObject({ role: 'owner' });
   });
 
   it('is STILL needed once the owner exists: the last screen must not refuse itself', async () => {

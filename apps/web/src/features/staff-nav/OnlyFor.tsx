@@ -8,6 +8,7 @@
  */
 import { useLocation } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { SecondFactorGate, pendingSecondFactor } from '../identity/secondFactor.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { mayOpen } from './entries.ts';
@@ -27,6 +28,9 @@ export function OnlyFor({
   const { pathname } = useLocation();
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next={pathname} />;
+  // A role holder without the second factor yet acts with no role or
+  // membership (plan E, E3): the way to it, not a refusal.
+  if (pendingSecondFactor(me.data)) return <SecondFactorGate>{null}</SecondFactorGate>;
   if (!mayOpen({ to: '/', label: '', for: audience }, me.data)) {
     return (
       <section className="space-y-3">
@@ -35,5 +39,5 @@ export function OnlyFor({
       </section>
     );
   }
-  return <>{children}</>;
+  return <SecondFactorGate>{children}</SecondFactorGate>;
 }

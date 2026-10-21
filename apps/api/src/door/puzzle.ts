@@ -28,7 +28,7 @@ import { deriveKey } from 'altcha-lib/algorithms/pbkdf2';
 import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import type { PuzzleLevel } from './settings.ts';
+import type { PuzzleLevel } from '../moderation/switches.ts';
 
 /** The one algorithm we issue: PBKDF2, which every browser's WebCrypto has. */
 export const PUZZLE_ALGORITHM = 'PBKDF2/SHA-256';

@@ -176,7 +176,12 @@ describe('where an address could have gone', () => {
       SELECT table_name FROM information_schema.tables
       WHERE table_schema = 'public' AND table_type = 'BASE TABLE'`.execute(db);
     expect(tables.map((t) => t.table_name)).toEqual(
-      expect.arrayContaining(['reports', 'report_submissions', 'list_entries', 'door_refusals']),
+      expect.arrayContaining([
+        'reports',
+        'report_submissions',
+        'list_entries',
+        'intake_refusal_counts',
+      ]),
     );
     for (const { table_name } of tables) {
       const { rows } = await sql<{ row: string }>`
@@ -211,11 +216,11 @@ describe('where an address could have gone', () => {
   });
 
   it('the refusals were counted by check, and nothing else about them was kept', async () => {
-    const rows = await db.selectFrom('door_refusals').selectAll().execute();
-    const checks = new Set(rows.map((r) => r.check_id));
+    const rows = await db.selectFrom('intake_refusal_counts').selectAll().execute();
+    const checks = new Set(rows.map((r) => r.check_name));
     for (const c of ['honeypot', 'too_fast', 'puzzle_missing', 'puzzle_wrong', 'requests'])
       expect(checks).toContain(c);
     // The hour, the check and the count: no column for anything more.
-    expect(Object.keys(rows[0] ?? {}).sort()).toEqual(['check_id', 'count', 'hour']);
+    expect(Object.keys(rows[0] ?? {}).sort()).toEqual(['check_name', 'hour', 'refusals']);
   });
 });
