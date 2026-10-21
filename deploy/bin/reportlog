@@ -8,6 +8,7 @@
 #   reportlog doctor             check this deployment
 #   reportlog backup [--check]   take a backup now (or report on them)
 #   reportlog mail-test <addr>   send one real message
+#   reportlog site-password      set the site password (asks twice)
 #   reportlog jobs               list scheduled jobs and their schedules
 #   reportlog job <name>         run one scheduled job now
 #   reportlog updates            is there an update, and what would it change?
@@ -47,6 +48,14 @@ case "$cmd" in
   doctor) cli doctor "$@" ;;
   backup) cli run backup "$@" ;;
   mail-test) cli mail-test "$@" ;;
+  site-password)
+    # The setup wizard refuses to run until there is one, so a stranger who
+    # finds a fresh install cannot seat themselves as its owner. Also the way
+    # back in for an operator who has lost it.
+    [ -e "$CURRENT" ] || die "nothing is deployed yet. Run: sudo reportlog deploy"
+    cd "$CURRENT"
+    app_node apps/api/src/identity/set-site-password.ts
+    ;;
   jobs) cli jobs ;;
   job) cli run "$@" ;;
   updates)
@@ -60,6 +69,6 @@ case "$cmd" in
     update_check
     cli updates "$@"
     ;;
-  help | -h | --help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help | -h | --help) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "unknown command: $cmd (try: reportlog help)" ;;
 esac

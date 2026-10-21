@@ -555,6 +555,7 @@ describe('the reportlog command', () => {
       'doctor',
       'backup',
       'mail-test',
+      'site-password',
       'jobs',
       'job <name>',
       'updates',

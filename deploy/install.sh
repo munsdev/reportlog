@@ -310,7 +310,9 @@ cat <<EOF
   1. Point the domain's DNS (A and AAAA) at this server.
   2. Check $DEPLOY_ENV (where code comes from).
   3. sudo reportlog deploy
-  4. sudo reportlog doctor
-  5. Optional: error tracking with Bugsink, on this server:
+  4. sudo reportlog site-password, then open the site and follow the setup
+     wizard (it makes you the owner)
+  5. sudo reportlog doctor
+  6. Optional: error tracking with Bugsink, on this server:
      sudo $HERE/install-bugsink.sh
 EOF

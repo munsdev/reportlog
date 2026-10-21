@@ -85,6 +85,12 @@ Email, and an EU object storage bucket.
    again asks only that. Have the accounts below ready (Email, Off-site
    backups) before you start, or come back to them.
 5. **Deploy.** `sudo reportlog deploy`
+   Then **set the site password**: `sudo reportlog site-password` (it asks
+   twice and shows nothing as you type). Open the site, enter that password,
+   and the setup wizard makes you the owner and asks whether to keep the
+   password. The wizard refuses to run without one, so a stranger who finds
+   a fresh install cannot seat themselves as its owner. The same command is
+   the way back in if the password is ever lost.
 6. **Check.** `sudo reportlog doctor`, then
    `sudo reportlog mail-test you@example.org` and look for the message,
    including in the spam folder.
