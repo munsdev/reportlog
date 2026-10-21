@@ -49,8 +49,8 @@ describe('the development notice', () => {
 });
 
 describe('the slots', () => {
-  it('are legacy’s nine, the lock screen’s paragraph and the three terms slots, and the optional ones resolve to nothing', () => {
-    expect(COPY_SLOTS).toHaveLength(13);
+  it('are legacy’s nine, the lock screen’s paragraph, the three terms slots and Plan E’s three, and the optional ones resolve to nothing', () => {
+    expect(COPY_SLOTS).toHaveLength(16);
     expect(COPY_SLOTS.find((s) => s.key === 'lock_intro')).toMatchObject({ optional: true });
     const copy = resolveCopy([]);
     for (const s of COPY_SLOTS) {

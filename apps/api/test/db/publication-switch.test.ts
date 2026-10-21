@@ -50,6 +50,9 @@ const NOT_THE_ARCHIVE: Record<string, string> = {
   // The site's own sentences, by digest: a reporter checking their own
   // report's seal needs them whatever the site publishes this week.
   '/api/v1/consent-texts': 'the wordings of the publication question (board/consentTexts.ts)',
+  // When the flood switches were used: a statement about the site, not the
+  // archive, and the one a flood's victims most need while it is off.
+  '/api/board/switches': 'the public log of the flood switches (moderation/switches.ts)',
 };
 
 let h: FilingHarness;
@@ -91,6 +94,9 @@ beforeAll(async () => {
     '/api/board/stats',
     '/api/board/figures',
     '/api/v1/stats',
+    // Plan E (PE3): counts by origin, place and time; declined by reason.
+    '/api/board/counts',
+    '/api/board/declined',
   ];
 });
 afterAll(async () => {

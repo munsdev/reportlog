@@ -28,6 +28,11 @@ function ModerateLayout() {
               </Link>
             </li>
             <li>
+              <Link to="/moderate/flood" className="underline-offset-4 hover:underline">
+                Flood screen
+              </Link>
+            </li>
+            <li>
               <Link to="/moderate/illegal-content" className="underline-offset-4 hover:underline">
                 Illegal content notices
               </Link>

@@ -88,6 +88,8 @@ const OPEN = [
   '/board/$ref',
   '/board/maps',
   '/board/numbers',
+  // Plan E (PE3): arrivals, declines and the switch log, public.
+  '/board/activity',
   '/board/press',
   '/board/',
   '/docs/checking',
@@ -108,6 +110,8 @@ const OPEN = [
   '/verify/$ref',
   '/organizations/',
   '/organizations/$id/listing',
+  // Plan E (PE3): any signed-in person joins by an organization's intake link.
+  '/organizations/join/$token',
   '/notifications_/stop/$token',
   '/journalists_/alerts',
   '/journalists_/confirm/$token',

@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -156,13 +156,25 @@ export default defineConfig({
       },
     },
     {
+      // Plan E (PE3): the flood screen, a bulk decline and pausing intake.
+      // Alone, after the journalist desk: a pause is the whole site's, and
+      // every other project files reports.
+      name: 'flood',
+      testMatch: /flood\/.*\.spec\.ts$/,
+      dependencies: ['journalist-desk'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // R8: the lock screen's accessibility check (decision 12), which the
       // walk of every page cannot reach with the password off. Alone, for
       // the same reason as the others: it turns on the password, renames the
       // site and shows the development notice. Before Q1's, which stays last.
       name: 'accessibility-behind-password',
       testMatch: /a11y-locked\/.*\.spec\.ts$/,
-      dependencies: ['journalist-desk'],
+      dependencies: ['flood'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

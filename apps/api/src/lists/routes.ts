@@ -48,6 +48,7 @@ import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { roleGuard } from '../identity/guards.ts';
 import { moderatorGuard } from '../moderation/agreement.ts';
+import { refuseWhilePaused } from '../moderation/switches.ts';
 import { limiter } from '../identity/limiter.ts';
 import { hasSiteAccess, locked } from '../identity/siteAccess.ts';
 import { summaryFor } from './aggregates.ts';
@@ -263,6 +264,8 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
       const list = await listBySlug(db, params.slug);
       await pastCurtain(db, request, list);
       if (!list || !maySee(list, request)) throw notFound('There is no form at this address.');
+      // Plan E: a moderator's pause stops new entries (moderation/switches.ts).
+      await refuseWhilePaused(db);
       filing.take(request.ip);
       const b = request.body as BodyOf<typeof sendListEntry>;
 

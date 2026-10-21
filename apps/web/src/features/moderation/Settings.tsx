@@ -20,6 +20,7 @@ import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
+import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
 import { accessLogQuery, archiveQuery, keywordsQuery, notesSwitchesQuery } from './queries.ts';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -43,6 +44,7 @@ export function SettingsPage() {
       <Archive />
       <Keywords />
       <NotesSwitches />
+      <CountsOnlySettings />
       <AccessLog />
     </Page>
   );

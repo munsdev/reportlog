@@ -5,6 +5,7 @@ import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
 import { SessionNav } from '../features/identity/SessionNav.tsx';
 import { StaffNav } from '../features/staff-nav/StaffNav.tsx';
+import { PauseBanner } from '../features/flood/IntakePaused.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -41,6 +42,7 @@ function RootLayout() {
         </div>
       </header>
       <StaffNav />
+      <PauseBanner />
       <main id="main" className="mx-auto w-full max-w-page flex-1 px-4 py-8">
         <Outlet />
       </main>

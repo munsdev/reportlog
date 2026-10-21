@@ -37,6 +37,7 @@ import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
+import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import { listFormQuery } from './queries.ts';
 import { keptFor } from './words.ts';
 
@@ -67,6 +68,9 @@ export function ListFormPage({ slug }: { slug: string }) {
 }
 
 export function ListFormView({ form }: { form: Form }) {
+  // Plan E: a moderator paused intake (features/flood).
+  const paused = useIntakePaused();
+  if (paused) return <PausedForm title={form.title} />;
   if (!form.accepting) {
     const opens = form.opens_at && new Date(form.opens_at) > new Date();
     return (
