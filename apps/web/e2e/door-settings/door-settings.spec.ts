@@ -44,10 +44,9 @@ test('an administrator sets the minimum time on a form, and nobody else can', as
     const box = page.getByLabel('Minimum time on a form, in seconds');
     await expect(box).toHaveValue('0');
     // Where the rest of the door is set, named on the page.
-    await expect(page.getByRole('link', { name: 'flood screen' })).toHaveAttribute(
-      'href',
-      '/moderate/flood',
-    );
+    await expect(
+      page.getByRole('main').getByRole('link', { name: 'flood screen', exact: true }),
+    ).toHaveAttribute('href', '/moderate/flood');
     const found = await axe(page);
     expect(found.violations.map(describeViolation)).toEqual([]);
 
