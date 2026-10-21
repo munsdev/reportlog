@@ -94,7 +94,10 @@ describe('the page wording', () => {
     // rather than with the wording, drawn with its `data-copy` marker.
     walk(`${import.meta.dirname}/../../src/routes`);
     walk(`${import.meta.dirname}/../../src/features`);
-    for (const key of COPY_KEYS) {
+    // Read by the server, which sends it as the sentence of a refusal at the
+    // door (apps/api/src/door/index.ts); a page shows it as any error.
+    const SERVER_READ: readonly string[] = ['refusal_message'];
+    for (const key of COPY_KEYS.filter((k) => !SERVER_READ.includes(k))) {
       expect(
         files.some(
           (f) =>

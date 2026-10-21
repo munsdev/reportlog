@@ -4,10 +4,14 @@
  * count on the code itself, in the database); this stops somebody flooding
  * an inbox or hammering the curtain.
  *
- * Keys may be an address or a client's IP. They live only here, in memory,
- * for the length of a window, and are never logged.
+ * Keys may be an address or a client's IP. NEITHER IS KEPT AS GIVEN: each is
+ * turned into a keyed hash under a key that lives only in memory and changes
+ * every day (door/clients.ts, owner decision E2), and the counters go with
+ * the key. They live only here, for the length of a window, and are never
+ * logged.
  */
 import { HttpError } from '../http/errors.ts';
+import { processHasher as hasher } from '../door/clients.ts';
 
 export interface Limiter {
   /** Counts one use of `key`; throws a 429 with a sentence once over the limit. */
@@ -16,8 +20,12 @@ export interface Limiter {
 
 export function limiter({ max, windowMs }: { max: number; windowMs: number }): Limiter {
   const windows = new Map<string, { start: number; count: number }>();
+  hasher.onRotate(() => {
+    windows.clear();
+  });
   return {
-    take(key) {
+    take(given) {
+      const key = hasher.of(given);
       const now = Date.now();
       // Forget old windows as we go, so the map cannot grow without bound.
       if (windows.size > 10_000) {

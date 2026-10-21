@@ -17,6 +17,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { photoWithLocation, signedIn } from '../files/helpers.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { doorFields } from '../door.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -93,6 +94,7 @@ test('a reporter without the password follows the evidence link from the email a
   let before = countTo(reporterEmail);
   const sent = await anon.post('/api/reports', {
     data: {
+      ...(await doorFields(anon)),
       logbook: lb.slug,
       email: reporterEmail,
       consent: true,

@@ -259,6 +259,36 @@ const ConfigSchema = z.object({
    */
   FILING_CONFIRMS_PER_CLIENT: z.coerce.number().int().min(1).max(1000).default(60),
 
+  // --- at the door (apps/api/src/door/) --------------------------------
+  /**
+   * The key the door's puzzles and form start tokens are signed with: 32
+   * random bytes, base64 (`openssl rand -base64 32`). Nothing signed with it
+   * outlives a day, so losing it costs nothing but the forms open at that
+   * moment. Unset, the server makes one in memory at start and says so: the
+   * door is never off, but a restart then refuses every form already open.
+   */
+  DOOR_KEY: optional(
+    z
+      .string()
+      .refine(
+        (s) => Buffer.from(s, 'base64').length === 32,
+        'DOOR_KEY is 32 random bytes, base64 (openssl rand -base64 32)',
+      ),
+  ),
+  /**
+   * Reports and tips one network address may send (owner decision E2), per
+   * minute and per hour. Counted under a keyed hash whose key changes daily
+   * and lives only in memory. Start low and tune in the rehearsal (brief
+   * §09); the browser suite raises both, since every test sends from 127.0.0.1.
+   */
+  DOOR_SUBMITS_PER_MINUTE: z.coerce.number().int().min(1).max(100_000).default(6),
+  DOOR_SUBMITS_PER_HOUR: z.coerce.number().int().min(1).max(1_000_000).default(60),
+  /**
+   * Requests of any kind one network address may make per minute: far higher,
+   * so reading the archive stays fast during a flood of submissions.
+   */
+  DOOR_REQUESTS_PER_MINUTE: z.coerce.number().int().min(10).max(1_000_000).default(600),
+
   /** Hours after which the newest anchor counts as stale (the job runs daily). */
   ANCHOR_MAX_AGE_HOURS: z.coerce
     .number()

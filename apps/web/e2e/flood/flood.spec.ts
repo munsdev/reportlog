@@ -14,6 +14,7 @@ import type { Browser, Page } from '@playwright/test';
 import { axe, describeViolation } from '../a11y.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { signInWithSecondFactor, stepUp } from '../second-factor.ts';
+import { doorFields } from '../door.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -58,6 +59,7 @@ async function fileAndConfirm(page: Page, browser: Browser, what: string) {
   const before = countTo(email);
   const sent = await page.request.post('/api/reports', {
     data: {
+      ...(await doorFields(page.request)),
       logbook: 'demo',
       email,
       consent: true,
@@ -181,6 +183,7 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
     };
     const refused = await v.page.request.post('/api/reports', {
       data: {
+        ...(await doorFields(v.page.request)),
         logbook: 'demo',
         email: `paused-${unique()}@example.org`,
         consent: true,

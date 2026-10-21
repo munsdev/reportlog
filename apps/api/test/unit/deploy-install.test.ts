@@ -231,11 +231,11 @@ describe('install.sh run again', () => {
     writeFileSync(s.at(ENV), 'SITE_ORIGIN=https://reports.example.org\n');
     expect(install(s).status).toBe(0);
     const env = s.read(ENV);
-    // (and the two-factor key and the transparency log's deploy key, which
+    // (and the two-factor key, the door's key and the transparency log's deploy key, which
     // install.sh also makes; no FILES_KEY, since nobody answered that this
     // server never took a file)
     expect(env).toMatch(
-      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTWO_FACTOR_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
+      /^SITE_ORIGIN=https:\/\/reports\.example\.org\nCONTACT_KEY=\S{44}\nTWO_FACTOR_KEY=\S{44}\nDOOR_KEY=\S{44}\nTRANSPARENCY_LOG_SSH_KEY=\S+\/var\/lib\/reportlog\/transparency-log-key\n$/,
     );
   });
 });
@@ -347,6 +347,42 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     '',
   ];
 
+  it('run again on a settings file made before DOOR_KEY and TWO_FACTOR_KEY, adds both and changes nothing else', () => {
+    // What the doctor's warning tells an operator to do (jobs/doctor-checks.ts).
+    for (const shape of ['blank', 'absent'] as const) {
+      const s = machine();
+      expect(ask(s, ANSWERS).status).toBe(0);
+      const full = s.read(ENV);
+      const older = full
+        .split('\n')
+        .flatMap((l) =>
+          /^(DOOR_KEY|TWO_FACTOR_KEY)=/.test(l)
+            ? shape === 'blank'
+              ? [l.replace(/=.*$/, '=')]
+              : []
+            : [l],
+        )
+        .join('\n');
+      writeFileSync(s.at(ENV), older);
+      // Enter for every question it asks: nothing is answered this time.
+      const r = ask(s, ['', '', '', '', '', '', '', '', '', '', '', '', '']);
+      expect(r.status, r.out).toBe(0);
+      const after = s.read(ENV);
+      for (const k of ['DOOR_KEY', 'TWO_FACTOR_KEY']) {
+        const v = new RegExp(`^${k}=(.+)$`, 'm').exec(after)?.[1] ?? '';
+        expect(Buffer.from(v, 'base64'), `${shape} ${k}`).toHaveLength(32);
+        expect(r.out).not.toContain(v);
+      }
+      // Every other line exactly as it was, and no line lost.
+      const others = (t: string) =>
+        t.split('\n').filter((l) => !/^(DOOR_KEY|TWO_FACTOR_KEY)=/.test(l));
+      expect(others(after), shape).toEqual(others(older));
+      expect(after.split('\n').filter((l) => /^(DOOR_KEY|TWO_FACTOR_KEY)=/.test(l))).toHaveLength(
+        2,
+      );
+    }
+  });
+
   it('writes each answer into the settings file, and turns mail on once it can send', () => {
     const s = machine();
     const r = ask(s, ANSWERS);
@@ -383,7 +419,7 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     const s = machine();
     const r = ask(s, ANSWERS);
     const env = s.read(ENV);
-    for (const key of ['CONTACT_KEY', 'FILES_KEY', 'TWO_FACTOR_KEY']) {
+    for (const key of ['CONTACT_KEY', 'FILES_KEY', 'TWO_FACTOR_KEY', 'DOOR_KEY']) {
       const v = new RegExp(`^${key}=(.+)$`, 'm').exec(env)?.[1] ?? '';
       expect(Buffer.from(v, 'base64'), key).toHaveLength(32);
       expect(r.out, key).not.toContain(v);

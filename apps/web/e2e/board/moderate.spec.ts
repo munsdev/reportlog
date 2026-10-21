@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { MODERATOR } from '../auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { doorFields } from '../door.ts';
 import { stepUp } from '../second-factor.ts';
 
 test.use({ storageState: MODERATOR });
@@ -21,6 +22,7 @@ async function fileAndConfirm(page: Page, request: APIRequestContext, email: str
   const before = countTo(email);
   const sent = await request.post('/api/reports', {
     data: {
+      ...(await doorFields(request)),
       logbook: 'demo',
       email,
       consent: true,

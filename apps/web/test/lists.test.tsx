@@ -148,7 +148,6 @@ describe('a list’s form', () => {
     expect(sent[0]?.body).toMatchObject({
       answers: { links: ['https://example.org/a'], state: 'Iowa' },
       email: null,
-      website: '',
     });
   });
 

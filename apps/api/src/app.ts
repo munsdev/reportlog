@@ -22,6 +22,7 @@ import { filesFrom } from './files/context.ts';
 import type { FilesConfig } from './files/context.ts';
 import { fileRoutes } from './files/routes.ts';
 import { filingRoutes } from './filing/routes.ts';
+import { doorRoutes, makeDoor } from './door/index.ts';
 import { identity } from './identity/index.ts';
 import { logoRoutes } from './identity/logoRoutes.ts';
 import { twoFactorKeyFrom } from './identity/twoFactorKey.ts';
@@ -61,6 +62,11 @@ export interface AppDeps {
         | 'PUBLIC_REF_PREFIX'
         | 'FILING_SENDS_PER_CLIENT'
         | 'FILING_CONFIRMS_PER_CLIENT'
+        // At the door (door/).
+        | 'DOOR_KEY'
+        | 'DOOR_SUBMITS_PER_MINUTE'
+        | 'DOOR_SUBMITS_PER_HOUR'
+        | 'DOOR_REQUESTS_PER_MINUTE'
         | 'ADMIN_EMAIL'
         | 'TRANSPARENCY_LOG_REMOTES'
         | 'ANCHOR_MAX_AGE_HOURS'
@@ -147,6 +153,22 @@ export async function buildApp({
   installErrorHandling(app);
   const mail = mailer ?? stderrMailer();
   const siteOrigin = config.SITE_ORIGIN ?? 'http://127.0.0.1:5173';
+  // At the door: before everything, so its per-address limit sees every
+  // request, and the report and tip routes below can ask it to check theirs.
+  const door = makeDoor({
+    db,
+    key: config.DOOR_KEY,
+    // The server always passes the parsed config, whose defaults are the low
+    // ones (config.ts). Only a test builds an app without them, and a test
+    // about something else should not trip over a limit: the door's own tests
+    // set theirs.
+    limits: {
+      submitsPerMinute: config.DOOR_SUBMITS_PER_MINUTE ?? 100_000,
+      submitsPerHour: config.DOOR_SUBMITS_PER_HOUR ?? 1_000_000,
+      requestsPerMinute: config.DOOR_REQUESTS_PER_MINUTE ?? 1_000_000,
+    },
+  });
+  doorRoutes(app, door, db);
   // First: its hooks must see every route registered after it.
   await identity(app, {
     db,
@@ -172,6 +194,7 @@ export async function buildApp({
     siteOrigin,
     settings: lists ?? DEFAULT_LIST_SETTINGS,
     keys: linkKeys,
+    door,
   });
   linkRoutes(app, { db, keys: linkKeys });
   // Files: storage and FILES_KEY, or the sentence saying why files are not taken.
@@ -186,6 +209,7 @@ export async function buildApp({
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     sendsPerClient: config.FILING_SENDS_PER_CLIENT,
     confirmsPerClient: config.FILING_CONFIRMS_PER_CLIENT,
+    door,
     files: typeof files === 'string' ? null : files,
   });
   await fileRoutes(app, { db, files });

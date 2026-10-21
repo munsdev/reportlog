@@ -74,7 +74,7 @@ Email, and an EU object storage bucket.
 
 4. **Settings: answer the installer's questions.** Nobody edits the settings
    file by hand. `install.sh` makes the keys a machine can make
-   (`CONTACT_KEY`, `FILES_KEY`, the transparency log's deploy key), sets
+   (`CONTACT_KEY`, `FILES_KEY`, `DOOR_KEY`, the transparency log's deploy key), sets
    `TRUST_PROXY=1` (Caddy is one proxy in front), and then asks, one at a
    time, for what only you know: the site's address, the Scaleway email
    account (the sending address, the project ID and the API key's secret
@@ -113,6 +113,7 @@ repository has every one of them blank.
 | Setting                                                  | Where it comes from                                                 |
 | -------------------------------------------------------- | ------------------------------------------------------------------- |
 | `CONTACT_KEY`, `FILES_KEY`                               | made by `install.sh` (32 random bytes); never changed, only rotated |
+| `DOOR_KEY`                                               | made by `install.sh` (32 random bytes); safe to replace at any time |
 | `TWO_FACTOR_KEY`                                         | made by `install.sh` (32 random bytes); a new one resets staff apps |
 | `TRANSPARENCY_LOG_SSH_KEY`                               | a key file made by `install.sh`; its public half is shown to add    |
 | `SCALEWAY_SECRET_KEY`                                    | asked by `install.sh`, from the Scaleway console                    |
@@ -349,8 +350,11 @@ needs it, this check is the first real thing that will run it.
 `.env.example` is the list; this is what each setting is for, so nothing in
 the settings file is a mystery. The installer fills in the ones it can and
 asks for the ones only you know (above), and `sudo reportlog doctor` names
-anything still missing. A server's other settings, the keys, email, error
-tracking and backups, are explained in their own sections above.
+anything still missing. A server installed before `DOOR_KEY` and
+`TWO_FACTOR_KEY` existed has neither: the doctor warns, and running
+`/root/reportlog/deploy/install.sh` again adds both and changes nothing else
+in the file. A server's other settings, the keys, email, error tracking and
+backups, are explained in their own sections above.
 
 | Setting                                                                          | What it does                                                                                      |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
@@ -360,6 +364,8 @@ tracking and backups, are explained in their own sections above.
 | `LOG_LEVEL`                                                                      | How much the API logs. Logs never hold an address or a full link.                                 |
 | `PUBLIC_REF_PREFIX`                                                              | The letters every public reference starts with (`RL-`). Sealed into every report: chosen once.    |
 | `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                               |
+| `DOOR_SUBMITS_PER_MINUTE`, `DOOR_SUBMITS_PER_HOUR`                               | Reports and tips one network address may send per minute and per hour (6 and 60).                 |
+| `DOOR_REQUESTS_PER_MINUTE`                                                       | Requests of any kind one address may make per minute (600), so reading stays fast in a flood.     |
 | `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                      |
 | `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.            |
 | `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise. `install.sh` writes `false`.       |

@@ -44,6 +44,8 @@ const SENTENCES = {
     'has a card to itself, only the first question on a card says what the card asks, and no ' +
     'question on a card may depend on another question on the same card: nothing on a card ' +
     'changes underneath somebody.',
+  'date-limits':
+    'An earliest or latest answer has to be a date (2026-11-03) for a date question, a time (07:00) for a time question, or a date and time with its offset (2026-11-03T07:00-05:00), and the earliest cannot be after the latest.',
   'number-picker':
     'An hour picker asks for a whole number from 0 to 23, so it needs whole numbers, a smallest of 0 and a largest of 23.',
   'checkbox-kind': 'Only a yes or no question can be asked as a tick box.',

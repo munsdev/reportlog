@@ -6,6 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { doorFields } from '../door.ts';
 
 test('the link in the confirmation email erases the address only when the button is pressed, and does not withdraw the report', async ({
   browser,
@@ -16,6 +17,7 @@ test('the link in the confirmation email erases the address only when the button
   const before = countTo(email);
   const sent = await request.post('/api/reports', {
     data: {
+      ...(await doorFields(request)),
       logbook: 'demo',
       email,
       consent: true,

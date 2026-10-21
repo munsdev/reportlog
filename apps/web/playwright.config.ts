@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,7 +54,7 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
@@ -168,13 +168,25 @@ export default defineConfig({
       },
     },
     {
+      // Plan E (PE2): the door's minimum time on a form, set from the
+      // settings screen. Alone, after the flood: the minimum is the whole
+      // site's, and every other project files reports with it at 0.
+      name: 'door-settings',
+      testMatch: /door-settings\/.*\.spec\.ts$/,
+      dependencies: ['flood'],
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
       // R8: the lock screen's accessibility check (decision 12), which the
       // walk of every page cannot reach with the password off. Alone, for
       // the same reason as the others: it turns on the password, renames the
       // site and shows the development notice. Before Q1's, which stays last.
       name: 'accessibility-behind-password',
       testMatch: /a11y-locked\/.*\.spec\.ts$/,
-      dependencies: ['flood'],
+      dependencies: ['door-settings'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
@@ -216,6 +228,12 @@ export default defineConfig({
         FILING_SENDS_PER_CLIENT: '200',
         // And each of those reports' confirmation links is opened and used.
         FILING_CONFIRMS_PER_CLIENT: '400',
+        // The door (apps/api/src/door/): a fixed key, and its per-address
+        // limits raised for the same reason. Its own tests set theirs.
+        DOOR_KEY: Buffer.alloc(32, 6).toString('base64'),
+        DOOR_SUBMITS_PER_MINUTE: '100000',
+        DOOR_SUBMITS_PER_HOUR: '100000',
+        DOOR_REQUESTS_PER_MINUTE: '1000000',
         // Files: a fixed key, a directory of its own, and the media worker
         // inside the server, so an attached photo is really re-encoded.
         FILES_KEY: Buffer.alloc(32, 8).toString('base64'),

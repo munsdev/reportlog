@@ -70,19 +70,24 @@ const heading = (page: Page, name: string) =>
   expect(page.getByRole('heading', { level: 1, name, exact: true })).toBeVisible();
 const next = (page: Page) => page.getByRole('button', { name: 'Next', exact: true }).click();
 
-/** The spine's three cards, then Send. */
-async function finish(page: Page, stem: string) {
+/**
+ * The spine's cards, then the review. No address card: the form asks no text
+ * question and takes no files, so it asks for no email (owner decision E1).
+ */
+async function finish(page: Page) {
   await page.getByRole('radio', { name: 'Yes, it may be published' }).click();
   await next(page);
-  await page.getByLabel('Your email address').fill(`${stem}-${run()}@example.org`);
-  await next(page);
   await heading(page, 'Check your answers');
+  await expect(page.getByText('Your email address')).toHaveCount(0);
 }
 
 async function send(page: Page) {
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).click();
+  // Send waits for the puzzle, solved in the background in this page.
   await page.getByRole('button', { name: 'Send report' }).click();
-  await heading(page, 'Check your email');
+  // Sealed on arrival: nothing to confirm, and no reference handed out.
+  await heading(page, 'Thank you');
+  await expect(page.getByText(/was received/)).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link, photo or video\?/)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Send it as a tip' })).toHaveAttribute(
     'href',
@@ -153,7 +158,7 @@ test('in person, something went wrong: every card, the parts of a card, the in-p
   await expectAccessible(page, 'card 8, in person');
   await next(page);
 
-  await finish(page, 'el-in-person');
+  await finish(page);
   // The review says it in words, never codes.
   const review = page.getByRole('main');
   await expect(review.getByText('Maricopa County, Arizona')).toBeVisible();
@@ -180,6 +185,18 @@ test('in person, something went wrong: every card, the parts of a card, the in-p
     voted: 'provisional',
   });
   expect(typeof sent[0]?.form).toBe('string');
+  // The door, from this page: a start token, the puzzle solved here by the
+  // widget (a solution to the server's own challenge), the empty hidden box,
+  // and no address at all.
+  expect(sent[0]?.start).toMatch(/^\d{13}\./);
+  const solved = JSON.parse(Buffer.from(String(sent[0]?.altcha), 'base64').toString()) as {
+    challenge: { parameters: { algorithm: string } };
+    solution: { counter: number };
+  };
+  expect(solved.challenge.parameters.algorithm).toBe('PBKDF2/SHA-256');
+  expect(typeof solved.solution.counter).toBe('number');
+  expect(sent[0]?.website).toBe('');
+  expect(sent[0]).not.toHaveProperty('email');
   expect(outside).toEqual([]);
 });
 
@@ -210,7 +227,7 @@ test('by mail, it went fine: no clock, no role or wait, straight to sending', as
 
   // Fine: the next card is the publication card, then sending.
   await expect(page.getByRole('radio', { name: 'Yes, it may be published' })).toBeVisible();
-  await finish(page, 'el-mail');
+  await finish(page);
   await send(page);
   expect(sent[0]?.answers).toEqual({
     outcome: 'fine',
@@ -246,7 +263,7 @@ test('by mail, something went wrong: the mail list, and no provisional ballot', 
   await expect(page.getByRole('radio', { name: 'Yes, a provisional ballot' })).toHaveCount(0);
   await page.getByRole('radio', { name: 'Not yet' }).click();
   await next(page);
-  await finish(page, 'el-mail-problem');
+  await finish(page);
 });
 
 test('the tip card: three rows of a link and its kind, and no email card', async ({
@@ -310,6 +327,10 @@ test('the tip card: three rows of a link and its kind, and no email card', async
     ],
   });
   expect((sent[0] as { email: unknown }).email).toBeNull();
+  // Each send carried a fresh solution from this page: one is good for one send.
+  const solutions = sent.map((b) => (b as { altcha?: string }).altcha);
+  expect(solutions.every((a) => typeof a === 'string' && a.length > 100)).toBe(true);
+  expect(new Set(solutions).size).toBe(sent.length);
   expect(outside).toEqual([]);
   await context.close();
   await page.request.patch(`/api/admin/lists/${String(id)}`, { data: { closed: true } });

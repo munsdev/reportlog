@@ -1,15 +1,27 @@
 /**
  * Sending a report, and confirming it from the emailed link.
  *
- * TWO STEPS, AND NOTHING IS FILED AT THE FIRST. Sending checks everything and
- * keeps the checked submission in `report_submissions`; the report enters
- * its logbook's chain only when the reporter follows the link in their
- * email. So an address nobody controls never takes a place in a chain.
+ * WHERE THE FORM ASKS FOR AN EMAIL, TWO STEPS, AND NOTHING IS FILED AT THE
+ * FIRST. Sending checks everything and keeps the checked submission in
+ * `report_submissions`; the report enters its logbook's chain only when the
+ * reporter follows the link in their email. So an address nobody controls
+ * never takes a place in a chain.
+ *
+ * WHERE IT DOES NOT, ONE STEP: SEALED ON ARRIVAL (owner decision E1). A form
+ * that asks nothing anybody types and takes no files is an advanced contact
+ * form (@reportlog/fields `formAsksEmail`). Its report is checked exactly as
+ * any other and sealed into its chain inside the request's transaction:
+ * nothing waits in `report_submissions`, no link is sent, and no contact row
+ * is written, so there is no address to confirm, to sign in with, to correct
+ * or withdraw from, or to tell of a decline. Hidden until a moderator
+ * accepts it, like every report.
  *
  * THE SPINE is what every report is asked, whichever logbook asked the rest:
- * an address to reach the reporter, their consent to the statement on the
- * last card, and whether it may be published. Everything else is the
- * logbook's own questions, checked by `buildAnswers` against them.
+ * an address to reach the reporter (only where the form asks for one: it is
+ * never sealed either way, so its absence changes no fingerprint), their
+ * consent to the statement on the last card, and whether it may be
+ * published. Everything else is the logbook's own questions, checked by
+ * `buildAnswers` against them.
  *
  * WHAT IS SEALED IS WHAT WAS CHECKED. The answers, the publication answer
  * and the form version are kept with the token and sealed from there at
@@ -20,7 +32,13 @@
  * filing is a deliberate POST from the page the link opens.
  */
 import type { Confirmation } from '@reportlog/contracts';
-import { buildAnswers, strictProblems, withoutWording } from '@reportlog/fields';
+import {
+  LIMITED_KINDS,
+  buildAnswers,
+  normalizeAnswer,
+  strictProblems,
+  withoutWording,
+} from '@reportlog/fields';
 import type { FieldDefinition, FieldSettings } from '@reportlog/fields';
 import { formDefinition, normalizeReportFields } from '@reportlog/seal';
 import type { FormDefinition, FormQuestion } from '@reportlog/seal';
@@ -137,7 +155,17 @@ export function answerRefusals(
   const label = (key: string) => questions.find((q) => q.key === key)?.label ?? key;
   const unknown = problems.filter((p) => p.reason === 'unknown').map((p) => p.key);
   const hidden = problems.filter((p) => p.reason === 'not-asked').map((p) => label(p.key));
-  const bad = problems.filter((p) => p.reason === 'not-accepted').map((p) => label(p.key));
+  // A real day or time outside the question's limits (owner decision E4) is
+  // said as that, not as a choice that was not offered.
+  const outside = (key: string) => {
+    const q = questions.find((x) => x.key === key);
+    return Boolean(
+      q && LIMITED_KINDS.has(q.kind) && normalizeAnswer(q.kind, body[key], {}) !== null,
+    );
+  };
+  const notAccepted = problems.filter((p) => p.reason === 'not-accepted');
+  const bad = notAccepted.filter((p) => !outside(p.key)).map((p) => label(p.key));
+  const late = notAccepted.filter((p) => outside(p.key)).map((p) => label(p.key));
   return [
     ...(unknown.length
       ? [
@@ -150,6 +178,7 @@ export function answerRefusals(
         ]
       : []),
     ...bad.map((l) => `${l} must be one of the choices offered.`),
+    ...late.map((l) => `${l} is outside the dates or times this form takes.`),
   ];
 }
 
@@ -232,10 +261,9 @@ function canonical(v: unknown): unknown {
 export async function stageSubmission(
   deps: FilingDeps,
   b: Submission,
-): Promise<{ filesDropped: string[] }> {
+): Promise<{ filed: false; filesDropped: string[] } | { filed: true }> {
   const { db } = deps;
   if (!(await intakeIsOpen(db))) throw intakeClosed();
-  if (!deps.ring) throw notConfigured();
 
   const slug = typeof b.logbook === 'string' ? b.logbook.trim() : '';
   if (!slug) throw refused(400, 'no_logbook', 'Choose which logbook this report is for.');
@@ -252,9 +280,20 @@ export async function stageSubmission(
     );
   }
 
+  // E1: derived from the questions, or the operator's switch (logbooks.ts).
+  const asksEmail = lb.asks_email;
+  // Only a form that keeps an address needs the key that protects it.
+  if (asksEmail && !deps.ring) throw notConfigured();
   const email = normalizeEmail(b.email);
   const problems: string[] = [];
-  if (!looksLikeEmail(email)) problems.push('Enter an email address we can reach you at.');
+  if (asksEmail && !looksLikeEmail(email))
+    problems.push('Enter an email address we can reach you at.');
+  // An address sent to a form that does not ask for one is not kept, and not
+  // quietly dropped either: the page that sent it is not this form.
+  if (!asksEmail && email)
+    problems.push(
+      'This form does not ask for an email address. Reload the page and send it again.',
+    );
   if (b.consent !== true) problems.push('Confirm the statement on the last card.');
 
   // The questions these answers are checked against, as a version. Sealed
@@ -286,6 +325,36 @@ export async function stageSubmission(
   // Shaped exactly as it will be sealed, now, so a submission that cannot be
   // sealed is refused while the reporter is still here to hear it.
   normalizeReportFields({ logbook: lb.slug, ...payload });
+
+  if (!asksEmail) {
+    // Files always ask for an address (E1), so a form without one has no
+    // upload question and nothing can have been staged for it.
+    if (b.draft_token) {
+      const staged = await stagedFileNames(db, {
+        draft: draftFrom(b.draft_token),
+        logbookId: lb.id,
+      });
+      if (staged.length) {
+        throw refused(
+          409,
+          'files_off',
+          `This form does not take files, so your report was not sent. Remove ${staged.join(', ')} and send it again.`,
+        );
+      }
+    }
+    await db.transaction().execute(async (trx) => {
+      const threadId = randomUUID();
+      const { row: report } = await appendReportVersion(trx, {
+        logbookId: lb.id,
+        threadId,
+        fields: normalizeReportFields({ logbook: lb.slug, ...payload }),
+        formId: form.id,
+        publicRefPrefix: deps.publicRefPrefix,
+      });
+      await startThread(trx, threadId, report);
+    });
+    return { filed: true };
+  }
 
   if (b.draft_token !== undefined && b.draft_token !== '') {
     // A FILING THAT CARRIES A FILE IS REFUSED WHILE UPLOADS ARE OFF (decision
@@ -335,7 +404,7 @@ export async function stageSubmission(
       `${deps.siteOrigin}/file/erase/${token}`,
     ),
   });
-  return { filesDropped: files.dropped };
+  return { filed: false, filesDropped: files.dropped };
 }
 
 const tokenLooksRight = (t: string) => /^[a-f0-9]{64}$/.test(t);

@@ -7,6 +7,7 @@
 import { expect, test } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { doorFields } from '../door.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -27,6 +28,7 @@ test.describe('the board', () => {
     const before = countTo(email);
     const sent = await anon.post('/api/reports', {
       data: {
+        ...(await doorFields(anon)),
         logbook: 'demo',
         email,
         consent: true,

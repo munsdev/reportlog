@@ -112,6 +112,15 @@ export const SWEPT: readonly SweptTable[] = [
     owner: 'C',
     expired: 'confirmed_at IS NULL AND expires_at < now()',
   },
+  {
+    // Spent puzzle solutions (door/puzzle.ts): the hash of a challenge we
+    // issued, kept only until that challenge would have expired anyway. The
+    // door deletes them as it goes; this is the net for a quiet site.
+    table: 'door_spent_puzzles',
+    what: 'spent puzzle solutions past their expiry',
+    owner: 'PE2',
+    expired: 'expires_at < now()',
+  },
 ];
 
 /**

@@ -98,9 +98,18 @@ WHAT IS COLLECTED, AND WHY
                   account here]
   Server logs:   [what your deployment's web server and this application
                   record, and for how long]
+  Network addresses, to stop a flood of reports and tips:
+                 [held only in this server's memory, as keyed hashes under a
+                  key that changes every day and is never written down, and
+                  gone within a day. Never stored with a report or a tip, in
+                  the logs or in error reports. The forms also run a small
+                  puzzle in the visitor's own browser: no cookie, and nothing
+                  sent anywhere but this site]
 
 LAWFUL BASIS                          [where your jurisdiction requires one]
   [basis for each kind of data above]
+  [network addresses for rate limiting: legitimate interest, in keeping the
+   forms usable and the record clean during a flood]
 
 WHO ELSE SEES IT
   [moderators and administrators of this deployment]

@@ -24,6 +24,7 @@ import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook, uniqueSlug } from './helpers.ts';
 import { address, seat, signIn } from './identity-helpers.ts';
+import { doorPass } from '../door-pass.ts';
 
 const WHAT = { key: 'what', kind: 'long_text', label: 'What happened', required: true };
 const QS = [WHAT, { key: 'photos', kind: 'file', label: 'Photos' }];
@@ -184,6 +185,7 @@ describe('the freeze on a launched logbook', () => {
       method: 'POST',
       url: '/api/reports',
       payload: {
+        ...(await doorPass(h.app)),
         ...spine(email),
         logbook: own.slug,
         answers: { what: 'The queue was turned away' },
@@ -202,7 +204,12 @@ describe('the freeze on a launched logbook', () => {
     await h.app.inject({
       method: 'POST',
       url: '/api/reports',
-      payload: { ...spine(email), logbook: own.slug, answers: { what: 'Filed before the freeze' } },
+      payload: {
+        ...(await doorPass(h.app)),
+        ...spine(email),
+        logbook: own.slug,
+        answers: { what: 'Filed before the freeze' },
+      },
     });
     const done = await h.app.inject({
       method: 'POST',

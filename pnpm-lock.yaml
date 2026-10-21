@@ -74,6 +74,9 @@ importers:
       '@simplewebauthn/server':
         specifier: 14.0.3
         version: 14.0.3
+      altcha-lib:
+        specifier: 2.5.0
+        version: 2.5.0(@fastify/cookie@11.1.2)(fastify@5.12.7)
       fastify:
         specifier: 5.12.7
         version: 5.12.7
@@ -132,6 +135,9 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.45
         version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      altcha:
+        specifier: 3.2.4
+        version: 3.2.4
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1
@@ -184,6 +190,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.1.2
         version: 6.1.2(vite@8.3.4(@types/node@22.20.5)(jiti@2.7.0)(yaml@2.9.1))
+      altcha-lib:
+        specifier: 2.5.0
+        version: 2.5.0(@fastify/cookie@11.1.2)(fastify@5.12.7)
       axe-core:
         specifier: 4.14.0
         version: 4.14.0
@@ -1900,6 +1909,57 @@ packages:
   ajv@8.20.0:
     resolution: {integrity: sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA==}
 
+  altcha-lib@2.5.0:
+    resolution: {integrity: sha512-MiqlwnImoooVTmFzZ8odhpqtCsSl7M/6cmgaX42Tkuvd41e5IVveg6hiw/e9rXSb6dm1RvniPmeURwO64wWTuQ==}
+    hasBin: true
+    peerDependencies:
+      '@fastify/cookie': ^11.0.0
+      '@fastify/cors': ^11.0.0
+      '@fastify/formbody': ^8.0.0 || ^9.0.0
+      '@nestjs/common': ^10.0.0 || ^11.0.0 || ^12.0.0
+      '@nestjs/core': ^10.0.0 || ^11.0.0 || ^12.0.0
+      '@nestjs/platform-express': ^10.0.0 || ^11.0.0 || ^12.0.0
+      '@nestjs/platform-fastify': ^10.0.0 || ^11.0.0 || ^12.0.0
+      '@sveltejs/kit': ^2.0.0
+      cookie-parser: ^1.0.0
+      cors: ^2.0.0
+      express: ^4.0.0 || ^5.0.0
+      fastify: ^5.0.0
+      h3: ^2.0.0
+      hono: ^4.0.0
+    peerDependenciesMeta:
+      '@fastify/cookie':
+        optional: true
+      '@fastify/cors':
+        optional: true
+      '@fastify/formbody':
+        optional: true
+      '@nestjs/common':
+        optional: true
+      '@nestjs/core':
+        optional: true
+      '@nestjs/platform-express':
+        optional: true
+      '@nestjs/platform-fastify':
+        optional: true
+      '@sveltejs/kit':
+        optional: true
+      cookie-parser:
+        optional: true
+      cors:
+        optional: true
+      express:
+        optional: true
+      fastify:
+        optional: true
+      h3:
+        optional: true
+      hono:
+        optional: true
+
+  altcha@3.2.4:
+    resolution: {integrity: sha512-+PN+MTzDtrXn7SBkliE+EYaojwLLS2rTtyk/O/wkQWNwl7PI91fXB8yiNa07Xy8b6rGD05oB8zpMfK/oEx00Og==}
+
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
@@ -2518,6 +2578,9 @@ packages:
   has-tostringtag@1.0.2:
     resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
     engines: {node: '>= 0.4'}
+
+  hash-wasm@4.12.0:
+    resolution: {integrity: sha512-+/2B2rYLb48I/evdOIhP+K/DD2ca2fgBjp6O+GBEnCDk2e4rpeXIK8GvIyRPjTezgmWn9gmKwkQjjx6BtqDHVQ==}
 
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
@@ -5753,6 +5816,15 @@ snapshots:
       json-schema-traverse: 1.0.0
       require-from-string: 2.0.2
 
+  altcha-lib@2.5.0(@fastify/cookie@11.1.2)(fastify@5.12.7):
+    optionalDependencies:
+      '@fastify/cookie': 11.1.2
+      fastify: 5.12.7
+
+  altcha@3.2.4:
+    dependencies:
+      hash-wasm: 4.12.0
+
   ansi-regex@5.0.1: {}
 
   ansi-styles@4.3.0:
@@ -6480,6 +6552,8 @@ snapshots:
   has-tostringtag@1.0.2:
     dependencies:
       has-symbols: 1.1.0
+
+  hash-wasm@4.12.0: {}
 
   hasown@2.0.4:
     dependencies:

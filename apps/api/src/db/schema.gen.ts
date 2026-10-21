@@ -216,6 +216,17 @@ export interface DigestSubscriptions {
   user_id: number;
 }
 
+export interface DoorSettings {
+  id: Generated<boolean>;
+  min_form_ms: Generated<number>;
+  updated_at: Generated<Timestamp>;
+}
+
+export interface DoorSpentPuzzles {
+  expires_at: Timestamp;
+  signature_hash: string;
+}
+
 export interface EditorialNoteLinks {
   added_by: string;
   created_at: Generated<Timestamp>;
@@ -610,6 +621,7 @@ export interface Logbooks {
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
   created_at: Generated<Timestamp>;
+  email_required: Generated<boolean>;
   /**
    * When somebody froze this logbook's uploads, or NULL. A protective measure, not the everyday control: whether a logbook asks for files is whether it has a question of kind 'file'. Freezing stops NEW upload slots and hides nothing already filed or published. Never sealed.
    */
@@ -1041,6 +1053,8 @@ export interface DB {
   decision_notices: DecisionNotices;
   digest_stop_links: DigestStopLinks;
   digest_subscriptions: DigestSubscriptions;
+  door_settings: DoorSettings;
+  door_spent_puzzles: DoorSpentPuzzles;
   editorial_note_links: EditorialNoteLinks;
   editorial_note_versions: EditorialNoteVersions;
   editorial_notes: EditorialNotes;

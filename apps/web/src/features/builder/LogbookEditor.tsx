@@ -79,6 +79,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
       </header>
 
       <Details lb={lb} refresh={refresh} />
+      <EmailRule lb={lb} refresh={refresh} />
 
       <Panel title="Questions">
         {launched && (
@@ -176,6 +177,46 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
         </Button>
         {save.isSuccess && <p role="status">Saved.</p>}
       </form>
+    </Panel>
+  );
+}
+
+/**
+ * WHETHER THE FORM ASKS FOR AN EMAIL (owner decision E1). Derived from the
+ * questions: one somebody types into, or files, and it asks. The operator can
+ * only add the address to a form that would not ask; never take it away from
+ * one that must. Not part of the questions, so it can change after launch.
+ */
+function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const save = useMutation({
+    mutationFn: (on: boolean) =>
+      call(updateLogbook, { params: { id: lb.id }, body: { email_required: on } }),
+    onSuccess: refresh,
+  });
+  const fromQuestions = lb.asks_email && !lb.email_required;
+  return (
+    <Panel title="Asking for an email address">
+      <p className="text-sm text-muted">
+        {lb.asks_email
+          ? 'This form asks every reporter for an email address. Nothing is filed until they confirm it from the link we send, and they can sign in later to correct or withdraw their report.'
+          : 'This form does not ask for an email address. Each report is filed the moment it is sent, with no link to confirm, and the reporter cannot come back to correct or withdraw it.'}
+      </p>
+      {fromQuestions ? (
+        <p className="text-sm text-muted">
+          It asks because a question lets people type, or takes files. That cannot be switched off.
+        </p>
+      ) : (
+        <Check
+          label="Ask for an email address anyway"
+          checked={lb.email_required}
+          disabled={save.isPending}
+          help="For a form of choices only, where you still want to reach reporters."
+          onChange={(e) => {
+            save.mutate(e.target.checked);
+          }}
+        />
+      )}
+      <Problem error={save.error} />
     </Panel>
   );
 }

@@ -16,6 +16,7 @@ import { ADMIN } from '../auth.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { expectAccessible } from '../filing/axe.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
+import { doorFields } from '../door.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
@@ -57,6 +58,7 @@ async function askedForEvidence(
   let before = countTo(reporterEmail);
   const sent = await anon.post('/api/reports', {
     data: {
+      ...(await doorFields(anon)),
       logbook: lb.slug,
       email: reporterEmail,
       consent: true,

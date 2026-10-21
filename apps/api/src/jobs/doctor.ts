@@ -27,6 +27,7 @@ import { CODE_ROOT, readState } from './backup.ts';
 import { CHANGED_MESSAGE, compare, recordedFingerprint } from './contact-key.ts';
 import type { Finding, UnitFacts } from './doctor-checks.ts';
 import {
+  assessAddedKeys,
   assessBackups,
   assessCertificate,
   assessDisk,
@@ -129,6 +130,7 @@ export async function diagnose({ config, db, server, now }: DoctorOptions): Prom
       ),
     );
   }
+  out.push(assessAddedKeys(config));
   const mail = emailReadiness(config);
   out.push(
     mail.ok

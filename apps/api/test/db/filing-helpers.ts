@@ -11,6 +11,7 @@ import { capturingMailer } from '../../src/email/mailer.ts';
 import type { CapturingMailer } from '../../src/email/mailer.ts';
 import { keyringFrom } from '../../src/filing/contactKeys.ts';
 import { testDatabase } from './helpers.ts';
+import { doorPass } from '../door-pass.ts';
 import { SITE } from './identity-helpers.ts';
 
 /** A test key. Never a deployment's. */
@@ -63,8 +64,16 @@ export function tokenFor(mailer: CapturingMailer, email: string): string | undef
   return /\/file\/confirm\/([a-f0-9]{64})\b/.exec(text)?.[1];
 }
 
+/**
+ * Send a report as the form does, with the door's fields (test/door-pass.ts).
+ * A key in `body` wins, so a door test can send a bad one, or none (`''`).
+ */
 export async function send(h: FilingHarness, body: Record<string, unknown>) {
-  const res = await h.app.inject({ method: 'POST', url: '/api/reports', payload: body });
+  const res = await h.app.inject({
+    method: 'POST',
+    url: '/api/reports',
+    payload: { ...(await doorPass(h.app)), ...body },
+  });
   return { status: res.statusCode, body: res.json<Record<string, unknown>>() };
 }
 
@@ -110,6 +119,38 @@ export async function fileThroughRoutes(
   const ref = done.body.confirmation.public_ref;
   if (!ref) throw new Error(`confirming failed: ${JSON.stringify(done.body)}`);
   return ref;
+}
+
+/** The spine of a form that asks for no address (E1): consent and the publication answer. */
+export const spineWithoutEmail = (extra: Record<string, unknown> = {}) => ({
+  consent: true,
+  may_publish: true,
+  may_publish_digest: GENERAL,
+  ...extra,
+});
+
+/**
+ * Send a report to a logbook that asks for no email (owner decision E1): it
+ * is sealed on arrival. Returns the public reference of the newest report in
+ * that logbook, which this send just made.
+ */
+export async function fileOnArrival(
+  h: FilingHarness,
+  logbook: string,
+  answers: Record<string, unknown>,
+  extra: Record<string, unknown> = {},
+): Promise<string> {
+  const sent = await send(h, { ...spineWithoutEmail(extra), logbook, answers });
+  if (sent.status !== 200 || sent.body.filed !== true)
+    throw new Error(`sending failed: ${JSON.stringify(sent.body)}`);
+  const row = await h.db
+    .selectFrom('reports as r')
+    .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
+    .select('r.public_ref')
+    .where('l.slug', '=', logbook)
+    .orderBy('r.id', 'desc')
+    .executeTakeFirstOrThrow();
+  return row.public_ref;
 }
 
 export async function threadOf(db: Database, publicRef: string): Promise<string> {

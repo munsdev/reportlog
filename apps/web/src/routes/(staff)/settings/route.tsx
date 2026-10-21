@@ -17,6 +17,7 @@ const SECTIONS = [
   { to: '/settings/words', label: 'Page wording' },
   { to: '/settings/legal', label: 'Legal notices' },
   { to: '/settings/development', label: 'Development notice' },
+  { to: '/settings/forms', label: 'Report and tip forms' },
   { to: '/settings/starting-points', label: 'Starting points' },
   // Arranged on the logbooks side, which knows when a logbook closes.
   { to: '/logbooks/front-page', label: 'Front page' },

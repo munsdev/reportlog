@@ -12,6 +12,7 @@
  * refuse first with one they cannot.
  */
 import { z } from 'zod';
+import { DoorFields } from './door.ts';
 import { FormQuestion } from './logbooks.ts';
 import { defineRoute } from './route.ts';
 
@@ -25,7 +26,7 @@ export const submitReport = defineRoute({
   method: 'POST',
   path: '/api/reports',
   summary:
-    'Send a report for confirmation. Nothing is filed until the link in the email is followed.',
+    'Send a report. Where the logbook asks for an email, nothing is filed until the link in it is followed; where it does not, the report is sealed on arrival.',
   body: z.object({
     logbook: z.string().optional(),
     /** The spine: where to reach the reporter. Never sealed. */
@@ -41,15 +42,25 @@ export const submitReport = defineRoute({
     draft_token: z.string().optional(),
     /** The form version the page showed (getPublicLogbook's `form`). */
     form: z.string().optional(),
+    ...DoorFields,
   }),
-  response: z.object({
-    pending: z.literal(true),
-    /**
-     * Files staged before the logbook's uploads were frozen, dropped at Send
-     * (decision 17). Present only when there were any. The report was sent.
-     */
-    files_dropped: z.array(z.string()).optional(),
-  }),
+  /**
+   * PENDING for a logbook that asks for an email: nothing is filed until the
+   * emailed link is followed. FILED for one that does not (owner decision E1):
+   * sealed on arrival, and nothing more to do. No receipt either way: a
+   * reporter is not handed a reference to a report nobody has yet accepted.
+   */
+  response: z.union([
+    z.object({
+      pending: z.literal(true),
+      /**
+       * Files staged before the logbook's uploads were frozen, dropped at Send
+       * (decision 17). Present only when there were any. The report was sent.
+       */
+      files_dropped: z.array(z.string()).optional(),
+    }),
+    z.object({ filed: z.literal(true) }),
+  ]),
 });
 
 /**

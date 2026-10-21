@@ -23,6 +23,7 @@ const SENTENCES = {
   'not-a-number': 'That needs to be a number.',
   'out-of-range': 'That number is outside what this question takes.',
   'not-a-date': 'That needs to be a date.',
+  'outside-dates': 'That is outside the dates or times this question takes.',
   'not-a-time': 'That needs to be a time of day.',
   'not-a-datetime': 'That needs to be a date and time.',
   'not-a-place': 'Pick a place from the list.',

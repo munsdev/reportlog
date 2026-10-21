@@ -15,13 +15,18 @@
  * changes underneath them: the address card's reason is worked out as they
  * arrive at it, not while they are on it. No auto-advance on selection.
  *
+ * AT THE DOOR (features/door/): a start token as the form opens, a puzzle
+ * solved in the background before Send works, and a box nobody can see.
+ *
  * ON A DOOR (the site password is on and this list is open outside) this page
- * calls exactly its list's two routes and nothing else.
+ * calls exactly its list's two routes and the door's two reads, nothing else.
  */
 import { LINK_FIELD_WORDING, sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { CountyPicker } from '../form/CountyPicker.tsx';
+import { inputLimits } from '../form/QuestionControl.tsx';
+import { DoorPuzzle, Honeypot, doorStatus, useDoor } from '../door/useDoor.tsx';
 import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode, RefObject } from 'react';
@@ -131,11 +136,10 @@ function Cards({ form }: { form: Form }) {
   );
   const [email, setEmail] = useState('');
   const [consent, setConsent] = useState(false);
-  const [website, setWebsite] = useState('');
+  const door = useDoor();
   const [problem, setProblem] = useState<string | null>(null);
   // Worked out on ARRIVING at the address card, never while somebody is on it.
   const [wroteOnArrival, setWroteOnArrival] = useState(false);
-  const [started] = useState(() => Date.now());
   const heading = useRef<HTMLHeadingElement>(null);
 
   const step = steps[at] ?? { kind: 'intro' };
@@ -150,12 +154,13 @@ function Cards({ form }: { form: Form }) {
           answers: Object.fromEntries(Object.entries(values).filter(([, v]) => !blank(v))),
           email: email.trim() || null,
           email_consent: form.email_reason === 'reply' ? true : consent,
-          website,
-          elapsed_ms: Date.now() - started,
+          ...door.fields(),
         },
       }),
     onError: (e) => {
       setProblem(e.message);
+      // A solution is good for one send, accepted or refused.
+      door.renew();
     },
   });
 
@@ -217,8 +222,9 @@ function Cards({ form }: { form: Form }) {
       setProblem(wrong);
       return;
     }
-    if (last) send.mutate();
-    else go(at + 1);
+    if (last) {
+      if (door.ready) send.mutate();
+    } else go(at + 1);
   };
 
   return (
@@ -230,19 +236,8 @@ function Cards({ form }: { form: Form }) {
       }}
     >
       {/* A box nobody can see. Filled in means a script. */}
-      <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
-        <label>
-          Leave this empty
-          <input
-            tabIndex={-1}
-            autoComplete="off"
-            value={website}
-            onChange={(e) => {
-              setWebsite(e.target.value);
-            }}
-          />
-        </label>
-      </div>
+      <Honeypot door={door} />
+      <DoorPuzzle door={door} />
       <Card>
         <CardContent className="space-y-4 pt-6">
           <p className="text-sm text-ink-alt">
@@ -290,10 +285,15 @@ function Cards({ form }: { form: Form }) {
                 Back
               </Button>
             ) : null}
-            <Button type="submit" disabled={send.isPending}>
+            <Button type="submit" disabled={send.isPending || (last && !door.ready)}>
               {last ? (send.isPending ? 'Sending…' : 'Send') : at === 0 ? 'Start' : 'Next'}
             </Button>
           </div>
+          {last && doorStatus(door) ? (
+            <p role="status" className="text-sm text-ink-alt">
+              {doorStatus(door)}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </form>
@@ -535,6 +535,7 @@ function Control({
       type={types[q.kind] ?? 'text'}
       value={q.kind === 'datetime' && text ? toLocal(text) : text}
       maxLength={q.kind === 'short_text' || q.kind === 'place' ? 200 : undefined}
+      {...inputLimits({ kind: q.kind, settings: { earliest: q.earliest, latest: q.latest } })}
       onChange={(e) => {
         const v = e.target.value;
         onChange(q.kind === 'datetime' && v ? new Date(v).toISOString() : v);

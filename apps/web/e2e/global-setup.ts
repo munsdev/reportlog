@@ -18,6 +18,15 @@ export default function globalSetup() {
   execFileSync('node', ['--env-file-if-exists=../../.env', 'src/identity/dev-state.ts', 'set-up'], {
     cwd: api,
   });
+  // The door's minimum time on a form off: a script fills a one-card form in
+  // faster than a person. The minimum is tested in test/db/door.test.ts.
+  execFileSync(
+    'node',
+    ['--env-file-if-exists=../../.env', 'src/door/dev-state.ts', 'min-form', '0'],
+    {
+      cwd: api,
+    },
+  );
   rmSync(fileURLToPath(new URL('./.outbox/', import.meta.url)), { recursive: true, force: true });
   writeFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), JSON.stringify(refs));
 }

@@ -17,6 +17,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
+import { doorFields } from '../door.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -89,6 +90,7 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   let before = countTo(reporterEmail);
   const sent = await anon.post('/api/reports', {
     data: {
+      ...(await doorFields(anon)),
       logbook: lb.slug,
       email: reporterEmail,
       consent: true,

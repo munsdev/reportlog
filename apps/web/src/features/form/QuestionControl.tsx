@@ -11,6 +11,7 @@ import {
   countyOptions,
   depthOf,
   hourLabel,
+  limitsOf,
   offeredOptions,
   optionCode,
   optionLabel,
@@ -253,12 +254,36 @@ export function QuestionControl(props: ControlProps) {
       {...(q.kind === 'number'
         ? { min: numberSetting(q, 'min'), max: numberSetting(q, 'max') }
         : {})}
+      {...inputLimits(q)}
       onChange={(e) => {
         onChange(e.target.value);
       }}
       {...common}
     />
   );
+}
+
+/**
+ * A date or time question's limits (E4) as the box's own min and max, so the
+ * picker offers nothing the server would refuse. A date and time is limited
+ * by a moment, which the box shows in the reporter's own clock.
+ */
+export function inputLimits(q: Pick<FormQuestion, 'kind' | 'settings'>): {
+  min?: string;
+  max?: string;
+} {
+  const { earliest, latest } = limitsOf(q.kind, q.settings);
+  const shown = (v: string | undefined) =>
+    v === undefined ? undefined : q.kind === 'datetime' ? localMoment(v) : v;
+  const min = shown(earliest);
+  const max = shown(latest);
+  return { ...(min ? { min } : {}), ...(max ? { max } : {}) };
+}
+
+function localMoment(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function ManyChoices({

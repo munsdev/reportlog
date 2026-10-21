@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { countTo, lastMessageTo, linkIn } from './identity/mail.ts';
+import { doorFields } from './door.ts';
 
 const refs = JSON.parse(
   readFileSync(fileURLToPath(new URL('./.refs.json', import.meta.url)), 'utf8'),
@@ -51,6 +52,7 @@ test('an unpublished report shows its fingerprints and not its words, until it i
   const before = countTo(email);
   const sent = await anon.post('/api/reports', {
     data: {
+      ...(await doorFields(anon)),
       logbook: 'demo',
       email,
       consent: true,

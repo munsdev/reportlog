@@ -250,6 +250,26 @@ export function assessNode(running: string, pinned: string | undefined): Finding
   return f('ok', 'node', `${running}, as pinned`);
 }
 
+/**
+ * THE KEYS A RE-RUN OF THE INSTALLER ADDS: DOOR_KEY (Plan E, the door's puzzles
+ * and start tokens) and TWO_FACTOR_KEY (staff authenticator apps). A server
+ * installed before either existed has a settings file without them. Neither
+ * stops the site (the door makes a key in memory; passkeys still work), so a
+ * warning, never a failure, and the fix in words: the installer adds a missing
+ * key to an existing file and touches nothing else.
+ */
+export const ADDED_KEYS = ['DOOR_KEY', 'TWO_FACTOR_KEY'] as const;
+export const ADD_KEYS_FIX =
+  'run /root/reportlog/deploy/install.sh again; it adds missing keys and asks nothing else';
+
+export function assessAddedKeys(
+  settings: Partial<Record<(typeof ADDED_KEYS)[number], string | undefined>>,
+): Finding {
+  const missing = ADDED_KEYS.filter((k) => !settings[k]);
+  if (!missing.length) return f('ok', 'keys', 'DOOR_KEY and TWO_FACTOR_KEY are set');
+  return f('warn', 'keys', `${missing.join(' and ')} not set: ${ADD_KEYS_FIX}`);
+}
+
 export function exitCode(findings: readonly Finding[]): number {
   return findings.some((x) => x.status === 'fail') ? 1 : 0;
 }

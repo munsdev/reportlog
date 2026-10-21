@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONFIG_KEYS } from '../../src/config.ts';
 import {
+  ADD_KEYS_FIX,
+  assessAddedKeys,
   assessBackups,
   assessCertificate,
   assessDisk,
@@ -15,6 +17,20 @@ import {
 } from '../../src/jobs/doctor-checks.ts';
 
 describe('the doctor', () => {
+  it('warns, never fails, when DOOR_KEY or TWO_FACTOR_KEY is missing, and names the fix', () => {
+    const key = Buffer.alloc(32, 1).toString('base64');
+    expect(assessAddedKeys({ DOOR_KEY: key, TWO_FACTOR_KEY: key }).status).toBe('ok');
+    const door = assessAddedKeys({ TWO_FACTOR_KEY: key });
+    expect(door).toMatchObject({ status: 'warn' });
+    expect(door.detail).toBe(`DOOR_KEY not set: ${ADD_KEYS_FIX}`);
+    const both = assessAddedKeys({});
+    expect(both.status).toBe('warn');
+    expect(both.detail).toMatch(
+      /^DOOR_KEY and TWO_FACTOR_KEY not set: run \/root\/reportlog\/deploy\/install\.sh again; it adds missing keys and asks nothing else$/,
+    );
+    expect(exitCode([both])).toBe(0);
+  });
+
   it('fails PostgreSQL listening beyond its socket and the loopback', () => {
     expect(assessListen('').status).toBe('ok');
     expect(assessListen('localhost').status).toBe('ok');

@@ -6,6 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { doorFields } from '../door.ts';
 
 test('a reporter prints a signed declaration of their report', async ({ page, request }) => {
   const email = `declare-${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}@example.org`;
@@ -13,6 +14,7 @@ test('a reporter prints a signed declaration of their report', async ({ page, re
   let before = countTo(email);
   const sent = await request.post('/api/reports', {
     data: {
+      ...(await doorFields(request)),
       logbook: 'demo',
       email,
       consent: true,

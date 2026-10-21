@@ -89,7 +89,9 @@
       "kind": "date",
       "label": "Date",
       "required": true,
-      "card_question": "When was it?"
+      "card_question": "When was it?",
+      "earliest": "2026-09-18",
+      "latest": "2026-11-10"
     },
     {
       "key": "hour",

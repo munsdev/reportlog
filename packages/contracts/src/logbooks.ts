@@ -59,6 +59,9 @@ export const QuestionSettingsInput = z.strictObject({
   code: z.string().optional(),
   /** On a `fips` county: the key of the earlier `postal` state question. */
   within: z.string().optional(),
+  /** On a date, time or date and time: the earliest and latest answer taken (E4). */
+  earliest: z.string().optional(),
+  latest: z.string().optional(),
 });
 export type QuestionSettingsInput = z.infer<typeof QuestionSettingsInput>;
 
@@ -105,6 +108,10 @@ export const LogbookSummary = z.object({
    * identity workstream's door route; read here so the builder can show it.
    */
   outside_access: z.enum(['closed', 'link', 'door']),
+  /** The operator's override: ask for an email even where the questions do not need one (E1). */
+  email_required: z.boolean(),
+  /** Whether the form asks for an email: derived from the questions, or the override (E1). */
+  asks_email: z.boolean(),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -147,6 +154,8 @@ export const LogbookFileQuestion = z.object({
   integer: z.boolean().optional(),
   picker: z.string().optional(),
   checkbox: z.boolean().optional(),
+  earliest: z.string().optional(),
+  latest: z.string().optional(),
 });
 export const LogbookFile = z.looseObject({
   reportlog_logbook: z.number(),
@@ -159,6 +168,8 @@ export const LogbookFile = z.looseObject({
   max_total_bytes: z.number().optional(),
   /** Whether moderators may attach editorial notes. Present only when true. */
   editorial_notes: z.boolean().optional(),
+  /** `always`: ask for an email even where the questions do not need one (E1). Present only then. */
+  ask_email: z.literal('always').optional(),
   questions: z.array(LogbookFileQuestion),
 });
 export type LogbookFile = z.infer<typeof LogbookFile>;
@@ -218,7 +229,12 @@ export const updateLogbook = defineRoute({
   summary:
     'Change the title or the description. Neither is part of the form, so both stay editable after launch.',
   params: LogbookParams,
-  body: z.object({ title: z.string().optional(), blurb: z.string().nullable().optional() }),
+  body: z.object({
+    title: z.string().optional(),
+    blurb: z.string().nullable().optional(),
+    /** Ask for an email even where the questions do not need one (E1). Changeable after launch. */
+    email_required: z.boolean().optional(),
+  }),
   response: LogbookDetail,
 });
 
@@ -377,6 +393,11 @@ export const getPublicLogbook = defineRoute({
     closes_at: Timestamp.nullable(),
     accepting: z.boolean(),
     asks_for_files: z.boolean(),
+    /**
+     * Whether the form asks for an email (E1). Without one, the report is sealed
+     * on arrival and the reporter cannot come back to correct or withdraw it.
+     */
+    asks_email: z.boolean(),
     fields: z.array(FormQuestion),
     /** The board's filters: only what the operator marked. None is built in. */
     filters: z.array(FormQuestion),

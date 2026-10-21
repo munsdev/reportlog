@@ -19,6 +19,11 @@
  * A REPORT WHOSE EMAIL KEY WAS DESTROYED GETS NO EMAIL. Nobody can be told,
  * and that is recorded as `no_key` rather than hidden: the decline stands.
  *
+ * A REPORT THAT NEVER HAD AN ADDRESS IS NOT A FAILURE TO NOTIFY. A form that
+ * asks for no email seals on arrival with no contact row at all (owner
+ * decision E1), so there is nobody to tell and nothing went wrong: nothing is
+ * attempted and nothing is recorded, and the route says `none`.
+ *
  * The email goes out after the decision is committed. A mail provider that is
  * down must not stop a moderator declining, and a failed send is recorded
  * (`failed`) so somebody can see it did not go.
@@ -74,8 +79,14 @@ export async function sendRejectionNotice(
     siteOrigin: string;
   },
   input: { threadId: string; reportId: number; reasonCode: RejectionReasonCode; actor: string },
-): Promise<NoticeOutcome> {
+): Promise<NoticeOutcome | 'none'> {
   const { db } = deps;
+  const hadAddress = await db
+    .selectFrom('report_contacts')
+    .select('thread_id')
+    .where('thread_id', '=', input.threadId)
+    .executeTakeFirst();
+  if (!hadAddress) return 'none';
   const outcome = await attempt();
   // Recorded either way. A failure to write this does not undo the decision.
   await db
