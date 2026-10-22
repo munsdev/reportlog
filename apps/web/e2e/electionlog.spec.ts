@@ -1,5 +1,5 @@
 /**
- * ElectionLog's forms in a real browser (docs/electionlog-questionnaires.md),
+ * The voting forms in a real browser (docs/voting-questionnaires.md),
  * from the shipped presets:
  *
  *   the logbook through every card, in person with a problem and by mail
@@ -54,10 +54,10 @@ async function copy(page: Page, slots: Record<string, string>) {
   );
 }
 
-/** The ElectionLog logbook, from its starting point, launched. */
-async function electionlog(page: Page): Promise<string> {
+/** The voting logbook, from its starting point, launched. */
+async function votingLogbook(page: Page): Promise<string> {
   const made = await page.request.post('/api/admin/logbooks', {
-    data: { title: `Log how voting went ${run()}`, starting_point: 'electionlog' },
+    data: { title: `Log how voting went ${run()}`, starting_point: 'how-voting-went' },
   });
   expect(made.ok(), await made.text()).toBe(true);
   const lb = (await made.json()) as { id: number; slug: string };
@@ -98,7 +98,7 @@ async function send(page: Page) {
 test('in person, something went wrong: every card, the parts of a card, the in-person lists', async ({
   page,
 }) => {
-  const slug = await electionlog(page);
+  const slug = await votingLogbook(page);
   await copy(page, { send_note: "This report can't be changed or withdrawn after you send it." });
   const outside = watch(page);
   const sent = sentReports(page);
@@ -201,7 +201,7 @@ test('in person, something went wrong: every card, the parts of a card, the in-p
 });
 
 test('by mail, it went fine: no clock, no role or wait, straight to sending', async ({ page }) => {
-  const slug = await electionlog(page);
+  const slug = await votingLogbook(page);
   const outside = watch(page);
   const sent = sentReports(page);
   await page.goto(`/file/${slug}`);
@@ -242,7 +242,7 @@ test('by mail, it went fine: no clock, no role or wait, straight to sending', as
 test('by mail, something went wrong: the mail list, and no provisional ballot', async ({
   page,
 }) => {
-  const slug = await electionlog(page);
+  const slug = await votingLogbook(page);
   await page.goto(`/file/${slug}`);
   await page.getByRole('button', { name: 'Start' }).click();
   await page.getByRole('radio', { name: 'Something went wrong' }).click();
@@ -272,7 +272,7 @@ test('the tip card: three rows of a link and its kind, and no email card', async
 }) => {
   const slug = `el-tips-${run()}`;
   const made = await page.request.post('/api/admin/lists', {
-    data: { template: 'electionlog-tips', slug },
+    data: { template: 'link-tips', slug },
   });
   expect(made.ok(), await made.text()).toBe(true);
   const { id } = (await made.json()) as { id: number };
@@ -344,7 +344,7 @@ test('the entry card: what do you want to do, and its two answers', async ({ pag
         json: {
           logbooks: [
             {
-              slug: 'electionlog',
+              slug: 'how-voting-went',
               title: 'Log how voting went',
               blurb: null,
               state: 'open',

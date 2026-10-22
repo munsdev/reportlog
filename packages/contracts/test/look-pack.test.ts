@@ -14,6 +14,7 @@ import {
   derived,
   contrast,
   emptyInstalled,
+  themeLayout,
   toCss,
 } from '../src/index.ts';
 import type { LookPack, Palette, Theme } from '../src/index.ts';
@@ -77,15 +78,15 @@ describe('the built-in pack', () => {
     expect(check(CORE_PACK, emptyInstalled(), null, { builtIn: true })).toEqual([]);
   });
 
-  it('holds the library decision 63 approved: 17 palettes, 10 themes, 16 looks', () => {
-    expect(PALETTES).toHaveLength(17);
-    expect(THEMES).toHaveLength(10);
-    expect(LOOKS).toHaveLength(16);
+  it('holds the library decision 63 approved, plus Newsdesk: 18 palettes, 11 themes, 17 looks', () => {
+    expect(PALETTES).toHaveLength(18);
+    expect(THEMES).toHaveLength(11);
+    expect(LOOKS).toHaveLength(17);
   });
 
-  it('has exactly one default, Desk, and ElectionLog is Flint with Signal', () => {
-    expect(LOOKS.filter((l) => l.default).map((l) => l.id)).toEqual(['desk']);
-    expect(LOOKS.find((l) => l.id === 'electionlog')).toMatchObject({
+  it('has exactly one default, Newsdesk, and Civic is Flint with Signal', () => {
+    expect(LOOKS.filter((l) => l.default).map((l) => l.id)).toEqual(['newsdesk']);
+    expect(LOOKS.find((l) => l.id === 'civic')).toMatchObject({
       palette: 'flint',
       theme: 'signal',
     });
@@ -189,6 +190,49 @@ describe('a pack that is refused, and the sentence it is refused with', () => {
     expect(refused(pack)).toContain('Theme "harbour" radius must be a number from 0 to 24.');
   });
 
+  it('a theme with neither a width nor a pageMax', () => {
+    const pack = goodPack();
+    const t = theme(pack);
+    delete t.width;
+    delete t.pageMax;
+    expect(refused(pack)).toContain(
+      'Theme "harbour" needs a width (narrow, regular, wide, full) or a pageMax in px.',
+    );
+  });
+
+  it('a layout choice the app does not have', () => {
+    const pack = goodPack();
+    const t = theme(pack) as unknown as Record<string, unknown>;
+    t.width = 'huge';
+    t.columns = 'three';
+    t.scale = 'tiny';
+    t.surface = 'glass';
+    const problems = refused(pack);
+    expect(problems).toContain('Theme "harbour" width must be one of narrow, regular, wide, full.');
+    expect(problems).toContain('Theme "harbour" columns must be one of single, split.');
+    expect(problems).toContain('Theme "harbour" scale must be one of standard, large.');
+    expect(problems).toContain('Theme "harbour" surface must be one of outlined, filled, ruled.');
+  });
+
+  it('a pack written before the layout fields still passes, and reads as before', () => {
+    const pack = goodPack();
+    const t = theme(pack);
+    delete t.width;
+    delete t.columns;
+    delete t.scale;
+    delete t.surface;
+    t.pageMax = 760;
+    expect(check(pack, installed, null)).toEqual([]);
+    expect(themeLayout(t)).toEqual({
+      panelHead: t.panelHead,
+      texture: t.texture,
+      width: 'narrow',
+      columns: 'split',
+      scale: 'standard',
+      surface: 'outlined',
+    });
+  });
+
   it('a default look from anything but the built-in pack', () => {
     const pack = goodPack();
     (pack.looks ?? [])[0] = {
@@ -242,9 +286,32 @@ describe('the stylesheet', () => {
   it('writes no :root unless asked, and then only the default look', () => {
     expect(toCss(goodPack(), undefined, { root: true })).not.toContain(':root');
     const core = toCss(CORE_PACK, undefined, { root: true });
-    expect(core).toContain(":root,\n[data-palette='platinum']");
-    expect(core).toContain(":root,\n[data-theme='desk']");
+    expect(core).toContain(":root,\n[data-palette='newsdesk']");
+    expect(core).toContain(":root,\n[data-theme='newsdesk']");
     expect(core.match(/:root/g)).toHaveLength(2);
+  });
+
+  it('a named width becomes its px, full keeps a growing margin, and pageMax still works', () => {
+    const pack = goodPack();
+    const t = theme(pack);
+    t.width = 'narrow';
+    expect(toCss(pack)).toContain('--rl-page-max: 760px;');
+    t.width = 'full';
+    expect(toCss(pack)).toContain('--rl-page-max: calc(100% - 2 * clamp(0rem, 4vw - 1rem, 4rem));');
+    delete t.width;
+    t.pageMax = 900;
+    expect(toCss(pack)).toContain('--rl-page-max: 900px;');
+  });
+
+  it('chips and counts are square in a square theme and a pill in a round one', () => {
+    const pack = goodPack();
+    const t = theme(pack);
+    t.shape = { ...t.shape, radius: 0, radiusSmall: 0 };
+    expect(toCss(pack)).toContain('--rl-radius-pill: 0px;');
+    t.shape = { ...t.shape, radius: 16, radiusSmall: 10 };
+    expect(toCss(pack)).toContain('--rl-radius-pill: 999px;');
+    t.shape = { ...t.shape, radius: 6, radiusSmall: 4 };
+    expect(toCss(pack)).toContain('--rl-radius-pill: 4px;');
   });
 
   it('page titles are fluid between the theme’s two sizes', () => {

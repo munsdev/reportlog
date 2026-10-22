@@ -70,7 +70,7 @@ function Guide({
   const siteName = plainSiteName(useSite().data);
   return (
     <Page eyebrow={`${siteName} · Guides`} title={title} lede={lede}>
-      <div className="grid items-start gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
+      <div className="layout-split grid items-start gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
         {/* Not numbered by the list: the steps carry their own numbers. */}
         <nav aria-label="Contents" className="print:hidden">
           <Card variant="quiet" heading="Contents" headingLevel={2}>

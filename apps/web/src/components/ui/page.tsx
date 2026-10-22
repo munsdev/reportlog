@@ -36,7 +36,11 @@ export function Page({
   }, [title, siteName]);
   return (
     <section
-      className={cn('flex flex-col gap-6', width === 'prose' && 'max-w-prose', className)}
+      className={cn(
+        'page-sections flex flex-col gap-6',
+        width === 'prose' && 'max-w-prose',
+        className,
+      )}
       {...props}
     >
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">

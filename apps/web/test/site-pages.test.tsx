@@ -305,21 +305,21 @@ describe('unsaved changes', () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => false);
     const router = await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
+    await user.click(screen.getByRole('radio', { name: 'Civic at night' }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(ask).toHaveBeenCalledTimes(1);
     expect(ask).toHaveBeenCalledWith(
       'You have changes to the look that are not saved. Leave without saving them?',
     );
     expect(router.state.location.pathname).toBe('/');
-    expect(screen.getByRole('radio', { name: 'ElectionLog at night' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'Civic at night' })).toBeChecked();
   });
 
   it('answering yes leaves', async () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => true);
     await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
+    await user.click(screen.getByRole('radio', { name: 'Civic at night' }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(await screen.findByRole('heading', { name: 'Elsewhere' })).toBeVisible();
     expect(ask).toHaveBeenCalledTimes(1);
@@ -329,8 +329,8 @@ describe('unsaved changes', () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => false);
     await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
-    await user.click(screen.getByRole('radio', { name: /^ElectionLog\s*On the site$/ }));
+    await user.click(screen.getByRole('radio', { name: 'Civic at night' }));
+    await user.click(screen.getByRole('radio', { name: /^Civic\s*On the site$/ }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(await screen.findByRole('heading', { name: 'Elsewhere' })).toBeVisible();
     expect(ask).not.toHaveBeenCalled();

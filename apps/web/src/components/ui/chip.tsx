@@ -17,7 +17,7 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils.ts';
 
 export const chipVariants = cva(
-  'inline-flex h-6 shrink-0 items-center rounded-control px-[0.5625rem] label-face text-[0.6875rem] leading-none tracking-[0.08em] whitespace-nowrap uppercase',
+  'inline-flex h-6 shrink-0 items-center rounded-pill px-[0.5625rem] label-face text-[0.6875rem] leading-none tracking-[0.08em] whitespace-nowrap uppercase',
   {
     variants: {
       tone: {

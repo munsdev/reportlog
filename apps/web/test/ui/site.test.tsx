@@ -14,12 +14,17 @@ afterEach(() => {
 });
 
 describe('applying the look', () => {
-  it('names the choice on <html>, and the default (Desk) by naming nothing', () => {
+  it('names the choice on <html>, and the default (Newsdesk) by naming nothing', () => {
     const root = document.documentElement;
     applyLook({ palette: 'midnight', theme: 'signal', panel_head: 'bar', texture: 'none' });
     expect(root).toHaveAttribute('data-palette', 'midnight');
     expect(root).toHaveAttribute('data-theme', 'signal');
-    applyLook({ palette: 'platinum', theme: 'desk', panel_head: 'title-bar', texture: 'none' });
+    applyLook({
+      palette: 'newsdesk',
+      theme: 'newsdesk',
+      panel_head: 'double-rule',
+      texture: 'none',
+    });
     expect(root).not.toHaveAttribute('data-palette');
     expect(root).not.toHaveAttribute('data-theme');
   });
@@ -37,6 +42,10 @@ describe('applying the look', () => {
     const console = THEMES.find((t) => t.id === 'console');
     expect(root).toHaveAttribute('data-panel-head', console?.panelHead);
     expect(root).toHaveAttribute('data-texture', console?.texture);
+    expect(root).toHaveAttribute('data-width', 'narrow');
+    expect(root).toHaveAttribute('data-columns', 'split');
+    expect(root).toHaveAttribute('data-scale', 'standard');
+    expect(root).toHaveAttribute('data-surface', 'outlined');
   });
 
   it('remembers the last look for the next visit, and only one the site could send', () => {

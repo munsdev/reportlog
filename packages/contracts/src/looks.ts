@@ -46,6 +46,12 @@ export const PackTheme = z.object({
   description: z.string(),
   panelHead: z.enum(ENUMS.panelHead),
   texture: z.enum(ENUMS.texture),
+  // Optional so a summary from before the theme could choose them still
+  // reads; the server always sends them.
+  width: z.enum(ENUMS.width).optional(),
+  columns: z.enum(ENUMS.columns).optional(),
+  scale: z.enum(ENUMS.scale).optional(),
+  surface: z.enum(ENUMS.surface).optional(),
 });
 export type PackTheme = z.infer<typeof PackTheme>;
 

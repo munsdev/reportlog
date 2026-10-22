@@ -22,6 +22,7 @@ import {
   RETIRED_IDS,
   THEMES,
   check,
+  themeLayout,
   toCss,
 } from '@reportlog/contracts';
 import type {
@@ -29,8 +30,7 @@ import type {
   Installed,
   LookPack,
   LookPackSummary,
-  PanelHead,
-  Texture,
+  ThemeLayout,
 } from '@reportlog/contracts';
 import { sql } from 'kysely';
 import { createHash } from 'node:crypto';
@@ -74,7 +74,7 @@ export function stylesheetPath(packId: string, sha256: string): string {
  */
 export interface LookCatalogue {
   palettes: readonly { id: string; dark: boolean; background: string; deep: string }[];
-  themes: readonly { id: string; panelHead: PanelHead; texture: Texture }[];
+  themes: readonly ({ id: string } & ThemeLayout)[];
   stylesheets: readonly string[];
 }
 
@@ -100,11 +100,7 @@ export function catalogueOf(rows: readonly PackRow[]): LookCatalogue {
     themes: [
       ...THEMES,
       ...rows.flatMap((r) =>
-        (r.manifest.themes ?? []).map((t) => ({
-          id: t.id,
-          panelHead: t.panelHead,
-          texture: t.texture,
-        })),
+        (r.manifest.themes ?? []).map((t) => ({ id: t.id, ...themeLayout(t) })),
       ),
     ],
     stylesheets: rows.map((r) => stylesheetPath(r.id, r.css_sha256)),
@@ -137,8 +133,7 @@ export function summarize(pack: LookPack): LookPackSummary {
       id: t.id,
       label: t.label,
       description: t.description,
-      panelHead: t.panelHead,
-      texture: t.texture,
+      ...themeLayout(t),
     })),
     looks: (pack.looks ?? []).map((l) => ({
       id: l.id,

@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils.ts';
 
 export const buttonVariants = cva(
   [
-    'inline-flex items-center justify-center gap-2 rounded-control text-center label-face text-[0.84375rem] leading-tight print:hidden',
+    'button-face inline-flex items-center justify-center gap-2 rounded-control text-center label-face text-[0.84375rem] leading-tight print:hidden',
     'border-control border-solid border-ink shadow-raised',
     'transition-[transform,box-shadow] duration-[120ms] active:translate-press active:shadow-pressed',
     'disabled:cursor-not-allowed disabled:border-dashed disabled:bg-paper-alt disabled:text-ink-alt disabled:shadow-none disabled:active:transform-none',

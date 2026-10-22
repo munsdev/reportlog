@@ -235,7 +235,7 @@ describe('walking the screens after the owner', () => {
 
     await heading('How should it look?');
     // The Look screen's chooser and its two previews, starting on what is stored.
-    expect(screen.getByText('Previewing ElectionLog.')).toBeInTheDocument();
+    expect(screen.getByText('Previewing Civic.')).toBeInTheDocument();
     expect(document.querySelector('iframe[title="Phone preview"]')).toHaveAttribute(
       'data-palette',
       'flint',

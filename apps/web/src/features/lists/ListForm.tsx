@@ -643,7 +643,7 @@ function Control({
 }
 
 /**
- * ROWS OF A LINK AND WHAT KIND OF THING IT IS (ElectionLog questionnaires
+ * ROWS OF A LINK AND WHAT KIND OF THING IT IS (voting questionnaires
  * §04). With `fixed_rows` every row is on the card from the start and none
  * is added or removed, so nothing on the card moves. Row 1 is the one a
  * required question needs. The fixed wording (K2) sits above the rows. Each

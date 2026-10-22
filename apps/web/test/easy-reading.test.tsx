@@ -67,6 +67,10 @@ describe('the choice', () => {
       theme: 'commons',
       panel_head: 'plain',
       texture: 'none',
+      width: 'regular',
+      columns: 'single',
+      scale: 'large',
+      surface: 'filled',
       dark: false,
     });
   });

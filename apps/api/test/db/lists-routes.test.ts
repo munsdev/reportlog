@@ -90,7 +90,7 @@ describe('who may build a list', () => {
     expect(b.templates.map((t) => t.slug)).toEqual([
       'tips',
       'election-tips',
-      'electionlog-tips',
+      'link-tips',
       'check-ins',
       'contact',
     ]);

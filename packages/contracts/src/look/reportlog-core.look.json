@@ -183,6 +183,31 @@
   ],
   "palettes": [
     {
+      "id": "newsdesk",
+      "label": "Newsdesk",
+      "description": "Black ink on newsprint, with a terminal's amber.",
+      "dark": false,
+      "colors": {
+        "background": "#f3f0e8",
+        "background-alt": "#e8e3d7",
+        "background-deep": "#161512",
+        "surface": "#fbfaf6",
+        "border": "#bdb5a5",
+        "text": "#151310",
+        "text-alt": "#3f3b34",
+        "text-muted": "#5a554b",
+        "text-on-deep": "#f3f0e8",
+        "action": "#151310",
+        "on-action": "#fbfaf6",
+        "brand": "#8a3f0e",
+        "brand-on-deep": "#ffb347",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
       "id": "platinum",
       "label": "Platinum",
       "description": "Old Mac and Linux desktop, newsroom grey.",
@@ -210,7 +235,7 @@
     {
       "id": "flint",
       "label": "Flint",
-      "description": "Steel and signal gold (ElectionLog).",
+      "description": "Steel and signal gold.",
       "dark": false,
       "colors": {
         "background": "#e7ecef",
@@ -435,7 +460,7 @@
     {
       "id": "midnight",
       "label": "Midnight",
-      "description": "Flint after dark (ElectionLog dark).",
+      "description": "Flint after dark.",
       "dark": true,
       "colors": {
         "background": "#121a24",
@@ -610,6 +635,48 @@
   ],
   "themes": [
     {
+      "id": "newsdesk",
+      "label": "Newsdesk",
+      "description": "A newspaper desk with a terminal on it: big serif headlines, typed labels, rules between sections instead of boxes.",
+      "type": {
+        "heading": {
+          "family": "Newsreader",
+          "weight": 700,
+          "case": "none",
+          "tracking": -0.02
+        },
+        "body": {
+          "family": "Newsreader",
+          "size": 18
+        },
+        "label": {
+          "family": "IBM Plex Mono",
+          "case": "upper",
+          "tracking": 0.08
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.25,
+          "max": 3.75
+        }
+      },
+      "shape": {
+        "radius": 4,
+        "radiusSmall": 3,
+        "border": 1,
+        "shadow": 0,
+        "press": 1
+      },
+      "panelHead": "double-rule",
+      "texture": "none",
+      "width": "wide",
+      "columns": "single",
+      "scale": "large",
+      "surface": "ruled"
+    },
+    {
       "id": "desk",
       "label": "Desk",
       "description": "Old-school Mac and Linux windows, typewritten headings.",
@@ -644,14 +711,17 @@
         "shadow": 3,
         "press": 2
       },
-      "pageMax": 880,
       "panelHead": "title-bar",
-      "texture": "none"
+      "texture": "none",
+      "width": "regular",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "outlined"
     },
     {
       "id": "signal",
       "label": "Signal",
-      "description": "Civic, sturdy, pressable (ElectionLog).",
+      "description": "Civic, sturdy and big: round, filled panels, one wide column.",
       "type": {
         "heading": {
           "family": "Archivo",
@@ -677,20 +747,23 @@
         }
       },
       "shape": {
-        "radius": 10,
-        "radiusSmall": 5,
+        "radius": 16,
+        "radiusSmall": 10,
         "border": 1,
         "shadow": 4,
         "press": 3
       },
-      "pageMax": 760,
       "panelHead": "plain",
-      "texture": "none"
+      "texture": "none",
+      "width": "wide",
+      "columns": "single",
+      "scale": "large",
+      "surface": "filled"
     },
     {
       "id": "broadsheet",
       "label": "Broadsheet",
-      "description": "Old-school newspaper: serif, hairline rules, columns.",
+      "description": "Old-school newspaper: serif, hairline rules, one wide column.",
       "type": {
         "heading": {
           "family": "Newsreader",
@@ -723,9 +796,12 @@
         "shadow": 0,
         "press": 1
       },
-      "pageMax": 1080,
       "panelHead": "double-rule",
-      "texture": "none"
+      "texture": "none",
+      "width": "wide",
+      "columns": "single",
+      "scale": "large",
+      "surface": "outlined"
     },
     {
       "id": "broadcast",
@@ -764,9 +840,12 @@
         "shadow": 0,
         "press": 1
       },
-      "pageMax": 1080,
       "panelHead": "bar",
-      "texture": "none"
+      "texture": "none",
+      "width": "wide",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "filled"
     },
     {
       "id": "docket",
@@ -803,9 +882,12 @@
         "shadow": 0,
         "press": 1
       },
-      "pageMax": 760,
       "panelHead": "rule",
-      "texture": "none"
+      "texture": "none",
+      "width": "narrow",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "outlined"
     },
     {
       "id": "notebook",
@@ -842,9 +924,12 @@
         "shadow": 2,
         "press": 2
       },
-      "pageMax": 840,
       "panelHead": "plain",
-      "texture": "ruled"
+      "texture": "ruled",
+      "width": "regular",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "outlined"
     },
     {
       "id": "trailhead",
@@ -876,20 +961,23 @@
         }
       },
       "shape": {
-        "radius": 12,
-        "radiusSmall": 8,
+        "radius": 16,
+        "radiusSmall": 10,
         "border": 3,
         "shadow": 0,
         "press": 1
       },
-      "pageMax": 960,
       "panelHead": "plain",
-      "texture": "none"
+      "texture": "none",
+      "width": "wide",
+      "columns": "split",
+      "scale": "large",
+      "surface": "filled"
     },
     {
       "id": "firm",
       "label": "Firm",
-      "description": "Corporate: quiet, even, wide.",
+      "description": "Corporate: quiet, even, edge to edge.",
       "type": {
         "heading": {
           "family": "IBM Plex Sans",
@@ -915,15 +1003,18 @@
         }
       },
       "shape": {
-        "radius": 6,
-        "radiusSmall": 4,
+        "radius": 8,
+        "radiusSmall": 6,
         "border": 1,
         "shadow": 0,
         "press": 0
       },
-      "pageMax": 1120,
       "panelHead": "plain",
-      "texture": "none"
+      "texture": "none",
+      "width": "full",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "filled"
     },
     {
       "id": "console",
@@ -960,14 +1051,17 @@
         "shadow": 0,
         "press": 0
       },
-      "pageMax": 1024,
       "panelHead": "prompt",
-      "texture": "none"
+      "texture": "none",
+      "width": "narrow",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "outlined"
     },
     {
       "id": "commons",
       "label": "Commons",
-      "description": "Neighbourhood board: friendly, rounded, larger text.",
+      "description": "Neighbourhood board: friendly, rounded, larger text, one column.",
       "type": {
         "heading": {
           "family": "Atkinson Hyperlegible",
@@ -993,28 +1087,37 @@
         }
       },
       "shape": {
-        "radius": 16,
-        "radiusSmall": 10,
+        "radius": 18,
+        "radiusSmall": 12,
         "border": 2,
         "shadow": 0,
         "press": 1
       },
-      "pageMax": 880,
       "panelHead": "plain",
-      "texture": "none"
+      "texture": "none",
+      "width": "regular",
+      "columns": "single",
+      "scale": "large",
+      "surface": "filled"
     }
   ],
   "looks": [
     {
-      "id": "desk",
-      "label": "Desk",
-      "palette": "platinum",
-      "theme": "desk",
+      "id": "newsdesk",
+      "label": "Newsdesk",
+      "palette": "newsdesk",
+      "theme": "newsdesk",
       "default": true
     },
     {
-      "id": "electionlog",
-      "label": "ElectionLog",
+      "id": "desk",
+      "label": "Desk",
+      "palette": "platinum",
+      "theme": "desk"
+    },
+    {
+      "id": "civic",
+      "label": "Civic",
       "palette": "flint",
       "theme": "signal"
     },
@@ -1091,8 +1194,8 @@
       "theme": "trailhead"
     },
     {
-      "id": "electionlog-night",
-      "label": "ElectionLog at night",
+      "id": "civic-night",
+      "label": "Civic at night",
       "palette": "midnight",
       "theme": "signal"
     },

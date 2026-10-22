@@ -15,6 +15,7 @@
 import { z } from 'zod';
 import { Figure } from './board.ts';
 import { ENUMS } from './look/pack.ts';
+import type { ThemeLayout } from './look/pack.ts';
 import { defineRoute } from './route.ts';
 
 // ── the look ────────────────────────────────────────────────────────────
@@ -60,13 +61,23 @@ export const Look = z.object({ palette: LookId, theme: LookId });
 export type Look = z.infer<typeof Look>;
 
 /**
- * The look as the page paints it: the two ids, and the theme's two layout
- * choices, which become `data-panel-head` and `data-texture` on <html>. A
- * theme picks between layouts the app already has; it cannot describe one.
+ * The look as the page paints it: the two ids, and the theme's layout
+ * choices, which become `data-panel-head`, `data-texture`, `data-width`,
+ * `data-columns`, `data-scale` and `data-surface` on <html>. A theme picks
+ * between layouts the app already has; it cannot describe one.
  */
 export const PaintedLook = Look.extend({
   panel_head: z.enum(ENUMS.panelHead),
   texture: z.enum(ENUMS.texture),
+  /**
+   * The four later choices. Optional because a look remembered in a browser
+   * before they existed must still parse; the page then takes the built-in
+   * theme's (or the default's). The server always sends them.
+   */
+  width: z.enum(ENUMS.width).optional(),
+  columns: z.enum(ENUMS.columns).optional(),
+  scale: z.enum(ENUMS.scale).optional(),
+  surface: z.enum(ENUMS.surface).optional(),
   /**
    * Whether the palette's page is dark, so Easier reading can pick High
    * contrast or High contrast dark for a palette from an installed pack too.
@@ -83,6 +94,20 @@ export const PaintedLook = Look.extend({
   stylesheets: z.array(LookStylesheet).max(100).optional(),
 });
 export type PaintedLook = z.infer<typeof PaintedLook>;
+
+/** A theme's layout choices, as PaintedLook names them. */
+export function paintedLayout(
+  layout: ThemeLayout,
+): Pick<PaintedLook, 'panel_head' | 'texture' | 'width' | 'columns' | 'scale' | 'surface'> {
+  return {
+    panel_head: layout.panelHead,
+    texture: layout.texture,
+    width: layout.width,
+    columns: layout.columns,
+    scale: layout.scale,
+    surface: layout.surface,
+  };
+}
 
 // ── the name ────────────────────────────────────────────────────────────
 

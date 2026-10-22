@@ -24,6 +24,25 @@
 @font-face { font-family: 'Atkinson Hyperlegible'; src: url('./fonts/AtkinsonHyperlegible-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: 'Atkinson Hyperlegible'; src: url('./fonts/AtkinsonHyperlegible-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
 :root,
+[data-palette='newsdesk'] {
+  --rl-background: #f3f0e8;
+  --rl-background-alt: #e8e3d7;
+  --rl-background-deep: #161512;
+  --rl-surface: #fbfaf6;
+  --rl-border: #bdb5a5;
+  --rl-text: #151310;
+  --rl-text-alt: #3f3b34;
+  --rl-text-muted: #5a554b;
+  --rl-text-on-deep: #f3f0e8;
+  --rl-action: #151310;
+  --rl-on-action: #fbfaf6;
+  --rl-brand: #8a3f0e;
+  --rl-brand-on-deep: #ffb347;
+  --rl-serious: #a81d33;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
 [data-palette='platinum'] {
   --rl-background: #e4e3de;
   --rl-background-alt: #d7d6d0;
@@ -348,10 +367,33 @@
   --rl-on-confirmed: #000000;
 }
 :root,
+[data-theme='newsdesk'] {
+  --rl-page-max: 1200px;
+  --rl-radius: 4px;
+  --rl-radius-sm: 3px;
+  --rl-radius-pill: 3px;
+  --rl-border-main: 1px;
+  --rl-shadow-offset: 0px;
+  --rl-press: 1px;
+  --rl-font-display: 'Newsreader', ui-sans-serif, system-ui, sans-serif;
+  --rl-display-stretch: 100%;
+  --rl-font-sans: 'Newsreader', ui-sans-serif, system-ui, sans-serif;
+  --rl-body-size: 18px;
+  --rl-font-label: 'IBM Plex Mono', ui-sans-serif, system-ui, sans-serif;
+  --rl-label-stretch: 100%;
+  --rl-label-transform: uppercase;
+  --rl-label-tracking: 0.08em;
+  --rl-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --rl-h1-weight: 700;
+  --rl-h1-tracking: -0.02em;
+  --rl-h1-size: clamp(2.25rem, 1.593rem + 2.697vw, 3.75rem);
+  --rl-display-transform: none;
+}
 [data-theme='desk'] {
-  --rl-page-max: 880px;
+  --rl-page-max: 1000px;
   --rl-radius: 2px;
   --rl-radius-sm: 2px;
+  --rl-radius-pill: 2px;
   --rl-border-main: 2px;
   --rl-shadow-offset: 3px;
   --rl-press: 2px;
@@ -370,9 +412,10 @@
   --rl-display-transform: none;
 }
 [data-theme='signal'] {
-  --rl-page-max: 760px;
-  --rl-radius: 10px;
-  --rl-radius-sm: 5px;
+  --rl-page-max: 1200px;
+  --rl-radius: 16px;
+  --rl-radius-sm: 10px;
+  --rl-radius-pill: 999px;
   --rl-border-main: 1px;
   --rl-shadow-offset: 4px;
   --rl-press: 3px;
@@ -391,9 +434,10 @@
   --rl-display-transform: none;
 }
 [data-theme='broadsheet'] {
-  --rl-page-max: 1080px;
+  --rl-page-max: 1200px;
   --rl-radius: 0px;
   --rl-radius-sm: 0px;
+  --rl-radius-pill: 0px;
   --rl-border-main: 1px;
   --rl-shadow-offset: 0px;
   --rl-press: 1px;
@@ -412,9 +456,10 @@
   --rl-display-transform: none;
 }
 [data-theme='broadcast'] {
-  --rl-page-max: 1080px;
+  --rl-page-max: 1200px;
   --rl-radius: 0px;
   --rl-radius-sm: 0px;
+  --rl-radius-pill: 0px;
   --rl-border-main: 2px;
   --rl-shadow-offset: 0px;
   --rl-press: 1px;
@@ -436,6 +481,7 @@
   --rl-page-max: 760px;
   --rl-radius: 0px;
   --rl-radius-sm: 0px;
+  --rl-radius-pill: 0px;
   --rl-border-main: 2px;
   --rl-shadow-offset: 0px;
   --rl-press: 1px;
@@ -454,9 +500,10 @@
   --rl-display-transform: uppercase;
 }
 [data-theme='notebook'] {
-  --rl-page-max: 840px;
+  --rl-page-max: 1000px;
   --rl-radius: 4px;
   --rl-radius-sm: 3px;
+  --rl-radius-pill: 3px;
   --rl-border-main: 1px;
   --rl-shadow-offset: 2px;
   --rl-press: 2px;
@@ -475,9 +522,10 @@
   --rl-display-transform: none;
 }
 [data-theme='trailhead'] {
-  --rl-page-max: 960px;
-  --rl-radius: 12px;
-  --rl-radius-sm: 8px;
+  --rl-page-max: 1200px;
+  --rl-radius: 16px;
+  --rl-radius-sm: 10px;
+  --rl-radius-pill: 999px;
   --rl-border-main: 3px;
   --rl-shadow-offset: 0px;
   --rl-press: 1px;
@@ -496,9 +544,10 @@
   --rl-display-transform: uppercase;
 }
 [data-theme='firm'] {
-  --rl-page-max: 1120px;
-  --rl-radius: 6px;
-  --rl-radius-sm: 4px;
+  --rl-page-max: calc(100% - 2 * clamp(0rem, 4vw - 1rem, 4rem));
+  --rl-radius: 8px;
+  --rl-radius-sm: 6px;
+  --rl-radius-pill: 6px;
   --rl-border-main: 1px;
   --rl-shadow-offset: 0px;
   --rl-press: 0px;
@@ -517,9 +566,10 @@
   --rl-display-transform: none;
 }
 [data-theme='console'] {
-  --rl-page-max: 1024px;
+  --rl-page-max: 760px;
   --rl-radius: 0px;
   --rl-radius-sm: 0px;
+  --rl-radius-pill: 0px;
   --rl-border-main: 1px;
   --rl-shadow-offset: 0px;
   --rl-press: 0px;
@@ -538,9 +588,10 @@
   --rl-display-transform: none;
 }
 [data-theme='commons'] {
-  --rl-page-max: 880px;
-  --rl-radius: 16px;
-  --rl-radius-sm: 10px;
+  --rl-page-max: 1000px;
+  --rl-radius: 18px;
+  --rl-radius-sm: 12px;
+  --rl-radius-pill: 999px;
   --rl-border-main: 2px;
   --rl-shadow-offset: 0px;
   --rl-press: 1px;

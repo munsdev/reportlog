@@ -29,7 +29,7 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { Chip } from '@/components/ui/chip.tsx';
-import { BrandName, useSite } from '@/components/ui/site.tsx';
+import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
 import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
 import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, layoutIn } from './looks.ts';
@@ -44,8 +44,7 @@ export function paintFrame(
   const layout = layoutIn(look.theme, catalogue);
   root.setAttribute('data-palette', look.palette);
   root.setAttribute('data-theme', look.theme);
-  root.setAttribute('data-panel-head', layout.panelHead);
-  root.setAttribute('data-texture', layout.texture);
+  setLayoutAttributes(root, layout);
 }
 
 /** Copy this page's stylesheets into a frame's head, once. */

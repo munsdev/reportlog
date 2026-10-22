@@ -78,9 +78,26 @@ export const ENUMS = {
   case: ['none', 'upper'],
   panelHead: ['plain', 'title-bar', 'double-rule', 'bar', 'rule', 'prompt'],
   texture: ['none', 'ruled', 'grid', 'dots'],
+  // The four layout choices below are optional in a theme, so a pack written
+  // before they existed stays valid; an absent one means what every page
+  // did before (themeLayout()).
+  width: ['narrow', 'regular', 'wide', 'full'],
+  columns: ['single', 'split'],
+  scale: ['standard', 'large'],
+  surface: ['outlined', 'filled', 'ruled'],
 } as const;
 export type PanelHead = (typeof ENUMS.panelHead)[number];
 export type Texture = (typeof ENUMS.texture)[number];
+export type Width = (typeof ENUMS.width)[number];
+export type Columns = (typeof ENUMS.columns)[number];
+export type Scale = (typeof ENUMS.scale)[number];
+export type Surface = (typeof ENUMS.surface)[number];
+
+/**
+ * The page widths a theme names. `full` has no number: the page runs edge
+ * to edge, less a margin that grows with the screen (toCss()).
+ */
+export const WIDTHS = { narrow: 760, regular: 1000, wide: 1200 } as const;
 export type LetterCase = (typeof ENUMS.case)[number];
 
 export const RANGES = {
@@ -137,9 +154,31 @@ export interface Theme {
     h1: { min: number; max: number };
   };
   shape: { radius: number; radiusSmall: number; border: number; shadow: number; press: number };
-  pageMax: number;
+  /**
+   * The page's width in px: the older way to say it, still read when
+   * `width` is absent. A theme states one or the other (or both, and then
+   * `width` decides).
+   */
+  pageMax?: number;
   panelHead: PanelHead;
   texture: Texture;
+  width?: Width;
+  /** Whether a page's two-part regions (`.layout-split`) sit side by side on a desktop. */
+  columns?: Columns;
+  /** `large`: bigger headings and lede, more room between sections, larger controls. */
+  scale?: Scale;
+  /** How a panel is drawn: an edge and a hard shadow, a soft tinted fill, or a rule on top. */
+  surface?: Surface;
+}
+
+/** Everything a theme decides that the page sets on <html> rather than as a CSS value. */
+export interface ThemeLayout {
+  panelHead: PanelHead;
+  texture: Texture;
+  width: Width;
+  columns: Columns;
+  scale: Scale;
+  surface: Surface;
 }
 export interface NamedLook {
   id: string;
@@ -415,7 +454,12 @@ export function check(
     const shape = bag(t.shape);
     for (const k of ['radius', 'radiusSmall', 'border', 'shadow', 'press'] as const)
       inRange(`Theme "${id}" ${k}`, shape[k], RANGES[k]);
-    inRange(`Theme "${id}" page width`, t.pageMax, RANGES.pageMax);
+    if (t.pageMax !== undefined) inRange(`Theme "${id}" page width`, t.pageMax, RANGES.pageMax);
+    else if (t.width === undefined)
+      say(`Theme "${id}" needs a width (${ENUMS.width.join(', ')}) or a pageMax in px.`);
+    for (const k of ['width', 'columns', 'scale', 'surface'] as const)
+      if (t[k] !== undefined && !oneOf(ENUMS[k], t[k]))
+        say(`Theme "${id}" ${k} must be one of ${ENUMS[k].join(', ')}.`);
     if (!oneOf(ENUMS.panelHead, t.panelHead))
       say(`Theme "${id}" panel heading must be one of ${ENUMS.panelHead.join(', ')}.`);
     if (!oneOf(ENUMS.texture, t.texture))
@@ -456,6 +500,27 @@ const FALLBACK = {
 };
 const fam = (f: { family: string }, fallback: string) => `'${f.family}', ${fallback}`;
 const em = (n: number) => `${String(n)}em`;
+
+/**
+ * The page's width. `full` keeps a margin on each side that grows from
+ * nothing on a phone to 4rem on a large screen, so a line never touches
+ * the window's edge.
+ */
+function pageMax(t: Theme): string {
+  if (t.width === 'full') return 'calc(100% - 2 * clamp(0rem, 4vw - 1rem, 4rem))';
+  if (t.width) return `${String(WIDTHS[t.width])}px`;
+  return `${String(t.pageMax ?? WIDTHS.regular)}px`;
+}
+
+/**
+ * Chips and counts. Square in a square theme; a full pill in a round one
+ * (a panel radius of 12 or more), so the small things read as round as the
+ * panels around them; otherwise the controls' radius.
+ */
+function pill(shape: Theme['shape']): number {
+  if (shape.radiusSmall === 0) return 0;
+  return shape.radius >= 12 ? 999 : shape.radiusSmall;
+}
 
 /**
  * Call only with a pack check() returned no problems for: every value
@@ -508,9 +573,10 @@ export function toCss(
     const base = ty.h1.min - (slope * 390) / 16;
     lines.push(
       `${sel} {`,
-      `  --rl-page-max: ${String(t.pageMax)}px;`,
+      `  --rl-page-max: ${pageMax(t)};`,
       `  --rl-radius: ${String(t.shape.radius)}px;`,
       `  --rl-radius-sm: ${String(t.shape.radiusSmall)}px;`,
+      `  --rl-radius-pill: ${String(pill(t.shape))}px;`,
       `  --rl-border-main: ${String(t.shape.border)}px;`,
       `  --rl-shadow-offset: ${String(t.shape.shadow)}px;`,
       `  --rl-press: ${String(t.shape.press)}px;`,
@@ -533,7 +599,37 @@ export function toCss(
   return lines.join('\n');
 }
 
-/** What the site sends with the look, so the page can set the two layout attributes. */
-export function themeMeta(theme: Theme): { panelHead: PanelHead; texture: Texture } {
-  return { panelHead: theme.panelHead, texture: theme.texture };
+/**
+ * A pageMax with no `width`, read as the nearest named width, so the page's
+ * `data-width` says something true about a theme written before widths had
+ * names.
+ */
+function widthOf(px: number): Width {
+  if (px <= 860) return 'narrow';
+  if (px <= 1100) return 'regular';
+  return 'wide';
+}
+
+/**
+ * What the site sends with the look, so the page can set the layout
+ * attributes on <html>. An absent choice is what every page did before the
+ * theme could make it: split, standard and outlined.
+ */
+export function themeLayout(theme: {
+  panelHead: PanelHead;
+  texture: Texture;
+  pageMax?: number | undefined;
+  width?: Width | undefined;
+  columns?: Columns | undefined;
+  scale?: Scale | undefined;
+  surface?: Surface | undefined;
+}): ThemeLayout {
+  return {
+    panelHead: theme.panelHead,
+    texture: theme.texture,
+    width: theme.width ?? widthOf(theme.pageMax ?? WIDTHS.regular),
+    columns: theme.columns ?? 'split',
+    scale: theme.scale ?? 'standard',
+    surface: theme.surface ?? 'outlined',
+  };
 }

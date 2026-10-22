@@ -101,7 +101,7 @@ export function FilingProgress({ value }: { value: number | null }) {
 // ── the tab title ───────────────────────────────────────────────────────
 
 /**
- * "How did you vote, or try to vote? (2 of 8) · ElectionLog": the question,
+ * "How did you vote, or try to vote? (2 of 8) · Our Town Votes": the question,
  * where it is among the cards still possible, and the site. On a door the
  * site's name is not asked for, and the software's stands in.
  */

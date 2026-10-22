@@ -15,7 +15,7 @@ Branch `claude/plan-d-intake`. Rulings 38 and 42 are rows in `docs/decisions.md`
 
 ## Not done / assumed
 
-- `elections.json` still has a `short_text` `place` question. ElectionLog's use of that template was not checked; change it in setup or the template.
+- `elections.json` still has a `short_text` `place` question. The voting site's use of that template was not checked; change it in setup or the template.
 - Pre-fill is per browser: a confirmation link opened on another device gets none. The confirm response carries no place or time, on purpose.
 - `ListForm.tsx` (tip workstream's folder) has a three-line change for the pre-fill.
 - The existing sealing vectors were untouched and stay green.

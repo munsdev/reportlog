@@ -144,20 +144,22 @@ export const TEMPLATES: readonly Template[] = [
     },
   },
   {
-    // THE OWNER'S QUESTIONNAIRES OF 21 OCTOBER 2026 (docs/electionlog-
+    // THE OWNER'S QUESTIONNAIRES OF 21 OCTOBER 2026 (docs/voting-
     // questionnaires.md), as ordinary settings: the one logbook, the tip list
     // at /list/tips (where "Send it as a tip" points), and the choosing card's
     // question. Nothing reads which template this was.
+    // The id keeps an older name because it is stored: an installation
+    // records the id of the template it started from (template_applied).
     id: 'electionlog',
-    label: 'ElectionLog',
+    label: 'How voting went, with a tip list for links',
     description:
       'How voting went, for every voter in the US or abroad and every voting method, good and bad, asked as choices with nothing to type, plus a tip list that takes up to three links and nothing else. No files. Public archive on.',
     settings: {
       publicArchive: true,
       attachments: false,
       intake: true,
-      logbook: 'electionlog',
-      list: { template: 'electionlog-tips', slug: 'tips', title: 'Send a link' },
+      logbook: 'how-voting-went',
+      list: { template: 'link-tips', slug: 'tips', title: 'Send a link' },
       copy: {
         home_headline: HOME_HEADLINE,
         home_intro:

@@ -115,8 +115,9 @@ describe('the themes', () => {
     }
   });
 
-  it('every theme states its own width', () => {
-    for (const [id, body] of themes) expect(body, id).toMatch(/--rl-page-max:\s*\d+px/);
+  it('every theme states its own width: px, or edge to edge less a margin', () => {
+    for (const [id, body] of themes)
+      expect(body, id).toMatch(/--rl-page-max:\s*(\d+px|calc\(100% - [^;]+\));/);
   });
 });
 

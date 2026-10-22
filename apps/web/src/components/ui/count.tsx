@@ -13,7 +13,7 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils.ts';
 
 export const countVariants = cva(
-  'inline-flex h-5 min-w-[1.375rem] shrink-0 items-center justify-center rounded-full px-1.5 font-mono text-xs leading-none font-medium tracking-normal normal-case',
+  'inline-flex h-5 min-w-[1.375rem] shrink-0 items-center justify-center rounded-pill px-1.5 font-mono text-xs leading-none font-medium tracking-normal normal-case',
   {
     variants: {
       tone: {

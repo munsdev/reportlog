@@ -67,7 +67,7 @@ export interface StrictProblem {
 }
 
 /**
- * THE STRICT READING of a submission (ElectionLog questionnaire §01, ruling
+ * THE STRICT READING of a submission (voting questionnaire §01, ruling
  * 49): every key sent must be a question the form has, asked of this person,
  * with a value it accepts. `buildAnswers` drops each of these without a word,
  * which is right for a form left open in a tab and wrong for a server that

@@ -120,12 +120,12 @@ describe('the look screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch(editorState({ look: { palette: 'newsprint', theme: 'broadsheet' } }));
     wrap(<LookScreen state={editorState()} />);
-    expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing ElectionLog.');
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing Civic.');
     expect(screen.queryByRole('button', { name: 'Apply to the site' })).toBeNull();
 
     await user.click(screen.getByRole('radio', { name: 'Morning edition' }));
     expect(screen.getAllByRole('status')[0]).toHaveTextContent(
-      'Preview only The site is still showing ElectionLog. You are previewing Morning edition.',
+      'Preview only The site is still showing Civic. You are previewing Morning edition.',
     );
     for (const f of frames()) {
       expect(f).toHaveAttribute('data-palette', 'newsprint');
@@ -152,9 +152,9 @@ describe('the look screen', () => {
     wrap(<LookScreen state={editorState()} />);
     await user.click(screen.getByRole('radio', { name: 'Green screen' }));
     await user.click(screen.getByRole('button', { name: 'Back to what the site shows' }));
-    expect(screen.getByRole('radio', { name: /^ElectionLog\s*On the site$/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^Civic\s*On the site$/ })).toBeChecked();
     for (const f of frames()) expect(f).toHaveAttribute('data-palette', 'flint');
-    expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing ElectionLog.');
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing Civic.');
     expect(writes(sent)).toEqual([]);
   });
 
@@ -162,10 +162,10 @@ describe('the look screen', () => {
     const user = userEvent.setup();
     stubFetch();
     wrap(<LookScreen state={editorState()} />);
-    expect(screen.getByRole('radio', { name: /^ElectionLog\s*On the site$/ })).toBeChecked();
+    expect(screen.getByRole('radio', { name: /^Civic\s*On the site$/ })).toBeChecked();
     await user.selectOptions(screen.getByLabelText('Palette, the colours'), 'midnight');
-    // Midnight with Signal is "ElectionLog at night".
-    expect(screen.getByRole('radio', { name: 'ElectionLog at night' })).toBeChecked();
+    // Midnight with Signal is "Civic at night".
+    expect(screen.getByRole('radio', { name: 'Civic at night' })).toBeChecked();
     await user.selectOptions(screen.getByLabelText('Theme, the type and shapes'), 'docket');
     expect(screen.queryByRole('radio', { checked: true })).toBeNull();
     expect(screen.getAllByRole('status')[0]).toHaveTextContent(

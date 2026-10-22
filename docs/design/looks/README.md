@@ -21,14 +21,14 @@ A palette owns every colour. A theme owns type, shape and width and sets no colo
 **CHANGED**
 
 - The 18 palettes and 6 themes are replaced by 17 palettes and 10 themes, defined in `reportlog-core.look.json`.
-- A third, optional layer: named **looks**, a palette and a theme offered together by name ("Desk", "ElectionLog"). An operator can still pick any palette with any theme.
+- A third, optional layer: named **looks**, a palette and a theme offered together by name ("Newsdesk", "Civic"). An operator can still pick any palette with any theme.
 - Palettes, themes and looks become **data**. The built-in set is a look pack like any other, so an uploaded pack and the shipped one pass the same check.
 - Themes gain settings the redesign needs: label font, label case and tracking, body size, fluid heading size, press depth, panel heading style, page texture.
-- Red Hat Mono is retired. IBM Plex Mono is the mono face, as ElectionLog's brand sheet already states.
+- Red Hat Mono is retired. IBM Plex Mono is the mono face.
 
 **THE DEFAULT**
 
-The ReportLog default is the look **Desk** (palette Platinum, theme Desk). ElectionLog is not special in the code: it is an installation that picks the look **ElectionLog** (Flint with Signal).
+The ReportLog default is the look **Newsdesk** (palette Newsdesk, theme Newsdesk): an old-school newspaper with a terminal on the desk. Big Newsreader headlines, IBM Plex Mono for labels, references and dates, rules between sections instead of boxes, one wide column, large type. It replaced Desk as the default on 22 October 2026 (migration `20261022155312_newsdesk_default.sql`, which moves only an installation with no owner yet). No installation is special in the code: a voting site is one that picks the look **Civic** (Flint with Signal).
 
 ---
 
@@ -40,12 +40,12 @@ The ReportLog default is the look **Desk** (palette Platinum, theme Desk). Elect
 
 | File                       | What it is                                                                      |
 | -------------------------- | ------------------------------------------------------------------------------- |
-| `reportlog-core.look.json` | The built-in pack: 9 font families, 17 palettes, 10 themes, 16 looks            |
+| `reportlog-core.look.json` | The built-in pack: 9 font families, 18 palettes, 11 themes, 17 looks            |
 | `look-pack.mjs`            | Reference `check()` and `toCss()`. No dependencies. Port it; do not reinvent it |
 | `looks.css`                | What `toCss()` writes for the built-in pack, for comparison                     |
 | `migration.json`           | Old palette and theme ids to new ones                                           |
 
-`node look-pack.mjs check reportlog-core.look.json` prints `OK: 17 palettes, 10 themes, 16 looks.`
+`node look-pack.mjs check reportlog-core.look.json` prints `OK: 18 palettes, 11 themes, 17 looks.`
 
 ---
 
@@ -76,12 +76,41 @@ type:  heading { family, stretch?, weight, case, tracking }  tracking -0.05 to 0
        mono    { family }
        h1      { min, max }                         rem, phone to desktop, written as clamp()
 shape: radius, radiusSmall, border, shadow, press   px
-pageMax                                             px
 panelHead  plain | title-bar | double-rule | bar | rule | prompt
 texture    none | ruled | grid | dots
+width      narrow | regular | wide | full          optional (see below)
+pageMax    640 to 1280                             px, optional: the older way to give a width
+columns    single | split                          optional, default split
+scale      standard | large                        optional, default standard
+surface    outlined | filled | ruled               optional, default outlined
 ```
 
-`panelHead` and `texture` choose between layouts the app already has; they are sent with the look in `GET /api/site` and set as `data-panel-head` and `data-texture` on `<html>`. A pack picks one; it cannot describe a new one.
+`panelHead`, `texture`, `width`, `columns`, `scale` and `surface` choose between layouts the app already has; they are sent with the look in `GET /api/site` (and with the lock screen's status) and set as `data-panel-head`, `data-texture`, `data-width`, `data-columns`, `data-scale` and `data-surface` on `<html>`. A pack picks one of each; it cannot describe a new one.
+
+**THE LAYOUT FIELDS** (added 22 October 2026, so every one is optional and a pack written before them still passes; an absent one means what every page did before)
+
+- `width`: how wide the page runs. `narrow` 760px, `regular` 1000px, `wide` 1200px, `full` edge to edge less a margin that grows from nothing on a phone to 4rem on a large screen. A theme states `width` or `pageMax` (or both, and then `width` decides). A theme with only `pageMax` keeps that exact width; its `data-width` is the nearest name.
+- `columns`: whether a page's two-part regions (marked `.layout-split` in the app: the board's cards, the guides' contents beside the guide, the settings panels) sit side by side on a desktop (`split`) or stack in one wide column (`single`). A phone is always one column.
+- `scale`: `large` makes titles (×1.2), the lede (×1.12) and body text (+1px) bigger, puts more room between a page's sections, and makes buttons and fields taller. The theme's own fluid title is what grows.
+- `surface`: how a raised panel is drawn. `outlined` is an edge and the theme's hard shadow. `filled` is a soft panel with no edge and a gentle shadow, so a page reads as a few surfaces rather than boxes in boxes. `ruled` is a rule across the top and nothing else, like a newspaper section; with `panelHead: double-rule` the rule is double.
+
+Rounding reaches every part: panels and dialogs take `radius`; buttons, fields, choices and toasts take `radiusSmall`; chips and counts take a pill radius written by `toCss()` (square when `radiusSmall` is 0, fully round when `radius` is 12 or more, otherwise `radiusSmall`). A stylesheet an installed pack was given before the pill existed falls back to `radiusSmall`.
+
+**THE BUILT-IN THEMES**
+
+| Theme      | width   | columns | scale    | surface  | corners     |
+| ---------- | ------- | ------- | -------- | -------- | ----------- |
+| Newsdesk   | wide    | single  | large    | ruled    | 4 / 3, soft |
+| Desk       | regular | split   | standard | outlined | 2 / 2       |
+| Signal     | wide    | single  | large    | filled   | 16 / 10     |
+| Broadsheet | wide    | single  | large    | outlined | square      |
+| Broadcast  | wide    | split   | standard | filled   | square      |
+| Docket     | narrow  | split   | standard | outlined | square      |
+| Notebook   | regular | split   | standard | outlined | 4 / 3       |
+| Trailhead  | wide    | split   | large    | filled   | 16 / 10     |
+| Firm       | full    | split   | standard | filled   | 8 / 6       |
+| Console    | narrow  | split   | standard | outlined | square      |
+| Commons    | regular | single  | large    | filled   | 18 / 12     |
 
 **LOOKS**
 
@@ -171,11 +200,15 @@ Old ids are mapped on read by `resolveLook()` (and written back the next time th
 
 **AN EXISTING SITE THAT NEVER CHOSE A LOOK**
 
-Today the default is Flint with Signal, and a site that never saved a look is wearing it by default. When the default becomes Desk, that site would change overnight, ElectionLog included. A site may also have saved only one axis (`validateLook` allows a palette without a theme), and the missing one would switch to Platinum or Desk. So the migration that ships this change writes `flint` into a missing palette and `signal` into a missing theme, for any installation that has an owner. A brand-new installation, with no owner yet, gets Desk. This is a new migration file and a data change, not a schema change.
+Today the default is Flint with Signal, and a site that never saved a look is wearing it by default. When the default becomes Desk, that site would change overnight, a voting site included. A site may also have saved only one axis (`validateLook` allows a palette without a theme), and the missing one would switch to Platinum or Desk. So the migration that ships this change writes `flint` into a missing palette and `signal` into a missing theme, for any installation that has an owner. A brand-new installation, with no owner yet, gets Desk. This is a new migration file and a data change, not a schema change.
 
 **WHAT CHANGES FOR A SITE ON SIGNAL**
 
 Signal keeps today's corners, shadow, border and width. Two things change on purpose: page titles are fluid (2rem to 3rem) instead of a fixed 1.875rem, and the mono face is IBM Plex Mono instead of Red Hat Mono.
+
+**22 OCTOBER 2026: SIGNAL GROWS UP, NEWSDESK BECOMES THE DEFAULT**
+
+The owner asked for real variance between themes rather than one narrow column with a 2px difference. Signal is now wide, one column, large and filled, with round corners (16 / 10), so a site on Signal does change: on purpose, because the narrow look was the complaint. The default became Newsdesk; an installation with an owner keeps what it stores. The named looks once called after a deployment are now **Civic** (`civic`, Flint with Signal) and **Civic at night** (`civic-night`, Midnight with Signal). Only palette and theme ids are ever stored, never a named look's id, so nothing maps the old look ids.
 
 ---
 

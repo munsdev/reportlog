@@ -15,7 +15,7 @@
  * throws, and the page must still render. The choice is then kept in memory
  * for as long as the page is open.
  */
-import { isDarkPalette, layoutOf } from '@reportlog/contracts';
+import { isDarkPalette, layoutOf, paintedLayout } from '@reportlog/contracts';
 import type { PaintedLook } from '@reportlog/contracts';
 
 export const EASY_KEY = 'rl-easy';
@@ -82,8 +82,7 @@ export function easyLook(site: PaintedLook, on: boolean = easyReadingOn()): Pain
   return {
     palette: dark ? EASY_READING.darkPalette : EASY_READING.palette,
     theme: EASY_READING.theme,
-    panel_head: layout.panelHead,
-    texture: layout.texture,
+    ...paintedLayout(layout),
     dark,
   };
 }

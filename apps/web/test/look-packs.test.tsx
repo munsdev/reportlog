@@ -338,7 +338,7 @@ describe('the installed packs', () => {
     });
     wrap(<InstalledLookPacks />);
     expect(screen.getByText('ReportLog, built in')).toBeVisible();
-    expect(screen.getByText('17 palettes · 10 themes · 16 looks')).toBeVisible();
+    expect(screen.getByText('18 palettes · 11 themes · 17 looks')).toBeVisible();
     expect(
       await screen.findByText(/2 palettes · 1 theme · 2 looks · installed 22 Oct 2026 by/),
     ).toBeVisible();

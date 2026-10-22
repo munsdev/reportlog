@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils.ts';
 import { useFieldControl } from './field.tsx';
 
 export const controlClass =
-  'min-h-11 w-full rounded-control border-[1.5px] border-ink-alt bg-surface px-3.5 py-2 font-sans text-base text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:border-dashed disabled:bg-paper-alt disabled:text-ink-alt aria-invalid:border-2 aria-invalid:border-serious';
+  'control-face min-h-11 w-full rounded-control border-[1.5px] border-ink-alt bg-surface px-3.5 py-2 font-sans text-base text-ink placeholder:text-muted disabled:cursor-not-allowed disabled:border-dashed disabled:bg-paper-alt disabled:text-ink-alt aria-invalid:border-2 aria-invalid:border-serious';
 
 export function Input({ className, type = 'text', ...props }: ComponentProps<'input'>) {
   const wired = useFieldControl(props);
