@@ -128,6 +128,8 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       // Not `under` /access/: sign-in, invitations and the security page
       // live there too and belong to nobody's area.
       { to: '/access', label: 'Roles', for: GRANTERS },
+      // Its own entry: it lives on the Roles page, where nobody looked for it.
+      { to: '/access', hash: 'site-password', label: 'Site password', for: ADMIN, alias: true },
       { to: '/access/orgs', label: 'Organizations', for: GRANTERS, under: ['/access/orgs/'] },
       {
         to: '/access/journalists',
@@ -145,6 +147,7 @@ export const STAFF_AREAS: readonly StaffArea[] = [
     pages: [
       { to: '/transparency-log', label: 'Transparency log', for: ADMIN },
       { to: '/backups', label: 'Backups and exports', for: ['owner'] },
+      { to: '/updates', label: 'Updates', for: ADMIN },
       // The access log, a page of its own (settings-and-admin.md §13); it
       // was a section of Moderation settings until then.
       {

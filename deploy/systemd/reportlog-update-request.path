@@ -1,0 +1,14 @@
+# Watches for the admin panel's Update or Check-now request and starts
+# reportlog-update-request.service, which carries it out as root. This is
+# what lets an administrator update the site without a shell. The request
+# is checked strictly before anything runs: deploy/lib.sh,
+# run_update_request.
+[Unit]
+Description=ReportLog update requests from the admin panel
+
+[Path]
+PathExists=/var/lib/reportlog/update-request/request
+Unit=reportlog-update-request.service
+
+[Install]
+WantedBy=multi-user.target

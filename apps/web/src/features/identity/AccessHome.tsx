@@ -60,7 +60,12 @@ export function AccessHome() {
           </>
         )}
         {user.role === 'owner' && <ResetSecondFactor />}
-        {hasAdminAuthority(user.role) && <SitePassword />}
+        {/* An anchor of its own: the staff sidebar links straight here. */}
+        {hasAdminAuthority(user.role) && (
+          <div id="site-password" className="scroll-mt-24">
+            <SitePassword />
+          </div>
+        )}
         <OwnerSeat me={user} />
       </StaffPage>
     </SecondFactorGate>

@@ -69,7 +69,7 @@ describe('who sees which staff area and page', () => {
     ]);
     expect(admin['Logbooks and lists']).toContain('Maps');
     expect(admin['People and access']).not.toContain('Journalists');
-    expect(admin.Records).toEqual(['Transparency log', 'Who opened protected data']);
+    expect(admin.Records).toEqual(['Transparency log', 'Updates', 'Who opened protected data']);
     expect(others(as('admin'))).toEqual(['Feedback', 'Testers', 'Guides']);
   });
 
@@ -78,6 +78,7 @@ describe('who sees which staff area and page', () => {
     expect(owner.Records).toEqual([
       'Transparency log',
       'Backups and exports',
+      'Updates',
       'Who opened protected data',
     ]);
     expect(owner['People and access']).toContain('Journalists');

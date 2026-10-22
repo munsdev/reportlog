@@ -289,25 +289,25 @@ describe('the threshold, read off the payload and not off a drawing', () => {
     expect(loose.computed.map.areas['US-AZ']?.n).toBe(4);
   });
 
-  it('has a floor of 2: refused by the module, refused by the database, clamped by the aggregate', async () => {
-    expect(await refusal(createMap(db, { slug: uniqueSlug('map'), title: 'x', min_area: 1 }))).toBe(
+  it('has a floor of 1: refused by the module, refused by the database, clamped by the aggregate', async () => {
+    expect(await refusal(createMap(db, { slug: uniqueSlug('map'), title: 'x', min_area: 0 }))).toBe(
       'min_area',
     );
     const made = await createMap(db, { slug: uniqueSlug('map'), title: 'x' });
     await expect(
-      db.updateTable('heat_maps').set({ min_area: 1 }).where('id', '=', made.id).execute(),
+      db.updateTable('heat_maps').set({ min_area: 0 }).where('id', '=', made.id).execute(),
     ).rejects.toThrow(/check/i);
     const row = await mapById(db, made.id);
     if (!row) throw new Error('missing');
     const computed = await computeMap(db, {
       ...row,
       enabled: true,
-      min_area: 1,
+      min_area: 0,
       logbook_ids: [main.id],
     });
     if (!computed.map.published) throw new Error('unpublished');
-    expect(computed.map.threshold).toBe(2);
-    expect(computed.map.areas['US-WY']).toBeUndefined();
+    expect(computed.map.threshold).toBe(1);
+    expect(computed.map.areas['US-WY']?.n).toBe(1);
   });
 });
 
@@ -750,12 +750,12 @@ describe('over HTTP', () => {
     const r = await admin({
       method: 'POST',
       url: '/api/admin/maps',
-      payload: { slug: uniqueSlug('map'), title: 'x', min_area: 1 },
+      payload: { slug: uniqueSlug('map'), title: 'x', min_area: 0 },
     });
     expect(r.statusCode).toBe(400);
     expect(json<{ error: { code: string; message: string } }>(r).error).toMatchObject({
       code: 'min_area',
-      message: expect.stringMatching(/at least 2/) as unknown,
+      message: expect.stringMatching(/at least 1/) as unknown,
     });
   });
 

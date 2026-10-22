@@ -102,7 +102,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
               rel="noopener"
               className={buttonVariants({ variant: 'secondary' })}
             >
-              Read it as a reporter
+              Open the reporter’s form (new tab)
             </a>
           </p>
         ) : null}

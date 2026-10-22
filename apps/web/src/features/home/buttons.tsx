@@ -9,7 +9,7 @@
  */
 import { getHomeButtons } from '@reportlog/contracts';
 import type { HomeButton } from '@reportlog/contracts';
-import { queryOptions } from '@tanstack/react-query';
+import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button.tsx';
 import { Count } from '@/components/ui/count.tsx';
 import { call } from '@/lib/api.ts';
@@ -116,3 +116,45 @@ export const FALLBACK_BUTTONS: readonly HomeButton[] = [
     accent: false,
   },
 ];
+
+/**
+ * THE FILING BUTTONS, wherever a page offers to take a report: one per open
+ * logbook and list, straight to its form, in the order and with the labels
+ * the operator arranged on the front page. A single "Submit a report" sent
+ * people to a page asking which form, then to that form's opening card: two
+ * pages before the first question, and a different front door from the home
+ * page's.
+ *
+ * While the arrangement loads, or if it cannot be read, the old way in
+ * stands in, so the page is never without one.
+ */
+export function FilingButtons({ className }: { className?: string }) {
+  const q = useQuery(homeButtonsQuery);
+  const filing = (q.data?.buttons ?? []).flatMap((b) => {
+    const href = b.kind === 'logbook' || b.kind === 'list' ? hrefOf(b) : null;
+    return href ? [{ b, href }] : [];
+  });
+  if (!filing.length) {
+    return (
+      <Button asChild size="lg" block className={cn('lg:w-auto', className)}>
+        <a href="/submit">Submit a report</a>
+      </Button>
+    );
+  }
+  return (
+    <>
+      {filing.map(({ b, href }, i) => (
+        <Button
+          key={`${b.kind}:${b.ref}`}
+          asChild
+          size="lg"
+          block
+          variant={i === 0 ? 'primary' : 'secondary'}
+          className={cn('lg:w-auto', className)}
+        >
+          <a href={href}>{b.label}</a>
+        </Button>
+      ))}
+    </>
+  );
+}

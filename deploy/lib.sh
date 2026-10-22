@@ -27,6 +27,10 @@ ETC=/etc/reportlog
 ENV_FILE=$ETC/reportlog.env
 DEPLOY_ENV=$ETC/deploy.env
 STATE_DIR=/var/lib/reportlog
+# The admin panel's Update button writes here (as the service user), and
+# root reports back in STATUS_DIR. See run_update_request.
+REQUEST_DIR=$STATE_DIR/update-request
+STATUS_DIR=$STATE_DIR/update-status
 BACKUP_DIR=/var/backups/reportlog
 BUILD_HOME=/var/cache/reportlog-build
 LIB=/usr/local/lib/reportlog
@@ -196,7 +200,7 @@ install_units() {
   local release=$1 src="$1/deploy/systemd" f name changed=0
   [ -d "$src" ] || die "$release has no deploy/systemd directory."
 
-  for f in "$src"/*.service "$src"/*.timer; do
+  for f in "$src"/*.service "$src"/*.timer "$src"/*.path; do
     [ -e "$f" ] || continue
     name=$(basename "$f")
     if ! cmp -s "$f" "$UNIT_DIR/$name"; then
@@ -214,7 +218,7 @@ install_units() {
   done
 
   # Units this release does not carry: stopped, disabled, removed.
-  for f in "$UNIT_DIR"/reportlog-*.service "$UNIT_DIR"/reportlog-*.timer; do
+  for f in "$UNIT_DIR"/reportlog-*.service "$UNIT_DIR"/reportlog-*.timer "$UNIT_DIR"/reportlog-*.path; do
     [ -e "$f" ] || continue
     name=$(basename "$f")
     if [ ! -e "$src/$name" ]; then
@@ -233,6 +237,14 @@ install_units() {
   [ "$changed" -eq 1 ] && systemctl daemon-reload
   systemctl enable reportlog-api.service >/dev/null 2>&1
   for f in "$src"/*.timer; do
+    [ -e "$f" ] || continue
+    systemctl enable --now "$(basename "$f")" >/dev/null 2>&1 \
+      || note "WARNING: could not enable $(basename "$f")"
+  done
+  # The admin panel's Update button: a path unit watching for its request,
+  # in a directory that is the service user's to write and nobody else's.
+  install -d -m 0750 -o "$APP_USER" -g "$APP_USER" "$REQUEST_DIR"
+  for f in "$src"/*.path; do
     [ -e "$f" ] || continue
     systemctl enable --now "$(basename "$f")" >/dev/null 2>&1 \
       || note "WARNING: could not enable $(basename "$f")"
@@ -421,5 +433,75 @@ update_check() {
     write_update_facts "$MIRROR" "$ref" "$(release_of "$CURRENT")" "$STATE_DIR/updates" "$cause"
   else
     write_update_facts /nonexistent "$ref" "" "$STATE_DIR/updates" "$cause"
+  fi
+}
+
+# One line of the request file's status, written whole (rename) so the panel
+# never reads half of one.
+update_status() {
+  local tmp
+  tmp=$(mktemp "$STATUS_DIR/.status.XXXXXX")
+  printf 'state=%s\naction=%s\nsha=%s\nat=%s\n' "$1" "$2" "$3" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$tmp"
+  chmod 0644 "$tmp"
+  mv -f "$tmp" "$STATUS_DIR/status"
+}
+
+# THE UPDATE BUTTON. The admin panel writes $REQUEST_DIR/request as the
+# service user; reportlog-update-request.path sees it and runs this as root,
+# so nobody needs a shell, sudo or ssh to update the site.
+#
+# THE FILE IS UNTRUSTED: anything that can run as the service user can write
+# it. So it can ask for exactly two things, and can choose nothing root
+# would not choose anyway:
+#   action=check            run the update check now
+#   action=apply sha=<40>   deploy ONLY the commit DEPLOY_REF points at after
+#                           a fresh fetch. Any other sha is refused, so the
+#                           file cannot pick a branch, a tag or an old release.
+# The deploy is the ordinary one: it migrates, switches, checks the new
+# release answers, and switches back if it does not.
+run_update_request() {
+  local req="$REQUEST_DIR/request" action sha ref tip rc=0 log="$STATUS_DIR/log"
+  [ -f "$req" ] || return 0
+  action=$(sed -n 's/^action=\([a-z]*\)$/\1/p' "$req" | head -n 1)
+  sha=$(sed -n 's/^sha=\([0-9a-f]\{40\}\)$/\1/p' "$req" | head -n 1)
+  # Removed before anything runs, so a request runs once even if it fails
+  # and the path unit does not start it again.
+  rm -f "$req"
+  install -d -m 0755 "$STATUS_DIR"
+  case "$action" in
+    check | apply) ;;
+    *)
+      update_status refused unknown ""
+      return 0
+      ;;
+  esac
+  : >"$log"
+  chmod 0644 "$log"
+  exec 8>/run/reportlog-deploy.lock
+  if ! flock -n 8; then
+    echo "A deploy is already running. Try again when it has finished." >>"$log"
+    update_status refused "$action" "$sha"
+    return 0
+  fi
+  update_status running "$action" "$sha"
+  update_check >>"$log" 2>&1 || rc=$?
+  if [ "$action" = apply ] && [ "$rc" -eq 0 ]; then
+    ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
+    tip=$(git -C "$MIRROR" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null || true)
+    if [ -z "$sha" ] || [ "$sha" != "$tip" ]; then
+      echo "What is on offer changed since the page was loaded. Reload it and try again." >>"$log"
+      update_status refused "$action" "$sha"
+      return 0
+    fi
+    # The deploy takes the same lock itself, so let go of it first.
+    exec 8>&-
+    "$LIB/deploy.sh" "$sha" >>"$log" 2>&1 || rc=$?
+    update_check >/dev/null 2>&1 || true
+  fi
+  if [ "$rc" -eq 0 ]; then
+    update_status done "$action" "$sha"
+  else
+    update_status failed "$action" "$sha"
   fi
 }

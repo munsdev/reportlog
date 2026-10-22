@@ -40,8 +40,11 @@ export const MAP_VIEWS: readonly MapView[] = MapView.options;
 export const Stance = z.enum(['positive', 'neutral', 'negative']);
 export type Stance = z.infer<typeof Stance>;
 
-/** The floor under every threshold. The database has the same CHECK. */
-export const MIN_AREA_FLOOR = 2;
+/**
+ * The floor under every threshold. The database has the same CHECK. 1, by
+ * the owner's decision: an area may be shaded from its first report.
+ */
+export const MIN_AREA_FLOOR = 1;
 export const DEFAULT_MIN_AREA = 3;
 
 /**

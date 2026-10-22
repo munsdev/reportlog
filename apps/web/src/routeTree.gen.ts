@@ -27,6 +27,7 @@ import { Route as staffLogbooksRouteRouteImport } from './routes/(staff)/logbook
 import { Route as staffModerateRouteRouteImport } from './routes/(staff)/moderate/route'
 import { Route as staffSettingsRouteRouteImport } from './routes/(staff)/settings/route'
 import { Route as staffTransparencyLogRouteImport } from './routes/(staff)/transparency-log'
+import { Route as staffUpdatesRouteImport } from './routes/(staff)/updates'
 import { Route as staffWhoOpenedWhatRouteImport } from './routes/(staff)/who-opened-what'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
@@ -197,6 +198,11 @@ const staffSettingsRouteRoute = staffSettingsRouteRouteImport.update({
 const staffTransparencyLogRoute = staffTransparencyLogRouteImport.update({
   id: '/(staff)/transparency-log',
   path: '/transparency-log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffUpdatesRoute = staffUpdatesRouteImport.update({
+  id: '/(staff)/updates',
+  path: '/updates',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffWhoOpenedWhatRoute = staffWhoOpenedWhatRouteImport.update({
@@ -632,6 +638,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof staffSettingsRouteRouteWithChildren
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
+  '/updates': typeof staffUpdatesRoute
   '/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/activity': typeof BoardActivityRoute
@@ -727,6 +734,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
+  '/updates': typeof staffUpdatesRoute
   '/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/activity': typeof BoardActivityRoute
@@ -829,6 +837,7 @@ export interface FileRoutesById {
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
   '/(staff)/backups': typeof staffBackupsRoute
   '/(staff)/transparency-log': typeof staffTransparencyLogRoute
+  '/(staff)/updates': typeof staffUpdatesRoute
   '/(staff)/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
   '/board/activity': typeof BoardActivityRoute
@@ -932,6 +941,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/backups'
     | '/transparency-log'
+    | '/updates'
     | '/who-opened-what'
     | '/board/$ref'
     | '/board/activity'
@@ -1027,6 +1037,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/backups'
     | '/transparency-log'
+    | '/updates'
     | '/who-opened-what'
     | '/board/$ref'
     | '/board/activity'
@@ -1128,6 +1139,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings'
     | '/(staff)/backups'
     | '/(staff)/transparency-log'
+    | '/(staff)/updates'
     | '/(staff)/who-opened-what'
     | '/board/$ref'
     | '/board/activity'
@@ -1230,6 +1242,7 @@ export interface RootRouteChildren {
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
   staffBackupsRoute: typeof staffBackupsRoute
   staffTransparencyLogRoute: typeof staffTransparencyLogRoute
+  staffUpdatesRoute: typeof staffUpdatesRoute
   staffWhoOpenedWhatRoute: typeof staffWhoOpenedWhatRoute
   BoardRefRoute: typeof BoardRefRoute
   BoardActivityRoute: typeof BoardActivityRoute
@@ -1405,6 +1418,13 @@ declare module '@tanstack/react-router' {
       path: '/transparency-log'
       fullPath: '/transparency-log'
       preLoaderRoute: typeof staffTransparencyLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/updates': {
+      id: '/(staff)/updates'
+      path: '/updates'
+      fullPath: '/updates'
+      preLoaderRoute: typeof staffUpdatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/who-opened-what': {
@@ -2120,6 +2140,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
   staffBackupsRoute: staffBackupsRoute,
   staffTransparencyLogRoute: staffTransparencyLogRoute,
+  staffUpdatesRoute: staffUpdatesRoute,
   staffWhoOpenedWhatRoute: staffWhoOpenedWhatRoute,
   BoardRefRoute: BoardRefRoute,
   BoardActivityRoute: BoardActivityRoute,

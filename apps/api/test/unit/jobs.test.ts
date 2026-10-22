@@ -11,7 +11,13 @@ const unit = (name: string) => readFileSync(new URL(name, SYSTEMD), 'utf8');
  * service user and not in the job registry. Named here, so another cannot
  * join it quietly.
  */
-const ROOT_UNITS = ['reportlog-update-check.service', 'reportlog-update-check.timer'];
+const ROOT_UNITS = [
+  'reportlog-update-check.service',
+  'reportlog-update-check.timer',
+  // The Update button's worker: root, for the same reasons (deploy/lib.sh).
+  'reportlog-update-request.service',
+  'reportlog-update-request.path',
+];
 
 describe('the job registry and the timers on disk', () => {
   it('has a timer for every job, exactly as the registry describes it', () => {

@@ -729,12 +729,12 @@ function MapEditor({
         <Label>Threshold</Label>
         <FieldDescription>
           An area is shaded only with at least this many reports. Under it, the area is sent with no
-          number at all. The least is {MIN_AREA_FLOOR}; the usual is {DEFAULT_MIN_AREA}. A single
-          report in a thinly covered place can identify the person who filed it, and an area
-          crossing the threshold tells a daily watcher that a report arrived there: think hardest
-          about this in a small place. The threshold hides counts, not places: every published
-          report still shows its own place, and with one thin area the logbook’s total minus the
-          areas shown gives that area’s count.
+          number at all. The least is {MIN_AREA_FLOOR}, which shades an area from its first report;
+          the usual is {DEFAULT_MIN_AREA}. A single report in a thinly covered place can identify
+          the person who filed it, and an area crossing the threshold tells a daily watcher that a
+          report arrived there: think hardest about this in a small place. The threshold hides
+          counts, not places: every published report still shows its own place, and with one thin
+          area the logbook’s total minus the areas shown gives that area’s count.
         </FieldDescription>
         <Input
           type="number"

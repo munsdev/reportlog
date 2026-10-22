@@ -1,0 +1,21 @@
+# Carries out one request from the admin panel: an update check, or a deploy
+# of exactly the commit the configured DEPLOY_REF points at. Runs root's own
+# copy of the deploy scripts (/usr/local/lib/reportlog), renewed by every
+# deploy, never anything from a release directly. Root, for the same reason
+# as reportlog-update-check.service: the repository's credentials are root's,
+# and a deploy installs units and restarts the API.
+[Unit]
+Description=ReportLog update request
+After=network-online.target
+Wants=network-online.target
+OnFailure=reportlog-alert@%n.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/reportlog request
+TimeoutStartSec=45min
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes

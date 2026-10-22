@@ -14,6 +14,7 @@ import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
 import type { Mailer } from './email/mailer.ts';
 import { copyRoutes } from './anchor/copies.ts';
+import { updateRoutes } from './site/updateRoutes.ts';
 import { anchorRoutes } from './anchor/routes.ts';
 import { installErrorHandling } from './http/errors.ts';
 import { roleGuard } from './identity/guards.ts';
@@ -251,6 +252,7 @@ export async function buildApp({
     ...(config.ANCHOR_MAX_AGE_HOURS ? { maxAgeHours: config.ANCHOR_MAX_AGE_HOURS } : {}),
   });
   copyRoutes(app, { db, config });
+  updateRoutes(app, { stateDir: config.STATE_DIR ?? '/var/lib/reportlog' });
   await menuRoutes(app, { db });
   return app;
 }

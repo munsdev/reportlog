@@ -84,10 +84,10 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await card.getByRole('button', { name: 'Change' }).click();
   const form = card.getByRole('form', { name: `Change ${title}` });
 
-  // A threshold of 1 is refused, in words.
-  await form.getByLabel('Threshold').fill('1');
+  // A threshold under 1 is refused, in words.
+  await form.getByLabel('Threshold').fill('0');
   await form.getByRole('button', { name: 'Save the map' }).click();
-  await expect(form).toContainText('A threshold of 1 is the protection switched off');
+  await expect(form).toContainText('The threshold is a whole number of at least 1');
 
   await form.getByLabel('Threshold').fill('3');
   await form.getByRole('checkbox', { name: lb.title }).click();

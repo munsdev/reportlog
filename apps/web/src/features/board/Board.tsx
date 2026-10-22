@@ -17,6 +17,7 @@
 import type { BoardLogbook, FormQuestion, PublicReport } from '@reportlog/contracts';
 import { BOARD_CSV_PATH } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
+import { FilingButtons } from '@/features/home/buttons.tsx';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -97,9 +98,8 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       lede="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
       actions={
         <>
-          <Button asChild size="lg" block className="lg:w-auto">
-            <Link to="/submit">Submit a report</Link>
-          </Button>
+          {/* The front page's filing buttons, in its order: straight to a form. */}
+          <FilingButtons />
           {/* Beside Submit on a desktop; under the list on a phone. */}
           {csv ? (
             <Button asChild variant="secondary" size="lg" className="hidden lg:inline-flex">

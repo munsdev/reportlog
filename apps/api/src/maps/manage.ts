@@ -142,8 +142,7 @@ async function validate(
     if (!Number.isInteger(n) || n < MIN_AREA_FLOOR) {
       throw refused(
         'min_area',
-        `The threshold is a whole number of at least ${String(MIN_AREA_FLOOR)}. ` +
-          'A threshold of 1 is the protection switched off while still claiming to be on.',
+        `The threshold is a whole number of at least ${String(MIN_AREA_FLOOR)}.`,
       );
     }
     if (n > 100000) throw refused('min_area', 'That threshold is larger than any archive.');

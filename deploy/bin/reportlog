@@ -79,6 +79,8 @@ case "$cmd" in
     update_check
     cli updates "$@"
     ;;
+  # The admin panel's Update button, run by reportlog-update-request.service.
+  request) run_update_request ;;
   help | -h | --help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "unknown command: $cmd (try: reportlog help)" ;;
 esac
