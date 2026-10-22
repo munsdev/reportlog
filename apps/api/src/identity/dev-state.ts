@@ -19,6 +19,12 @@
  *       Age every session of the address's step-up past its five minutes
  *       (plan E, E3), so a browser test meets the step-up dialog without
  *       waiting for it.
+ *   node src/identity/dev-state.ts session <email>
+ *       Print a session token for an existing account, its second factor
+ *       already proven: signed in without the emailed code. For browser tests
+ *       that need many people signed in and are not testing signing in, so
+ *       the suite stays inside the sign-in rate limit (60 an hour from one
+ *       client) rather than that limit being raised for tests.
  *   node src/identity/dev-state.ts subscription <email>
  *       Print how often the address hears about reports: hourly, weekly or
  *       none. How a browser test checks that opening a link changed nothing.
@@ -30,6 +36,9 @@ import { createDatabase } from '../db/database.ts';
 import { sql } from 'kysely';
 import { outboxMailer } from '../email/mailer.ts';
 import { runDigest } from '../site/digest.ts';
+import { STAFF_SESSION_MS } from './secondFactor.ts';
+import { sha256Hex } from './secrets.ts';
+import { createSession } from './sessions.ts';
 import { writeSiteAccess } from './siteAccess.ts';
 
 if (process.env.NODE_ENV === 'production') {
@@ -66,6 +75,20 @@ try {
       .values({ email: password.toLowerCase(), role })
       .onConflict((oc) => oc.column('email').doUpdateSet({ role }))
       .execute();
+  } else if (mode === 'session' && password) {
+    // `password` is the address in this mode.
+    const user = await db
+      .selectFrom('users')
+      .select('id')
+      .where('email', '=', password.toLowerCase())
+      .executeTakeFirstOrThrow();
+    const token = await createSession(db, user.id, STAFF_SESSION_MS);
+    await db
+      .updateTable('sessions')
+      .set({ second_factor_at: new Date() })
+      .where('token_hash', '=', sha256Hex(token))
+      .execute();
+    process.stdout.write(token);
   } else if (mode === 'digest-for' && password) {
     const outbox = process.env.MAIL_OUTBOX;
     if (!outbox) throw new Error('digest-for needs MAIL_OUTBOX: where the email is written.');

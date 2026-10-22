@@ -107,10 +107,18 @@ function MenuControl({
     button.current?.focus();
   }, []);
 
-  // Focus in on open; the page behind stays where it is while open.
+  // Focus in on open. The menu's contents can arrive a moment after it
+  // opens (who is signed in, the counts), so this runs again as they do,
+  // but only while focus has not got in yet: never pulled from where the
+  // person has since moved it.
+  useEffect(() => {
+    if (!open || panel.current?.contains(document.activeElement)) return;
+    focusables(panel.current)[0]?.focus();
+  }, [open, me, waiting, phone]);
+
+  // The page behind stays where it is while the menu is open.
   useEffect(() => {
     if (!open) return;
-    focusables(panel.current)[0]?.focus();
     const root = document.documentElement;
     const was = root.style.overflow;
     root.style.overflow = 'hidden';
