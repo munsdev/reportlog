@@ -170,6 +170,9 @@ describe('install.sh on a fresh Debian 12', () => {
     expect(env).toMatch(/^CONTACT_KEY_PREVIOUS=$/m);
     // Files on disk go where the service may write, never into a release.
     expect(env).toMatch(new RegExp(`^FILES_DIR=${s.at('/var/lib/reportlog/files')}$`, 'm'));
+    // The daily anchor has somewhere to write without anybody being asked:
+    // left commented, every installed server's anchor failed each night.
+    expect(env).toMatch(/^TRANSPARENCY_LOG_DIR=\/var\/lib\/reportlog\/transparency-log$/m);
     expect(statSync(s.at(ENV)).mode & 0o777).toBe(0o640);
     // Everything else in the template is carried over, comments and all.
     const template = readFileSync(join(REPO, '.env.example'), 'utf8').split('\n');
