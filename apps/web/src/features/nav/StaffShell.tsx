@@ -171,15 +171,15 @@ export function StaffSidebar({
   return (
     <nav aria-label="Staff areas" className="px-3 py-4">
       {me ? null : <p className="px-3 text-sm text-muted">Loading…</p>}
-      <ul className="flex flex-col gap-5">
+      <ul className="flex flex-col gap-4">
         {sections.map((section) => (
-          <li key={section.id}>
+          <li key={section.id} className="border-t-2 border-line pt-4 first:border-t-0 first:pt-0">
             {/* A label naming its list, not a heading: the page's own
-                headings stay the only ones a reader jumps between there. */}
-            <p
-              id={`staff-area-${section.id}`}
-              className="mb-1 px-3 label-face text-[0.6875rem] text-muted"
-            >
+                headings stay the only ones a reader jumps between there.
+                Full size and in the ink colour, with a rule above each
+                group: at 11px in the muted grey the groups ran together
+                and the labels read as decoration. */}
+            <p id={`staff-area-${section.id}`} className="mb-1.5 px-3 label-face text-sm text-ink">
               {section.label}
             </p>
             <ul aria-labelledby={`staff-area-${section.id}`} className="flex flex-col gap-0.5">

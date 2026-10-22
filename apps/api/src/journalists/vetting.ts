@@ -39,7 +39,9 @@ export const deskLinkFor = (siteOrigin: string) => `${siteOrigin}/desk`;
 interface Details {
   outlet: string;
   role: string;
-  links: string[];
+  about?: string;
+  /** Only on requests sent before the form asked for `about` instead. */
+  links?: string[];
   press_card_number?: string;
   press_card_issuer?: string;
 }
@@ -152,7 +154,7 @@ export async function submitRequest(
   const details: Details = {
     outlet: input.outlet,
     role: input.role,
-    links: [...new Set(input.links)],
+    about: input.about,
     // Absent, not empty, when not given: the owner sees "none" either way.
     ...(input.press_card_number ? { press_card_number: input.press_card_number } : {}),
     ...(input.press_card_issuer ? { press_card_issuer: input.press_card_issuer } : {}),
@@ -222,7 +224,8 @@ export async function requestsForOwner(deps: ListDeps): Promise<AccessRequestVie
       address: partlyHidden(openWithDek(dek, r.email_enc)),
       outlet: d.outlet,
       role: d.role,
-      links: d.links,
+      about: d.about ?? null,
+      links: d.links ?? [],
       press_card_number: d.press_card_number ?? null,
       press_card_issuer: d.press_card_issuer ?? null,
       states: r.states.map(placeLabel),

@@ -79,6 +79,9 @@ export function applyLook(
 /** Easier reading, if this reader turned it on, else the site's look. */
 function paint(site: PaintedLook, root: HTMLElement): void {
   const worn = easyLook(site);
+  // Marked as well as painted: the larger root size in styles.css hangs off
+  // this, because a palette and a theme cannot make a rem bigger.
+  root.toggleAttribute('data-easy', worn !== site);
   for (const axis of ['palette', 'theme'] as const) {
     if (worn[axis] === DEFAULT_LOOK[axis]) root.removeAttribute(`data-${axis}`);
     else root.setAttribute(`data-${axis}`, worn[axis]);

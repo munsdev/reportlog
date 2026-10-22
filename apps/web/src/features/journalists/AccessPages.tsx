@@ -87,7 +87,7 @@ export function AccessLinkPage({ token }: { token: string }) {
   const state = useQuery(linkQuery(token));
   const [outlet, setOutlet] = useState('');
   const [role, setRole] = useState('');
-  const [links, setLinks] = useState('');
+  const [about, setAbout] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [cardIssuer, setCardIssuer] = useState('');
   const send = useMutation({
@@ -97,10 +97,7 @@ export function AccessLinkPage({ token }: { token: string }) {
         body: {
           outlet,
           role,
-          links: links
-            .split(/\s+/)
-            .map((l) => l.trim())
-            .filter(Boolean),
+          about,
           ...(cardNumber.trim() ? { press_card_number: cardNumber.trim() } : {}),
           ...(cardIssuer.trim() ? { press_card_issuer: cardIssuer.trim() } : {}),
         },
@@ -182,18 +179,20 @@ export function AccessLinkPage({ token }: { token: string }) {
           }}
         />
         <div className="flex flex-col gap-2">
-          <Label htmlFor="access-links">Links to your published work</Label>
-          <p id="access-links-hint" className="text-sm text-muted">
-            One to five addresses, one per line.
+          <Label htmlFor="access-about">Who are you?</Label>
+          <p id="access-about-hint" className="text-sm text-muted">
+            Enough for the owner to tell who you are and what you cover. Links to your published
+            work or a profile help most, if you have them.
           </p>
           <Textarea
-            id="access-links"
-            aria-describedby="access-links-hint"
+            id="access-about"
+            aria-describedby="access-about-hint"
             required
-            rows={4}
-            value={links}
+            maxLength={4000}
+            rows={5}
+            value={about}
             onChange={(e) => {
-              setLinks(e.target.value);
+              setAbout(e.target.value);
             }}
           />
         </div>

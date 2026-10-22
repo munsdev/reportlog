@@ -60,7 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div
         role="status"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--rl-savebar-height,0px)+1rem)] z-40 flex justify-center px-4 print:hidden"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] z-40 flex justify-center px-4 print:hidden"
       >
         {shown ? (
           <Toast

@@ -110,6 +110,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
       <Details lb={lb} refresh={refresh} />
       <EmailRule lb={lb} refresh={refresh} />
+      <PublicationRule lb={lb} refresh={refresh} />
 
       <Panel title="Questions">
         {launched && (
@@ -266,6 +267,39 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           }}
         />
       )}
+      <Problem error={save.error} />
+    </Panel>
+  );
+}
+
+/**
+ * Whether reporters are asked if their report may be published, or told that
+ * filing here means it may be. Not part of the questions and never sealed
+ * itself (each report seals the wording its reporter saw), so it can change
+ * after launch.
+ */
+function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const save = useMutation({
+    mutationFn: (on: boolean) =>
+      call(updateLogbook, { params: { id: lb.id }, body: { publish_by_terms: on } }),
+    onSuccess: refresh,
+  });
+  return (
+    <Panel title="Publishing">
+      <p className="text-sm text-muted">
+        {lb.publish_by_terms
+          ? 'Reporters are not asked whether their report may be published. The last card tells them that filing here means it may be, once a moderator approves it.'
+          : 'Reporters are asked whether their report may be published. A report whose reporter says no, or does not answer, is never published.'}
+      </p>
+      <Check
+        label="Publishing is a condition of filing"
+        checked={lb.publish_by_terms}
+        disabled={save.isPending}
+        help="For a logbook that exists to be public and asks for nothing personal. Each report records which of the two it was filed under."
+        onCheckedChange={(on) => {
+          save.mutate(on);
+        }}
+      />
       <Problem error={save.error} />
     </Panel>
   );

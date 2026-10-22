@@ -112,6 +112,12 @@ export const LogbookSummary = z.object({
   email_required: z.boolean(),
   /** Whether the form asks for an email: derived from the questions, or the override (E1). */
   asks_email: z.boolean(),
+  /**
+   * Publication is a condition of filing: the reporter is told, not asked,
+   * and the report seals may_publish = true beside the terms' digest.
+   * Changeable after launch; never sealed itself.
+   */
+  publish_by_terms: z.boolean(),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -234,6 +240,8 @@ export const updateLogbook = defineRoute({
     blurb: z.string().nullable().optional(),
     /** Ask for an email even where the questions do not need one (E1). Changeable after launch. */
     email_required: z.boolean().optional(),
+    /** Publication as a condition of filing rather than a question. Changeable after launch. */
+    publish_by_terms: z.boolean().optional(),
   }),
   response: LogbookDetail,
 });
@@ -398,6 +406,13 @@ export const getPublicLogbook = defineRoute({
      * on arrival and the reporter cannot come back to correct or withdraw it.
      */
     asks_email: z.boolean(),
+    /**
+     * Present only where publication is a condition of filing: the terms the
+     * form shows instead of asking, and the digest to send back with them.
+     */
+    publication_terms: z
+      .object({ heading: z.string(), body: z.array(z.string()), digest: z.string() })
+      .optional(),
     fields: z.array(FormQuestion),
     /** The board's filters: only what the operator marked. None is built in. */
     filters: z.array(FormQuestion),

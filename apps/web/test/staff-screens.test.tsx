@@ -145,6 +145,7 @@ const REQUEST: AccessRequestView = {
   address: 'p***@example.org',
   outlet: 'Desk Daily',
   role: 'reporter',
+  about: 'Pat, covering Vermont for Desk Daily.',
   links: ['https://deskdaily.example.org/by/pat'],
   press_card_number: 'PC-777',
   press_card_issuer: null,

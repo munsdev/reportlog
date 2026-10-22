@@ -140,19 +140,31 @@ function RequestCard({ r }: { r: AccessRequestView }) {
   const facts: KeyValue[] = [
     { key: 'Address', value: r.address, mono: true },
     { key: 'Covers', value: r.states.join(', ') },
-    {
-      key: 'Published work',
-      value: (
-        // Text, never a link: the owner copies one on purpose.
-        <ul>
-          {r.links.map((l) => (
-            <li key={l} className="font-mono text-sm break-all select-all">
-              {l}
-            </li>
-          ))}
-        </ul>
-      ),
-    },
+    ...(r.about
+      ? [
+          {
+            key: 'Who they are',
+            // Text, never a link: any address in it is copied on purpose.
+            value: <p className="break-words whitespace-pre-wrap">{r.about}</p>,
+          },
+        ]
+      : []),
+    ...(r.links.length
+      ? [
+          {
+            key: 'Published work',
+            value: (
+              <ul>
+                {r.links.map((l) => (
+                  <li key={l} className="font-mono text-sm break-all select-all">
+                    {l}
+                  </li>
+                ))}
+              </ul>
+            ),
+          },
+        ]
+      : []),
     {
       key: 'Press card',
       value:
@@ -226,8 +238,8 @@ function RequestCard({ r }: { r: AccessRequestView }) {
           <DialogHeader>
             <DialogTitle>Reject the request from {r.name}?</DialogTitle>
             <DialogDescription>
-              This deletes what they sent: their outlet, role, links and press card. It cannot be
-              undone. They stay on the alert list and can ask again.
+              This deletes what they sent: their outlet, role, what they said about themselves and
+              press card. It cannot be undone. They stay on the alert list and can ask again.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

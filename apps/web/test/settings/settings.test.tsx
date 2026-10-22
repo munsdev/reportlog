@@ -103,6 +103,7 @@ const logbook = (id: number, state: 'draft' | 'open' | 'closed') => ({
   files_frozen_at: null,
   outside_access: 'closed',
   email_required: false,
+  publish_by_terms: false,
   asks_email: true,
 });
 

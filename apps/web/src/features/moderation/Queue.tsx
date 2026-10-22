@@ -28,6 +28,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import { BottomBar } from '@/components/ui/bottom-bar.tsx';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
@@ -913,7 +914,7 @@ function SelectionBar({
   });
   return (
     <>
-      <div className="z-30 max-md:fixed max-md:inset-x-0 max-md:bottom-0 md:sticky md:top-2">
+      <BottomBar className="z-30 max-md:fixed max-md:inset-x-0 max-md:bottom-0 md:sticky md:top-2">
         <Card
           variant="deep"
           className="flex-row flex-wrap items-center gap-3 px-4 py-3 max-md:rounded-none"
@@ -949,7 +950,7 @@ function SelectionBar({
             Decline selected…
           </Button>
         </Card>
-      </div>
+      </BottomBar>
       {approve.isError ? <Alert tone="serious">{approve.error.message}</Alert> : null}
       <BulkDecline
         open={declining}

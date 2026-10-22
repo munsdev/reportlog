@@ -307,8 +307,22 @@ export async function stageSubmission(
 
   // The digest arrives from the client, so it is not trusted: it has to name
   // wording this site actually put on screen, and the general card's at that.
+  //
+  // AND IT HAS TO BE THE WORDING THIS LOGBOOK SHOWS. Where publication is a
+  // condition of filing the reporter was told, not asked, so the only honest
+  // record is `true` beside the terms' digest: a `false` there would seal an
+  // answer to a question nobody put. Anywhere else the terms are refused,
+  // because that reporter was asked.
   const digest = b.may_publish_digest ?? '';
-  if (!(await isKnownDigest(db, digest, 'general'))) {
+  if (lb.publish_by_terms) {
+    if (b.may_publish !== true || !(await isKnownDigest(db, digest, 'terms'))) {
+      throw refused(
+        400,
+        'unknown_wording',
+        'Reports filed here are published, and this page showed different terms. Reload the page and send it again.',
+      );
+    }
+  } else if (!(await isKnownDigest(db, digest, 'general'))) {
     throw refused(
       400,
       'unknown_wording',
@@ -319,7 +333,7 @@ export async function stageSubmission(
   // answer is sealed with the wording it answered either way.
   const payload: StagedPayload = {
     ...(answers ? { answers } : {}),
-    may_publish: b.may_publish === true,
+    may_publish: lb.publish_by_terms || b.may_publish === true,
     may_publish_digest: digest,
   };
   // Shaped exactly as it will be sealed, now, so a submission that cannot be

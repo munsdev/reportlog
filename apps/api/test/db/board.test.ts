@@ -339,7 +339,7 @@ describe('the consent wordings (/api/v1/consent-texts)', () => {
       );
     }
     expect(new Set(r.body.texts.map((x) => x.variant))).toEqual(
-      new Set(['general', 'coordinator']),
+      new Set(['general', 'coordinator', 'terms']),
     );
   });
 

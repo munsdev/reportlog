@@ -24,6 +24,7 @@
  * are shown: a total that falls as you answer reads as a trap.
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react';
+import { BottomBar } from '@/components/ui/bottom-bar.tsx';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Eyebrow } from '@/components/ui/type.tsx';
@@ -285,7 +286,7 @@ export function CardBar({
   return (
     <>
       <div aria-hidden="true" className="h-36 sm:hidden" />
-      <div
+      <BottomBar
         data-card-bar=""
         className={cn(
           'fixed inset-x-0 bottom-(--rl-card-bar-inset,0px) z-30 flex flex-col gap-3 border-t-(length:--rl-border-main) border-ink-alt bg-surface p-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] print:hidden',
@@ -318,7 +319,7 @@ export function CardBar({
             {primary}
           </Button>
         </div>
-      </div>
+      </BottomBar>
     </>
   );
 }

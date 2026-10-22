@@ -37,6 +37,7 @@ import type { QueueItem, ResponseOf, getQueueItem, getReportNote } from '@report
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { BottomBar } from '@/components/ui/bottom-bar.tsx';
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
@@ -217,7 +218,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
         <>
           {/* Room for the bar, so the last row can be scrolled clear of it. */}
           <div aria-hidden="true" className="h-20" />
-          <div
+          <BottomBar
             role="region"
             aria-label="Decide"
             className="fixed inset-x-0 bottom-0 z-30 border-t-[6px] border-brand-on-deep bg-deep text-on-deep print:hidden"
@@ -241,7 +242,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
                 Decline…
               </Button>
             </div>
-          </div>
+          </BottomBar>
         </>
       ) : null}
       <Dialog

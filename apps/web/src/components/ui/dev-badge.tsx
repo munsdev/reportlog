@@ -64,7 +64,7 @@ export function DevBadge() {
   if (!active) return null;
   return (
     <Dialog>
-      <DialogTrigger className="fixed right-4 bottom-[calc(var(--rl-savebar-height,0px)+1rem)] z-30 flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden">
+      <DialogTrigger className="fixed right-4 bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] z-30 flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden">
         <span aria-hidden="true" className="size-2 rounded-full bg-ink-alt" />
         Under active development
       </DialogTrigger>

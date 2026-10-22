@@ -97,3 +97,43 @@ export function cardFor(variant: string): Card {
     digest: digestOf(cardLines(v)),
   };
 }
+
+/**
+ * THE TERMS, for a logbook where publication is a condition of filing
+ * (`logbooks.publish_by_terms`). Not a question and not dressed as one: no
+ * options, no "if you do not answer". The reporter is told before they send,
+ * and the report seals `may_publish: true` beside THIS digest, so the record
+ * says the `true` was a term accepted by filing rather than a box ticked.
+ *
+ * Kept apart from CARD_VARIANTS on purpose: every variant of the card says
+ * filing works either way, and here it does not. Recorded in consent_texts
+ * under the variant 'terms', so its digest reads back like the others.
+ */
+export const TERMS = {
+  heading: 'Reports filed here are published',
+  body: [
+    'By sending this report you agree that, once a moderator approves it, it ' +
+      'goes on a public archive that anyone can read, search and download. ' +
+      'Publication is permanent. You can ask later for a published report to ' +
+      'be hidden from the public archive, but it cannot be unpublished as ' +
+      'though it had never been public.',
+    'This covers the report itself — your answers, in your words. Your email ' +
+      'address is not part of what is published, and anything you attached is ' +
+      'asked about separately.',
+  ],
+} as const;
+
+export function termsLines(): string[] {
+  return [TERMS.heading, ...TERMS.body];
+}
+
+export interface Terms {
+  heading: string;
+  body: string[];
+  digest: string;
+}
+
+/** The terms and their digest, as the form shows them. */
+export function termsFor(): Terms {
+  return { heading: TERMS.heading, body: [...TERMS.body], digest: digestOf(termsLines()) };
+}

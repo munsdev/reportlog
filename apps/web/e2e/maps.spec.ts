@@ -69,7 +69,15 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await page.getByRole('button', { name: 'Make a map' }).click();
   await page.getByLabel('Title').first().fill(title);
   await page.getByLabel('Short name').first().fill(slug);
+  const failed: string[] = [];
+  page.on('requestfailed', (r) =>
+    failed.push(`${r.method()} ${r.url()} ${r.failure()?.errorText ?? ''}`),
+  );
   await page.getByRole('button', { name: 'Make the map' }).click();
+  // Made, AND told so: the map was being created while the page said
+  // "Failed to fetch", because the request never got its answer.
+  await expect(page.getByRole('button', { name: 'Make the map' })).toHaveCount(0);
+  expect(failed).toEqual([]);
 
   const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
   await expect(card).toContainText('Off');

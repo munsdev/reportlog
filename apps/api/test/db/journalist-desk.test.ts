@@ -80,7 +80,7 @@ async function askLink(email: string): Promise<string> {
 const REQUEST = {
   outlet: 'OUTLET-IN-THE-CLEAR',
   role: 'Reporter',
-  links: ['https://daily.example.org/by/pat'],
+  about: 'Pat, local politics at Desk Daily. https://daily.example.org/by/pat',
   press_card_number: 'PC-12345',
   press_card_issuer: 'Press Union',
 };
@@ -217,7 +217,7 @@ describe('J7a · an access request, from the alert subscription', () => {
     expect(await askLink(journalist)).not.toBe('');
   });
 
-  it('opening the link changes nothing; the form takes text and links only', async () => {
+  it('opening the link changes nothing; the form takes text only, links optional', async () => {
     const token = await askLink(journalist);
     const seen = await h.app.inject({ method: 'GET', url: `/api/journalists/access/${token}` });
     expect(seen.json()).toMatchObject({ state: 'open' });
@@ -226,8 +226,9 @@ describe('J7a · an access request, from the alert subscription', () => {
     const bad = await h.app.inject({
       method: 'POST',
       url: `/api/journalists/access/${token}`,
-      payload: { ...REQUEST, links: ['javascript:alert(1)'] },
+      payload: { ...REQUEST, about: '   ' },
     });
+    // Saying nothing about who they are is refused; a link is not required.
     expect(bad.statusCode).toBe(400);
     const sent = await h.app.inject({
       method: 'POST',

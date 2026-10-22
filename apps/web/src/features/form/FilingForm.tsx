@@ -193,6 +193,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       questions={lb.fields}
       form={lb.form}
       asksEmail={lb.asks_email}
+      terms={lb.publication_terms}
       card={card.data}
       cardError={card.isError}
       retryCard={() => {
@@ -211,6 +212,7 @@ function Cards({
   questions,
   form,
   asksEmail,
+  terms,
   card,
   cardError,
   retryCard,
@@ -226,6 +228,11 @@ function Cards({
   asksEmail: boolean;
   /** The version these questions are; sealed if only wording changes before Send. */
   form?: string | undefined;
+  /**
+   * Where publication is a condition of filing: shown on the last card in
+   * place of the question, and their digest is what is sealed.
+   */
+  terms?: { heading: string; body: string[]; digest: string } | undefined;
   card: PublicationCard | undefined;
   cardError: boolean;
   retryCard: () => void;
@@ -268,8 +275,9 @@ function Cards({
           consent,
           answers: toSubmission(questions, raw),
           // Not answering is "no", and the card said so before anybody acted.
-          may_publish: publish === 'yes',
-          may_publish_digest: card?.digest ?? '',
+          // Under terms nobody was asked: filing is the agreement.
+          may_publish: terms ? true : publish === 'yes',
+          may_publish_digest: terms ? terms.digest : (card?.digest ?? ''),
           ...(draft && uploader.kept.length ? { draft_token: draft } : {}),
           ...(form ? { form } : {}),
         },
@@ -289,7 +297,7 @@ function Cards({
   const steps: Step[] = [
     'intro',
     ...askedCards(questions, raw).map((c): Step => `q:${c.id}`),
-    'publish',
+    ...(terms ? [] : (['publish'] as Step[])),
     ...(asksEmail ? (['contact'] as Step[]) : []),
     ...(takesFiles ? (['files'] as Step[]) : []),
     'review',
@@ -354,7 +362,8 @@ function Cards({
     cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
       .length +
     (mayTakeFiles ? 4 : 3) -
-    (asksEmail ? 0 : 1);
+    (asksEmail ? 0 : 1) -
+    (terms ? 1 : 0);
   const progress = send.isSuccess || step === 'intro' ? null : Math.min(1, at / possible);
 
   // The tab title (filing.md §02): the question, where it is among the cards
@@ -422,7 +431,7 @@ function Cards({
     const now = [
       'intro',
       ...askedCards(questions, raw).map((c) => `q:${c.id}`),
-      'publish',
+      ...(terms ? [] : ['publish']),
       ...(asksEmail ? ['contact'] : []),
       ...(takesFiles ? ['files'] : []),
       'review',
@@ -579,14 +588,18 @@ function Cards({
                 }}
               />
             ))}
-            <ReviewRow
-              label="Published if approved"
-              value={publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')}
-              required
-              onChange={() => {
-                go('publish', true);
-              }}
-            />
+            {terms ? null : (
+              <ReviewRow
+                label="Published if approved"
+                value={
+                  publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')
+                }
+                required
+                onChange={() => {
+                  go('publish', true);
+                }}
+              />
+            )}
             {takesFiles && fileQuestion ? (
               <ReviewRow
                 label={fileQuestion.label}
@@ -608,6 +621,16 @@ function Cards({
               />
             ) : null}
           </dl>
+          {terms ? (
+            <div className="flex max-w-prose flex-col gap-2">
+              <p className="font-semibold">{terms.heading}</p>
+              {terms.body.map((line) => (
+                <p key={line} className="text-sm text-muted">
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : null}
           <CheckOption
             id="filing-statement"
             checked={consent}

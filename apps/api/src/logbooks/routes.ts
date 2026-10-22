@@ -36,7 +36,7 @@ import {
 } from '@reportlog/contracts';
 import type { FormQuestion, Question } from '@reportlog/contracts';
 import { FILE_TYPE, LOCATION_TYPE, canFilter, placeOptions } from '@reportlog/fields';
-import { formText } from '@reportlog/seal';
+import { formText, termsFor } from '@reportlog/seal';
 import { questionsFor } from '../chain/questions.ts';
 import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database.ts';
@@ -140,6 +140,8 @@ export function logbookRoutes(
       // workstream's to add beside this, resolved on the server.
       asks_for_files: fields.some((f) => f.kind === FILE_TYPE),
       asks_email: lb.asks_email,
+      // Only where it applies, so a form that asks is told nothing new.
+      ...(lb.publish_by_terms ? { publication_terms: termsFor() } : {}),
       fields: fields.map(forForm),
       filters: fields.filter((f) => f.filterable && canFilter(f.kind)).map(forForm),
       // The version these questions are, so a report sent from this page seals
@@ -195,7 +197,12 @@ export function logbookRoutes(
       await updateDetails(
         db,
         id,
-        request.body as { title?: string; blurb?: string | null; email_required?: boolean },
+        request.body as {
+          title?: string;
+          blurb?: string | null;
+          email_required?: boolean;
+          publish_by_terms?: boolean;
+        },
       );
       return logbookDetail(db, id);
     });

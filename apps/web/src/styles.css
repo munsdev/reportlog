@@ -115,6 +115,19 @@
   body {
     font-size: calc(var(--rl-body-size) + var(--rl-scale-body, 0px));
   }
+  /* EASIER READING MAKES EVERYTHING BIGGER, not only paragraphs. Nearly
+     every size on the site is a rem (Tailwind's text-sm, a button's height,
+     an input's padding), and a rem is measured from <html>, so a theme's
+     18px body left the labels, help lines, buttons and menus at their
+     ordinary size. Raising the root is what scales them all together. The
+     body follows in rem rather than the theme's px, or it would end up
+     smaller than the text around it. */
+  html[data-easy] {
+    font-size: 125%;
+  }
+  html[data-easy] body {
+    font-size: 1.0625rem;
+  }
   h1 {
     font-weight: var(--rl-h1-weight);
     letter-spacing: var(--rl-h1-tracking);

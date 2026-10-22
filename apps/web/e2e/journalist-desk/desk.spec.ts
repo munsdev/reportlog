@@ -123,8 +123,8 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await link.getByLabel('Your outlet').fill('Desk Daily');
   await link.getByLabel('Your role there').fill('Reporter');
   await link
-    .getByLabel('Links to your published work')
-    .fill('https://deskdaily.example.org/by/pat');
+    .getByLabel('Who are you?')
+    .fill('Pat, covering Vermont for Desk Daily. https://deskdaily.example.org/by/pat');
   await link.getByLabel('Press card number (optional)').fill('PC-777');
   await link.getByRole('button', { name: 'Send my request to the owner' }).click();
   await expect(

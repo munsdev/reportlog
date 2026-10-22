@@ -107,6 +107,7 @@ function summaries(db: Db) {
     'logbooks.files_frozen_at',
     'logbooks.outside_access',
     'logbooks.email_required',
+    'logbooks.publish_by_terms',
     // What E1's email rule reads: each question's kind and settings.
     sql<{ kind: string; settings: FieldSettings | null }[] | null>`(
       SELECT json_agg(json_build_object('kind', f.kind, 'settings', f.settings))
@@ -152,6 +153,7 @@ function present(row: SummaryRow): LogbookSummary {
     // DERIVED, like asks_for_files: a question somebody types into or files
     // ask for an address; the operator's switch can only add one (E1).
     asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
+    publish_by_terms: row.publish_by_terms,
   };
 }
 
@@ -386,12 +388,14 @@ export async function updateDetails(
     title?: string | undefined;
     blurb?: string | null | undefined;
     email_required?: boolean | undefined;
+    publish_by_terms?: boolean | undefined;
   },
 ): Promise<LogbookSummary> {
   const set: {
     title?: string;
     blurb?: string | null;
     email_required?: boolean;
+    publish_by_terms?: boolean;
     updated_at: Date;
   } = {
     updated_at: new Date(),
@@ -401,6 +405,9 @@ export async function updateDetails(
   // Not part of the form and never sealed, so it stays changeable after
   // launch: it decides what the next report is asked (E1).
   if (spec.email_required !== undefined) set.email_required = spec.email_required;
+  // The same, for publication: it changes what the next reporter is shown,
+  // and every report already filed sealed the wording its reporter saw.
+  if (spec.publish_by_terms !== undefined) set.publish_by_terms = spec.publish_by_terms;
   const done = await db.updateTable('logbooks').set(set).where('id', '=', id).executeTakeFirst();
   if (!done.numUpdatedRows) refuse('no-logbook');
   return (await logbookById(db, id)) ?? refuse('no-logbook');

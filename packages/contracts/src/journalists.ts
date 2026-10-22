@@ -167,18 +167,17 @@ export const askForAccessLink = defineRoute({
   response: z.object({ ok: z.literal(true) }),
 });
 
-const WorkLink = z
-  .string()
-  .trim()
-  .max(2048)
-  .regex(/^https?:\/\/[^\s]+$/i, 'A link starts with http:// or https://');
-
 export const AccessRequestBody = z.object({
   outlet: z.string().trim().min(1).max(160),
   /** What they do there: reporter, editor, producer. */
   role: z.string().trim().min(1).max(120),
-  /** Published work, so the owner can see who they are. */
-  links: z.array(WorkLink).min(1).max(5),
+  /**
+   * Who they are, in their own words, so the owner can tell. Free text: the
+   * form suggests links to published work but does not demand them, because
+   * a freelancer or a local reporter may have none to give, and a list of
+   * URLs was never the only way to show who somebody is.
+   */
+  about: z.string().trim().min(1).max(4000),
   press_card_number: z.string().trim().max(80).optional(),
   press_card_issuer: z.string().trim().max(160).optional(),
 });
@@ -219,6 +218,9 @@ export const AccessRequestView = z.object({
   address: z.string(),
   outlet: z.string(),
   role: z.string(),
+  /** Who they are, as they wrote it. Null on a request sent before it was asked. */
+  about: z.string().nullable(),
+  /** Links, from a request sent when the form still asked for a list of them. */
   links: z.array(z.string()),
   press_card_number: z.string().nullable(),
   press_card_issuer: z.string().nullable(),
