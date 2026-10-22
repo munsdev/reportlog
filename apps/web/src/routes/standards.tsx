@@ -8,8 +8,9 @@
  * reads like one.
  */
 import { createFileRoute } from '@tanstack/react-router';
+import { Alert } from '../components/ui/alert.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { useSite } from '../components/ui/site.tsx';
 
 export const Route = createFileRoute('/standards')({
@@ -19,18 +20,22 @@ export const Route = createFileRoute('/standards')({
 function StandardsPage() {
   const site = useSite();
   return (
-    <Page
+    <PublicPage
       title="Moderation standard"
       width="prose"
       lede="What gets published here, what is held back, and who decides."
     >
       {site.isPending ? <p role="status">Loading…</p> : null}
-      {site.isError ? <p role="alert">{site.error.message}</p> : null}
+      {site.isError ? (
+        <Alert tone="serious" title="The standard could not be loaded">
+          {site.error.message}
+        </Alert>
+      ) : null}
       <CopyText slot="standards" />
       <p className="text-sm text-ink-alt">
         Holding a report back is not a finding that it is false, and publishing one is not a finding
         that it is true. A moderator judges whether an account may be published, nothing more.
       </p>
-    </Page>
+    </PublicPage>
   );
 }

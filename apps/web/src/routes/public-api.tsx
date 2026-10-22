@@ -15,9 +15,10 @@
  */
 import { Link, createFileRoute } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Page } from '../components/ui/page.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { ProseSection } from '../components/ui/prose-section.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
+import { CopyButton } from '../features/site-pages/CopyButton.tsx';
 
 export const Route = createFileRoute('/public-api')({
   component: PublicApiPage,
@@ -83,14 +84,22 @@ function PublicApiPage() {
   const name = plainSiteName(useSite().data);
   const origin = typeof window === 'undefined' ? '' : window.location.origin;
   return (
-    <Page
+    <PublicPage
       title="Public API"
       width="prose"
       lede={`The figures ${name} publishes, as JSON. No key and no sign-up. They are the same counts the board is drawn from.`}
     >
       <ProseSection id="endpoints" title="Addresses">
-        <Table head={['Address', 'What it returns']} rows={ENDPOINTS} />
-        <pre className="overflow-x-auto rounded-card border border-line bg-surface p-3 font-mono text-sm">
+        <ul className="flex flex-col gap-3" aria-label="Addresses">
+          {ENDPOINTS.map(([address, what]) => (
+            <li key={address} className="flex flex-col gap-1 rounded-card bg-paper-alt p-4">
+              <code className="font-mono text-sm break-all">{address}</code>
+              <span className="text-ink-alt">{what}</span>
+              <CopyButton text={`${origin}${address.replace(/^GET /, '')}`} what={address} />
+            </li>
+          ))}
+        </ul>
+        <pre className="overflow-x-auto rounded-card bg-paper-alt p-3 font-mono text-sm">
           <code>curl {origin}/api/v1/stats</code>
         </pre>
         <p>
@@ -149,6 +158,6 @@ function PublicApiPage() {
           nothing here licenses you to republish what a report says.
         </p>
       </ProseSection>
-    </Page>
+    </PublicPage>
   );
 }

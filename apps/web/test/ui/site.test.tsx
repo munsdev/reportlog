@@ -107,9 +107,29 @@ describe('the front page’s buttons', () => {
     expect(links[1]?.className).not.toMatch(/bg-action/);
   });
 
-  it('draws no dead button for an action nothing can do yet', () => {
+  it('draws the alerts button as the way to the journalist alert sign-up', () => {
     render(<HomeButtons buttons={[button('alerts', true, null)]} />);
+    expect(screen.getByRole('link', { name: 'Go to alerts' })).toHaveAttribute(
+      'href',
+      '/journalists/alerts',
+    );
+  });
+
+  it('draws no dead button for an action with nowhere to go', () => {
+    render(<HomeButtons buttons={[{ ...button('alerts', true, null), action: 'something' }]} />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
+  it('puts the number of published reports on the board button, in a sentence for a screen reader', () => {
+    render(<HomeButtons buttons={[button('board', false)]} published={134} />);
+    const link = screen.getByRole('link');
+    expect(link).toHaveTextContent('134 published reports');
+    expect(link).toHaveAttribute('href', '/board');
+  });
+
+  it('gives a button its blurb as a second line', () => {
+    render(<HomeButtons buttons={[{ ...button('submit', true), blurb: 'Good or bad' }]} />);
+    expect(screen.getByRole('link', { name: /Go to submit\s*Good or bad/ })).toBeInTheDocument();
   });
 });
 

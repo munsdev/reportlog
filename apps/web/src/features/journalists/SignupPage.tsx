@@ -7,40 +7,42 @@
  * links the legal notice and privacy policy before anything is sent.
  */
 import { signUpForAlerts } from '@reportlog/contracts';
-import { placeOptions } from '@reportlog/fields';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { useState } from 'react';
+import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Field } from '@/components/ui/field.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { CardError } from '../form/CardFrame.tsx';
+import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { call } from '../../lib/api.ts';
-import { ErrorText, TextField } from '../identity/ui.tsx';
-
-const STATES = placeOptions({ scope: 'us' }).subdivisions;
+import { StatesPicker } from './StatesPicker.tsx';
 
 export function SignupPage() {
-  const idBase = useId();
   const [name, setName] = useState('');
   const [outlet, setOutlet] = useState('');
   const [email, setEmail] = useState('');
   const [states, setStates] = useState<string[]>([]);
+  const [noStates, setNoStates] = useState(false);
   const signUp = useMutation({
     mutationFn: () => call(signUpForAlerts, { body: { name, outlet, email, states } }),
   });
 
   if (signUp.isSuccess) {
     return (
-      <Page title="Check your email" width="prose">
+      <PublicPage title="Check your email" width="prose">
         <p role="status">
           If that address is not on the list yet, we have sent it a link. Open the link and press
           the button on its page to join. Nothing is added until you do.
         </p>
-      </Page>
+      </PublicPage>
     );
   }
   return (
-    <Page
+    <PublicPage
       title="Journalist alerts"
       width="prose"
       lede="An email when new approved reports appear in the states you cover. It says how many, and nothing more."
@@ -49,72 +51,91 @@ export function SignupPage() {
         className="flex flex-col gap-6"
         onSubmit={(e) => {
           e.preventDefault();
-          if (states.length) signUp.mutate();
+          if (!states.length) {
+            setNoStates(true);
+            return;
+          }
+          signUp.mutate();
         }}
       >
-        <TextField
-          label="Your name"
-          autoComplete="name"
-          required
-          maxLength={120}
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-          }}
-        />
-        <TextField
-          label="Your outlet"
-          autoComplete="organization"
-          required
-          maxLength={160}
-          value={outlet}
-          onChange={(e) => {
-            setOutlet(e.target.value);
-          }}
-        />
-        <TextField
-          label="Your email address"
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={254}
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-          }}
-        />
-        <fieldset className="flex flex-col gap-3">
-          <legend className="mb-2 font-semibold">States you cover</legend>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            {STATES.map((s) => (
-              <CheckOption
-                key={s.code}
-                label={s.name}
-                id={`${idBase}-${s.code}`}
-                checked={states.includes(s.code)}
-                onCheckedChange={(on) => {
-                  setStates(on === true ? [...states, s.code] : states.filter((x) => x !== s.code));
-                }}
-              />
-            ))}
-          </div>
-        </fieldset>
-        <ErrorText error={signUp.error} />
-        <div>
-          <Button type="submit" disabled={signUp.isPending || states.length === 0}>
-            Send me a confirmation email
+        <Field>
+          <Label>Your name</Label>
+          <Input
+            autoComplete="name"
+            required
+            maxLength={120}
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
+          />
+        </Field>
+        <Field>
+          <Label>Your outlet</Label>
+          <Input
+            autoComplete="organization"
+            required
+            maxLength={160}
+            value={outlet}
+            onChange={(e) => {
+              setOutlet(e.target.value);
+            }}
+          />
+        </Field>
+        <Field>
+          <Label>Your email address</Label>
+          <Input
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            required
+            maxLength={254}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+            }}
+          />
+        </Field>
+        <div className="flex flex-col gap-2">
+          <StatesPicker
+            value={states}
+            invalid={noStates}
+            onChange={(next) => {
+              setNoStates(false);
+              setStates(next);
+            }}
+          />
+          {noStates ? <CardError>Choose at least one state.</CardError> : null}
+        </div>
+        <Card variant="quiet">
+          <p className="font-semibold">Joining gives you no access to anything.</p>
+          <p className="text-ink-alt">
+            We keep only these four answers, encrypted. We email a link to confirm; you are on the
+            list only after you press its button. Every alert carries a link to leave. Read the{' '}
+            <Link to="/legal" className="underline underline-offset-2">
+              imprint and privacy policy
+            </Link>
+            .
+          </p>
+        </Card>
+        {signUp.isError ? (
+          <Alert tone="serious" title="You were not added">
+            {signUp.error.message}
+          </Alert>
+        ) : null}
+        <div className="flex flex-col sm:items-start">
+          <Button
+            type="submit"
+            size="lg"
+            block
+            className="sm:w-auto"
+            busy={signUp.isPending}
+            busyLabel="Sending…"
+          >
+            Join the list
           </Button>
         </div>
-        <p className="text-sm text-muted">
-          We keep only these four answers, encrypted. We email a link to confirm; you are on the
-          list only after you press its button. Every alert carries a link to leave. Being on the
-          list gives no access to anything that is not public. Read the{' '}
-          <Link to="/legal" className="underline">
-            legal notice and privacy policy
-          </Link>
-          .
-        </p>
       </form>
-    </Page>
+    </PublicPage>
   );
 }

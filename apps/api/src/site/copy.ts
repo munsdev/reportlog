@@ -233,6 +233,22 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback:
       'Intake is paused. The moderators have stopped taking new reports and tips for now, usually because of a flood of submissions. Everything already sent is safe. Please try again later.',
   },
+  {
+    // DECISION 62. The emergency notice, drawn on the front page and on every
+    // logbook's opening card. NEVER OPTIONAL, so it can be reworded and never
+    // blanked: saving it empty goes back to this wording (null means "use what
+    // ships"), and no stored value can make it vanish. Sent with the logbook's
+    // own form call too (logbooks/routes.ts), because a door may not ask for
+    // the site's wording. No figures: a door shows it, and figures count what
+    // the password protects.
+    key: 'help_now',
+    kind: 'block',
+    figures: false,
+    label: 'If someone needs help right now',
+    help: 'Shown on the front page and before every report is started. Who to call instead of filing, in an emergency. You can reword it; you cannot remove it. Saved empty, it goes back to the shipped wording.',
+    fallback:
+      'This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.',
+  },
 ];
 
 const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s]));
@@ -290,6 +306,13 @@ export function validateCopy(
   }
   // The password screen shows no figures: they count what the password
   // protects. Refused, rather than shown as typed to every stranger.
+  if (slot.figures === false && raw.includes('{{') && slot.key === 'help_now') {
+    return {
+      ok: false,
+      error:
+        'The emergency notice cannot show numbers: it is shown where the figures are not. Take out the {{ }}.',
+    };
+  }
   if (slot.figures === false && raw.includes('{{')) {
     return {
       ok: false,

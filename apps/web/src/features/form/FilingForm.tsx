@@ -10,7 +10,8 @@
  * browser's Back goes back one question, as it did in the old form.
  *
  * The cards, in order:
- *   the opening card       what this logbook is, and that it is a few questions
+ *   the opening card       what this logbook is, the emergency notice, what
+ *                          happens next, and Start
  *   the logbook's own      one per question being asked
  *   the publication card   its wording and digest come from the server
  *   where to reach you     the address the confirmation link goes to. ONLY
@@ -24,13 +25,19 @@
  *                          staging quota is keyed on the address
  *   check your answers     every answer, each one changeable, and the statement
  *
+ * Every card wears the same frame (CardFrame.tsx): the logbook as the
+ * eyebrow, the question as the page's heading, Back and Next in a bar fixed
+ * to the bottom of a phone's screen. Next is never disabled: on a card that
+ * needs an answer it says so instead.
+ *
  * AT THE DOOR (features/door/): a start token as the form opens, a puzzle
  * solved in the background before Send works, and a box nobody can see.
  *
  * ON A DOOR this page may call only the filing calls: the logbook's form, the
  * publication card and sending, the door's two reads, and, only for a logbook
  * that asks for files, the upload calls. It asks for nothing else, so it works
- * on a site behind its password for a logbook opened outside it.
+ * on a site behind its password for a logbook opened outside it. The
+ * emergency notice comes with the logbook's form for that reason.
  */
 import {
   getUploadConfig,
@@ -42,27 +49,40 @@ import {
 import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
-import { TipOffer, rememberForTip } from './tipOffer.tsx';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
-import { CopyText } from '@/components/ui/copy-text.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
+import { CopyText } from '@/components/ui/copy-text.tsx';
+import { Count } from '@/components/ui/count.tsx';
+import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { DoorPuzzle, Honeypot, doorStatus, useDoor } from '@/features/door/useDoor.tsx';
+import { plainSiteName, useSite } from '@/components/ui/site.tsx';
+import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
+import {
+  DoorPuzzle,
+  Honeypot,
+  doorStatus,
+  useDoor,
+  useSendWhenReady,
+} from '@/features/door/useDoor.tsx';
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
+import { useGateMode } from '@/features/identity/gateMode.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
-import { useCardHistory } from './cardHistory.ts';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
+import { CardBar, CardFrame, FilingProgress, useCardTitle, useFocusOnMount } from './CardFrame.tsx';
+import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
-import { QuestionControl } from './QuestionControl.tsx';
-import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
+import { FormColumn, FormNotice } from './FormNotice.tsx';
+import { HelpNow } from './HelpNow.tsx';
+import { QuestionControl, kindHelp } from './QuestionControl.tsx';
+import { TipOffer, rememberForTip } from './tipOffer.tsx';
 import {
   askedCards,
   askedQuestions,
@@ -110,47 +130,57 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   const intake = useQuery(intakeSwitchQuery);
   const paused = useIntakePaused();
 
-  if (logbook.isPending) return <p role="status">Loading the form…</p>;
+  if (logbook.isPending) {
+    return (
+      <FormColumn>
+        <p role="status">Loading the form…</p>
+      </FormColumn>
+    );
+  }
   if (logbook.isError) {
     const missing = logbook.error instanceof ApiRequestError && logbook.error.status === 404;
     return (
-      <Page
-        title={missing ? 'There is no logbook here' : 'This form could not be loaded'}
-        width="prose"
-      >
-        <p>
-          {missing
-            ? 'Check the address you were given. It may have a typing mistake in it.'
-            : logbook.error.message}
-        </p>
-      </Page>
+      <FormNotice title={missing ? 'There is no logbook here' : 'This form could not be loaded'}>
+        {missing ? (
+          <p className="max-w-prose">
+            Check the address you were given. It may have a typing mistake in it.
+          </p>
+        ) : (
+          <Alert tone="serious" title="The form did not load">
+            {logbook.error.message}
+          </Alert>
+        )}
+      </FormNotice>
     );
   }
   const lb = logbook.data;
   if (!lb.accepting) {
     return (
-      <Page title={lb.title} width="prose">
-        <Alert
-          title={
-            lb.state === 'scheduled' ? 'This logbook has not opened yet' : 'This logbook is closed'
-          }
-        >
-          {lb.state === 'scheduled' && lb.opens_at
-            ? `It opens on ${new Date(lb.opens_at).toLocaleString()}.`
-            : 'It is not taking reports.'}
-        </Alert>
-      </Page>
+      <FormNotice title={lb.title}>
+        <Card variant="quiet">
+          <p className="max-w-prose">
+            {lb.state !== 'scheduled'
+              ? 'This logbook is closed. It is not taking reports.'
+              : lb.opens_at
+                ? `This logbook has not opened yet. It opens on ${new Date(lb.opens_at).toLocaleString()}.`
+                : 'This logbook has not opened yet.'}
+          </p>
+        </Card>
+      </FormNotice>
     );
   }
   // Plan E: a moderator paused intake (features/flood).
   if (paused) return <PausedForm title={lb.title} />;
   if (intake.data?.open === false) {
     return (
-      <Page title={lb.title} width="prose">
-        <Alert title="This site is not taking reports at the moment">
-          Nothing you type here could be sent. Please come back later.
-        </Alert>
-      </Page>
+      <FormNotice title={lb.title}>
+        <Card variant="quiet">
+          <p className="max-w-prose">
+            This site is not taking reports at the moment. Nothing you type here could be sent.
+            Please come back later.
+          </p>
+        </Card>
+      </FormNotice>
     );
   }
   return (
@@ -158,11 +188,15 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       slug={lb.slug}
       title={lb.title}
       blurb={lb.blurb}
+      helpNow={lb.help_now}
       questions={lb.fields}
       form={lb.form}
       asksEmail={lb.asks_email}
       card={card.data}
       cardError={card.isError}
+      retryCard={() => {
+        void card.refetch();
+      }}
       history={history}
     />
   );
@@ -172,16 +206,20 @@ function Cards({
   slug,
   title,
   blurb,
+  helpNow,
   questions,
   form,
   asksEmail,
   card,
   cardError,
+  retryCard,
   history,
 }: {
   slug: string;
   title: string;
   blurb: string | null;
+  /** The emergency notice (decision 62), sent with the form so a door has it. */
+  helpNow: string;
   questions: FormQuestion[];
   /** Whether this logbook asks for an address at all (E1). */
   asksEmail: boolean;
@@ -189,6 +227,7 @@ function Cards({
   form?: string | undefined;
   card: PublicationCard | undefined;
   cardError: boolean;
+  retryCard: () => void;
   history: RouterHistory | undefined;
 }) {
   const [raw, setRaw] = useState<RawAnswers>({});
@@ -235,6 +274,8 @@ function Cards({
         },
       }),
   });
+
+  const sending = useSendWhenReady(door, send);
 
   const asked = useMemo(() => askedQuestions(questions, raw), [questions, raw]);
   // ONE STEP PER CARD. Most cards ask one question; a card whose question has
@@ -293,18 +334,53 @@ function Cards({
     return { card: instead, toReview: false };
   });
 
-  if (send.isSuccess) {
-    return 'filed' in send.data ? (
-      <FiledReceipt title={title} />
-    ) : (
-      <SentReceipt email={email.trim()} title={title} />
-    );
-  }
-
   const shownCard = step.startsWith('q:')
     ? askedCards(questions, raw).find((c) => `q:${c.id}` === step)
     : undefined;
+  const shownHeading = shownCard
+    ? cardHeading(cardsOf(questions).find((c) => c[0]?.key === shownCard.id) ?? shownCard.parts)
+    : '';
   const at = Math.max(0, steps.indexOf(step));
+
+  // Measured against every question that could STILL be asked, so on the
+  // way forward the rule only ever advances. No numbers on the page: a total
+  // that changes as you answer reads as a trap. The files card counts until
+  // the server has said the logbook takes none: its answer arriving late may
+  // only move the rule on, never back.
+  const sealed = sealedAnswers(questions, raw);
+  const mayTakeFiles = Boolean(fileQuestion) && uploadConfig.data?.enabled !== false;
+  const possible =
+    cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
+      .length +
+    (mayTakeFiles ? 4 : 3) -
+    (asksEmail ? 0 : 1);
+  const progress = send.isSuccess || step === 'intro' ? null : Math.min(1, at / possible);
+
+  // The tab title (filing.md §02): the question, where it is among the cards
+  // still possible (the opening card not counted), and the site.
+  const tabHeading: Record<string, string> = {
+    intro: title,
+    review: 'Check your answers',
+    publish: card?.question ?? 'Should this report be published?',
+    contact: 'Where can we reach you?',
+    files: fileQuestion?.label ?? 'Files',
+  };
+  useCardTitle(
+    send.isSuccess ? 'Your report was sent' : (tabHeading[step] ?? shownHeading),
+    send.isSuccess || step === 'intro' || step === 'review' ? null : { n: at, of: possible - 1 },
+  );
+
+  if (send.isSuccess) {
+    return (
+      <FormColumn>
+        {'filed' in send.data ? (
+          <FiledReceipt title={title} />
+        ) : (
+          <SentReceipt email={email.trim()} title={title} />
+        )}
+      </FormColumn>
+    );
+  }
 
   const problemHere = (): string | null => {
     if (shownCard) {
@@ -315,7 +391,9 @@ function Cards({
       return null;
     }
     if (step === 'publish' && !card)
-      return 'This question has not loaded yet. Try again in a moment.';
+      return cardError
+        ? 'The wording of this question did not load. Press Try again.'
+        : 'The wording of this question has not loaded yet. Wait a moment, then press Next again.';
     if (step === 'contact' && !looksLikeEmail(email))
       return 'Enter an email address we can reach you at.';
     if (step === 'files' && fileQuestion?.required && !uploader.kept.length)
@@ -351,63 +429,53 @@ function Cards({
     go(now[now.indexOf(step) + 1] ?? 'review');
   };
   // Where the browser's Back would go: after "Change", that is the review.
+  // On the first question it is the opening card.
   const back = () => {
     if (cards.back) cards.back();
     else go(steps[at - 1] ?? 'intro');
   };
-
-  // Measured against every question that could STILL be asked, so on the
-  // way forward the bar only ever advances. No numbers: a total that changes
-  // as you answer reads as a trap. The files card counts until the server
-  // has said the logbook takes none: its answer arriving late may only move
-  // the bar on, never back.
-  const sealed = sealedAnswers(questions, raw);
-  const mayTakeFiles = Boolean(fileQuestion) && uploadConfig.data?.enabled !== false;
-  const possible =
-    cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
-      .length +
-    (mayTakeFiles ? 4 : 3) -
-    (asksEmail ? 0 : 1);
-  const progress = step === 'intro' ? null : Math.round((at / possible) * 100);
+  const sendNow = () => {
+    if (!consent) {
+      setProblem('Tick the statement above to send the report.');
+      return;
+    }
+    const missing = asked.find((q) => cardProblem(q, raw, questions));
+    if (missing) {
+      setProblem(`“${missing.label}” needs an answer. Press Change beside it.`);
+      return;
+    }
+    if (uploader.busy) {
+      setProblem('Wait until your files have finished sending, then send the report.');
+      return;
+    }
+    // Pressed before the door is ready, it goes when it is; the door's
+    // status line above the button says what it is waiting for.
+    setProblem(null);
+    sending.press();
+  };
 
   return (
-    <section className="relative mx-auto flex max-w-prose flex-col gap-6">
+    <FormColumn>
       <Honeypot door={door} />
       <DoorPuzzle door={door} />
-      <p className="text-sm font-semibold text-ink-alt">{title}</p>
-      {progress !== null ? (
-        <div
-          role="progressbar"
-          aria-label="How far through the form"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.min(progress, 100)}
-          className="h-2 w-full overflow-hidden rounded-full bg-paper-alt"
-        >
-          <div className="h-full bg-ink" style={{ width: `${String(Math.min(progress, 100))}%` }} />
-        </div>
-      ) : null}
+      <FilingProgress value={progress} />
 
       {step === 'intro' ? (
-        <CardShell heading={title} step={step}>
-          {blurb ? <p className="whitespace-pre-wrap">{blurb}</p> : null}
-          <p>
-            A few questions, one at a time. How many depends on your answers. Most people take a few
-            minutes. Nothing is sent until the last card
-            {asksEmail
-              ? ', and nothing is filed until you confirm it from your email.'
-              : '. This form does not ask for your email address, so once you send it, your report is filed as it is.'}
-          </p>
-        </CardShell>
+        <OpeningCard
+          title={title}
+          blurb={blurb}
+          helpNow={helpNow}
+          asksEmail={asksEmail}
+          onStart={next}
+        />
       ) : null}
 
       {shownCard ? (
         <QuestionCard
           key={shownCard.id}
+          eyebrow={title}
           parts={shownCard.parts}
-          heading={cardHeading(
-            cardsOf(questions).find((c) => c[0]?.key === shownCard.id) ?? shownCard.parts,
-          )}
+          heading={shownHeading}
           help={helpFor(
             questions.find((q) => q.key === shownCard.id) ?? shownCard.parts[0] ?? { help: null },
             sealed,
@@ -423,11 +491,28 @@ function Cards({
       ) : null}
 
       {step === 'publish' ? (
-        <PublishCard card={card} failed={cardError} value={publish} onChange={setPublish} />
+        <PublishCard
+          eyebrow={title}
+          card={card}
+          failed={cardError}
+          onRetry={retryCard}
+          value={publish}
+          onChange={(v) => {
+            setProblem(null);
+            setPublish(v);
+          }}
+          problem={problem}
+        />
       ) : null}
 
       {step === 'contact' ? (
-        <CardShell heading="Where can we reach you?" step={step}>
+        <CardFrame
+          eyebrow={title}
+          heading="Where can we reach you?"
+          focusKey={step}
+          error={problem}
+          errorId="contact-error"
+        >
           <Field>
             <Label>Your email address</Label>
             <FieldDescription>
@@ -436,58 +521,56 @@ function Cards({
             </FieldDescription>
             <Input
               type="email"
+              inputMode="email"
               autoComplete="email"
               value={email}
+              aria-describedby={problem ? 'contact-error' : undefined}
+              aria-invalid={problem ? true : undefined}
               onChange={(e) => {
                 setProblem(null);
                 setEmail(e.target.value);
               }}
             />
-            <FieldError>{problem}</FieldError>
           </Field>
-        </CardShell>
+        </CardFrame>
       ) : null}
 
       {step === 'files' && fileQuestion && uploadConfig.data ? (
-        <CardShell
+        <CardFrame
+          eyebrow={title}
           heading={fileQuestion.label}
-          step={step}
+          focusKey={step}
           headingId="files-card-heading"
+          optional={!fileQuestion.required}
           help={
-            <div className="flex flex-col gap-1 text-ink-alt">
-              {fileQuestion.help ? (
-                <p className="whitespace-pre-wrap">{fileQuestion.help}</p>
-              ) : null}
-              {fileQuestion.required ? null : <p className="text-sm">Optional.</p>}
-            </div>
+            fileQuestion.help ? (
+              <p className="max-w-prose whitespace-pre-wrap text-ink-alt">{fileQuestion.help}</p>
+            ) : null
           }
+          error={problem}
         >
           <FilePicker
             config={uploadConfig.data}
             uploader={uploader}
             labelledBy="files-card-heading"
           />
-          {problem ? (
-            <p role="alert" className="text-sm font-semibold text-serious">
-              {problem}
-            </p>
-          ) : null}
-        </CardShell>
+        </CardFrame>
       ) : null}
 
       {step === 'review' ? (
-        <CardShell heading="Check your answers" step={step}>
-          <p>
+        <CardFrame eyebrow={title} heading="Check your answers" focusKey={step}>
+          <p className="max-w-prose">
             {asksEmail
               ? 'Nothing is filed until you confirm it from your email. Check it over first.'
               : 'Your report is filed the moment you send it, and you cannot come back to it. Check it over first.'}
           </p>
-          <dl className="divide-y divide-line rounded-card border border-line">
+          <dl className="flex flex-col divide-y divide-line border-y border-line">
             {asked.map((q) => (
               <ReviewRow
                 key={q.key}
                 label={q.label}
-                value={shownAnswer(q, raw, questions) ?? (q.required ? null : '—')}
+                value={shownAnswer(q, raw, questions)}
+                required={q.required}
                 onChange={() => {
                   go(`q:${cardOf.get(q.key) ?? q.key}`, true);
                 }}
@@ -496,6 +579,7 @@ function Cards({
             <ReviewRow
               label="Published if approved"
               value={publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')}
+              required
               onChange={() => {
                 go('publish', true);
               }}
@@ -503,13 +587,8 @@ function Cards({
             {takesFiles && fileQuestion ? (
               <ReviewRow
                 label={fileQuestion.label}
-                value={
-                  uploader.kept.length
-                    ? uploader.kept.map((f) => f.name).join(', ')
-                    : fileQuestion.required
-                      ? null
-                      : '—'
-                }
+                value={uploader.kept.length ? uploader.kept.map((f) => f.name).join(', ') : null}
+                required={fileQuestion.required}
                 onChange={() => {
                   go('files', true);
                 }}
@@ -519,6 +598,7 @@ function Cards({
               <ReviewRow
                 label="Your email address"
                 value={email.trim() || null}
+                required
                 onChange={() => {
                   go('contact', true);
                 }}
@@ -536,105 +616,150 @@ function Cards({
           />
           {/* The operator's own line about sending, when they wrote one. */}
           <CopyText slot="send_note" className="font-semibold" />
-          {problem ? <Alert tone="serious" title={problem} /> : null}
-          {send.isError ? (
-            <Alert tone="serious" title="The report was not sent">
-              {send.error.message}
-            </Alert>
-          ) : null}
-          {doorStatus(door) ? (
-            <p role="status" className="text-sm text-ink-alt">
-              {doorStatus(door)}
-            </p>
-          ) : null}
-        </CardShell>
+          <Card variant="deep" className="gap-1">
+            {asksEmail ? (
+              <p className="font-semibold">
+                Nothing is filed until you confirm it from your email.
+              </p>
+            ) : (
+              <>
+                <p className="font-semibold">
+                  This report can’t be changed or withdrawn after you send it.
+                </p>
+                <p className="text-on-deep-muted">
+                  It is sealed the moment it arrives. A moderator reads it before anything is
+                  public.
+                </p>
+              </>
+            )}
+          </Card>
+        </CardFrame>
       ) : null}
 
-      {problem && step !== 'review' && step !== 'contact' && step !== 'files' && !shownCard ? (
-        <Alert tone="serious" title={problem} />
-      ) : null}
-
-      <div className="flex items-center justify-between gap-3">
-        {at > 0 ? (
-          <Button type="button" variant="secondary" onClick={back}>
-            Back
-          </Button>
-        ) : (
-          <span />
-        )}
-        {step === 'review' ? (
-          <Button
-            type="button"
-            disabled={send.isPending || !door.ready}
-            onClick={() => {
-              if (!consent) {
-                setProblem('Confirm the statement above to send the report.');
-                return;
-              }
-              const missing = asked.find((q) => cardProblem(q, raw, questions));
-              if (missing) {
-                setProblem(`“${missing.label}” needs an answer. Press Change beside it.`);
-                return;
-              }
-              if (uploader.busy) {
-                setProblem('Wait until your files have finished sending, then send the report.');
-                return;
-              }
-              if (!door.ready) return;
-              send.mutate();
-            }}
-          >
-            {send.isPending
-              ? 'Sending…'
-              : uploader.busy
-                ? 'Your files are still sending…'
-                : 'Send report'}
-          </Button>
-        ) : (
-          <Button type="button" onClick={next}>
-            {step === 'intro' ? 'Start' : 'Next'}
-          </Button>
-        )}
-      </div>
-    </section>
+      {step === 'intro' ? null : (
+        <CardBar
+          onBack={back}
+          primary={step === 'review' ? 'Send report' : 'Next'}
+          onPrimary={step === 'review' ? sendNow : next}
+          busy={step === 'review' && (send.isPending || sending.waiting)}
+          busyLabel="Sending…"
+          above={
+            step === 'review' ? (
+              <ReviewMessages
+                problem={problem}
+                failure={send.isError ? send.error.message : null}
+                status={doorStatus(door)}
+              />
+            ) : null
+          }
+        />
+      )}
+    </FormColumn>
   );
 }
 
 /**
- * A card. Its heading takes focus when it appears, because the page does not
- * reload between questions and nothing else would tell a screen reader that
- * the content changed. The tab title names the card for the same reason.
+ * What the review card needs said above its button: a problem with the
+ * answers, a refusal, or the door still getting ready. A problem takes
+ * focus, so somebody who pressed Send hears why nothing happened; the
+ * answers stay as they were.
  */
-function CardShell({
-  heading,
-  step,
-  help,
-  headingId,
-  children,
+function ReviewMessages({
+  problem,
+  failure,
+  status,
 }: {
-  heading: string;
-  step: string;
-  help?: ReactNode;
-  headingId?: string;
-  children: ReactNode;
+  problem: string | null;
+  failure: string | null;
+  status: string | null;
 }) {
-  const ref = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    ref.current?.focus();
-    window.scrollTo(0, 0);
-  }, [step]);
   return (
-    <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5">
-      <h1
-        ref={ref}
-        id={headingId}
-        tabIndex={-1}
-        className="font-display text-2xl font-bold outline-none"
-      >
-        {heading}
-      </h1>
-      {help}
-      {children}
+    <>
+      {problem ? <FocusedAlert key={problem} title={problem} /> : null}
+      {failure ? (
+        <FocusedAlert key={failure} title="The report was not sent" body={failure} />
+      ) : null}
+      {status ? (
+        <p role="status" className="text-sm text-ink-alt">
+          {status}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function FocusedAlert({ title, body }: { title: string; body?: string }) {
+  const ref = useFocusOnMount<HTMLDivElement>();
+  return (
+    <Alert ref={ref} tone="serious" title={title} tabIndex={-1} className="outline-none">
+      {body}
+    </Alert>
+  );
+}
+
+/**
+ * The logbook's opening card (filing.md §03): what it is, the emergency
+ * notice, what happens next, and Start. No progress rule here.
+ */
+function OpeningCard({
+  title,
+  blurb,
+  helpNow,
+  asksEmail,
+  onStart,
+}: {
+  title: string;
+  blurb: string | null;
+  helpNow: string;
+  asksEmail: boolean;
+  onStart: () => void;
+}) {
+  const onDoor = useGateMode() === 'door';
+  const site = plainSiteName(useSite().data);
+  const heading = useFocusOnMount<HTMLHeadingElement>();
+  const lines = [
+    'One question at a time. How many depends on your answers.',
+    asksEmail
+      ? 'You check your answers before you send. Nothing is filed until you confirm it from your email.'
+      : 'You check your answers before you send. Once you send it, it is filed as it is.',
+    'A moderator reads it before anything is public.',
+  ];
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Eyebrow>File a report</Eyebrow>
+        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
+          {title}
+        </h1>
+        {blurb ? <Lede className="whitespace-pre-wrap">{blurb}</Lede> : null}
+      </div>
+      <HelpNow text={helpNow} />
+      <section aria-labelledby="what-happens" className="flex flex-col gap-3">
+        <h2 id="what-happens" className="label-face text-xs text-muted">
+          What happens next
+        </h2>
+        <ol className="flex flex-col gap-2.5">
+          {lines.map((line, i) => (
+            <li key={line} className="flex items-start gap-3">
+              {/* The list already numbers it for a screen reader. */}
+              <Count value={i + 1} label="" aria-hidden="true" className="mt-0.5" />
+              <span className="max-w-prose">{line}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+      <div className="flex flex-col items-stretch gap-3 sm:items-start">
+        <Button size="lg" block className="sm:w-auto" onClick={onStart}>
+          Start
+        </Button>
+        {/* Behind the password on a door, so not offered there. */}
+        {onDoor ? null : (
+          <Button asChild variant="quiet" className="self-center sm:self-start">
+            <a href="/how">How to use {site}</a>
+          </Button>
+        )}
+      </div>
+      <Meta className="text-center sm:text-left">Sealed and timestamped on arrival.</Meta>
     </div>
   );
 }
@@ -646,6 +771,7 @@ function CardShell({
  * question and each part is named by its own label beside its control.
  */
 function QuestionCard({
+  eyebrow,
   parts,
   heading,
   help,
@@ -654,6 +780,7 @@ function QuestionCard({
   onChange,
   problem,
 }: {
+  eyebrow: string;
   parts: FormQuestion[];
   heading: string;
   help: string | undefined;
@@ -668,17 +795,26 @@ function QuestionCard({
   const errorId = `${id}-error`;
   const single = parts.length === 1 ? parts[0] : undefined;
   const sealedSoFar = answers as Parameters<typeof QuestionControl>[0]['answers'];
+  // What the kind itself needs said ("Tick everything that applies.", a
+  // date's format, whose clock a time is in), unless the wording says it.
+  const extra = single ? kindHelp(single, `${heading} ${help ?? ''}`) : null;
   return (
-    <CardShell
+    <CardFrame
+      eyebrow={eyebrow}
       heading={heading}
-      step={parts[0]?.key ?? ''}
+      focusKey={parts[0]?.key ?? ''}
       headingId={headingId}
+      optional={Boolean(single && !single.required)}
       help={
-        <div id={helpId} className="flex flex-col gap-1 text-ink-alt">
-          {help ? <p className="whitespace-pre-wrap">{help}</p> : null}
-          {single && !single.required ? <p className="text-sm">Optional.</p> : null}
-        </div>
+        help || extra ? (
+          <div id={helpId} className="flex max-w-prose flex-col gap-1 text-ink-alt">
+            {help ? <p className="whitespace-pre-wrap">{help}</p> : null}
+            {extra ? <p>{extra}</p> : null}
+          </div>
+        ) : null
       }
+      error={problem}
+      errorId={errorId}
     >
       {single ? (
         <QuestionControl
@@ -688,25 +824,33 @@ function QuestionCard({
             onChange(single.key, v);
           }}
           labelledBy={headingId}
-          describedBy={[helpId, problem ? errorId : ''].filter(Boolean).join(' ')}
+          describedBy={
+            [help || extra ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ') ||
+            undefined
+          }
           invalid={Boolean(problem)}
           answers={sealedSoFar}
           raw={raw}
         />
       ) : (
-        <div className="flex flex-col gap-4" role="group" aria-labelledby={headingId}>
+        <div className="flex flex-col gap-5" role="group" aria-labelledby={headingId}>
           {parts.map((part, i) => {
             const partId = `${id}-part-${String(i)}`;
             // A tick box carries its own label beside the box.
             const box = part.kind === 'yes_no' && part.settings.checkbox === true;
-            const partHelp = i === 0 ? undefined : part.help;
+            const partHelp = [i === 0 ? undefined : part.help, kindHelp(part, part.label)]
+              .filter(Boolean)
+              .join(' ');
             return (
-              <div key={part.key} className="flex flex-col gap-2">
+              <div key={part.key} className="flex flex-col gap-1.5">
                 {box ? null : (
-                  <p id={partId} className="font-semibold">
+                  <p id={partId} className="label-face text-[0.8125rem]">
                     {part.label}
                     {part.required ? null : (
-                      <span className="font-normal text-ink-alt"> (optional)</span>
+                      <span className="font-sans font-normal tracking-normal normal-case text-ink-alt">
+                        {' '}
+                        Optional.
+                      </span>
                     )}
                   </p>
                 )}
@@ -736,15 +880,7 @@ function QuestionCard({
           })}
         </div>
       )}
-      {problem ? (
-        <p id={errorId} role="alert" className="flex gap-1.5 text-sm font-semibold text-serious">
-          <span aria-hidden="true">!</span>
-          <span>
-            <span className="sr-only">Error:</span> {problem}
-          </span>
-        </p>
-      ) : null}
-    </CardShell>
+    </CardFrame>
   );
 }
 
@@ -752,67 +888,104 @@ function QuestionCard({
  * The publication question, in the server's words. The digest of exactly
  * these words is sealed beside the answer, so the page holds no copy of its
  * own. Optional, and the card says what not answering means BEFORE anybody
- * acts.
+ * acts. Until the words arrive the card says so, and Next says why it
+ * cannot go on yet; the report cannot be sent without them.
  */
 function PublishCard({
+  eyebrow,
   card,
   failed,
+  onRetry,
   value,
   onChange,
+  problem,
 }: {
+  eyebrow: string;
   card: PublicationCard | undefined;
   failed: boolean;
+  onRetry: () => void;
   value: string;
   onChange: (v: string) => void;
+  problem: string | null;
 }) {
   const id = useId();
   if (!card) {
     return (
-      <CardShell heading="Should this report be published?" step="publish">
-        <p role="status">
-          {failed
-            ? 'This question could not be loaded. Reload the page.'
-            : 'Loading this question…'}
-        </p>
-      </CardShell>
+      <CardFrame
+        eyebrow={eyebrow}
+        heading="Should this report be published?"
+        focusKey="publish"
+        error={problem}
+      >
+        {failed ? (
+          <Alert tone="serious" title="The wording of this question did not load">
+            <span className="flex flex-col items-start gap-3">
+              <span>The report cannot be sent without it.</span>
+              <Button type="button" variant="secondary" onClick={onRetry}>
+                Try again
+              </Button>
+            </span>
+          </Alert>
+        ) : (
+          <p role="status">Loading the wording…</p>
+        )}
+      </CardFrame>
     );
   }
   return (
-    <CardShell heading={card.question} step="publish" headingId={`${id}-q`}>
-      {card.body.map((line) => (
-        <p key={line}>{line}</p>
-      ))}
-      <p className="font-semibold">{card.optionality}</p>
+    <CardFrame
+      eyebrow={eyebrow}
+      heading={card.question}
+      focusKey="publish"
+      headingId={`${id}-q`}
+      help={
+        <div className="flex max-w-prose flex-col gap-2">
+          {card.body.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+          <p className="font-semibold">{card.optionality}</p>
+        </div>
+      }
+      error={problem}
+    >
       <RadioGroup value={value} onValueChange={onChange} aria-labelledby={`${id}-q`}>
         <RadioOption value="yes" label={card.options.yes} />
         <RadioOption value="no" label={card.options.no} />
       </RadioGroup>
-    </CardShell>
+    </CardFrame>
   );
 }
 
 function ReviewRow({
   label,
   value,
+  required,
   onChange,
 }: {
   label: string;
   value: string | null;
+  required: boolean;
   onChange: () => void;
 }) {
   // A group in a <dl> may hold only its <dt> and <dd>, so the Change button
   // is inside the answer, not beside it.
   return (
-    <div className="flex flex-col gap-1 p-3">
-      <dt className="text-sm font-semibold text-ink-alt">{label}</dt>
-      <dd className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-        <span className="whitespace-pre-wrap">
-          {value ?? <span className="font-semibold text-serious">Not answered</span>}
+    <div className="flex flex-col gap-1 py-3">
+      <dt className="label-face text-xs text-ink-alt">{label}</dt>
+      <dd className="flex items-start justify-between gap-3">
+        <span className="min-w-0 break-words whitespace-pre-wrap">
+          {value ??
+            (required ? (
+              // The cards do not let this happen; said plainly if it ever does.
+              <span className="font-semibold text-serious">Not answered</span>
+            ) : (
+              <span className="text-ink-alt">Not answered</span>
+            ))}
         </span>
         <Button
           type="button"
           variant="quiet"
-
+          className="-my-2 shrink-0"
           onClick={onChange}
           aria-label={`Change: ${label}`}
         >
@@ -826,29 +999,56 @@ function ReviewRow({
 /**
  * Sealed on arrival (E1): nothing to confirm and nothing to come back to. No
  * reference is shown: a reporter is not handed a receipt for a report nobody
- * has yet accepted, and this one has no address to send one to.
+ * has yet accepted, and this one has no address to send one to. Quiet, not
+ * teal: teal says a moderator confirmed something.
  */
 function FiledReceipt({ title }: { title: string }) {
   return (
-    <Page title="Thank you" width="prose">
-      <Alert tone="done" title={`Your report to “${title}” was received`}>
-        It is filed as you sent it. A moderator reads every report before anything of it is
-        published.
-      </Alert>
-      <TipOffer />
-    </Page>
+    <Receipt heading={`Your report to “${title}” was received`}>
+      <Alert tone="done">It is sealed. A moderator reads it before anything is public.</Alert>
+    </Receipt>
   );
 }
 
 function SentReceipt({ email, title }: { email: string; title: string }) {
   return (
-    <Page title="Check your email" width="prose">
-      <Alert tone="done" title={`We have sent a link to ${email}`}>
-        Open it and press “Confirm and file my report”. Nothing is filed in “{title}” until you do.
-        The link works for 24 hours.
-      </Alert>
-      <p>If nothing arrives in a few minutes, look in your spam folder.</p>
+    <Receipt heading="Check your email">
+      <p className="max-w-prose">
+        We have sent a link to <strong className="break-all">{email}</strong>. Nothing is filed in “
+        {title}” until you press the button on that page. The link works for 24 hours.
+      </p>
+      <p className="max-w-prose text-ink-alt">
+        If nothing arrives in a few minutes, look in your spam folder.
+      </p>
+    </Receipt>
+  );
+}
+
+/** The receipt replaces the form; focus moves to its heading. */
+function Receipt({ heading, children }: { heading: string; children: ReactNode }) {
+  const onDoor = useGateMode() === 'door';
+  const focused = useFocusOnMount<HTMLHeadingElement>();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Eyebrow>File a report</Eyebrow>
+        <h1 ref={focused} tabIndex={-1} className="font-display text-title outline-none">
+          {heading}
+        </h1>
+      </div>
+      {children}
       <TipOffer />
-    </Page>
+      {/* Behind the password on a door, so not offered there. */}
+      {onDoor ? null : (
+        <p className="flex flex-wrap gap-x-2">
+          <Button asChild variant="quiet">
+            <a href="/">Back to the front page</a>
+          </Button>
+          <Button asChild variant="quiet">
+            <a href="/board">See the live board</a>
+          </Button>
+        </p>
+      )}
+    </div>
   );
 }

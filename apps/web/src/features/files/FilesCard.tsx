@@ -57,11 +57,15 @@ export function useFilingTarget(
   }, [slug, email]);
 }
 
+/**
+ * Each file's line while it is on its way: "Uploading, 40%", then
+ * "Preparing" while the server checks and re-encodes it, then "Ready". The
+ * rest say what went wrong in a word; the reason, when there is one, follows.
+ */
 const STATUS: Record<string, string> = {
-  uploading: 'Sending',
-  uploaded: 'Sent',
-  pending: 'Waiting',
-  processing: 'Being prepared',
+  uploaded: 'Preparing',
+  pending: 'Preparing',
+  processing: 'Preparing',
   clean: 'Ready',
   rejected: 'Not accepted',
   unreadable: 'Could not be read',
@@ -69,6 +73,11 @@ const STATUS: Record<string, string> = {
   failed: 'Not sent',
   expired: 'Expired',
 };
+
+export function statusWords(i: Pick<Item, 'status' | 'progress'>): string {
+  if (i.status === 'uploading') return `Uploading, ${String(i.progress)}%`;
+  return STATUS[i.status] ?? i.status;
+}
 
 export function FileList({
   items,
@@ -80,17 +89,17 @@ export function FileList({
   if (!items.length) return null;
   return (
     <ul
-      className="flex flex-col divide-y divide-line rounded-card border border-line"
+      className="flex flex-col divide-y divide-line rounded-card border border-ink-alt bg-surface"
       aria-label="Your files"
     >
       {items.map((i) => (
-        <li key={i.id} className="flex flex-col gap-1 p-3">
+        <li key={i.id} className="flex flex-col gap-1 px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="break-all font-semibold">{i.name}</span>
+            <span className="min-w-0 font-semibold break-all">{i.name}</span>
             <Button
               type="button"
               variant="quiet"
-
+              className="-my-2 shrink-0"
               onClick={() => {
                 onRemove(i);
               }}
@@ -99,8 +108,8 @@ export function FileList({
               Remove
             </Button>
           </div>
-          <span className="text-sm text-ink-alt">
-            {megabytes(i.size)} · <span data-status={i.status}>{STATUS[i.status] ?? i.status}</span>
+          <span className="font-mono text-[0.8125rem] text-ink-alt">
+            {megabytes(i.size)} · <span data-status={i.status}>{statusWords(i)}</span>
           </span>
           {i.status === 'uploading' ? (
             <div
@@ -126,10 +135,16 @@ export function FilePicker({
   config,
   uploader,
   labelledBy,
+  filing = true,
 }: {
   config: UploadConfig;
   uploader: Uploader;
   labelledBy?: string;
+  /**
+   * On a report being filed, which waits for the reporter's email. False for
+   * files sent in answer to a request, which are added when they are sent.
+   */
+  filing?: boolean;
 }) {
   const id = useId();
   const [problem, setProblem] = useState<string | null>(null);
@@ -143,10 +158,10 @@ export function FilePicker({
           ? `Video and sound up to ${config.max_video_seconds < 90 ? `${String(config.max_video_seconds)} seconds` : `${String(Math.round(config.max_video_seconds / 60))} minutes`}.`
           : null}
       </p>
-      <p className="text-sm">
+      <p className="max-w-prose text-sm">
         Photos and videos carry hidden details: where they were taken, when, and on what. Those are
         removed from any copy that could ever be shown. The file as you send it is kept, locked, as
-        evidence. Nothing is filed until you confirm from your email.
+        evidence.{filing ? ' Nothing is filed until you confirm from your email.' : null}
       </p>
       <FileDrop
         multiple={config.max_files > 1}

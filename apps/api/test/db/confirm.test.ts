@@ -369,7 +369,11 @@ describe('a link that is not, or is no longer, usable', () => {
       .set({ expires_at: new Date(Date.now() - 1000) })
       .where('email', '=', email)
       .execute();
-    expect((await look(h, token)).body.confirmation).toMatchObject({ state: 'expired' });
+    // With the logbook's address, so the page can offer to file it again.
+    expect((await look(h, token)).body.confirmation).toMatchObject({
+      state: 'expired',
+      logbook_slug: lb.slug,
+    });
     const done = await confirm(h, token);
     expect(done.body.just_confirmed).toBe(false);
     expect(done.body.confirmation.state).toBe('expired');

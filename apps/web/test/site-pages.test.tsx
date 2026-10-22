@@ -54,6 +54,7 @@ function site(overrides: Partial<Site> = {}): Site {
       origin_open_form: 'Unverified public report',
       origin_organization: 'Filed by an organization',
       intake_paused_notice: 'Intake is paused.',
+      help_now: 'This is a record, not an emergency line.',
       contact_users: '',
       contact_authorities: '',
       board_intro: '',

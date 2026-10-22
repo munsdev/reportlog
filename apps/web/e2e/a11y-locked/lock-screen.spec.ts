@@ -112,8 +112,10 @@ test('the lock screen after a wrong password passes the accessibility check', as
   await page.goto('/', { waitUntil: 'networkidle' });
   await expect(lockHeading(page)).toBeVisible();
   await page.getByLabel('Site password').fill('not the password');
-  await page.getByRole('button', { name: 'Enter' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
   // The refusal is on the screen before it is checked.
-  await expect(page.getByRole('alert')).toHaveText('That is not the password.');
+  await expect(page.getByRole('alert')).toContainText('That password is not right.');
+  // Back on the field, to type it again.
+  await expect(page.getByLabel('Site password')).toBeFocused();
   await checked(page, 'a wrong password');
 });

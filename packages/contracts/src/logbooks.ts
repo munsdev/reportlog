@@ -403,6 +403,12 @@ export const getPublicLogbook = defineRoute({
     filters: z.array(FormQuestion),
     /** The hash of the form version these questions are; sent back with a report. */
     form: z.string().optional(),
+    /**
+     * The emergency notice for the opening card (decision 62), in the
+     * operator's words or what ships. Sent here because a door may not ask
+     * for the site's wording, and the notice must be drawn on a door too.
+     */
+    help_now: z.string(),
   }),
 });
 

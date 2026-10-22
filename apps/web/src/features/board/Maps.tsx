@@ -10,7 +10,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
+import { BoardFrame } from './BoardFrame.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
 import { placedMapsQuery } from '../maps/queries.ts';
 import { boardMetaQuery } from './queries.ts';
@@ -23,19 +24,20 @@ export function BoardMapsPage() {
   const off = meta.data && !meta.data.published ? meta.data.reason : null;
   const none = !off && placed.data && !placed.data.maps.some((m) => m.slot === 'board_tab');
   return (
-    <Page
+    <BoardFrame
       title="Maps"
       lede="Where published reports say things happened. An area with too few reports to count safely is not shaded and its number is not shown."
     >
-      <Link to="/board" className="underline">
-        Back to the board
-      </Link>
       {placed.isPending ? <p role="status">Loading the maps…</p> : null}
-      {placed.isError ? <Alert tone="serious">{placed.error.message}</Alert> : null}
+      {placed.isError ? (
+        <Alert tone="serious" title="The maps could not be loaded">
+          {placed.error.message}
+        </Alert>
+      ) : null}
       {off ? <Alert>{off}</Alert> : null}
-      {none ? <p>There are no maps on the board.</p> : null}
+      {none ? <Empty title="No maps here">There are no maps on the board.</Empty> : null}
       <MapSlot slot="board_tab" />
-    </Page>
+    </BoardFrame>
   );
 }
 

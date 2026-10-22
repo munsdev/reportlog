@@ -49,6 +49,7 @@ import { Route as MapSlugRouteImport } from './routes/map/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
 import { Route as MineThreadIdRouteImport } from './routes/mine/$threadId'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
+import { Route as VerifyIndexRouteImport } from './routes/verify.index'
 import { Route as VerifyRefRouteImport } from './routes/verify.$ref'
 import { Route as staffAccessIndexRouteImport } from './routes/(staff)/access/index'
 import { Route as staffAccessAuditRouteImport } from './routes/(staff)/access/audit'
@@ -305,6 +306,11 @@ const MineThreadIdRoute = MineThreadIdRouteImport.update({
 const OrganizationsIndexRoute = OrganizationsIndexRouteImport.update({
   id: '/organizations/',
   path: '/organizations/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyIndexRoute = VerifyIndexRouteImport.update({
+  id: '/verify/',
+  path: '/verify/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerifyRefRoute = VerifyRefRouteImport.update({
@@ -643,6 +649,7 @@ export interface FileRoutesByFullPath {
   '/illegal-content/': typeof IllegalContentIndexRoute
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
+  '/verify/': typeof VerifyIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
@@ -736,6 +743,7 @@ export interface FileRoutesByTo {
   '/illegal-content': typeof IllegalContentIndexRoute
   '/mine': typeof MineIndexRoute
   '/organizations': typeof OrganizationsIndexRoute
+  '/verify': typeof VerifyIndexRoute
   '/access/audit': typeof staffAccessAuditRoute
   '/access/journalists': typeof staffAccessJournalistsRoute
   '/access/roster': typeof staffAccessRosterRoute
@@ -836,6 +844,7 @@ export interface FileRoutesById {
   '/illegal-content/': typeof IllegalContentIndexRoute
   '/mine/': typeof MineIndexRoute
   '/organizations/': typeof OrganizationsIndexRoute
+  '/verify/': typeof VerifyIndexRoute
   '/(staff)/access/audit': typeof staffAccessAuditRoute
   '/(staff)/access/journalists': typeof staffAccessJournalistsRoute
   '/(staff)/access/roster': typeof staffAccessRosterRoute
@@ -937,6 +946,7 @@ export interface FileRouteTypes {
     | '/illegal-content/'
     | '/mine/'
     | '/organizations/'
+    | '/verify/'
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
@@ -1030,6 +1040,7 @@ export interface FileRouteTypes {
     | '/illegal-content'
     | '/mine'
     | '/organizations'
+    | '/verify'
     | '/access/audit'
     | '/access/journalists'
     | '/access/roster'
@@ -1129,6 +1140,7 @@ export interface FileRouteTypes {
     | '/illegal-content/'
     | '/mine/'
     | '/organizations/'
+    | '/verify/'
     | '/(staff)/access/audit'
     | '/(staff)/access/journalists'
     | '/(staff)/access/roster'
@@ -1229,6 +1241,7 @@ export interface RootRouteChildren {
   IllegalContentIndexRoute: typeof IllegalContentIndexRoute
   MineIndexRoute: typeof MineIndexRoute
   OrganizationsIndexRoute: typeof OrganizationsIndexRoute
+  VerifyIndexRoute: typeof VerifyIndexRoute
   staffAccessAuditRoute: typeof staffAccessAuditRoute
   staffAccessJournalistsRoute: typeof staffAccessJournalistsRoute
   staffAccessRosterRoute: typeof staffAccessRosterRoute
@@ -1533,6 +1546,13 @@ declare module '@tanstack/react-router' {
       path: '/organizations'
       fullPath: '/organizations/'
       preLoaderRoute: typeof OrganizationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify/': {
+      id: '/verify/'
+      path: '/verify'
+      fullPath: '/verify/'
+      preLoaderRoute: typeof VerifyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verify/$ref': {
@@ -2103,6 +2123,7 @@ const rootRouteChildren: RootRouteChildren = {
   IllegalContentIndexRoute: IllegalContentIndexRoute,
   MineIndexRoute: MineIndexRoute,
   OrganizationsIndexRoute: OrganizationsIndexRoute,
+  VerifyIndexRoute: VerifyIndexRoute,
   staffAccessAuditRoute: staffAccessAuditRoute,
   staffAccessJournalistsRoute: staffAccessJournalistsRoute,
   staffAccessRosterRoute: staffAccessRosterRoute,

@@ -49,15 +49,17 @@ test('the link in the confirmation email erases the address only when the button
   const erase = /https?:\/\/\S+\/file\/erase\/[0-9a-f]{64}/.exec(mail.text)?.[0];
   expect(erase).toBeTruthy();
   await page.goto(erase ?? '');
-  await expect(page.getByRole('heading', { name: 'Erase your email address' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Erase your contact details' })).toBeVisible();
   await expect(page.getByText(/Your report is not withdrawn/)).toBeVisible();
   // Opening it again, as a mail scanner would: still nothing erased.
   await page.reload();
-  const button = page.getByRole('button', { name: 'Erase my email address' });
+  const button = page.getByRole('button', { name: 'Erase my details' });
   await expect(button).toBeDisabled();
   await page.getByRole('checkbox', { name: /cannot be undone/ }).click();
   await button.click();
-  await expect(page.getByRole('heading', { name: 'Your email address is erased' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Your contact details are erased' }),
+  ).toBeVisible();
 
   // The link finds nothing now, and the confirmation link with it.
   await page.goto(erase ?? '');

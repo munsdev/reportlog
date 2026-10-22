@@ -176,3 +176,33 @@ export function doorStatus(door: Door): string | null {
   if (!door.ready) return 'Getting ready to send…';
   return null;
 }
+
+/**
+ * Send, pressed before the puzzle is solved: the press is kept, the button
+ * says "Sending…", and the form goes the moment the door is ready, rather
+ * than the button being dead with no reason given. Nothing is sent that the
+ * person did not press for, and a door that cannot get ready drops the
+ * press and says so (doorStatus).
+ */
+export function useSendWhenReady(
+  door: Door,
+  /** The send: a mutation's `mutate`, and when it was last called. */
+  send: { mutate: () => void; submittedAt: number },
+) {
+  // When the person pressed. A press is still waiting until the send has been
+  // made since, so a send that fails and a puzzle renewed afterwards never
+  // send again without another press.
+  const [pressedAt, setPressedAt] = useState(0);
+  const waiting = pressedAt > send.submittedAt && !door.failed;
+  const { mutate } = send;
+  useEffect(() => {
+    if (waiting && door.ready) mutate();
+  }, [waiting, door.ready, mutate]);
+  return {
+    waiting,
+    press: () => {
+      if (door.ready) mutate();
+      else if (!door.failed) setPressedAt(Date.now());
+    },
+  };
+}

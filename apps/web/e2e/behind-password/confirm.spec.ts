@@ -85,7 +85,9 @@ test('a reporter without the password files, and confirms from the email', async
   await expect(heading(inbox.page, 'Your report is filed')).toBeVisible();
   await expect(inbox.page.getByText(/Its reference is RL-/)).toBeVisible();
   // On a door the page offers nothing that leads behind the password.
-  await expect(inbox.page.getByRole('link', { name: 'Check its fingerprint' })).toHaveCount(0);
+  await expect(inbox.page.getByRole('link', { name: 'Check it has not been changed' })).toHaveCount(
+    0,
+  );
   await expect(lockHeading(inbox.page)).toHaveCount(0);
 
   // The link keeps working there, without the password.

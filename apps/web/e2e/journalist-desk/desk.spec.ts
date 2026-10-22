@@ -176,7 +176,7 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await expect(alerts.getByRole('radio', { name: 'Send me alerts' })).toBeChecked();
   await alerts.getByRole('radio', { name: /Turn alerts off for now/ }).click();
   await alerts.getByRole('checkbox', { name: 'Nevada' }).click();
-  await alerts.getByRole('button', { name: 'Save my alert settings' }).click();
+  await alerts.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(alerts.getByText('Your alert settings are saved.')).toBeVisible();
   expect(node('src/dev/journalists-state.ts', 'listed', JOURNALIST)).toBe('paused');
   await reader.reload();

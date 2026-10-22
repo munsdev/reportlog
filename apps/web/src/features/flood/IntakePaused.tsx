@@ -14,7 +14,8 @@
 import { getIntakePause } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Alert } from '../../components/ui/alert.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { FormNotice } from '../form/FormNotice.tsx';
 import { call } from '../../lib/api.ts';
 import { useGateMode } from '../identity/gateMode.ts';
 
@@ -54,11 +55,21 @@ export function useIntakePaused(): boolean {
   return useQuery(intakePauseQuery).data?.paused === true;
 }
 
-export function PausedForm({ title }: { title: string }) {
+/**
+ * In place of a form's opening card: a deep panel, because somebody who came
+ * to report something must not miss that it cannot be taken now.
+ */
+export function PausedForm({ title, eyebrow }: { title: string; eyebrow?: string }) {
   const pause = useQuery(intakePauseQuery).data;
   return (
-    <Page title={title} width="prose">
-      <Alert title="Intake is paused">{pause?.notice}</Alert>
-    </Page>
+    <FormNotice title={title} {...(eyebrow ? { eyebrow } : {})}>
+      <Card variant="deep">
+        <h2 className="label-face text-sm text-brand-on-deep">Intake is paused</h2>
+        {/* The operator's words (site copy), sent with the pause. */}
+        <p data-copy="intake_paused_notice" className="max-w-prose whitespace-pre-wrap">
+          {pause?.notice}
+        </p>
+      </Card>
+    </FormNotice>
   );
 }

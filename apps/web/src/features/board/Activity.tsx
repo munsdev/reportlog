@@ -10,9 +10,8 @@
 import { getDeclinedCounts, getPublicCounts, getSwitchLog } from '@reportlog/contracts';
 import type { LogbookCounts } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { Alert } from '../../components/ui/alert.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { BoardFrame } from './BoardFrame.tsx';
 import { call } from '../../lib/api.ts';
 
 export const publicCountsQuery = queryOptions({
@@ -42,34 +41,46 @@ function OriginTable({
   rows: { key: string; name: string; organization: number; open_form: number }[];
   labels: { organization: string; open_form: string };
 }) {
+  // Scrolls sideways inside its own box on a phone, never the page; the box
+  // takes focus so the keyboard can scroll it too.
   return (
-    <table className="w-full border-collapse text-sm">
-      <caption className="text-left font-semibold">{caption}</caption>
-      <thead>
-        <tr className="border-b border-line text-left">
-          <th scope="col" className="py-1 pr-4">
-            {first}
-          </th>
-          <th scope="col" className="py-1 pr-4 text-right">
-            {labels.organization}
-          </th>
-          <th scope="col" className="py-1 text-right">
-            {labels.open_form}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.key} className="border-b border-line">
-            <th scope="row" className="py-1 pr-4 text-left font-normal">
-              {r.name}
+    <div
+      className="overflow-x-auto rounded-card border border-line bg-surface p-3"
+      role="region"
+      aria-label={caption}
+      // A box that scrolls must be reachable by the keyboard to be scrolled
+      // (axe: scrollable-region-focusable); it is a named region, not a control.
+      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      tabIndex={0}
+    >
+      <table className="w-full min-w-[22rem] border-collapse text-sm">
+        <caption className="pb-2 text-left font-semibold">{caption}</caption>
+        <thead>
+          <tr className="border-b border-line text-left">
+            <th scope="col" className="py-1 pr-4">
+              {first}
             </th>
-            <td className="py-1 pr-4 text-right font-mono">{r.organization}</td>
-            <td className="py-1 text-right font-mono">{r.open_form}</td>
+            <th scope="col" className="py-1 pr-4 text-right">
+              {labels.organization}
+            </th>
+            <th scope="col" className="py-1 text-right">
+              {labels.open_form}
+            </th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.key} className="border-b border-line">
+              <th scope="row" className="py-1 pr-4 text-left font-normal">
+                {r.name}
+              </th>
+              <td className="py-1 pr-4 text-right font-mono">{r.organization}</td>
+              <td className="py-1 text-right font-mono">{r.open_form}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -153,14 +164,11 @@ export function ActivityPage() {
   const counts = useQuery(publicCountsQuery).data;
   const declined = useQuery(declinedQuery).data;
   return (
-    <Page
+    <BoardFrame
       title="Arrivals, declines and switches"
       lede="When accepted reports arrived, by the hour, so a burst looks like a burst; how many reports were declined and why; and every time a moderator used a flood switch."
       width="prose"
     >
-      <Link to="/board" className="underline">
-        Back to the board
-      </Link>
       {counts && !counts.published ? <Alert>{counts.reason}</Alert> : null}
       {counts?.published ? (
         <>
@@ -201,7 +209,7 @@ export function ActivityPage() {
         </>
       ) : null}
       <SwitchLog />
-    </Page>
+    </BoardFrame>
   );
 }
 

@@ -152,7 +152,7 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await expect(inbox.getByText(`Its reference is ${ref}`)).toBeVisible();
 
   // And the report it filed is sealed and verifies, with the answer given.
-  await inbox.getByRole('link', { name: 'Check its fingerprint' }).click();
+  await inbox.getByRole('link', { name: 'Check it has not been changed' }).click();
   const checks = inbox.getByRole('list', { name: 'Checks' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');

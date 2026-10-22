@@ -5,10 +5,12 @@
  * caveat that these are reviewed accounts, not verified facts.
  */
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { Alert } from '../../components/ui/alert.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { KeyValueList } from '../../components/ui/key-value-list.tsx';
+import { Meta } from '../../components/ui/type.tsx';
+import { BoardFrame } from './BoardFrame.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
 import { boardStatsQuery } from './queries.ts';
 
@@ -16,64 +18,64 @@ export function NumbersPage() {
   const query = useQuery(boardStatsQuery);
   const d = query.data?.published ? query.data : null;
   return (
-    <Page title="By the numbers" width="prose">
-      <Link to="/board" className="underline">
-        Back to the board
-      </Link>
+    <BoardFrame title="By the numbers" width="prose">
       {query.isPending ? <p role="status">Counting…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? (
+        <Alert tone="serious" title="The numbers could not be loaded">
+          {query.error.message}
+        </Alert>
+      ) : null}
       {query.data && !query.data.published ? <Alert>{query.data.reason}</Alert> : null}
       {d ? (
         <>
-          <Alert>{d.note}</Alert>
           <NotASample line={d.not_a_sample} />
+          <Alert>{d.note}</Alert>
           {Object.entries(d.published_reports.by_logbook).map(([slug, b]) => (
-            <section key={slug} aria-labelledby={`lb-${slug}`} className="flex flex-col gap-2">
-              <h2 id={`lb-${slug}`} className="font-display text-xl font-bold">
+            <section key={slug} aria-labelledby={`lb-${slug}`} className="flex flex-col gap-4">
+              <h2 id={`lb-${slug}`} className="font-display text-section">
                 {b.title}
               </h2>
               <p>
-                Published reports: <span className="font-mono">{b.published}</span>
+                Published reports: <Meta className="text-base text-ink">{b.published}</Meta>
               </p>
               {Object.entries(b.by_question).map(([key, q]) => (
-                <div key={key}>
-                  <h3 className="font-semibold">{q.label}</h3>
-                  <dl className="grid grid-cols-[1fr_auto] gap-x-6">
-                    {Object.entries(q.counts)
-                      .sort((x, y) => y[1] - x[1])
-                      .map(([answer, n]) => (
-                        <div key={answer} className="contents">
-                          <dt>{answer}</dt>
-                          <dd className="text-right font-mono">{n}</dd>
-                        </div>
-                      ))}
-                    {q.withheld && q.withheld.reports !== null ? (
-                      <div className="contents">
-                        <dt>Places with fewer than {q.withheld.threshold}, together</dt>
-                        <dd className="text-right font-mono">{q.withheld.reports}</dd>
-                      </div>
-                    ) : null}
-                    {q.unanswered ? (
-                      <div className="contents">
-                        <dt>Not answered</dt>
-                        <dd className="text-right font-mono">{q.unanswered}</dd>
-                      </div>
-                    ) : null}
-                  </dl>
+                <Card key={key} heading={q.label} headingLevel={3}>
+                  <KeyValueList
+                    items={[
+                      ...Object.entries(q.counts)
+                        .sort((x, y) => y[1] - x[1])
+                        .map(([answer, n]) => ({ key: answer, value: n, mono: true })),
+                      ...(q.withheld && q.withheld.reports !== null
+                        ? [
+                            {
+                              key: `Places with fewer than ${String(q.withheld.threshold)}, together`,
+                              value: q.withheld.reports,
+                              mono: true,
+                            },
+                          ]
+                        : []),
+                      // Last, always: an unanswered question is counted, not hidden.
+                      ...(q.unanswered
+                        ? [{ key: 'Not answered', value: q.unanswered, mono: true }]
+                        : []),
+                    ]}
+                  />
                   {q.withheld ? (
-                    <p className="text-sm text-ink-alt">
+                    <p className="max-w-prose text-sm text-ink-alt">
                       Fewer than {q.withheld.threshold} published reports each, so these places are
                       named without a number: {q.withheld.areas.join(', ')}.
                     </p>
                   ) : null}
-                </div>
+                </Card>
               ))}
             </section>
           ))}
           <MapSlot slot="board_numbers" />
-          <p className="text-sm text-ink-alt">As of {new Date(d.as_of).toLocaleString()}.</p>
+          <p className="text-sm text-ink-alt">
+            As of <Meta>{new Date(d.as_of).toLocaleString()}</Meta>.
+          </p>
         </>
       ) : null}
-    </Page>
+    </BoardFrame>
   );
 }

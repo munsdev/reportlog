@@ -24,20 +24,28 @@
 import { LINK_FIELD_WORDING, sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  CardBar,
+  CardFrame,
+  FilingProgress,
+  useCardTitle,
+  useFocusOnMount,
+} from '../form/CardFrame.tsx';
 import { CountyPicker } from '../form/CountyPicker.tsx';
-import { inputLimits } from '../form/QuestionControl.tsx';
-import { DoorPuzzle, Honeypot, doorStatus, useDoor } from '../door/useDoor.tsx';
+import { FormColumn, FormNotice } from '../form/FormNotice.tsx';
+import { CharacterCount, inputLimits, kindHelp } from '../form/QuestionControl.tsx';
+import { DoorPuzzle, Honeypot, doorStatus, useDoor, useSendWhenReady } from '../door/useDoor.tsx';
 import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
-import { useEffect, useRef, useState } from 'react';
-import type { ReactNode, RefObject } from 'react';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Card, CardContent } from '../../components/ui/card.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field, FieldDescription, FieldError, FieldReset } from '../../components/ui/field.tsx';
+import { FieldReset } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
@@ -65,33 +73,63 @@ const blank = (v: Value): boolean =>
     ? v.every((x: string | LinkRow) => (typeof x === 'string' ? !x.trim() : blankRow(x)))
     : !v.trim());
 
-/** What is wrong with a question's link rows, in a sentence, or null. */
+/** What is wrong with a question's link rows, in a sentence that names the row, or null. */
 function rowProblem(q: ListFormQuestion, v: Value): string | null {
   if (!q.link_types?.length) return null;
   const rows = (Array.isArray(v) ? v : []) as LinkRow[];
-  for (const r of rows) {
-    if (r.url.trim() && !r.type) return 'Say what kind of link each one is.';
+  for (const [i, r] of rows.entries()) {
+    const n = String(i + 1);
+    if (r.url.trim() && !r.type) return `Link ${n} has no type. Choose what kind of thing it is.`;
     if (!r.url.trim() && r.type)
-      return 'A row says what kind of link it is but has no link. Add the link, or clear the row.';
+      return `Link ${n} has a type but no link. Add the link, or clear the row.`;
   }
   const first = rows[0];
-  if (q.required && !first?.url.trim()) return 'Row 1 needs a link.';
+  if (q.required && !first?.url.trim()) return 'Link 1 needs a link.';
   return null;
+}
+
+/**
+ * What is sent: only what was answered. A row of a link question with
+ * neither a link nor a type is not an answer, so it is never sent as an
+ * empty row; the rows that are sent keep their order.
+ */
+function answersToSend(values: Record<string, Value>): Record<string, Value> {
+  const out: Record<string, Value> = {};
+  for (const [k, v] of Object.entries(values)) {
+    if (blank(v)) continue;
+    const isRows = Array.isArray(v) && v.some((x: string | LinkRow) => typeof x === 'object');
+    out[k] = isRows ? (v as LinkRow[]).filter((r) => !blankRow(r)) : v;
+  }
+  return out;
 }
 
 export function ListFormPage({ slug }: { slug: string }) {
   const query = useQuery(listFormQuery(slug));
-  if (query.isPending) return <p role="status">Opening the form…</p>;
+  if (query.isPending) {
+    return (
+      <FormColumn>
+        <p role="status">Opening the form…</p>
+      </FormColumn>
+    );
+  }
   if (query.isError) {
     const gone = query.error instanceof ApiRequestError && query.error.status === 404;
     return (
-      <Page title={gone ? 'Not found' : 'This form could not be opened'} width="prose">
-        <Alert tone={gone ? 'note' : 'serious'}>
-          {gone
-            ? 'There is no form at this address.'
-            : 'The form could not be loaded. Check your connection and try again.'}
-        </Alert>
-      </Page>
+      <FormNotice
+        eyebrow="Send something"
+        title={gone ? 'Not found' : 'This form could not be opened'}
+      >
+        {gone ? (
+          <p className="max-w-prose">
+            There is no form at this address. Check the address you were given. It may have a typing
+            mistake in it.
+          </p>
+        ) : (
+          <Alert tone="serious" title="The form did not load">
+            Check your connection and try again.
+          </Alert>
+        )}
+      </FormNotice>
     );
   }
   return <ListFormView form={query.data} />;
@@ -100,24 +138,23 @@ export function ListFormPage({ slug }: { slug: string }) {
 export function ListFormView({ form }: { form: Form }) {
   // Plan E: a moderator paused intake (features/flood).
   const paused = useIntakePaused();
-  if (paused) return <PausedForm title={form.title} />;
+  if (paused) return <PausedForm title={form.title} eyebrow="Send something" />;
   if (!form.accepting) {
     const opens = form.opens_at && new Date(form.opens_at) > new Date();
     return (
-      <Page title={form.title} lede={form.blurb} width="prose">
-        <Alert>
-          {opens
-            ? `This form opens on ${new Date(form.opens_at ?? '').toLocaleString()}.`
-            : 'This form is not taking anything at the moment.'}
-        </Alert>
-      </Page>
+      <FormNotice eyebrow="Send something" title={form.title}>
+        {form.blurb ? <Lede className="whitespace-pre-wrap">{form.blurb}</Lede> : null}
+        <Card variant="quiet">
+          <p className="max-w-prose">
+            {opens
+              ? `This form opens on ${new Date(form.opens_at ?? '').toLocaleString()}.`
+              : 'This form is not taking anything at the moment.'}
+          </p>
+        </Card>
+      </FormNotice>
     );
   }
-  return (
-    <Page title={form.title} lede={form.blurb} width="prose">
-      <Cards form={form} />
-    </Page>
-  );
+  return <Cards form={form} />;
 }
 
 type Step = { kind: 'intro' } | { kind: 'question'; q: ListFormQuestion } | { kind: 'email' };
@@ -130,7 +167,8 @@ function Cards({ form }: { form: Form }) {
   ];
   const [at, setAt] = useState(0);
   // The tips form starts with the state, county and time of a report just
-  // filed in this browser (features/form/tipOffer.tsx). Browser only.
+  // filed in this browser (features/form/tipOffer.tsx). Browser only, and
+  // visibly: they are the card's starting answers, which can be changed.
   const [values, setValues] = useState<Record<string, Value>>(() =>
     form.slug === 'tips' ? takeTipPrefill(form.fields) : {},
   );
@@ -140,7 +178,6 @@ function Cards({ form }: { form: Form }) {
   const [problem, setProblem] = useState<string | null>(null);
   // Worked out on ARRIVING at the address card, never while somebody is on it.
   const [wroteOnArrival, setWroteOnArrival] = useState(false);
-  const heading = useRef<HTMLHeadingElement>(null);
 
   const step = steps[at] ?? { kind: 'intro' };
   const last = at === steps.length - 1;
@@ -151,7 +188,7 @@ function Cards({ form }: { form: Form }) {
       call(sendListEntry, {
         params: { slug: form.slug },
         body: {
-          answers: Object.fromEntries(Object.entries(values).filter(([, v]) => !blank(v))),
+          answers: answersToSend(values),
           email: email.trim() || null,
           email_consent: form.email_reason === 'reply' ? true : consent,
           ...door.fields(),
@@ -164,34 +201,28 @@ function Cards({ form }: { form: Form }) {
     },
   });
 
-  useEffect(() => {
-    heading.current?.focus();
-  }, [at, send.isSuccess]);
+  const sending = useSendWhenReady(door, send);
+
   useEffect(() => {
     if (send.isSuccess) clearTipPrefill();
   }, [send.isSuccess]);
 
+  const heading =
+    step.kind === 'intro'
+      ? form.title
+      : step.kind === 'question'
+        ? step.q.label
+        : 'Your email address';
+  useCardTitle(
+    send.isSuccess ? 'Sent. Thank you.' : heading,
+    send.isSuccess || at === 0 ? null : { n: at, of: steps.length - 1 },
+  );
+
   if (send.isSuccess) {
     return (
-      <Card>
-        <CardContent className="space-y-3 pt-6">
-          <h2 ref={heading} tabIndex={-1} className="font-display text-2xl font-bold">
-            Sent. Thank you.
-          </h2>
-          <p>Nothing you sent is published. A moderator reads it.</p>
-          {send.data.erasure_mailed ? (
-            <p>
-              We emailed you a link that deletes what you wrote and your email address. Keep that
-              email if you might want to use it.
-            </p>
-          ) : send.data.erasable ? (
-            <p>
-              We could not email you the link that deletes what you wrote. Ask whoever runs this
-              site if you want it deleted.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
+      <FormColumn>
+        <Sent erasureMailed={send.data.erasure_mailed} erasable={send.data.erasable} />
+      </FormColumn>
     );
   }
 
@@ -223,84 +254,120 @@ function Cards({ form }: { form: Form }) {
       return;
     }
     if (last) {
-      if (door.ready) send.mutate();
+      // Pressed before the door is ready, it goes when it is; the door's
+      // status line above the button says what it is waiting for.
+      sending.press();
     } else go(at + 1);
   };
 
+  // No numbers on the page, as on a logbook: the share of the cards done.
+  const progress = at === 0 ? null : at / steps.length;
+
   return (
-    <form
-      noValidate
-      onSubmit={(e) => {
-        e.preventDefault();
-        next();
-      }}
-    >
-      {/* A box nobody can see. Filled in means a script. */}
-      <Honeypot door={door} />
-      <DoorPuzzle door={door} />
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <p className="text-sm text-ink-alt">
-            {String(at + 1)} of {String(steps.length)}
-          </p>
-          {step.kind === 'intro' ? (
-            <Intro form={form} heading={heading} />
-          ) : step.kind === 'question' ? (
-            <Question
-              q={step.q}
-              days={form.personal_days}
-              value={values[step.q.key]}
-              problem={problem}
-              heading={heading}
-              onChange={(v) => {
-                setProblem(null);
-                setValues((all) => ({ ...all, [step.q.key]: v }));
-              }}
-            />
-          ) : (
-            <EmailCard
-              form={form}
-              wrote={wroteOnArrival}
-              email={email}
-              consent={consent}
-              problem={problem}
-              heading={heading}
-              onEmail={(v) => {
-                setProblem(null);
-                setEmail(v);
-              }}
-              onConsent={setConsent}
-            />
-          )}
-          {problem && step.kind === 'intro' ? <Alert tone="serious">{problem}</Alert> : null}
-          <div className="flex flex-wrap gap-3 pt-2">
-            {at > 0 ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
+    <FormColumn>
+      <form
+        noValidate
+        className="flex flex-col gap-6"
+        onSubmit={(e) => {
+          e.preventDefault();
+          next();
+        }}
+      >
+        {/* A box nobody can see. Filled in means a script. */}
+        <Honeypot door={door} />
+        <DoorPuzzle door={door} />
+        <FilingProgress value={progress} />
+        {step.kind === 'intro' ? (
+          <Intro form={form} />
+        ) : step.kind === 'question' ? (
+          <Question
+            key={step.q.key}
+            eyebrow={form.title}
+            q={step.q}
+            days={form.personal_days}
+            value={values[step.q.key]}
+            problem={problem}
+            onChange={(v) => {
+              setProblem(null);
+              setValues((all) => ({ ...all, [step.q.key]: v }));
+            }}
+          />
+        ) : (
+          <EmailCard
+            eyebrow={form.title}
+            form={form}
+            wrote={wroteOnArrival}
+            email={email}
+            consent={consent}
+            problem={problem}
+            onEmail={(v) => {
+              setProblem(null);
+              setEmail(v);
+            }}
+            onConsent={setConsent}
+          />
+        )}
+        <CardBar
+          submit
+          onBack={
+            at > 0
+              ? () => {
                   go(at - 1);
-                }}
-              >
-                Back
-              </Button>
-            ) : null}
-            <Button type="submit" disabled={send.isPending || (last && !door.ready)}>
-              {last ? (send.isPending ? 'Sending…' : 'Send') : at === 0 ? 'Start' : 'Next'}
-            </Button>
-          </div>
-          {last && doorStatus(door) ? (
-            <p role="status" className="text-sm text-ink-alt">
-              {doorStatus(door)}
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-    </form>
+                }
+              : undefined
+          }
+          primary={last ? 'Send' : at === 0 ? 'Start' : 'Next'}
+          busy={send.isPending || sending.waiting}
+          busyLabel="Sending…"
+          above={
+            <>
+              {problem && step.kind === 'intro' ? <Alert tone="serious" title={problem} /> : null}
+              {last && doorStatus(door) ? (
+                <p role="status" className="text-sm text-ink-alt">
+                  {doorStatus(door)}
+                </p>
+              ) : null}
+            </>
+          }
+        />
+      </form>
+    </FormColumn>
   );
 }
 
-function Intro({ form, heading }: { form: Form; heading: RefObject<HTMLHeadingElement | null> }) {
+/** After sending: quiet, with a tick, never teal. Focus moves to its heading. */
+function Sent({ erasureMailed, erasable }: { erasureMailed: boolean; erasable: boolean }) {
+  const heading = useFocusOnMount<HTMLHeadingElement>();
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Eyebrow>Send something</Eyebrow>
+        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
+          Sent. Thank you.
+        </h1>
+      </div>
+      <Alert tone="done">Nothing you sent is published. A moderator reads it.</Alert>
+      {erasureMailed ? (
+        <p className="max-w-prose">
+          We emailed you a link that deletes what you wrote and your email address. Keep that email
+          if you might want to use it.
+        </p>
+      ) : erasable ? (
+        <p className="max-w-prose">
+          We could not email you the link that deletes what you wrote. Ask whoever runs this site if
+          you want it deleted.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The first card: the form's own title and words, then what happens to an
+ * entry, in words rather than in a policy nobody opens.
+ */
+function Intro({ form }: { form: Form }) {
+  const heading = useFocusOnMount<HTMLHeadingElement>();
   const gone = `${form.personal_days === null ? 'when you ask' : `after ${keptFor(form.personal_days)}`}, or sooner if you use the link we email you`;
   const address: Record<Form['email_when'], string> = {
     always:
@@ -311,70 +378,81 @@ function Intro({ form, heading }: { form: Form; heading: RefObject<HTMLHeadingEl
     never: 'Nothing here asks about you, and no email address is needed.',
   };
   return (
-    <div className="space-y-3">
-      <h2 ref={heading} tabIndex={-1} className="font-display text-2xl font-bold">
-        Before you start
-      </h2>
-      <p>
-        Nothing you send here is published. A moderator reads it, and at most a count of the answers
-        is ever made public.
-      </p>
-      <p>{address[form.email_when]}</p>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <Eyebrow>Send something</Eyebrow>
+        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
+          {form.title}
+        </h1>
+        {form.blurb ? <Lede className="whitespace-pre-wrap">{form.blurb}</Lede> : null}
+      </div>
+      <section aria-labelledby="list-before" className="flex max-w-prose flex-col gap-3">
+        <h2 id="list-before" className="label-face text-xs text-muted">
+          Before you start
+        </h2>
+        <p>
+          Nothing you send here is published. A moderator reads it, and at most a count of the
+          answers is ever made public.
+        </p>
+        <p>{address[form.email_when]}</p>
+      </section>
     </div>
   );
 }
 
-function QuestionHeading({
-  q,
-  heading,
-  id,
-}: {
-  q: ListFormQuestion;
-  heading: RefObject<HTMLHeadingElement | null>;
-  id: string;
-}) {
-  return (
-    <h2 ref={heading} id={id} tabIndex={-1} className="font-display text-2xl font-bold">
-      {q.label}
-      {q.required ? null : (
-        <>
-          {' '}
-          <span className="text-base font-normal text-ink-alt">(optional)</span>
-        </>
-      )}
-    </h2>
-  );
-}
-
 function Question({
+  eyebrow,
   q,
   days,
   value,
   problem,
-  heading,
   onChange,
 }: {
+  eyebrow: string;
   q: ListFormQuestion;
   days: number | null;
   value: Value;
   problem: string | null;
-  heading: RefObject<HTMLHeadingElement | null>;
   onChange: (v: Value) => void;
 }) {
   const headingId = `q-${q.key}`;
+  const helpId = `${headingId}-help`;
+  const errorId = `${headingId}-error`;
+  const extra = kindHelp({ kind: q.kind, settings: {} }, `${q.label} ${q.help ?? ''}`);
+  const help = Boolean(q.help) || q.erased || extra !== null;
   return (
-    <Field>
-      <QuestionHeading q={q} heading={heading} id={headingId} />
-      {q.help ? <FieldDescription>{q.help}</FieldDescription> : null}
-      {q.erased ? (
-        <p className="text-sm text-ink-alt">
-          Deleted {days === null ? 'when you ask' : `after ${keptFor(days)}`}, with your email
-          address.
-        </p>
-      ) : null}
-      <Control q={q} value={value} labelledBy={headingId} onChange={onChange} />
-      <FieldError>{problem}</FieldError>
-    </Field>
+    <CardFrame
+      eyebrow={eyebrow}
+      heading={q.label}
+      headingId={headingId}
+      focusKey={q.key}
+      optional={!q.required}
+      help={
+        help ? (
+          <div id={helpId} className="flex max-w-prose flex-col gap-1 text-ink-alt">
+            {q.help ? <p className="whitespace-pre-wrap">{q.help}</p> : null}
+            {extra ? <p>{extra}</p> : null}
+            {q.erased ? (
+              <p className="text-sm">
+                Deleted {days === null ? 'when you ask' : `after ${keptFor(days)}`}, with your email
+                address.
+              </p>
+            ) : null}
+          </div>
+        ) : null
+      }
+      error={problem}
+      errorId={errorId}
+    >
+      <Control
+        q={q}
+        value={value}
+        labelledBy={headingId}
+        describedBy={[help ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ')}
+        invalid={Boolean(problem)}
+        onChange={onChange}
+      />
+    </CardFrame>
   );
 }
 
@@ -382,16 +460,24 @@ function Control({
   q,
   value,
   labelledBy,
+  describedBy,
+  invalid,
   onChange,
 }: {
   q: ListFormQuestion;
   value: Value;
   labelledBy: string;
+  describedBy: string;
+  invalid: boolean;
   onChange: (v: Value) => void;
 }): ReactNode {
   const text = typeof value === 'string' ? value : '';
   const list = Array.isArray(value) ? value : [];
-  const named = { 'aria-labelledby': labelledBy };
+  const named = {
+    'aria-labelledby': labelledBy,
+    'aria-describedby': describedBy || undefined,
+    'aria-invalid': invalid || undefined,
+  };
 
   if (q.kind === 'url' && q.link_types?.length) {
     return <LinkRows q={q} value={value} labelledBy={labelledBy} onChange={onChange} />;
@@ -404,9 +490,9 @@ function Control({
       onChange(q.max_values > 1 ? all : all[0]);
     };
     return (
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {/* K2: part of the field type, so every form asking for a link says it. */}
-        <p className="text-sm text-ink-alt" data-testid="link-wording">
+        <p className="max-w-prose text-sm text-ink-alt" data-testid="link-wording">
           {LINK_FIELD_WORDING}
         </p>
         {boxes.map((b, i) => (
@@ -426,16 +512,17 @@ function Control({
           />
         ))}
         {q.max_values > 1 && boxes.length < q.max_values ? (
-          <Button
-            type="button"
-            variant="quiet"
-
-            onClick={() => {
-              onChange([...boxes, '']);
-            }}
-          >
-            Add another link
-          </Button>
+          <div>
+            <Button
+              type="button"
+              variant="quiet"
+              onClick={() => {
+                onChange([...boxes, '']);
+              }}
+            >
+              Add another link
+            </Button>
+          </div>
         ) : null}
       </div>
     );
@@ -487,6 +574,8 @@ function Control({
         value={text}
         onChange={onChange}
         labelledBy={labelledBy}
+        describedBy={describedBy || undefined}
+        invalid={invalid}
       />
     );
   }
@@ -510,14 +599,19 @@ function Control({
   }
   if (q.kind === 'long_text') {
     return (
-      <Textarea
-        value={text}
-        maxLength={1000}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        {...named}
-      />
+      <div className="flex flex-col gap-1">
+        <Textarea
+          value={text}
+          rows={6}
+          maxLength={1000}
+          className="min-h-40 [field-sizing:content]"
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          {...named}
+        />
+        <CharacterCount length={text.length} max={1000} />
+      </div>
     );
   }
   const types: Record<string, string> = {
@@ -527,26 +621,34 @@ function Control({
     datetime: 'datetime-local',
     email: 'email',
   };
+  const max = q.kind === 'short_text' || q.kind === 'place' ? 200 : null;
   return (
-    <Input
-      type={types[q.kind] ?? 'text'}
-      value={q.kind === 'datetime' && text ? toLocal(text) : text}
-      maxLength={q.kind === 'short_text' || q.kind === 'place' ? 200 : undefined}
-      {...inputLimits({ kind: q.kind, settings: { earliest: q.earliest, latest: q.latest } })}
-      onChange={(e) => {
-        const v = e.target.value;
-        onChange(q.kind === 'datetime' && v ? new Date(v).toISOString() : v);
-      }}
-      {...named}
-    />
+    <div className="flex flex-col gap-1">
+      <Input
+        type={types[q.kind] ?? 'text'}
+        value={q.kind === 'datetime' && text ? toLocal(text) : text}
+        {...(max === null ? {} : { maxLength: max })}
+        {...(q.kind === 'email' ? { inputMode: 'email' as const, autoComplete: 'email' } : {})}
+        {...(q.kind === 'number' ? { inputMode: 'numeric' as const } : {})}
+        {...inputLimits({ kind: q.kind, settings: { earliest: q.earliest, latest: q.latest } })}
+        onChange={(e) => {
+          const v = e.target.value;
+          onChange(q.kind === 'datetime' && v ? new Date(v).toISOString() : v);
+        }}
+        {...named}
+      />
+      {max === null ? null : <CharacterCount length={text.length} max={max} />}
+    </div>
   );
 }
 
 /**
- * ROWS OF A LINK AND WHAT KIND OF LINK IT IS (ElectionLog questionnaires §04).
- * With `fixed_rows` every row is on the card from the start and none is added
- * or removed, so nothing on the card moves. Row 1 is the one a required
- * question needs. The fixed wording (K2) sits above the rows.
+ * ROWS OF A LINK AND WHAT KIND OF THING IT IS (ElectionLog questionnaires
+ * §04). With `fixed_rows` every row is on the card from the start and none
+ * is added or removed, so nothing on the card moves. Row 1 is the one a
+ * required question needs. The fixed wording (K2) sits above the rows. Each
+ * row is a plain panel: the link and its kind stacked on a phone, side by
+ * side on a desktop.
  */
 function LinkRows({
   q,
@@ -566,8 +668,8 @@ function LinkRows({
     onChange(rows.map((r, j) => (j === i ? row : r)));
   };
   return (
-    <div className="space-y-4" role="group" aria-labelledby={labelledBy}>
-      <p className="text-sm text-ink-alt" data-testid="link-wording">
+    <div className="flex flex-col gap-4" role="group" aria-labelledby={labelledBy}>
+      <p className="max-w-prose text-sm text-ink-alt" data-testid="link-wording">
         {LINK_FIELD_WORDING}
       </p>
       {/* Each row's two controls carry their own labels, not the card's one id. */}
@@ -576,49 +678,56 @@ function LinkRows({
           const n = String(i + 1);
           const optional = !(q.required && i === 0);
           return (
-            <fieldset
-              // Rows never move or go away, so a position is a stable key.
-              key={`row-${n}`}
-              className="space-y-2 rounded-card border border-line p-3"
-            >
-              <legend className="px-1 font-semibold">
-                Link {n}
-                {optional ? <span className="font-normal text-ink-alt"> (optional)</span> : null}
-              </legend>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
-                <Input
-                  id={`${labelledBy}-url-${n}`}
-                  type="url"
-                  inputMode="url"
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="https://"
-                  maxLength={2000}
-                  value={row.url}
-                  onChange={(e) => {
-                    put(i, { ...row, url: e.target.value });
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of link it is</Label>
-                <Select
-                  id={`${labelledBy}-type-${n}`}
-                  value={row.type}
-                  onChange={(e) => {
-                    put(i, { ...row, type: e.target.value });
-                  }}
-                >
-                  <option value="">Choose one</option>
-                  {(q.link_types ?? []).map((t) => (
-                    <option key={t.code} value={t.code}>
-                      {t.label}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-            </fieldset>
+            // The rule is on a box around the fieldset, so the legend sits
+            // under it rather than breaking it.
+            <div key={`row-${n}`} className="border-t border-ink-alt pt-3">
+              <fieldset className="flex flex-col gap-2">
+                <legend className="label-face mb-2 text-[0.8125rem]">
+                  Link {n}
+                  {optional ? (
+                    <span className="font-sans font-normal tracking-normal normal-case text-ink-alt">
+                      {' '}
+                      (optional)
+                    </span>
+                  ) : null}
+                </legend>
+                <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[2fr_1fr] sm:gap-x-4">
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
+                    <Input
+                      id={`${labelledBy}-url-${n}`}
+                      type="url"
+                      inputMode="url"
+                      autoComplete="off"
+                      spellCheck={false}
+                      placeholder="https://"
+                      maxLength={2000}
+                      value={row.url}
+                      onChange={(e) => {
+                        put(i, { ...row, url: e.target.value });
+                      }}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of thing is it?</Label>
+                    <Select
+                      id={`${labelledBy}-type-${n}`}
+                      value={row.type}
+                      onChange={(e) => {
+                        put(i, { ...row, type: e.target.value });
+                      }}
+                    >
+                      <option value="">Choose one</option>
+                      {(q.link_types ?? []).map((t) => (
+                        <option key={t.code} value={t.code}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+                </div>
+              </fieldset>
+            </div>
           );
         })}
       </FieldReset>
@@ -635,21 +744,21 @@ function toLocal(iso: string): string {
 }
 
 function EmailCard({
+  eyebrow,
   form,
   wrote,
   email,
   consent,
   problem,
-  heading,
   onEmail,
   onConsent,
 }: {
+  eyebrow: string;
   form: Form;
   wrote: boolean;
   email: string;
   consent: boolean;
   problem: string | null;
-  heading: RefObject<HTMLHeadingElement | null>;
   onEmail: (v: string) => void;
   onConsent: (v: boolean) => void;
 }) {
@@ -663,25 +772,34 @@ function EmailCard({
       ? 'Needed, because you wrote something: we email you a link that deletes it, and your address with it.'
       : 'Not needed: you have not written anything. Leave it empty unless you want a reply.';
   return (
-    <div className="space-y-4">
-      <Field>
-        <h2 ref={heading} tabIndex={-1} className="font-display text-2xl font-bold">
-          <Label className="text-2xl font-bold" optional={!always && !wrote}>
-            Your email address
-          </Label>
-        </h2>
-        <FieldDescription>{why}</FieldDescription>
-        <Input
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => {
-            onEmail(e.target.value);
-          }}
-        />
-        <FieldError>{problem}</FieldError>
-      </Field>
+    <CardFrame
+      eyebrow={eyebrow}
+      heading="Your email address"
+      headingId="list-email-heading"
+      focusKey="email"
+      optional={!always && !wrote}
+      help={
+        <p id="list-email-help" className="max-w-prose text-ink-alt">
+          {why}
+        </p>
+      }
+      error={problem}
+      errorId="list-email-error"
+    >
+      <Input
+        type="email"
+        inputMode="email"
+        autoComplete="email"
+        value={email}
+        aria-labelledby="list-email-heading"
+        aria-describedby={['list-email-help', problem ? 'list-email-error' : '']
+          .filter(Boolean)
+          .join(' ')}
+        aria-invalid={problem ? true : undefined}
+        onChange={(e) => {
+          onEmail(e.target.value);
+        }}
+      />
       {/* On a form for reaching the site, sending it IS asking for a reply. */}
       {reply ? null : (
         <CheckOption
@@ -694,6 +812,6 @@ function EmailCard({
           }}
         />
       )}
-    </div>
+    </CardFrame>
   );
 }

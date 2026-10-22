@@ -50,7 +50,8 @@ test('the front page still offers the way in when its buttons cannot be fetched'
   await page.goto('/');
   const buttons = page.getByRole('list', { name: 'What you can do here' }).getByRole('link');
   // The query retries before it gives up, so allow for that.
-  await expect(buttons).toHaveText(['Submit a Report', 'View Live Report Board'], {
+  // The board's button may carry its count after the words.
+  await expect(buttons).toHaveText(['Submit a Report', /^View Live Report Board/], {
     timeout: 15_000,
   });
   await expect(buttons.first()).toHaveAttribute('href', '/submit');
@@ -306,10 +307,17 @@ test.describe('an organization’s own listing switch', () => {
       page.getByRole('heading', { level: 1, name: 'Harbour Group in the directory' }),
     ).toBeVisible();
     await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
-    await expect(page.getByText('Today that number would be 3.')).toBeVisible();
-    await page.getByRole('button', { name: 'List it in the directory' }).click();
+    await expect(page.getByText('Today its number of members would be 3.')).toBeVisible();
+    // Two choice cards and the panel's own Save; nothing changes until Save.
+    await page.getByRole('radio', { name: 'Listed', exact: true }).check();
+    await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Harbour Group is listed in .*since/)).toBeVisible();
-    await page.getByRole('button', { name: 'Take it out of the directory' }).click();
+    await expect(
+      page.getByRole('status').filter({ hasText: 'listed in the directory now' }),
+    ).toBeVisible();
+    await page.getByRole('radio', { name: 'Not listed' }).check();
+    await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
   });
 });

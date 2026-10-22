@@ -98,7 +98,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   // On the board, without any of moderation's workings.
   await page.goto('/board');
   await page.getByLabel('Search the words').fill(word);
-  await page.getByRole('button', { name: 'Show reports' }).click();
+  await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`q=${word}`));
   await page.getByRole('link', { name: /^Read in full: RL-/ }).click();
   await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);

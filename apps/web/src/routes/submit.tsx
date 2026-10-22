@@ -1,14 +1,14 @@
 /**
  * Where the front page's "File" button goes: ONE CARD, ONE QUESTION. Every
  * report is filed through a logbook, and a link or tip goes through the tips
- * list, so this asks which, takes the answer, and moves on only when the
- * confirm button is pressed. Choosing an answer never moves anybody on, even
+ * list, so this asks which, takes the answer, and moves on only when Next
+ * is pressed. Choosing an answer never moves anybody on, even
  * when there is only one to choose (nothing on a card changes underneath
  * somebody, and no card advances by itself).
  *
  * THE QUESTION IS THE OPERATOR'S WORDING (`submit_question`, "What are you
  * reporting?" until they write one; ElectionLog's is "What do you want to
- * do?"), and each answer is named by what it opens: a logbook by its title,
+ * do?"), on the same card frame as every filing card, and each answer is named by what it opens: a logbook by its title,
  * the tips list by its own title ("Send a link"), so renaming one renames its
  * answer. The operator's intro (`submit_intro`) is drawn under the question,
  * and the card waits for the wording to load, so the page is drawn once.
@@ -17,13 +17,13 @@ import { listOpenLists, listPublicLogbooks } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '../components/ui/button.tsx';
-import { Field, FieldError } from '../components/ui/field.tsx';
-import { Label } from '../components/ui/label.tsx';
+import { Alert } from '../components/ui/alert.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { Empty } from '../components/ui/empty.tsx';
 import { RadioGroup, RadioOption } from '../components/ui/radio-group.tsx';
 import { useSite } from '../components/ui/site.tsx';
+import { CardBar, CardFrame, useCardTitle } from '../features/form/CardFrame.tsx';
+import { FormColumn, FormNotice } from '../features/form/FormNotice.tsx';
 import { call } from '../lib/api.ts';
 
 const openLogbooksQuery = queryOptions({
@@ -50,8 +50,24 @@ function Submit() {
   const navigate = useNavigate();
   const [chosen, setChosen] = useState('');
   const [problem, setProblem] = useState<string | null>(null);
-  if (logbooks.isPending || lists.isPending || site.isPending) return <p role="status">Loading…</p>;
-  if (logbooks.isError) return <p role="alert">{logbooks.error.message}</p>;
+  const question = site.data?.copy.submit_question ?? 'What are you reporting?';
+  useCardTitle(question);
+  if (logbooks.isPending || lists.isPending || site.isPending) {
+    return (
+      <FormColumn>
+        <p role="status">Loading…</p>
+      </FormColumn>
+    );
+  }
+  if (logbooks.isError) {
+    return (
+      <FormNotice title={question}>
+        <Alert tone="serious" title="What is open could not be loaded">
+          {logbooks.error.message}
+        </Alert>
+      </FormNotice>
+    );
+  }
   const open = logbooks.data.logbooks;
   // A tips list that failed to load is no reason to hide the logbooks.
   const tips = lists.data?.lists.find((l) => l.slug === TIPS_SLUG);
@@ -68,39 +84,51 @@ function Submit() {
     if (kind === 'list') void navigate({ to: '/list/$slug', params: { slug } });
     else void navigate({ to: '/file/$slug', params: { slug } });
   };
+  if (choices.length === 0) {
+    return (
+      <FormNotice title={question}>
+        <CopyText slot="submit_intro" />
+        <Empty title="Nothing is open">
+          Nothing is taking reports at the moment. Please come back later.
+        </Empty>
+      </FormNotice>
+    );
+  }
   return (
-    <Page title={site.data?.copy.submit_question ?? 'What are you reporting?'} width="prose">
-      <CopyText slot="submit_intro" />
-      {choices.length === 0 ? (
-        <p>Nothing is taking reports at the moment. Please come back later.</p>
-      ) : (
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            go();
-          }}
+    <FormColumn>
+      <form
+        noValidate
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          go();
+        }}
+      >
+        <CardFrame
+          eyebrow="File a report"
+          heading={question}
+          headingId="submit-question"
+          focusKey="submit"
+          help={<CopyText slot="submit_intro" className="text-ink-alt" />}
+          error={problem}
+          errorId="submit-problem"
         >
-          <Field>
-            <Label>Choose one</Label>
-            <RadioGroup
-              value={chosen}
-              onValueChange={(v) => {
-                setProblem(null);
-                setChosen(v);
-              }}
-            >
-              {choices.map((c) => (
-                <RadioOption key={c.value} value={c.value} label={c.label} hint={c.hint} />
-              ))}
-            </RadioGroup>
-            <FieldError>{problem}</FieldError>
-          </Field>
-          <div>
-            <Button type="submit">Continue</Button>
-          </div>
-        </form>
-      )}
-    </Page>
+          <RadioGroup
+            aria-labelledby="submit-question"
+            aria-describedby={problem ? 'submit-problem' : undefined}
+            value={chosen}
+            onValueChange={(v) => {
+              setProblem(null);
+              setChosen(v);
+            }}
+          >
+            {choices.map((c) => (
+              <RadioOption key={c.value} value={c.value} label={c.label} hint={c.hint} />
+            ))}
+          </RadioGroup>
+        </CardFrame>
+        <CardBar primary="Next" submit />
+      </form>
+    </FormColumn>
   );
 }

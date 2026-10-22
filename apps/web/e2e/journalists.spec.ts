@@ -67,7 +67,7 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   // J1, J6: four questions, and the legal notice and privacy policy before sending.
   await page.goto('/journalists/alerts');
   await expect(page.getByRole('heading', { level: 1, name: 'Journalist alerts' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'legal notice and privacy policy' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'imprint and privacy policy' })).toHaveAttribute(
     'href',
     '/legal',
   );
@@ -77,7 +77,7 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   await page.getByLabel('Your email address').fill(EMAIL);
   await page.getByLabel(state).check();
   const before = countTo(EMAIL);
-  await page.getByRole('button', { name: 'Send me a confirmation email' }).click();
+  await page.getByRole('button', { name: 'Join the list' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
   await noViolations(page);
   expect(devState('listed', EMAIL)).toBe('pending');
@@ -145,13 +145,18 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   // Back on, with one more state.
   await changing.getByRole('radio', { name: 'Send me alerts' }).click();
   await changing.getByRole('checkbox', { name: 'New Hampshire' }).click();
-  await changing.getByRole('button', { name: 'Save my alert settings' }).click();
+  await changing.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(changing.getByText('Your alert settings are saved.')).toBeVisible();
   expect(devState('listed', EMAIL)).toBe('active');
   // Removing yourself entirely is its own button, and says what else it ends.
   const removal = changing.getByRole('region', { name: 'Remove me from the list entirely' });
   await expect(removal.getByText(/ends that too/)).toBeVisible();
   await removal.getByRole('button', { name: 'Remove me from the list entirely' }).click();
+  // It asks again first (decision 46).
+  await changing
+    .getByRole('dialog')
+    .getByRole('button', { name: 'Remove me', exact: true })
+    .click();
   await expect(
     changing.getByRole('heading', { level: 1, name: 'You are off the alert list' }),
   ).toBeVisible();

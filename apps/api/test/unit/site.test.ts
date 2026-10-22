@@ -188,6 +188,27 @@ describe('the page wording', () => {
     });
   });
 
+  it('ships the emergency notice, takes a rewording, and can never be blanked (decision 62)', () => {
+    const shipped =
+      'This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.';
+    expect(resolveCopy([]).help_now).toBe(shipped);
+    expect(resolveCopy([{ key: 'help_now', body: 'Call 911 first.' }]).help_now).toBe(
+      'Call 911 first.',
+    );
+    // Not optional: an operator who saves it empty gets the shipped wording
+    // back, never a blank panel.
+    expect(COPY_SLOTS.find((s) => s.key === 'help_now')?.optional).toBeUndefined();
+    expect(validateCopy('help_now', '  ')).toEqual({
+      ok: true,
+      value: { key: 'help_now', body: null },
+    });
+    expect(resolveCopy([{ key: 'help_now', body: '   ' }]).help_now).toBe(shipped);
+    // A door shows it, and figures count what the password protects.
+    const figures = validateCopy('help_now', 'We have {{ published }} reports.');
+    expect(figures.ok).toBe(false);
+    expect(figures.ok ? '' : figures.error).toMatch(/emergency notice/);
+  });
+
   it('offers no slot for what the software says about itself', () => {
     for (const key of COPY_SLOTS.map((s) => s.key)) {
       expect(key).not.toMatch(/consent|verify|seal|error|label|submit_lede/);

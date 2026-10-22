@@ -86,10 +86,10 @@ async function send(page: Page) {
   // Send waits for the puzzle, solved in the background in this page.
   await page.getByRole('button', { name: 'Send report' }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
-  await heading(page, 'Thank you');
-  await expect(page.getByText(/was received/)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /was received/ })).toBeVisible();
+  await expect(page.getByText(/It is sealed/)).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link, photo or video\?/)).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Send it as a tip' })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: 'Send a link' })).toHaveAttribute(
     'href',
     '/list/tips',
   );
@@ -308,14 +308,12 @@ test('the tip card: three rows of a link and its kind, and no email card', async
   // The last card: the form asks for no email, so this one sends.
   await v.waitForTimeout(2600);
   await v.getByRole('button', { name: 'Send' }).click();
-  await expect(v.getByText('Say what kind of link each one is.')).toBeVisible();
-  await row('1').getByLabel('What kind of link it is').selectOption({ label: 'Video' });
-  await row('3').getByLabel('What kind of link it is').selectOption({ label: 'News article' });
+  await expect(v.getByText('Link 1 has no type. Choose what kind of thing it is.')).toBeVisible();
+  await row('1').getByLabel('What kind of thing is it?').selectOption({ label: 'Video' });
+  await row('3').getByLabel('What kind of thing is it?').selectOption({ label: 'News article' });
   await v.getByRole('button', { name: 'Send' }).click();
   await expect(
-    v.getByText(
-      'A row says what kind of link it is but has no link. Add the link, or clear the row.',
-    ),
+    v.getByText('Link 3 has a type but no link. Add the link, or clear the row.'),
   ).toBeVisible();
   await row('3').getByLabel('Link', { exact: true }).fill('https://news.example.org/story');
   await v.getByRole('button', { name: 'Send' }).click();
@@ -323,8 +321,8 @@ test('the tip card: three rows of a link and its kind, and no email card', async
   expect(sent).toHaveLength(1);
   expect((sent[0] as { answers: unknown; email: unknown }).answers).toEqual({
     links: [
+      // The empty middle row is not an answer, so it is not sent.
       { url: 'https://video.example.org/watch/1', type: 'video' },
-      { url: '', type: '' },
       { url: 'https://news.example.org/story', type: 'article' },
     ],
   });
@@ -370,7 +368,7 @@ test('the entry card: what do you want to do, and its two answers', async ({ pag
   await expectAccessible(page, 'the entry card');
   await page.getByRole('radio', { name: 'Send a link' }).check();
   await expect(page).toHaveURL(/\/submit$/);
-  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
   await expect(page).toHaveURL(/\/list\/tips$/);
   expect(outside).toEqual([]);
 });

@@ -12,7 +12,7 @@
  */
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { Contents, ProseSection } from '../components/ui/prose-section.tsx';
 
 export const Route = createFileRoute('/how')({
@@ -32,7 +32,7 @@ const link = 'underline underline-offset-2';
 
 function HowPage() {
   return (
-    <Page title="How to use this" width="prose">
+    <PublicPage title="How to use this" width="prose">
       <CopyText slot="how_intro" />
       <Contents label="On this page" items={SECTIONS} />
 
@@ -106,6 +106,6 @@ function HowPage() {
           explains why the check can be trusted.
         </p>
       </ProseSection>
-    </Page>
+    </PublicPage>
   );
 }

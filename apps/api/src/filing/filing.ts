@@ -417,7 +417,14 @@ async function submissionFor(db: Kysely<DB>, token: string) {
   return db
     .selectFrom('report_submissions as s')
     .innerJoin('logbooks as l', 'l.id', 's.logbook_id')
-    .select(['s.id', 's.expires_at', 's.confirmed_at', 's.thread_id', 'l.title as logbook_title'])
+    .select([
+      's.id',
+      's.expires_at',
+      's.confirmed_at',
+      's.thread_id',
+      'l.title as logbook_title',
+      'l.slug as logbook_slug',
+    ])
     .where('s.token_hash', '=', sha256Hex(token))
     .executeTakeFirst();
 }
@@ -462,7 +469,9 @@ export async function confirmationState(db: Kysely<DB>, token: string): Promise<
   const row = await submissionFor(db, token);
   if (!row) throw linkNotFound();
   if (row.thread_id) return threadState(db, row.thread_id, row.logbook_title, row.id);
-  if (row.expires_at < new Date()) return { state: 'expired', logbook_title: row.logbook_title };
+  // With the logbook's address, so the page can offer to file again.
+  if (row.expires_at < new Date())
+    return { state: 'expired', logbook_title: row.logbook_title, logbook_slug: row.logbook_slug };
   return {
     state: 'unconfirmed',
     logbook_title: row.logbook_title,

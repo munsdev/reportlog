@@ -161,7 +161,7 @@ describe('a list’s form', () => {
     await user.click(screen.getByRole('radio', { name: 'Ohio' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(
-      screen.getByRole('textbox', { name: 'Anything we should know (optional)' }),
+      screen.getByRole('textbox', { name: 'Anything we should know' }),
       'Seen on the news',
     );
     await user.click(screen.getByRole('button', { name: 'Next' }));
