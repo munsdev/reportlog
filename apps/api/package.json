@@ -17,6 +17,9 @@
     "anchor": "node --env-file-if-exists=../../.env src/anchor/cli.ts",
     "check-chain": "node src/anchor/check-chain.ts",
     "ops": "node --env-file-if-exists=../../.env src/jobs/cli.ts",
+    "look:add": "node --env-file-if-exists=../../.env src/looks/cli.ts add",
+    "look:list": "node --env-file-if-exists=../../.env src/looks/cli.ts list",
+    "look:remove": "node --env-file-if-exists=../../.env src/looks/cli.ts remove",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --project unit",
     "test:db": "vitest run --project db"

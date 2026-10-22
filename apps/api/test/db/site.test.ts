@@ -125,6 +125,9 @@ describe('the settings routes', () => {
       theme: 'docket',
       panel_head: THEMES.find((t) => t.id === 'docket')?.panelHead,
       texture: THEMES.find((t) => t.id === 'docket')?.texture,
+      // Stage 6: Easier reading's dark flag, and no look packs installed.
+      dark: true,
+      stylesheets: [],
     });
     const refused = await admin('PUT', '/api/admin/site/look', { palette: 'retired' });
     expect(refused.statusCode).toBe(400);

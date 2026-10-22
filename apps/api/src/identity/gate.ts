@@ -56,6 +56,10 @@ export const IN_FRONT: readonly string[] = [
   // The access request link (journalists/vetting.ts): the form it opens, and sending it.
   'GET /api/journalists/access/:token',
   'POST /api/journalists/access/:token',
+  // An installed look pack's stylesheet and fonts (looks/routes.ts), so the
+  // lock screen and a door wear the site's look (decision 60). Colours and
+  // type, by hash; nothing the password protects.
+  'GET /api/looks/:pack/:file',
 ];
 
 /**

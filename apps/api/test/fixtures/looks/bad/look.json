@@ -1,0 +1,185 @@
+{
+  "format": 1,
+  "id": "broken",
+  "label": "Broken",
+  "version": "1.0.0",
+  "author": "The ReportLog tests",
+  "fonts": [
+    {
+      "family": "Broken Sans",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/BrokenSans-400.woff2",
+          "weight": 400
+        }
+      ]
+    }
+  ],
+  "palettes": [
+    {
+      "id": "flint",
+      "label": "Flint again",
+      "description": "Built to fail.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e3de",
+        "background-alt": "#d7d6d0",
+        "background-deep": "#1c1c1a",
+        "surface": "#faf9f5",
+        "border": "#9e9d97",
+        "text": "#141413",
+        "text-alt": "#3e3d39",
+        "text-muted": "#55534d",
+        "text-on-deep": "#f2f1ec",
+        "action": "#2348b8",
+        "on-action": "#ffffff",
+        "brand": "#2348b8",
+        "brand-on-deep": "#a9bcff",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "faint",
+      "label": "Faint",
+      "description": "Built to fail.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e3de",
+        "background-alt": "#d7d6d0",
+        "background-deep": "#1c1c1a",
+        "surface": "#faf9f5",
+        "border": "#9e9d97",
+        "text": "#141413",
+        "text-alt": "#3e3d39",
+        "text-muted": "#c8c8c8",
+        "text-on-deep": "#f2f1ec",
+        "action": "#2348b8",
+        "on-action": "#ffffff",
+        "brand": "#2348b8",
+        "brand-on-deep": "#a9bcff",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "bluish",
+      "label": "Bluish",
+      "description": "Built to fail.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e3de",
+        "background-alt": "#d7d6d0",
+        "background-deep": "#1c1c1a",
+        "surface": "#faf9f5",
+        "border": "#9e9d97",
+        "text": "#141413",
+        "text-alt": "#3e3d39",
+        "text-muted": "#55534d",
+        "text-on-deep": "#f2f1ec",
+        "action": "#2348b8",
+        "on-action": "#ffffff",
+        "brand": "#2348b8",
+        "brand-on-deep": "#a9bcff",
+        "serious": "#1d4ed8",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    }
+  ],
+  "themes": [
+    {
+      "id": "unknown-font",
+      "label": "Unknown font",
+      "description": "Unknown font, for the tests.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "Comic Neue",
+          "size": 17
+        },
+        "label": {
+          "family": "Comic Neue",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 2,
+        "radiusSmall": 2,
+        "border": 2,
+        "shadow": 3,
+        "press": 2
+      },
+      "pageMax": 880,
+      "panelHead": "title-bar",
+      "texture": "none"
+    },
+    {
+      "id": "round",
+      "label": "Round",
+      "description": "Round, for the tests.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "Broken Sans",
+          "size": 17
+        },
+        "label": {
+          "family": "Broken Sans",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 40,
+        "radiusSmall": 2,
+        "border": 2,
+        "shadow": 3,
+        "press": 2
+      },
+      "pageMax": 880,
+      "panelHead": "title-bar",
+      "texture": "none"
+    }
+  ],
+  "looks": [
+    {
+      "id": "broken",
+      "label": "Broken",
+      "palette": "faint",
+      "theme": "round",
+      "default": true
+    }
+  ]
+}

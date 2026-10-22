@@ -8,6 +8,7 @@ import { editorCopy, resolveCopy } from './copy.ts';
 import { getDevMode } from './devMode.ts';
 import { resolveSiteName } from './identity.ts';
 import { editorStartingText, resolveLegalText } from './legal.ts';
+import { lookCatalogue } from '../looks/packs.ts';
 import { paintedLook, resolveLook } from './look.ts';
 import { readCopy, readSettings } from './settings.ts';
 import type { SettingsRow } from './settings.ts';
@@ -40,14 +41,19 @@ export async function renderCopy(
 }
 
 export async function publicSite(db: Database, version: SiteVersion = NO_VERSION): Promise<Site> {
-  const [settings, rows, dev] = await Promise.all([readSettings(db), readCopy(db), getDevMode(db)]);
+  const [settings, rows, dev, looks] = await Promise.all([
+    readSettings(db),
+    readCopy(db),
+    getDevMode(db),
+    lookCatalogue(db),
+  ]);
   const name = resolveSiteName(settings.site_name);
   return {
     software_name: SOFTWARE_NAME,
     name,
     name_parts: parseBrand(name),
     plain_name: plainName(name),
-    look: paintedLook(settings),
+    look: paintedLook(settings, looks),
     copy: await renderCopy(db, resolveCopy(rows)),
     dev_mode_until: dev.until,
     version,
@@ -62,9 +68,13 @@ export function legalFrom(settings: SettingsRow): Legal {
 }
 
 export async function editorState(db: Database): Promise<SiteEditor> {
-  const [settings, rows] = await Promise.all([readSettings(db), readCopy(db)]);
+  const [settings, rows, looks] = await Promise.all([
+    readSettings(db),
+    readCopy(db),
+    lookCatalogue(db),
+  ]);
   return {
-    look: resolveLook(settings),
+    look: resolveLook(settings, looks),
     name: settings.site_name,
     effective_name: resolveSiteName(settings.site_name),
     copy: editorCopy(rows),

@@ -309,6 +309,10 @@ describe('with the site password on', () => {
           theme: 'docket',
           panel_head: 'rule',
           texture: 'none',
+          // Stage 6: whether the palette is dark (for Easier reading), and the
+          // installed packs' stylesheets, served in front of the password too.
+          dark: true,
+          stylesheets: [],
         });
       } finally {
         await writeSettings(h.db, { palette: before.palette, theme: before.theme });

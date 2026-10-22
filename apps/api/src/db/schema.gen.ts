@@ -635,6 +635,23 @@ export interface Logbooks {
   updated_at: Generated<Timestamp>;
 }
 
+export interface LookPackFiles {
+  bytes: Buffer;
+  pack_id: string;
+  path: string;
+  sha256: string;
+}
+
+export interface LookPacks {
+  css: string;
+  css_sha256: string;
+  id: string;
+  installed_at: Generated<Timestamp>;
+  installed_by: string;
+  manifest: Json;
+  version: string;
+}
+
 export interface MapListPlaceQuestions {
   field_key: string;
   list_id: number;
@@ -1092,6 +1109,8 @@ export interface DB {
   logbook_forms: LogbookForms;
   logbook_publication: LogbookPublication;
   logbooks: Logbooks;
+  look_pack_files: LookPackFiles;
+  look_packs: LookPacks;
   map_list_place_questions: MapListPlaceQuestions;
   map_place_questions: MapPlaceQuestions;
   moderation_bulk_actions: ModerationBulkActions;

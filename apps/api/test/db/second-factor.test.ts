@@ -834,6 +834,21 @@ describe('step-up before each listed action', () => {
       url: () => '/api/admin/agreement/journalist',
       payload: () => ({}),
     },
+    // Look packs (stage 6): they change every public page. An empty zip is
+    // refused for itself once the step-up is given; replacing is the same call.
+    {
+      what: 'installing or replacing a look pack',
+      who: () => admin,
+      method: 'POST',
+      url: () => '/api/admin/looks',
+      payload: () => ({ zip: '' }),
+    },
+    {
+      what: 'removing a look pack',
+      who: () => owner,
+      method: 'DELETE',
+      url: () => '/api/admin/looks/no-such-pack',
+    },
   ];
 
   for (const action of LISTED) {

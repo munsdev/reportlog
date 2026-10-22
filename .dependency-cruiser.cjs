@@ -100,6 +100,15 @@ module.exports = {
       to: { path: '^apps/api/src/(site|feedback)/', reachable: true },
     },
     {
+      name: 'look-packs-stay-out-of-the-seal',
+      comment:
+        'An installed look pack is presentation an operator can replace or remove. A report ' +
+        'must never verify differently because somebody installed a look.',
+      severity: 'error',
+      from: { path: '^(packages/seal/|apps/api/src/chain/)' },
+      to: { path: '^apps/api/src/looks/', reachable: true },
+    },
+    {
       name: 'maps-stay-out-of-the-seal',
       comment:
         'A heat map is a view of the record, not part of it. A report must never verify ' +
