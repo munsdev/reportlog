@@ -745,6 +745,9 @@ const NOT_STAFF_PREFIXES = [
   // The menu's waiting totals (stage 3 navigation): anybody signed in, each
   // total only for the people its own screen admits (menu/waiting.ts).
   '/api/menu/',
+  // Look packs' stylesheets and fonts (stage 6): public, in front of the
+  // password, by content hash. Installing and removing are under /api/admin/.
+  '/api/looks/',
   '/api/setup/',
   '/api/doors',
   // The puzzle and start token every report and tip form asks for (door/).

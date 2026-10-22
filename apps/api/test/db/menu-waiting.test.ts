@@ -112,7 +112,12 @@ beforeAll(async () => {
 
   // Feedback: two open, one fixed.
   const submitter = await seat(h.db, address('menu-fb'), 'user');
-  const issue = { type: 'bug', severity: 'minor', title: 'A thing', body: 'It broke when I pressed it.' };
+  const issue = {
+    type: 'bug',
+    severity: 'minor',
+    title: 'A thing',
+    body: 'It broke when I pressed it.',
+  };
   await h.db
     .insertInto('feedback')
     .values([
