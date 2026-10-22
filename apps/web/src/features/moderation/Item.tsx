@@ -715,7 +715,6 @@ function Citations({
                 {l.title}
               </a>
               <Button
-               
                 variant="quiet"
                 onClick={() => {
                   remove.mutate(l.id);

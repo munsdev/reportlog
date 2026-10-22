@@ -166,7 +166,7 @@ function FileCard({
           <div>
             <Button
               variant="secondary"
-             
+
               aria-expanded={showing}
               onClick={() => {
                 setShowing((s) => !s);
@@ -233,11 +233,7 @@ function FileCard({
             ) : null}
             {f.publication !== 'refused' ? (
               <AskDialog
-                trigger={
-                  <Button variant="secondary">
-                    Refuse…
-                  </Button>
-                }
+                trigger={<Button variant="secondary">Refuse…</Button>}
                 title={`Refuse ${name}`}
                 description="Refusing says this file is not to be published. It stays with the report as evidence, and its fingerprint stays in the report."
                 questions={[
@@ -277,11 +273,7 @@ function OpenOriginal({
 }) {
   return (
     <AskDialog
-      trigger={
-        <Button variant="quiet">
-          Open the original…
-        </Button>
-      }
+      trigger={<Button variant="quiet">Open the original…</Button>}
       title={`The original of ${name}`}
       description="The original is the file exactly as it was sent, with whatever it carries about where and on what it was made. Opening it is recorded on the file, with your reason."
       questions={[
@@ -354,7 +346,6 @@ function Preview({ file: f }: { file: ThreadFile }) {
       {f.pages > 1 ? (
         <figcaption className="flex items-center gap-3 text-sm">
           <Button
-           
             variant="secondary"
             disabled={page === 1}
             onClick={() => {
@@ -367,7 +358,6 @@ function Preview({ file: f }: { file: ThreadFile }) {
             Page {String(page)} of {String(f.pages)}
           </span>
           <Button
-           
             variant="secondary"
             disabled={page === f.pages}
             onClick={() => {

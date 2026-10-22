@@ -196,7 +196,7 @@ function IssueCard({ issue }: { issue: FeedbackIssue }) {
         <div>
           <Button
             variant="quiet"
-           
+
             aria-expanded={open}
             onClick={() => {
               setOpen(!open);

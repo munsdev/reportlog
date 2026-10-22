@@ -147,7 +147,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                 )}
                 <div className="flex flex-wrap gap-2">
                   <Button
-                   
                     variant="secondary"
                     disabled={i === 0}
                     aria-label={`Move up: “${name}”`}
@@ -158,7 +157,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     Move up
                   </Button>
                   <Button
-                   
                     variant="secondary"
                     disabled={i === rows.length - 1}
                     aria-label={`Move down: “${name}”`}
@@ -169,7 +167,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     Move down
                   </Button>
                   <Button
-                   
                     variant="secondary"
                     aria-label={`Take off the page: “${name}”`}
                     onClick={() => {
@@ -216,7 +213,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
               >
                 <span>{b.label}</span>
                 <Button
-                 
                   variant="secondary"
                   aria-label={`Add to the page: “${b.label}”`}
                   onClick={() => {

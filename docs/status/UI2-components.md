@@ -43,7 +43,14 @@
 
 ## Checks
 
-TOTALS
+| Suite          | After stage 1          | After stage 2          |
+| -------------- | ---------------------- | ---------------------- |
+| `pnpm check`   | green; web 328         | green; web 372         |
+| `pnpm test:db` | 1373 in 90 files       | 1373 in 90 files       |
+| browser        | 1045 passed, 5 skipped | 1054 passed, 6 skipped |
+
+The browser run was on `ebdce4c`; the commit after it only reformats lines Prettier wanted
+rewrapped where `size="sm"` was removed.
 
 A browser test walks every page as an administrator and fails if any shows a browser-default
 radio, checkbox or file input (`e2e/site-ops.spec.ts`).

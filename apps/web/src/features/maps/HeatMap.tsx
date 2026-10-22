@@ -282,7 +282,7 @@ function Switch<T extends string>({
           <Button
             key={v}
             type="button"
-           
+
             variant="secondary"
             aria-pressed={v === value}
             // Pressed in ink, unmistakably: a near-miss shade read as the wrong one.
@@ -453,7 +453,7 @@ function Stage({
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
-         
+
           variant="secondary"
           disabled={zoom.k >= MAX_ZOOM}
           onClick={() => {
@@ -464,7 +464,7 @@ function Stage({
         </Button>
         <Button
           type="button"
-         
+
           variant="secondary"
           disabled={zoom.k <= 1}
           onClick={() => {
@@ -475,7 +475,7 @@ function Stage({
         </Button>
         <Button
           type="button"
-         
+
           variant="quiet"
           disabled={zoom.k === 1}
           onClick={() => {

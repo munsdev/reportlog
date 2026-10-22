@@ -67,7 +67,7 @@ export function FeedbackQueue() {
                 <div>
                   <Button
                     variant="quiet"
-                   
+
                     aria-expanded={openId === issue.id}
                     onClick={() => {
                       setOpenId(openId === issue.id ? null : issue.id);

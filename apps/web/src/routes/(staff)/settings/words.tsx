@@ -89,7 +89,7 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
       <div>
         <Button
           type="button"
-         
+
           variant="secondary"
           disabled={!current}
           onClick={() => {
@@ -191,7 +191,7 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
               <div>
                 <Button
                   type="button"
-                 
+
                   variant="quiet"
                   aria-expanded={picking}
                   onClick={() => {
