@@ -1,5 +1,11 @@
 /** What the public pages read, and what the settings screens edit, each in one go. */
-import { LEGAL_KINDS, SOFTWARE_NAME, parseBrand, plainName } from '@reportlog/contracts';
+import {
+  LEGAL_KINDS,
+  SOFTWARE_NAME,
+  parseBrand,
+  plainName,
+  resolveHomeSections,
+} from '@reportlog/contracts';
 import type { CopyKey, Legal, Site, SiteEditor, SiteVersion } from '@reportlog/contracts';
 import { figureValues, renderText } from '../board/figures.ts';
 import { publicArchiveAvailable } from '../board/publication.ts';
@@ -57,6 +63,7 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     copy: await renderCopy(db, resolveCopy(rows)),
     dev_mode_until: dev.until,
     version,
+    home_sections: resolveHomeSections(settings.home_sections),
   };
 }
 
@@ -82,5 +89,6 @@ export async function editorState(db: Database): Promise<SiteEditor> {
       kind,
       ...editorStartingText(settings[LEGAL_COLUMN[kind]], kind),
     })),
+    home_sections: resolveHomeSections(settings.home_sections),
   };
 }

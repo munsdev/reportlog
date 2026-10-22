@@ -927,6 +927,7 @@ export interface SiteCopy {
 export interface SiteSettings {
   dev_mode_until: Timestamp | null;
   home_buttons: Json | null;
+  home_sections: Json | null;
   id: Generated<boolean>;
   impressum_text: string | null;
   last_seen_build: string | null;

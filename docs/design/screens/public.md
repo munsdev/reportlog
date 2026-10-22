@@ -46,6 +46,28 @@ The operator's slots (`home_headline`, `home_lede`, `home_intro`, `about_archive
 
 **`/` · everyone · the operator's headline, the ways in, the map, checking a report**
 
+**THE FRONT PAGE AS BUILT, 22 OCTOBER 2026** (owner decision of that day; it replaces the layout below where they differ)
+
+Who it is for: somebody stressed at a polling place, who barely uses a touchscreen, pulls out a phone and must send a report or a tip within two minutes. So the top of the page carries only what she needs, and everything else is underneath, quieter.
+
+1. Eyebrow (the site's name), a big H1 `home_headline` (larger on a desktop), and `home_lede`, which should be one short sentence of what this is.
+2. The front-page buttons from `getHomeButtons`, full width at every size, at least 64px tall, the label in a larger size; the first is the accent. Blurbs, the board count and `FALLBACK_BUTTONS` as before (`features/home/buttons.tsx`).
+3. "What is this? About this site" (a link to `/about`), and the meta line.
+4. The `help_now` notice (decision 62). Always drawn, never removable.
+5. Under all of that, the quieter sections, in the order an administrator chose, each of which may be hidden: what this archive is for (`home_intro`), Check a report, the map (full width), the figures (the published count and a link to `/board/numbers`; drawn only while the archive is public), and More you can do (board, alerts, how to use, moderation standard). Shipped order: intro, check, map, figures, links, all shown.
+
+Desktop: the top part is one strong centred column (max 48rem), not a strip beside other things; the quieter sections sit under it in a two-column grid whose container carries `layout-split`, so a theme can style it.
+
+The order and visibility of the quieter sections is the site setting `home_sections` (`site_settings.home_sections`, NULL is the shipped order), served in `getSite` and the settings editor state, written by `PUT /api/admin/site/home-sections` (administrators, like every site settings write). `resolveHomeSections` in `packages/contracts/src/site.ts` drops an unknown id and appends a missing one, so a section added later appears.
+
+**EDIT MODE.** An owner or administrator (whoever can open `/settings`) sees "Edit this page" at the top of the front page. Nobody else fetches anything for it: the editor's calls are made only once edit mode is switched on, and never on a door. In edit mode the page keeps its shape (`features/home/FrontPageEditor.tsx` fills the same `FrontPageLayout` with fields), and every piece an operator owns has a dashed line round it:
+
+- the headline, the lede, the introduction and the emergency notice's wording, edited in place (the `setCopy` route the Wording screen uses; raw text, so a `{{ figure }}` is edited as written). The notice can be reworded, not removed: saved empty, it goes back to its shipped wording.
+- each button: Move up, Move down, Hide, and for a logbook or a list its own wording (empty means the record's title). A built-in keeps its wording. Hidden buttons are listed under "Not on the front page" with "Show it" (`setHomeButtons`).
+- each quieter section: Move up, Move down, Hide or Show; a hidden one stays on screen, dimmed, marked "hidden from visitors".
+
+A Save bar fixed to the bottom says "Editing the front page" with Cancel and Save. Nothing is public until Save. Cancel with changes asks before throwing them away; leaving the page or closing the tab with changes asks too (`UnsavedChangesGuard`). Save sends only what changed, then refetches the page, so the saved page is what shows when edit mode closes. A refusal is shown above the page and edit mode stays open. The Wording screen and `/logbooks/front-page` still edit the same things in forms.
+
 **PHONE** (canvas "Front page · phone · the voting site front door")
 
 1. Eyebrow, H1 `home_headline`, lede `home_lede`.

@@ -241,6 +241,51 @@ export const COPY_KEYS = [
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);
 
+// ── the front page's quieter sections ───────────────────────────────────
+
+/**
+ * What sits under the front page's buttons, which an administrator may hide
+ * and reorder (the on-page editor, decided 22 October 2026). The headline,
+ * the buttons and the emergency notice are not here: they are the page, and
+ * the notice may not be removed (decision 62).
+ */
+export const HOME_SECTIONS = ['intro', 'check', 'map', 'figures', 'links'] as const;
+export type HomeSectionId = (typeof HOME_SECTIONS)[number];
+export const HomeSectionIdSchema = z.enum(HOME_SECTIONS);
+
+export const HomeSection = z.object({ id: HomeSectionIdSchema, shown: z.boolean() });
+export type HomeSection = z.infer<typeof HomeSection>;
+
+/** What each section is called in the editor. */
+export const HOME_SECTION_NAMES: Record<HomeSectionId, string> = {
+  intro: 'What this archive is for',
+  check: 'Check a report',
+  map: 'The map',
+  figures: 'The figures',
+  links: 'More you can do',
+};
+
+/**
+ * The sections as stored, made whole: an id this release does not know is
+ * dropped, a repeat is dropped, and a section the list does not name is
+ * appended, shown, so one added in a later release still appears. Anything
+ * that is not a list (NULL included) is the shipped order. One function, used
+ * by the server on read and on write and by the page, so they cannot differ.
+ */
+export function resolveHomeSections(stored: unknown): HomeSection[] {
+  const out: HomeSection[] = [];
+  if (Array.isArray(stored)) {
+    for (const raw of stored as unknown[]) {
+      const parsed = HomeSection.safeParse(raw);
+      if (parsed.success && !out.some((s) => s.id === parsed.data.id)) out.push(parsed.data);
+    }
+  }
+  for (const id of HOME_SECTIONS) {
+    if (!out.some((s) => s.id === id)) out.push({ id, shown: true });
+  }
+  return out;
+}
+
 // ── what every page reads ───────────────────────────────────────────────
 
 /**
@@ -276,6 +321,12 @@ export const Site = z.object({
    */
   dev_mode_until: z.string().nullable(),
   version: SiteVersion,
+  /**
+   * The front page's quieter sections, whole and in order. Optional only so
+   * a page holding an older answer still draws; the server always sends it,
+   * and the page reads it through `resolveHomeSections`.
+   */
+  home_sections: z.array(HomeSection).optional(),
 });
 export type Site = z.infer<typeof Site>;
 
@@ -370,6 +421,8 @@ export const SiteEditor = z.object({
   effective_name: z.string(),
   copy: z.array(CopySlot),
   legal: z.array(LegalEditor),
+  /** The front page's quieter sections, whole and in order. */
+  home_sections: z.array(HomeSection),
 });
 export type SiteEditor = z.infer<typeof SiteEditor>;
 
@@ -407,6 +460,20 @@ export const setCopy = defineRoute({
   summary: 'Write one slot of page wording. Empty goes back to what ships.',
   params: z.object({ key: z.string() }),
   body: z.object({ body: z.string() }),
+  response: SiteEditor,
+});
+
+/**
+ * The front page's quieter sections, in order, each shown or hidden. Ids as
+ * strings, so an unknown one is refused in a sentence, not a schema error.
+ */
+export const setHomeSections = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/site/home-sections',
+  summary: "Choose which of the front page's quieter sections show, and their order.",
+  body: z.object({
+    sections: z.array(z.object({ id: z.string(), shown: z.boolean() })).max(20),
+  }),
   response: SiteEditor,
 });
 

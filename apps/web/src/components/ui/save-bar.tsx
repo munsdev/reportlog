@@ -23,6 +23,8 @@ export interface SaveBarProps {
   /** Saving now: Save says so and ignores a second press. */
   busy?: boolean | undefined;
   saveLabel?: ReactNode;
+  /** The words before the name. A bar for a whole page in edit mode says what is being edited instead. */
+  lead?: ReactNode;
   className?: string | undefined;
 }
 
@@ -39,6 +41,7 @@ export function SaveBar({
   onCancel,
   busy = false,
   saveLabel = 'Save',
+  lead = 'Saving: ',
   className,
 }: SaveBarProps) {
   const bar = useRef<HTMLDivElement>(null);
@@ -121,7 +124,7 @@ export function SaveBar({
       >
         <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-x-4 gap-y-2 px-[max(1rem,env(safe-area-inset-left))] py-3">
           <p className="min-w-0">
-            <span className="label-face text-xs text-on-deep-muted">Saving: </span>
+            {lead ? <span className="label-face text-xs text-on-deep-muted">{lead}</span> : null}
             <span className="font-semibold">{name}</span>
           </p>
           <div className="flex items-center gap-2">

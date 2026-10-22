@@ -44,6 +44,7 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
     effective_name: state.name ?? 'ReportLog',
     copy: [],
     legal: [],
+    home_sections: [],
   });
   const files = () => ({
     configured,

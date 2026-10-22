@@ -20,6 +20,7 @@ import {
   getWebManifest,
   setCopy,
   setDevMode,
+  setHomeSections,
   setLegalText,
   setLook,
   setSiteName,
@@ -32,6 +33,7 @@ import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { catalogue, checkText, figureValues } from '../board/figures.ts';
 import { validateCopy } from './copy.ts';
+import { validateHomeSections } from './homeSections.ts';
 import * as dev from './devMode.ts';
 import { validateSiteName } from './identity.ts';
 import { validateLegalText } from './legal.ts';
@@ -130,6 +132,12 @@ export async function siteAdminRoutes(
     route(scoped, setDevMode, async ({ request }) => {
       const hours = accept(dev.validateDevModeHours(bodyOf(setDevMode, request).hours));
       return dev.setDevMode(db, hours);
+    });
+
+    route(scoped, setHomeSections, async ({ request }) => {
+      const sections = accept(validateHomeSections(bodyOf(setHomeSections, request).sections));
+      await writeSettings(db, { home_sections: JSON.stringify(sections) });
+      return editorState(db);
     });
 
     route(scoped, setLegalText, async ({ params, request }) => {

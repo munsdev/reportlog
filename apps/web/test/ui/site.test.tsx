@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrandName, applyLook, rememberedLook } from '../../src/components/ui/site.tsx';
-import { HomeButtons } from '../../src/routes/index.tsx';
+import { HomeButtons } from '../../src/features/home/buttons.tsx';
 
 afterEach(() => {
   document.documentElement.removeAttribute('data-palette');
