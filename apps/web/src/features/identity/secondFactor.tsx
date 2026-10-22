@@ -9,6 +9,10 @@
  *
  * The QR code is drawn here, from the otpauth address the server sends, by
  * qrcode-generator: nothing is fetched from anywhere else.
+ *
+ * The look is account.md §03: one raised panel a step, codes in mono and
+ * letter-spaced, the two ways to set up as choice cards, and the recovery
+ * codes with Copy, Download and Print, all done in the browser.
  */
 import {
   addPasskey,
@@ -31,9 +35,13 @@ import qrcode from 'qrcode-generator';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { BrandName, useSite } from '@/components/ui/site.tsx';
+import { Eyebrow, Lede } from '@/components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
-import { meQuery, useMe } from './session.ts';
-import { ErrorText, TextField } from './ui.tsx';
+import { meQuery, useMe, useSignOut } from './session.ts';
+import { ErrorText, TextField, codeInputClass } from './ui.tsx';
 
 export const secondFactorQuery = queryOptions({
   queryKey: ['identity', 'second-factor'],
@@ -65,27 +73,103 @@ function useShownCodes(): string[] | null {
 }
 export const showRecoveryCodes = setShownCodes;
 
+/** Put text on the clipboard; false where the browser will not (an insecure page, say). */
+async function copied(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Hand the browser a text file it made itself: nothing is sent anywhere. */
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * The codes, once. They stay on screen until "I have kept them", even when
+ * the screen behind them has become available. Printing prints the codes
+ * and the site's name and nothing else (`data-print-only`, styles.css).
+ */
 export function RecoveryCodes({ codes, onKept }: { codes: string[]; onKept: () => void }) {
+  const site = useSite();
+  const [said, setSaid] = useState<string | null>(null);
+  const siteName = site.data?.plain_name ?? 'ReportLog';
+  const asText = `Recovery codes for ${siteName}. Each signs you in once.\n\n${codes.join('\n')}\n`;
   return (
-    <section className="max-w-xl space-y-4" aria-labelledby="recovery-heading">
-      <h1 id="recovery-heading" className="font-display text-2xl font-bold">
-        Your recovery codes
-      </h1>
-      <p>
-        If you lose your phone or your passkey, each of these codes signs you in once, in place of
-        it. Keep them somewhere safe that is not that phone, such as a password manager or on paper.
-        <strong> They are not shown again.</strong>
+    <section className="flex max-w-2xl flex-col gap-4" aria-labelledby="recovery-heading">
+      <div data-print-only className="flex flex-col gap-4">
+        <p className="label-face hidden text-xs print:block">
+          {site.data ? <BrandName parts={site.data.name_parts} /> : siteName}
+        </p>
+        <h1 id="recovery-heading" className="font-display text-title font-bold">
+          Your recovery codes
+        </h1>
+        <p className="print:hidden">
+          If you lose your phone or your passkey, each of these codes signs you in once, in place of
+          it. Keep them somewhere safe that is not that phone, such as a password manager or on
+          paper.
+          <strong> They are not shown again.</strong>
+        </p>
+        <ol className="grid grid-cols-1 gap-2 font-mono text-lg sm:grid-cols-2">
+          {codes.map((c) => (
+            <li key={c} className="rounded-control border border-line bg-surface px-3 py-2">
+              {c}
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            void copied(codes.join('\n')).then((ok) => {
+              setSaid(
+                ok
+                  ? 'Copied. Paste them somewhere safe.'
+                  : 'This browser would not copy them. Select the codes and copy them by hand.',
+              );
+            });
+          }}
+        >
+          Copy them
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            download('recovery-codes.txt', asText);
+            setSaid('Saved as recovery-codes.txt, made in this browser.');
+          }}
+        >
+          Download as a text file
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            window.print();
+          }}
+        >
+          Print them
+        </Button>
+      </div>
+      <p role="status" className="text-sm text-ink-alt">
+        {said}
       </p>
-      <ol className="grid grid-cols-1 gap-2 font-mono text-lg sm:grid-cols-2">
-        {codes.map((c) => (
-          <li key={c} className="rounded-card border border-line bg-surface px-3 py-2">
-            {c}
-          </li>
-        ))}
-      </ol>
-      <Button type="button" onClick={onKept}>
-        I have kept them
-      </Button>
+      <div>
+        <Button type="button" size="lg" onClick={onKept}>
+          I have kept them
+        </Button>
+      </div>
     </section>
   );
 }
@@ -131,9 +215,12 @@ const grouped = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 export function ProveIt({
   intro,
   onProved,
+  submitLabel = 'Confirm',
 }: {
   intro: ReactNode;
   onProved: (me: Me) => void | Promise<void>;
+  /** "Continue" when signing in, "Confirm" in the step-up dialog. */
+  submitLabel?: string;
 }) {
   const status = useQuery(secondFactorQuery);
   const client = useQueryClient();
@@ -161,24 +248,25 @@ export function ProveIt({
   const hasPasskey = (status.data?.passkeys.length ?? 0) > 0;
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
       {intro}
       {hasPasskey && (
-        <div className="space-y-2">
-          <Button
-            type="button"
-            disabled={byPasskey.isPending}
-            onClick={() => {
-              byCode.reset();
-              byPasskey.mutate();
-            }}
-          >
-            Use a passkey
-          </Button>
-        </div>
+        <Button
+          type="button"
+          size="lg"
+          block
+          busy={byPasskey.isPending}
+          busyLabel="Waiting for the passkey…"
+          onClick={() => {
+            byCode.reset();
+            byPasskey.mutate();
+          }}
+        >
+          Use a passkey
+        </Button>
       )}
       <form
-        className="space-y-4"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           byPasskey.reset();
@@ -197,6 +285,7 @@ export function ProveIt({
           spellCheck={false}
           maxLength={24}
           required
+          inputClassName={codeInputClass}
           value={code}
           onChange={(e) => {
             setCode(e.target.value);
@@ -204,8 +293,14 @@ export function ProveIt({
           {...(error ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {})}
         />
         <ErrorText error={error} id={errorId} />
-        <Button type="submit" disabled={byCode.isPending}>
-          Confirm
+        <Button
+          type="submit"
+          block
+          variant={hasPasskey ? 'secondary' : 'primary'}
+          busy={byCode.isPending}
+          busyLabel="Checking…"
+        >
+          {submitLabel}
         </Button>
       </form>
     </div>
@@ -220,6 +315,7 @@ export function AddAuthenticatorApp({
   onAdded: (codes: string[] | null) => void | Promise<void>;
 }) {
   const [code, setCode] = useState('');
+  const [keySaid, setKeySaid] = useState<string | null>(null);
   const errorId = useId();
   const begin = useMutation({ mutationFn: () => call(beginTotp) });
   const confirm = useMutation({
@@ -234,9 +330,10 @@ export function AddAuthenticatorApp({
 
   if (begin.error) return <ErrorText error={begin.error} />;
   if (!begin.data) return <p role="status">Making a key…</p>;
+  const secret = begin.data.secret;
   return (
     <form
-      className="space-y-4"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         confirm.mutate();
@@ -252,9 +349,27 @@ export function AddAuthenticatorApp({
           <p>
             Or type this key into the app:{' '}
             <code className="font-mono break-all" data-testid="totp-secret">
-              {grouped(begin.data.secret)}
+              {grouped(secret)}
             </code>
           </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                void copied(secret).then((ok) => {
+                  setKeySaid(
+                    ok ? 'Copied.' : 'This browser would not copy it. Select the key instead.',
+                  );
+                });
+              }}
+            >
+              Copy the key
+            </Button>
+            <span role="status" className="text-sm text-ink-alt">
+              {keySaid}
+            </span>
+          </div>
         </li>
         <li>
           <TextField
@@ -264,6 +379,7 @@ export function AddAuthenticatorApp({
             pattern="[0-9]{6}"
             maxLength={6}
             required
+            inputClassName={codeInputClass}
             value={code}
             onChange={(e) => {
               setCode(e.target.value.replace(/\D/g, ''));
@@ -275,9 +391,11 @@ export function AddAuthenticatorApp({
         </li>
       </ol>
       <ErrorText error={confirm.error} id={errorId} />
-      <Button type="submit" disabled={confirm.isPending}>
-        Use this app
-      </Button>
+      <div>
+        <Button type="submit" busy={confirm.isPending} busyLabel="Checking…">
+          Turn it on
+        </Button>
+      </div>
     </form>
   );
 }
@@ -300,7 +418,7 @@ export function AddPasskey({
   });
   return (
     <form
-      className="space-y-4"
+      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         add.mutate();
@@ -317,9 +435,11 @@ export function AddPasskey({
         }}
       />
       <ErrorText error={add.error} />
-      <Button type="submit" disabled={add.isPending}>
-        Make a passkey
-      </Button>
+      <div>
+        <Button type="submit" busy={add.isPending} busyLabel="Waiting for the browser…">
+          Add the passkey
+        </Button>
+      </div>
     </form>
   );
 }
@@ -328,75 +448,121 @@ function SetUpFirst() {
   const client = useQueryClient();
   const [way, setWay] = useState<'app' | 'passkey' | null>(null);
   const status = useQuery(secondFactorQuery);
+  const appOffered = status.data?.totpAvailable !== false;
+  const [choice, setChoice] = useState<'app' | 'passkey' | null>(null);
   const added = async (codes: string[] | null) => {
     if (codes) setShownCodes(codes);
     await client.invalidateQueries({ queryKey: ['identity'] });
   };
   return (
-    <section className="max-w-xl space-y-6" aria-labelledby="set-up-heading">
-      <h1 id="set-up-heading" className="font-display text-2xl font-bold">
+    <section className="flex max-w-xl flex-col gap-4" aria-labelledby="set-up-heading">
+      <h1 id="set-up-heading" className="font-display text-title font-bold">
         Set up a second way to sign in
       </h1>
-      <p>
+      <Lede>
         Your account has a role on this site, so signing in takes the emailed code and then a second
         step: a code from an authenticator app on your phone, or a passkey. Nothing behind your role
         opens until you set one up.
-      </p>
-      {way === null && (
-        <div className="flex flex-wrap gap-3">
-          {status.data?.totpAvailable !== false && (
-            <Button
-              type="button"
-              onClick={() => {
-                setWay('app');
-              }}
-            >
-              Use an authenticator app
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant={status.data?.totpAvailable === false ? 'primary' : 'secondary'}
-            onClick={() => {
-              setWay('passkey');
+      </Lede>
+      <Card>
+        {way === null && (
+          <form
+            className="flex flex-col gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const chosen = choice ?? (appOffered ? null : 'passkey');
+              if (chosen) setWay(chosen);
             }}
           >
-            Use a passkey
-          </Button>
-        </div>
-      )}
-      {way === 'app' && <AddAuthenticatorApp onAdded={added} />}
-      {way === 'passkey' && <AddPasskey onAdded={added} />}
-      {way !== null && (
-        <Button
-          type="button"
-          variant="quiet"
-          onClick={() => {
-            setWay(null);
-          }}
-        >
-          Choose another way
-        </Button>
-      )}
+            {appOffered ? null : (
+              <p>
+                This server has no key for authenticator apps set up, so a passkey is the way to
+                sign in here.
+              </p>
+            )}
+            <RadioGroup
+              aria-label="Which second way"
+              value={choice ?? (appOffered ? '' : 'passkey')}
+              onValueChange={(v) => {
+                setChoice(v === 'app' ? 'app' : 'passkey');
+              }}
+            >
+              {appOffered ? (
+                <RadioOption
+                  value="app"
+                  label="An authenticator app"
+                  hint="A six-digit code from an app on your phone"
+                />
+              ) : null}
+              <RadioOption
+                value="passkey"
+                label="A passkey"
+                hint="Your phone’s or computer’s own lock, a fingerprint or face"
+              />
+            </RadioGroup>
+            <div>
+              <Button type="submit" disabled={appOffered && choice === null}>
+                Next
+              </Button>
+            </div>
+          </form>
+        )}
+        {way === 'app' && <AddAuthenticatorApp onAdded={added} />}
+        {way === 'passkey' && <AddPasskey onAdded={added} />}
+        {way !== null && (
+          <div>
+            <Button
+              type="button"
+              variant="quiet"
+              onClick={() => {
+                setWay(null);
+              }}
+            >
+              Choose another way
+            </Button>
+          </div>
+        )}
+      </Card>
     </section>
   );
 }
 
 function VerifyAfterEmail() {
   const client = useQueryClient();
+  const me = useMe();
+  const signOut = useSignOut();
+  const email = me.data?.signedIn ? me.data.email : null;
   return (
-    <section className="max-w-xl space-y-4" aria-labelledby="verify-heading">
-      <h1 id="verify-heading" className="font-display text-2xl font-bold">
+    <section className="flex max-w-xl flex-col gap-4" aria-labelledby="verify-heading">
+      <Eyebrow>Sign in · step 2 of 2</Eyebrow>
+      <h1 id="verify-heading" className="font-display text-title font-bold">
         One more step
       </h1>
-      <ProveIt
-        intro={
-          <p>Your account has a role on this site. Prove it is you with your second factor.</p>
-        }
-        onProved={async () => {
-          await client.invalidateQueries({ queryKey: ['identity'] });
-        }}
-      />
+      <Lede>Your account has a role on this site. Prove it is you with your second factor.</Lede>
+      <Card>
+        <ProveIt
+          intro={null}
+          submitLabel="Continue"
+          onProved={async () => {
+            await client.invalidateQueries({ queryKey: ['identity'] });
+          }}
+        />
+      </Card>
+      {email ? (
+        <p className="text-sm text-ink-alt">
+          Signed in as <strong className="font-mono text-ink">{email}</strong>. Not you?{' '}
+          <Button
+            type="button"
+            variant="quiet"
+            className="min-h-0 px-0 align-baseline"
+            onClick={() => {
+              signOut.mutate();
+            }}
+          >
+            Start again
+          </Button>
+        </p>
+      ) : null}
     </section>
   );
 }

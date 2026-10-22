@@ -83,9 +83,13 @@ test.describe('an administrator', () => {
     page,
   }) => {
     await page.goto('/settings/development');
-    await expect(page.getByRole('status')).toHaveText('The notice is not showing.');
-    await page.getByRole('button', { name: /Turn it on for 6 hours/ }).click();
-    await expect(page.getByRole('status')).toHaveText(/The notice is showing until/);
+    const panel = page.getByRole('region', { name: 'Development notice' });
+    await expect(panel.getByRole('radio', { name: 'Off now' })).toBeChecked();
+    // Choosing the card does nothing by itself; the button applies it, and a toast says so.
+    await panel.getByRole('radio', { name: /^On for 6 hours from now/ }).click();
+    await panel.getByRole('button', { name: 'Turn it on' }).click();
+    await expect(page.getByText(/The development notice is now on, until/)).toBeVisible();
+    await expect(panel).toContainText(/ShowingYes, until/);
 
     await page.goto('/');
     const badge = page.getByRole('button', { name: 'Under active development' });
@@ -97,8 +101,10 @@ test.describe('an administrator', () => {
     await page.keyboard.press('Escape');
 
     await page.goto('/settings/development');
-    await page.getByRole('button', { name: 'Turn it off now' }).click();
-    await expect(page.getByRole('status')).toHaveText('The notice is not showing.');
+    await panel.getByRole('radio', { name: 'Off now' }).click();
+    await panel.getByRole('button', { name: 'Turn it off' }).click();
+    await expect(page.getByText('The development notice is now off.')).toBeVisible();
+    await expect(panel).toContainText('ShowingNo');
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(badge).toHaveCount(0);
@@ -108,50 +114,80 @@ test.describe('an administrator', () => {
     page,
   }) => {
     await page.goto('/settings/words');
-    const box = page.getByRole('textbox', { name: 'Your own words on the how-to page' });
+    const slot = 'Your own words on the how-to page';
+    const card = page.getByRole('region', { name: slot });
+    const bar = page.getByRole('region', { name: 'Save changes' });
+    await card.getByRole('button', { name: `Edit ${slot}` }).click();
+    const box = page.getByRole('textbox', { name: slot });
     await box.fill('Reports filed so far: ');
-    const card = page.locator('form').filter({ has: box });
     await card.getByRole('button', { name: 'Insert a number' }).click();
     await card.getByLabel('Which number').selectOption({ label: 'Reports filed ever' });
     await card.getByRole('button', { name: 'Insert it' }).click();
     await expect(box).toHaveValue('Reports filed so far: {{ [reports.filed.all] }}');
-    await card.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(card.getByText('Saved. The page shows it now.')).toBeVisible();
+    // Beside the editor, the piece where it sits, with the placeholder as its number.
+    await expect(card.getByRole('figure')).toContainText(/Reports filed so far: \d[\d,]*/);
+    await expect(bar).toContainText(`Saving: ${slot}`);
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Saved. The page shows it now.')).toBeVisible();
 
     await page.goto('/how');
     await expect(page.locator('[data-copy="how_intro"]')).toHaveText(
       /^Reports filed so far: \d[\d,]*$/,
     );
 
-    // A placeholder that would not work is refused, in words.
+    // A placeholder that would not work is refused, in words, beside the field.
     await page.goto('/settings/words');
+    await card.getByRole('button', { name: `Edit ${slot}` }).click();
     await box.fill('{{ [no.such.figure] }}');
-    await card.getByRole('button', { name: 'Save', exact: true }).click();
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(card.getByText(/no figure called \[no\.such\.figure\]/)).toBeVisible();
 
     // Put it back, so other tests see the shipped page.
     await box.fill('');
-    await card.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(card.getByText('Saved. The page shows it now.')).toBeVisible();
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText(`${slot} is back to the shipped wording.`)).toBeVisible();
   });
 
-  test('is warned before leaving a settings screen with unsaved changes', async ({ page }) => {
-    await page.goto('/settings/look');
-    await page.getByRole('radio', { name: 'Midnight' }).click();
-    const settingsNav = page.getByRole('navigation', { name: 'Site settings' });
+  test('is warned before leaving a settings screen with unsaved changes, by the panel’s name', async ({
+    page,
+  }) => {
+    // The overview's one form: Publishing, opened and changed but not saved.
+    await page.goto('/settings');
+    const publishing = page.getByRole('region', { name: 'Publishing' });
+    await publishing.getByRole('button', { name: 'Edit Publishing' }).click();
+    const off = publishing.getByRole('radio', { name: 'Off' });
+    const on = publishing.getByRole('radio', { name: 'On' });
+    await ((await on.isChecked()) ? off : on).click();
 
     let asked = '';
     page.once('dialog', (d) => {
       asked = d.message();
       void d.dismiss();
     });
-    await settingsNav.getByRole('link', { name: 'Name' }).click();
-    await expect.poll(() => asked).toMatch(/changes to the look that are not saved/);
-    await expect(page).toHaveURL(/\/settings\/look$/);
-    await expect(page.getByRole('radio', { name: 'Midnight' })).toBeChecked();
+    await page.getByRole('link', { name: 'Change This site’s name' }).click();
+    await expect.poll(() => asked).toMatch(/changes to Publishing that are not saved/);
+    await expect(page).toHaveURL(/\/settings$/);
 
     page.once('dialog', (d) => void d.accept());
-    await settingsNav.getByRole('link', { name: 'Name' }).click();
+    await page.getByRole('link', { name: 'Change This site’s name' }).click();
     await expect(page).toHaveURL(/\/settings\/name$/);
+  });
+
+  test('is warned before leaving the Look screen with a look previewed and not applied', async ({
+    page,
+  }) => {
+    // In from the overview, so Back stays inside the app and the router asks.
+    await page.goto('/settings');
+    await page.getByRole('link', { name: 'Change How this site looks' }).click();
+    await expect(page).toHaveURL(/\/settings\/look$/);
+    await page.getByRole('radio', { name: 'Green screen' }).click();
+    let asked = '';
+    page.once('dialog', (d) => {
+      asked = d.message();
+      void d.dismiss();
+    });
+    await page.goBack();
+    await expect.poll(() => asked).toMatch(/changes to the look that are not saved/);
+    await expect(page).toHaveURL(/\/settings\/look$/);
   });
 });

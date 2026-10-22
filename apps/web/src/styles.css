@@ -277,3 +277,22 @@
     font-family: var(--rl-font-mono);
   }
 }
+
+/* ---- printing one thing only ---------------------------------------------
+   A page that prints one part of itself (the recovery codes, shown once)
+   marks it `data-print-only`; printing then shows that part and nothing
+   else, the header and footer included. Visibility rather than display, so
+   the marked part keeps its place in the layout it was drawn in. */
+@media print {
+  body:has([data-print-only]) * {
+    visibility: hidden;
+  }
+  body:has([data-print-only]) [data-print-only],
+  body:has([data-print-only]) [data-print-only] * {
+    visibility: visible;
+  }
+  body:has([data-print-only]) [data-print-only] {
+    position: absolute;
+    inset: 0 auto auto 0;
+  }
+}

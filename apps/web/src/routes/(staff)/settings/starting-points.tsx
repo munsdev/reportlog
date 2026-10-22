@@ -25,7 +25,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Field } from '@/components/ui/field.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
+import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '@/lib/api.ts';
 
 const templatesQuery = queryOptions({
@@ -43,6 +47,7 @@ export function StartingPointsPage() {
   const client = useQueryClient();
   const catalogue = useQuery(templatesQuery);
   const [asking, setAsking] = useState<TemplateSummary | null>(null);
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const apply = useMutation({
     mutationFn: (template: string) => call(applyTemplate, { body: { template } }),
     onSuccess: () => {
@@ -55,6 +60,7 @@ export function StartingPointsPage() {
   const applied = catalogue.data?.applied ?? null;
   const appliedLabel = templates.find((t) => t.id === applied?.id)?.label;
   const done = apply.data ? templates.find((t) => t.id === apply.data.applied) : undefined;
+  const chosen = templates.find((t) => t.id === chosenId);
 
   return (
     <Page
@@ -102,32 +108,44 @@ export function StartingPointsPage() {
       ) : null}
 
       {templates.length > 0 ? (
-        <ul className="flex flex-col gap-4" aria-label="Starting points">
-          {templates.map((t) => (
-            <li key={t.id} className="flex flex-col gap-2 rounded-card border border-line p-4">
-              <h2 className="text-lg font-semibold">{t.label}</h2>
-              <p>{t.description}</p>
-              <ul className="list-disc pl-5 text-sm text-ink-alt">
-                {t.sets.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-              <div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    apply.reset();
-                    setAsking(t);
-                  }}
-                >
-                  Apply this…
-                  <span className="sr-only">{` “${t.label}”`}</span>
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <Field>
+          <Label>Starting points</Label>
+          <RadioGroup
+            value={chosen?.id ?? ''}
+            onValueChange={(id) => {
+              apply.reset();
+              setChosenId(id);
+            }}
+          >
+            {templates.map((t) => (
+              <RadioOption key={t.id} value={t.id} label={t.label} hint={t.description} />
+            ))}
+          </RadioGroup>
+        </Field>
+      ) : null}
+
+      {/* Choosing shows what it would change; only the dialog's "Apply it" sends. */}
+      {chosen ? (
+        <Card heading={chosen.label}>
+          <p>What it changes:</p>
+          <ul className="list-disc pl-5 text-ink-alt">
+            {chosen.sets.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+          </ul>
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                apply.reset();
+                setAsking(chosen);
+              }}
+            >
+              Apply it…
+            </Button>
+          </div>
+        </Card>
       ) : null}
 
       <Dialog

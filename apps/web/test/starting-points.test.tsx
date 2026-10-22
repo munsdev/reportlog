@@ -93,14 +93,19 @@ afterEach(() => {
 });
 
 describe('starting points after setup', () => {
-  it('shows what each one changes, and which one the site was started from', async () => {
-    serve({ status: 200, body: {} });
+  it('offers each one as a choice card, and shows what it changes once chosen', async () => {
+    const sent = serve({ status: 200, body: {} });
+    const user = userEvent.setup();
     show();
-    const heading = await screen.findByRole('heading', { name: 'Election incidents' });
-    const elections = heading.closest('li');
-    if (!elections) throw new Error('the template is not in a list item');
-    expect(within(elections).getByText('Takes files with reports')).toBeInTheDocument();
+    const card = await screen.findByRole('radio', { name: 'Election incidents' });
+    expect(card).toHaveAccessibleDescription('Observers and voters reporting what went wrong.');
     expect(screen.getByText(/last started from “Start from nothing”/)).toBeInTheDocument();
+    expect(screen.queryByText('Takes files with reports')).toBeNull();
+    await user.click(card);
+    const panel = screen.getByRole('region', { name: 'Election incidents' });
+    expect(within(panel).getByText('Takes files with reports')).toBeInTheDocument();
+    // Choosing applies nothing.
+    expect(writes(sent)).toEqual([]);
   });
 
   it('sends nothing until "Apply it", then exactly { template }', async () => {
@@ -110,9 +115,8 @@ describe('starting points after setup', () => {
     });
     const user = userEvent.setup();
     show();
-    await user.click(
-      await screen.findByRole('button', { name: /^Apply this….*Election incidents/ }),
-    );
+    await user.click(await screen.findByRole('radio', { name: 'Election incidents' }));
+    await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     const dialog = await screen.findByRole('dialog', { name: 'Apply “Election incidents”?' });
     expect(within(dialog).getByText('Takes files with reports')).toBeInTheDocument();
     expect(writes(sent)).toEqual([]);
@@ -133,9 +137,8 @@ describe('starting points after setup', () => {
     const sent = serve({ status: 200, body: { applied: 'blank' } });
     const user = userEvent.setup();
     show();
-    await user.click(
-      await screen.findByRole('button', { name: /^Apply this….*Start from nothing/ }),
-    );
+    await user.click(await screen.findByRole('radio', { name: 'Start from nothing' }));
+    await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(writes(sent)).toEqual([]);
@@ -148,9 +151,8 @@ describe('starting points after setup', () => {
     });
     const user = userEvent.setup();
     show();
-    await user.click(
-      await screen.findByRole('button', { name: /^Apply this….*Start from nothing/ }),
-    );
+    await user.click(await screen.findByRole('radio', { name: 'Start from nothing' }));
+    await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Apply it' }));
     expect(await within(dialog).findByText(/Nothing was changed\./)).toBeInTheDocument();

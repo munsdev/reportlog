@@ -34,6 +34,10 @@ test.describe('the transparency log', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Transparency log' })).toBeVisible();
     // The test server anchors nothing and has no mirror, and the page says so.
     await expect(page.getByText('The anchor is not working')).toBeVisible();
+    // The page's one question, answered first in a sentence.
+    await expect(
+      page.getByText('The archive’s daily claim has not reached the transparency log yet.'),
+    ).toBeVisible();
     await expect(page.getByRole('region', { name: 'The last anchors' })).toContainText(
       'Nothing has been anchored yet.',
     );

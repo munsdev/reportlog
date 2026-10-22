@@ -20,6 +20,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -122,14 +123,7 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
         </Button>
       </form>
       {make.isError ? <Alert tone="serious">{make.error.message}</Alert> : null}
-      {make.data ? (
-        <Alert tone="done" title="Copy the link now">
-          <span>
-            It is shown this once. Anybody holding it can join until it is used up or off.
-          </span>
-          <code className="break-all font-mono text-sm">{make.data.url}</code>
-        </Alert>
-      ) : null}
+      {make.data ? <NewLink url={make.data.url} /> : null}
       {links.data?.links.length ? (
         <ul className="flex flex-col gap-2 text-sm">
           {links.data.links.map((l) => (
@@ -156,6 +150,45 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
       ) : null}
       {off.isError ? <Alert tone="serious">{off.error.message}</Alert> : null}
     </section>
+  );
+}
+
+/**
+ * The new link, once (account.md §12): on the deep surface, not as a teal
+ * "done" (teal is a moderator's confirmation), with a Copy button. The
+ * link stays selectable text if the browser will not copy.
+ */
+function NewLink({ url }: { url: string }) {
+  const [said, setSaid] = useState<string | null>(null);
+  return (
+    <Card variant="deep" heading="Copy the link now" headingLevel={3}>
+      <code className="font-mono text-sm break-all">{url}</code>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            navigator.clipboard.writeText(url).then(
+              () => {
+                setSaid('Copied.');
+              },
+              () => {
+                setSaid('This browser would not copy it. Select the link instead.');
+              },
+            );
+          }}
+        >
+          Copy
+        </Button>
+        <span role="status" className="text-sm text-on-deep-muted">
+          {said}
+        </span>
+      </div>
+      <p className="text-on-deep-muted">
+        Only this screen shows it. We keep a fingerprint of it, not the link. Anybody holding it can
+        join until it is used up or switched off.
+      </p>
+    </Card>
   );
 }
 

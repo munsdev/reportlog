@@ -192,7 +192,7 @@ describe('the name', () => {
   it('a blank one is refused on the screen and nothing is sent', async () => {
     const { writes } = fakeServer();
     wizard();
-    await userEvent.click(await screen.findByRole('button', { name: 'Continue' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Use this and continue' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Give this archive a name.');
     expect(writes).toEqual([]);
   });
@@ -201,7 +201,7 @@ describe('the name', () => {
     fakeServer({ refuseName: true });
     wizard();
     await userEvent.type(await screen.findByLabelText('Its name'), 'Polling Watch');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('The server said no.');
     expect(screen.getByRole('heading', { name: 'What is this archive called?' })).toBeVisible();
   });
@@ -214,7 +214,7 @@ describe('walking the screens after the owner', () => {
 
     expect(await screen.findByText('Setting up · step 2 of 7')).toBeVisible();
     await userEvent.type(await screen.findByLabelText('Its name'), 'Polling "Watch"');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
 
     await heading('What kind of archive is this?');
     const option = screen.getByRole('radio', { name: /Workplace or safety incidents/ });
@@ -227,14 +227,24 @@ describe('walking the screens after the owner', () => {
     await heading('Does this deployment publish an archive?');
     expect(screen.getByRole('radio', { name: /No, keep everything internal/ })).toBeChecked();
     await userEvent.click(screen.getByRole('radio', { name: /Yes, publish approved reports/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
 
     await heading('Can people attach files to a report?');
     expect(screen.getByRole('radio', { name: /Yes, take files/ })).toBeChecked();
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
 
     await heading('How should it look?');
-    await userEvent.click(screen.getByRole('radio', { name: /Darkroom/ }));
+    // The Look screen's chooser and its two previews, starting on what is stored.
+    expect(screen.getByText('Previewing ElectionLog.')).toBeInTheDocument();
+    expect(document.querySelector('iframe[title="Phone preview"]')).toHaveAttribute(
+      'data-palette',
+      'flint',
+    );
+    expect(screen.getByText('Setting up · step 6 of 7')).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Palette, the colours'), 'darkroom');
+    expect(screen.getByText('Previewing Darkroom with Signal.')).toBeInTheDocument();
+    // Choosing repaints the previews only, until it is saved.
+    expect(document.documentElement).not.toHaveAttribute('data-palette', 'darkroom');
     await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
 
     await heading('The site password');
@@ -266,11 +276,11 @@ describe('walking the screens after the owner', () => {
     const { writes } = fakeServer();
     wizard();
     await userEvent.type(await screen.findByLabelText('Its name'), 'Kept');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     await heading('What kind of archive is this?');
     await userEvent.click(screen.getByRole('button', { name: 'Back' }));
     expect(await screen.findByLabelText('Its name')).toHaveValue('Kept');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     await heading('What kind of archive is this?');
     await userEvent.click(screen.getByRole('button', { name: /^Skip/ }));
     await heading('Does this deployment publish an archive?');
@@ -292,10 +302,10 @@ describe('files, with nowhere to keep them yet', () => {
     const { writes } = fakeServer({ configured: false });
     wizard();
     await userEvent.type(await screen.findByLabelText('Its name'), 'X');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     await userEvent.click(await screen.findByRole('button', { name: /^Skip/ }));
     await heading('Does this deployment publish an archive?');
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     await heading('Can people attach files to a report?');
     expect(
       await screen.findByText(/nowhere to keep files yet \(FILES_STORAGE is not set\)/),
@@ -304,7 +314,7 @@ describe('files, with nowhere to keep them yet', () => {
       name: 'Can people attach files to a report?',
     });
     await userEvent.click(within(choices).getByRole('radio', { name: /Yes, take files/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
     await heading('How should it look?');
     expect(writes.at(-1)).toEqual({
       method: 'PUT',

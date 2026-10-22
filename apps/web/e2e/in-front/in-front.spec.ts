@@ -189,13 +189,18 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   const staff = await browser.newContext({ storageState: adminState });
   const settings = await staff.newPage();
   await settings.goto('/settings/words');
-  const box = settings.getByRole('textbox', { name: 'Your own words on the password screen' });
+  const slot = 'Your own words on the password screen';
+  const form = settings.getByRole('region', { name: slot });
+  await form.getByRole('button', { name: `Edit ${slot}` }).click();
+  const box = settings.getByRole('textbox', { name: slot });
   await box.fill('Run by the harbour residents.\nAsk at the office for the password.');
-  const form = settings.locator('form').filter({ has: box });
   // Numbers are for the pages behind the password, never this one.
   await expect(form.getByRole('button', { name: 'Insert a number' })).toHaveCount(0);
-  await form.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(form.getByText('Saved. The page shows it now.')).toBeVisible();
+  await settings
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+  await expect(settings.getByText('Saved. The page shows it now.')).toBeVisible();
   await staff.close();
   expect((await admin.put('/api/admin/site/name', { data: { name: 'Harbour Watch' } })).ok()).toBe(
     true,

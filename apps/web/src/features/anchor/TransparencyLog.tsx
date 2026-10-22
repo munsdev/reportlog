@@ -12,12 +12,15 @@
  * Nothing here can rewrite the log. The log is never rewritten, not even to
  * correct it; something that invalidates published proofs is published beside
  * them (`anchor reset-marker`, a command, not a button).
+ *
+ * The page answers its one question first, in a sentence on a deep panel
+ * (settings-and-admin.md §13), then shows the anchors as a table.
  */
 import { getAnchorStatus, getCompleteChainFile, listLogbooks } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useId } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { StepUpDownload } from '../identity/StepUp.tsx';
@@ -47,18 +50,19 @@ const OUTCOME: Record<string, string> = {
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const id = useId();
-  return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 id={id} className="font-display text-xl font-bold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
+  return <Card heading={title}>{children}</Card>;
+}
+
+interface Anchor {
+  date: string;
+  public_log_ref: string | null;
+}
+
+/** The page's one question, answered in a sentence. */
+export function lastClaim(anchors: readonly Anchor[]): string {
+  const published = anchors.find((a) => a.public_log_ref !== null);
+  if (!published) return 'The archive’s daily claim has not reached the transparency log yet.';
+  return `The archive’s daily claim was last published for ${published.date}, to the transparency log this server does not control.`;
 }
 
 const day = (iso: string) => new Date(iso).toLocaleString();
@@ -75,6 +79,9 @@ export function TransparencyLogPage() {
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? (
         <>
+          <Card variant="deep">
+            <p className="text-lede">{lastClaim(query.data.anchors)}</p>
+          </Card>
           <Alert
             tone={HEALTH[query.data.health.status].tone}
             title={HEALTH[query.data.health.status].title}
@@ -85,23 +92,41 @@ export function TransparencyLogPage() {
             {query.data.anchors.length === 0 ? (
               <p>Nothing has been anchored yet.</p>
             ) : (
-              <ul className="flex flex-col gap-2 text-sm" aria-label="Anchors">
-                {query.data.anchors.map((a) => (
-                  <li key={a.date}>
-                    <span className="font-semibold">{a.date}</span>: {String(a.logbooks)} logbook
-                    {a.logbooks === 1 ? '' : 's'}, digest{' '}
-                    <span className="font-mono break-all">{a.root_chain_hash}</span>
-                    {a.public_log_ref ? (
-                      <>
-                        {' '}
-                        · in the log as <span className="font-mono">{a.public_log_ref}</span>
-                      </>
-                    ) : (
-                      ' · not in the log yet'
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <caption className="sr-only">Anchors, newest first</caption>
+                  <thead>
+                    <tr className="border-b border-ink-alt">
+                      <th scope="col" className="py-2 pr-4">
+                        Date
+                      </th>
+                      <th scope="col" className="py-2 pr-4">
+                        Chain heads
+                      </th>
+                      <th scope="col" className="py-2 pr-4">
+                        Digest
+                      </th>
+                      <th scope="col" className="py-2">
+                        In the log
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {query.data.anchors.map((a) => (
+                      <tr key={a.date} className="border-b border-line align-top last:border-0">
+                        <td className="py-2 pr-4 font-mono whitespace-nowrap">{a.date}</td>
+                        <td className="py-2 pr-4 font-mono">{String(a.logbooks)}</td>
+                        <td className="py-2 pr-4 font-mono break-all">{a.root_chain_hash}</td>
+                        <td className="py-2 font-mono break-all">
+                          {a.public_log_ref ?? (
+                            <span className="font-sans text-ink-alt">Not in the log yet</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </Section>
           <Section title="What happened at each run">
@@ -127,6 +152,12 @@ export function TransparencyLogPage() {
         </>
       ) : null}
       <ChainFiles />
+      <Card variant="quiet">
+        <p>
+          This log is never rewritten, not even to correct it. A fact that invalidates published
+          proofs is published beside them, by a command on the server, not by a button here.
+        </p>
+      </Card>
       <Section title="Where it is published, and how to change that">
         <p className="text-sm">
           The mirrors, the timestamp authority and the key the log is pushed with are the server’s

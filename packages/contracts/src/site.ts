@@ -301,6 +301,8 @@ export const CopySlot = z.object({
   body: z.string(),
   /** False while the slot still carries the shipped wording. */
   written: z.boolean(),
+  /** When the operator's words were last saved; null while it is the shipped wording. */
+  changed_at: z.string().nullable(),
 });
 export type CopySlot = z.infer<typeof CopySlot>;
 

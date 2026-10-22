@@ -45,14 +45,15 @@ async function emailCode(page: Page, email: string) {
 /** The authenticator app, set up as a person would: the key read off the page. */
 async function setUpApp(page: Page, email: string): Promise<string> {
   await expect(page.getByRole('heading', { name: 'Set up a second way to sign in' })).toBeVisible();
-  await page.getByRole('button', { name: 'Use an authenticator app' }).click();
+  await page.getByRole('radio', { name: 'An authenticator app' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
   await expect(
     page.getByRole('img', { name: 'QR code to add this site to your authenticator app' }),
   ).toBeVisible();
   const secret = ((await page.getByTestId('totp-secret').textContent()) ?? '').replace(/\s/g, '');
   rememberSecret(email, secret);
   await page.getByLabel('The six-digit code the app shows now').fill(totp(secret));
-  await page.getByRole('button', { name: 'Use this app' }).click();
+  await page.getByRole('button', { name: 'Turn it on' }).click();
   await expect(page.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
   await page.getByRole('button', { name: 'I have kept them' }).click();
   return secret;
@@ -73,7 +74,8 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   expect(me).toMatchObject({ role: 'user', heldRole: 'moderator', secondFactor: 'set-up' });
   expect((await page.request.get('/api/moderation/reports')).status()).toBe(403);
 
-  await page.getByRole('button', { name: 'Use an authenticator app' }).click();
+  await page.getByRole('radio', { name: 'An authenticator app' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
   const qr = page.getByRole('img', { name: 'QR code to add this site to your authenticator app' });
   await expect(qr).toBeVisible();
   await noViolations(page);
@@ -85,12 +87,12 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   const field = page.getByLabel('The six-digit code the app shows now');
   const right = totp(secret);
   await field.fill(right === '000000' ? '111111' : '000000');
-  await page.getByRole('button', { name: 'Use this app' }).click();
+  await page.getByRole('button', { name: 'Turn it on' }).click();
   await expect(page.getByRole('alert')).toContainText('That code does not match');
   await expect(field).toHaveAttribute('aria-invalid', 'true');
 
   await field.fill(right);
-  await page.getByRole('button', { name: 'Use this app' }).click();
+  await page.getByRole('button', { name: 'Turn it on' }).click();
   await expect(page.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
   await expect(
     page.getByRole('listitem').filter({ hasText: /^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/ }),
@@ -111,7 +113,7 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   await noViolations(page);
   // The code it was set up with is spent; the next step's is not.
   await page.getByLabel('Code from your authenticator app').fill(totp(secret, 30_000));
-  await page.getByRole('button', { name: 'Confirm' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'One more step' })).toHaveCount(0);
   expect(await (await page.request.get('/api/auth/me')).json()).toMatchObject({
     role: 'moderator',
@@ -140,7 +142,7 @@ test('an administrator is asked for the factor again before granting a role', as
   identityState('stale-step-up', email);
   await page.goto('/access');
   await page.getByLabel('Their email address').fill(subject);
-  await page.getByLabel('Role').selectOption('moderator');
+  await page.getByRole('radio', { name: 'Moderator' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Confirm it is you' });
@@ -202,10 +204,11 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
 
   await signIn();
   await expect(page.getByRole('heading', { name: 'Set up a second way to sign in' })).toBeVisible();
-  await page.getByRole('button', { name: 'Use a passkey' }).click();
+  await page.getByRole('radio', { name: 'A passkey' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel('A name for this passkey').fill('Test laptop');
   await noViolations(page);
-  await page.getByRole('button', { name: 'Make a passkey' }).click();
+  await page.getByRole('button', { name: 'Add the passkey' }).click();
   await expect(page.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
   await page.getByRole('button', { name: 'I have kept them' }).click();
   expect(await (await page.request.get(`${LOCAL}/api/auth/me`)).json()).toMatchObject({
@@ -225,7 +228,12 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
   });
 
   await page.goto(`${LOCAL}/access/security`);
+  // Closed, the panel says how many; open, it names each.
+  await expect(page.getByRole('region', { name: 'Passkeys' })).toContainText('1 passkey');
+  await page.getByRole('button', { name: 'Change Passkeys' }).click();
   await expect(page.getByText('Test laptop')).toBeVisible();
+  // The only way to sign in says why it has no Remove.
+  await expect(page.getByText(/This is your only way to sign in/)).toBeVisible();
   await noViolations(page);
   expect(outside).toEqual([]);
 });

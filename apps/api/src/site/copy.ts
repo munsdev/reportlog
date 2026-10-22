@@ -240,6 +240,8 @@ const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s])
 export interface CopyRow {
   key: string;
   body: string;
+  /** When it was last written. Only the editor reads it. */
+  updated_at?: Date | string;
 }
 
 function written(rows: readonly CopyRow[], key: string): string | null {
@@ -252,6 +254,12 @@ export function resolveCopy(rows: readonly CopyRow[]): Record<CopyKey, string> {
   return Object.fromEntries(
     COPY_SLOTS.map((s) => [s.key, written(rows, s.key)?.trim() ?? s.fallback]),
   ) as Record<CopyKey, string>;
+}
+
+function changedAt(rows: readonly CopyRow[], key: string): string | null {
+  const at = rows.find((r) => r.key === key)?.updated_at;
+  if (at === undefined) return null;
+  return at instanceof Date ? at.toISOString() : new Date(at).toISOString();
 }
 
 /** What the editor opens with, and whether it is the operator's or ours. */
@@ -269,6 +277,8 @@ export function editorCopy(rows: readonly CopyRow[]): CopySlot[] {
       // So the editor can say "this is still the shipped wording" rather
       // than letting an operator believe they wrote it.
       written: own !== null,
+      // When the operator's words were last saved, for "Changed 20 Oct".
+      changed_at: own !== null ? changedAt(rows, s.key) : null,
     };
   });
 }

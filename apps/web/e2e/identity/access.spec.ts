@@ -163,7 +163,8 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
     owner.getByRole('heading', { name: 'Set up a second way to sign in' }),
   ).toBeVisible();
   expect(await axeViolations(owner)).toEqual([]);
-  await owner.getByRole('button', { name: 'Use an authenticator app' }).click();
+  await owner.getByRole('radio', { name: 'An authenticator app' }).click();
+  await owner.getByRole('button', { name: 'Next' }).click();
   await expect(
     owner.getByRole('img', { name: 'QR code to add this site to your authenticator app' }),
   ).toBeVisible();
@@ -172,7 +173,7 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
   rememberSecret(OWNER, secret);
   expect(await axeViolations(owner)).toEqual([]);
   await owner.getByLabel('The six-digit code the app shows now').fill(totp(secret));
-  await owner.getByRole('button', { name: 'Use this app' }).click();
+  await owner.getByRole('button', { name: 'Turn it on' }).click();
   await expect(owner.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
   await expect(
     owner.getByRole('listitem').filter({ hasText: /^[0-9A-Z]{4}(-[0-9A-Z]{4}){3}$/ }),
@@ -182,10 +183,10 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
 
   // The name, required here.
   await expect(owner.getByRole('heading', { name: 'What is this archive called?' })).toBeVisible();
-  await owner.getByRole('button', { name: 'Continue' }).click();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
   await expect(owner.getByRole('alert')).toHaveText('Give this archive a name.');
   await owner.getByLabel('Its name').fill(SITE_NAME);
-  await owner.getByRole('button', { name: 'Continue' }).click();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   // The starting point, which says what it will change before it is chosen.
   await expect(owner.getByRole('heading', { name: 'What kind of archive is this?' })).toBeVisible();
@@ -200,25 +201,25 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
     owner.getByRole('heading', { name: 'Does this deployment publish an archive?' }),
   ).toBeVisible();
   await expect(owner.getByRole('radio', { name: /Yes, publish approved reports/ })).toBeChecked();
-  await owner.getByRole('button', { name: 'Continue' }).click();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   // Files, likewise.
   await expect(
     owner.getByRole('heading', { name: 'Can people attach files to a report?' }),
   ).toBeVisible();
   await expect(owner.getByRole('radio', { name: /Yes, take files/ })).toBeChecked();
-  await owner.getByRole('button', { name: 'Continue' }).click();
+  await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   // The look, with the name just given in its preview.
   await expect(owner.getByRole('heading', { name: 'How should it look?' })).toBeVisible();
-  await owner.getByRole('radio', { name: /^Darkroom/ }).click();
+  await owner.getByLabel('Palette, the colours').selectOption('darkroom');
   await owner.getByRole('button', { name: 'Use this and continue' }).click();
   await expect(owner.locator('html')).toHaveAttribute('data-palette', 'darkroom');
 
   // Back shows what was saved.
   await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
   await owner.getByRole('button', { name: 'Back' }).click();
-  await expect(owner.getByRole('radio', { name: /^Darkroom/ })).toBeChecked();
+  await expect(owner.getByLabel('Palette, the colours')).toHaveValue('darkroom');
   await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
@@ -437,7 +438,7 @@ test('the owner gives somebody a role, and it is on the record', async () => {
   await owner.goto('/access');
   await stepUp(owner.request);
   await owner.getByLabel('Their email address').fill(MOD);
-  await owner.getByLabel('Role').selectOption('moderator');
+  await owner.getByRole('radio', { name: 'Moderator' }).click();
   await owner.getByRole('button', { name: 'Save' }).click();
   await expect(owner.getByRole('status')).toHaveText(`${MOD} is now: Moderator.`);
   await expect(owner.getByRole('row', { name: new RegExp(MOD) })).toContainText('Moderator');

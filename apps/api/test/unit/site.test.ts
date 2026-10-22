@@ -174,6 +174,18 @@ describe('the page wording', () => {
     expect(slots.find((s) => s.key === 'home_intro')).toMatchObject({ written: false });
   });
 
+  it('says when an operator last wrote a slot, and nothing for the shipped wording', () => {
+    const at = new Date('2026-10-20T09:30:00Z');
+    const slots = editorCopy([
+      { key: 'standards', body: 'Ours.', updated_at: at },
+      // Emptied but not deleted: still the shipped wording, so no date.
+      { key: 'home_intro', body: '  ', updated_at: at },
+    ]);
+    expect(slots.find((s) => s.key === 'standards')?.changed_at).toBe('2026-10-20T09:30:00.000Z');
+    expect(slots.find((s) => s.key === 'home_intro')?.changed_at).toBeNull();
+    expect(slots.find((s) => s.key === 'home_lede')?.changed_at).toBeNull();
+  });
+
   it('keeps a line to one line, refuses an unknown slot, and treats empty as cleared', () => {
     expect(validateCopy('home_headline', 'One\nTwo').ok).toBe(false);
     expect(validateCopy('home_headline', 'x'.repeat(301)).ok).toBe(false);

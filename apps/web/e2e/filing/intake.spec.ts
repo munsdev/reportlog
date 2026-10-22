@@ -149,5 +149,5 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
 
   // The coordinator's own reports page is untouched: it is not theirs.
   await page.goto('/mine');
-  await expect(page.getByText('There are no reports filed from this address.')).toBeVisible();
+  await expect(page.getByText(/^There are no reports filed from this address\./)).toBeVisible();
 });

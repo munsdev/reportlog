@@ -24,6 +24,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { desksFor } from './desks.ts';
 import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
@@ -43,8 +44,8 @@ export function AccessHome() {
         <h1 className="font-display text-title font-bold">
           {user.grantsAccess ? 'Access' : 'Your account'}
         </h1>
+        {/* settings-and-admin.md §12: in this order, each only to whom may use it. */}
         <YourAccount me={user} />
-        <OwnerSeat me={user} />
         {user.grantsAccess && (
           <>
             <nav aria-label="Access" className="flex flex-wrap gap-4">
@@ -58,12 +59,13 @@ export function AccessHome() {
                 Who changed what
               </Link>
             </nav>
-            <GrantRole me={user} />
             <People />
+            <GrantRole me={user} />
           </>
         )}
         {user.role === 'owner' && <ResetSecondFactor />}
         {hasAdminAuthority(user.role) && <SitePassword />}
+        <OwnerSeat me={user} />
       </div>
     </SecondFactorGate>
   );
@@ -164,14 +166,13 @@ function GrantRole({ me }: { me: SignedInMe }) {
         sign in. To take a role away, give them “No role”.
       </p>
       <form
-        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           grant.mutate();
         }}
       >
         <TextField
-          className="flex-1"
           label="Their email address"
           type="email"
           required
@@ -181,31 +182,31 @@ function GrantRole({ me }: { me: SignedInMe }) {
             grant.reset();
           }}
         />
-        <div className="flex flex-col gap-1">
-          <label htmlFor={roleId} className="font-semibold">
+        {/* Only the roles this person may grant (packages/access, MAY_GRANT): the
+            role ceiling is the server's, and the cards never offer past it. */}
+        <div className="flex flex-col gap-1.5">
+          <p id={roleId} className="label-face text-xs">
             Role
-          </label>
-          <select
-            id={roleId}
+          </p>
+          <RadioGroup
+            aria-labelledby={roleId}
             value={role}
-            onChange={(e) => {
-              const next = grantable.find((r) => r === e.target.value);
+            onValueChange={(v) => {
+              const next = grantable.find((r) => r === v);
               if (next) setRole(next);
             }}
-            className="rounded-card border border-line bg-surface px-3 py-2"
           >
             {grantable.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABELS[r]}
-              </option>
+              <RadioOption key={r} value={r} label={ROLE_LABELS[r]} hint={ROLE_EXPLAINED[r]} />
             ))}
-          </select>
+          </RadioGroup>
         </div>
-        <Button type="submit" disabled={grant.isPending}>
-          Save
-        </Button>
+        <div>
+          <Button type="submit" busy={grant.isPending} busyLabel="Saving…">
+            Save
+          </Button>
+        </div>
       </form>
-      <p className="text-sm text-muted">{ROLE_EXPLAINED[role]}</p>
       <ErrorText error={grant.error} />
       {grant.isSuccess && (
         <Done>

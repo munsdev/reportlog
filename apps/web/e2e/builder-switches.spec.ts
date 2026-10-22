@@ -2,7 +2,7 @@
  * The builder's switches that are not questions (B2), in a real browser
  * against the real server: freezing a launched logbook's uploads and taking
  * the freeze off, choosing who can file without the site password, and the
- * site's intake switch on the logbook list.
+ * site's intake switch, which moved to the settings overview.
  *
  * The intake switch is site-wide and the other browser tests file reports
  * at the same time, so this test only READS it: closing the site here would
@@ -21,6 +21,7 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
 }, info) => {
   const title = unique('Freeze', info.project.name);
   await page.goto('/logbooks');
+  await page.getByRole('button', { name: 'Make a logbook' }).click();
   await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByRole('button', { name: 'Make the draft' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
@@ -94,10 +95,16 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
   ).toBeVisible();
 });
 
-test('the logbook list says whether the site is taking reports at all', async ({ page }) => {
+test('the settings overview says whether the site is taking reports at all, and the logbook list points there', async ({
+  page,
+}) => {
   await page.goto('/logbooks');
-  const panel = page.getByRole('region', { name: 'New reports, across the site' });
-  await expect(panel.getByText(/^The site is (not )?taking new reports/)).toBeVisible();
+  await page.getByRole('link', { name: 'Site settings, Accepting reports' }).click();
+  const panel = page.getByRole('region', { name: 'Accepting reports' });
+  await expect(panel).toContainText(/Accepting(Yes|No)/);
+  await expect(panel).toContainText(/Logbooks open\d+ of \d+/);
+  // One of the two cards is chosen: what the site does now.
+  await expect(panel.getByRole('radio', { checked: true })).toHaveCount(1);
 });
 
 test('the builder’s switches ask no third party for anything', async ({ page }) => {
@@ -107,6 +114,8 @@ test('the builder’s switches ask no third party for anything', async ({ page }
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await page.goto('/logbooks');
-  await expect(page.getByRole('region', { name: 'New reports, across the site' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Logbooks' })).toBeVisible();
+  await page.goto('/settings');
+  await expect(page.getByRole('region', { name: 'Accepting reports' })).toBeVisible();
   expect(outside).toEqual([]);
 });
