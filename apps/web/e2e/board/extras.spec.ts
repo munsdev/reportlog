@@ -8,7 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
-import { goViaMenu } from '../menu.ts';
+import { goViaMenu, tabLink } from '../menu.ts';
 import { stepUp } from '../second-factor.ts';
 
 function watchOutside(page: Page): string[] {
@@ -58,7 +58,7 @@ test.describe('the press pack', () => {
   test('says plainly that nothing is published, and asks no other host', async ({ page }) => {
     const outside = watchOutside(page);
     await page.goto('/board');
-    await page.getByRole('link', { name: 'Press pack' }).click();
+    await (await tabLink(page, 'The board', 'Press pack')).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Press pack' })).toBeVisible();
     await expect(page.getByText('Nothing has been published here yet.')).toBeVisible();
     expect(outside).toEqual([]);

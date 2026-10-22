@@ -1,8 +1,13 @@
 /**
  * What the Menu button opens (docs/design/navigation.md, sections 02 to 04):
  * on a desktop a PANEL under the bar with three rows (this site, staff, you);
- * below 768px a SHEET filling the screen under the bar, whose staff areas
- * fold. Both list the same links, from the same lists, for the same person.
+ * below 768px a SHEET filling the screen under the bar. Both list the same
+ * links, from the same lists, for the same person.
+ *
+ * THE STAFF ROW IS ONE LINK, "Open the staff area", to the first staff page
+ * this person may open. The staff pages themselves are listed in the staff
+ * area's own sidebar (StaffShell.tsx), not here: the public menu stays the
+ * public site's, whoever is reading it.
  *
  * Nothing here decides who may open what: the staff pages come from
  * `entries.ts` (each with its route's own guard), and the account links from
@@ -13,9 +18,8 @@
 import { DIRECTORY_NAME, getHomeButtons } from '@reportlog/contracts';
 import type { HomeButton, MenuWaiting } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { Link, useMatches, useNavigate, useRouter } from '@tanstack/react-router';
+import { Link, useMatches, useNavigate } from '@tanstack/react-router';
 import type { LinkProps } from '@tanstack/react-router';
-import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Count } from '@/components/ui/count.tsx';
@@ -23,8 +27,7 @@ import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 import type { SignedInMe } from '../identity/session.ts';
 import { useSignOut } from '../identity/session.ts';
-import { areaAt, areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
-import type { StaffArea, StaffEntry } from '../staff-nav/entries.ts';
+import { entriesFor, staffHome } from '../staff-nav/entries.ts';
 import { EasierReadingSlot } from './EasierReadingSlot.tsx';
 import { waitingWords } from './waiting.ts';
 
@@ -131,41 +134,33 @@ function PublicTiles({ onChoose, phone }: { onChoose: () => void; phone: boolean
   );
 }
 
-/** A staff page's link: "you are here" by entries.ts's rule, and its waiting total. */
-function PageLink({
-  entry,
-  here,
+/**
+ * The one way from the public site into the staff area, with the reports
+ * waiting for a moderator beside it for those the queue admits.
+ */
+function StaffAreaLink({
+  me,
   waiting,
   onChoose,
   className,
 }: {
-  entry: StaffEntry;
-  here: boolean;
+  me: SignedInMe;
   waiting: MenuWaiting | undefined;
   onChoose: () => void;
-  className?: string;
+  className: string;
 }) {
-  const n = entry.waiting ? waiting?.[entry.waiting] : undefined;
+  const home = staffHome(me);
+  if (!home) return null;
+  const n = waiting?.reports;
   return (
     <Link
-      to={entry.to}
-      {...(entry.hash ? { hash: entry.hash } : {})}
-      // Exact, so the router marks only what entries.ts would; a report's
-      // own page is marked as the queue by `aria-current` below.
-      activeOptions={{ exact: true, includeSearch: false, includeHash: Boolean(entry.hash) }}
-      aria-current={here ? 'page' : undefined}
+      to={home.to}
+      {...(home.hash ? { hash: home.hash } : {})}
       onClick={onChoose}
-      className={cn(
-        'flex min-h-11 items-center justify-between gap-2 rounded-control px-2 text-[0.9375rem] text-on-deep hover:bg-deep',
-        'aria-[current=page]:bg-deep aria-[current=page]:font-semibold aria-[current=page]:shadow-[inset_3px_0_0_var(--rl-brand-on-deep)]',
-        ON_DEEP_FOCUS,
-        className,
-      )}
+      className={className}
     >
-      <span>{entry.label}</span>
-      {n && entry.waiting ? (
-        <Count tone="onDeep" value={n} label={`, ${waitingWords(entry.waiting, n)}`} />
-      ) : null}
+      <span>Open the staff area</span>
+      {n ? <Count tone="onDeep" value={n} label={`, ${waitingWords('reports', n)}`} /> : null}
     </Link>
   );
 }
@@ -214,7 +209,7 @@ const YOU_LINK = cn(
 );
 
 /** The person's own links: their reports, their email, their account. */
-function AccountLinks({
+export function AccountLinks({
   me,
   onChoose,
   className,
@@ -263,76 +258,48 @@ function AccountLinks({
   );
 }
 
-/** The "You" row's work links: the groups outside the areas, and the bug link. */
-function WorkLinks({
+/**
+ * "Report a bug on this page", for those the feedback tracker admits. It
+ * says which screen it was opened from by the router's name for it.
+ */
+export function BugLink({
   me,
-  waiting,
   pathname,
   onChoose,
-  linkClass,
-  pageClass,
-  labelled,
+  className,
 }: {
   me: SignedInMe;
-  waiting: MenuWaiting | undefined;
   pathname: string;
   onChoose: () => void;
-  linkClass: string;
-  pageClass?: string;
-  labelled: boolean;
+  className: string;
 }) {
   const routeId = useHereRouteId();
-  const here = entryAt(pathname);
-  const groups = groupsFor(me);
-  const bugs = groups.some((g) => g.pages.some((p) => p.to === '/feedback'));
+  const bugs = entriesFor(me).some((p) => p.to === '/feedback');
+  if (!bugs || pathname === '/feedback') return null;
   return (
-    <>
-      {groups.map((g) => (
-        <li key={g.id}>
-          {labelled || g.id === 'organization' ? (
-            <h3 className="label-face pt-3 text-[0.6875rem] text-on-deep-muted">{g.label}</h3>
-          ) : null}
-          <ul className={cn(!labelled && g.id !== 'organization' && 'flex flex-wrap gap-x-6')}>
-            {g.pages.map((p) => (
-              <li key={p.to}>
-                <PageLink
-                  entry={p}
-                  here={here === p}
-                  waiting={waiting}
-                  onChoose={onChoose}
-                  className={pageClass ?? linkClass}
-                />
-              </li>
-            ))}
-            {bugs && g.id === 'work' && pathname !== '/feedback' ? (
-              <li>
-                <Link
-                  to="/feedback"
-                  {...(routeId ? { search: { from: routeId } } : {})}
-                  activeOptions={{ exact: true, includeSearch: true }}
-                  onClick={onChoose}
-                  className={cn(
-                    'flex min-h-11 items-center rounded-control px-2 text-[0.9375rem] text-on-deep hover:bg-deep',
-                    ON_DEEP_FOCUS,
-                    pageClass,
-                  )}
-                >
-                  Report a bug on this page
-                </Link>
-              </li>
-            ) : null}
-          </ul>
-        </li>
-      ))}
-    </>
+    <li>
+      <Link
+        to="/feedback"
+        {...(routeId ? { search: { from: routeId } } : {})}
+        activeOptions={{ exact: true, includeSearch: true }}
+        onClick={onChoose}
+        className={className}
+      >
+        Report a bug on this page
+      </Link>
+    </li>
   );
 }
 
 // ── the desktop panel ───────────────────────────────────────────────────
 
+const STAFF_TILE = cn(
+  'inline-flex min-h-11 items-center gap-3 rounded-control border border-line-on-deep px-3.5 py-1.5 font-label text-[0.9375rem] leading-tight font-semibold text-on-deep hover:bg-deep',
+  ON_DEEP_FOCUS,
+);
+
 export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
-  const here = entryAt(pathname);
-  const areas = me ? areasFor(me) : [];
+  const staff = me ? staffHome(me) !== null : false;
   return (
     <div className="mx-auto max-w-[76rem] px-[max(1rem,env(safe-area-inset-left))] pt-6 md:px-8">
       <section aria-labelledby="menu-this-site" className="border-b border-line-on-deep pb-5">
@@ -347,16 +314,12 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
         </div>
       </section>
 
-      {areas.length ? (
+      {me && staff ? (
         <section aria-labelledby="menu-staff" className="pt-5">
           <h2 id="menu-staff" className="label-face mb-2 text-[0.6875rem] text-on-deep-muted">
             Staff
           </h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(11.5rem,1fr))] gap-x-8 gap-y-6">
-            {areas.map((a) => (
-              <AreaColumn key={a.id} area={a} here={here} waiting={waiting} onChoose={onChoose} />
-            ))}
-          </div>
+          <StaffAreaLink me={me} waiting={waiting} onChoose={onChoose} className={STAFF_TILE} />
         </section>
       ) : null}
 
@@ -366,7 +329,7 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
           'flex flex-wrap items-center gap-x-6 gap-y-2 pt-2 pb-3',
           // One rule between rows: under row 1, and over this one only
           // when the staff row stands between them.
-          areas.length > 0 && 'mt-5 border-t border-line-on-deep',
+          staff && 'mt-5 border-t border-line-on-deep',
         )}
       >
         <h2 id="menu-you" className="sr-only">
@@ -376,17 +339,7 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
           <>
             <ul className="flex flex-wrap items-center gap-x-6">
               <AccountLinks me={me} onChoose={onChoose} className={YOU_LINK} />
-            </ul>
-            <ul className="flex flex-wrap items-center gap-x-6">
-              <WorkLinks
-                me={me}
-                waiting={waiting}
-                pathname={pathname}
-                onChoose={onChoose}
-                linkClass={YOU_LINK}
-                pageClass={cn(YOU_LINK, 'px-0 hover:bg-transparent')}
-                labelled={false}
-              />
+              <BugLink me={me} pathname={pathname} onChoose={onChoose} className={YOU_LINK} />
             </ul>
             <div className="ml-auto flex flex-wrap items-center gap-4">
               <SignedInAs email={me.email} />
@@ -409,94 +362,10 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
   );
 }
 
-function AreaColumn({
-  area,
-  here,
-  waiting,
-  onChoose,
-}: {
-  area: StaffArea;
-  here: StaffEntry | null;
-  waiting: MenuWaiting | undefined;
-  onChoose: () => void;
-}) {
-  const first = area.pages[0];
-  if (!first) return null;
-  return (
-    <div>
-      <h3>
-        <AreaHeadingLink
-          entry={first}
-          onChoose={onChoose}
-          className={cn(
-            'mb-1.5 flex min-h-11 items-center border-b-2 border-brand-on-deep label-face text-[0.8125rem] text-on-deep',
-            ON_DEEP_FOCUS,
-          )}
-        >
-          {area.label}
-        </AreaHeadingLink>
-      </h3>
-      <ul>
-        {area.pages.map((p) => (
-          <li key={`${p.to}#${p.hash ?? ''}`}>
-            <PageLink
-              entry={p}
-              here={here === p}
-              waiting={waiting}
-              onChoose={onChoose}
-              className="-mx-2"
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/**
- * The way into an area, as a plain link the router follows. Not the
- * router's <Link>, which would mark it as the current page whenever its
- * first page is: "you are here" is said once, by the page's own link under
- * it, so a reader never hears it twice.
- */
-function AreaHeadingLink({
-  entry,
-  onChoose,
-  className,
-  children,
-}: {
-  entry: StaffEntry;
-  onChoose: () => void;
-  className: string;
-  children: ReactNode;
-}) {
-  const router = useRouter();
-  const to = { to: entry.to, ...(entry.hash ? { hash: entry.hash } : {}) };
-  return (
-    <a
-      href={router.buildLocation(to).href}
-      className={className}
-      onClick={(e) => {
-        // A new tab or window is the browser's to open, as with any link.
-        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        void router.navigate(to);
-        onChoose();
-      }}
-    >
-      {children}
-    </a>
-  );
-}
-
 // ── the phone sheet ─────────────────────────────────────────────────────
 
 export function MenuSheet({ me, waiting, pathname, onChoose }: MenuProps) {
-  const here = entryAt(pathname);
-  const areas = me ? areasFor(me) : [];
-  const current = areaAt(pathname);
-  // The area holding this page starts open; opening one closes no other.
-  const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(current ? [current.id] : []));
+  const staff = me ? staffHome(me) !== null : false;
   const ITEM = cn(
     'flex min-h-12 w-full items-center justify-between gap-3 border-b border-line-on-deep px-5 font-label text-base font-semibold text-on-deep hover:bg-deep',
     ON_DEEP_FOCUS,
@@ -516,89 +385,27 @@ export function MenuSheet({ me, waiting, pathname, onChoose }: MenuProps) {
         </div>
       </section>
 
-      {areas.length ? (
+      {me && staff ? (
         <section aria-labelledby="menu-staff">
           <SheetHeading id="menu-staff">Staff</SheetHeading>
-          <ul className="border-t border-line-on-deep">
-            {areas.map((a) => {
-              const isOpen = open.has(a.id);
-              const panel = `menu-area-${a.id}`;
-              return (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    aria-expanded={isOpen}
-                    aria-controls={panel}
-                    className={cn(ITEM, isOpen && 'border-b-transparent')}
-                    onClick={() => {
-                      setOpen((was) => {
-                        const next = new Set(was);
-                        if (next.has(a.id)) next.delete(a.id);
-                        else next.add(a.id);
-                        return next;
-                      });
-                    }}
-                  >
-                    {a.label}
-                    <svg
-                      width="12"
-                      height="8"
-                      viewBox="0 0 12 8"
-                      aria-hidden="true"
-                      focusable="false"
-                      className={cn('shrink-0', isOpen && 'rotate-180')}
-                    >
-                      <path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                  </button>
-                  <ul
-                    id={panel}
-                    hidden={!isOpen}
-                    className="border-b border-line-on-deep bg-deep py-1"
-                  >
-                    {a.pages.map((p) => (
-                      <li key={`${p.to}#${p.hash ?? ''}`}>
-                        <PageLink
-                          entry={p}
-                          here={here === p}
-                          waiting={waiting}
-                          onChoose={onChoose}
-                          className="rounded-none pr-5 pl-9"
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="border-t border-line-on-deep">
+            <StaffAreaLink me={me} waiting={waiting} onChoose={onChoose} className={ITEM} />
+          </div>
         </section>
       ) : null}
 
       {me ? (
-        <>
-          <ul aria-label="Your work">
-            <WorkLinks
-              me={me}
-              waiting={waiting}
-              pathname={pathname}
-              onChoose={onChoose}
-              linkClass={ITEM}
-              pageClass={cn(ITEM, 'rounded-none px-5 text-base')}
-              labelled
-            />
+        <section aria-labelledby="menu-you">
+          <SheetHeading id="menu-you">Your account</SheetHeading>
+          <ul className="border-t border-line-on-deep">
+            <AccountLinks me={me} onChoose={onChoose} className={ITEM} />
+            <BugLink me={me} pathname={pathname} onChoose={onChoose} className={ITEM} />
           </ul>
-          <section aria-labelledby="menu-you">
-            <SheetHeading id="menu-you">Your account</SheetHeading>
-            <ul className="border-t border-line-on-deep">
-              <AccountLinks me={me} onChoose={onChoose} className={ITEM} />
-            </ul>
-            <div className="flex flex-wrap items-end justify-between gap-3 px-[max(1.25rem,env(safe-area-inset-left))] pt-5">
-              <SignedInAs email={me.email} />
-              <SignOutButton onChoose={onChoose} />
-            </div>
-          </section>
-        </>
+          <div className="flex flex-wrap items-end justify-between gap-3 px-[max(1.25rem,env(safe-area-inset-left))] pt-5">
+            <SignedInAs email={me.email} />
+            <SignOutButton onChoose={onChoose} />
+          </div>
+        </section>
       ) : (
         <section aria-labelledby="menu-you" className="pt-5">
           <h2 id="menu-you" className="sr-only">

@@ -189,7 +189,14 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
       },
       // It had no menu entry before; its route admits these two (OnlyFor).
       { to: '/feedback/testers', label: 'Testers', for: GRANTERS },
-      { to: '/docs', label: 'Guides', for: ['moderator', 'access_manager', 'admin', 'team'] },
+      {
+        to: '/docs',
+        label: 'Guides',
+        for: ['moderator', 'access_manager', 'admin', 'team'],
+        // Each guide is this page too, so a staff reader stays in the staff
+        // area while reading one.
+        under: ['/docs/'],
+      },
     ],
   },
 ];
@@ -241,6 +248,14 @@ export function groupsFor(viewer: Viewer): StaffGroup[] {
   return STAFF_GROUPS.map((g) => ({ ...g, pages: entriesFor(viewer, g.pages) })).filter(
     (g) => g.pages.length > 0,
   );
+}
+
+/**
+ * Where "Open the staff area" in the public menu goes: the first page this
+ * person may open, in the order above. `null` for somebody with none.
+ */
+export function staffHome(viewer: Viewer): StaffEntry | null {
+  return entriesFor(viewer)[0] ?? null;
 }
 
 const trimmed = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
