@@ -1,4 +1,5 @@
 /** An editor state as the server would send it, for screens tested without one. */
+import { resolveHomeSections } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 
 export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
@@ -23,6 +24,7 @@ export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
       { kind: 'impressum', text: 'IMPRINT — outline to complete\n[name]', published: false },
       { kind: 'privacy', text: 'Our policy.', published: true },
     ],
+    home_sections: resolveHomeSections(null),
     ...overrides,
   };
 }

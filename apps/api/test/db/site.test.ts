@@ -103,6 +103,7 @@ describe('the settings routes', () => {
       ['PUT', '/api/admin/site/name', { name: 'Taken' }],
       ['PUT', '/api/admin/site/copy/home_headline', { body: 'Taken' }],
       ['PUT', '/api/admin/site/legal/impressum', { text: 'Taken' }],
+      ['PUT', '/api/admin/site/home-sections', { sections: [{ id: 'map', shown: false }] }],
     ] as const) {
       const body = payload ? { payload } : {};
       expect((await app.inject({ method, url, ...body })).statusCode, url).toBe(401);
@@ -254,5 +255,36 @@ describe('the migration that brought in the look library', () => {
     expect(rows).toEqual([]);
     const unknown = await admin('PUT', '/api/admin/site/copy/consent_text', { body: 'x' });
     expect(unknown.statusCode).toBe(400);
+  });
+
+  it('arrange the front page’s quieter sections, keeping any the screen left out', async () => {
+    type Sections = { id: string; shown: boolean }[];
+    const shipped = (await get<{ home_sections: Sections }>('/api/site')).home_sections;
+    expect(shipped.every((s) => s.shown)).toBe(true);
+    const res = await admin('PUT', '/api/admin/site/home-sections', {
+      sections: [
+        { id: 'map', shown: false },
+        { id: 'check', shown: true },
+      ],
+    });
+    expect(res.statusCode).toBe(200);
+    const after = (await get<{ home_sections: Sections }>('/api/site')).home_sections;
+    expect(after.slice(0, 2)).toEqual([
+      { id: 'map', shown: false },
+      { id: 'check', shown: true },
+    ]);
+    // The rest are still there, shown, after the two that were named.
+    expect(after.map((s) => s.id).sort()).toEqual(shipped.map((s) => s.id).sort());
+    for (const sections of [
+      [{ id: 'ads', shown: true }],
+      [
+        { id: 'map', shown: true },
+        { id: 'map', shown: false },
+      ],
+    ]) {
+      const refused = await admin('PUT', '/api/admin/site/home-sections', { sections });
+      expect(refused.statusCode).toBe(400);
+    }
+    await db.updateTable('site_settings').set({ home_sections: null }).execute();
   });
 });
