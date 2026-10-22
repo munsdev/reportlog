@@ -186,7 +186,7 @@ describe('deciding', () => {
   async function decideIn(scope: HTMLElement, note: string) {
     const user = userEvent.setup();
     await user.click(within(scope).getByRole('radio', { name: 'Approve' }));
-    await user.type(within(scope).getByLabelText('Note for the record (never sent)'), note);
+    await user.type(within(scope).getByLabelText(/^Note for the record \(never sent\)/), note);
     await user.click(within(scope).getByRole('button', { name: 'Record the decision' }));
   }
 
@@ -232,8 +232,11 @@ describe('deciding', () => {
     });
   });
 
-  it('asks the reason only after Decline is chosen, and sends nothing without a note', async () => {
-    const sent = serve({ [`GET /api/moderation/reports/${THREAD}`]: ITEM });
+  it('asks the reason only after Decline is chosen; the note is optional', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: ITEM,
+      [`POST /api/moderation/reports/${THREAD}/decision`]: { ok: true, notice: 'sent' },
+    });
     wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
     const user = userEvent.setup();
     const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
@@ -247,10 +250,17 @@ describe('deciding', () => {
     ).toBeTruthy();
     await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
     expect(within(form).getByText('Choose the reason the reporter is told.')).toBeInTheDocument();
+    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
     await user.selectOptions(reason, 'duplicate');
     await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
-    expect(within(form).getByText(/Write a note for the record/)).toBeInTheDocument();
-    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
+    // No note written: the decision goes, and carries no comment at all (decision 64).
+    await waitFor(() => {
+      expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+    });
+    expect(sent.find((s) => s.method === 'POST')?.body).toEqual({
+      status: 'invalid',
+      reason_code: 'duplicate',
+    });
   });
 });
 

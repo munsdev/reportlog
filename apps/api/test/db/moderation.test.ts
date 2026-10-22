@@ -116,29 +116,34 @@ describe('NOTHING IS PUBLIC UNTIL A MODERATOR APPROVES IT', () => {
     expect(await onBoard(r.ref)).toBe(false);
   });
 
-  it('a decision needs a reason and one of the three words, and is logged with who and which version', async () => {
+  it('a decision needs one of the three words, takes an optional note, and is logged with who and which version', async () => {
     const r = await file('An account checked carefully.');
-    expect((await decide(mod.call, r.thread, 'valid', '  ')).statusCode).toBe(400);
     expect((await decide(mod.call, r.thread, 'pending')).statusCode).toBe(400);
     expect((await decide(mod.call, r.thread, 'published')).statusCode).toBe(400);
+    // The note is optional (decision 64): a blank one is no note, not a refusal.
+    expect((await decide(mod.call, r.thread, 'unknown', '  ')).statusCode).toBe(200);
     await decide(mod.call, r.thread, 'valid', 'Matches two other accounts.');
-    const log = await h.db
+    const logs = await h.db
       .selectFrom('moderation_log')
       .selectAll()
       .where('thread_id', '=', r.thread)
-      .executeTakeFirstOrThrow();
+      .orderBy('id')
+      .execute();
     const head = await h.db
       .selectFrom('report_heads')
       .select('current_report_id')
       .where('thread_id', '=', r.thread)
       .executeTakeFirstOrThrow();
-    expect(log).toMatchObject({
-      action: 'review',
-      new_status: 'valid',
-      actor_email: mod.email,
-      comment: 'Matches two other accounts.',
-      report_id: head.current_report_id,
-    });
+    expect(logs).toMatchObject([
+      { action: 'review', new_status: 'unknown', actor_email: mod.email, comment: null },
+      {
+        action: 'review',
+        new_status: 'valid',
+        actor_email: mod.email,
+        comment: 'Matches two other accounts.',
+        report_id: head.current_report_id,
+      },
+    ]);
     // And the log cannot be rewritten.
     await expect(
       h.db.updateTable('moderation_log').set({ comment: 'x' }).execute(),

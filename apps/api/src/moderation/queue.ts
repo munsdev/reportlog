@@ -46,6 +46,17 @@ const refuse = (status: number, code: string, message: string) =>
   new HttpError(status, code, message);
 const noReport = () => notFound('There is no report with that reference.');
 
+/**
+ * A moderator's note on a decision: optional (decision 64), but never
+ * longer than the column holds. Empty is "no note", stored as null.
+ */
+function noteOf(comment: unknown): string | null {
+  const why = typeof comment === 'string' ? comment.trim() : '';
+  if (why.length > 2000)
+    throw refuse(400, 'reason_too_long', 'Keep the note under 2000 characters.');
+  return why || null;
+}
+
 function reasonOf(comment: unknown): string {
   const why = typeof comment === 'string' ? comment.trim() : '';
   if (!why) throw refuse(400, 'reason_required', 'Give a reason. It stays on the record.');
@@ -349,7 +360,7 @@ export async function decide(
   if (!DECISIONS.includes(status as Decision)) {
     throw refuse(400, 'invalid_status', 'A decision is approve, decline or unclear.');
   }
-  const why = reasonOf(comment);
+  const why = noteOf(comment);
   return db.transaction().execute(async (trx) => {
     const head = await lockedHead(trx, threadId);
     await trx

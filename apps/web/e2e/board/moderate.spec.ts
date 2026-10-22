@@ -80,7 +80,7 @@ async function decideOnReportPage(page: Page, choice: 'Approve' | 'Decline', not
     form = page.getByRole('region', { name: 'Decide' });
     await form.getByRole('radio', { name: choice }).click();
   }
-  await form.getByLabel('Note for the record (never sent)').fill(note);
+  await form.getByLabel(/^Note for the record \(never sent\)/).fill(note);
   await form.getByRole('button', { name: 'Record the decision' }).click();
 }
 
@@ -224,7 +224,7 @@ test('deciding in the queue and on the report page record the same decision row'
   await expect(decideHere).toHaveAttribute('aria-expanded', 'true');
   const form = firstRow.getByRole('form', { name: `Decide ${firstRef}` });
   await form.getByRole('radio', { name: 'Approve' }).click();
-  await form.getByLabel('Note for the record (never sent)').fill('Checked against the photos.');
+  await form.getByLabel(/^Note for the record \(never sent\)/).fill('Checked against the photos.');
   await form.getByRole('button', { name: 'Record the decision' }).click();
 
   // It leaves the Waiting list with a toast, and focus moves to the next row's Decide here.

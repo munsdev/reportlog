@@ -96,7 +96,7 @@ export function DecideForm({
         params: { threadId: report.thread_id },
         body: {
           status,
-          comment: note.trim(),
+          ...(note.trim() ? { comment: note.trim() } : {}),
           ...(status === 'invalid' ? { reason_code: reason } : {}),
         },
       }),
@@ -114,8 +114,8 @@ export function DecideForm({
     const found: typeof problems = {};
     if (!choice) found.choice = 'Choose approve, decline or unclear for now.';
     if (choice === 'invalid' && !reason) found.reason = 'Choose the reason the reporter is told.';
-    if (!note.trim()) found.note = 'Write a note for the record. It is never sent to anybody.';
-    else if (note.trim().length > 2000) found.note = 'Keep the note under 2000 characters.';
+    // The note is optional (decision 64); only its length is checked.
+    if (note.trim().length > 2000) found.note = 'Keep the note under 2000 characters.';
     setProblems(found);
     if (found.choice) {
       choiceRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
@@ -200,7 +200,7 @@ export function DecideForm({
         </Field>
       ) : null}
       <Field>
-        <Label>Note for the record (never sent)</Label>
+        <Label optional>Note for the record (never sent)</Label>
         <FieldDescription>Kept on the record with your name. Not shown publicly.</FieldDescription>
         <Textarea
           ref={noteRef}
