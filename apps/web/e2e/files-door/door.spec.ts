@@ -62,14 +62,14 @@ test('a reporter without the password attaches a photo, sends, and confirms from
   await page
     .locator('input[type=file]')
     .setInputFiles({ name: 'door.jpg', mimeType: 'image/jpeg', buffer: photoWithLocation() });
-  await expect(page.getByRole('list', { name: 'Your files' }).getByText('Sent')).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Your files' }).getByText('Uploaded')).toBeVisible();
   // Removing one and adding it again: the remove call passes the door too.
   await page.getByRole('button', { name: 'Remove door.jpg' }).click();
   await expect(page.getByRole('list', { name: 'Your files' })).toHaveCount(0);
   await page
     .locator('input[type=file]')
     .setInputFiles({ name: 'door.jpg', mimeType: 'image/jpeg', buffer: photoWithLocation() });
-  await expect(page.getByRole('list', { name: 'Your files' }).getByText('Sent')).toBeVisible();
+  await expect(page.getByRole('list', { name: 'Your files' }).getByText('Uploaded')).toBeVisible();
   await next();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   const before = countTo(email);

@@ -164,6 +164,7 @@ describe('the character count', () => {
 describe('a file’s line', () => {
   it('says how far it has got, then Preparing, then Ready', () => {
     expect(statusWords({ status: 'uploading', progress: 40 })).toBe('Uploading, 40%');
+    expect(statusWords({ status: 'uploaded', progress: 100 })).toBe('Uploaded');
     expect(statusWords({ status: 'processing', progress: 100 })).toBe('Preparing');
     expect(statusWords({ status: 'clean', progress: 100 })).toBe('Ready');
   });

@@ -58,12 +58,16 @@ export function useFilingTarget(
 }
 
 /**
- * Each file's line while it is on its way: "Uploading, 40%", then
- * "Preparing" while the server checks and re-encodes it, then "Ready". The
- * rest say what went wrong in a word; the reason, when there is one, follows.
+ * Each file's line while it is on its way: "Uploading, 40%", "Uploaded",
+ * then "Preparing" while the server checks and re-encodes it, then "Ready".
+ * On the filing form a file stops at "Uploaded": it is prepared only once
+ * the report is sent (files/slots.ts, releaseDraft), so "Preparing" there
+ * would say something is happening that is not. The evidence page and the
+ * coordinator's accounts go on to Ready. The rest say what went wrong in a
+ * word; the reason, when there is one, follows.
  */
 const STATUS: Record<string, string> = {
-  uploaded: 'Preparing',
+  uploaded: 'Uploaded',
   pending: 'Preparing',
   processing: 'Preparing',
   clean: 'Ready',

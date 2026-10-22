@@ -72,7 +72,9 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
   });
   const files = page.getByRole('list', { name: 'Your files' });
   await expect(files.getByText('IMG_0042.jpg')).toBeVisible();
-  await expect(files.getByText(/^(Preparing|Ready)$/)).toBeVisible();
+  // Prepared only once the report is sent (files/slots.ts, releaseDraft), so
+  // on this form a file stops at Uploaded.
+  await expect(files.getByText('Uploaded')).toBeVisible();
   // A second file this form does not take is refused before it is sent.
   await page
     .locator('input[type=file]')
