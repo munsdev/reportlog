@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Second factor, phone</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="platinum" data-theme="desk" data-panel-head="title-bar" data-texture="none" style="width: 390px; height: 844px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Report<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main">
+    <p class="rl-eyebrow rl-label">Sign in · step 2 of 2</p>
+    <h1 class="rl-h1">One more step</h1>
+    <p class="rl-lede" style="font-size: 16px;">Enter the 6-digit code from your authenticator app.</p>
+    <section class="rl-panel" style="margin-top: 22px;"><div class="rl-panel-body">
+      <div class="rl-field"><label class="rl-field-label rl-label" for="otp">Code</label><span id="otp" class="rl-input rl-meta" style="font-size: 28px; letter-spacing: .3em; color: var(--rl-text); min-height: 60px; justify-content: center;">4 1 8 _ _ _</span></div>
+      <a href="#" class="rl-btn is-primary is-lg is-block">Continue</a>
+      <a href="#" class="rl-btn is-block">Use a passkey instead</a>
+      <a href="#" class="rl-btn is-quiet" style="align-self: center;">Use a recovery code</a>
+    </div></section>
+    <p class="rl-help" style="margin-top: 16px;">Signed in as <span class="rl-meta" style="color: var(--rl-text);">owner@example.org</span>. Not you? <a href="#">Start again</a>.</p>
+  </main>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

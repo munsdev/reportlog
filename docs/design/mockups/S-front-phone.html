@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Front page, phone, ElectionLog</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="flint" data-theme="signal" data-panel-head="plain" data-texture="none" style="width: 390px; height: 1640px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Election<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main">
+    <p class="rl-eyebrow rl-label">ElectionLog</p>
+    <h1 class="rl-h1">How did voting go where you are?</h1>
+    <p class="rl-lede" style="font-size: 17px;">Log it in two minutes. Every report is sealed when it arrives, and nothing is public until a moderator has read it.</p>
+
+    <div class="rl-stack" style="gap: 16px; margin-top: 24px;">
+      <a href="#" class="rl-btn is-primary is-lg is-block" style="flex-direction: column; gap: 2px; min-height: 72px;">Log how voting went<span style="font-family: var(--rl-font-sans); font-weight: 400; font-size: 13px; text-transform: none; letter-spacing: 0;">Good or bad, in person or by mail</span></a>
+      <a href="#" class="rl-btn is-lg is-block" style="flex-direction: column; gap: 2px; min-height: 72px;">Send a link<span style="font-family: var(--rl-font-sans); font-weight: 400; font-size: 13px; text-transform: none; letter-spacing: 0;">A video, photo or post someone else made</span></a>
+      <a href="#" class="rl-btn is-lg is-block">See the live board <span class="rl-count is-neutral" aria-label="134 published">134</span></a>
+      <a href="#" class="rl-btn is-lg is-block">Get alerts as reports come in</a>
+    </div>
+    <p class="rl-meta" style="margin: 14px 0 0;">Anyone can file. Sealed and timestamped on arrival.</p>
+
+    <section class="rl-panel is-deep" style="margin-top: 28px;" aria-labelledby="help-h">
+      <div class="rl-panel-body">
+        <h2 id="help-h" class="rl-label" style="margin: 0; font-size: 13px; color: var(--rl-brand-on-deep);">If someone needs help right now</h2>
+        <p style="margin: 0; font-size: 15px;">This archive is not an emergency line. [Operator's wording: who to call in an emergency, and where to get help voting today.]</p>
+      </div>
+    </section>
+
+    <section class="rl-panel" style="margin-top: 28px;" aria-labelledby="map-hp">
+      <div class="rl-panel-body">
+        <h2 id="map-hp" class="rl-h3 rl-panel-title">Everywhere we heard from</h2>
+        <div style="height: 220px; border: 1px dashed var(--rl-text-alt); border-radius: var(--rl-radius-sm); display: flex; align-items: center; justify-content: center; background: var(--rl-background);">
+          <span class="rl-meta">[Heat map]</span>
+        </div>
+        <dl class="rl-kv" style="grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px;">
+          <dt>Published reports</dt><dd class="rl-meta" style="color: var(--rl-text); margin: 0;">134</dd>
+          <dt>States shaded</dt><dd class="rl-meta" style="color: var(--rl-text); margin: 0;">9</dd>
+        </dl>
+        <a href="#" class="rl-btn is-quiet" style="align-self: flex-start; padding: 0;">The table behind the map</a>
+      </div>
+    </section>
+
+    <section class="rl-panel is-quiet" style="margin-top: 28px;" aria-labelledby="chk-hp">
+      <div class="rl-panel-body">
+        <h2 id="chk-hp" class="rl-h3">Check a report</h2>
+        <div class="rl-field">
+          <label class="rl-field-label rl-label" for="p-ref">Its reference</label>
+          <span id="p-ref" class="rl-input rl-meta" style="color: var(--rl-text-muted);">EL-</span>
+        </div>
+        <a href="#" class="rl-btn is-block">Check it</a>
+      </div>
+    </section>
+  </main>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

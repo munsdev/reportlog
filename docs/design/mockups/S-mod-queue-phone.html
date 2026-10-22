@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Moderation queue, phone</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="platinum" data-theme="desk" data-panel-head="title-bar" data-texture="none" style="width: 390px; height: 1500px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Report<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false"><span class="rl-count is-action" aria-label="7 reports waiting for a moderator">7</span>Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main" style="">
+    <p class="rl-eyebrow rl-label">ReportLog · Staff</p>
+    <h1 class="rl-h1">Moderation</h1>
+    <p class="rl-lede" style="font-size: 16px;">Nothing is public until it is approved here. A decline tells the reporter one reason from the fixed list.</p>
+    <div class="rl-tabs-wrap" style="margin-top: 24px;">
+      <nav class="rl-tabs" aria-label="This area">
+        <a href="#" class="rl-tab rl-label" aria-current="page">Queue</a>
+        <a href="#" class="rl-tab rl-label">Flood screen</a>
+        <a href="#" class="rl-tab rl-label">Tip links</a>
+        <a href="#" class="rl-tab rl-label">List review</a>
+        <a href="#" class="rl-tab rl-label">Illegal content notices</a>
+        <a href="#" class="rl-tab rl-label">Files</a>
+        <a href="#" class="rl-tab rl-label">Agreement</a>
+        <a href="#" class="rl-tab rl-label">Moderation settings</a>
+      </nav>
+      <div class="rl-tabs-fade" aria-hidden="true"></div>
+    </div>
+    <div role="group" aria-label="Show reports that are" style="display: flex; gap: 12px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px 8px; margin-top: 20px;"><button type="button" class="rl-btn" aria-pressed="false" style=" min-height: 40px; padding: 0 12px;">All <span class="rl-count is-neutral">31</span></button><button type="button" class="rl-btn is-pressed" aria-pressed="true" style="background: var(--rl-background-alt); min-height: 40px; padding: 0 12px;">Waiting <span class="rl-count is-neutral">7</span></button><button type="button" class="rl-btn" aria-pressed="false" style=" min-height: 40px; padding: 0 12px;">Approved <span class="rl-count is-neutral">19</span></button><button type="button" class="rl-btn" aria-pressed="false" style=" min-height: 40px; padding: 0 12px;">Declined <span class="rl-count is-neutral">3</span></button><button type="button" class="rl-btn" aria-pressed="false" style=" min-height: 40px; padding: 0 12px;">Unclear <span class="rl-count is-neutral">1</span></button><button type="button" class="rl-btn" aria-pressed="false" style=" min-height: 40px; padding: 0 12px;">Withdrawn <span class="rl-count is-neutral">1</span></button><button type="button" class="rl-btn" aria-pressed="false" style="min-height: 40px; padding: 0 12px; border-style: dashed;">Only second reads <span class="rl-count is-neutral">2</span></button></div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: end; margin-top: 18px;">
+      <div style="grid-column: 1 / -1;"><div class="rl-field"><label class="rl-field-label rl-label" for="q-s">Search words or a reference</label><span id="q-s" class="rl-input"></span><p class="rl-help">Press Enter to search.</p></div></div>
+      <button type="button" class="rl-btn">Filter <span class="rl-count is-neutral" aria-label="1 filter on">1</span></button>
+      <button type="button" class="rl-btn">Oldest first <svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"></path></svg></button>
+    </div>
+    <p class="rl-countline" aria-live="polite" style="margin: 16px 0 0;">7 waiting · 1 filter: arrived today · oldest first</p>
+    <div class="rl-panel is-deep" style="margin-top: 18px;"><div class="rl-panel-body" style="flex-direction: row; flex-wrap: wrap; align-items: center; gap: 12px; padding-top: 10px; padding-bottom: 10px;">
+      <span class="rl-label" style="font-size: 13px; flex: 1; min-width: 140px;">2 selected <a href="#" style="margin-left: 10px; font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--rl-text-on-deep);">Select all 7</a></span>
+      <a href="#" class="rl-btn is-primary">Approve selected</a>
+      <a href="#" class="rl-btn on-deep">Decline selected…</a>
+    </div></div>
+    <div class="rl-stack" style="gap: 18px; margin-top: 18px;">
+      <article class="rl-report">
+        <div class="rl-panel-body" style="flex-direction: row; gap: 14px; align-items: flex-start;">
+          <label class="rl-choice-mark is-box" style="cursor: pointer; background: var(--rl-text);" aria-label="Select RL-7K2M-4QXD"><input type="checkbox" checked style="position: absolute; opacity: 0; width: 1px; height: 1px;"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></label>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+                <div class="rl-row" style="gap: 6px;"><span class="rl-chip is-open">Waiting</span><span class="rl-chip is-serious">Serious</span></div>
+                <p style="margin: 0;">Voting machine not working; told to come back later. In person, early. Arizona, Maricopa.</p>
+                <span class="rl-meta">RL-7K2M-4QXD · Election incidents · arrived 3 Nov 14:02 · open form</span>
+              </div>
+              <div class="rl-row" style="gap: 12px; width: 100%;">
+              <a href="#" class="rl-btn" style="flex: 1;">Decide here</a>
+              <a href="#" class="rl-btn is-quiet">Open</a>
+            </div>
+            </div>
+          </div>
+        </div>
+      </article>
+      <article class="rl-report">
+        <div class="rl-panel-body" style="flex-direction: row; gap: 14px; align-items: flex-start;">
+          <label class="rl-choice-mark is-box" style="cursor: pointer; background: var(--rl-text);" aria-label="Select RL-4HT8-0QNC"><input type="checkbox" checked style="position: absolute; opacity: 0; width: 1px; height: 1px;"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></label>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+                <div class="rl-row" style="gap: 6px;"><span class="rl-chip is-open">Waiting</span><span class="rl-chip is-tag">Second read</span></div>
+                <p style="margin: 0;">Polling place moved, or not where it was listed. Election day. Texas, Tarrant.</p>
+                <span class="rl-meta">RL-4HT8-0QNC · Election incidents · 3 Nov 14:20 · via Tarrant Voters League</span>
+              </div>
+              
+            </div>
+          <div class="rl-panel is-quiet" style="margin-top: 4px;"><div class="rl-panel-body" style="gap: 12px;">
+            <p class="rl-label" style="margin: 0; font-size: 12px;">Decide here</p>
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+              <label class="rl-choice"><span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span><input type="radio" name="d-RL-4HT8-0QNC" style="position: absolute; opacity: 0; width: 1px; height: 1px;"><span class="rl-choice-title">Approve<span class="rl-choice-note">Publishes what the reporter allowed</span></span></label>
+              <label class="rl-choice is-on"><span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span><input type="radio" name="d-RL-4HT8-0QNC" checked style="position: absolute; opacity: 0; width: 1px; height: 1px;"><span class="rl-choice-title">Decline<span class="rl-choice-note">The reporter is told the reason below</span></span></label>
+              <label class="rl-choice"><span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span><input type="radio" name="d-RL-4HT8-0QNC" style="position: absolute; opacity: 0; width: 1px; height: 1px;"><span class="rl-choice-title">Unclear for now<span class="rl-choice-note">Stays out of the archive; decide later</span></span></label>
+            </div>
+            <div class="rl-field"><label class="rl-field-label rl-label" for="r-RL-4HT8-0QNC">Reason the reporter is told</label><span id="r-RL-4HT8-0QNC" class="rl-input is-select">It is outside what this logbook records.<svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"></path></svg></span></div>
+            <div class="rl-field"><label class="rl-field-label rl-label" for="n-RL-4HT8-0QNC">Note for the record (never sent)</label><span id="n-RL-4HT8-0QNC" class="rl-input"></span><p class="rl-help">Optional. Stays with the decision.</p></div>
+            <div class="rl-row" style="gap: 12px; justify-content: flex-end;">
+              <a href="#" class="rl-btn is-quiet">Cancel</a>
+              <a href="#" class="rl-btn is-primary">Record the decision</a>
+            </div>
+          </div></div>
+          </div>
+        </div>
+      </article>
+      <article class="rl-report">
+        <div class="rl-panel-body" style="flex-direction: row; gap: 14px; align-items: flex-start;">
+          <label class="rl-choice-mark is-box" style="cursor: pointer; " aria-label="Select RL-1MZ5-7YDK"><input type="checkbox" style="position: absolute; opacity: 0; width: 1px; height: 1px;"></label>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+                <div class="rl-row" style="gap: 6px;"><span class="rl-chip is-open">Waiting</span></div>
+                <p style="margin: 0;">It went fine. By mail. Georgia, Fulton.</p>
+                <span class="rl-meta">RL-1MZ5-7YDK · Election incidents · 3 Nov 14:31 · open form</span>
+              </div>
+              <div class="rl-row" style="gap: 12px; width: 100%;">
+              <a href="#" class="rl-btn" style="flex: 1;">Decide here</a>
+              <a href="#" class="rl-btn is-quiet">Open</a>
+            </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

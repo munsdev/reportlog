@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Site settings overview, desktop</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl" data-palette="platinum" data-theme="desk" data-panel-head="title-bar" data-texture="none" style="width: 1280px; height: 1300px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word">Report<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main" style="max-width: 1100px; padding-bottom: 140px;">
+    <p class="rl-eyebrow rl-label">ReportLog · Staff</p>
+    <h1 class="rl-h1">Site settings</h1>
+    <p class="rl-lede">Everything set here applies to the whole site. Each panel shows what is set now; open one to change it.</p>
+    <div class="rl-tabs-wrap" style="margin-top: 24px;">
+      <nav class="rl-tabs" aria-label="This area">
+        <a href="#" class="rl-tab rl-label" aria-current="page">Overview</a>
+        <a href="#" class="rl-tab rl-label">Look</a>
+        <a href="#" class="rl-tab rl-label">Name</a>
+        <a href="#" class="rl-tab rl-label">Wording</a>
+        <a href="#" class="rl-tab rl-label">Legal notices</a>
+        <a href="#" class="rl-tab rl-label">Report and tip forms</a>
+        <a href="#" class="rl-tab rl-label">Starting points</a>
+        <a href="#" class="rl-tab rl-label">Development notice</a>
+        <a href="#" class="rl-tab rl-label">Testers</a>
+      </nav>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; margin-top: 28px; align-items: start;">
+      <section class="rl-panel" aria-labelledby="Accept">
+        <div class="rl-head" aria-hidden="true"><span>accepting reports</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="Accept" class="rl-h3 rl-panel-title">Accepting reports</h2>
+            <a href="#" class="rl-btn">Edit</a>
+          </div>
+          <dl class="rl-kv"><dt>Accepting</dt><dd>Yes</dd><dt>Paused by the flood screen</dt><dd>No</dd><dt>Logbooks open</dt><dd>2 of 3</dd></dl>
+        </div>
+      </section>
+
+      <section class="rl-panel" aria-labelledby="Publis">
+        <div class="rl-head" aria-hidden="true"><span>publishing</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="Publis" class="rl-h3 rl-panel-title">Publishing</h2>
+            
+          </div>
+          <div class="rl-stack" style="gap: 10px;">
+            <p class="rl-help">Whether approved reports appear on the board. Turning it off hides them; nothing is deleted.</p>
+            <label class="rl-choice"><span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span><input type="radio" name="pub" style="position: absolute; opacity: 0; width: 1px; height: 1px;"><span class="rl-choice-title">On<span class="rl-choice-note">Approved reports appear on the board and in the public figures.</span></span></label>
+            <label class="rl-choice is-on"><span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span><input type="radio" name="pub" checked style="position: absolute; opacity: 0; width: 1px; height: 1px;"><span class="rl-choice-title">Off<span class="rl-choice-note">The board says publishing is paused. Reports still arrive and are moderated.</span></span></label>
+          </div>
+        </div>
+      </section>
+
+      <section class="rl-panel" aria-labelledby="This s">
+        <div class="rl-head" aria-hidden="true"><span>this site’s name</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="This s" class="rl-h3 rl-panel-title">This site’s name</h2>
+            <a href="#" class="rl-btn">Edit</a>
+          </div>
+          <dl class="rl-kv"><dt>Name</dt><dd><span class="rl-label">Report<b style="color: var(--rl-brand);">Log</b></span></dd><dt>In emails</dt><dd>ReportLog</dd></dl>
+        </div>
+      </section>
+
+      <section class="rl-panel" aria-labelledby="How th">
+        <div class="rl-head" aria-hidden="true"><span>how this site looks</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="How th" class="rl-h3 rl-panel-title">How this site looks</h2>
+            <a href="#" class="rl-btn">Edit</a>
+          </div>
+          <dl class="rl-kv"><dt>Look</dt><dd>Desk</dd><dt>Palette</dt><dd>Platinum</dd><dt>Theme</dt><dd>Desk</dd><dt>Installed looks</dt><dd>16, from 1 pack</dd></dl>
+        </div>
+      </section>
+
+      <section class="rl-panel" aria-labelledby="Wordin">
+        <div class="rl-head" aria-hidden="true"><span>wording</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="Wordin" class="rl-h3 rl-panel-title">Wording</h2>
+            <a href="#" class="rl-btn">Edit</a>
+          </div>
+          <dl class="rl-kv"><dt>Changed from the shipped wording</dt><dd>12 of 31</dd><dt>Last change</dt><dd>20 Oct, by owner@example.org</dd></dl>
+        </div>
+      </section>
+
+      <section class="rl-panel" aria-labelledby="Legal ">
+        <div class="rl-head" aria-hidden="true"><span>legal notices</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="justify-content: space-between; gap: 12px;">
+            <h2 id="Legal " class="rl-h3 rl-panel-title">Legal notices</h2>
+            <a href="#" class="rl-btn">Edit</a>
+          </div>
+          <dl class="rl-kv"><dt>Imprint</dt><dd>Written</dd><dt>Privacy policy</dt><dd>Written</dd><dt>Terms</dt><dd>Shipped wording</dd></dl>
+        </div>
+      </section>
+
+    </div>
+  </main>
+  <div class="rl-toast" role="status" style="bottom: 108px;"><span>Accepting reports is now on.</span><a href="#" class="rl-btn is-quiet on-deep" style="color: var(--rl-text-on-deep);">Dismiss</a></div>
+  <div class="rl-savebar"><div class="rl-savebar-in" style="max-width: 1100px;">
+    <span class="rl-label" style="font-size: 13px;">Saving: Publishing <span style="font-family: var(--rl-font-sans); font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--rl-text-on-deep-muted);">· Escape cancels</span></span>
+    <span class="rl-row" style="gap: 12px;"><a href="#" class="rl-btn is-quiet" style="color: var(--rl-text-on-deep);">Cancel</a><a href="#" class="rl-btn is-primary">Save</a></span>
+  </div></div>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

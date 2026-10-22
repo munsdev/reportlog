@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Board, phone</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="flint" data-theme="signal" data-panel-head="plain" data-texture="none" style="width: 390px; height: 1700px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Report<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main" style="">
+    <p class="rl-eyebrow rl-label">ReportLog</p>
+    <h1 class="rl-h1">Live report board</h1>
+    <p class="rl-lede" style="font-size: 16px;">Reports a moderator has read and approved. Each one is sealed; anyone can check it has not changed.</p>
+      <div class="rl-stack" style="gap: 14px; margin-top: 4px;">
+        <a href="#" class="rl-btn is-primary is-lg is-block">Submit a report</a>
+      </div>
+    <div class="rl-tabs-wrap" style="margin-top: 24px;">
+      <nav class="rl-tabs" aria-label="This area">
+        <a href="#" class="rl-tab rl-label" aria-current="page">Reports</a>
+        <a href="#" class="rl-tab rl-label">By the numbers</a>
+        <a href="#" class="rl-tab rl-label">Maps</a>
+        <a href="#" class="rl-tab rl-label">Arrivals and declines</a>
+        <a href="#" class="rl-tab rl-label">Press pack</a>
+      </nav>
+      <div class="rl-tabs-fade" aria-hidden="true"></div>
+    </div>
+    <div class="rl-stack" style="gap: 12px; margin-top: 20px;">
+      <div class="rl-field"><label class="rl-field-label rl-label" for="b-s">Search the reports</label><span id="b-s" class="rl-input">maricopa</span><p class="rl-help">Press Enter to search.</p></div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px;">
+        <button type="button" class="rl-btn">Filter <span class="rl-count is-neutral" aria-label="2 filters on">2</span></button>
+      </div>
+    </div>
+    <div class="rl-row" style="gap: 8px; margin-top: 14px;">
+      <span class="rl-chip is-tag" style="height: 32px; text-transform: none; letter-spacing: 0; font-size: 13px;">Logbook: Election incidents <button type="button" aria-label="Remove this filter" style="margin-left: 6px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;">✕</button></span>
+      <span class="rl-chip is-tag" style="height: 32px; text-transform: none; letter-spacing: 0; font-size: 13px;">How it went: Something went wrong <button type="button" aria-label="Remove this filter" style="margin-left: 6px; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;">✕</button></span>
+      <a href="#" class="rl-btn is-quiet" style="padding: 0 4px;">Clear all</a>
+    </div>
+    <p class="rl-countline" aria-live="polite" style="margin: 18px 0 16px;">19 reports · 2 filters</p>
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <article class="rl-report">
+        <div class="rl-head" aria-hidden="true"><span>RL-7K2M-4QXD</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="gap: 8px; justify-content: space-between;">
+            <span class="rl-label" style="font-size: 12px; color: var(--rl-text-alt);">Election incidents</span>
+            <span class="rl-row" style="gap: 6px;"></span>
+          </div>
+          <div class="rl-answers"><span class="rl-answer"><i>How it went</i>Something went wrong</span><span class="rl-answer"><i>How</i>In person, early</span><span class="rl-answer"><i>Where</i>Arizona, Maricopa</span><span class="rl-answer"><i>Wait</i>1 to 2 hours</span><span class="rl-answer"><i>What went wrong</i>Voting machine not working</span></div>
+          
+          <div class="rl-row" style="justify-content: space-between; gap: 8px;">
+            <span class="rl-meta">RL-7K2M-4QXD · 3 Nov 2026, 14:02</span>
+            <a href="#" class="rl-btn is-quiet" style="padding: 0 4px;">Check it</a>
+          </div>
+        </div>
+      </article>
+      <article class="rl-report">
+        <div class="rl-head" aria-hidden="true"><span>RL-2PQ9-8LTA</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="gap: 8px; justify-content: space-between;">
+            <span class="rl-label" style="font-size: 12px; color: var(--rl-text-alt);">Election incidents</span>
+            <span class="rl-row" style="gap: 6px;"><span class="rl-chip is-tag">Corrected</span></span>
+          </div>
+          <div class="rl-answers"><span class="rl-answer"><i>How it went</i>Something went wrong</span><span class="rl-answer"><i>How</i>In person, election day</span><span class="rl-answer"><i>Where</i>Texas, Tarrant</span><span class="rl-answer"><i>What went wrong</i>Polling place moved, or not where it was listed</span></div>
+          
+          <div class="rl-row" style="justify-content: space-between; gap: 8px;">
+            <span class="rl-meta">RL-2PQ9-8LTA · 3 Nov 2026, 14:02</span>
+            <a href="#" class="rl-btn is-quiet" style="padding: 0 4px;">Check it</a>
+          </div>
+        </div>
+      </article>
+      <article class="rl-report">
+        <div class="rl-head" aria-hidden="true"><span>RL-9WB3-1ZRE</span></div>
+        <div class="rl-panel-body">
+          <div class="rl-row" style="gap: 8px; justify-content: space-between;">
+            <span class="rl-label" style="font-size: 12px; color: var(--rl-text-alt);">Check-ins</span>
+            <span class="rl-row" style="gap: 6px;"><span class="rl-chip is-tag">Via an organization</span></span>
+          </div>
+          <div class="rl-answers"><span class="rl-answer"><i>How it went</i>It went fine</span><span class="rl-answer"><i>How</i>By mail</span><span class="rl-answer"><i>Where</i>Georgia, Fulton</span><span class="rl-answer"><i>When</i>28 Oct 2026</span></div>
+          
+          <div class="rl-row" style="justify-content: space-between; gap: 8px;">
+            <span class="rl-meta">RL-9WB3-1ZRE · 3 Nov 2026, 14:02</span>
+            <a href="#" class="rl-btn is-quiet" style="padding: 0 4px;">Check it</a>
+          </div>
+        </div>
+      </article>
+    </div>
+    <div class="rl-row" style="justify-content: center; gap: 16px; margin-top: 28px;">
+      <a href="#" class="rl-btn">Previous</a><span class="rl-meta" style="color: var(--rl-text);">Page 1 of 4</span><a href="#" class="rl-btn">Next</a>
+    </div>
+    <a href="#" class="rl-btn is-block" style="margin-top: 16px;">Download these (CSV)</a>
+    <section class="rl-panel is-quiet" style="margin-top: 32px;"><div class="rl-panel-body" style="gap: 6px;">
+      <h2 class="rl-h3">Counted, not shown</h2>
+      <p class="rl-alt" style="margin: 0;">"Check-ins" publishes numbers only. Its reports are counted in By the numbers and never shown one by one.</p>
+    </div></section>
+  </main>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

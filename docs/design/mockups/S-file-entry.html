@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ElectionLog entry card, phone</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="flint" data-theme="signal" data-panel-head="plain" data-texture="none" style="width: 390px; height: 844px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Election<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+  <main class="rl-main">
+    <p class="rl-eyebrow rl-label">ElectionLog</p>
+    <h1 class="rl-h2" tabindex="-1">What do you want to do?</h1>
+    <fieldset class="rl-stack" style="gap: 12px; margin: 22px 0 0; padding: 0; border: 0;">
+      <legend class="rl-sr" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">What do you want to do?</legend>
+      <label class="rl-choice is-on">
+        <span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span>
+        <input type="radio" name="entry" checked style="position: absolute; opacity: 0; width: 1px; height: 1px;">
+        <span class="rl-choice-title">Log how voting went<span class="rl-choice-note">What happened when you voted, good or bad</span></span>
+      </label>
+      <label class="rl-choice">
+        <span class="rl-choice-mark" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 12 12"><path d="M2 6.5l2.5 2.5L10 3" fill="none" stroke="var(--rl-surface)" stroke-width="2.2"></path></svg></span>
+        <input type="radio" name="entry" style="position: absolute; opacity: 0; width: 1px; height: 1px;">
+        <span class="rl-choice-title">Send a link<span class="rl-choice-note">A video, photo or post you found</span></span>
+      </label>
+    </fieldset>
+    <p class="rl-help" style="margin-top: 18px;">Nothing moves on until you press Next.</p>
+  </main>
+  <nav aria-label="Card" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px 22px; background: var(--rl-surface); border-top: var(--rl-border-main) solid var(--rl-text-alt); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px;">
+    <a href="#" class="rl-btn is-lg">Back</a>
+    <a href="#" class="rl-btn is-primary is-lg">Next</a>
+  </nav>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>
