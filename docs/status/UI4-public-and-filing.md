@@ -47,6 +47,10 @@
 - **Evidence**: H1 "A moderator asked for evidence", the reference in mono, the request in a quiet
   panel, each file's line "Uploading, 40%" / "Preparing" / "Ready", and a sentence under Send saying
   how many are still preparing.
+- **Filing form's files** (departs from filing.md): a file's line stops at "Uploaded", not
+  "Preparing"/"Ready". The server prepares it only once the report is sent (`releaseDraft` in
+  `apps/api/src/files/slots.ts`), so "Preparing" there sat on screen forever. Found by the browser
+  suite on 22 October.
 - **Erase**: H1 "Erase your contact details", what it does not do in a deep panel, the statement as
   a choice card, "Erase my details" as a secondary button.
 
