@@ -493,7 +493,7 @@ describe('the staff area', () => {
       'People and access',
       'Records',
     ])
-      expect(within(side).getByRole('heading', { name: area })).toBeInTheDocument();
+      expect(within(side).getByRole('list', { name: area })).toBeInTheDocument();
     expect(within(side).getByRole('link', { name: 'Maps' })).toHaveAttribute('href', '/maps');
     expect(
       await within(side).findByRole('link', { name: 'Queue, 3 reports waiting for a moderator' }),
@@ -522,9 +522,10 @@ describe('the staff area', () => {
     await settle();
     expect(
       within(side)
-        .getAllByRole('heading')
-        .map((h) => h.textContent),
-    ).toEqual(['Moderation', 'Your work']);
+        .getAllByRole('list')
+        .map((l) => l.getAttribute('aria-labelledby'))
+        .filter(Boolean),
+    ).toEqual(['staff-area-moderation', 'staff-area-work']);
     expect(within(side).queryByRole('link', { name: 'Look' })).toBeNull();
     expect(within(side).getByRole('link', { name: 'Queue' })).toHaveAttribute(
       'aria-current',

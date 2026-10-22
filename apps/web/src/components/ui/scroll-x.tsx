@@ -21,7 +21,10 @@ export function ScrollX({ label, className, ...props }: ScrollXProps) {
       // A region that can take focus is the pattern axe and WCAG ask for here.
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
-      className={cn('overflow-x-auto rounded-control', className)}
+      // `relative`, so screen-reader-only text inside the table (positioned
+      // absolutely) is held by this box too: without it, it sits where the
+      // table would have run on and widens the whole page on a phone.
+      className={cn('relative overflow-x-auto rounded-control', className)}
       {...props}
     />
   );

@@ -52,7 +52,7 @@ test.describe('an administrator', () => {
     await expect(page.getByRole('status')).toHaveText(`${email} is not on the team.`);
 
     await goViaMenu(page, 'Roles', { area: 'People and access' });
-    await page.getByRole('link', { name: 'Who granted what' }).click();
+    await goViaMenu(page, 'Who granted what', { area: 'People and access' });
     await expect(page.getByText(`took from ${email}: team member`)).toBeVisible();
     expect(outside).toEqual([]);
   });

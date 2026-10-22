@@ -174,12 +174,14 @@ export function StaffSidebar({
       <ul className="flex flex-col gap-5">
         {sections.map((section) => (
           <li key={section.id}>
-            <h2
+            {/* A label naming its list, not a heading: the page's own
+                headings stay the only ones a reader jumps between there. */}
+            <p
               id={`staff-area-${section.id}`}
               className="mb-1 px-3 label-face text-[0.6875rem] text-muted"
             >
               {section.label}
-            </h2>
+            </p>
             <ul aria-labelledby={`staff-area-${section.id}`} className="flex flex-col gap-0.5">
               {section.pages.map((p) => (
                 <li key={`${p.to}#${p.hash ?? ''}`}>
