@@ -15,6 +15,7 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
+import { goViaMenu } from '../menu.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 import { doorFields } from '../door.ts';
@@ -139,10 +140,7 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   const outside = watchOutside(page);
 
   await page.goto('/');
-  await page
-    .getByRole('navigation', { name: /staff/i })
-    .getByRole('link', { name: 'Files', exact: true })
-    .click();
+  await goViaMenu(page, 'Files', { area: 'Moderation' });
   await expect(page.getByRole('heading', { level: 1, name: 'Files' })).toBeVisible();
   await page
     .getByRole('list', { name: 'Reports with files waiting' })
@@ -223,10 +221,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await admin.dispose();
 
   await page.goto('/');
-  await page
-    .getByRole('navigation', { name: /staff/i })
-    .getByRole('link', { name: 'File settings' })
-    .click();
+  await goViaMenu(page, 'File limits', { area: 'Logbooks and lists' });
   await expect(page.getByRole('heading', { level: 1, name: 'Files: the site' })).toBeVisible();
   await expect(page.getByLabel('Largest photo (MB)')).toBeVisible();
 

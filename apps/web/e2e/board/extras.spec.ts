@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
+import { goViaMenu } from '../menu.ts';
 import { stepUp } from '../second-factor.ts';
 
 function watchOutside(page: Page): string[] {
@@ -27,10 +28,7 @@ test.describe('the transparency log', () => {
   }) => {
     const outside = watchOutside(page);
     await page.goto('/');
-    await page
-      .getByRole('navigation', { name: 'Staff' })
-      .getByRole('link', { name: 'Transparency log' })
-      .click();
+    await goViaMenu(page, 'Transparency log', { area: 'Records' });
     await expect(page.getByRole('heading', { level: 1, name: 'Transparency log' })).toBeVisible();
     // The test server anchors nothing and has no mirror, and the page says so.
     await expect(page.getByText('The anchor is not working')).toBeVisible();

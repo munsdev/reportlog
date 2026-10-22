@@ -11,6 +11,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { MODERATOR } from '../auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { doorFields } from '../door.ts';
+import { goViaMenu } from '../menu.ts';
 import { stepUp } from '../second-factor.ts';
 
 test.use({ storageState: MODERATOR });
@@ -59,10 +60,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
 
   // Waiting in the queue, asking for a second read.
   await page.goto('/');
-  await page
-    .getByRole('navigation', { name: 'Staff' })
-    .getByRole('link', { name: 'Moderation', exact: true })
-    .click();
+  await goViaMenu(page, 'Queue', { area: 'Moderation' });
   await expect(page.getByRole('heading', { level: 1, name: 'Moderation' })).toBeVisible();
   await page.getByLabel('Search the words or a reference').fill(word);
   await page.getByRole('button', { name: 'Show' }).click();

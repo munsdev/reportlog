@@ -2,8 +2,11 @@
  * The site settings: how it looks, what it is called, the words on its
  * pages, its legal notices, its front page and its starting points. Administrators only: the
  * server refuses everybody else, and StaffOnly says so before it has to.
+ *
+ * Its pages are reached from the menu and the area tabs (features/nav, the
+ * Site settings area in features/staff-nav/entries.ts), not from a row here.
  */
-import { Link, Outlet, createFileRoute } from '@tanstack/react-router';
+import { Outlet, createFileRoute } from '@tanstack/react-router';
 import { StaffOnly } from '../../../features/identity/StaffOnly.tsx';
 import { UnsavedChangesGuard } from './-editor.tsx';
 
@@ -11,38 +14,10 @@ export const Route = createFileRoute('/(staff)/settings')({
   component: SettingsLayout,
 });
 
-const SECTIONS = [
-  { to: '/settings/look', label: 'Look' },
-  { to: '/settings/name', label: 'Name' },
-  { to: '/settings/words', label: 'Page wording' },
-  { to: '/settings/legal', label: 'Legal notices' },
-  { to: '/settings/development', label: 'Development notice' },
-  { to: '/settings/forms', label: 'Report and tip forms' },
-  { to: '/settings/starting-points', label: 'Starting points' },
-  // Arranged on the logbooks side, which knows when a logbook closes.
-  { to: '/logbooks/front-page', label: 'Front page' },
-  { to: '/settings/feedback', label: 'Feedback' },
-  { to: '/feedback/testers', label: 'Testers' },
-] as const;
-
 function SettingsLayout() {
   return (
     <StaffOnly needs="admin">
       <div className="flex flex-col gap-6">
-        <nav aria-label="Site settings">
-          <ul className="flex flex-wrap gap-x-4 gap-y-2 border-b border-line pb-3 text-sm font-semibold">
-            {SECTIONS.map((s) => (
-              <li key={s.to}>
-                <Link
-                  to={s.to}
-                  className="underline-offset-4 hover:underline aria-[current=page]:underline"
-                >
-                  {s.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
         <UnsavedChangesGuard>
           <Outlet />
         </UnsavedChangesGuard>

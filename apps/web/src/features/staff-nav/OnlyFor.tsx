@@ -31,7 +31,7 @@ export function OnlyFor({
   // A role holder without the second factor yet acts with no role or
   // membership (plan E, E3): the way to it, not a refusal.
   if (pendingSecondFactor(me.data)) return <SecondFactorGate>{null}</SecondFactorGate>;
-  if (!mayOpen({ to: '/', label: '', for: audience }, me.data)) {
+  if (!mayOpen({ for: audience }, me.data)) {
     return (
       <section className="space-y-3">
         <h1 className="font-display text-2xl font-bold">Not for this account</h1>

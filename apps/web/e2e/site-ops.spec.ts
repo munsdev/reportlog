@@ -89,10 +89,14 @@ test.describe('the header', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
       const header = page.locator('header').first();
-      await expect(header.getByRole('link', { name: 'My reports' })).toBeAttached();
+      // The wordmark and the Menu button, and nothing else in the bar.
+      await expect(header.getByRole('button', { name: /Menu$/ })).toBeVisible();
       const row = await header.evaluate((el) => {
         const inner = el.firstElementChild;
-        const kids = [...(inner?.children ?? [])].map((k) => k.getBoundingClientRect());
+        // What is drawn in the bar: the closed menu (hidden) takes no room.
+        const kids = [...(inner?.children ?? [])]
+          .map((k) => k.getBoundingClientRect())
+          .filter((k) => k.width > 0);
         return {
           tops: kids.map((k) => k.top),
           bottoms: kids.map((k) => k.bottom),

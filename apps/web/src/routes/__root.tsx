@@ -2,11 +2,12 @@ import type { QueryClient } from '@tanstack/react-query';
 import { Link, Outlet, createRootRouteWithContext } from '@tanstack/react-router';
 import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { SiteFooter } from '../components/ui/site-footer.tsx';
-import { BrandName, SiteLook, useSite } from '../components/ui/site.tsx';
-import { SessionNav } from '../features/identity/SessionNav.tsx';
+import { SiteLook } from '../components/ui/site.tsx';
 import { StepUpHost } from '../features/identity/StepUp.tsx';
-import { StaffNav } from '../features/staff-nav/StaffNav.tsx';
 import { PauseBanner } from '../features/flood/IntakePaused.tsx';
+import { AreaTabsFallback, AreaTabsSlot } from '../features/nav/AreaTabs.tsx';
+import { HeaderProgressProvider } from '../features/nav/progress.tsx';
+import { SiteHeader } from '../features/nav/SiteHeader.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -18,42 +19,36 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function RootLayout() {
-  const site = useSite().data;
   return (
-    <div className="flex min-h-dvh flex-col">
-      <SiteLook />
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:rounded-card focus:bg-surface focus:p-2"
-      >
-        Skip to the content
-      </a>
-      <header className="border-b-4 border-action bg-deep text-on-deep print:hidden">
-        {/* ONE ROW AT EVERY WIDTH: the name gives way (it is cut short, and
-            the page's heading says it in full) and the links scroll sideways,
-            rather than either wrapping onto a second line. */}
-        <div className="mx-auto flex max-w-page items-center justify-between gap-4 px-4 py-1">
-          <Link
-            to="/"
-            className="block min-w-0 max-w-[55%] shrink-0 truncate font-display text-xl font-bold leading-[2.75rem]"
+    <HeaderProgressProvider>
+      <AreaTabsSlot>
+        <div className="flex min-h-dvh flex-col">
+          <SiteLook />
+          <a
+            href="#main"
+            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-card focus:bg-surface focus:p-2"
           >
-            {site ? <BrandName parts={site.name_parts} onDeep /> : 'ReportLog'}
-          </Link>
-          <SessionNav />
+            Skip to the content
+          </a>
+          {/* The header and its menu (features/nav): the only way around the
+              site. It replaces the session links and the staff bar. */}
+          <SiteHeader />
+          <PauseBanner />
+          <main
+            id="main"
+            className="mx-auto w-full max-w-page flex-1 pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]"
+          >
+            {/* A staff page's area tabs, until the page draws its own
+                under its heading (features/nav/AreaTabs.tsx). */}
+            <AreaTabsFallback className="mb-6" />
+            <Outlet />
+          </main>
+          <SiteFooter />
+          <DevBadge />
+          <StepUpHost />
         </div>
-      </header>
-      <StaffNav />
-      <PauseBanner />
-      <main
-        id="main"
-        className="mx-auto w-full max-w-page flex-1 pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]"
-      >
-        <Outlet />
-      </main>
-      <SiteFooter />
-      <DevBadge />
-      <StepUpHost />
-    </div>
+      </AreaTabsSlot>
+    </HeaderProgressProvider>
   );
 }
 

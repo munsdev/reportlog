@@ -11,6 +11,9 @@
  *
  * The version line is left out where there is no number to show (a
  * development checkout) rather than inventing one.
+ *
+ * "Easier reading" ends it (docs/design/navigation.md, section 06), drawn
+ * by the slot the look system's switch fills (features/nav/EasierReadingSlot).
  */
 import {
   DIRECTORY_NAME,
@@ -20,6 +23,7 @@ import {
 } from '@reportlog/contracts';
 import type { SiteVersion } from '@reportlog/contracts';
 import { Link } from '@tanstack/react-router';
+import { EasierReadingSlot } from '@/features/nav/EasierReadingSlot.tsx';
 import { useSite } from './site.tsx';
 
 export function versionLine(version: SiteVersion | undefined): string | null {
@@ -33,10 +37,10 @@ export function versionLine(version: SiteVersion | undefined): string | null {
 
 const LINKS = [
   { to: '/about', label: 'About' },
-  { to: '/how', label: 'How to use this' },
+  { to: '/how', label: 'How to use' },
   { to: '/standards', label: 'Moderation standard' },
   { to: '/legal', label: 'Imprint and privacy' },
-  { to: '/terms', label: 'Terms and contact' },
+  { to: '/terms', label: 'Terms' },
   { to: '/illegal-content', label: 'Report illegal content' },
   { to: '/organizations', label: DIRECTORY_NAME },
   { to: '/public-api', label: 'Public API' },
@@ -69,6 +73,7 @@ export function SiteFooter() {
         , free software under the {SOFTWARE_LICENCE} licence.
       </p>
       {version ? <p className="mt-1 font-mono text-xs">{version}</p> : null}
+      <EasierReadingSlot where="footer" />
     </footer>
   );
 }

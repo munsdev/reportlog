@@ -7,6 +7,7 @@ import { execFileSync } from 'node:child_process';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { goViaMenu } from './menu.ts';
 import { stepUp } from './second-factor.ts';
 
 const run = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
@@ -50,7 +51,7 @@ test.describe('an administrator', () => {
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByRole('status')).toHaveText(`${email} is not on the team.`);
 
-    await page.getByRole('link', { name: 'Access', exact: true }).first().click();
+    await goViaMenu(page, 'Roles', { area: 'People and access' });
     await page.getByRole('link', { name: 'Who changed what' }).click();
     await expect(page.getByText(`took from ${email}: team member`)).toBeVisible();
     expect(outside).toEqual([]);

@@ -58,7 +58,7 @@ test.describe('signed out', () => {
     await expect(footer.getByText(/Powered by ReportLog/)).toBeVisible();
     for (const [link, heading] of [
       ['About', /^About /],
-      ['How to use this', 'How to use this'],
+      ['How to use', 'How to use this'],
       ['Moderation standard', 'Moderation standard'],
       ['Public API', 'Public API'],
     ] as const) {

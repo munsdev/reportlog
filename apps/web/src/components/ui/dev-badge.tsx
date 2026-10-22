@@ -8,6 +8,9 @@
  *
  * Neutral colours: it is a notice, not a warning, and a status colour on a
  * button would be saying something about a report.
+ *
+ * It never covers the Save bar: it sits above the height the bar publishes
+ * (`--rl-savebar-height`, save-bar.tsx), which is 0 while there is none.
  */
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -61,7 +64,7 @@ export function DevBadge() {
   if (!active) return null;
   return (
     <Dialog>
-      <DialogTrigger className="fixed right-4 bottom-4 z-30 flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden">
+      <DialogTrigger className="fixed right-4 bottom-[calc(var(--rl-savebar-height,0px)+1rem)] z-30 flex items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden">
         <span aria-hidden="true" className="size-2 rounded-full bg-ink-alt" />
         Under active development
       </DialogTrigger>
