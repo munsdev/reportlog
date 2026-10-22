@@ -137,7 +137,8 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await inbox.goto(link);
   // Opening the link files nothing: there is a button for that.
   await expect(heading(inbox, 'Confirm your report')).toBeVisible();
-  await expect(inbox.getByText(`For “${title}”.`)).toBeVisible();
+  // The logbook it is for, named above the heading.
+  await expect(inbox.getByText(title, { exact: true })).toBeVisible();
   await inbox.reload();
   await expect(heading(inbox, 'Confirm your report')).toBeVisible();
   await inbox.getByRole('button', { name: 'Confirm and file my report' }).click();

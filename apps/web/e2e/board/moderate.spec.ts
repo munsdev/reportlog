@@ -111,9 +111,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
 
   // Not on the board yet.
   await page.goto(`/board?q=${word}`);
-  await expect(
-    page.getByText('No published report matches that', { exact: true }),
-  ).toBeVisible();
+  await expect(page.getByText('No published report matches that', { exact: true })).toBeVisible();
 
   // Waiting in the queue, asking for a second read.
   await page.goto('/');
