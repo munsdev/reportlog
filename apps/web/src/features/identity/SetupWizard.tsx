@@ -41,14 +41,13 @@ import {
 } from '@reportlog/contracts';
 import type { Look } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { BrandName, applyLook } from '@/components/ui/site.tsx';
-import { cn } from '@/lib/utils.ts';
 import { call } from '../../lib/api.ts';
 import { meQuery } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
@@ -196,43 +195,21 @@ function Actions({
   );
 }
 
-/** A choice shown as a card: the words are the click target, and choosing moves nothing. */
+/**
+ * A choice shown as a card (RadioOption): the whole card is the click
+ * target, and choosing moves nothing. It sits inside a RadioGroup, which
+ * holds the value.
+ */
 function Choice({
-  name,
   value,
-  chosen,
-  onChoose,
   title,
   children,
 }: {
-  name: string;
   value: string;
-  chosen: string | null;
-  onChoose: (v: string) => void;
   title: string;
   children?: ReactNode;
 }) {
-  return (
-    <label
-      className={cn(
-        'grid cursor-pointer grid-cols-[auto_1fr] gap-x-3 rounded-card border bg-surface p-4',
-        chosen === value ? 'border-ink' : 'border-line',
-      )}
-    >
-      <input
-        type="radio"
-        name={name}
-        value={value}
-        checked={chosen === value}
-        onChange={() => {
-          onChoose(value);
-        }}
-        className="mt-1"
-      />
-      <span className="font-semibold">{title}</span>
-      {children && <span className="col-start-2 space-y-2 text-sm text-ink-alt">{children}</span>}
-    </label>
-  );
+  return <RadioOption value={value} label={title} hint={children} />;
 }
 
 function Loading() {
@@ -329,7 +306,6 @@ function NameForm({ stored, onDone, back }: StepProps & { stored: string }) {
 
 function StartStep({ onDone, back }: StepProps) {
   const client = useQueryClient();
-  const group = useId();
   const catalogue = useQuery({
     queryKey: keys.templates,
     queryFn: ({ signal }) => call(listTemplates, { signal }),
@@ -376,17 +352,9 @@ function StartStep({ onDone, back }: StepProps) {
           screens ask the same questions either way.
         </p>
       ) : (
-        <fieldset className="space-y-3">
-          <legend className="sr-only">Starting points</legend>
+        <RadioGroup aria-label="Starting points" value={picked ?? ''} onValueChange={setPicked}>
           {templates.map((t) => (
-            <Choice
-              key={t.id}
-              name={group}
-              value={t.id}
-              chosen={picked}
-              onChoose={setPicked}
-              title={t.label}
-            >
+            <Choice key={t.id} value={t.id} title={t.label}>
               <span className="block">{t.description}</span>
               <span className="block">
                 {t.sets.map((line) => (
@@ -397,7 +365,7 @@ function StartStep({ onDone, back }: StepProps) {
               </span>
             </Choice>
           ))}
-        </fieldset>
+        </RadioGroup>
       )}
       {tried && !picked && (
         <p role="alert" className="font-semibold text-serious">
@@ -465,7 +433,6 @@ function YesNo({
   onDone,
   back,
 }: StepProps & { kind: 'publication' | 'files'; now: string | null; note?: string | null }) {
-  const group = useId();
   const [chosen, setChosen] = useState<string | null>(now);
   const save = useMutation({
     mutationFn: async (yes: boolean) => {
@@ -506,48 +473,29 @@ function YesNo({
         </>
       )}
       {note && <p className="rounded-card border border-line bg-surface p-4 text-sm">{note}</p>}
-      <fieldset className="space-y-3">
-        <legend className="sr-only">{TITLES[kind]}</legend>
+      <RadioGroup aria-label={TITLES[kind]} value={chosen ?? ''} onValueChange={setChosen}>
         {kind === 'publication' ? (
           <>
-            <Choice
-              name={group}
-              value="yes"
-              chosen={chosen}
-              onChoose={setChosen}
-              title="Yes, publish approved reports"
-            >
+            <Choice value="yes" title="Yes, publish approved reports">
               The board, the public API, the download and the figures all answer. This is what the
               software does if nobody chooses.
             </Choice>
-            <Choice
-              name={group}
-              value="no"
-              chosen={chosen}
-              onChoose={setChosen}
-              title="No, keep everything internal"
-            >
+            <Choice value="no" title="No, keep everything internal">
               All four say that this site does not publish. You can turn it on later and nothing is
               lost in the meantime.
             </Choice>
           </>
         ) : (
           <>
-            <Choice
-              name={group}
-              value="yes"
-              chosen={chosen}
-              onChoose={setChosen}
-              title="Yes, take files"
-            >
+            <Choice value="yes" title="Yes, take files">
               Every kind to begin with. You can narrow the kinds and sizes later, under Files.
             </Choice>
-            <Choice name={group} value="no" chosen={chosen} onChoose={setChosen} title="No files">
+            <Choice value="no" title="No files">
               No logbook takes an upload. Nothing already attached anywhere is affected.
             </Choice>
           </>
         )}
-      </fieldset>
+      </RadioGroup>
       <ErrorText error={save.error} />
       <Actions back={back} pending={save.isPending} disabled={chosen === null} />
     </form>
@@ -687,7 +635,6 @@ function CurtainDecision({
   onFinished: () => Promise<void>;
   back: (() => void) | undefined;
 }) {
-  const name = useId();
   const [decision, setDecision] = useState<'keep' | 'change' | null>(null);
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -714,31 +661,20 @@ function CurtainDecision({
         Whoever installed this deployment chose its site password. Decide whether to keep it. There
         is no default: keeping somebody else’s password should be a choice, not an accident.
       </p>
-      <fieldset className="space-y-3">
-        <legend className="sr-only">Keep or change the site password</legend>
-        <Choice
-          name={name}
-          value="change"
-          chosen={decision}
-          onChoose={() => {
-            setDecision('change');
-          }}
-          title="Change it"
-        >
+      <RadioGroup
+        aria-label="Keep or change the site password"
+        value={decision ?? ''}
+        onValueChange={(v) => {
+          setDecision(v === 'keep' ? 'keep' : 'change');
+        }}
+      >
+        <Choice value="change" title="Change it">
           Choose a new password. The old one stops working at once.
         </Choice>
-        <Choice
-          name={name}
-          value="keep"
-          chosen={decision}
-          onChoose={() => {
-            setDecision('keep');
-          }}
-          title="Keep it"
-        >
+        <Choice value="keep" title="Keep it">
           Everybody who has it now keeps getting in.
         </Choice>
-      </fieldset>
+      </RadioGroup>
       {decision === 'change' && (
         <div className="space-y-4">
           <TextField

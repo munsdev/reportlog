@@ -13,7 +13,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useId, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
@@ -107,36 +107,29 @@ export function NotificationsForm({ current }: { current: Notifications }) {
       {frequency !== 'none' ? (
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-2 font-semibold">From which logbooks</legend>
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id={allId}
-              checked={all}
-              onCheckedChange={(on) => {
-                setAll(on === true);
-              }}
-            />
-            <Label htmlFor={allId} className="font-normal">
-              Every logbook, including ones launched later
-            </Label>
-          </div>
+          <CheckOption
+            id={allId}
+            checked={all}
+            onCheckedChange={(on) => {
+              setAll(on === true);
+            }}
+            label="Every logbook, including ones launched later"
+          />
           {!all ? (
             <div className="flex flex-col gap-3 pl-9" data-testid="logbook-choices">
               {current.choices.length === 0 ? <p>No logbook has been launched yet.</p> : null}
               {current.choices.map((c, i) => (
-                <div key={c.slug} className="flex items-center gap-3">
-                  <Checkbox
-                    id={`${allId}-${String(i)}`}
-                    checked={picked.includes(c.slug)}
-                    onCheckedChange={(on) => {
-                      setPicked(
-                        on === true ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
-                      );
-                    }}
-                  />
-                  <Label htmlFor={`${allId}-${String(i)}`} className="font-normal">
-                    {c.title}
-                  </Label>
-                </div>
+                <CheckOption
+                  key={c.slug}
+                  id={`${allId}-${String(i)}`}
+                  label={c.title}
+                  checked={picked.includes(c.slug)}
+                  onCheckedChange={(on) => {
+                    setPicked(
+                      on === true ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
+                    );
+                  }}
+                />
               ))}
               {nothingPicked ? (
                 <p role="alert" className="text-sm">
@@ -155,7 +148,7 @@ export function NotificationsForm({ current }: { current: Notifications }) {
       ) : null}
       {save.isSuccess ? (
         <Alert
-          tone="confirmed"
+          tone="done"
           title={
             save.data.frequency === 'none'
               ? 'Saved. You will not be emailed.'

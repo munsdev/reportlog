@@ -74,7 +74,7 @@ export function SaveOutcome({
       </Alert>
     );
   }
-  if (mutation.isSuccess) return <Alert tone="confirmed" title={done} />;
+  if (mutation.isSuccess) return <Alert tone="done" title={done} />;
   return null;
 }
 

@@ -38,10 +38,11 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
@@ -215,24 +216,18 @@ function CheckForm({ group }: { group: LinkGroup }) {
   return (
     <fieldset className="space-y-2">
       <legend className="font-semibold">Check this link</legend>
-      {(Object.keys(OUTCOME_CHOICES) as LinkOutcome[]).map((o) => (
-        <div key={o} className="flex items-start gap-2">
-          <input
-            type="radio"
-            id={`${id}-${o}`}
-            name={id}
-            value={o}
-            checked={outcome === o}
-            onChange={() => {
-              setOutcome(o);
-            }}
-            className="mt-1"
-          />
-          <Label htmlFor={`${id}-${o}`} className="font-normal">
-            {OUTCOME_CHOICES[o]}
-          </Label>
-        </div>
-      ))}
+      <RadioGroup
+        aria-label="Check this link"
+        name={id}
+        value={outcome}
+        onValueChange={(v) => {
+          setOutcome(v as LinkOutcome);
+        }}
+      >
+        {(Object.keys(OUTCOME_CHOICES) as LinkOutcome[]).map((o) => (
+          <RadioOption key={o} id={`${id}-${o}`} value={o} label={OUTCOME_CHOICES[o]} />
+        ))}
+      </RadioGroup>
       {outcome === 'illegal' ? (
         <div className="space-y-2 rounded-card border border-line p-3">
           <div>
@@ -266,19 +261,14 @@ function CheckForm({ group }: { group: LinkGroup }) {
               <option value="domain">Block its whole site, and every subdomain</option>
             </Select>
           </div>
-          <div className="flex items-start gap-2">
-            <Checkbox
-              id={`${id}-followed`}
-              checked={followed}
-              onCheckedChange={(on) => {
-                setFollowed(on === true);
-              }}
-            />
-            <Label htmlFor={`${id}-followed`} className="font-normal">
-              I have followed the procedure above. Every copy will be erased and cannot be brought
-              back.
-            </Label>
-          </div>
+          <CheckOption
+            id={`${id}-followed`}
+            label="I have followed the procedure above. Every copy will be erased and cannot be brought back."
+            checked={followed}
+            onCheckedChange={(on) => {
+              setFollowed(on === true);
+            }}
+          />
         </div>
       ) : null}
       {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
@@ -326,7 +316,7 @@ function CommentForm({ group }: { group: LinkGroup }) {
       <Button
         type="button"
         variant="secondary"
-        size="sm"
+
         disabled={save.isPending || body.trim() === (group.comment ?? '')}
         onClick={() => {
           save.mutate();
@@ -350,7 +340,7 @@ function History({ id }: { id: number }) {
       <Button
         type="button"
         variant="quiet"
-        size="sm"
+
         aria-expanded={open}
         onClick={() => {
           setOpen((o) => !o);
@@ -520,7 +510,7 @@ function BlockRow({ entry }: { entry: BlocklistEntry }) {
       <Button
         type="button"
         variant="secondary"
-        size="sm"
+
         disabled={!reason || remove.isPending}
         onClick={() => {
           remove.mutate();

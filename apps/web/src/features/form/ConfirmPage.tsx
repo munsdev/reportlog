@@ -152,7 +152,7 @@ function Shown({
       }
       width="prose"
     >
-      <Alert tone="confirmed" title={`Its reference is ${c.public_ref}`}>
+      <Alert tone="done" title={`Its reference is ${c.public_ref}`}>
         {c.state === 'public'
           ? 'A moderator approved it, and it is on the public archive.'
           : c.state === 'counted'

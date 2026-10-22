@@ -13,7 +13,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
@@ -44,7 +44,7 @@ export function IllegalContentPage() {
   if (send.isSuccess) {
     return (
       <Page title="We have your notice" width="prose">
-        <Alert tone="confirmed" title={`Your reference is ${send.data.receipt}`}>
+        <Alert tone="done" title={`Your reference is ${send.data.receipt}`}>
           {send.data.emailed
             ? 'We emailed you a receipt with a link to see where it stands. A person will look at it and tell you what was decided and why.'
             : 'Keep this reference. You gave no email address, so we cannot tell you the decision; the people who run this site still read the notice.'}
@@ -121,18 +121,14 @@ export function IllegalContentPage() {
             }}
           />
         </Field>
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="good-faith"
-            checked={good}
-            onCheckedChange={(on) => {
-              setGood(on === true);
-            }}
-          />
-          <Label htmlFor="good-faith" className="font-normal">
-            I believe that what I am telling you is accurate and complete.
-          </Label>
-        </div>
+        <CheckOption
+          id="good-faith"
+          checked={good}
+          onCheckedChange={(on) => {
+            setGood(on === true);
+          }}
+          label="I believe that what I am telling you is accurate and complete."
+        />
         {send.isError ? (
           <Alert tone="serious" title="Your notice was not sent">
             {send.error.message}
@@ -183,7 +179,7 @@ export function NoticeStatusPage({ token }: { token: string }) {
           decision when it is made.
         </Alert>
       ) : (
-        <Alert tone="confirmed" title={DECISION_WORDS[n.decision]}>
+        <Alert tone="done" title={DECISION_WORDS[n.decision]}>
           <span className="whitespace-pre-wrap">{n.decision_reason}</span>
         </Alert>
       )}

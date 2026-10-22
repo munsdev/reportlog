@@ -189,7 +189,8 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
 
   // The starting point, which says what it will change before it is chosen.
   await expect(owner.getByRole('heading', { name: 'What kind of archive is this?' })).toBeVisible();
-  const elections = owner.getByRole('radio', { name: /^Election incidents Observers/ });
+  const elections = owner.getByRole('radio', { name: 'Election incidents', exact: true });
+  await expect(elections).toHaveAccessibleDescription(/^Observers/);
   await expect(owner.getByText(/Makes a draft logbook, “Election incidents”/)).toBeVisible();
   await elections.check();
   await owner.getByRole('button', { name: 'Use this and continue' }).click();

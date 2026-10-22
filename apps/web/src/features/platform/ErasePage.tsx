@@ -12,8 +12,7 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 
@@ -47,7 +46,7 @@ export function ErasePage({ token }: { token: string }) {
   if (erase.isSuccess) {
     return (
       <Page title="Your email address is erased" width="prose">
-        <Alert tone="confirmed" title="Done">
+        <Alert tone="done">
           The key your address was kept under is destroyed. Nobody can read it again, and nobody can
           reach you about this report. Your report itself is unchanged.
         </Alert>
@@ -84,18 +83,14 @@ export function ErasePage({ token }: { token: string }) {
           {erase.error.message}
         </Alert>
       ) : null}
-      <div className="flex items-start gap-3">
-        <Checkbox
-          id="erase-sure"
-          checked={sure}
-          onCheckedChange={(on) => {
-            setSure(on === true);
-          }}
-        />
-        <Label htmlFor="erase-sure" className="font-normal">
-          I understand this cannot be undone.
-        </Label>
-      </div>
+      <CheckOption
+        id="erase-sure"
+        checked={sure}
+        onCheckedChange={(on) => {
+          setSure(on === true);
+        }}
+        label="I understand this cannot be undone."
+      />
       <div>
         <Button
           type="button"

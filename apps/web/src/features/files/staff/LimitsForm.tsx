@@ -15,7 +15,7 @@ import type { FileKind, FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import { Alert } from '../../../components/ui/alert.tsx';
 import { Button } from '../../../components/ui/button.tsx';
-import { Checkbox } from '../../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
 import { Input } from '../../../components/ui/input.tsx';
 import { Label } from '../../../components/ui/label.tsx';
@@ -136,9 +136,10 @@ export function LimitsForm({
               const offAbove =
                 mine === 'logbook' && !(layers.kinds.site ?? layers.kinds.shipped).includes(k);
               return (
-                <li key={k} className="flex items-center gap-2">
-                  <Checkbox
+                <li key={k}>
+                  <CheckOption
                     id={id}
+                    label={`${KIND_LABEL[k]}${offAbove ? ' (the site does not take these, so this logbook cannot)' : ''}`}
                     checked={kinds.includes(k)}
                     onCheckedChange={(on) => {
                       setKinds((now) =>
@@ -148,10 +149,6 @@ export function LimitsForm({
                       );
                     }}
                   />
-                  <Label htmlFor={id} className="font-normal">
-                    {KIND_LABEL[k]}
-                    {offAbove ? ' (the site does not take these, so this logbook cannot)' : ''}
-                  </Label>
                 </li>
               );
             })}
@@ -181,7 +178,7 @@ export function LimitsForm({
         ))}
       </div>
 
-      {outcome ? <Alert tone={outcome.ok ? 'confirmed' : 'serious'}>{outcome.text}</Alert> : null}
+      {outcome ? <Alert tone={outcome.ok ? 'done' : 'serious'}>{outcome.text}</Alert> : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={busy}>
           Save the limits

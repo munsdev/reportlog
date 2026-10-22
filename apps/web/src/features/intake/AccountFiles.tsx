@@ -23,8 +23,8 @@ import {
 } from '@reportlog/contracts';
 import type { FormQuestion, UploadConfig } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { FileList } from '@/features/files/FilesCard.tsx';
 import { megabytes, refusalFor, useUploader } from '@/features/files/uploader.ts';
 import type { Item, Target } from '@/features/files/uploader.ts';
@@ -170,7 +170,6 @@ function Picker({
   onRefused: (why: string | null) => void;
 }) {
   const id = useId();
-  const input = useRef<HTMLInputElement>(null);
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm text-ink-alt" id={`${id}-limits`}>
@@ -182,18 +181,17 @@ function Picker({
         could ever be shown. The file as you attach it is kept, locked, as evidence. It is filed
         with the account, when you file the batch.
       </p>
-      <input
-        ref={input}
-        type="file"
-        className="sr-only"
+      <FileDrop
         multiple={config.max_files > 1}
         accept={config.accept.join(',')}
-        aria-labelledby={labelledBy}
-        aria-describedby={`${id}-limits`}
-        onChange={(e) => {
+        labelledBy={labelledBy}
+        describedBy={`${id}-limits`}
+        disabled={kept.length >= config.max_files}
+        buttonLabel={kept.length ? 'Add another file' : 'Choose files'}
+        onFiles={(files) => {
           onRefused(null);
           const counted = [...kept];
-          for (const f of Array.from(e.target.files ?? [])) {
+          for (const f of files) {
             const why = refusalFor(f, config, counted);
             if (why) {
               onRefused(why);
@@ -202,19 +200,8 @@ function Picker({
             counted.push({ ...EMPTY, name: f.name, size: f.size });
             onPick(f);
           }
-          e.target.value = '';
         }}
       />
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={kept.length >= config.max_files}
-          onClick={() => input.current?.click()}
-        >
-          {kept.length ? 'Add another file' : 'Choose files'}
-        </Button>
-      </div>
     </div>
   );
 }

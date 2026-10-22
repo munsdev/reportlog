@@ -48,7 +48,7 @@ import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
@@ -525,19 +525,15 @@ function Cards({
               />
             ) : null}
           </dl>
-          <div className="flex items-start gap-3">
-            <Checkbox
-              id="filing-statement"
-              checked={consent}
-              onCheckedChange={(on) => {
-                setProblem(null);
-                setConsent(on === true);
-              }}
-            />
-            <Label htmlFor="filing-statement" className="font-normal">
-              {STATEMENT}
-            </Label>
-          </div>
+          <CheckOption
+            id="filing-statement"
+            checked={consent}
+            onCheckedChange={(on) => {
+              setProblem(null);
+              setConsent(on === true);
+            }}
+            label={STATEMENT}
+          />
           {/* The operator's own line about sending, when they wrote one. */}
           <CopyText slot="send_note" className="font-semibold" />
           {problem ? <Alert tone="serious" title={problem} /> : null}
@@ -816,7 +812,7 @@ function ReviewRow({
         <Button
           type="button"
           variant="quiet"
-          size="sm"
+
           onClick={onChange}
           aria-label={`Change: ${label}`}
         >
@@ -835,7 +831,7 @@ function ReviewRow({
 function FiledReceipt({ title }: { title: string }) {
   return (
     <Page title="Thank you" width="prose">
-      <Alert tone="confirmed" title={`Your report to “${title}” was received`}>
+      <Alert tone="done" title={`Your report to “${title}” was received`}>
         It is filed as you sent it. A moderator reads every report before anything of it is
         published.
       </Alert>
@@ -847,7 +843,7 @@ function FiledReceipt({ title }: { title: string }) {
 function SentReceipt({ email, title }: { email: string; title: string }) {
   return (
     <Page title="Check your email" width="prose">
-      <Alert tone="confirmed" title={`We have sent a link to ${email}`}>
+      <Alert tone="done" title={`We have sent a link to ${email}`}>
         Open it and press “Confirm and file my report”. Nothing is filed in “{title}” until you do.
         The link works for 24 hours.
       </Alert>

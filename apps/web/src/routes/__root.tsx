@@ -28,7 +28,7 @@ function RootLayout() {
       >
         Skip to the content
       </a>
-      <header className="border-b-4 border-action bg-deep text-on-deep">
+      <header className="border-b-4 border-action bg-deep text-on-deep print:hidden">
         {/* ONE ROW AT EVERY WIDTH: the name gives way (it is cut short, and
             the page's heading says it in full) and the links scroll sideways,
             rather than either wrapping onto a second line. */}
@@ -44,7 +44,10 @@ function RootLayout() {
       </header>
       <StaffNav />
       <PauseBanner />
-      <main id="main" className="mx-auto w-full max-w-page flex-1 px-4 py-8">
+      <main
+        id="main"
+        className="mx-auto w-full max-w-page flex-1 pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]"
+      >
         <Outlet />
       </main>
       <SiteFooter />

@@ -265,7 +265,7 @@ function Decide({ r }: { r: QueueItem }) {
         </Field>
         <Problem error={decide.error} />
         {decide.isSuccess ? (
-          <Alert tone="confirmed">Recorded. {NOTICE_WORDS[notice] ?? ''}</Alert>
+          <Alert tone="done">Recorded. {NOTICE_WORDS[notice] ?? ''}</Alert>
         ) : null}
         <Button type="submit" className="self-start" disabled={decide.isPending}>
           Record the decision
@@ -345,7 +345,7 @@ function Severity({ r, a }: { r: QueueItem; a: Assessment }) {
           </FieldDescription>
         </Field>
         <Problem error={save.error} />
-        {save.isSuccess ? <Alert tone="confirmed">Recorded.</Alert> : null}
+        {save.isSuccess ? <Alert tone="done">Recorded.</Alert> : null}
         <Button
           type="submit"
           variant="secondary"
@@ -442,7 +442,7 @@ function Incident({ r, a }: { r: QueueItem; a: Assessment }) {
           </FieldDescription>
         </Field>
         <Problem error={link.error} />
-        {link.isSuccess ? <Alert tone="confirmed">Recorded.</Alert> : null}
+        {link.isSuccess ? <Alert tone="done">Recorded.</Alert> : null}
         <div className="flex flex-wrap gap-3">
           <Button
             type="submit"
@@ -715,7 +715,7 @@ function Citations({
                 {l.title}
               </a>
               <Button
-                size="sm"
+               
                 variant="quiet"
                 onClick={() => {
                   remove.mutate(l.id);

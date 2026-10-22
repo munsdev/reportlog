@@ -300,7 +300,9 @@ describe('files, with nowhere to keep them yet', () => {
     expect(
       await screen.findByText(/nowhere to keep files yet \(FILES_STORAGE is not set\)/),
     ).toBeVisible();
-    const choices = screen.getByRole('group', { name: 'Can people attach files to a report?' });
+    const choices = screen.getByRole('radiogroup', {
+      name: 'Can people attach files to a report?',
+    });
     await userEvent.click(within(choices).getByRole('radio', { name: /Yes, take files/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
     await heading('How should it look?');

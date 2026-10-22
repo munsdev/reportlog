@@ -48,7 +48,7 @@ const LINKS = [
 export function SiteFooter() {
   const version = versionLine(useSite().data?.version);
   return (
-    <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted">
+    <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted print:hidden">
       <p>Every report is fingerprinted and chained, so any later change shows.</p>
       <nav aria-label="About this site" className="mt-2">
         <ul className="flex flex-wrap justify-center gap-x-4">

@@ -15,7 +15,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,6 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { call } from '@/lib/api.ts';
 import { AccountDialog } from './AccountDialog.tsx';
@@ -88,7 +87,7 @@ export function BatchPage({ id }: { id: number }) {
       </Link>
       {filed ? (
         <Alert
-          tone="confirmed"
+          tone="done"
           title={`Filed ${plural(filed.refs.length, 'account', 'accounts')}: ${filed.refs.join(', ')}.`}
         >
           {filed.staged
@@ -147,7 +146,7 @@ export function BatchPage({ id }: { id: number }) {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      size="sm"
+
                       variant="secondary"
                       aria-label={`Change account ${n}`}
                       onClick={() => {
@@ -158,7 +157,7 @@ export function BatchPage({ id }: { id: number }) {
                     </Button>
                     <Button
                       type="button"
-                      size="sm"
+
                       variant="quiet"
                       aria-label={`Remove account ${n}`}
                       disabled={remove.isPending}
@@ -311,18 +310,14 @@ function FileDialog(props: {
           the record. The organization is shown publicly; you are not. Your account is recorded as
           the person who entered them.
         </p>
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="attest-batch"
-            checked={attested}
-            onCheckedChange={(on) => {
-              setAttested(on === true);
-            }}
-          />
-          <Label htmlFor="attest-batch" className="font-normal">
-            {BATCH_STATEMENT}
-          </Label>
-        </div>
+        <CheckOption
+          id="attest-batch"
+          checked={attested}
+          onCheckedChange={(on) => {
+            setAttested(on === true);
+          }}
+          label={BATCH_STATEMENT}
+        />
         {submit.isError ? (
           <Alert tone="serious" title="Nothing was filed">
             {submit.error.message}

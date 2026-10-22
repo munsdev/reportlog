@@ -33,7 +33,7 @@ import type { ReactNode, RefObject } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError, FieldReset } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -429,7 +429,7 @@ function Control({
           <Button
             type="button"
             variant="quiet"
-            size="sm"
+
             onClick={() => {
               onChange([...boxes, '']);
             }}
@@ -466,18 +466,15 @@ function Control({
           const id = `${labelledBy}-${o}`;
           const ticked = list as string[];
           return (
-            <div key={o} className="flex items-start gap-3">
-              <Checkbox
-                id={id}
-                checked={ticked.includes(o)}
-                onCheckedChange={(on) => {
-                  onChange(on === true ? [...ticked, o] : ticked.filter((x) => x !== o));
-                }}
-              />
-              <Label htmlFor={id} className="font-normal">
-                {words(o, i)}
-              </Label>
-            </div>
+            <CheckOption
+              key={o}
+              id={id}
+              checked={ticked.includes(o)}
+              onCheckedChange={(on) => {
+                onChange(on === true ? [...ticked, o] : ticked.filter((x) => x !== o));
+              }}
+              label={words(o, i)}
+            />
           );
         })}
       </div>
@@ -687,23 +684,15 @@ function EmailCard({
       </Field>
       {/* On a form for reaching the site, sending it IS asking for a reply. */}
       {reply ? null : (
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="list-consent"
-            checked={consent}
-            onCheckedChange={(on) => {
-              onConsent(on === true);
-            }}
-          />
-          <div className="flex flex-col">
-            <Label htmlFor="list-consent" className="font-normal">
-              You may write back to me about this
-            </Label>
-            <span className="text-sm text-ink-alt">
-              Only about what you sent. Not a newsletter, and not passed to anybody.
-            </span>
-          </div>
-        </div>
+        <CheckOption
+          id="list-consent"
+          label="You may write back to me about this"
+          hint="Only about what you sent. Not a newsletter, and not passed to anybody."
+          checked={consent}
+          onCheckedChange={(on) => {
+            onConsent(on === true);
+          }}
+        />
       )}
     </div>
   );

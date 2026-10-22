@@ -18,9 +18,8 @@ import {
 } from '@reportlog/fields';
 import type { Answers, FieldSettings } from '@reportlog/fields';
 import { useId } from 'react';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
@@ -80,19 +79,15 @@ export function QuestionControl(props: ControlProps) {
   if (q.kind === 'yes_no' && q.settings.checkbox === true) {
     const id = `${labelledBy}-box`;
     return (
-      <div className="flex items-center gap-3">
-        <Checkbox
-          id={id}
-          checked={text === 'yes'}
-          aria-describedby={describedBy}
-          onCheckedChange={(on) => {
-            onChange(on === true ? 'yes' : undefined);
-          }}
-        />
-        <Label htmlFor={id} className="font-normal">
-          {q.label}
-        </Label>
-      </div>
+      <CheckOption
+        id={id}
+        checked={text === 'yes'}
+        aria-describedby={describedBy}
+        onCheckedChange={(on) => {
+          onChange(on === true ? 'yes' : undefined);
+        }}
+        label={q.label}
+      />
     );
   }
   // Either/or answers are tiles, never a checkbox: a checkbox cannot tell
@@ -303,22 +298,19 @@ function ManyChoices({
       className="flex flex-col gap-3"
     >
       {options.map((o, i) => (
-        <div key={o.value} className="flex items-center gap-3">
-          <Checkbox
-            id={`${id}-${String(i)}`}
-            checked={picked.includes(o.value)}
-            onCheckedChange={(on) => {
-              // The order sent is the screen's, which is the operator's.
-              const next = new Set(picked);
-              if (on === true) next.add(o.value);
-              else next.delete(o.value);
-              onChange(options.map((x) => x.value).filter((x) => next.has(x)));
-            }}
-          />
-          <Label htmlFor={`${id}-${String(i)}`} className="font-normal">
-            {o.label}
-          </Label>
-        </div>
+        <CheckOption
+          key={o.value}
+          id={`${id}-${String(i)}`}
+          label={o.label}
+          checked={picked.includes(o.value)}
+          onCheckedChange={(on) => {
+            // The order sent is the screen's, which is the operator's.
+            const next = new Set(picked);
+            if (on === true) next.add(o.value);
+            else next.delete(o.value);
+            onChange(options.map((x) => x.value).filter((x) => next.has(x)));
+          }}
+        />
       ))}
     </div>
   );

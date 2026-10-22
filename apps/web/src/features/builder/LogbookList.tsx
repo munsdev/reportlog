@@ -11,6 +11,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button.tsx';
+import { FileDrop } from '../../components/ui/file-drop.tsx';
+import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
 import { logbooksQuery, startingPointsQuery } from './queries.ts';
@@ -122,27 +124,30 @@ function NewLogbook() {
       >
         <fieldset className="space-y-2">
           <legend className="font-semibold">Start from</legend>
-          {/* "Start from nothing" is FIRST and chosen by default: a list whose
+          <RadioGroup
+            aria-label="Start from"
+            name="starting-point"
+            value={from}
+            onValueChange={setFrom}
+          >
+            {/* "Start from nothing" is FIRST and chosen by default: a list whose
               first choice is somebody else's questions reads as a recommendation. */}
-          <StartChoice
-            value="none"
-            current={from}
-            onPick={setFrom}
-            title="Start from nothing"
-            detail="An empty draft. You add every question yourself."
-          />
-          {points.data?.starting_points.map((p) => (
             <StartChoice
-              key={p.id}
-              value={p.id}
-              current={from}
-              onPick={setFrom}
-              title={p.title}
-              detail={`${p.blurb ? `${p.blurb} ` : ''}${String(p.questions)} questions${
-                p.typed ? '' : ', all of them choices'
-              }${p.takes_files ? ', and a place for files' : ', and no files'}.`}
+              value="none"
+              title="Start from nothing"
+              detail="An empty draft. You add every question yourself."
             />
-          ))}
+            {points.data?.starting_points.map((p) => (
+              <StartChoice
+                key={p.id}
+                value={p.id}
+                title={p.title}
+                detail={`${p.blurb ? `${p.blurb} ` : ''}${String(p.questions)} questions${
+                  p.typed ? '' : ', all of them choices'
+                }${p.takes_files ? ', and a place for files' : ', and no files'}.`}
+              />
+            ))}
+          </RadioGroup>
         </fieldset>
 
         <Field
@@ -187,51 +192,32 @@ function NewLogbook() {
         </Button>
       </form>
 
-      <Field
-        label="Or upload a logbook file"
-        help="A file downloaded from a logbook here or elsewhere. It makes a new draft."
-      >
-        {(p) => (
-          <input
-            {...p}
-            type="file"
-            accept="application/json,.json"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) upload.mutate(file);
-            }}
-          />
-        )}
-      </Field>
+      <div className="flex flex-col gap-1">
+        <p id="upload-logbook-label" className="font-semibold">
+          Or upload a logbook file
+        </p>
+        <FileDrop
+          labelledBy="upload-logbook-label"
+          accept="application/json,.json"
+          limits="A file downloaded from a logbook here or elsewhere. It makes a new draft."
+          onFiles={(files) => {
+            const file = files[0];
+            if (file) upload.mutate(file);
+          }}
+        />
+      </div>
       <Problem error={upload.error} />
     </Panel>
   );
 }
 
-function StartChoice(props: {
-  value: string;
-  current: string;
-  onPick: (v: string) => void;
-  title: string;
-  detail: string;
-}) {
-  const id = `start-${props.value}`;
+function StartChoice(props: { value: string; title: string; detail: string }) {
   return (
-    <div className="flex items-start gap-2 rounded-card border border-line p-3">
-      <input
-        id={id}
-        type="radio"
-        name="starting-point"
-        className="mt-1 size-4"
-        checked={props.current === props.value}
-        onChange={() => {
-          props.onPick(props.value);
-        }}
-      />
-      <label htmlFor={id}>
-        <span className="block font-semibold">{props.title}</span>
-        <span className="block text-sm text-muted">{props.detail}</span>
-      </label>
-    </div>
+    <RadioOption
+      id={`start-${props.value}`}
+      value={props.value}
+      label={props.title}
+      hint={props.detail}
+    />
   );
 }

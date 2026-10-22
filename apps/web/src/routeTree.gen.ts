@@ -33,6 +33,7 @@ import { Route as BoardActivityRouteImport } from './routes/board/activity'
 import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as BoardPressRouteImport } from './routes/board/press'
+import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
 import { Route as DocsFirstLogbookRouteImport } from './routes/docs/first-logbook'
@@ -224,6 +225,11 @@ const BoardNumbersRoute = BoardNumbersRouteImport.update({
 const BoardPressRoute = BoardPressRouteImport.update({
   id: '/board/press',
   path: '/board/press',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevComponentsRoute = DevComponentsRouteImport.update({
+  id: '/dev/components',
+  path: '/dev/components',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -619,6 +625,7 @@ export interface FileRoutesByFullPath {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -711,6 +718,7 @@ export interface FileRoutesByTo {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -810,6 +818,7 @@ export interface FileRoutesById {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
   '/evidence/$token': typeof EvidenceTokenRoute
@@ -910,6 +919,7 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -1002,6 +1012,7 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -1100,6 +1111,7 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
     | '/evidence/$token'
@@ -1199,6 +1211,7 @@ export interface RootRouteChildren {
   BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
   BoardPressRoute: typeof BoardPressRoute
+  DevComponentsRoute: typeof DevComponentsRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
   EvidenceTokenRoute: typeof EvidenceTokenRoute
@@ -1408,6 +1421,13 @@ declare module '@tanstack/react-router' {
       path: '/board/press'
       fullPath: '/board/press'
       preLoaderRoute: typeof BoardPressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev/components': {
+      id: '/dev/components'
+      path: '/dev/components'
+      fullPath: '/dev/components'
+      preLoaderRoute: typeof DevComponentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -2065,6 +2085,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
   BoardPressRoute: BoardPressRoute,
+  DevComponentsRoute: DevComponentsRoute,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,
   EvidenceTokenRoute: EvidenceTokenRoute,

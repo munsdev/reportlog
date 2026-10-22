@@ -1,6 +1,9 @@
 /**
  * A label. Inside a `<Field>` it labels the field's control without being
- * told which; outside one, give it `htmlFor`.
+ * told which, and wears the label face (the theme's label family, case and
+ * tracking), as buttons and tabs do. Given its own `htmlFor` it is naming
+ * one option or a control outside a field, and reads as ordinary text: an
+ * answer in capitals would shout.
  */
 import { Label as LabelPrimitive } from 'radix-ui';
 import type { ComponentProps } from 'react';
@@ -28,11 +31,19 @@ export function Label({
     <LabelPrimitive.Root
       htmlFor={own ? field.controlId : htmlFor}
       id={id ?? (own ? field.labelId : undefined)}
-      className={cn('font-semibold text-ink', className)}
+      className={cn(
+        own ? 'label-face text-[0.8125rem] text-ink' : 'font-semibold text-ink',
+        className,
+      )}
       {...props}
     >
       {children}
-      {optional ? <span className="font-normal text-ink-alt"> (optional)</span> : null}
+      {optional ? (
+        <span className="font-sans font-normal tracking-normal text-ink-alt normal-case">
+          {' '}
+          (optional)
+        </span>
+      ) : null}
     </LabelPrimitive.Root>
   );
 }

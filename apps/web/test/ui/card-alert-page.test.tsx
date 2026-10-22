@@ -49,7 +49,7 @@ describe('an alert', () => {
     render(
       <>
         <Alert title="Saved.">Your changes are live.</Alert>
-        <Alert tone="confirmed" title="Approved." />
+        <Alert tone="done" title="Approved." />
       </>,
     );
     const [note, done] = screen.getAllByRole('status');
@@ -68,6 +68,19 @@ describe('an alert', () => {
     expect(serious.className).toMatch(/border-l-serious/);
     expect(serious.className).not.toMatch(/bg-serious|text-serious/);
     expect(screen.getByRole('status').className).not.toMatch(/serious|confirmed/);
+  });
+
+  it('says Done without teal: teal means a moderator confirmed something', () => {
+    const { container } = render(<Alert tone="done" title="Saved." />);
+    expect(container.innerHTML).not.toMatch(/confirmed/);
+    expect(screen.getByRole('status')).toHaveTextContent('Done: Saved.');
+  });
+
+  it('a warning is deep, and still says itself in words', () => {
+    render(<Alert tone="warning" title="The anchor needs a look." />);
+    const warning = screen.getByRole('status');
+    expect(warning.className).toMatch(/bg-deep/);
+    expect(warning).toHaveTextContent('Warning: The anchor needs a look.');
   });
 });
 

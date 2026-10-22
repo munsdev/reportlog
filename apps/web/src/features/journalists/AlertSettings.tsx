@@ -24,7 +24,7 @@ import { placeOptions } from '@reportlog/fields';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
@@ -83,19 +83,16 @@ function SettingsForm({
         <legend className="mb-2 font-semibold">States you cover</legend>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {STATES.map((s) => (
-            <div key={s.code} className="flex items-center gap-3">
-              <Checkbox
-                id={`${idBase}-${s.code}`}
-                checked={states.includes(s.code)}
-                onCheckedChange={(on) => {
-                  setSaved(false);
-                  setStates(on === true ? [...states, s.code] : states.filter((x) => x !== s.code));
-                }}
-              />
-              <Label htmlFor={`${idBase}-${s.code}`} className="font-normal">
-                {s.name}
-              </Label>
-            </div>
+            <CheckOption
+              key={s.code}
+              label={s.name}
+              id={`${idBase}-${s.code}`}
+              checked={states.includes(s.code)}
+              onCheckedChange={(on) => {
+                setSaved(false);
+                setStates(on === true ? [...states, s.code] : states.filter((x) => x !== s.code));
+              }}
+            />
           ))}
         </div>
       </fieldset>

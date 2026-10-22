@@ -81,6 +81,9 @@ const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers', '/desk'] as const;
 /** Every other page: for anybody, or for any signed-in person (not staff). */
 const OPEN = [
   '/',
+  // The components page: development builds only, and not found in a
+  // production one (routes/dev.components.tsx). It shows no data.
+  '/dev/components',
   '/about',
   '/how',
   '/legal',

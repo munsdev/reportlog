@@ -143,7 +143,7 @@ function Switch({
         />
       </RadioGroup>
       {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-      {save.isSuccess ? <Alert tone="confirmed">Saved.</Alert> : null}
+      {save.isSuccess ? <Alert tone="done">Saved.</Alert> : null}
       <div>
         <Button type="submit" disabled={save.isPending}>
           Save
@@ -313,7 +313,7 @@ function ErasingList({ data }: { data: ErasingData }) {
                   <div>
                     <AskDialog
                       trigger={
-                        <Button size="sm" variant="secondary">
+                        <Button variant="secondary">
                           Erase this file…
                         </Button>
                       }

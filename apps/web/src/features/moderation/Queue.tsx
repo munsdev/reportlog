@@ -15,6 +15,7 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -114,7 +115,7 @@ export function QueuePage({ search }: { search: QueueSearch }) {
           />
           {batch.isError ? <Alert tone="serious">{batch.error.message}</Alert> : null}
           {batch.data ? (
-            <Alert tone={batch.data.skipped.length ? 'note' : 'confirmed'}>
+            <Alert tone={batch.data.skipped.length ? 'note' : 'done'}>
               {`Approved ${String(batch.data.approved.length)}.`}
               {batch.data.skipped.length
                 ? ` Left alone: ${batch.data.skipped.map((x) => x.why).join(' ')}`
@@ -197,7 +198,7 @@ function BulkDecline({
   });
   // What was done stays on the screen after the selection empties.
   const result = decline.data ? (
-    <Alert tone="confirmed">
+    <Alert tone="done">
       {`Declined ${String(decline.data.declined.length)}.`}
       {decline.data.skipped.length
         ? ` Left alone: ${decline.data.skipped.map((x) => x.why).join(' ')}`
@@ -373,16 +374,15 @@ function QueueFilters({ search }: { search: QueueSearch }) {
           }}
         />
       </Field>
-      <div className="flex items-center gap-2 pb-2">
-        <Checkbox
-          id="only-flagged"
-          checked={flagged}
-          onCheckedChange={(v) => {
-            setFlagged(v === true);
-          }}
-        />
-        <Label htmlFor="only-flagged">Only those waiting for a second read</Label>
-      </div>
+      <CheckOption
+        id="only-flagged"
+        label="Only those waiting for a second read"
+        className="w-auto self-end"
+        checked={flagged}
+        onCheckedChange={(v) => {
+          setFlagged(v === true);
+        }}
+      />
       <Field>
         <Label>Arrived from</Label>
         <Input

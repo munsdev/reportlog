@@ -70,7 +70,7 @@ function Notice({ n }: { n: ContentNoticeRow }) {
       </p>
       <p className="whitespace-pre-wrap">{n.explanation}</p>
       {n.status === 'decided' && n.decision ? (
-        <Alert tone="confirmed" title={DECISION_LABEL[n.decision]}>
+        <Alert tone="done" title={DECISION_LABEL[n.decision]}>
           {n.decision_reason}
         </Alert>
       ) : (

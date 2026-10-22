@@ -25,7 +25,7 @@ import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import {
   Dialog,
   DialogClose,
@@ -239,32 +239,24 @@ function Permissions({ r }: { r: MyReportDetail }) {
         change them.
       </p>
       {(Object.keys(PERMISSION_WORDS) as Permission[]).map((p) => (
-        <div key={p} className="flex items-start gap-3">
-          <Checkbox
-            id={`perm-${p}`}
-            // Read back from the server, never trusted from the click: the
-            // server is where the current value lives.
-            checked={r.permissions[p]}
-            disabled={set.isPending}
-            onCheckedChange={(on) => {
-              if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
-                setAskTakeDown(true);
-                return;
-              }
-              setStatus('Saving…');
-              set.mutate({ permission: p, granted: on === true });
-            }}
-            aria-describedby={`perm-${p}-hint`}
-          />
-          <div className="flex flex-col">
-            <Label htmlFor={`perm-${p}`} className="font-normal">
-              {PERMISSION_WORDS[p].label}
-            </Label>
-            <span id={`perm-${p}-hint`} className="text-sm text-ink-alt">
-              {PERMISSION_WORDS[p].hint}
-            </span>
-          </div>
-        </div>
+        <CheckOption
+          key={p}
+          id={`perm-${p}`}
+          label={PERMISSION_WORDS[p].label}
+          hint={PERMISSION_WORDS[p].hint}
+          // Read back from the server, never trusted from the click: the
+          // server is where the current value lives.
+          checked={r.permissions[p]}
+          disabled={set.isPending}
+          onCheckedChange={(on) => {
+            if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
+              setAskTakeDown(true);
+              return;
+            }
+            setStatus('Saving…');
+            set.mutate({ permission: p, granted: on === true });
+          }}
+        />
       ))}
       {status ? <p role="status">{status}</p> : null}
       <Dialog open={askTakeDown} onOpenChange={setAskTakeDown}>
@@ -379,19 +371,14 @@ function Correct({ r }: { r: MyReportDetail }) {
         />
       </Field>
       {r.may_publish ? (
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="keep-out"
-            checked={keepOut}
-            onCheckedChange={(on) => {
-              setKeepOut(on === true);
-            }}
-          />
-          <Label htmlFor="keep-out" className="font-normal">
-            Keep it out of the public archive from now on. (This cannot be undone: a correction can
-            take permission to publish back, never give it.)
-          </Label>
-        </div>
+        <CheckOption
+          id="keep-out"
+          label="Keep it out of the public archive from now on. (This cannot be undone: a correction can take permission to publish back, never give it.)"
+          checked={keepOut}
+          onCheckedChange={(on) => {
+            setKeepOut(on === true);
+          }}
+        />
       ) : null}
       {problem ? <Alert tone="serious" title={problem} /> : null}
       {send.isError ? (
@@ -399,7 +386,7 @@ function Correct({ r }: { r: MyReportDetail }) {
           {send.error.message}
         </Alert>
       ) : null}
-      {done ? <Alert tone="confirmed" title={done} /> : null}
+      {done ? <Alert tone="done" title={done} /> : null}
       <div>
         <Button
           type="button"
@@ -490,18 +477,14 @@ function Erase({ r }: { r: MyReportDetail }) {
         never held your address), and is published or not exactly as before. Afterwards it no longer
         appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
-      <div className="flex items-start gap-3">
-        <Checkbox
-          id="erase-sure"
-          checked={sure}
-          onCheckedChange={(on) => {
-            setSure(on === true);
-          }}
-        />
-        <Label htmlFor="erase-sure" className="font-normal">
-          I understand this cannot be undone.
-        </Label>
-      </div>
+      <CheckOption
+        id="erase-sure"
+        label="I understand this cannot be undone."
+        checked={sure}
+        onCheckedChange={(on) => {
+          setSure(on === true);
+        }}
+      />
       {go.isError ? <Alert tone="serious" title={go.error.message} /> : null}
       <div>
         <Button

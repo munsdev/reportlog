@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -298,7 +298,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
           ) : null}
           {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
           {save.isSuccess ? (
-            <Alert tone="confirmed">
+            <Alert tone="done">
               {save.data.confirm_sent === true
                 ? 'Saved. A link was emailed to the new address; it receives nothing until it is used.'
                 : save.data.confirm_sent === false
@@ -366,19 +366,15 @@ function Tick({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-start gap-3">
-      <Checkbox
-        id={id}
-        checked={checked}
-        onCheckedChange={(on) => {
-          onChange(on === true);
-        }}
-      />
-      <div className="flex flex-col">
-        <Label htmlFor={id}>{label}</Label>
-        <span className="text-sm text-ink-alt">{help}</span>
-      </div>
-    </div>
+    <CheckOption
+      id={id}
+      label={label}
+      hint={help}
+      checked={checked}
+      onCheckedChange={(on) => {
+        onChange(on === true);
+      }}
+    />
   );
 }
 
@@ -582,7 +578,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  size="sm"
+
                   variant="secondary"
                   disabled={i === 0}
                   aria-label={`Move “${d.label || d.key}” up`}
@@ -594,7 +590,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
+
                   variant="secondary"
                   disabled={i === drafts.length - 1}
                   aria-label={`Move “${d.label || d.key}” down`}
@@ -606,7 +602,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
+
                   variant="secondary"
                   aria-label={`Remove “${d.label || d.key}”`}
                   onClick={() => {
@@ -660,7 +656,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
           </Button>
         </div>
         {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-        {save.isSuccess ? <Alert tone="confirmed">The questions are saved.</Alert> : null}
+        {save.isSuccess ? <Alert tone="done">The questions are saved.</Alert> : null}
         <Button
           type="button"
           disabled={save.isPending}

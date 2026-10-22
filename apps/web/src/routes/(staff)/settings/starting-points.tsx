@@ -75,7 +75,7 @@ export function StartingPointsPage() {
       ) : null}
 
       {apply.data ? (
-        <Alert tone="confirmed" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
+        <Alert tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
           {apply.data.logbook ? (
             <p>
               It made a draft logbook,{' '}

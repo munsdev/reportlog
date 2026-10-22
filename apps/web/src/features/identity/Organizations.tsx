@@ -28,6 +28,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
@@ -166,7 +167,7 @@ export function OrganizationPage({ id }: { id: number }) {
               <Button
                 type="button"
                 variant="quiet"
-                size="sm"
+
                 onClick={() => {
                   remove.mutate(m.email);
                 }}
@@ -265,18 +266,19 @@ function LogoPanel({
         }}
       >
         <div className="flex flex-col gap-1">
-          <label htmlFor={inputId} className="font-semibold">
+          <p id={`${inputId}-label`} className="font-semibold">
             {logo ? 'A new logo' : 'A logo'}
-          </label>
-          <input
-            id={inputId}
-            type="file"
+          </p>
+          <FileDrop
+            labelledBy={`${inputId}-label`}
             accept={LOGO_TYPES.join(',')}
-            onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
+            buttonLabel="Choose an image"
+            onFiles={(files) => {
+              setFile(files[0] ?? null);
               save.reset();
             }}
           />
+          {file ? <p className="text-sm text-ink-alt">Chosen: {file.name}</p> : null}
         </div>
         <Button type="submit" disabled={!file || save.isPending}>
           {save.isPending ? 'Saving…' : 'Use this image'}
@@ -434,7 +436,7 @@ function InvitationRow({
         {i.status === 'pending' && (
           <Button
             type="button"
-            size="sm"
+
             variant="secondary"
             onClick={() => {
               resend.mutate();
@@ -446,7 +448,7 @@ function InvitationRow({
         {i.status === 'awaiting_approval' && youGrantAccess && (
           <Button
             type="button"
-            size="sm"
+
             variant="secondary"
             onClick={() => {
               approve.mutate();
@@ -457,7 +459,7 @@ function InvitationRow({
         )}
         <Button
           type="button"
-          size="sm"
+
           variant="quiet"
           onClick={() => {
             withdraw.mutate();

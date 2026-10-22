@@ -14,7 +14,7 @@ import type { ReactNode } from 'react';
 import { useId, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
@@ -197,16 +197,16 @@ function NotesSwitches() {
       {query.data.logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
       <ul className="flex flex-col gap-2">
         {query.data.logbooks.map((l) => (
-          <li key={l.slug} className="flex items-center gap-2">
-            <Checkbox
+          <li key={l.slug}>
+            <CheckOption
               id={`notes-${l.slug}`}
+              label={`${l.title} uses editorial notes`}
               checked={l.notes_enabled}
               disabled={set.isPending}
               onCheckedChange={(v) => {
                 set.mutate({ slug: l.slug, enabled: v === true });
               }}
             />
-            <Label htmlFor={`notes-${l.slug}`}>{l.title} uses editorial notes</Label>
           </li>
         ))}
       </ul>

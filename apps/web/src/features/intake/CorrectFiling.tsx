@@ -13,7 +13,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
@@ -99,7 +99,7 @@ function CorrectForm({
       <Link to="/intake/$id" params={{ id: String(f.batch_id) }} className="underline">
         Back to the batch
       </Link>
-      {done ? <Alert tone="confirmed" title={done} /> : null}
+      {done ? <Alert tone="done" title={done} /> : null}
 
       <section
         aria-labelledby="the-correction"
@@ -166,18 +166,14 @@ function CorrectForm({
             }}
           />
         </Field>
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="attest-correction"
-            checked={attested}
-            onCheckedChange={(on) => {
-              setAttested(on === true);
-            }}
-          />
-          <Label htmlFor="attest-correction" className="font-normal">
-            {CORRECTION_STATEMENT}
-          </Label>
-        </div>
+        <CheckOption
+          id="attest-correction"
+          checked={attested}
+          onCheckedChange={(on) => {
+            setAttested(on === true);
+          }}
+          label={CORRECTION_STATEMENT}
+        />
         {f.may_publish && publish === 'no' ? (
           <Alert tone="note" title="Keeping it out cannot be undone">
             A correction can take permission to publish back, never give it.

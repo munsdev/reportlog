@@ -166,7 +166,7 @@ function FileCard({
           <div>
             <Button
               variant="secondary"
-              size="sm"
+             
               aria-expanded={showing}
               onClick={() => {
                 setShowing((s) => !s);
@@ -182,7 +182,7 @@ function FileCard({
           <div className="flex flex-wrap gap-2">
             {f.publication !== 'published' && blocked === null ? (
               <AskDialog
-                trigger={<Button size="sm">Publish…</Button>}
+                trigger={<Button>Publish…</Button>}
                 title={`Publish ${name}`}
                 description="The re-encoded copy goes on the public report. The original never does."
                 questions={[
@@ -210,7 +210,7 @@ function FileCard({
             {f.publication !== 'refused' ? (
               <AskDialog
                 trigger={
-                  <Button size="sm" variant="secondary">
+                  <Button variant="secondary">
                     {f.publication === 'published' ? 'Take it down…' : 'Keep it unpublished…'}
                   </Button>
                 }
@@ -234,7 +234,7 @@ function FileCard({
             {f.publication !== 'refused' ? (
               <AskDialog
                 trigger={
-                  <Button size="sm" variant="secondary">
+                  <Button variant="secondary">
                     Refuse…
                   </Button>
                 }
@@ -278,7 +278,7 @@ function OpenOriginal({
   return (
     <AskDialog
       trigger={
-        <Button size="sm" variant="quiet">
+        <Button variant="quiet">
           Open the original…
         </Button>
       }
@@ -354,7 +354,7 @@ function Preview({ file: f }: { file: ThreadFile }) {
       {f.pages > 1 ? (
         <figcaption className="flex items-center gap-3 text-sm">
           <Button
-            size="sm"
+           
             variant="secondary"
             disabled={page === 1}
             onClick={() => {
@@ -367,7 +367,7 @@ function Preview({ file: f }: { file: ThreadFile }) {
             Page {String(page)} of {String(f.pages)}
           </span>
           <Button
-            size="sm"
+           
             variant="secondary"
             disabled={page === f.pages}
             onClick={() => {

@@ -211,8 +211,8 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           checked={lb.email_required}
           disabled={save.isPending}
           help="For a form of choices only, where you still want to reach reporters."
-          onChange={(e) => {
-            save.mutate(e.target.checked);
+          onCheckedChange={(on) => {
+            save.mutate(on);
           }}
         />
       )}
@@ -320,7 +320,6 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                   {!launched && (
                     <>
                       <Button
-                        size="sm"
                         variant="secondary"
                         disabled={i === 0}
                         aria-label={`Move up: “${q.label}”`}
@@ -329,7 +328,6 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         Move up
                       </Button>
                       <Button
-                        size="sm"
                         variant="secondary"
                         disabled={i === lb.fields.length - 1}
                         aria-label={`Move down: “${q.label}”`}
@@ -338,7 +336,6 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         Move down
                       </Button>
                       <Button
-                        size="sm"
                         variant="secondary"
                         aria-label={`Change “${q.label}”`}
                         onClick={() => {
@@ -348,7 +345,6 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                         Change
                       </Button>
                       <Button
-                        size="sm"
                         variant="secondary"
                         aria-label={`Remove “${q.label}”`}
                         onClick={() =>
@@ -363,7 +359,6 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                   )}
                   {launched && (
                     <Button
-                      size="sm"
                       variant="secondary"
                       aria-label={`Reword “${q.label}”`}
                       onClick={() => {
@@ -377,11 +372,11 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                     <Check
                       label="A filter on the board"
                       checked={q.filterable}
-                      onChange={(e) =>
+                      onCheckedChange={(on) =>
                         void run(() =>
                           call(updateQuestion, {
                             params: { id: lb.id, fieldId: q.id },
-                            body: { filterable: e.target.checked },
+                            body: { filterable: on },
                           }),
                         )
                       }

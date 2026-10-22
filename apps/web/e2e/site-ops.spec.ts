@@ -205,6 +205,46 @@ test('no page says ReportLog where it means the deployment', async ({ page }) =>
   ).toEqual([]);
 });
 
+test.describe('the site’s own controls', () => {
+  test.use({ storageState: ADMIN });
+
+  // docs/design/components.md §06: every choice is a choice card, and files
+  // are chosen with a button. A real input may sit underneath (it is what
+  // posts the form, or opens the phone's camera roll), but a person never
+  // sees the browser's own. Walked as an administrator, so the staff screens
+  // draw their forms rather than a request to sign in.
+  test('no page shows a browser-default radio, checkbox or file input', async ({ page }) => {
+    test.skip(test.info().project.name !== 'chromium', 'the same walk twice would say the same');
+    test.setTimeout(240_000);
+    const found: string[] = [];
+    for (const path of everyPage()) {
+      await page.goto(address(path), { waitUntil: 'networkidle' });
+      const shown = await page.evaluate(() =>
+        [
+          ...document.querySelectorAll<HTMLInputElement>(
+            'input[type=radio], input[type=checkbox], input[type=file]',
+          ),
+        ]
+          .filter((el) => {
+            const style = getComputedStyle(el);
+            const box = el.getBoundingClientRect();
+            const clipped = style.clipPath.includes('inset(50%');
+            return (
+              style.opacity !== '0' &&
+              style.visibility !== 'hidden' &&
+              box.width > 2 &&
+              box.height > 2 &&
+              !clipped
+            );
+          })
+          .map((el) => el.type),
+      );
+      if (shown.length) found.push(`${path}: ${shown.join(', ')}`);
+    }
+    expect(found).toEqual([]);
+  });
+});
+
 test.describe('the directory', () => {
   test('lists no report counts and no ranking, and says plainly when it is empty', async ({
     page,

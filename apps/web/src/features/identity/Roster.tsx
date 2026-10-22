@@ -15,6 +15,7 @@ import { Link } from '@tanstack/react-router';
 import { useId, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { call } from '../../lib/api.ts';
 import { deskLabel } from './desks.ts';
 import { ROLE_LABELS, useIdentityChanged } from './session.ts';
@@ -146,7 +147,7 @@ function Roster() {
                       <Button
                         type="button"
                         variant="quiet"
-                        size="sm"
+
                         aria-label={`Change the team and desks of ${p.email}`}
                         onClick={() => {
                           setEditing({ email: p.email, team: p.teamMember, desks: p.desks });
@@ -219,21 +220,15 @@ function TeamForm({
               save.reset();
             }}
           />
-          <div className="flex items-center gap-2">
-            <input
-              id={teamId}
-              type="checkbox"
-              className="size-5"
-              checked={team}
-              onChange={(e) => {
-                setTeam(e.target.checked);
-                save.reset();
-              }}
-            />
-            <label htmlFor={teamId} className="font-semibold">
-              On the team
-            </label>
-          </div>
+          <CheckOption
+            id={teamId}
+            label="On the team"
+            checked={team}
+            onCheckedChange={(on) => {
+              setTeam(on === true);
+              save.reset();
+            }}
+          />
           <fieldset className="space-y-2" disabled={!team}>
             <legend className="font-semibold">Desks</legend>
             {!team && (
@@ -241,20 +236,18 @@ function TeamForm({
             )}
             <div className="grid gap-2 sm:grid-cols-2">
               {DESKS.map((d) => (
-                <label key={d.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    className="size-5"
-                    checked={team && desks.includes(d.id)}
-                    onChange={(e) => {
-                      setDesks((now) =>
-                        e.target.checked ? [...now, d.id] : now.filter((x) => x !== d.id),
-                      );
-                      save.reset();
-                    }}
-                  />
-                  {d.label}
-                </label>
+                <CheckOption
+                  key={d.id}
+                  label={d.label}
+                  disabled={!team}
+                  checked={team && desks.includes(d.id)}
+                  onCheckedChange={(on) => {
+                    setDesks((now) =>
+                      on === true ? [...now, d.id] : now.filter((x) => x !== d.id),
+                    );
+                    save.reset();
+                  }}
+                />
               ))}
             </div>
           </fieldset>

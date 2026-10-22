@@ -263,8 +263,8 @@ export function QuestionForm({
         <Check
           label="Let people type a place that is not on the list"
           checked={allowOther}
-          onChange={(e) => {
-            setAllowOther(e.target.checked);
+          onCheckedChange={(on) => {
+            setAllowOther(on);
           }}
         />
       )}
@@ -356,16 +356,16 @@ export function QuestionForm({
               ? 'An upload question cannot be compulsory: it seals no answer of its own.'
               : undefined
         }
-        onChange={(e) => {
-          setRequired(e.target.checked);
+        onCheckedChange={(on) => {
+          setRequired(on);
         }}
       />
       {canFilter(kind) && (
         <Check
           label="Offer it as a filter on the board"
           checked={filterable}
-          onChange={(e) => {
-            setFilterable(e.target.checked);
+          onCheckedChange={(on) => {
+            setFilterable(on);
           }}
         />
       )}
@@ -402,10 +402,8 @@ export function QuestionForm({
                   key={v}
                   label={v === YES ? 'Yes' : v === 'no' ? 'No' : v}
                   checked={whenValues.includes(v)}
-                  onChange={(e) => {
-                    setWhenValues((now) =>
-                      e.target.checked ? [...now, v] : now.filter((x) => x !== v),
-                    );
+                  onCheckedChange={(on) => {
+                    setWhenValues((now) => (on ? [...now, v] : now.filter((x) => x !== v)));
                   }}
                 />
               ))}

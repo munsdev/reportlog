@@ -140,7 +140,7 @@ export function AgreementAdminPage({ audience }: { audience: AgreementAudience }
           <FieldDescription>Plain text. It is shown exactly as written.</FieldDescription>
         </Field>
         {publish.isError ? <Alert tone="serious">{publish.error.message}</Alert> : null}
-        {publish.isSuccess ? <Alert tone="confirmed">Published.</Alert> : null}
+        {publish.isSuccess ? <Alert tone="done">Published.</Alert> : null}
         <Button type="submit" className="self-start" disabled={publish.isPending}>
           Publish this version
         </Button>

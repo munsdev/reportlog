@@ -144,7 +144,7 @@ function FileForm({ from }: { from?: string | undefined }) {
             </Alert>
           ) : null}
           {file.isSuccess ? (
-            <Alert tone="confirmed" title={`Filed as #${String(file.data.id)}. Thank you.`}>
+            <Alert tone="done" title={`Filed as #${String(file.data.id)}. Thank you.`}>
               You will get an email when somebody changes its status.
             </Alert>
           ) : null}
@@ -196,7 +196,7 @@ function IssueCard({ issue }: { issue: FeedbackIssue }) {
         <div>
           <Button
             variant="quiet"
-            size="sm"
+           
             aria-expanded={open}
             onClick={() => {
               setOpen(!open);
@@ -278,7 +278,7 @@ function IssueDetail({ id }: { id: number }) {
           </Field>
           {add.isError ? <p role="alert">{add.error.message}</p> : null}
           <div>
-            <Button type="submit" variant="secondary" size="sm" disabled={add.isPending}>
+            <Button type="submit" variant="secondary" disabled={add.isPending}>
               Add the comment
             </Button>
           </div>

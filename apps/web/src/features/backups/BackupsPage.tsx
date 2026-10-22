@@ -95,7 +95,7 @@ function Running({ state }: { state: CopiesState }) {
   if (!state.last) return null;
   return (
     <Alert
-      tone={state.last.ok ? 'confirmed' : 'serious'}
+      tone={state.last.ok ? 'done' : 'serious'}
       title={
         state.last.ok
           ? state.last.kind === 'backup'

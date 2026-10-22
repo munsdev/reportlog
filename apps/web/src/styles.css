@@ -88,7 +88,11 @@
   --font-label: var(--rl-font-label);
   /* Page titles: fluid from a phone to a desktop, between the theme's sizes. */
   --text-title: var(--rl-h1-size);
-  --text-title--line-height: 1.15;
+  --text-title--line-height: 1.08;
+  --text-section: clamp(1.5rem, 1.2rem + 1vw, 2.125rem);
+  --text-section--line-height: 1.15;
+  --text-lede: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --text-lede--line-height: 1.5;
 }
 
 @layer base {
@@ -110,7 +114,166 @@
     text-transform: var(--rl-display-transform);
     font-stretch: var(--rl-display-stretch);
   }
+  body {
+    line-height: 1.55;
+  }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-ink;
+  }
+
+  /* The page's texture (a theme's `texture`, set on <html> as
+     data-texture). On the page's own ground only: a panel's surface covers
+     it, so nothing is ever read over a rule. Off in print. */
+  html[data-texture='ruled'] body {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0 27px,
+      var(--rl-border) 27px 28px
+    );
+  }
+  html[data-texture='grid'] body {
+    background-image:
+      linear-gradient(var(--rl-border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rl-border) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+  html[data-texture='dots'] body {
+    background-image: radial-gradient(var(--rl-border) 1px, transparent 1.5px);
+    background-size: 20px 20px;
+  }
+
+  /* Motion is only ever a press or a menu opening, and none at all for
+     somebody who asked for less. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  @media print {
+    body {
+      background-image: none !important;
+    }
+  }
+}
+
+/* ---- type ----------------------------------------------------------------
+   The theme decides the faces; these say which face a piece of text wears.
+   `label-face` is the face of buttons, tabs, form labels and eyebrows: the
+   theme's label family, case and tracking, always bold. */
+@utility label-face {
+  font-family: var(--rl-font-label);
+  font-stretch: var(--rl-label-stretch);
+  font-weight: 700;
+  text-transform: var(--rl-label-transform);
+  letter-spacing: var(--rl-label-tracking);
+}
+@utility display-face {
+  font-family: var(--rl-font-display);
+  font-stretch: var(--rl-display-stretch);
+  font-weight: var(--rl-h1-weight);
+  text-transform: var(--rl-display-transform);
+}
+/* A control's edge reaches 3:1 and never thinner than 1.5px, whatever the
+   theme's border. */
+@utility border-control {
+  border-width: max(var(--rl-border-main), 1.5px);
+}
+/* The theme's hard shadow, and the same shadow pressed in. */
+@utility shadow-pressed {
+  box-shadow: calc(var(--rl-shadow-offset) - var(--rl-press))
+    calc(var(--rl-shadow-offset) - var(--rl-press)) 0 var(--rl-text);
+}
+@utility translate-press {
+  transform: translate(var(--rl-press), var(--rl-press));
+}
+
+/* ---- panel headings ------------------------------------------------------
+   A theme's `panelHead`, set on <html> as data-panel-head, draws the heading
+   of every panel that has one (Card's `heading`). Only on a raised panel: a
+   quiet, deep or plain one keeps a plain heading, because a striped bar on a
+   notice that is already deep would be two signals for one thing. The shapes
+   are borders and backgrounds around a real <h2>/<h3>; none of them is a
+   word a screen reader would read. */
+@layer components {
+  .panel-head {
+    padding: 1.25rem 1.25rem 0;
+  }
+  .panel-title {
+    font-family: var(--rl-font-display);
+    font-stretch: var(--rl-display-stretch);
+    font-weight: var(--rl-h1-weight);
+    text-transform: var(--rl-display-transform);
+    font-size: 1.25rem;
+    line-height: 1.2;
+  }
+
+  /* The old Mac window: a striped strip, the title on a plain block. */
+  html[data-panel-head='title-bar'] .panel[data-variant='raised'] > .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 1.5rem;
+    padding: 0;
+    border-bottom: var(--rl-border-main) solid var(--rl-text-alt);
+    background-color: var(--rl-background-alt);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      var(--rl-border) 0 1px,
+      transparent 1px 3px
+    );
+    background-size: 100% 13px;
+    background-position: 0 5px;
+    background-repeat: repeat-x;
+  }
+  html[data-panel-head='title-bar'] .panel[data-variant='raised'] > .panel-head > .panel-title {
+    padding: 0 0.625rem;
+    background: var(--rl-background-alt);
+    font-family: var(--rl-font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    line-height: 1.5rem;
+  }
+
+  /* Broadcast: a deep bar with a brand edge. */
+  html[data-panel-head='bar'] .panel[data-variant='raised'] > .panel-head {
+    padding: 0.375rem 1rem;
+    background: var(--rl-background-deep);
+    color: var(--rl-text-on-deep);
+    border-left: 6px solid var(--rl-brand-on-deep);
+  }
+  html[data-panel-head='bar'] .panel[data-variant='raised'] > .panel-head > .panel-title,
+  html[data-panel-head='double-rule'] .panel[data-variant='raised'] > .panel-head > .panel-title {
+    font-family: var(--rl-font-label);
+    font-stretch: var(--rl-label-stretch);
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  /* Broadsheet: a double rule across the top. */
+  html[data-panel-head='double-rule'] .panel[data-variant='raised'] {
+    border-top: 4px double var(--rl-text);
+  }
+
+  /* Docket: the title, then a dashed rule. */
+  html[data-panel-head='rule'] .panel[data-variant='raised'] > .panel-head > .panel-title,
+  html[data-panel-head='rule'] .panel-title-inline {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--rl-text-alt);
+  }
+
+  /* Console: a prompt. */
+  html[data-panel-head='prompt'] .panel[data-variant='raised'] > .panel-head > .panel-title::before,
+  html[data-panel-head='prompt'] .panel-title-inline::before {
+    content: '$ ' / '';
+    color: var(--rl-brand);
+    font-family: var(--rl-font-mono);
   }
 }

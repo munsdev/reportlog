@@ -10,6 +10,7 @@ import { DRAFT_HEADER, FILE_PATHS, createUpload, newUploadDraft } from '@reportl
 import type { UploadConfig } from '@reportlog/contracts';
 import { useId, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { call } from '@/lib/api.ts';
 import { megabytes, refusalFor } from './uploader.ts';
 import type { Item, Target, Uploader } from './uploader.ts';
@@ -89,7 +90,7 @@ export function FileList({
             <Button
               type="button"
               variant="quiet"
-              size="sm"
+
               onClick={() => {
                 onRemove(i);
               }}
@@ -132,7 +133,6 @@ export function FilePicker({
 }) {
   const id = useId();
   const [problem, setProblem] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
   const room = uploader.kept.length < config.max_files;
   return (
     <div className="flex flex-col gap-3">
@@ -148,19 +148,17 @@ export function FilePicker({
         removed from any copy that could ever be shown. The file as you send it is kept, locked, as
         evidence. Nothing is filed until you confirm from your email.
       </p>
-      <input
-        ref={input}
-        id={`${id}-input`}
-        type="file"
-        className="sr-only"
+      <FileDrop
         multiple={config.max_files > 1}
         accept={config.accept.join(',')}
-        aria-labelledby={labelledBy}
-        aria-describedby={`${id}-limits`}
-        onChange={(e) => {
+        labelledBy={labelledBy}
+        describedBy={`${id}-limits`}
+        disabled={!room}
+        buttonLabel={uploader.kept.length ? 'Add another file' : 'Choose files'}
+        onFiles={(files) => {
           setProblem(null);
           const kept = [...uploader.kept];
-          for (const f of Array.from(e.target.files ?? [])) {
+          for (const f of files) {
             const why = refusalFor(f, config, kept);
             if (why) {
               setProblem(why);
@@ -177,19 +175,8 @@ export function FilePicker({
             });
             void uploader.add(f);
           }
-          e.target.value = '';
         }}
       />
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!room}
-          onClick={() => input.current?.click()}
-        >
-          {uploader.kept.length ? 'Add another file' : 'Choose files'}
-        </Button>
-      </div>
       {problem ? (
         <p role="alert" className="text-sm font-semibold text-serious">
           {problem}

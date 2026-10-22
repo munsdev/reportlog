@@ -62,7 +62,7 @@ function Pager({
       <Button
         type="button"
         variant="secondary"
-        size="sm"
+       
         disabled={page <= 1}
         onClick={() => {
           onPage(page - 1);
@@ -76,7 +76,7 @@ function Pager({
       <Button
         type="button"
         variant="secondary"
-        size="sm"
+       
         disabled={page >= pages}
         onClick={() => {
           onPage(page + 1);

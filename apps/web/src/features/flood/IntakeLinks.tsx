@@ -123,7 +123,7 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
       </form>
       {make.isError ? <Alert tone="serious">{make.error.message}</Alert> : null}
       {make.data ? (
-        <Alert tone="confirmed" title="Copy the link now">
+        <Alert tone="done" title="Copy the link now">
           <span>
             It is shown this once. Anybody holding it can join until it is used up or off.
           </span>
@@ -196,7 +196,7 @@ export function JoinPage({ token }: { token: string }) {
       ) : null}
       {join.isError ? <Alert tone="serious">{join.error.message}</Alert> : null}
       {join.data ? (
-        <Alert tone="confirmed">
+        <Alert tone="done">
           {join.data.already_member
             ? `You are already in ${join.data.organization}.`
             : `You are now a coordinator of ${join.data.organization}.`}{' '}

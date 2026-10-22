@@ -12,8 +12,7 @@ import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorText, TextField } from '../identity/ui.tsx';
@@ -88,20 +87,15 @@ export function SignupPage() {
           <legend className="mb-2 font-semibold">States you cover</legend>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {STATES.map((s) => (
-              <div key={s.code} className="flex items-center gap-3">
-                <Checkbox
-                  id={`${idBase}-${s.code}`}
-                  checked={states.includes(s.code)}
-                  onCheckedChange={(on) => {
-                    setStates(
-                      on === true ? [...states, s.code] : states.filter((x) => x !== s.code),
-                    );
-                  }}
-                />
-                <Label htmlFor={`${idBase}-${s.code}`} className="font-normal">
-                  {s.name}
-                </Label>
-              </div>
+              <CheckOption
+                key={s.code}
+                label={s.name}
+                id={`${idBase}-${s.code}`}
+                checked={states.includes(s.code)}
+                onCheckedChange={(on) => {
+                  setStates(on === true ? [...states, s.code] : states.filter((x) => x !== s.code));
+                }}
+              />
             ))}
           </div>
         </fieldset>

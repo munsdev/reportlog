@@ -19,7 +19,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -59,17 +59,15 @@ export function CountsOnlySettings() {
       <ul className="flex flex-col gap-4">
         {query.data.logbooks.map((l) => (
           <li key={l.slug} className="flex flex-col gap-2">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id={`counts-${l.slug}`}
-                checked={l.counts_only}
-                disabled={set.isPending}
-                onCheckedChange={(v) => {
-                  set.mutate({ slug: l.slug, counts_only: v === true });
-                }}
-              />
-              <Label htmlFor={`counts-${l.slug}`}>{l.title} is published as counts only</Label>
-            </div>
+            <CheckOption
+              id={`counts-${l.slug}`}
+              label={`${l.title} is published as counts only`}
+              checked={l.counts_only}
+              disabled={set.isPending}
+              onCheckedChange={(v) => {
+                set.mutate({ slug: l.slug, counts_only: v === true });
+              }}
+            />
             <SmallArea slug={l.slug} title={l.title} saved={l.small_area} />
           </li>
         ))}

@@ -5,6 +5,7 @@
  */
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { cn } from '@/lib/utils.ts';
 
 const box = 'w-full rounded-card border border-line bg-surface px-3 py-2';
@@ -46,23 +47,30 @@ export function Select({ className, ...props }: ComponentProps<'select'>) {
   return <select className={cn(box, className)} {...props} />;
 }
 
-/** A checkbox with its words beside it, and an optional line of why. */
+/** A yes/no as a choice card, with an optional line of why. */
 export function Check({
   label,
   help,
-  ...props
-}: Omit<ComponentProps<'input'>, 'type'> & { label: string; help?: string | undefined }) {
-  const id = useId();
+  checked,
+  disabled,
+  onCheckedChange,
+}: {
+  label: string;
+  help?: string | undefined;
+  checked: boolean;
+  disabled?: boolean | undefined;
+  onCheckedChange: (on: boolean) => void;
+}) {
   return (
-    <div className="flex items-start gap-2">
-      <input id={id} type="checkbox" className="mt-1 size-4" {...props} />
-      <div>
-        <label htmlFor={id} className="font-semibold">
-          {label}
-        </label>
-        {help && <p className="text-sm text-muted">{help}</p>}
-      </div>
-    </div>
+    <CheckOption
+      label={label}
+      hint={help}
+      checked={checked}
+      disabled={disabled}
+      onCheckedChange={(on) => {
+        onCheckedChange(on === true);
+      }}
+    />
   );
 }
 

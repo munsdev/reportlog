@@ -33,8 +33,8 @@ const logbooksQuery = queryOptions({
 });
 
 const HEALTH = {
-  ok: { tone: 'confirmed', title: 'The anchor is running' },
-  warn: { tone: 'note', title: 'The anchor needs a look' },
+  ok: { tone: 'done', title: 'The anchor is running' },
+  warn: { tone: 'warning', title: 'The anchor needs a look' },
   fail: { tone: 'serious', title: 'The anchor is not working' },
 } as const;
 

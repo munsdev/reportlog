@@ -157,7 +157,7 @@ function Factors() {
                   <Button
                     type="button"
                     variant="quiet"
-                    size="sm"
+                   
                     disabled={dropPasskey.isPending}
                     onClick={() => {
                       dropPasskey.mutate(p.id);

@@ -84,7 +84,7 @@ export function EvidencePage({ token }: { token: string }) {
   if (send.isSuccess) {
     return (
       <Page title="Thank you" width="prose">
-        <Alert tone="confirmed" title={`Your files are part of report ${send.data.public_ref}`}>
+        <Alert tone="done" title={`Your files are part of report ${send.data.public_ref}`}>
           {send.data.attached === 1
             ? 'One file was added'
             : `${String(send.data.attached)} files were added`}{' '}

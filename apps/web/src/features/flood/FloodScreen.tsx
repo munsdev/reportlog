@@ -420,7 +420,7 @@ function LinkWindow() {
       </form>
       {run.isError ? <Alert tone="serious">{run.error.message}</Alert> : null}
       {run.data ? (
-        <Alert tone="confirmed">{`Withheld ${String(run.data.withheld)} link groups.`}</Alert>
+        <Alert tone="done">{`Withheld ${String(run.data.withheld)} link groups.`}</Alert>
       ) : null}
     </Section>
   );

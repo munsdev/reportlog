@@ -3,7 +3,9 @@
  * whatever opened it; Escape closes it; the page behind is hidden from
  * screen readers. Every dialog has a title, and a "Close" button a keyboard
  * reaches. Use it for a question that has to be answered before going on,
- * never to show something a page could.
+ * never to show something a page could. Its actions sit on the right, and a
+ * destructive one is never the primary colour: the action colour is for the
+ * thing the person came to do, and deleting is rarely that.
  */
 import { Dialog as DialogPrimitive } from 'radix-ui';
 import type { ComponentProps } from 'react';
@@ -36,13 +38,13 @@ export function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-card border border-line bg-surface p-6 text-ink shadow-raised',
+          'fixed top-1/2 left-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col gap-4 overflow-y-auto rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-6 text-ink shadow-raised print:hidden',
           className,
         )}
         {...props}
       >
         {children}
-        <DialogPrimitive.Close className="absolute top-3 right-3 rounded-control px-2 py-1 text-sm font-semibold text-ink-alt underline-offset-4 hover:underline">
+        <DialogPrimitive.Close className="absolute top-2 right-2 min-h-11 rounded-control px-3 label-face text-[0.8125rem] text-ink underline underline-offset-4 hover:decoration-2">
           Close
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
@@ -51,7 +53,7 @@ export function DialogContent({
 }
 
 export function DialogHeader({ className, ...props }: ComponentProps<'div'>) {
-  return <div className={cn('flex flex-col gap-1.5 pr-14', className)} {...props} />;
+  return <div className={cn('flex flex-col gap-1.5 pr-20', className)} {...props} />;
 }
 
 export function DialogFooter({ className, ...props }: ComponentProps<'div'>) {
@@ -65,7 +67,10 @@ export function DialogFooter({ className, ...props }: ComponentProps<'div'>) {
 
 export function DialogTitle({ className, ...props }: ComponentProps<typeof DialogPrimitive.Title>) {
   return (
-    <DialogPrimitive.Title className={cn('font-display text-xl font-bold', className)} {...props} />
+    <DialogPrimitive.Title
+      className={cn('display-face text-xl leading-tight', className)}
+      {...props}
+    />
   );
 }
 

@@ -51,7 +51,7 @@ import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -427,7 +427,7 @@ function MapCard({
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            size="sm"
+
             variant="secondary"
             aria-expanded={open}
             onClick={() => {
@@ -441,7 +441,7 @@ function MapCard({
           </Button>
           <Button
             type="button"
-            size="sm"
+
             variant="secondary"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
@@ -452,7 +452,7 @@ function MapCard({
           </Button>
           <Button
             type="button"
-            size="sm"
+
             variant="secondary"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
@@ -462,7 +462,7 @@ function MapCard({
             Move down
           </Button>
           {map.enabled ? (
-            <Button asChild size="sm" variant="quiet">
+            <Button asChild variant="quiet">
               <Link to="/map/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
@@ -488,18 +488,14 @@ function Tick({
 }) {
   const id = useId();
   return (
-    <div className="flex items-start gap-3">
-      <Checkbox
-        id={id}
-        checked={checked}
-        onCheckedChange={(on) => {
-          onChange(on === true);
-        }}
-      />
-      <Label htmlFor={id} className="font-normal">
-        {children}
-      </Label>
-    </div>
+    <CheckOption
+      id={id}
+      checked={checked}
+      onCheckedChange={(on) => {
+        onChange(on === true);
+      }}
+      label={children}
+    />
   );
 }
 
