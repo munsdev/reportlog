@@ -124,14 +124,17 @@ function QueueScreen({ search }: { search: QueueSearch }) {
       </StaffHead>
 
       <StatusButtons search={search} data={query.data} go={go} />
-      <Tools key={JSON.stringify(search)} search={search} data={query.data} go={go} />
+      {/* Keyed by the search, so a new search starts the tools afresh. The
+          prefix matters: the list below is keyed by the same search, and two
+          siblings with one key leave React unable to remove the old one. */}
+      <Tools key={`tools:${JSON.stringify(search)}`} search={search} data={query.data} go={go} />
 
       {query.isPending ? <p role="status">Reading the queue…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? (
         <QueueList
           // A new filter or page is a new list: nothing stays ticked or open across it.
-          key={JSON.stringify(search)}
+          key={`list:${JSON.stringify(search)}`}
           search={search}
           status={status}
           data={query.data}
@@ -165,10 +168,12 @@ function StatusButtons({
 }) {
   const status = search.status ?? 'pending';
   return (
-    // On a phone the row scrolls sideways inside the gutter rather than wrapping
-    // into a block of buttons above the list.
-    <div className="-mx-1 flex items-center gap-3 overflow-x-auto px-1 pt-1 pb-2">
-      <div role="group" aria-label="Show reports that are" className="flex shrink-0 gap-2">
+    // On a phone the buttons wrap rather than scroll sideways as
+    // moderation.md first asked: a phone's browser counted the scrolled-off
+    // width as the page's, laid the whole page out at over 1000px and zoomed
+    // out to fit, so nothing below could be tapped where it was drawn.
+    <div className="flex flex-wrap items-center gap-3 pt-1 pb-2">
+      <div role="group" aria-label="Show reports that are" className="flex flex-wrap gap-2">
         {STATUS_BUTTONS.map((b) => {
           const n = data?.counts[b.value];
           return (

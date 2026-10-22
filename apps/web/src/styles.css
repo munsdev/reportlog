@@ -98,6 +98,13 @@
 @layer base {
   html {
     @apply bg-paper font-sans text-ink antialiased;
+    /* The header is sticky. Whatever the page scrolls to (an anchor, the
+       skip link's target, a field taking focus) stops below it rather than
+       under it, where it would be hidden (WCAG 2.4.11). The bar's height,
+       its 6px rule, and a little room. */
+    scroll-padding-top: 5.5rem;
+    /* And above a bar fixed to the foot of the screen (the Save bar). */
+    scroll-padding-bottom: var(--rl-savebar-height, 0px);
   }
   /* On body rather than html, so a theme's larger text does not also
      stretch every rem of spacing on the page. */

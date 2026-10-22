@@ -98,8 +98,9 @@ export function LinkChecksPage() {
         </Button>
       </div>
       <Hotlines />
-      <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-2">
-        <div role="group" aria-label="Show links that are" className="flex shrink-0 gap-2">
+      {/* Wraps on a phone rather than scrolling sideways: see the queue's StatusButtons. */}
+      <div className="pt-1 pb-2">
+        <div role="group" aria-label="Show links that are" className="flex flex-wrap gap-2">
           {LINK_BUTTONS.map((b) => (
             <Button
               key={b.value}

@@ -98,8 +98,9 @@ export function ReviewPage({ id }: { id: number }) {
           <Link to="/lists/review">All lists</Link>
         </Button>
       </div>
-      <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-2">
-        <div role="group" aria-label="Show entries that are" className="flex shrink-0 gap-2">
+      {/* Wraps on a phone rather than scrolling sideways: see the queue's StatusButtons. */}
+      <div className="pt-1 pb-2">
+        <div role="group" aria-label="Show entries that are" className="flex flex-wrap gap-2">
           {(Object.keys(REVIEW) as ReviewState[]).map((s) => (
             <Button
               key={s}

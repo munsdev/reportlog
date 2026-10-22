@@ -14,7 +14,7 @@
  * access_log row before anything is shown. Closing the row without a reason
  * sends nothing, so it writes nothing and shows nothing.
  *
- * On a desktop two columns, the Decide panel sticky on the right; on a phone
+ * On a desktop two columns, the Decide panel heading the right one; on a phone
  * one column and a bar at the foot with Approve… and Decline…, each opening
  * the same Decide form in a sheet with that choice made.
  */
@@ -191,8 +191,12 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
             {files}
             {record}
           </div>
+          {/* Not sticky, though moderation.md asked for a sticky Decide panel:
+              sticky alone, the rows under it slid beneath it and could not be
+              pressed; a sticky, self-scrolling column hid its own controls
+              from the pointer. The panel heads the column instead. */}
           <div className="flex min-w-0 flex-col gap-6">
-            <div className="sticky top-[88px] z-10">{decide}</div>
+            {decide}
             {rows}
           </div>
         </div>
