@@ -11,8 +11,8 @@ import { getLegal } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { Alert } from '../components/ui/alert.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { Card } from '../components/ui/card.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { call } from '../lib/api.ts';
 
 export const legalQuery = queryOptions({
@@ -33,18 +33,16 @@ function Notice({
   text: string | null | undefined;
   missing: string;
 }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {text ? (
-          <p className="whitespace-pre-wrap">{text}</p>
-        ) : (
-          <p className="text-ink-alt">{missing}</p>
-        )}
-      </CardContent>
+  // Unwritten, a quiet panel that says so, never a placeholder that reads
+  // like the real thing.
+  return text ? (
+    <Card heading={title}>
+      <p className="whitespace-pre-wrap">{text}</p>
+    </Card>
+  ) : (
+    <Card variant="quiet" heading={title}>
+      <p className="font-semibold">Not written yet.</p>
+      <p className="text-ink-alt">{missing}</p>
     </Card>
   );
 }
@@ -52,7 +50,7 @@ function Notice({
 function LegalPage() {
   const legal = useQuery(legalQuery);
   return (
-    <Page title="Imprint and privacy" width="prose">
+    <PublicPage title="Imprint and privacy" width="prose">
       {legal.isError ? (
         <Alert tone="serious" title="The legal notices could not be loaded.">
           {legal.error.message}
@@ -80,6 +78,6 @@ function LegalPage() {
         </Link>
         .
       </p>
-    </Page>
+    </PublicPage>
   );
 }

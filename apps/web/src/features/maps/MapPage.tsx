@@ -8,7 +8,7 @@
  * thing it is for.
  */
 import { useQuery } from '@tanstack/react-query';
-import { Page } from '../../components/ui/page.tsx';
+import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { HeatMap } from './HeatMap.tsx';
 import type { MapStart } from './HeatMap.tsx';
 import { mapQuery } from './queries.ts';
@@ -18,8 +18,8 @@ export function MapPage({ slug, start }: { slug: string; start: MapStart }) {
   const title = map.data?.published ? map.data.title : 'Map';
   const lede = map.data?.published ? map.data.blurb : null;
   return (
-    <Page title={title} lede={lede}>
+    <PublicPage title={title} lede={lede}>
       <HeatMap slug={slug} start={start} showTitle={false} />
-    </Page>
+    </PublicPage>
   );
 }

@@ -17,7 +17,7 @@
 import { SOFTWARE_LICENCE, SOFTWARE_NAME, SOFTWARE_SOURCE } from '@reportlog/contracts';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { Contents, ProseSection } from '../components/ui/prose-section.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 
@@ -43,7 +43,7 @@ const link = 'underline underline-offset-2';
 function AboutPage() {
   const name = plainSiteName(useSite().data);
   return (
-    <Page title={`About ${name}`} width="prose">
+    <PublicPage title={`About ${name}`} width="prose">
       <Contents
         label="Contents"
         items={[
@@ -82,9 +82,11 @@ function AboutPage() {
         </p>
       </ProseSection>
 
-      <div className="flex flex-col gap-2 border-t border-line pt-6">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted">Part two</p>
-        <h2 className="font-display text-2xl font-bold">About the software</h2>
+      {/* The divide between the operator's part and the software's: a plain
+          panel's rule, and the second part named for what it offers. */}
+      <div className="flex flex-col gap-2 border-t-2 border-ink-alt pt-6">
+        <p className="label-face text-xs text-muted">Part two · what you can check yourself</p>
+        <h2 className="font-display text-section">About the software</h2>
         <p>
           Everything below describes {SOFTWARE_NAME}, the software this archive runs on. It is the
           same on every deployment, and none of it is written or controlled by whoever runs this
@@ -251,6 +253,6 @@ function AboutPage() {
           the people using it without publishing that change too. That is what the licence is for.
         </p>
       </ProseSection>
-    </Page>
+    </PublicPage>
   );
 }

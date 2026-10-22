@@ -61,23 +61,22 @@ test.describe('the board', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'View Live Report Board' }).click();
     await expect(page).toHaveURL(/\/board$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
     await page.getByLabel('Search the words').fill(word);
-    // Nothing changes until the reader asks.
-    await expect(page.getByRole('status').first()).not.toContainText('match');
-    await page.getByRole('button', { name: 'Show reports' }).click();
-    await expect(
-      page.getByRole('status').filter({ hasText: '1 published report match' }),
-    ).toBeVisible();
+    // Nothing changes until the reader asks (decision 59).
+    await expect(page.getByRole('status').filter({ hasText: word })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(page.getByRole('status').filter({ hasText: /^1 report\b/ })).toBeVisible();
     await page.getByRole('link', { name: `Read in full: ${ref}` }).click();
-    await expect(page.getByRole('heading', { level: 1, name: `Report ${ref}` })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
-    await page.getByRole('link', { name: 'Check it has not been changed' }).click();
+    await page.getByRole('link', { name: 'Check this report' }).click();
     await expect(page).toHaveURL(new RegExp(`/verify/${ref}$`));
   });
 
   test('offers no built-in date or place filter', async ({ page }) => {
     await page.goto('/board');
+    await page.getByRole('button', { name: /^Filter/ }).click();
     const form = page.getByRole('form', { name: 'Narrow the board' });
     await expect(form).toBeVisible();
     await expect(form.getByLabel(/date|when|where|place/i)).toHaveCount(0);
@@ -104,7 +103,7 @@ test.describe('the board', () => {
       if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
     });
     await page.goto('/board');
-    await expect(page.getByRole('heading', { level: 1, name: 'Report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
     await page.goto(`/board/${ref}`);
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
     await page.goto('/board/numbers');
@@ -144,13 +143,13 @@ test.describe('the moderation screens', () => {
     // A site-wide switch: one project turns it, or desktop and phone would
     // flip it under each other.
     test.skip(info.project.name !== 'chromium', 'a site-wide switch, turned by one project');
-    const csvLink = page.getByRole('link', { name: 'Download these as a spreadsheet (CSV)' });
+    const csvLink = page.getByRole('link', { name: 'Download these (CSV)' });
     await page.goto('/moderate/settings');
     const archive = page.getByRole('region', { name: 'The public archive' });
     await expect(archive).toContainText('Nobody has chosen, which means no downloads.');
     expect((await page.request.get('/api/board/reports.csv')).status()).toBe(404);
     await page.goto('/board');
-    await expect(page.getByRole('status').filter({ hasText: 'published report' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /^\d+ reports?\b/ })).toBeVisible();
     await expect(csvLink).toHaveCount(0);
 
     await page.goto('/moderate/settings');
@@ -172,7 +171,7 @@ test.describe('the moderation screens', () => {
       await page.request.put('/api/admin/moderation/archive', { data: { distribution: null } });
     }
     await page.goto('/board');
-    await expect(page.getByRole('status').filter({ hasText: 'published report' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: /^\d+ reports?\b/ })).toBeVisible();
     await expect(csvLink).toHaveCount(0);
   });
 });

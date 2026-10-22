@@ -9,11 +9,14 @@
  */
 import { lookEraseLink, eraseViaLink } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { plainSiteName, useSite } from '@/components/ui/site.tsx';
+import { Eyebrow, Meta } from '@/components/ui/type.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 
 const lookQuery = (token: string) =>
@@ -34,50 +37,54 @@ export function ErasePage({ token }: { token: string }) {
   if (look.isError) {
     const missing = look.error instanceof ApiRequestError && look.error.status === 404;
     return (
-      <Page title="This link does not match anything" width="prose">
-        <p>
+      <LinkPage title="This link does not match anything">
+        <p className="max-w-prose">
           {missing
-            ? 'Either the whole link was not copied, or your email address has already been erased.'
+            ? 'Either the whole link was not copied, or your contact details have already been erased.'
             : look.error.message}
         </p>
-      </Page>
+      </LinkPage>
     );
   }
   if (erase.isSuccess) {
     return (
-      <Page title="Your email address is erased" width="prose">
+      <LinkPage title="Your contact details are erased" eyebrow={look.data.logbook_title}>
         <Alert tone="done">
-          The key your address was kept under is destroyed. Nobody can read it again, and nobody can
-          reach you about this report. Your report itself is unchanged.
+          The key your email address was kept under is destroyed. Nobody can read it again, and
+          nobody can reach you about this report. Your report itself is unchanged.
         </Alert>
-      </Page>
+      </LinkPage>
     );
   }
   if (look.data.state === 'not_yet_filed') {
     return (
-      <Page title="Nothing to erase yet" width="prose" lede={`For “${look.data.logbook_title}”.`}>
-        <p>
+      <LinkPage title="Nothing to erase yet" eyebrow={look.data.logbook_title}>
+        <p className="max-w-prose">
           Your report has not been filed, so this site holds nothing but the message it sent you. If
           you do not want to file it, ignore that email: the link in it stops working on its own.
         </p>
-      </Page>
+      </LinkPage>
     );
   }
   return (
-    <Page
-      title="Erase your email address"
-      width="prose"
-      lede={`For your report ${look.data.public_ref ?? ''} to “${look.data.logbook_title}”.`}
-    >
-      <p>
+    <LinkPage title="Erase your contact details" eyebrow={look.data.logbook_title}>
+      {look.data.public_ref ? (
+        <p>
+          For your report <Meta className="text-base text-ink">{look.data.public_ref}</Meta>.
+        </p>
+      ) : null}
+      <p className="max-w-prose">
         Pressing the button destroys the key your email address is kept under. After that nobody,
         including the people who run this site, can read your address or write to you about this
         report. This cannot be undone.
       </p>
-      <p>
-        <strong>Your report is not withdrawn.</strong> It stays exactly as it is, sealed, and is
-        published or not as before. If you want it taken down, withdraw it from “My reports” first.
-      </p>
+      <Card variant="deep" className="gap-2">
+        <h2 className="label-face text-sm text-brand-on-deep">What this does not do</h2>
+        <p className="max-w-prose">
+          Your report is not withdrawn. It stays exactly as it is, sealed, and is published or not
+          as before. If you want it taken down, withdraw it from “My reports” first.
+        </p>
+      </Card>
       {erase.isError ? (
         <Alert tone="serious" title="It was not erased">
           {erase.error.message}
@@ -91,17 +98,52 @@ export function ErasePage({ token }: { token: string }) {
         }}
         label="I understand this cannot be undone."
       />
-      <div>
+      <div className="flex flex-col items-start gap-2">
+        {/* Secondary: a destructive action is never the action colour. */}
         <Button
           type="button"
-          disabled={!sure || erase.isPending}
+          variant="secondary"
+          disabled={!sure}
+          busy={erase.isPending}
+          busyLabel="Erasing…"
+          aria-describedby={sure ? undefined : 'erase-why'}
           onClick={() => {
             erase.mutate();
           }}
         >
-          {erase.isPending ? 'Erasing…' : 'Erase my email address'}
+          Erase my details
         </Button>
+        {sure ? null : (
+          <p id="erase-why" className="text-sm text-ink-alt">
+            Tick the statement above first.
+          </p>
+        )}
       </div>
-    </Page>
+    </LinkPage>
+  );
+}
+
+/** A page reached from a link in an email: its heading, and nothing of the rest of the site. */
+function LinkPage({
+  title,
+  eyebrow,
+  children,
+}: {
+  title: string;
+  eyebrow?: string;
+  children: ReactNode;
+}) {
+  const site = plainSiteName(useSite().data);
+  useEffect(() => {
+    document.title = `${title} · ${site}`;
+  }, [title, site]);
+  return (
+    <section className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+        <h1 className="font-display text-title">{title}</h1>
+      </div>
+      {children}
+    </section>
   );
 }

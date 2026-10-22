@@ -76,7 +76,8 @@ const FileOutcome = z.object({
 
 export const Confirmation = z.discriminatedUnion('state', [
   z.object({ state: z.literal('unconfirmed'), logbook_title: z.string(), expires_at: Timestamp }),
-  z.object({ state: z.literal('expired'), logbook_title: z.string() }),
+  /** With the logbook's address, so the page can offer to file it again. */
+  z.object({ state: z.literal('expired'), logbook_title: z.string(), logbook_slug: z.string() }),
   /** Files are still being prepared; nothing was filed yet. Press again shortly. */
   z.object({
     state: z.literal('preparing'),

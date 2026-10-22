@@ -17,11 +17,14 @@ export function ReportAnswers({
   slug,
   answers,
   only,
+  pills = false,
 }: {
   slug: string;
   answers: Record<string, unknown>;
   /** At most this many rows, for a list; the full report shows them all. */
   only?: number;
+  /** As a board card shows them: pills, and the reporter's words clamped. */
+  pills?: boolean;
 }) {
   const logbook = useQuery({ ...publicLogbookQuery(slug), staleTime: 5 * 60_000 });
   const questions: FormQuestion[] = (logbook.data?.fields ?? []).filter((q) => q.kind !== 'file');
@@ -40,10 +43,42 @@ export function ReportAnswers({
     );
   }
   const raw = rawFromAnswers(questions, answers);
-  const shown = askedQuestions(questions, raw)
+  const all = askedQuestions(questions, raw)
     .map((q) => ({ q, text: shownAnswer(q, raw, questions) }))
-    .filter((x) => x.text !== null)
-    .slice(0, only);
+    .filter((x): x is { q: FormQuestion; text: string } => x.text !== null);
+  if (pills) {
+    // On a board card: the answers as pills, and the reporter's own words
+    // under them, cut to four lines; the report's page shows them whole.
+    const short = all.filter((x) => x.q.kind !== 'long_text').slice(0, only);
+    const words = all.filter((x) => x.q.kind === 'long_text');
+    return (
+      <div className="flex flex-col gap-3">
+        {short.length ? (
+          <dl className="flex flex-wrap gap-2">
+            {short.map(({ q, text }) => (
+              <div
+                key={q.key}
+                className="flex max-w-full flex-wrap gap-x-1 rounded-control border border-ink-alt px-2.5 py-1 text-sm"
+              >
+                <dt className="text-ink-alt">
+                  {q.label}
+                  <span aria-hidden="true"> ·</span>
+                </dt>
+                <dd className="min-w-0 break-words">{text}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+        {words.map(({ q, text }) => (
+          <p key={q.key} className="line-clamp-4 max-w-prose whitespace-pre-wrap">
+            <span className="sr-only">{q.label}: </span>
+            {text}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  const shown = all.slice(0, only);
   return (
     <dl className="flex flex-col gap-2">
       {shown.map(({ q, text }) => (

@@ -92,16 +92,16 @@ test('a map in each of the board’s slots, no count under the threshold, and no
   try {
     // Above the report board: before the filters.
     await page.goto('/board');
-    await expect(page.getByRole('heading', { level: 1, name: 'Report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
     const above = mapOf('board_reports');
     await expect(above.getByRole('img')).toBeVisible();
-    await expect(page.getByRole('form', { name: 'Narrow the board' })).toBeVisible();
+    await expect(page.getByRole('search', { name: 'Search the board' })).toBeVisible();
     const order = await page.evaluate(
       ([title]) => {
         const fig = [...document.querySelectorAll('figure')].find((f) =>
           f.textContent.includes(title ?? ''),
         );
-        const form = document.querySelector('form[aria-label="Narrow the board"]');
+        const form = document.querySelector('form[aria-label="Search the board"]');
         return fig && form
           ? Boolean(fig.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING)
           : null;
@@ -147,7 +147,7 @@ test('a map in each of the board’s slots, no count under the threshold, and no
 
   // With none placed, the board has no Maps button and its Maps page says so.
   await page.goto('/board');
-  await expect(page.getByRole('form', { name: 'Narrow the board' })).toBeVisible();
+  await expect(page.getByRole('search', { name: 'Search the board' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Maps', exact: true })).toHaveCount(0);
   await page.goto('/board/maps');
   await expect(page.getByText('There are no maps on the board.')).toBeVisible();

@@ -72,7 +72,8 @@ describe('the gate', () => {
       },
     });
     gate('/', fakeHistory().history);
-    const link = await screen.findByRole('link', { name: 'Open logbook' });
+    // A logbook's door says what it is for (public.md §11).
+    const link = await screen.findByRole('link', { name: 'File a report: Open logbook' });
     expect(link).toHaveAttribute('href', '/file/open');
   });
 

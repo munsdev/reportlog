@@ -71,6 +71,26 @@ describe('a logbook opened outside the password', () => {
     expect(done.body.confirmation.public_ref).toMatch(/^RL-/);
   });
 
+  it('carries the emergency notice with the form, since a door may not ask for the wording (decision 62)', async () => {
+    const shipped = (await get(`/api/logbooks/${outside.slug}`)).body.help_now;
+    expect(shipped).toBe(
+      'This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.',
+    );
+    // The site's wording itself stays behind the password.
+    expect(isLocked(await get('/api/site'))).toBe(true);
+    await h.db
+      .insertInto('site_copy')
+      .values({ key: 'help_now', body: 'Call 911 first. This page is not watched.' })
+      .execute();
+    try {
+      expect((await get(`/api/logbooks/${outside.slug}`)).body.help_now).toBe(
+        'Call 911 first. This page is not watched.',
+      );
+    } finally {
+      await h.db.deleteFrom('site_copy').where('key', '=', 'help_now').execute();
+    }
+  });
+
   it('but not a logbook that is not opened outside', async () => {
     const r = await send(h, {
       ...spine(address('in')),

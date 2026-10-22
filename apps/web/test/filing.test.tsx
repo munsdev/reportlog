@@ -138,6 +138,7 @@ describe('the cards', () => {
         asks_email: true,
         fields,
         filters: [],
+        help_now: 'This is a record, not an emergency line.',
       },
       'GET /api/publication-card': card,
       'GET /api/intake-switch': { open: true },
@@ -258,10 +259,7 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
     expect(screen.getByText(/Thank you\. Have a link, photo or video\?/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Send it as a tip' })).toHaveAttribute(
-      'href',
-      '/list/tips',
-    );
+    expect(screen.getByRole('link', { name: 'Send a link' })).toHaveAttribute('href', '/list/tips');
     const kept = JSON.parse(localStorage.getItem('reportlog:tip-prefill') ?? 'null') as {
       values: Record<string, string>;
     };

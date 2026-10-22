@@ -134,7 +134,7 @@ async function stranger(browser: Browser) {
 }
 
 const requestPage = (page: Page) =>
-  page.getByRole('heading', { name: 'A request about your report' });
+  page.getByRole('heading', { name: 'A moderator asked for evidence' });
 
 test('a moderator asks for the photo a reporter mentioned, and the reporter sends it from the email', async ({
   browser,

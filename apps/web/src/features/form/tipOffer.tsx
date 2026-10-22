@@ -11,6 +11,7 @@
  * the confirmation link is usually opened in another tab; it is removed as
  * soon as the tip form has used it and expires with the confirmation link.
  */
+import { Button } from '@/components/ui/button.tsx';
 
 const STORAGE_KEY = 'reportlog:tip-prefill';
 const KEYS = ['state', 'county', 'time'] as const;
@@ -70,16 +71,20 @@ export function clearTipPrefill(): void {
   }
 }
 
+/**
+ * The offer under a receipt. A plain link with no query string, no reference
+ * and nothing else that could tie the tip to the report: the carry-over is
+ * this browser's storage alone. Plain rather than the router's, because it
+ * must work in the unit tests' bare render and on a door, and a full page
+ * load costs nothing here.
+ */
 export function TipOffer() {
-  // A plain link: it must work in the unit tests' bare render and on a door,
-  // and a full page load costs nothing here.
   return (
-    <p>
-      Thank you. Have a link, photo or video?{' '}
-      <a href="/list/tips" className="underline">
-        Send it as a tip
-      </a>
-      .
-    </p>
+    <div className="flex flex-col items-stretch gap-3 sm:items-start">
+      <p className="max-w-prose">Thank you. Have a link, photo or video? Send it as a tip.</p>
+      <Button asChild variant="secondary" size="lg" block className="sm:w-auto">
+        <a href="/list/tips">Send a link</a>
+      </Button>
+    </div>
   );
 }

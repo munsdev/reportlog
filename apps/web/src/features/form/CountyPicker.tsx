@@ -61,8 +61,12 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor={`${id}-county`}>County, if you know it</Label>
+          <p id={`${id}-county-help`} className="text-sm text-ink-alt">
+            The list follows the state you choose.
+          </p>
           <Select
             id={`${id}-county`}
+            aria-describedby={`${id}-county-help`}
             value={state ? value : ''}
             disabled={!state}
             onChange={(e) => {

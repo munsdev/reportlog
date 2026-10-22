@@ -17,11 +17,14 @@ export function ProseSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="flex scroll-mt-4 flex-col gap-3">
-      {label ? (
-        <p className="font-mono text-xs uppercase tracking-widest text-muted">{label}</p>
-      ) : null}
-      <h2 id={`${id}-title`} className="font-display text-2xl font-bold">
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="flex scroll-mt-20 flex-col gap-3 leading-[1.55]"
+    >
+      {/* The numbered eyebrow ("Part one · 01"), in the label face like every eyebrow. */}
+      {label ? <p className="label-face text-xs text-muted">{label}</p> : null}
+      <h2 id={`${id}-title`} className="font-display text-section">
         {title}
       </h2>
       {children}
@@ -38,8 +41,8 @@ export function Contents({
   items: readonly { id: string; title: string }[];
 }) {
   return (
-    <nav aria-label={label} className="rounded-card border border-line bg-surface p-4">
-      <p className="mb-2 font-semibold">{label}</p>
+    <nav aria-label={label} className="rounded-card bg-paper-alt p-5">
+      <p className="label-face mb-2 text-xs text-ink-alt">{label}</p>
       <ol className="flex list-decimal flex-col pl-6">
         {items.map((i) => (
           <li key={i.id}>

@@ -114,6 +114,8 @@ const OPEN = [
   '/mine/',
   '/mine/declaration/$threadId',
   '/verify/$ref',
+  // The bare form for checking a reference (public.md §06): asks for nothing.
+  '/verify/',
   '/organizations/',
   '/organizations/$id/listing',
   // Plan E (PE3): any signed-in person joins by an organization's intake link.

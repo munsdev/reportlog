@@ -11,7 +11,7 @@
  */
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Page } from '../components/ui/page.tsx';
+import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { useSite } from '../components/ui/site.tsx';
 
 export const Route = createFileRoute('/terms')({
@@ -21,7 +21,7 @@ export const Route = createFileRoute('/terms')({
 function TermsPage() {
   const site = useSite();
   return (
-    <Page
+    <PublicPage
       title="Terms of use and contact"
       width="prose"
       lede="What this site does with what you send it, and who to write to."
@@ -100,6 +100,6 @@ function TermsPage() {
         </Link>{' '}
         page.
       </p>
-    </Page>
+    </PublicPage>
   );
 }

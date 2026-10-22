@@ -45,7 +45,7 @@ const lockHeading = (page: Page) =>
 
 async function unlock(page: Page, password: string) {
   await page.getByLabel('Site password').fill(password);
-  await page.getByRole('button', { name: 'Enter' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
 }
 
 /** Sign in on the sign-in form in front of us, reading the code from the email. */

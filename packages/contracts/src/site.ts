@@ -210,6 +210,8 @@ export const COPY_KEYS = [
   'origin_open_form',
   'origin_organization',
   'intake_paused_notice',
+  // Decision 62: the emergency notice on the front page and the filing landing.
+  'help_now',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

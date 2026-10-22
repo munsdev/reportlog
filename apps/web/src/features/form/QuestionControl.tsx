@@ -66,6 +66,42 @@ const optionsOf = (q: FormQuestion, answers?: Answers): Choice[] =>
 const numberSetting = (q: FormQuestion, key: string): number | undefined =>
   typeof q.settings[key] === 'number' ? q.settings[key] : undefined;
 
+/**
+ * What a kind of question needs said that its wording may not: how many to
+ * tick, the order of a date, whose clock a time is in. Null when the
+ * operator's own words already say it (`said` is the question and its help).
+ */
+export function kindHelp(q: Pick<FormQuestion, 'kind' | 'settings'>, said: string): string | null {
+  if (q.kind === 'choice_many')
+    return /\bappl(y|ies)\b/i.test(said) ? null : 'Tick everything that applies.';
+  if (q.kind === 'date') return 'Day, month and year.';
+  if (q.kind === 'datetime') return 'Day, month and year, and the time where you are.';
+  if (q.kind === 'number' && q.settings.picker === 'hour')
+    return /local|your time|where you/i.test(said) ? null : 'In local time.';
+  return null;
+}
+
+/** How each typed kind opens a phone's keyboard and what the browser may fill in. */
+const KEYBOARD: Record<string, { inputMode?: 'email' | 'url' | 'numeric'; autoComplete?: string }> =
+  {
+    email: { inputMode: 'email', autoComplete: 'email' },
+    url: { inputMode: 'url', autoComplete: 'url' },
+    number: { inputMode: 'numeric' },
+  };
+
+/**
+ * "212 of 500", under a box once half its room is used: earlier it is noise,
+ * and at the limit the box simply stops taking more.
+ */
+export function CharacterCount({ length, max }: { length: number; max: number }) {
+  if (length < max / 2) return null;
+  return (
+    <p aria-live="polite" className="font-mono text-[0.8125rem] text-muted">
+      {length} of {max}
+    </p>
+  );
+}
+
 export function QuestionControl(props: ControlProps) {
   const { question: q, value, onChange, labelledBy, describedBy, invalid } = props;
   const text = typeof value === 'string' ? value : '';
@@ -227,34 +263,45 @@ export function QuestionControl(props: ControlProps) {
     );
   }
   if (q.kind === 'long_text') {
+    const max = numberSetting(q, 'maxLength') ?? 5000;
     return (
-      <Textarea
+      <div className="flex flex-col gap-1">
+        {/* At least six lines, growing with what is written where the
+            browser can (field-sizing), so nobody types into a slot. */}
+        <Textarea
+          value={text}
+          rows={6}
+          maxLength={max}
+          className="min-h-40 [field-sizing:content]"
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          {...common}
+        />
+        <CharacterCount length={text.length} max={max} />
+      </div>
+    );
+  }
+  const max =
+    q.kind === 'short_text' || q.kind === 'place' ? (numberSetting(q, 'maxLength') ?? 200) : null;
+  return (
+    <div className="flex flex-col gap-1">
+      <Input
+        type={INPUT_TYPES[q.kind] ?? 'text'}
         value={text}
-        rows={8}
-        maxLength={numberSetting(q, 'maxLength') ?? 5000}
+        {...(max === null ? {} : { maxLength: max })}
+        {...(q.kind === 'number'
+          ? { min: numberSetting(q, 'min'), max: numberSetting(q, 'max') }
+          : {})}
+        {...KEYBOARD[q.kind]}
+        {...inputLimits(q)}
         onChange={(e) => {
           onChange(e.target.value);
         }}
         {...common}
       />
-    );
-  }
-  return (
-    <Input
-      type={INPUT_TYPES[q.kind] ?? 'text'}
-      value={text}
-      {...(q.kind === 'short_text' || q.kind === 'place'
-        ? { maxLength: numberSetting(q, 'maxLength') ?? 200 }
-        : {})}
-      {...(q.kind === 'number'
-        ? { min: numberSetting(q, 'min'), max: numberSetting(q, 'max') }
-        : {})}
-      {...inputLimits(q)}
-      onChange={(e) => {
-        onChange(e.target.value);
-      }}
-      {...common}
-    />
+      {max === null ? null : <CharacterCount length={text.length} max={max} />}
+    </div>
   );
 }
 

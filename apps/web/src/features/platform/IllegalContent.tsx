@@ -13,11 +13,12 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
@@ -43,17 +44,17 @@ export function IllegalContentPage() {
 
   if (send.isSuccess) {
     return (
-      <Page title="We have your notice" width="prose">
+      <PublicPage title="We have your notice" width="prose">
         <Alert tone="done" title={`Your reference is ${send.data.receipt}`}>
           {send.data.emailed
             ? 'We emailed you a receipt with a link to see where it stands. A person will look at it and tell you what was decided and why.'
             : 'Keep this reference. You gave no email address, so we cannot tell you the decision; the people who run this site still read the notice.'}
         </Alert>
-      </Page>
+      </PublicPage>
     );
   }
   return (
-    <Page
+    <PublicPage
       title="Report illegal content"
       width="prose"
       lede="If something on this site is illegal, tell us here. You do not need an account."
@@ -109,11 +110,12 @@ export function IllegalContentPage() {
         <Field>
           <Label>Your email address (optional)</Label>
           <FieldDescription>
-            Only to send you a receipt and the decision. It is deleted once the decision has been
-            sent.
+            Only for a receipt and the decision. It is deleted once the decision has been sent.
           </FieldDescription>
           <Input
             type="email"
+            inputMode="email"
+            autoComplete="email"
             value={email}
             maxLength={320}
             onChange={(e) => {
@@ -134,13 +136,20 @@ export function IllegalContentPage() {
             {send.error.message}
           </Alert>
         ) : null}
-        <div>
-          <Button type="submit" disabled={send.isPending}>
-            {send.isPending ? 'Sending…' : 'Send the notice'}
+        <div className="flex flex-col sm:items-start">
+          <Button
+            type="submit"
+            size="lg"
+            block
+            className="sm:w-auto"
+            busy={send.isPending}
+            busyLabel="Sending…"
+          >
+            Send the notice
           </Button>
         </div>
       </form>
-    </Page>
+    </PublicPage>
   );
 }
 
@@ -164,24 +173,31 @@ export function NoticeStatusPage({ token }: { token: string }) {
   if (state.isError) {
     const missing = state.error instanceof ApiRequestError && state.error.status === 404;
     return (
-      <Page title="This link does not match a notice" width="prose">
-        <p>{missing ? 'Check that the whole link was copied.' : state.error.message}</p>
-      </Page>
+      <PublicPage title="This link does not match a notice" width="prose">
+        <p className="max-w-prose">
+          {missing ? 'Check that the whole link was copied.' : state.error.message}
+        </p>
+      </PublicPage>
     );
   }
   const n = state.data;
   return (
-    <Page title={`Notice ${n.receipt}`} width="prose">
+    <PublicPage title={`Notice ${n.receipt}`} width="prose">
       <p>Received {new Date(n.received_at).toLocaleString()}.</p>
+      {/* Quiet either way, never teal: teal is a moderator confirming a
+          report, and this is a decision about a notice. */}
       {n.status === 'open' || !n.decision ? (
-        <Alert title="Not decided yet">
-          A person will look at it and tell you what was decided and why. This page shows the
-          decision when it is made.
-        </Alert>
+        <Card variant="quiet" heading="Not decided yet">
+          <p>
+            A person will look at it and tell you what was decided and why. This page shows the
+            decision when it is made.
+          </p>
+        </Card>
       ) : (
-        <Alert tone="done" title={DECISION_WORDS[n.decision]}>
-          <span className="whitespace-pre-wrap">{n.decision_reason}</span>
-        </Alert>
+        <Card variant="quiet" heading="What we decided">
+          <p className="font-semibold">{DECISION_WORDS[n.decision]}</p>
+          <p className="whitespace-pre-wrap">{n.decision_reason}</p>
+        </Card>
       )}
       {onDoor ? null : (
         <p>
@@ -192,6 +208,6 @@ export function NoticeStatusPage({ token }: { token: string }) {
           .
         </p>
       )}
-    </Page>
+    </PublicPage>
   );
 }

@@ -151,7 +151,7 @@ test('a reporter without the password follows the evidence link from the email a
   await expect(lockHeading(page)).toBeVisible();
 
   await page.goto(link);
-  await expect(page.getByRole('heading', { name: 'A request about your report' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'A moderator asked for evidence' })).toBeVisible();
   await expect(page.getByText('Could you send the photo of the chained door?')).toBeVisible();
   await expect(lockHeading(page)).toHaveCount(0);
   await page
@@ -219,7 +219,7 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   );
   await expect(page.getByRole('button', { name: 'Under active development' })).toBeVisible();
   // Nothing of the board, and nothing behind the gate was asked to draw this.
-  await expect(page.getByRole('heading', { name: 'Report board' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Live report board' })).toHaveCount(0);
   await page.waitForLoadState('networkidle');
   expect(
     seen.paths.filter(

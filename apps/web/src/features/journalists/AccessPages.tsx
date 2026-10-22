@@ -14,7 +14,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { call } from '../../lib/api.ts';
@@ -25,16 +25,16 @@ export function AskAccessPage() {
   const ask = useMutation({ mutationFn: () => call(askForAccessLink, { body: { email } }) });
   if (ask.isSuccess) {
     return (
-      <Page title="Check your email" width="prose">
+      <PublicPage title="Check your email" width="prose">
         <p role="status">
           If that address is on the journalist alert list, we have sent it a link to the request
           form.
         </p>
-      </Page>
+      </PublicPage>
     );
   }
   return (
-    <Page
+    <PublicPage
       title="Ask for access to the journalist desk"
       width="prose"
       lede="Vetted journalists can read links that moderators have checked. The owner of this site reads every request; nothing is approved automatically."
@@ -59,7 +59,7 @@ export function AskAccessPage() {
         />
         <ErrorText error={ask.error} />
         <div>
-          <Button type="submit" disabled={ask.isPending}>
+          <Button type="submit" busy={ask.isPending} busyLabel="Sending…">
             Email me the request form
           </Button>
         </div>
@@ -71,7 +71,7 @@ export function AskAccessPage() {
           first.
         </p>
       </form>
-    </Page>
+    </PublicPage>
   );
 }
 
@@ -113,43 +113,43 @@ export function AccessLinkPage({ token }: { token: string }) {
   if (state.isPending) return <p role="status">Checking this link…</p>;
   if (state.isError) {
     return (
-      <Page title="This link could not be checked" width="prose">
+      <PublicPage title="This link could not be checked" width="prose">
         <ErrorText error={state.error} />
-      </Page>
+      </PublicPage>
     );
   }
   const s = state.data;
   if (s.state === 'gone') {
     return (
-      <Page title="This link does not work any more" width="prose">
+      <PublicPage title="This link does not work any more" width="prose">
         <p>
           It may have expired, been used already, or not been copied whole. Ask for a new one on the
           access request page.
         </p>
-      </Page>
+      </PublicPage>
     );
   }
   if (s.state === 'pending') {
     return (
-      <Page title="Your request is with the owner" width="prose">
+      <PublicPage title="Your request is with the owner" width="prose">
         <p role="status">
           The request for <strong>{s.address}</strong> is waiting. You will get an email when the
           owner decides.
         </p>
-      </Page>
+      </PublicPage>
     );
   }
   if (s.state === 'approved') {
     return (
-      <Page title="You already have access" width="prose">
+      <PublicPage title="You already have access" width="prose">
         <p>
           <strong>{s.address}</strong> is approved. Sign in with it to open the desk.
         </p>
-      </Page>
+      </PublicPage>
     );
   }
   return (
-    <Page
+    <PublicPage
       title="Ask for access to the journalist desk"
       width="prose"
       lede={`For ${s.address}. Text and links only. Nothing is sent until you press the button.`}
@@ -215,7 +215,7 @@ export function AccessLinkPage({ token }: { token: string }) {
         />
         <ErrorText error={send.error} />
         <div>
-          <Button type="submit" disabled={send.isPending}>
+          <Button type="submit" busy={send.isPending} busyLabel="Sending…">
             Send my request to the owner
           </Button>
         </div>
@@ -224,6 +224,6 @@ export function AccessLinkPage({ token }: { token: string }) {
           approved, it is deleted and you stay on the alert list.
         </p>
       </form>
-    </Page>
+    </PublicPage>
   );
 }

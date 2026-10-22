@@ -43,6 +43,8 @@ import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
+import { resolveCopy } from '../site/copy.ts';
+import { readCopy } from '../site/settings.ts';
 import {
   availableButtons,
   clearHomeButtons,
@@ -143,6 +145,8 @@ export function logbookRoutes(
       // The version these questions are, so a report sent from this page seals
       // the wording its reporter read even if a label is reworded meanwhile.
       form: formText(lb.slug, await questionsFor(db, lb.id)).hash,
+      // Shown as written, never through the figures (site/copy.ts, help_now).
+      help_now: resolveCopy(await readCopy(db)).help_now,
     };
   });
 
