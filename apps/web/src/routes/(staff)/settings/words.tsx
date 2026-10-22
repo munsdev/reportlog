@@ -1,8 +1,11 @@
 /**
- * The words on the site's own pages, one slot at a time. Plain text,
- * published exactly as typed in a place the design already put it. Each
- * slot says whether it still carries the shipped wording, so nobody
- * believes they wrote something they did not.
+ * The words on the site's own pages, one slot at a time, grouped by the
+ * page each is on. Plain text, published exactly as typed in a place the
+ * design already put it. Each slot is a setting panel: closed, its first
+ * lines and whether it still carries the shipped wording, so nobody
+ * believes they wrote something they did not; open, its editor beside a
+ * small picture of where it sits, updating as it is typed (decision 61,
+ * instead of editing on the public page).
  *
  * What the software says about itself (how a report is sealed, the consent
  * wording, the verify page) is not here and cannot be.
@@ -11,23 +14,27 @@
  * public pages show as that figure (board/figures.ts on the server). A
  * button and a list rather than a menu on right-click: there is no
  * right-click on a phone. The server refuses a placeholder that would not
- * work, and says why, so a broken one never reaches a page as "?".
+ * work, and says why beside the field, so a broken one never reaches a page
+ * as "?".
  */
 import { getCopyFigures, setCopy } from '@reportlog/contracts';
 import type { CopySlot } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { Select } from '@/components/ui/select.tsx';
+import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
+import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
+import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
+import { SlotInContext, firstLines, groupSlots } from '../../../features/settings/wording.tsx';
+import { WithEditor, useSave } from './-editor.tsx';
 
 const figuresQuery = queryOptions({
   queryKey: ['site-editor', 'figures'],
@@ -89,7 +96,6 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
       <div>
         <Button
           type="button"
-
           variant="secondary"
           disabled={!current}
           onClick={() => {
@@ -112,36 +118,70 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
 
 export const Route = createFileRoute('/(staff)/settings/words')({
   component: () => (
-    <Page title="Page wording" lede="What this archive is for, in your own words." width="prose">
-      <WithEditor>
-        {(state) => (
-          <div className="flex flex-col gap-6">
-            {state.copy.map((slot) => (
-              <SlotEditor key={slot.key} slot={slot} />
-            ))}
-          </div>
-        )}
-      </WithEditor>
-    </Page>
+    <SettingsFrame>
+      <Page
+        title="Wording"
+        lede="What this archive is for, in your own words. Each piece shows what it says now; open one to change it and see it where it sits."
+      >
+        <WithEditor>{(state) => <WordingList slots={state.copy} />}</WithEditor>
+      </Page>
+    </SettingsFrame>
   ),
 });
 
+export function WordingList({ slots }: { slots: readonly CopySlot[] }) {
+  return (
+    <div className="flex flex-col gap-10">
+      {groupSlots(slots).map((group) => (
+        <section key={group.page} className="flex flex-col gap-4">
+          <h2 className="font-display text-section font-bold">{group.page}</h2>
+          {group.slots.map((slot) => (
+            <SlotEditor key={slot.key} slot={slot} />
+          ))}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+
+/** The figures by id, read only while an open slot has a placeholder to show. */
+function useFigureValues(enabled: boolean): ReadonlyMap<string, number> | null {
+  const figures = useQuery({ ...figuresQuery, enabled });
+  return useMemo(
+    () => (figures.data ? new Map(figures.data.figures.map((f) => [f.id, f.value])) : null),
+    [figures.data],
+  );
+}
+
 export function SlotEditor({ slot }: { slot: CopySlot }) {
   const [body, setBody] = useState(slot.body);
+  const toast = useToast();
+  const panels = useSettingPanels();
+  const open = panels.openId === slot.key;
   const save = useSave((value: string) =>
     call(setCopy, { params: { key: slot.key }, body: { body: value } }),
   );
   const [picking, setPicking] = useState(false);
+  const figures = useFigureValues(open && body.includes('{{'));
   // Only a block takes a number, so only the text area needs its cursor.
   const box = useRef<HTMLTextAreaElement | null>(null);
   // Where the person last left the cursor, or null if they never put it in
   // the box. An untouched box reports a cursor at 0, which would put the
   // number before everything they wrote.
   const cursor = useRef<number | null>(null);
-  useUnsavedChanges(slot.label, body !== slot.body);
   const onChange = (e: { target: { value: string } }) => {
     setBody(e.target.value);
   };
+  // The mutation's reset is bound once, so the panel keeps one callback.
+  const resetSave = save.reset;
+  const cancel = useCallback(() => {
+    setBody(slot.body);
+    setPicking(false);
+    resetSave();
+  }, [slot.body, resetSave]);
 
   const insert = (placeholder: string) => {
     const next = insertAt(body, placeholder, cursor.current);
@@ -154,19 +194,42 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
     });
   };
 
+  /** Save, and leave the box holding what the server now holds. */
+  const write = async (value: string) => {
+    const state = await save.mutateAsync(value);
+    setBody(state.copy.find((c) => c.key === slot.key)?.body ?? value);
+    setPicking(false);
+    toast.show(
+      value.trim()
+        ? `Saved. The page shows it now.`
+        : `${slot.label} is back to the shipped wording.`,
+    );
+    return true;
+  };
+
+  const status = slot.written
+    ? slot.changed_at
+      ? `Changed ${day(slot.changed_at)}`
+      : 'Changed'
+    : 'Shipped wording';
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle as="h2">{slot.label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="flex flex-col gap-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate(body);
-          }}
-        >
+    <GuardedPanel
+      id={slot.key}
+      title={slot.label}
+      summary={[
+        { key: 'Says', value: firstLines(slot.body) || 'Nothing yet' },
+        { key: 'Status', value: status },
+      ]}
+      dirty={body !== slot.body}
+      onCancel={cancel}
+      onSave={() => write(body)}
+    >
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="lg:order-2">
+          <SlotInContext slot={slot} text={body} figures={figures} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-3">
           <Field>
             <Label>{slot.label}</Label>
             <FieldDescription>
@@ -184,6 +247,8 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
                 }}
               />
             )}
+            {/* The server's refusal (a broken placeholder, say), beside the field. */}
+            <FieldError>{save.isError ? save.error.message : null}</FieldError>
           </Field>
           {/* The password screen's paragraph takes no numbers (site/copy.ts). */}
           {slot.kind === 'block' && slot.key !== 'lock_intro' ? (
@@ -191,7 +256,6 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
               <div>
                 <Button
                   type="button"
-
                   variant="quiet"
                   aria-expanded={picking}
                   onClick={() => {
@@ -204,26 +268,27 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
               {picking ? <FigurePicker onInsert={insert} /> : null}
             </div>
           ) : null}
-          <SaveOutcome mutation={save} done="Saved. The page shows it now." />
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" variant="secondary" disabled={save.isPending}>
-              Save
-            </Button>
-            {slot.written ? (
+          {slot.written ? (
+            <div>
               <Button
                 type="button"
                 variant="quiet"
                 onClick={() => {
-                  setBody(slot.fallback);
-                  save.mutate('');
+                  write('').then(
+                    () => {
+                      panels.closeNow();
+                    },
+                    // The refusal is shown beside the field; the panel stays open.
+                    () => undefined,
+                  );
                 }}
               >
                 Go back to the shipped wording
               </Button>
-            ) : null}
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </GuardedPanel>
   );
 }

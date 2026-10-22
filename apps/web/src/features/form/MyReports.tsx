@@ -21,9 +21,12 @@ import {
 import type { MyReport, MyReportDetail, Permission } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Chip } from '@/components/ui/chip.tsx';
+import { Empty } from '@/components/ui/empty.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import {
@@ -82,6 +85,24 @@ function statusOf(r: MyReport): string {
   return 'Read by a moderator';
 }
 
+/**
+ * The report's state as a chip (account.md §07). Never teal: teal is a
+ * moderator's confirmation on the board, and this is the reporter's own
+ * list. "Declined" is a plain tag, not the serious colour: the reporter did
+ * nothing wrong. "Public" follows the board's own rule (board/published.ts:
+ * approved, allowed, not withdrawn); a site that publishes nothing, or a
+ * counts-only logbook, still shows the report's own state here, because this
+ * list is not told either.
+ */
+export function stateChip(r: MyReport): { tone: 'open' | 'tag'; label: string } {
+  if (r.withdrawn) return { tone: 'tag', label: 'Withdrawn' };
+  if (r.moderation_status === 'pending') return { tone: 'open', label: 'Waiting' };
+  if (r.moderation_status === 'invalid') return { tone: 'tag', label: 'Declined' };
+  if (r.moderation_status === 'valid')
+    return { tone: 'tag', label: r.may_publish ? 'Public' : 'Not published' };
+  return { tone: 'tag', label: 'Read' };
+}
+
 export function MyReportsPage() {
   return (
     <SignedIn>
@@ -101,30 +122,38 @@ function MyReportsList() {
       {list.isPending ? <p role="status">Loading…</p> : null}
       {list.isError ? <Alert tone="serious" title={list.error.message} /> : null}
       {list.data?.reports.length === 0 ? (
-        <p>There are no reports filed from this address.</p>
+        <Empty title="No reports yet">
+          There are no reports filed from this address. Reports you file while signed in, or confirm
+          from the email, appear here.
+        </Empty>
       ) : null}
       <ul className="flex flex-col gap-3">
-        {list.data?.reports.map((r) => (
-          <li key={r.thread_id} className="rounded-card border border-line bg-surface p-4">
-            <p className="text-sm text-ink-alt">{r.logbook_title}</p>
-            <p className="font-mono font-semibold">{r.public_ref}</p>
-            <p className="text-sm">
-              {statusOf(r)} · filed{' '}
-              <time dateTime={r.first_received_at}>
-                {new Date(r.first_received_at).toLocaleDateString()}
-              </time>
-              {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
-            </p>
-            <Link
-              to="/mine/$threadId"
-              params={{ threadId: r.thread_id }}
-              className="underline"
-              aria-label={`Open ${r.public_ref}`}
-            >
-              Open
-            </Link>
-          </li>
-        ))}
+        {list.data?.reports.map((r) => {
+          const chip = stateChip(r);
+          return (
+            <li key={r.thread_id}>
+              {/* The whole row opens it: that is all anybody comes to a row to do. */}
+              <Link
+                to="/mine/$threadId"
+                params={{ threadId: r.thread_id }}
+                aria-label={`Open ${r.public_ref}`}
+                className="flex flex-col gap-1 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised hover:bg-paper-alt"
+              >
+                <span className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-mono font-semibold">{r.public_ref}</span>
+                  <Chip tone={chip.tone}>{chip.label}</Chip>
+                </span>
+                <span className="text-sm text-ink-alt">
+                  {r.logbook_title} · filed{' '}
+                  <time dateTime={r.first_received_at}>
+                    {new Date(r.first_received_at).toLocaleDateString()}
+                  </time>
+                  {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </Page>
   );
@@ -153,37 +182,29 @@ function MyReportView({ threadId }: { threadId: string }) {
   }
   const r = report.data;
   return (
-    <Page
-      title={`Report ${r.public_ref}`}
-      lede={`${r.logbook_title} · ${statusOf(r)}`}
-      width="prose"
-    >
-      <Link to="/mine" className="underline">
-        All your reports
+    <>
+      <Link to="/mine" className="mb-3 inline-block underline underline-offset-4">
+        ← All your reports
       </Link>
-      <Answers r={r} />
-      <Permissions r={r} />
-      <ContactAccesses threadId={r.thread_id} />
-      <Correct r={r} />
-      {r.withdrawn ? null : <Withdraw r={r} />}
-      <Erase r={r} />
-    </Page>
+      <Page
+        title={`Report ${r.public_ref}`}
+        lede={`${r.logbook_title} · ${statusOf(r)}`}
+        width="prose"
+      >
+        <Answers r={r} />
+        <Permissions r={r} />
+        <ContactAccesses threadId={r.thread_id} />
+        <Correct r={r} />
+        {r.withdrawn ? null : <Withdraw r={r} />}
+        <Erase r={r} />
+      </Page>
+    </>
   );
 }
 
+/** A section of the page: a panel with its own H2, in the theme's heading. */
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const id = useId();
-  return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 id={id} className="font-display text-xl font-bold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
+  return <Card heading={title}>{children}</Card>;
 }
 
 function Answers({ r }: { r: MyReportDetail }) {

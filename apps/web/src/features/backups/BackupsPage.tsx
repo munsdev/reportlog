@@ -17,9 +17,10 @@ import { copyDownloadPath, getCopies, startCopy } from '@reportlog/contracts';
 import type { CopiesState, CopyFile } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { useId } from 'react';
+import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { StepUpDownload } from '../identity/StepUp.tsx';
@@ -33,17 +34,39 @@ const copiesQuery = queryOptions({
 });
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
-  const id = useId();
+  return <Card heading={title}>{children}</Card>;
+}
+
+/** The restore command, to copy and type on the server. Nothing on this page runs it. */
+function RestoreCommand({ command }: { command: string }) {
+  const [said, setSaid] = useState<string | null>(null);
   return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 id={id} className="font-display text-xl font-bold">
-        {title}
-      </h2>
-      {children}
-    </section>
+    <div className="flex flex-col gap-2">
+      <pre className="overflow-x-auto rounded-control bg-paper-alt p-3 font-mono text-sm">
+        {command}
+      </pre>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            navigator.clipboard.writeText(command).then(
+              () => {
+                setSaid('Copied.');
+              },
+              () => {
+                setSaid('This browser would not copy it. Select the command instead.');
+              },
+            );
+          }}
+        >
+          Copy the command
+        </Button>
+        <span role="status" className="text-sm text-ink-alt">
+          {said}
+        </span>
+      </div>
+    </div>
   );
 }
 
@@ -66,17 +89,25 @@ function Files({
   return (
     <ul className="flex flex-col gap-2">
       {files.map((f) => (
-        <li key={f.name} className="flex flex-wrap items-baseline justify-between gap-2">
+        <li
+          key={f.name}
+          className="flex flex-col gap-2 border-b border-line pb-2 last:border-0 sm:flex-row sm:items-baseline sm:justify-between"
+        >
           <span>
             <span className="font-mono break-all">{f.name}</span>{' '}
-            <span className="text-sm text-ink-alt">
-              {size(f.bytes)}, {when(f.made_at)}
+            <span className="font-mono text-sm text-ink-alt">
+              {size(f.bytes)} · {when(f.made_at)}
             </span>
           </span>
-          {/* A step-up first (plan E, E3): the server refuses the file without one. */}
-          <StepUpDownload className="underline" href={copyDownloadPath(kind, f.name)}>
-            Download <span className="sr-only">{f.name}</span>
-          </StepUpDownload>
+          <span className="flex flex-col gap-1 sm:items-end">
+            {/* A step-up first (plan E, E3): the server refuses the file without one. */}
+            <StepUpDownload className="underline" href={copyDownloadPath(kind, f.name)}>
+              Download <span className="sr-only">{f.name}</span>
+            </StepUpDownload>
+            <span className="text-xs text-ink-alt">
+              Downloading is recorded in Who changed what before the file leaves.
+            </span>
+          </span>
         </li>
       ))}
     </ul>
@@ -171,17 +202,15 @@ export function BackupsPage() {
             </Button>
             <Files kind="backup" files={query.data.backups} none="No backups yet." />
             {query.data.restore_command ? (
-              <details>
-                <summary className="cursor-pointer">Putting a backup back</summary>
-                <p className="mt-2">
+              <Card variant="quiet">
+                <h3 className="font-display text-lg font-bold">Nothing here restores.</h3>
+                <p>
                   Restoring replaces everything in the database, so it is done on the server itself,
                   never from this page. Whoever runs the server types this, with the file’s name in
                   place of &lt;file&gt;:
                 </p>
-                <pre className="mt-2 overflow-x-auto rounded-card bg-paper-alt p-3 text-sm">
-                  {query.data.restore_command}
-                </pre>
-              </details>
+                <RestoreCommand command={query.data.restore_command} />
+              </Card>
             ) : null}
           </Section>
           <Section title="Archive exports">

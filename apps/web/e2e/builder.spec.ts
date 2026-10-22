@@ -18,6 +18,7 @@ const unique = (stem: string, project: string) =>
 
 async function makeDraft(page: Page, title: string) {
   await page.goto('/logbooks');
+  await page.getByRole('button', { name: 'Make a logbook' }).click();
   await page.getByLabel('Title', { exact: true }).fill(title);
   await page.getByRole('button', { name: 'Make the draft' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
@@ -114,6 +115,7 @@ test('a logbook made from a starting point arrives as a draft with its questions
   page,
 }) => {
   await page.goto('/logbooks');
+  await page.getByRole('button', { name: 'Make a logbook' }).click();
   await page.getByLabel(/^Election day: how did it go\?/).check();
   await page.getByRole('button', { name: 'Make the draft' }).click();
   await expect(

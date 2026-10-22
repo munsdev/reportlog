@@ -9,16 +9,20 @@
  * Somebody with a role then proves a second factor, or sets the first one
  * up (plan E, E3), before `onSignedIn` is called: the email code alone signs
  * a role holder in to nothing.
+ *
+ * Each step is one raised panel whose content is replaced by the next; the
+ * page around it stays (account.md §02).
  */
 import { claimOwnership, requestSetupCode, requestSignInCode, signIn } from '@reportlog/contracts';
 import type { Me } from '@reportlog/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { call } from '../../lib/api.ts';
 import { SecondFactorGate, pendingSecondFactor } from './secondFactor.tsx';
 import { meQuery, useMe } from './session.ts';
-import { ErrorText, TextField } from './ui.tsx';
+import { ErrorText, TextField, codeInputClass } from './ui.tsx';
 
 export function SignInForm({
   purpose = 'sign-in',
@@ -45,6 +49,7 @@ export function SignInForm({
     onSuccess: () => {
       setSentTo(email.trim());
       setCode('');
+      setSecondStep(false);
     },
   });
   const client = useQueryClient();
@@ -64,7 +69,13 @@ export function SignInForm({
     },
   });
 
-  if (secondStep) {
+  // "Not you? Start again" on the second step signs out: back to the start,
+  // with the address kept in the box. Read from who is signed in rather than
+  // copied into state, so the two cannot disagree.
+  const me = useMe();
+  const startedAgain = secondStep && me.data?.signedIn === false;
+
+  if (secondStep && !startedAgain) {
     return (
       <SecondFactorGate>
         <WhenSignedIn onSignedIn={onSignedIn} />
@@ -72,76 +83,81 @@ export function SignInForm({
     );
   }
 
-  if (!sentTo) {
+  if (!sentTo || startedAgain) {
     return (
-      <form
-        className="space-y-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          ask.mutate();
-        }}
-      >
-        {intro && <p className="text-ink-alt">{intro}</p>}
-        <TextField
-          label="Your email address"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
+      <Card>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            ask.mutate();
           }}
-          {...refused(ask.error)}
-        />
-        <ErrorText error={ask.error} id={errorId} />
-        <Button type="submit" disabled={ask.isPending}>
-          Send me a code
-        </Button>
-      </form>
+        >
+          {intro && <p className="text-ink-alt">{intro}</p>}
+          <TextField
+            label="Your email address"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+            }}
+            {...refused(ask.error)}
+          />
+          <ErrorText error={ask.error} id={errorId} />
+          <Button type="submit" size="lg" block busy={ask.isPending} busyLabel="Sending…">
+            Send me a code
+          </Button>
+        </form>
+      </Card>
     );
   }
 
   return (
-    <form
-      className="space-y-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        verify.mutate();
-      }}
-    >
-      <p>
-        We sent a six-digit code to <strong>{sentTo}</strong>. It works for ten minutes.
-      </p>
-      <TextField
-        label="The code from the email"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]{6}"
-        maxLength={6}
-        required
-        value={code}
-        onChange={(e) => {
-          setCode(e.target.value.replace(/\D/g, ''));
+    <Card>
+      <form
+        className="flex flex-col gap-4"
+        onSubmit={(e) => {
+          e.preventDefault();
+          verify.mutate();
         }}
-        {...refused(verify.error)}
-      />
-      <ErrorText error={verify.error} id={errorId} />
-      <div className="flex flex-wrap items-center gap-4">
-        <Button type="submit" disabled={verify.isPending}>
+      >
+        <p>
+          We sent a six-digit code to <strong>{sentTo}</strong>. It works for ten minutes.
+        </p>
+        <TextField
+          label="The code from the email"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          required
+          inputClassName={codeInputClass}
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, ''));
+          }}
+          {...refused(verify.error)}
+        />
+        <ErrorText error={verify.error} id={errorId} />
+        <Button type="submit" size="lg" block busy={verify.isPending} busyLabel="Checking…">
           {purpose === 'setup' ? 'Become the owner' : 'Sign in'}
         </Button>
         <Button
           type="button"
           variant="quiet"
+          className="self-center"
           onClick={() => {
+            // The address is kept in the box, to correct rather than retype.
             setSentTo(null);
             verify.reset();
           }}
         >
           Use a different address
         </Button>
-      </div>
-    </form>
+      </form>
+    </Card>
   );
 }
 

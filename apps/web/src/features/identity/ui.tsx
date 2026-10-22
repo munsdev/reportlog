@@ -1,35 +1,49 @@
 /**
- * The few form pieces the identity screens share. Plain inputs with a label
- * each; errors in the serious colour, which is status, never a button.
+ * The few form pieces the identity screens share, in the shared components'
+ * look (components/ui/): a field's label in the label face, the same field
+ * edge, the theme's panel. Errors in the serious colour, which is status,
+ * never a button.
  */
 import { useId } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
+import { Card } from '@/components/ui/card.tsx';
+import { controlClass } from '@/components/ui/input.tsx';
 import { cn } from '@/lib/utils.ts';
 import { ApiRequestError } from '../../lib/api.ts';
+
+/**
+ * A code typed from an email or an app: mono, large and letter-spaced, set
+ * in the middle, so six digits read as one thing and a mistyped one shows.
+ */
+export const codeInputClass = 'text-center font-mono text-2xl tracking-[0.3em]';
 
 export function TextField({
   label,
   hint,
   className,
+  inputClassName,
   ...input
-}: { label: string; hint?: string } & ComponentProps<'input'>) {
+}: { label: string; hint?: string; inputClassName?: string } & ComponentProps<'input'>) {
   const id = useId();
   const hintId = useId();
+  // The caller's own description (an error sentence, say) is kept beside the hint.
+  const describedBy =
+    [hint ? hintId : undefined, input['aria-describedby']].filter(Boolean).join(' ') || undefined;
   return (
-    <div className={cn('flex flex-col gap-1', className)}>
-      <label htmlFor={id} className="font-semibold">
+    <div className={cn('flex flex-col gap-1.5', className)}>
+      <label htmlFor={id} className="label-face text-xs text-ink">
         {label}
       </label>
       {hint && (
-        <p id={hintId} className="text-sm text-muted">
+        <p id={hintId} className="text-sm text-ink-alt">
           {hint}
         </p>
       )}
       <input
         id={id}
-        {...(hint ? { 'aria-describedby': hintId } : {})}
-        className="rounded-card border border-line bg-surface px-3 py-2"
         {...input}
+        aria-describedby={describedBy}
+        className={cn(controlClass, inputClassName)}
       />
     </div>
   );
@@ -58,11 +72,7 @@ export function Done({ children }: { children: ReactNode }) {
   );
 }
 
+/** A panel with the theme's heading. */
 export function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="space-y-4 rounded-card border border-line bg-surface p-4 sm:p-6">
-      <h2 className="font-display text-xl font-bold">{title}</h2>
-      {children}
-    </section>
-  );
+  return <Card heading={title}>{children}</Card>;
 }

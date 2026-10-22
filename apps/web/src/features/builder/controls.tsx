@@ -1,14 +1,19 @@
 /**
- * The few form controls the builder needs, kept here rather than in
- * components/ui/ (which the site workstream owns) until shared ones exist.
+ * The few form controls the builder needs, in the shared components' look
+ * (components/ui/): the same field edge, the same panel with the theme's
+ * heading, the same serious alert. Kept as the builder's own small API so
+ * its screens did not have to change to get the look.
  * Every control has a visible label tied to it, and help is read out with it.
  */
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
+import { Alert } from '@/components/ui/alert.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
+import { controlClass } from '@/components/ui/input.tsx';
 import { cn } from '@/lib/utils.ts';
 
-const box = 'w-full rounded-card border border-line bg-surface px-3 py-2';
+const box = controlClass;
 
 interface FieldProps {
   label: string;
@@ -22,7 +27,7 @@ export function Field({ label, help, children }: FieldProps) {
   const helpId = `${id}-help`;
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="font-semibold">
+      <label htmlFor={id} className="label-face text-xs">
         {label}
       </label>
       {children(help ? { id, 'aria-describedby': helpId } : { id })}
@@ -44,7 +49,7 @@ export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {
 }
 
 export function Select({ className, ...props }: ComponentProps<'select'>) {
-  return <select className={cn(box, className)} {...props} />;
+  return <select className={cn(box, 'pr-8', className)} {...props} />;
 }
 
 /** A yes/no as a choice card, with an optional line of why. */
@@ -77,11 +82,7 @@ export function Check({
 /** A refusal from the server, said where the control is. */
 export function Problem({ error }: { error: Error | null }) {
   if (!error) return null;
-  return (
-    <p role="alert" className="rounded-card border-l-4 border-serious bg-surface p-3">
-      {error.message}
-    </p>
-  );
+  return <Alert tone="serious" title={error.message} />;
 }
 
 export function Panel({
@@ -94,12 +95,8 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <section
-      aria-label={title}
-      className={cn('space-y-4 rounded-card border border-line bg-surface p-4', className)}
-    >
-      <h2 className="font-display text-xl font-bold">{title}</h2>
+    <Card heading={title} className={className}>
       {children}
-    </section>
+    </Card>
   );
 }

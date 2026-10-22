@@ -42,7 +42,7 @@ export async function readSettings(db: Database): Promise<SettingsRow> {
 }
 
 export async function readCopy(db: Database): Promise<CopyRow[]> {
-  return db.selectFrom('site_copy').select(['key', 'body']).execute();
+  return db.selectFrom('site_copy').select(['key', 'body', 'updated_at']).execute();
 }
 
 type Writable = Partial<{

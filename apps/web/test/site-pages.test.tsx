@@ -26,7 +26,9 @@ import { CopyText } from '../src/components/ui/copy-text.tsx';
 import { DevBadge } from '../src/components/ui/dev-badge.tsx';
 import { SiteFooter, versionLine } from '../src/components/ui/site-footer.tsx';
 import { UnsavedChangesGuard, unsavedQuestion } from '../src/routes/(staff)/settings/-editor.tsx';
-import { LookForm } from '../src/routes/(staff)/settings/look.tsx';
+import { LegalEditor } from '../src/routes/(staff)/settings/legal.tsx';
+import { LookScreen } from '../src/routes/(staff)/settings/look.tsx';
+import { SettingsFrame } from '../src/features/settings/panels.tsx';
 import { SlotEditor, insertAt } from '../src/routes/(staff)/settings/words.tsx';
 import { editorState, recordingFetch } from './site-fixture.ts';
 
@@ -225,22 +227,32 @@ describe('inserting a number', () => {
     };
     const rec = recordingFetch(answer);
     vi.stubGlobal('fetch', rec.fetchImpl);
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+    });
+    // The slot's picture names the site; it is read already, as on the real page.
+    client.setQueryData(['site'], site());
     render(
       <QueryClientProvider client={client}>
-        <SlotEditor
-          slot={{
-            key: 'how_intro',
-            kind: 'block',
-            label: 'Your own words on the how-to page',
-            help: 'h',
-            optional: true,
-            fallback: '',
-            body: 'This week:',
-            written: true,
-          }}
-        />
+        <SettingsFrame>
+          <SlotEditor
+            slot={{
+              key: 'how_intro',
+              kind: 'block',
+              label: 'Your own words on the how-to page',
+              help: 'h',
+              optional: true,
+              fallback: '',
+              body: 'This week:',
+              written: true,
+              changed_at: '2026-10-20T09:30:00.000Z',
+            }}
+          />
+        </SettingsFrame>
       </QueryClientProvider>,
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Edit Your own words on the how-to page' }),
     );
     expect(rec.sent).toEqual([]);
     await user.click(screen.getByRole('button', { name: 'Insert a number' }));
@@ -270,7 +282,9 @@ describe('unsaved changes', () => {
   function lookScreen(ask: (q: string) => boolean) {
     return () => (
       <UnsavedChangesGuard ask={ask}>
-        <LookForm state={editorState()} />
+        <SettingsFrame>
+          <LookScreen state={editorState()} />
+        </SettingsFrame>
         <Link to="/about">Leave</Link>
       </UnsavedChangesGuard>
     );
@@ -290,21 +304,21 @@ describe('unsaved changes', () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => false);
     const router = await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'Midnight' }));
+    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(ask).toHaveBeenCalledTimes(1);
     expect(ask).toHaveBeenCalledWith(
       'You have changes to the look that are not saved. Leave without saving them?',
     );
     expect(router.state.location.pathname).toBe('/');
-    expect(screen.getByRole('radio', { name: 'Midnight' })).toBeChecked();
+    expect(screen.getByRole('radio', { name: 'ElectionLog at night' })).toBeChecked();
   });
 
   it('answering yes leaves', async () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => true);
     await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'Midnight' }));
+    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(await screen.findByRole('heading', { name: 'Elsewhere' })).toBeVisible();
     expect(ask).toHaveBeenCalledTimes(1);
@@ -314,10 +328,31 @@ describe('unsaved changes', () => {
     const user = userEvent.setup();
     const ask = vi.fn(() => false);
     await inRouter(lookScreen(ask));
-    await user.click(screen.getByRole('radio', { name: 'Midnight' }));
-    await user.click(screen.getByRole('radio', { name: 'Flint' }));
+    await user.click(screen.getByRole('radio', { name: 'ElectionLog at night' }));
+    await user.click(screen.getByRole('radio', { name: /^ElectionLog\s*On the site$/ }));
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(await screen.findByRole('heading', { name: 'Elsewhere' })).toBeVisible();
     expect(ask).not.toHaveBeenCalled();
+  });
+
+  it('names the open setting panel, and only while it is open', async () => {
+    const user = userEvent.setup();
+    const ask = vi.fn(() => false);
+    const imprint = editorState().legal[0];
+    if (!imprint) throw new Error('fixture');
+    await inRouter(() => (
+      <UnsavedChangesGuard ask={ask}>
+        <SettingsFrame>
+          <LegalEditor entry={imprint} />
+        </SettingsFrame>
+        <Link to="/about">Leave</Link>
+      </UnsavedChangesGuard>
+    ));
+    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.type(screen.getByRole('textbox', { name: 'Imprint' }), ' more');
+    await user.click(screen.getByRole('link', { name: 'Leave' }));
+    expect(ask).toHaveBeenCalledWith(
+      'You have changes to Imprint that are not saved. Leave without saving them?',
+    );
   });
 });

@@ -115,8 +115,12 @@ describe('a staff screen, for a role holder without a second factor', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('The queue')).not.toBeInTheDocument();
     expect(screen.queryByText('Not for this account')).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use an authenticator app' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Use a passkey' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'An authenticator app' })).toHaveAccessibleDescription(
+      'A six-digit code from an app on your phone',
+    );
+    expect(screen.getByRole('radio', { name: 'A passkey' })).toBeInTheDocument();
+    // Choosing moves nothing; Next does.
+    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
   it('with one set up: asked to prove it', async () => {
@@ -166,7 +170,8 @@ describe('a staff screen, for a role holder without a second factor', () => {
       </StaffOnly>,
     );
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Use an authenticator app' }));
+    await user.click(await screen.findByRole('radio', { name: 'An authenticator app' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
     const qr = await screen.findByRole('img', {
       name: 'QR code to add this site to your authenticator app',
     });
@@ -174,7 +179,7 @@ describe('a staff screen, for a role holder without a second factor', () => {
     expect(qr.querySelector('path')?.getAttribute('d')).toMatch(/^M\d+,\d+h1v1h-1z/);
     expect(screen.getByText('JBSW Y3DP EHPK 3PXP JBSW Y3DP EHPK 3PXP')).toBeInTheDocument();
     await user.type(screen.getByLabelText('The six-digit code the app shows now'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Use this app' }));
+    await user.click(screen.getByRole('button', { name: 'Turn it on' }));
     expect(await screen.findByRole('heading', { name: 'Your recovery codes' })).toBeInTheDocument();
     for (const c of codes) expect(screen.getByText(c)).toBeInTheDocument();
     // The server has let them in by now; the codes stay until they say so.

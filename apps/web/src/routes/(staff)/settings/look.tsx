@@ -1,104 +1,109 @@
 /**
- * Choosing the palette and the theme. PALETTE owns every colour; THEME owns
- * type, corners and width and sets no colour, so any pair works.
+ * Choosing how the site looks (settings-and-admin.md §04, decision 61).
  *
- * Choosing does nothing until Save: the page an administrator is working on
- * does not repaint under them. Each palette shows its own colours in a
- * swatch, painted by the same stylesheet the site uses, never by a colour
- * this screen computed.
+ * PREVIEW, THEN APPLY. Choosing a look changes the two preview frames and
+ * the line above them, and nothing else: the page the administrator is
+ * working on does not repaint under them. "Apply to the site" saves palette
+ * and theme together, with no step-up (as before), and only then does the
+ * site change. "Back to what the site shows" puts the chooser back.
+ *
+ * PALETTE owns every colour; THEME owns type, corners and width and sets no
+ * colour, so any pair works. The frames are painted by the site's own
+ * stylesheet (features/settings/LookPreview.tsx), never by a colour this
+ * screen computed.
  */
-import { PALETTES, THEMES, setLook } from '@reportlog/contracts';
+import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
+import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { Page } from '@/components/ui/page.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
+import { LookChooser } from '../../../features/settings/LookChooser.tsx';
+import { LookFrames } from '../../../features/settings/LookPreview.tsx';
+import { LookPacks } from '../../../features/settings/LookPacks.tsx';
+import { lookName, sameLook } from '../../../features/settings/looks.ts';
+import { SettingsFrame } from '../../../features/settings/panels.tsx';
+import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/look')({
   component: () => (
-    <Page title="Look" width="wide">
-      <WithEditor>{(state) => <LookForm state={state} />}</WithEditor>
-    </Page>
+    <SettingsFrame>
+      <Page
+        title="Look"
+        lede="Pick a look and see it on a desktop and a phone. Nothing on the site changes until you apply it."
+      >
+        <WithEditor>{(state) => <LookScreen state={state} />}</WithEditor>
+      </Page>
+    </SettingsFrame>
   ),
 });
 
-function Swatch({ palette }: { palette: string }) {
-  return (
-    <span
-      data-palette={palette}
-      aria-hidden="true"
-      className="flex h-10 w-28 shrink-0 overflow-hidden rounded-control border border-line"
-    >
-      <span className="flex flex-1 items-center justify-center bg-paper font-bold text-ink">
-        Aa
-      </span>
-      <span className="w-6 bg-deep" />
-      <span className="w-6 bg-action" />
-    </span>
-  );
-}
-
-export function LookForm({ state }: { state: SiteEditor }) {
-  const [look, setLookState] = useState<Look>(state.look);
-  const save = useSave((value: Look) => call(setLook, { body: value }));
-  const changed = look.palette !== state.look.palette || look.theme !== state.look.theme;
-  useUnsavedChanges('the look', changed);
+export function LookScreen({ state }: { state: SiteEditor }) {
+  const current = state.look;
+  const [chosen, setChosen] = useState<Look>(current);
+  const toast = useToast();
+  const apply = useSave((value: Look) => call(setLook, { body: value }));
+  const previewing = !sameLook(chosen, current);
+  useUnsavedChanges('the look', previewing);
 
   return (
-    <form
-      className="flex flex-col gap-8"
-      onSubmit={(e) => {
-        e.preventDefault();
-        save.mutate(look);
-      }}
-    >
-      <Field>
-        <Label>Palette</Label>
-        <RadioGroup
-          value={look.palette}
-          onValueChange={(v) => {
-            setLookState({ ...look, palette: v });
-          }}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          {PALETTES.map((p) => (
-            <div key={p.id} className="flex items-start gap-3">
-              <RadioOption
-                value={p.id}
-                label={p.label}
-                hint={`${p.description}${p.dark ? ' Dark.' : ''}`}
-              />
-              <Swatch palette={p.id} />
-            </div>
-          ))}
-        </RadioGroup>
-      </Field>
+    <div className="flex flex-col gap-8">
+      {/* The sentence is the status, not the panel: its buttons are not news. */}
+      <Card variant="deep" className="sm:flex-row sm:items-center sm:justify-between">
+        <p role="status">
+          {previewing ? (
+            <>
+              <span className="label-face block text-xs text-brand-on-deep">Preview only</span> The
+              site is still showing {lookName(current)}. You are previewing {lookName(chosen)}.
+            </>
+          ) : (
+            <>The site is showing {lookName(current)}.</>
+          )}
+        </p>
+        {previewing ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              variant="quiet"
+              className="text-on-deep"
+              onClick={() => {
+                apply.reset();
+                setChosen(current);
+              }}
+            >
+              Back to what the site shows
+            </Button>
+            <Button
+              busy={apply.isPending}
+              busyLabel="Applying…"
+              onClick={() => {
+                apply.mutate(chosen, {
+                  onSuccess: (next) => {
+                    setChosen(next.look);
+                    toast.show('The new look is live.');
+                  },
+                });
+              }}
+            >
+              Apply to the site
+            </Button>
+          </div>
+        ) : null}
+      </Card>
+      {apply.isError ? (
+        <Alert tone="serious" title="The look was not applied.">
+          {apply.error.message}
+        </Alert>
+      ) : null}
 
-      <Field>
-        <Label>Theme</Label>
-        <RadioGroup
-          value={look.theme}
-          onValueChange={(v) => {
-            setLookState({ ...look, theme: v });
-          }}
-        >
-          {THEMES.map((t) => (
-            <RadioOption key={t.id} value={t.id} label={t.label} hint={t.description} />
-          ))}
-        </RadioGroup>
-      </Field>
+      <LookFrames look={chosen} />
 
-      <SaveOutcome mutation={save} done="The new look is live." />
-      <div>
-        <Button type="submit" disabled={!changed || save.isPending}>
-          Save the look
-        </Button>
-      </div>
-    </form>
+      <LookChooser value={chosen} onChange={setChosen} current={current} />
+
+      <LookPacks />
+    </div>
   );
 }

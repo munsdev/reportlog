@@ -20,11 +20,16 @@
  * Choosing an option highlights it and moves nothing; the button does. A
  * screen is drawn only once what it shows has loaded, so a preselected answer
  * never jumps under somebody's cursor.
+ *
+ * THE LOOK OF IT (settings-and-admin.md §07): one question a screen, every
+ * choice a choice card, a progress rule under "Step 3 of 7", "Use this and
+ * continue" as the one primary button, full width on a phone. The name step
+ * shows the Name screen's header picture; the look step is the Look screen's
+ * named looks and its two preview frames, with the name just given.
  */
 import {
+  DEFAULT_LOOK,
   MAX_SITE_NAME,
-  PALETTES,
-  THEMES,
   accentMarksClose,
   applyTemplate,
   decideCurtain,
@@ -44,11 +49,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { BrandName, applyLook } from '@/components/ui/site.tsx';
+import { applyLook } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
+import { LookChooser } from '../settings/LookChooser.tsx';
+import { LookFrames } from '../settings/LookPreview.tsx';
+import { NamePreview } from '../settings/NamePreview.tsx';
+import { lookName } from '../settings/looks.ts';
 import { meQuery } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInForm } from './SignInForm.tsx';
@@ -115,11 +122,15 @@ export function SetupWizard({
       : undefined;
 
   return (
-    <main id="main" className="mx-auto w-full max-w-xl space-y-8 px-4 py-12">
-      <header className="space-y-2">
-        <p className="text-sm font-semibold text-muted">
+    <main
+      id="main"
+      className={`mx-auto w-full space-y-8 px-4 py-12 ${step === 'look' ? 'max-w-page' : 'max-w-xl'}`}
+    >
+      <header className="space-y-3">
+        <p className="label-face text-xs text-muted">
           Setting up · step {n + 1} of {SETUP_STEPS.length}
         </p>
+        <Progress at={n + 1} of={SETUP_STEPS.length} />
         <h1 className="font-display text-title font-bold">{TITLES[step]}</h1>
       </header>
       {/* The owner, once seated, sets up a second factor before the rest
@@ -161,6 +172,19 @@ export function SetupWizard({
   );
 }
 
+/**
+ * How far through setup this is, as a rule that fills: the same shape as a
+ * filing card's progress. The line above it says the same in words, so the
+ * bar is hidden from screen readers rather than read twice.
+ */
+function Progress({ at, of }: { at: number; of: number }) {
+  return (
+    <div aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-control bg-paper-alt">
+      <div className="h-full bg-ink" style={{ width: `${String((at / of) * 100)}%` }} />
+    </div>
+  );
+}
+
 interface StepProps {
   onDone: () => void;
   back: (() => void) | undefined;
@@ -170,7 +194,7 @@ interface StepProps {
 function Actions({
   back,
   pending,
-  label = 'Continue',
+  label = 'Use this and continue',
   disabled = false,
   children,
 }: {
@@ -181,8 +205,15 @@ function Actions({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button type="submit" disabled={pending || disabled}>
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <Button
+        type="submit"
+        size="lg"
+        className="w-full sm:w-auto"
+        disabled={disabled}
+        busy={pending}
+        busyLabel="Saving…"
+      >
         {label}
       </Button>
       {children}
@@ -285,12 +316,7 @@ function NameForm({ stored, onDone, back }: StepProps & { stored: string }) {
           setName(e.target.value);
         }}
       />
-      <div className="space-y-2">
-        <p className="text-sm font-semibold">How the header will show it</p>
-        <p className="rounded-card bg-deep px-4 py-3 font-display text-xl font-bold text-on-deep">
-          <BrandName parts={parseBrand(name.trim() || 'ReportLog')} onDeep />
-        </p>
-      </div>
+      <NamePreview name={name.trim() || 'ReportLog'} page={false} />
       {tried && problem && (
         <p role="alert" className="font-semibold text-serious">
           {problem}
@@ -373,8 +399,14 @@ function StartStep({ onDone, back }: StepProps) {
         </p>
       )}
       <ErrorText error={apply.error} />
-      <Actions back={back} pending={apply.isPending} label="Use this and continue">
-        <Button type="button" variant="secondary" onClick={onDone} disabled={apply.isPending}>
+      <Actions back={back} pending={apply.isPending}>
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full sm:w-auto"
+          onClick={onDone}
+          disabled={apply.isPending}
+        >
           Skip: I will set it up myself
         </Button>
       </Actions>
@@ -504,28 +536,12 @@ function YesNo({
 
 /* ---- the look ------------------------------------------------------- */
 
-function Swatch({ palette }: { palette: string }) {
-  return (
-    <span
-      data-palette={palette}
-      aria-hidden="true"
-      className="flex h-10 w-28 shrink-0 overflow-hidden rounded-control border border-line"
-    >
-      <span className="flex flex-1 items-center justify-center bg-paper font-bold text-ink">
-        Aa
-      </span>
-      <span className="w-6 bg-deep" />
-      <span className="w-6 bg-action" />
-    </span>
-  );
-}
-
 /**
- * Late on purpose: by now the site has a name, so the preview shows theirs.
- * THE PREVIEW ONLY changes while choosing. The page behind it takes the look
- * when it is saved, which is one moment and one decision; repainting the
- * whole page on every click turned the two looks being compared into the
- * same place.
+ * Late on purpose: by now the site has a name, so the previews show theirs.
+ * The Look screen's chooser and its two frames (features/settings): choosing
+ * changes the frames only. The page behind them takes the look when it is
+ * saved, which is one moment and one decision; repainting the whole page on
+ * every click turned the two looks being compared into the same place.
  */
 function LookStep({ onDone, back }: StepProps) {
   const editor = useQuery({
@@ -535,7 +551,8 @@ function LookStep({ onDone, back }: StepProps) {
   if (editor.isPending) return <Loading />;
   return (
     <LookForm
-      start={editor.data?.look ?? { palette: 'flint', theme: 'signal' }}
+      // Desk to start with on a fresh site, which is what a fresh site wears.
+      start={editor.data?.look ?? DEFAULT_LOOK}
       name={editor.data?.name ?? 'ReportLog'}
       onDone={onDone}
       back={back}
@@ -565,61 +582,18 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
       }}
     >
       <p>
-        The palette is every colour on the site. The theme is the lettering, the corners and how
-        wide the page runs, and sets no colour at all. Any pair works.
+        A look is a palette, every colour on the site, and a theme: the lettering, the corners and
+        how wide the page runs. Pick one and see it on a desktop and a phone. You can change it at
+        any time under Site settings.
       </p>
-      <div
-        data-palette={look.palette}
-        data-theme={look.theme}
-        aria-hidden="true"
-        className="overflow-hidden rounded-card border border-line bg-paper text-ink"
-      >
-        <p className="bg-deep px-4 py-3 font-display text-lg font-bold text-on-deep">
-          <BrandName parts={parseBrand(name)} onDeep />
-        </p>
-        <div className="space-y-3 p-4">
-          <p className="font-display text-xl font-bold">A record that cannot be quietly changed.</p>
-          <span className="inline-block rounded-control bg-action px-4 py-2 font-semibold text-on-action">
-            File a report
-          </span>
-        </div>
-      </div>
-      <Field>
-        <Label>Palette</Label>
-        <RadioGroup
-          value={look.palette}
-          onValueChange={(v) => {
-            setLookState({ ...look, palette: v });
-          }}
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          {PALETTES.map((p) => (
-            <div key={p.id} className="flex items-start gap-3">
-              <RadioOption
-                value={p.id}
-                label={p.label}
-                hint={`${p.description}${p.dark ? ' Dark.' : ''}`}
-              />
-              <Swatch palette={p.id} />
-            </div>
-          ))}
-        </RadioGroup>
-      </Field>
-      <Field>
-        <Label>Theme</Label>
-        <RadioGroup
-          value={look.theme}
-          onValueChange={(v) => {
-            setLookState({ ...look, theme: v });
-          }}
-        >
-          {THEMES.map((t) => (
-            <RadioOption key={t.id} value={t.id} label={t.label} hint={t.description} />
-          ))}
-        </RadioGroup>
-      </Field>
+      {/* Said politely as it changes; the frames below are pictures only. */}
+      <p aria-live="polite" className="font-semibold">
+        Previewing {lookName(look)}.
+      </p>
+      <LookFrames look={look} name={parseBrand(name)} />
+      <LookChooser value={look} onChange={setLookState} />
       <ErrorText error={save.error} />
-      <Actions back={back} pending={save.isPending} label="Use this and continue" />
+      <Actions back={back} pending={save.isPending} />
     </form>
   );
 }

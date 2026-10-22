@@ -1,10 +1,11 @@
 /**
- * The builder's switches that are not questions (B2): the freeze, who can
- * file without the site password, and the site's intake switch.
+ * The builder's switches that are not questions (B2): the freeze, and who
+ * can file without the site password. The site's intake switch moved to the
+ * settings overview; its tests are in test/settings/settings.test.tsx.
  *
  * THE PROMISES UNDER TEST:
- *   - freezing and closing the site are asked before they happen, on a card
- *     of their own, and nothing is sent until the second press;
+ *   - freezing is asked before it happens, on a card of its own, and
+ *     nothing is sent until the second press;
  *   - undoing either is one press;
  *   - the freeze is offered only where there is something to freeze;
  *   - each sends exactly the body its contract names, to its route.
@@ -21,7 +22,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FreezePanel, IntakeSwitchPanel, OutsidePanel } from '../src/features/builder/Switches.tsx';
+import { FreezePanel, OutsidePanel } from '../src/features/builder/Switches.tsx';
 
 const LB: LogbookDetail = {
   id: 12,
@@ -172,37 +173,5 @@ describe('who can file without the site password', () => {
     serve({});
     wrap(<OutsidePanel lb={{ ...LB, state: 'draft' }} refresh={() => Promise.resolve()} />);
     expect(await screen.findByText(/applies once the logbook has launched/)).toBeInTheDocument();
-  });
-});
-
-describe('the site’s intake switch', () => {
-  it('asks before closing the whole site, then sends open: false', async () => {
-    const sent = serve({
-      'GET /api/admin/intake-switch': { open: true, stored: null },
-      'PUT /api/admin/intake-switch': { open: false, stored: false },
-    });
-    const user = userEvent.setup();
-    wrap(<IntakeSwitchPanel />);
-    expect(await screen.findByText(/Nobody has set this/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Stop taking new reports…' }));
-    expect(writes(sent)).toEqual([]);
-    await user.click(screen.getByRole('button', { name: 'Stop taking reports' }));
-    expect(writes(sent)).toEqual([
-      { method: 'PUT', url: '/api/admin/intake-switch', body: { open: false } },
-    ]);
-  });
-
-  it('opens a closed site in one press', async () => {
-    const sent = serve({
-      'GET /api/admin/intake-switch': { open: false, stored: false },
-      'PUT /api/admin/intake-switch': { open: true, stored: true },
-    });
-    const user = userEvent.setup();
-    wrap(<IntakeSwitchPanel />);
-    expect(await screen.findByText(/corrections to them still work/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Take new reports again' }));
-    expect(writes(sent)).toEqual([
-      { method: 'PUT', url: '/api/admin/intake-switch', body: { open: true } },
-    ]);
   });
 });

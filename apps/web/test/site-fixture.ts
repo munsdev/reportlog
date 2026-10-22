@@ -16,6 +16,7 @@ export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
         fallback: 'A record of what happened.',
         body: 'A record of what happened.',
         written: false,
+        changed_at: null,
       },
     ],
     legal: [

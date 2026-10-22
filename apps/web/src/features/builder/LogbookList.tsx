@@ -1,9 +1,14 @@
 /**
- * Every logbook, drafts included, and making a new one.
+ * Every logbook, drafts included, and making a new one
+ * (settings-and-admin.md §08).
  *
- * THE WHOLE TILE OPENS IT: opening a logbook is the only thing anybody comes
- * to its row to do, so the row is one link rather than a card with a small
- * button in the corner.
+ * One row per logbook, as a raised panel: its title, its state as a chip,
+ * its filing address in mono, and Open. Making one is behind a primary
+ * "Make a logbook" button rather than always open on the page.
+ *
+ * The site-wide intake switch ("New reports, across the site") moved to the
+ * settings overview as "Accepting reports" (features/settings/Switches.tsx):
+ * it is the whole site's state, not a logbook's. This page links to it.
  */
 import { createLogbook, createLogbookFromFile } from '@reportlog/contracts';
 import type { LogbookDetail } from '@reportlog/contracts';
@@ -11,71 +16,104 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { Chip } from '../../components/ui/chip.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
 import { FileDrop } from '../../components/ui/file-drop.tsx';
+import { Page } from '../../components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
 import { logbooksQuery, startingPointsQuery } from './queries.ts';
-import { IntakeSwitchPanel } from './Switches.tsx';
 import { stateLabel, stateWords } from './words.ts';
 
 export function LogbookList() {
   const query = useQuery(logbooksQuery());
+  const [making, setMaking] = useState(false);
+  const make = (
+    <Button
+      aria-expanded={making}
+      onClick={() => {
+        setMaking(!making);
+      }}
+    >
+      Make a logbook
+    </Button>
+  );
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <h1 className="font-display text-title font-bold">Logbooks</h1>
-        <p className="max-w-prose text-ink-alt">
-          A logbook is one named place to file reports, with its own questions. Every report in it
-          is fingerprinted and chained to the one before.
-        </p>
-        <Link to="/logbooks/front-page" className="underline">
+    <Page
+      title="Logbooks"
+      lede="A logbook is one named place to file reports, with its own questions. Every report in it is fingerprinted and chained to the one before."
+      actions={making ? null : make}
+    >
+      <p className="text-ink-alt">
+        Whether the site takes new reports at all is set under{' '}
+        <Link to="/settings" className="underline underline-offset-4">
+          Site settings, Accepting reports
+        </Link>
+        . The order of the front page’s buttons is under{' '}
+        <Link to="/logbooks/front-page" className="underline underline-offset-4">
           Arrange the front page’s buttons
         </Link>
-      </header>
+        .
+      </p>
+
+      {making ? (
+        <NewLogbook
+          onCancel={() => {
+            setMaking(false);
+          }}
+        />
+      ) : null}
 
       {query.isPending && <p role="status">Reading the logbooks…</p>}
       {query.isError && <Problem error={query.error} />}
       {query.isSuccess &&
         (query.data.logbooks.length === 0 ? (
-          <p>No logbooks yet.</p>
+          making ? null : (
+            <Empty title="No logbooks yet">
+              Make one to start taking reports.
+              <span className="mt-3 flex justify-center">{make}</span>
+            </Empty>
+          )
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2" aria-label="Logbooks">
+          <ul className="flex flex-col gap-3" aria-label="Logbooks">
             {query.data.logbooks.map((l) => (
               <li key={l.id}>
-                <Link
-                  to="/logbooks/$id"
-                  params={{ id: l.id }}
-                  className="block h-full space-y-1 rounded-card border border-line bg-surface p-4 hover:bg-paper-alt"
-                >
-                  <span className="flex items-baseline justify-between gap-2">
-                    <span className="font-semibold">{l.title}</span>
-                    <span className="rounded-card border border-line px-2 text-sm">
-                      {stateLabel[l.state]}
+                <Card className="gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-lg font-bold">{l.title}</span>
+                      <Chip tone="tag">{stateLabel[l.state]}</Chip>
                     </span>
-                  </span>
-                  <span className="block text-sm text-ink-alt">{stateWords(l)}</span>
-                  <span className="block font-mono text-sm text-muted">
-                    /{l.slug} · {l.question_count} question{l.question_count === 1 ? '' : 's'} ·{' '}
-                    {l.asks_for_files
-                      ? l.files_frozen_at
-                        ? 'files frozen'
-                        : 'asks for files'
-                      : 'no files'}
-                  </span>
-                </Link>
+                    <span className="text-sm text-ink-alt">{stateWords(l)}</span>
+                    <span className="font-mono text-sm break-all text-muted">
+                      /file/{l.slug} · {l.question_count} question
+                      {l.question_count === 1 ? '' : 's'} ·{' '}
+                      {l.asks_for_files
+                        ? l.files_frozen_at
+                          ? 'files frozen'
+                          : 'asks for files'
+                        : 'no files'}
+                    </span>
+                  </div>
+                  <div className="shrink-0">
+                    <Button asChild variant="secondary">
+                      <Link to="/logbooks/$id" params={{ id: l.id }} aria-label={`Open ${l.title}`}>
+                        Open
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
               </li>
             ))}
           </ul>
         ))}
-
-      <NewLogbook />
-      <IntakeSwitchPanel />
-    </div>
+    </Page>
   );
 }
 
-function NewLogbook() {
+function NewLogbook({ onCancel }: { onCancel: () => void }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const points = useQuery(startingPointsQuery());
@@ -187,9 +225,14 @@ function NewLogbook() {
           It is made as a draft. Nobody sees it until you launch it.
         </p>
         <Problem error={make.error} />
-        <Button type="submit" variant="primary" disabled={make.isPending}>
-          Make the draft
-        </Button>
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" variant="primary" busy={make.isPending} busyLabel="Making it…">
+            Make the draft
+          </Button>
+          <Button type="button" variant="quiet" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
       </form>
 
       <div className="flex flex-col gap-1">

@@ -1,33 +1,41 @@
 /**
  * What the site calls itself. Double quotes mark part of the name in the
- * accent colour, single quotes in the quieter second accent; the preview
- * shows exactly what the header will draw. Clearing it goes back to the
- * software's own name.
+ * accent colour, single quotes in the quieter second accent; the previews
+ * show exactly what the header will draw, on the deep bar it sits on, and
+ * how the name reads on the page's own ground (the password screen, the
+ * emails' heading). Clearing it goes back to the software's own name.
+ *
+ * ONE SETTING ON ITS OWN PAGE, so the field is open from the start rather
+ * than behind an Edit button; the Save bar appears once there is something
+ * to save, names it, and Escape puts the field back.
  */
-import {
-  MAX_SITE_NAME,
-  accentMarksClose,
-  parseBrand,
-  plainName,
-  setSiteName,
-} from '@reportlog/contracts';
+import { MAX_SITE_NAME, accentMarksClose, plainName, setSiteName } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
+import { Alert } from '@/components/ui/alert.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
-import { BrandName } from '@/components/ui/site.tsx';
+import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
-import { SaveOutcome, WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
+import { NamePreview } from '../../../features/settings/NamePreview.tsx';
+import { SettingsFrame } from '../../../features/settings/panels.tsx';
+import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
-    <Page title="Name" width="prose">
-      <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
-    </Page>
+    <SettingsFrame>
+      <Page
+        title="Name"
+        width="prose"
+        lede="What this site calls itself in its header, its emails and its browser tab."
+      >
+        <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
+      </Page>
+    </SettingsFrame>
   ),
 });
 
@@ -44,17 +52,29 @@ export function nameProblem(raw: string): string | null {
 
 export function NameForm({ state }: { state: SiteEditor }) {
   const [name, setName] = useState(state.name ?? '');
+  const toast = useToast();
   const save = useSave((value: string | null) => call(setSiteName, { body: { name: value } }));
   const problem = nameProblem(name);
   const preview = name.trim() || state.effective_name;
-  useUnsavedChanges('the name', (name.trim() || null) !== state.name);
+  const dirty = (name.trim() || null) !== state.name;
+  useUnsavedChanges('the name', dirty);
+
+  const submit = () => {
+    if (problem) return;
+    save.mutate(name.trim() || null, {
+      onSuccess: (next) => {
+        setName(next.name ?? '');
+        toast.show('The new name is live.');
+      },
+    });
+  };
 
   return (
     <form
       className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!problem) save.mutate(name.trim() || null);
+        submit();
       }}
     >
       <Field>
@@ -67,25 +87,31 @@ export function NameForm({ state }: { state: SiteEditor }) {
           value={name}
           onChange={(e) => {
             setName(e.target.value);
+            save.reset();
           }}
           autoComplete="off"
         />
         <FieldError>{problem}</FieldError>
       </Field>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-sm font-semibold">How the header will show it</p>
-        <p className="rounded-card bg-deep px-4 py-3 font-display text-xl font-bold text-on-deep">
-          <BrandName parts={parseBrand(preview)} onDeep />
-        </p>
-      </div>
+      <NamePreview name={preview} />
 
-      <SaveOutcome mutation={save} done="The new name is live." />
-      <div>
-        <Button type="submit" disabled={Boolean(problem) || save.isPending}>
-          Save the name
-        </Button>
-      </div>
+      {save.isError ? (
+        <Alert tone="serious" title="That was not saved.">
+          {save.error.message}
+        </Alert>
+      ) : null}
+      {dirty ? (
+        <SaveBar
+          name="This site’s name"
+          busy={save.isPending}
+          onSave={submit}
+          onCancel={() => {
+            setName(state.name ?? '');
+            save.reset();
+          }}
+        />
+      ) : null}
     </form>
   );
 }
