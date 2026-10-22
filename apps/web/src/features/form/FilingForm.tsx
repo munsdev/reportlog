@@ -988,7 +988,7 @@ function ReviewRow({
         <Button
           type="button"
           variant="quiet"
-          className="-my-2 shrink-0"
+          className="shrink-0"
           onClick={onChange}
           aria-label={`Change: ${label}`}
         >
