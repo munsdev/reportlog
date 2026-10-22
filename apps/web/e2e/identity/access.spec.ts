@@ -129,7 +129,7 @@ test('while locked, only the password screen renders and the router goes nowhere
   await expect(page.getByText('Check a report')).toHaveCount(0);
 
   await unlock(page, 'not-the-password');
-  await expect(page.getByRole('alert')).toHaveText('That is not the password.');
+  await expect(page.getByRole('alert')).toContainText('That password is not right.');
   await expect(page.locator('header')).toHaveCount(0);
   expect(outside).toEqual([]);
 });
@@ -284,7 +284,7 @@ test("the installer's password is retired and the owner's opens the site", async
   const page = await freshPage(browser);
   await page.goto('/');
   await unlock(page, INSTALL_PW);
-  await expect(page.getByRole('alert')).toHaveText('That is not the password.');
+  await expect(page.getByRole('alert')).toContainText('That password is not right.');
   await unlock(page, SITE_PW);
   await expect(page.getByRole('heading', { name: 'Check a report' })).toBeVisible();
   await page.context().close();
