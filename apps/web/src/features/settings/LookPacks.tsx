@@ -1,33 +1,22 @@
 /**
- * Look packs on the Look screen: what is installed, and (from stage 6) the
- * upload that adds more.
- *
- * ┌──────────────────────────────────────────────────────────────────────┐
- * │ "ADD LOOKS FROM A FILE" GOES HERE.                                   │
- * │ Thread E builds the upload (FilePicker, check(), Install with a      │
- * │ step-up, the installed packs with Remove). The lead wires it in at   │
- * │ merge by replacing `AddLooksFromAFile` below; nothing else on the    │
- * │ Look screen needs to change. Until then the panel lists the built-in │
- * │ pack and says nothing about uploading.                               │
- * └──────────────────────────────────────────────────────────────────────┘
+ * Look packs on the Look screen: the built-in pack, the packs an operator
+ * has added, and the upload that adds more (stage 6, features/looks). The
+ * settings screens are the owner's and administrators' already; installing,
+ * replacing and removing also ask for the step-up, on the server.
  */
 import { Card } from '@/components/ui/card.tsx';
 import { KeyValueList } from '@/components/ui/key-value-list.tsx';
+import { AddLookPack } from '@/features/looks/AddLookPack.tsx';
+import { InstalledLookPacks } from '@/features/looks/InstalledLookPacks.tsx';
 import { BUILT_IN, plural } from './looks.ts';
-
-/** Thread E's upload panel. Nothing until it is merged. */
-function AddLooksFromAFile() {
-  return null;
-}
 
 export function LookPacks() {
   return (
     <Card heading="Look packs" data-slot="look-packs">
-      <AddLooksFromAFile />
       <KeyValueList
         items={[
           {
-            key: 'Installed',
+            key: 'Built in',
             value: [
               BUILT_IN.label,
               plural(BUILT_IN.palettes, 'palette', 'palettes'),
@@ -37,6 +26,8 @@ export function LookPacks() {
           },
         ]}
       />
+      <InstalledLookPacks />
+      <AddLookPack />
     </Card>
   );
 }
