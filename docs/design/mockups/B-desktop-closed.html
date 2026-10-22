@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Model B, desktop, menu closed</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}
+body{margin:0}
+a{color:#121A24}a:hover{color:#7D5B10}
+.lab{font-family:Archivo,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.09em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border:2px solid #121A24;border-radius:6px;font-family:Archivo,sans-serif;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:#121A24;background:#FFFFFF;box-shadow:4px 4px 0 #121A24;text-decoration:none;box-sizing:border-box;cursor:pointer}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-family:Archivo,sans-serif;font-weight:700;font-size:11px;letter-spacing:.09em;text-transform:uppercase;box-sizing:border-box}
+.tab{padding:12px 12px 10px;font-size:13px;color:#4A5764;text-decoration:none;white-space:nowrap}
+.top{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;font-size:13px;color:#FFFFFF;text-decoration:none;border-radius:6px;background:transparent;border:0;cursor:pointer;white-space:nowrap}
+.top:hover{background:#1C2632;color:#FFFFFF}
+.n{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;border-radius:999px;font-family:'Red Hat Mono',monospace;font-weight:500;font-size:12px;letter-spacing:0;box-sizing:border-box}
+</style></head><body>
+
+<div style="width: 1280px; height: 800px; overflow: hidden; box-sizing: border-box; background: #E7ECEF; color: #121A24; font-family: 'Public Sans', sans-serif;">
+
+  <header style="height: 64px; background: #121A24; border-bottom: 6px solid #E9A81C;">
+    <div style="max-width: 1216px; height: 64px; margin: 0 auto; padding: 0 32px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between;">
+      <a href="#" class="lab" style="font-size: 16px; color: #FFFFFF; text-decoration: none; letter-spacing: .08em;">Report<span style="color: #E9A81C;">Log</span></a>
+      <button type="button" class="lab top" aria-expanded="false" style="font-size: 14px; margin-right: -12px;">
+        <span class="n" style="background: #E9A81C; color: #121A24;" aria-label="7 waiting for a moderator">7</span>
+        Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="#FFFFFF" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="max-width: 1024px; margin: 0 auto; padding: 40px 32px 0;">
+    <p class="lab" style="margin: 0 0 8px; font-size: 12px; letter-spacing: .14em; color: #4A5764;">ReportLog · Staff</p>
+    <h1 style="margin: 0; font-family: Archivo, sans-serif; font-weight: 700; font-size: 48px; line-height: 1.08;">Moderation</h1>
+    <p style="margin: 14px 0 0; max-width: 680px; font-size: 17px; line-height: 1.55; color: #2E3A46;">Nothing is public until it is approved here. Every decision needs a reason, and every one can be revisited.</p>
+
+    <nav aria-label="Moderation" style="display: flex; gap: 4px; margin-top: 28px; border-bottom: 1px solid #A9B5BF;">
+      <a href="#" aria-current="page" class="lab tab" style="color: #121A24; border-bottom: 3px solid #E9A81C; margin-bottom: -1px;">Queue</a>
+      <a href="#" class="lab tab">Flood screen</a>
+      <a href="#" class="lab tab">Tip links</a>
+      <a href="#" class="lab tab">List review</a>
+      <a href="#" class="lab tab">Notices</a>
+      <a href="#" class="lab tab">Files</a>
+      <a href="#" class="lab tab">Settings</a>
+    </nav>
+
+    <div style="display: flex; gap: 16px; align-items: flex-end; margin-top: 24px;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+        <label for="b-search" class="lab" style="font-size: 12px;">Search words or a reference</label>
+        <input id="b-search" type="search" placeholder="RL-… or a word" style="min-height: 44px; padding: 0 14px; border: 1.5px solid #3D4A57; border-radius: 6px; background: #FFFFFF; font: 16px 'Public Sans', sans-serif; box-sizing: border-box;">
+      </div>
+      <button type="button" class="btn">Filter <span style="font-family: 'Red Hat Mono', monospace; font-weight: 500; letter-spacing: 0;">(1)</span></button>
+      <button type="button" class="btn">Newest first</button>
+    </div>
+    <p style="margin: 16px 0 0; font-family: 'Red Hat Mono', monospace; font-size: 14px;">31 reports · 7 waiting · 19 approved · 3 declined · 1 withdrawn</p>
+
+    <article style="margin-top: 18px; background: #FFFFFF; border: 1px solid #121A24; border-radius: 10px; box-shadow: 4px 4px 0 #121A24; padding: 18px 22px; display: flex; gap: 20px; align-items: center;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span class="chip" style="border: 1.5px solid #5A6672; color: #3D4A57;">Waiting</span>
+          <span class="chip" style="background: #A81D33; color: #FFFFFF;">Serious</span>
+          <span style="font-family: 'Red Hat Mono', monospace; font-size: 13px; color: #4A5764;">RL-7K2M-4QXD · Election incidents · 3 Nov 14:02</span>
+        </div>
+        <p style="margin: 0; font-size: 16px; line-height: 1.5;">[What happened, first two lines of the report as filed]</p>
+      </div>
+      <a href="#" class="btn">Open</a>
+    </article>
+  </main>
+</div>
+</body></html>

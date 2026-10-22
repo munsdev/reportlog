@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>ReportLog character sheet</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}
+body{margin:0}
+a{color:#121A24}a:hover{color:#7D5B10}
+.lab{font-family:Archivo,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.09em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border:2px solid #121A24;border-radius:6px;font-family:Archivo,sans-serif;font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.09em;color:#121A24;background:#FFFFFF;box-shadow:4px 4px 0 #121A24;text-decoration:none;box-sizing:border-box;cursor:pointer}
+.chip{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-family:Archivo,sans-serif;font-weight:700;font-size:11px;letter-spacing:.09em;text-transform:uppercase;box-sizing:border-box}
+.eyebrow{margin:0 0 14px;font-family:Archivo,sans-serif;font-weight:700;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#4A5764}
+</style></head><body>
+
+<div style="width: 1280px; height: 1040px; box-sizing: border-box; background: #E7ECEF; color: #121A24; font-family: 'Public Sans', sans-serif; display: flex; flex-direction: column;">
+
+  <header style="position: relative; height: 64px; background: #121A24; border-bottom: 6px solid #E9A81C; display: flex; align-items: center; justify-content: space-between; padding: 0 64px;">
+    <button type="button" class="lab" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 14px 0 10px; margin-left: -10px; background: transparent; border: 0; color: #FFFFFF; font-size: 14px; cursor: pointer;" aria-expanded="false">
+      <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="#FFFFFF" stroke-width="2"></path></svg>
+      Menu
+    </button>
+    <a href="#" class="lab" style="font-size: 16px; color: #FFFFFF; text-decoration: none; letter-spacing: .08em;">Report<span style="color: #E9A81C;">Log</span></a>
+  </header>
+
+  <div style="flex: 1; padding: 48px 64px 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 56px; row-gap: 40px; align-content: start;">
+
+    <section style="display: flex; flex-direction: column; gap: 20px;">
+      <p class="eyebrow">Type</p>
+      <div>
+        <p class="eyebrow" style="margin-bottom: 8px;">ReportLog</p>
+        <h1 style="margin: 0; font-family: Archivo, sans-serif; font-weight: 700; font-size: 48px; line-height: 1.08; letter-spacing: -.01em;">A record of what happened</h1>
+      </div>
+      <h2 style="margin: 0; font-family: Archivo, sans-serif; font-weight: 700; font-size: 32px; line-height: 1.15;">Section heading</h2>
+      <h3 style="margin: 0; font-family: Archivo, sans-serif; font-weight: 600; font-size: 22px; line-height: 1.2;">Card heading</h3>
+      <p style="margin: 0; font-size: 16px; line-height: 1.55; color: #2E3A46;">Body text in Public Sans at 16px with 1.55 leading. Headings are fluid on the real site: 32px on a phone up to 48px on a wide screen.</p>
+      <p class="mono" style="margin: 0; font-family: 'Red Hat Mono', monospace; font-size: 14px; color: #4A5764;">RL-7K2M-4QXD · filed 3 Nov 14:02 · sealed</p>
+      <p class="mono" style="margin: 0; font-family: 'Red Hat Mono', monospace; font-size: 14px; color: #121A24;">31 reports · 7 waiting · 19 approved · 3 declined</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 20px;">
+      <p class="eyebrow">Buttons</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px;">
+        <a href="#" class="btn" style="background: #E9A81C;">Submit a report</a>
+        <a href="#" class="btn">Secondary</a>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center;">
+        <a href="#" class="btn" style="background: #E9A81C; transform: translate(3px, 3px); box-shadow: 1px 1px 0 #121A24;">Pressed</a>
+        <a href="#" class="btn" style="min-height: 36px; padding: 0 14px; font-size: 12px; box-shadow: 3px 3px 0 #121A24;">Small · 36px</a>
+        <a href="#" class="lab" style="font-size: 13px; color: #121A24; text-underline-offset: 4px;">Quiet link</a>
+      </div>
+      <a href="#" class="btn" style="width: 100%; min-height: 52px; background: #E9A81C;">Full width on a phone</a>
+
+      <p class="eyebrow" style="margin-top: 12px;">Chips and counts</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+        <span class="chip" style="border: 1.5px solid #5A6672; color: #3D4A57; background: #FFFFFF;">Open</span>
+        <span class="chip" style="background: #296B60; color: #FFFFFF;">Confirmed</span>
+        <span class="chip" style="background: #A81D33; color: #FFFFFF;">Serious</span>
+        <span class="chip" style="border: 1.5px solid #121A24; color: #121A24; background: transparent;">Single account</span>
+        <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 22px; padding: 0 7px; border-radius: 999px; background: #E9A81C; color: #121A24; font-family: 'Red Hat Mono', monospace; font-weight: 500; font-size: 12px; box-sizing: border-box;">7</span>
+      </div>
+
+      <p class="eyebrow" style="margin-top: 12px;">Area tabs</p>
+      <nav aria-label="Example tabs" style="display: flex; gap: 4px; border-bottom: 1px solid #A9B5BF;">
+        <a href="#" aria-current="page" class="lab" style="padding: 12px 12px 10px; font-size: 13px; color: #121A24; text-decoration: none; border-bottom: 3px solid #E9A81C; margin-bottom: -1px;">Queue</a>
+        <a href="#" class="lab" style="padding: 12px 12px 10px; font-size: 13px; color: #4A5764; text-decoration: none;">Flood screen</a>
+        <a href="#" class="lab" style="padding: 12px 12px 10px; font-size: 13px; color: #4A5764; text-decoration: none;">Tip links</a>
+      </nav>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 18px;">
+      <p class="eyebrow">Surfaces</p>
+      <div style="background: #FFFFFF; border: 1px solid #121A24; border-radius: 10px; box-shadow: 4px 4px 0 #121A24; padding: 18px 20px;">
+        <p class="lab" style="margin: 0 0 6px; font-size: 11px; color: #4A5764;">Raised</p>
+        <p style="margin: 0; font-size: 15px;">Cards that hold a decision or a setting.</p>
+      </div>
+      <div style="background: #121A24; color: #FFFFFF; border-radius: 10px; padding: 18px 20px;">
+        <p class="lab" style="margin: 0 0 6px; font-size: 11px; color: #B8C2CC;">Deep</p>
+        <p style="margin: 0; font-size: 15px;">Notices that must not be missed.</p>
+      </div>
+      <div style="background: #DCE3E8; border-radius: 10px; padding: 18px 20px;">
+        <p class="lab" style="margin: 0 0 6px; font-size: 11px; color: #3D4A57;">Quiet</p>
+        <p style="margin: 0; font-size: 15px;">Help text and side information.</p>
+      </div>
+      <div style="border: 2px dashed #7A8794; border-radius: 10px; padding: 22px 20px; text-align: center;">
+        <p class="lab" style="margin: 0 0 4px; font-size: 12px;">Nothing waiting</p>
+        <p style="margin: 0; font-size: 14px; color: #3D4A57;">Empty states get a box, not a bare sentence.</p>
+      </div>
+
+      <p class="eyebrow" style="margin-top: 8px;">Choice cards and fields</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <label style="display: flex; gap: 12px; align-items: center; min-height: 52px; padding: 0 16px; background: #FFFFFF; border: 2px solid #121A24; border-radius: 8px; box-shadow: 3px 3px 0 #121A24; font-weight: 700; font-size: 15px;">
+          <input type="radio" name="demo" checked style="width: 20px; height: 20px; accent-color: #121A24; margin: 0;"> Log how voting went
+        </label>
+        <label style="display: flex; gap: 12px; align-items: center; min-height: 52px; padding: 0 16px; background: #FFFFFF; border: 1px solid #7A8794; border-radius: 8px; font-size: 15px;">
+          <input type="radio" name="demo" style="width: 20px; height: 20px; accent-color: #121A24; margin: 0;"> Send a link
+        </label>
+      </div>
+    </section>
+  </div>
+</div>
+</body></html>

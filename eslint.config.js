@@ -13,6 +13,8 @@ export default tseslint.config(
       '**/.turbo/**',
       'apps/web/src/routeTree.gen.ts',
       'apps/api/src/db/schema.gen.ts',
+      // Design references (docs/design/looks/look-pack.mjs): read and ported, not run by the app.
+      'docs/**',
     ],
   },
   js.configs.recommended,

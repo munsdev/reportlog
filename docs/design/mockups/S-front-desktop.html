@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Front page, desktop</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl" data-palette="platinum" data-theme="desk" data-panel-head="title-bar" data-texture="none" style="width: 1280px; height: 1640px;">
+  <header class="rl-bar">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word">Report<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="rl-main" style="max-width: 1100px;">
+    <div style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 56px; align-items: start;">
+      <div class="rl-stack" style="gap: 0;">
+        <p class="rl-eyebrow rl-label">ReportLog</p>
+        <h1 class="rl-h1">A record of what happened, that cannot be quietly changed.</h1>
+        <p class="rl-lede">File a report. A moderator reviews it. Once it is filed, nobody, including whoever runs this archive, can alter or remove it without that being visible.</p>
+        <p style="margin: 1rem 0 0; max-width: 62ch;">[The operator's introduction: what this archive is for, who should file into it, and who runs it.]</p>
+      </div>
+      <div class="rl-stack" style="gap: 18px; padding-top: 30px;">
+        <a href="#" class="rl-btn is-primary is-lg is-block">File a report</a>
+        <a href="#" class="rl-btn is-lg is-block">See the live report board <span class="rl-count is-neutral" aria-label="134 published">134</span></a>
+        <a href="#" class="rl-btn is-lg is-block">Get alerts as reports come in</a>
+        <a href="#" class="rl-btn is-lg is-block">Volunteer</a>
+        <p class="rl-meta" style="margin: 2px 0 0;">Anyone can file. Sealed and timestamped on arrival.</p>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 32px; margin-top: 56px; align-items: start;">
+      <section class="rl-panel" aria-labelledby="map-h">
+        <div class="rl-head" aria-hidden="true"><span>map.svg</span></div>
+        <div class="rl-panel-body">
+          <h2 id="map-h" class="rl-h3 rl-panel-title">Everywhere we heard from</h2>
+          <p class="rl-help">Published reports, by state. A state is shaded once it has 5 or more.</p>
+          <div style="height: 300px; border: 1px dashed var(--rl-text-alt); border-radius: var(--rl-radius-sm); display: flex; align-items: center; justify-content: center; background: var(--rl-background);">
+            <span class="rl-meta">[Heat map, as built in features/maps/HeatMap.tsx]</span>
+          </div>
+          <div class="rl-row" style="justify-content: space-between;">
+            <div class="rl-row" style="gap: 8px;">
+              <a href="#" class="rl-btn" aria-label="Zoom in">+</a>
+              <a href="#" class="rl-btn" aria-label="Zoom out">−</a>
+              <a href="#" class="rl-btn is-quiet">Reset</a>
+            </div>
+            <a href="#" class="rl-btn is-quiet">The table behind the map</a>
+          </div>
+        </div>
+      </section>
+      <div class="rl-stack" style="gap: 32px;">
+        <section class="rl-panel" aria-labelledby="fig-h">
+          <div class="rl-head" aria-hidden="true"><span>figures</span></div>
+          <div class="rl-panel-body">
+            <h2 id="fig-h" class="rl-h3 rl-panel-title">Figures</h2>
+            <dl class="rl-kv" style="grid-template-columns: minmax(0, 1fr) auto;">
+              <dt>Published reports</dt><dd class="rl-meta" style="color: var(--rl-text);">134</dd>
+              <dt>States and territories shaded</dt><dd class="rl-meta" style="color: var(--rl-text);">9</dd>
+              <dt>Under the threshold</dt><dd class="rl-meta" style="color: var(--rl-text);">10 in 4</dd>
+              <dt>From outside the US</dt><dd class="rl-meta" style="color: var(--rl-text);">0</dd>
+            </dl>
+            <p class="rl-help">These are first-hand accounts from people who chose to file. Not a survey and not a sample.</p>
+          </div>
+        </section>
+        <section class="rl-panel is-quiet" aria-labelledby="chk-h">
+          <div class="rl-panel-body">
+            <h2 id="chk-h" class="rl-h3">Check a report</h2>
+            <div class="rl-field">
+              <label class="rl-field-label rl-label" for="f-ref">Its reference</label>
+              <div class="rl-row" style="flex-wrap: nowrap; gap: 12px;">
+                <span id="f-ref" class="rl-input rl-meta" style="color: var(--rl-text-muted);">RL-</span>
+                <a href="#" class="rl-btn">Check it</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>

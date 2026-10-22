@@ -1,0 +1,30 @@
+{
+  "palettes": {
+    "flint": "flint",
+    "paper": "newsprint",
+    "bureau": "boardroom",
+    "sage": "ranger",
+    "gallery": "newsprint",
+    "parchment": "old-glory",
+    "ledger": "press-pass",
+    "indigo": "porch",
+    "bone": "platinum",
+    "midnight": "midnight",
+    "ink": "newsroom",
+    "graphite": "darkroom",
+    "harbour": "darkroom",
+    "dusk": "darkroom",
+    "blackedition": "contrast-dark",
+    "moss": "phosphor",
+    "umber": "campfire",
+    "slate": "darkroom"
+  },
+  "themes": {
+    "signal": "signal",
+    "plain": "firm",
+    "docket": "docket",
+    "broadsheet": "broadsheet",
+    "bulletin": "broadcast",
+    "register": "console"
+  }
+}

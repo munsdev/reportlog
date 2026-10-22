@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Filing, state and county, phone</title><link rel="stylesheet" href="looks.css"><link rel="stylesheet" href="components.css"><style>body{margin:0}body{margin:0}</style></head><body>
+
+<div class="rl rl-phone" data-palette="flint" data-theme="signal" data-panel-head="plain" data-texture="none" style="width: 390px; height: 844px;">
+  <header class="rl-bar is-filing">
+    <div class="rl-bar-in">
+      <a href="#" class="rl-word" style="font-size: 15px;">Election<b>Log</b></a>
+      <button type="button" class="rl-menubtn rl-label" aria-expanded="false">Menu
+        <svg width="20" height="14" viewBox="0 0 20 14" aria-hidden="true"><path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" stroke-width="2"></path></svg>
+      </button>
+    </div>
+    <div class="rl-progress" style="width: 38%;" aria-hidden="true"></div>
+  </header>
+  <main class="rl-main">
+    <p class="rl-eyebrow rl-label">Log how voting went</p>
+    <h1 class="rl-h2" tabindex="-1">Which state and county?</h1>
+    <p class="rl-help" style="margin-top: 10px;">The county where the polling place was.</p>
+    <div class="rl-stack" style="gap: 18px; margin-top: 22px;">
+      <div class="rl-field">
+        <label class="rl-field-label rl-label" for="w-state">State or territory</label>
+        <span id="w-state" class="rl-input is-select">Arizona <svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"></path></svg></span>
+      </div>
+      <div class="rl-field">
+        <label class="rl-field-label rl-label" for="w-county">County</label>
+        <span id="w-county" class="rl-input is-select" style="color: var(--rl-text-alt);">Choose a county <svg width="12" height="8" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2"></path></svg></span>
+        <p class="rl-help">The list follows the state above. Not sure? Choose "Not sure which county".</p>
+      </div>
+    </div>
+    <p class="rl-meta" style="margin-top: 22px;">This is the one card where a choice changes another field on the same card: the county list follows the state.</p>
+  </main>
+  <nav aria-label="Card" style="position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 16px 22px; background: var(--rl-surface); border-top: var(--rl-border-main) solid var(--rl-text-alt); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 14px;">
+    <a href="#" class="rl-btn is-lg">Back</a>
+    <a href="#" class="rl-btn is-primary is-lg">Next</a>
+  </nav>
+</div>
+<script>/* ?look=<id> paints another named look */ const L={"desk": ["platinum", "desk", "title-bar", "none"], "electionlog": ["flint", "signal", "plain", "none"], "morning-edition": ["newsprint", "broadsheet", "double-rule", "none"], "press-desk": ["press-pass", "docket", "rule", "none"], "field-notes": ["legal-pad", "notebook", "plain", "ruled"], "ranger-station": ["ranger", "trailhead", "plain", "none"], "main-street": ["old-glory", "trailhead", "plain", "none"], "evening-news": ["newsroom", "broadcast", "bar", "none"], "the-firm": ["boardroom", "firm", "plain", "none"], "block-club": ["porch", "commons", "plain", "none"], "green-screen": ["phosphor", "console", "prompt", "none"], "amber-terminal": ["amber", "desk", "title-bar", "none"], "devtools": ["darkroom", "console", "prompt", "none"], "campfire": ["campfire", "trailhead", "plain", "none"], "electionlog-night": ["midnight", "signal", "plain", "none"], "high-contrast": ["contrast", "commons", "plain", "none"]};const k=new URLSearchParams(location.search).get("look");if(L[k]){const r=document.querySelector(".rl");const[p,t,h,x]=L[k];r.dataset.palette=p;r.dataset.theme=t;r.dataset.panelHead=h;r.dataset.texture=x;}</script></body></html>
