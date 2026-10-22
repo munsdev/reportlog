@@ -107,94 +107,18 @@ function inPlace(place: string) {
 }
 
 /**
- * The queue. A moderator's search spans every status, unlike the board's:
- * finding the pending and declined ones is the point. Contact details are
- * never here; they open one at a time, logged (accessLog.ts).
+ * The queue's rows and every filter but the status, shared by the list and
+ * the status buttons' counts, so a count can never disagree with the list
+ * its button shows.
  */
-export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
+function filtered(db: Kysely<DB>, filter: QueueFilter) {
   let q = db
     .selectFrom('report_heads as h')
     .innerJoin('reports as r', 'r.id', 'h.current_report_id')
     .innerJoin('logbooks as l', 'l.id', 'r.logbook_id')
     .leftJoin('report_review_flags as f', 'f.report_id', 'h.current_report_id')
     .leftJoin('logbook_editorial_notes as en', 'en.logbook_id', 'l.id')
-    .leftJoin('report_assessments as sev', 'sev.thread_id', 'h.thread_id')
-    .select((eb) => [
-      'h.thread_id',
-      'h.moderation_status',
-      'h.withdrawn',
-      'h.updated_at',
-      'r.id as report_id',
-      'r.public_ref',
-      'r.received_at',
-      'r.answers',
-      'r.may_publish',
-      'r.third_party',
-      'r.filed_via',
-      'r.intake_method',
-      'r.collected_on',
-      'l.slug as logbook_slug',
-      'l.title as logbook_title',
-      'f.terms as flag_terms',
-      'f.cleared_at as flag_cleared_at',
-      sql<boolean>`coalesce(en.enabled, false)`.as('notes_enabled'),
-      'sev.severity',
-      'sev.incident_id',
-      // Published accounts in its incident, itself included when public:
-      // the one rule in board/published.ts, so it is the number a reader
-      // could count on the board.
-      eb
-        .selectFrom('report_assessments as inc')
-        .innerJoin('report_heads as ih', 'ih.thread_id', 'inc.thread_id')
-        .whereRef('inc.incident_id', '=', 'sev.incident_id')
-        .where('ih.current_report_id', 'in', publishedReportIds(db))
-        .select((e) => e.fn.countAll<string>().as('n'))
-        .as('corroboration'),
-      eb
-        .selectFrom('report_assessments as inc2')
-        .whereRef('inc2.incident_id', '=', 'sev.incident_id')
-        .select((e) => e.fn.countAll<string>().as('n'))
-        .as('incident_size'),
-      eb
-        .exists(eb.selectFrom('editorial_notes as n').whereRef('n.thread_id', '=', 'h.thread_id'))
-        .as('has_note'),
-      eb
-        .exists(
-          eb
-            .selectFrom('reporter_actions as ra')
-            .whereRef('ra.thread_id', '=', 'h.thread_id')
-            .where('ra.action', '=', 'withdraw'),
-        )
-        .as('reporter_withdrew'),
-      eb
-        .exists(eb.selectFrom('report_contacts as c').whereRef('c.thread_id', '=', 'h.thread_id'))
-        .as('has_contact'),
-      eb
-        .selectFrom('report_attachments as ra2')
-        .whereRef('ra2.report_id', '=', 'h.current_report_id')
-        .select((e) => e.fn.countAll<string>().as('n'))
-        .as('file_count'),
-      eb
-        .selectFrom('report_attachments as ra3')
-        .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'ra3.attachment_id')
-        .whereRef('ra3.report_id', '=', 'h.current_report_id')
-        .where('fh.publication', '=', 'published')
-        .select((e) => e.fn.countAll<string>().as('n'))
-        .as('published_files'),
-      eb
-        .selectFrom('reports as v')
-        .whereRef('v.thread_id', '=', 'h.thread_id')
-        .select((e) => e.fn.countAll<string>().as('n'))
-        .as('versions'),
-      answerSet.as('answer_set'),
-      organizationOf.as('organization_id'),
-    ]);
-
-  const status = filter.status ?? 'all';
-  if (status === 'withdrawn') q = q.where('h.withdrawn', '=', true);
-  else if (status !== 'all') {
-    q = q.where('h.withdrawn', '=', false).where('h.moderation_status', '=', status);
-  }
+    .leftJoin('report_assessments as sev', 'sev.thread_id', 'h.thread_id');
   const search = normalizeSearch(filter.q);
   if (search) q = q.where(searchMatches(search));
   if (filter.flagged) q = q.where('f.id', 'is not', null).where('f.cleared_at', 'is', null);
@@ -212,6 +136,132 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
   if (filter.lane === 'organization') q = q.where('r.third_party', 'is', true);
   if (filter.lane === 'open_form') q = q.where('r.third_party', 'is not', true);
 
+  return q;
+}
+
+/** Where a report stands for the status buttons: withdrawn first, as the filter reads it. */
+const standing = sql<string>`case when h.withdrawn then 'withdrawn' else h.moderation_status end`;
+
+/**
+ * How many reports each status button would show under the same filters.
+ * `all` is the sum, as the list under All shows every one of them.
+ */
+export async function queueCounts(
+  db: Kysely<DB>,
+  filter: QueueFilter = {},
+): Promise<Record<StatusFilter, number>> {
+  const rows = await filtered(db, filter)
+    .select([standing.as('standing'), sql<string>`count(*)`.as('n')])
+    .groupBy(standing)
+    .execute();
+  const out: Record<StatusFilter, number> = {
+    all: 0,
+    pending: 0,
+    valid: 0,
+    invalid: 0,
+    unknown: 0,
+    withdrawn: 0,
+  };
+  for (const r of rows) {
+    const n = Number(r.n);
+    if ((STATUS_FILTERS as readonly string[]).includes(r.standing)) {
+      out[r.standing as StatusFilter] += n;
+    }
+    out.all += n;
+  }
+  return out;
+}
+
+/**
+ * The queue. A moderator's search spans every status, unlike the board's:
+ * finding the pending and declined ones is the point. Contact details are
+ * never here; they open one at a time, logged (accessLog.ts).
+ *
+ * One page at a time (`limit` and `offset`); without them, the first 500,
+ * as before paging existed.
+ */
+export async function listQueue(
+  db: Kysely<DB>,
+  filter: QueueFilter = {},
+  page: { limit: number; offset: number } = { limit: 500, offset: 0 },
+) {
+  let q = filtered(db, filter).select((eb) => [
+    'h.thread_id',
+    'h.moderation_status',
+    'h.withdrawn',
+    'h.updated_at',
+    'r.id as report_id',
+    'r.public_ref',
+    'r.received_at',
+    'r.answers',
+    'r.may_publish',
+    'r.third_party',
+    'r.filed_via',
+    'r.intake_method',
+    'r.collected_on',
+    'l.slug as logbook_slug',
+    'l.title as logbook_title',
+    'f.terms as flag_terms',
+    'f.cleared_at as flag_cleared_at',
+    sql<boolean>`coalesce(en.enabled, false)`.as('notes_enabled'),
+    'sev.severity',
+    'sev.incident_id',
+    // Published accounts in its incident, itself included when public:
+    // the one rule in board/published.ts, so it is the number a reader
+    // could count on the board.
+    eb
+      .selectFrom('report_assessments as inc')
+      .innerJoin('report_heads as ih', 'ih.thread_id', 'inc.thread_id')
+      .whereRef('inc.incident_id', '=', 'sev.incident_id')
+      .where('ih.current_report_id', 'in', publishedReportIds(db))
+      .select((e) => e.fn.countAll<string>().as('n'))
+      .as('corroboration'),
+    eb
+      .selectFrom('report_assessments as inc2')
+      .whereRef('inc2.incident_id', '=', 'sev.incident_id')
+      .select((e) => e.fn.countAll<string>().as('n'))
+      .as('incident_size'),
+    eb
+      .exists(eb.selectFrom('editorial_notes as n').whereRef('n.thread_id', '=', 'h.thread_id'))
+      .as('has_note'),
+    eb
+      .exists(
+        eb
+          .selectFrom('reporter_actions as ra')
+          .whereRef('ra.thread_id', '=', 'h.thread_id')
+          .where('ra.action', '=', 'withdraw'),
+      )
+      .as('reporter_withdrew'),
+    eb
+      .exists(eb.selectFrom('report_contacts as c').whereRef('c.thread_id', '=', 'h.thread_id'))
+      .as('has_contact'),
+    eb
+      .selectFrom('report_attachments as ra2')
+      .whereRef('ra2.report_id', '=', 'h.current_report_id')
+      .select((e) => e.fn.countAll<string>().as('n'))
+      .as('file_count'),
+    eb
+      .selectFrom('report_attachments as ra3')
+      .innerJoin('attachment_heads as fh', 'fh.attachment_id', 'ra3.attachment_id')
+      .whereRef('ra3.report_id', '=', 'h.current_report_id')
+      .where('fh.publication', '=', 'published')
+      .select((e) => e.fn.countAll<string>().as('n'))
+      .as('published_files'),
+    eb
+      .selectFrom('reports as v')
+      .whereRef('v.thread_id', '=', 'h.thread_id')
+      .select((e) => e.fn.countAll<string>().as('n'))
+      .as('versions'),
+    answerSet.as('answer_set'),
+    organizationOf.as('organization_id'),
+  ]);
+
+  const status = filter.status ?? 'all';
+  if (status === 'withdrawn') q = q.where('h.withdrawn', '=', true);
+  else if (status !== 'all') {
+    q = q.where('h.withdrawn', '=', false).where('h.moderation_status', '=', status);
+  }
+
   const rows = await q
     // THE ORGANIZATION LANE FIRST (Plan E): on a flood day, open-form reports
     // wait behind the accounts an accountable organization filed. Within
@@ -219,7 +269,8 @@ export async function listQueue(db: Kysely<DB>, filter: QueueFilter = {}) {
     .orderBy(sql`(r.third_party is true)`, 'desc')
     .orderBy('r.received_at', sortDirection(filter.sort))
     .orderBy('r.id', sortDirection(filter.sort))
-    .limit(500)
+    .limit(page.limit)
+    .offset(page.offset)
     .execute();
   const perms = await permissionsForMany(
     db,

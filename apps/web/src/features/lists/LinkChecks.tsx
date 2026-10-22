@@ -39,13 +39,15 @@ import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
+import { CountLine, Meta } from '../../components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
+import { StaffHead } from '../moderation/parts.tsx';
 import { LINK_OUTCOME } from './words.ts';
 
 const groupsQuery = (filter: LinkFilter) =>
@@ -72,41 +74,65 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : '')
 const reasonLabel = (r: string | undefined) =>
   r && Object.hasOwn(LINK_REASONS, r) ? LINK_REASONS[r as LinkReason] : (r ?? '');
 
+/** The status buttons, as the queue's: one pressed at a time. */
+const LINK_BUTTONS: { value: LinkFilter; label: string; counted: (n: number) => string }[] = [
+  { value: 'unchecked', label: 'Waiting', counted: (n) => `${String(n)} waiting` },
+  { value: 'checked', label: 'Passed', counted: (n) => `${String(n)} passed` },
+  { value: 'withheld', label: 'Withheld', counted: (n) => `${String(n)} withheld` },
+  { value: 'illegal', label: 'Illegal', counted: (n) => `${String(n)} illegal, erased` },
+];
+
 export function LinkChecksPage() {
   const [filter, setFilter] = useState<LinkFilter>('unchecked');
   const query = useQuery(groupsQuery(filter));
+  const shown = query.data?.groups.length;
   return (
-    <Page
-      title="Check links"
-      lede="Every link sent on a list, one entry per address however many tips sent it. A check covers every copy, and later copies too, except that an illegal link is erased and only the blocklist stops it coming back."
-      actions={
-        <Button asChild variant="secondary">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <StaffHead
+          title="Check links"
+          lede="Links are never published. A link that passes may be shared with vetted journalists. One entry per address however many tips sent it; a check covers every copy, and later ones too."
+        />
+        <Button asChild variant="secondary" className="self-start sm:self-end">
           <Link to="/lists/review">List entries</Link>
         </Button>
-      }
-    >
-      <Hotlines />
-      <div className="max-w-xs">
-        <Label htmlFor="link-filter">Showing</Label>
-        <Select
-          id="link-filter"
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value as LinkFilter);
-          }}
-        >
-          {(Object.keys(LINK_OUTCOME) as LinkFilter[]).map((f) => (
-            <option key={f} value={f}>
-              {LINK_OUTCOME[f]}
-            </option>
-          ))}
-        </Select>
       </div>
+      <Hotlines />
+      <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-2">
+        <div role="group" aria-label="Show links that are" className="flex shrink-0 gap-2">
+          {LINK_BUTTONS.map((b) => (
+            <Button
+              key={b.value}
+              type="button"
+              variant="secondary"
+              aria-pressed={filter === b.value}
+              className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
+              onClick={() => {
+                setFilter(b.value);
+              }}
+            >
+              {b.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <CountLine
+        parts={[
+          shown === undefined
+            ? null
+            : (LINK_BUTTONS.find((b) => b.value === filter)?.counted(shown) ?? null),
+          LINK_OUTCOME[filter],
+        ]}
+      />
       {query.isPending ? <p role="status">Reading the links…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? (
         query.data.groups.length === 0 ? (
-          <p>Nothing here.</p>
+          <Empty title={filter === 'unchecked' ? 'No link waiting' : 'Nothing here'}>
+            {filter === 'unchecked'
+              ? 'Links sent with tips appear here until somebody checks them.'
+              : 'No link has been given this outcome.'}
+          </Empty>
         ) : (
           <ul className="space-y-3" aria-label="Links">
             {query.data.groups.map((g) => (
@@ -118,38 +144,70 @@ export function LinkChecksPage() {
         )
       ) : null}
       <Blocklist />
-    </Page>
+    </div>
   );
 }
 
-/** X5: the procedure is outside the code; the screen points at it. */
+const GUIDANCE_READ = 'reportlog.links.guidance-read';
+
+/** Whether this browser has read the guidance before. Storage can throw; then it has not. */
+function guidanceRead(): boolean {
+  try {
+    return window.localStorage.getItem(GUIDANCE_READ) === 'yes';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * X5: the procedure is outside the code; the screen points at it. Open the
+ * first time, and closed after that in this browser (remembered here only,
+ * a convenience): it is one press away, never gone.
+ */
 function Hotlines() {
+  const [open, setOpen] = useState(() => !guidanceRead());
   return (
-    <Alert title="If a link may be illegal" tone="serious">
-      <ol className="list-decimal space-y-1 pl-5">
-        <li>Do not download it, save it or send it to anybody.</li>
-        <li>
-          Report it to a hotline:{' '}
-          {HOTLINES.map((h, i) => (
-            <span key={h.url}>
-              {i ? ' or ' : ''}
-              <a
-                href={h.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="underline"
-              >
-                {h.name}
-              </a>
-            </span>
-          ))}
-          .
-        </li>
-        <li>
-          Then mark it illegal here. Every copy is erased, and you can block it from coming back.
-        </li>
-      </ol>
-    </Alert>
+    <Card variant="deep" className="gap-3">
+      <details
+        open={open}
+        onToggle={(e) => {
+          const now = e.currentTarget.open;
+          setOpen(now);
+          if (!now) {
+            try {
+              window.localStorage.setItem(GUIDANCE_READ, 'yes');
+            } catch {
+              // Not remembered; it opens again next time, which is safe.
+            }
+          }
+        }}
+      >
+        <summary className="cursor-pointer font-semibold">If a link may be illegal</summary>
+        <ol className="mt-3 list-decimal space-y-1 pl-5">
+          <li>Do not download it, save it or send it to anybody.</li>
+          <li>
+            Report it to a hotline:{' '}
+            {HOTLINES.map((h, i) => (
+              <span key={h.url}>
+                {i ? ' or ' : ''}
+                <a
+                  href={h.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="underline"
+                >
+                  {h.name}
+                </a>
+              </span>
+            ))}
+            .
+          </li>
+          <li>
+            Then mark it illegal here. Every copy is erased, and you can block it from coming back.
+          </li>
+        </ol>
+      </details>
+    </Card>
   );
 }
 
@@ -157,21 +215,22 @@ function GroupCard({ group }: { group: LinkGroup }) {
   const erased = group.outcome === 'illegal';
   return (
     <Card>
-      <CardContent className="space-y-3 pt-4">
-        <div>
+      <CardContent className="space-y-3">
+        <div className="flex flex-col gap-1">
           {group.url ? (
-            <p className="break-all font-mono" data-testid="link-value">
+            <p className="font-mono break-all" data-testid="link-value">
               {group.url}
             </p>
           ) : (
             <p className="text-ink-alt">Erased. Nothing of the link is kept.</p>
           )}
-          <p className="text-sm text-ink-alt">
-            {group.host ? `${group.host} · ` : ''}
+          <Meta>
+            {group.host ? <span className="font-bold text-ink">{group.host}</span> : null}
+            {group.host ? ' · ' : ''}
             {String(group.copies)} {group.copies === 1 ? 'copy' : 'copies'}
             {group.lists.length ? ` · from ${group.lists.map((l) => l.title).join(', ')}` : ''}
             {group.last_seen ? ` · last sent ${when(group.last_seen)}` : ''}
-          </p>
+          </Meta>
           <p className="text-sm">
             {LINK_OUTCOME[group.outcome ?? 'unchecked']}
             {group.checked_by ? `, by ${group.checked_by} on ${when(group.checked_at)}` : ''}
@@ -389,10 +448,7 @@ function Blocklist() {
     },
   });
   return (
-    <section className="space-y-3" aria-labelledby="blocklist-heading">
-      <h2 id="blocklist-heading" className="font-display text-xl font-bold">
-        Blocklist
-      </h2>
+    <Card heading="Blocklist">
       <p>
         A link that matches is erased the moment it arrives: never kept, never shown. The list keeps
         only a keyed fingerprint of each address or site, so nobody, here or in a backup, can read
@@ -470,7 +526,7 @@ function Blocklist() {
           <p>Nothing is blocked.</p>
         )
       ) : null}
-    </section>
+    </Card>
   );
 }
 

@@ -107,15 +107,25 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
   const outside = outsideRequests(page);
   await page.goto(`/moderate?status=pending&q=${word}`);
   await expect(page.getByRole('link', { name: /^Open RL-/ })).toHaveCount(2);
-  await page.getByRole('button', { name: 'Select all of these' }).click();
-  const form = page.getByRole('form', { name: 'Decline the selected reports' });
-  await expect(form).toBeVisible();
+  // Tick one, then "Select all 2" in the bar that appears.
+  await page
+    .getByRole('checkbox', { name: /^Select RL-/ })
+    .first()
+    .click();
+  await page.getByRole('button', { name: 'Select all 2' }).click();
+  await expect(page.getByText('2 selected')).toBeVisible();
+  await page.getByRole('button', { name: 'Decline selected…' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Decline 2 selected' });
+  // Decision 51: one reason from the fixed list, and nobody is emailed.
+  await expect(dialog).toContainText('Nobody is emailed when you decline in bulk.');
   await noViolations(page);
-  await form.getByLabel('The reason').selectOption('abusive_or_spam');
+  await dialog.getByRole('button', { name: 'Decline 2' }).click();
+  await expect(dialog.getByText('Choose the reason.', { exact: false })).toBeVisible();
+  await dialog.getByLabel('The reason').selectOption('abusive_or_spam');
   // A bulk decline asks for the second factor again (plan E, E3).
   await stepUp(page.request);
-  await form.getByRole('button', { name: 'Decline 2' }).click();
-  await expect(page.getByText('Declined 2.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Decline 2' }).click();
+  await expect(page.getByText('Declined 2. Nobody was emailed.')).toBeVisible();
   await page.goto(`/moderate?status=invalid&q=${word}`);
   await expect(page.getByRole('link', { name: /^Open RL-/ })).toHaveCount(2);
   // Each one carries its own decision.
@@ -123,7 +133,7 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
     .getByRole('link', { name: /^Open RL-/ })
     .first()
     .click();
-  await expect(page.getByRole('region', { name: 'What happened to it' })).toContainText(
+  await expect(page.getByRole('region', { name: 'The record' })).toContainText(
     'It is abusive, or it is spam or an advertisement.',
   );
   expect(outside).toEqual([]);

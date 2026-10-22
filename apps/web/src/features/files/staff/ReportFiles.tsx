@@ -9,6 +9,9 @@
  *
  * `reportPublic`, when given, says whether the report's text is on the board:
  * a published file is shown only while it is, so the screen says so.
+ * `reportApproved`, when given and false, puts "Approve the report first" in
+ * place of Publish… (moderation.md section 04): a moderator may publish the
+ * text and not the files, never the reverse, so the files wait for the text.
  *
  * CONSENT IS THE CEILING, MODERATION IS THE FLOOR. A moderator may always
  * withhold or refuse a file. Publishing is offered only while the report's
@@ -26,7 +29,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '../../../components/ui/alert.tsx';
 import { Button } from '../../../components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card.tsx';
+import { Card } from '../../../components/ui/card.tsx';
+import { Chip } from '../../../components/ui/chip.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { threadFilesQuery, refreshStaffViews } from './queries.ts';
@@ -38,9 +42,11 @@ type Events = ResponseOf<typeof getThreadFiles>['events'];
 export function ReportFiles({
   threadId,
   reportPublic,
+  reportApproved,
 }: {
   threadId: string;
   reportPublic?: boolean;
+  reportApproved?: boolean;
 }) {
   const query = useQuery(threadFilesQuery(threadId));
   if (query.isPending) return <p role="status">Reading the files…</p>;
@@ -48,10 +54,7 @@ export function ReportFiles({
   const { files, events, refused, may_publish, files_permitted, withdrawn } = query.data;
   const consent = { may_publish, files_permitted, withdrawn };
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="report-files-heading">
-      <h2 id="report-files-heading" className="font-display text-2xl font-bold">
-        Files
-      </h2>
+    <Card heading={`Files (${String(files.length)})`}>
       <ConsentSummary {...consent} />
       {reportPublic === false && !withdrawn ? (
         <p className="text-sm text-ink-alt">
@@ -61,12 +64,13 @@ export function ReportFiles({
       {files.length === 0 ? (
         <p>This report has no files.</p>
       ) : (
-        <ul className="flex flex-col gap-4" aria-label="Files on this report">
+        <ul className="flex flex-col" aria-label="Files on this report">
           {files.map((f) => (
-            <li key={f.id}>
+            <li key={f.id} className="border-t border-line py-4 first:border-t-0 first:pt-0">
               <FileCard
                 file={f}
                 consent={consent}
+                approved={reportApproved}
                 events={events.filter((e) => e.attachment_id === f.id)}
               />
             </li>
@@ -74,22 +78,50 @@ export function ReportFiles({
         </ul>
       )}
       {refused.length ? (
-        <div className="flex flex-col gap-2">
-          <h3 className="font-bold">Sent and not accepted ({String(refused.length)})</h3>
-          <p className="text-sm text-ink-alt">
+        // A closed row: what never became part of the report is worth a look, not a place.
+        <details className="border-t border-line pt-3">
+          <summary className="cursor-pointer font-semibold">
+            Sent and not accepted ({String(refused.length)})
+          </summary>
+          <p className="mt-2 text-sm text-ink-alt">
             These never became part of the report. Whoever sent them was told each one, with the
             same reason.
           </p>
-          <ul className="list-disc pl-6" aria-label="Files sent and not accepted">
+          <ul className="mt-2 list-disc pl-6" aria-label="Files sent and not accepted">
             {refused.map((r, i) => (
               <li key={i}>
                 {r.name}: {r.reason} ({new Date(r.at).toLocaleString()})
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       ) : null}
-    </section>
+    </Card>
+  );
+}
+
+/** A file's state as a chip: refused is the one status worth the serious colour. */
+function StateChip({ file: f }: { file: ThreadFile }) {
+  if (f.erased) return <Chip tone="tag">Erased</Chip>;
+  if (f.publication === 'published') return <Chip tone="tag">{PUBLICATION.published}</Chip>;
+  if (f.publication === 'refused') return <Chip tone="serious">{PUBLICATION.refused}</Chip>;
+  return <Chip tone="open">{PUBLICATION.withheld}</Chip>;
+}
+
+/**
+ * The file's type in three or four letters, in place of a thumbnail: the
+ * copy is shown only when somebody asks for it (above), not on arrival.
+ */
+function TypeMark({ file: f }: { file: ThreadFile }) {
+  const sub = (f.media_type.split('/')[1] ?? f.media_type).replace(/^x-/, '');
+  const mark = (sub === 'jpeg' ? 'jpg' : sub).slice(0, 4).toUpperCase();
+  return (
+    <span
+      aria-hidden="true"
+      className="flex size-12 shrink-0 items-center justify-center rounded-control border-[1.5px] border-ink-alt font-mono text-xs"
+    >
+      {mark}
+    </span>
   );
 }
 
@@ -121,10 +153,12 @@ function ConsentSummary({ may_publish, files_permitted, withdrawn }: Consent) {
 function FileCard({
   file: f,
   consent,
+  approved,
   events,
 }: {
   file: ThreadFile;
   consent: Consent;
+  approved: boolean | undefined;
   events: Events;
 }) {
   const qc = useQueryClient();
@@ -140,24 +174,24 @@ function FileCard({
   };
   const blocked = whyNotPublishable(f, consent);
   const name = f.original_name ?? `File ${String(f.ordinal)}`;
-  const state = f.erased ? 'Erased' : PUBLICATION[f.publication];
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          <span className="sr-only">File {String(f.ordinal)}: </span>
-          {name}
-        </CardTitle>
-        <p className="text-sm text-ink-alt">{describeFile(f)}</p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p>
-          <span className="font-semibold">Now: {state}</span>
-          {f.publication === 'published' && f.alt_text ? (
-            <span className="block text-ink-alt">Described as: “{f.alt_text}”</span>
-          ) : null}
-        </p>
+    <article className="flex flex-col gap-3">
+      <div className="flex items-start gap-3">
+        <TypeMark file={f} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <h3 className="font-bold break-words">
+            <span className="sr-only">File {String(f.ordinal)}: </span>
+            {name}
+          </h3>
+          <p className="text-sm text-ink-alt">{describeFile(f)}</p>
+        </div>
+        <StateChip file={f} />
+      </div>
+      <div className="flex flex-col gap-3">
+        {f.publication === 'published' && f.alt_text ? (
+          <p className="text-ink-alt">Described as: “{f.alt_text}”</p>
+        ) : null}
         <p className="text-sm break-all text-ink-alt">
           Fingerprint of the file as sent (SHA-256): <span className="font-mono">{f.sha256}</span>
         </p>
@@ -180,7 +214,12 @@ function FileCard({
 
         {f.erased ? null : (
           <div className="flex flex-wrap gap-2">
-            {f.publication !== 'published' && blocked === null ? (
+            {f.publication !== 'published' && blocked === null && approved === false ? (
+              <p className="flex min-h-11 items-center text-sm font-semibold">
+                Approve the report first
+              </p>
+            ) : null}
+            {f.publication !== 'published' && blocked === null && approved !== false ? (
               <AskDialog
                 trigger={<Button>Publish…</Button>}
                 title={`Publish ${name}`}
@@ -257,8 +296,8 @@ function FileCard({
         ) : null}
 
         <FileRecord events={events} />
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 }
 

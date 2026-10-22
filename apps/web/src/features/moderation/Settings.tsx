@@ -3,6 +3,9 @@
  * archive at all, the words that raise a review flag, which logbooks use
  * editorial notes, and who opened a reporter's contact details.
  *
+ * Setting panels (moderation.md section 10): each closed panel shows what is
+ * set, one editor is open at a time, and the Save bar names what it saves.
+ *
  * THE KEYWORD LIST HAS THREE STATES and the page says which it is in: the
  * shipped list, the operator's own, or none at all. Showing "none" as "using
  * the shipped list" would lose an operator's decision the next time somebody
@@ -10,49 +13,47 @@
  */
 import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { useId, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { SettingPanel, SettingPanels } from '../../components/ui/setting-panel.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
+import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
+import { ClosedRow } from './ClosedRow.tsx';
+import { StaffHead } from './parts.tsx';
 import { accessLogQuery, archiveQuery, keywordsQuery, notesSwitchesQuery } from './queries.ts';
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  const id = useId();
-  return (
-    <section
-      aria-labelledby={id}
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 id={id} className="font-display text-xl font-bold">
-        {title}
-      </h2>
-      {children}
-    </section>
-  );
-}
 
 export function SettingsPage() {
   return (
-    <Page title="Moderation settings" width="prose">
-      <Archive />
-      <Keywords />
-      <NotesSwitches />
-      <CountsOnlySettings />
-      <AccessLog />
-    </Page>
+    <ToastProvider>
+      <SettingPanels>
+        <div className="flex max-w-prose flex-col gap-6">
+          <StaffHead
+            title="Moderation settings"
+            lede="What the site publishes, what asks for a second read, and who opened what. Each change is recorded with your name."
+          />
+          <Archive />
+          <Keywords />
+          <NotesSwitches />
+          <CountsOnlySettings />
+          <AccessLog />
+        </div>
+      </SettingPanels>
+    </ToastProvider>
   );
 }
 
 function Archive() {
   const qc = useQueryClient();
+  const toast = useToast();
   const query = useQuery(archiveQuery);
+  const [published, setPublished] = useState<boolean | null>(null);
+  const [downloads, setDownloads] = useState<boolean | null>(null);
   const set = useMutation({
     mutationFn: (body: { published?: boolean | null; distribution?: boolean | null }) =>
       call(setArchiveSwitch, { body }),
@@ -61,60 +62,73 @@ function Archive() {
       void qc.invalidateQueries({ queryKey: ['board'] });
     },
   });
+  const reset = useCallback(() => {
+    setPublished(null);
+    setDownloads(null);
+    set.reset();
+  }, [set]);
   if (!query.data) return null;
-  const { published, stored, distribution, distribution_stored } = query.data;
+  const d = query.data;
+  const offered = d.distribution_stored === true;
+  const nowPublished = published ?? d.published;
+  const nowDownloads = downloads ?? offered;
   return (
-    <Section title="The public archive">
-      <p>
-        {published
-          ? 'This site publishes approved reports on its board.'
-          : 'This site publishes nothing: the board, single reports, the counts and the spreadsheet all say so.'}
-        {stored === null ? ' Nobody has chosen, which means it publishes.' : ''}
-      </p>
-      <p className="text-sm text-ink-alt">
-        A reporter permitting publication does not oblige the site to publish, and the site
-        publishing never overrides a reporter who said no. Moderation goes on either way.
-      </p>
+    <SettingPanel
+      id="archive"
+      title="The public archive"
+      summary={[
+        {
+          key: 'The archive',
+          value: `${d.published ? 'Published on the board.' : 'Not published: the board, single reports, the counts and the spreadsheet all say so.'}${d.stored === null ? ' Nobody has chosen, which means it publishes.' : ''}`,
+        },
+        {
+          key: 'Downloads of the whole archive',
+          value: `${
+            d.distribution
+              ? 'Offered: the board as a spreadsheet, and each logbook’s published chain file.'
+              : !d.published && offered
+                ? 'Allowed, but nothing is offered while the archive is not published.'
+                : 'Not offered.'
+          }${d.distribution_stored === null ? ' Nobody has chosen, which means no downloads.' : ''}`,
+        },
+      ]}
+      dirty={nowPublished !== d.published || nowDownloads !== offered}
+      onCancel={reset}
+      onSave={async () => {
+        // Each switch only when it changed: saving one must never set the other.
+        const body = {
+          ...(nowPublished !== d.published ? { published: nowPublished } : {}),
+          ...(nowDownloads !== offered ? { distribution: nowDownloads } : {}),
+        };
+        if (Object.keys(body).length) await set.mutateAsync(body);
+        toast.show('The public archive is saved.');
+        reset();
+      }}
+    >
+      <CheckOption
+        label="Publish the archive"
+        hint="Approved reports appear on the board. A reporter permitting publication does not oblige the site to publish, and the site publishing never overrides a reporter who said no. Moderation goes on either way."
+        checked={nowPublished}
+        onCheckedChange={(v) => {
+          setPublished(v === true);
+        }}
+      />
+      <CheckOption
+        label="Offer downloads of the whole archive"
+        hint="A download is a copy that leaves this site for good, so this is off until somebody chooses it. Your own backups and archive exports are not affected."
+        checked={nowDownloads}
+        onCheckedChange={(v) => {
+          setDownloads(v === true);
+        }}
+      />
       {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
-      <Button
-        variant="secondary"
-        className="self-start"
-        disabled={set.isPending}
-        onClick={() => {
-          set.mutate({ published: !published });
-        }}
-      >
-        {published ? 'Stop publishing the archive' : 'Publish the archive'}
-      </Button>
-      <h3 className="font-semibold">Downloads of the whole archive</h3>
-      <p>
-        {distribution
-          ? 'Anybody who can read the board can also download it as a spreadsheet, and download each logbook’s published chain file.'
-          : !published && distribution_stored === true
-            ? 'Downloads are allowed, but nothing is offered while the archive is not published.'
-            : 'Nobody can download the board as a spreadsheet or a logbook’s published chain file. Reports are read on the board one page at a time.'}
-        {distribution_stored === null ? ' Nobody has chosen, which means no downloads.' : ''}
-      </p>
-      <p className="text-sm text-ink-alt">
-        A download is a copy that leaves this site for good, so this is off until somebody chooses
-        it. Your own backups and archive exports are not affected.
-      </p>
-      <Button
-        variant="secondary"
-        className="self-start"
-        disabled={set.isPending}
-        onClick={() => {
-          set.mutate({ distribution: distribution_stored !== true });
-        }}
-      >
-        {distribution_stored === true ? 'Stop offering downloads' : 'Offer downloads'}
-      </Button>
-    </Section>
+    </SettingPanel>
   );
 }
 
 function Keywords() {
   const qc = useQueryClient();
+  const toast = useToast();
   const query = useQuery(keywordsQuery);
   const [text, setText] = useState<string | null>(null);
   const save = useMutation({
@@ -124,120 +138,164 @@ function Keywords() {
       setText(null);
     },
   });
+  const reset = useCallback(() => {
+    setText(null);
+    save.reset();
+  }, [save]);
   if (!query.data) return null;
   const k = query.data;
+  const shown = k.terms.slice(0, 3).join(', ');
+  const which = k.using_default
+    ? `The list that ships with the software, ${String(k.default_count)} terms: ${shown}, …`
+    : k.terms.length === 0
+      ? 'None: an administrator chose an empty list, so nothing asks for a second read.'
+      : `This site’s own list, ${String(k.terms.length)} terms: ${shown}${k.terms.length > 3 ? ', …' : ''}`;
   return (
-    <Section title="Words that ask for a second read">
-      <p>
-        {k.using_default
-          ? `Using the list that ships with the software (${String(k.default_count)} terms).`
-          : k.terms.length === 0
-            ? 'No keyword matching: an administrator chose an empty list.'
-            : `Using this site’s own list (${String(k.terms.length)} terms).`}
-        {k.set_by ? ` Last changed by ${k.set_by}.` : ''}
-      </p>
+    <SettingPanel
+      id="keywords"
+      title="Words that ask for a second read"
+      summary={[
+        { key: 'Words', value: which },
+        ...(k.set_by ? [{ key: 'Last changed by', value: k.set_by }] : []),
+      ]}
+      dirty={text !== null}
+      onCancel={reset}
+      onSave={async () => {
+        if (text !== null) await save.mutateAsync({ terms: text });
+        toast.show('The words are saved.');
+      }}
+    >
       <p className="text-sm text-ink-alt">
         A report whose own words (not its chosen answers) contain one of these is marked for a
         second read. That is all it means. Words match whole, and a phrase matches as a phrase.
       </p>
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save.mutate({ terms: text ?? k.terms.join('\n') });
-        }}
-      >
-        <Field>
-          <Label>One term per line</Label>
-          <Textarea
-            rows={10}
-            value={text ?? k.terms.join('\n')}
-            onChange={(e) => {
-              setText(e.target.value);
-            }}
-          />
-          <FieldDescription>Save an empty box to switch keyword matching off.</FieldDescription>
-        </Field>
-        {save.error ? <Alert tone="serious">{save.error.message}</Alert> : null}
-        <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={save.isPending || text === null}>
-            Save the list
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={save.isPending}
-            onClick={() => {
-              save.mutate({ reset: true });
-            }}
-          >
-            Go back to the shipped list
-          </Button>
-        </div>
-      </form>
-    </Section>
+      <Field>
+        <Label>One term per line</Label>
+        <FieldDescription>Save an empty box to switch keyword matching off.</FieldDescription>
+        <Textarea
+          rows={10}
+          value={text ?? k.terms.join('\n')}
+          onChange={(e) => {
+            setText(e.target.value);
+          }}
+        />
+      </Field>
+      {save.error ? <Alert tone="serious">{save.error.message}</Alert> : null}
+      <div>
+        <Button
+          type="button"
+          variant="secondary"
+          busy={save.isPending}
+          busyLabel="Going back…"
+          onClick={() => {
+            save.mutate(
+              { reset: true },
+              {
+                onSuccess: () => {
+                  toast.show('Back to the shipped list.');
+                },
+              },
+            );
+          }}
+        >
+          Go back to the shipped list
+        </Button>
+      </div>
+    </SettingPanel>
   );
 }
 
 function NotesSwitches() {
   const qc = useQueryClient();
+  const toast = useToast();
   const query = useQuery(notesSwitchesQuery);
+  const [chosen, setChosen] = useState<Record<string, boolean>>({});
   const set = useMutation({
     mutationFn: (v: { slug: string; enabled: boolean }) =>
       call(setNotesSwitch, { params: { slug: v.slug }, body: { enabled: v.enabled } }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['moderation'] }),
   });
+  const reset = useCallback(() => {
+    setChosen({});
+    set.reset();
+  }, [set]);
   if (!query.data) return null;
+  const logbooks = query.data.logbooks;
+  const on = logbooks.filter((l) => l.notes_enabled);
+  const changed = logbooks.filter((l) => l.slug in chosen && chosen[l.slug] !== l.notes_enabled);
   return (
-    <Section title="Editorial notes">
+    <SettingPanel
+      id="notes"
+      title="Editorial notes"
+      summary={[
+        {
+          key: 'Logbooks using notes',
+          value: logbooks.length
+            ? on.length
+              ? on.map((l) => l.title).join(', ')
+              : 'None.'
+            : 'No logbook has launched yet.',
+        },
+      ]}
+      dirty={changed.length > 0}
+      onCancel={reset}
+      onSave={async () => {
+        for (const l of changed) {
+          await set.mutateAsync({ slug: l.slug, enabled: chosen[l.slug] === true });
+        }
+        await qc.invalidateQueries({ queryKey: ['moderation'] });
+        toast.show('Editorial notes are saved.');
+        reset();
+      }}
+    >
       <p className="text-sm text-ink-alt">
         A note is the archive’s own statement about a report it published, under the archive’s name.
         Off for a logbook unless switched on here.
       </p>
-      {query.data.logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
+      {logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
       <ul className="flex flex-col gap-2">
-        {query.data.logbooks.map((l) => (
+        {logbooks.map((l) => (
           <li key={l.slug}>
             <CheckOption
               id={`notes-${l.slug}`}
               label={`${l.title} uses editorial notes`}
-              checked={l.notes_enabled}
-              disabled={set.isPending}
+              checked={chosen[l.slug] ?? l.notes_enabled}
               onCheckedChange={(v) => {
-                set.mutate({ slug: l.slug, enabled: v === true });
+                setChosen((c) => ({ ...c, [l.slug]: v === true }));
               }}
             />
           </li>
         ))}
       </ul>
       {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
-    </Section>
+    </SettingPanel>
   );
 }
 
+/**
+ * Closed, it says only what the log holds and that reading it is recorded:
+ * a count of looks would need the log read, and reading it is a look of its
+ * own, so nothing is read until somebody opens it.
+ */
 function AccessLog() {
-  const [shown, setShown] = useState(false);
   return (
-    <Section title="Who opened what">
+    <ClosedRow
+      id="access-log"
+      title="Who opened what"
+      action="Open"
+      summary={
+        <p>
+          Every opening of a reporter’s contact details or of a file’s original, with who and why.
+          Reading this list is itself recorded.
+        </p>
+      }
+    >
       <p className="text-sm text-ink-alt">
         Every opening of a reporter’s contact details or of a file’s original, with who and why;
         every time an address was opened to ask a reporter for files; and every look at a file’s
-        cleaned copy. Reading this list is itself recorded.
+        cleaned copy. The last twelve months.
       </p>
-      {shown ? (
-        <AccessLogEntries />
-      ) : (
-        <Button
-          variant="secondary"
-          className="self-start"
-          onClick={() => {
-            setShown(true);
-          }}
-        >
-          Show the last twelve months
-        </Button>
-      )}
-    </Section>
+      <AccessLogEntries />
+    </ClosedRow>
   );
 }
 

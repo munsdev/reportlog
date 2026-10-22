@@ -135,7 +135,7 @@ test.describe('the moderation screens', () => {
     await page.goto('/moderate/settings');
     await expect(
       page.getByRole('region', { name: 'Words that ask for a second read' }),
-    ).toContainText(/Using the list that ships|this site’s own list|No keyword matching/);
+    ).toContainText(/The list that ships|This site’s own list|None: an administrator chose/);
   });
 
   test('downloads are off until an administrator offers them, and the board follows', async ({
@@ -154,8 +154,13 @@ test.describe('the moderation screens', () => {
     await expect(csvLink).toHaveCount(0);
 
     await page.goto('/moderate/settings');
-    await archive.getByRole('button', { name: 'Offer downloads' }).click();
-    await expect(archive.getByRole('button', { name: 'Stop offering downloads' })).toBeVisible();
+    // A setting panel: Edit, tick, then the Save bar, which names what it saves.
+    await archive.getByRole('button', { name: 'Edit The public archive' }).click();
+    await archive.getByRole('checkbox', { name: 'Offer downloads of the whole archive' }).click();
+    const bar = page.getByRole('region', { name: 'Save changes' });
+    await expect(bar).toContainText('The public archive');
+    await bar.getByRole('button', { name: 'Save' }).click();
+    await expect(archive).toContainText('Offered: the board as a spreadsheet');
     try {
       await page.goto('/board');
       await expect(csvLink).toBeVisible();

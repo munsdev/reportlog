@@ -32,16 +32,29 @@ function outcome(a: Ask): string {
   return `open until ${when(a.expires_at)}`;
 }
 
-export function EvidenceRequests({ threadId }: { threadId: string }) {
+export function EvidenceRequests({
+  threadId,
+  bare = false,
+}: {
+  threadId: string;
+  /** Inside a panel that already carries the heading (the report under moderation). */
+  bare?: boolean;
+}) {
   const qc = useQueryClient();
   const query = useQuery(evidenceQuery(threadId));
   const refresh = () => refreshStaffViews(qc);
 
+  const Wrap = bare ? 'div' : 'section';
   return (
-    <section className="flex flex-col gap-4" aria-labelledby="evidence-heading">
-      <h2 id="evidence-heading" className="font-display text-2xl font-bold">
-        Asking for evidence
-      </h2>
+    <Wrap
+      className="flex flex-col gap-4"
+      {...(bare ? {} : { 'aria-labelledby': 'evidence-heading' })}
+    >
+      {bare ? null : (
+        <h2 id="evidence-heading" className="font-display text-2xl font-bold">
+          Asking for evidence
+        </h2>
+      )}
       {query.isPending ? <p role="status">Reading…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? (
@@ -116,6 +129,16 @@ export function EvidenceRequests({ threadId }: { threadId: string }) {
           ) : null}
         </>
       ) : null}
-    </section>
+    </Wrap>
   );
+}
+
+/** One line on where asking for evidence stands, for a closed row. */
+export function evidenceSummary(data: ResponseOf<typeof getEvidenceState> | undefined): string {
+  if (!data) return 'Reading…';
+  if (data.open)
+    return `Asked ${when(data.open.asked_at)}; the link works until ${when(data.open.expires_at)}.`;
+  const last = [...data.history].sort((a, b) => b.asked_at.localeCompare(a.asked_at))[0];
+  if (last) return `Asked ${when(last.asked_at)}, ${outcome(last)}.`;
+  return data.askable ? 'Not asked.' : `Not asked. ${data.why_not ?? ''}`.trim();
 }

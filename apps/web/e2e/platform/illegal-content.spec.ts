@@ -58,7 +58,7 @@ test('a notice gets a receipt, a decision with its reason, and a link that shows
   // A moderator decides it.
   await page.goto('/moderate/illegal-content');
   const notice = page.getByRole('article').filter({ hasText: receipt ?? '' });
-  await notice.getByLabel('Decision').selectOption({ label: 'Remove the content' });
+  await notice.getByRole('radio', { name: 'Remove the content' }).click();
   await notice
     .getByLabel(/Reason, as the sender/)
     .fill('It named a private person, so we removed it.');
