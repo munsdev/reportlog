@@ -251,7 +251,8 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
             <FieldError>{save.isError ? save.error.message : null}</FieldError>
           </Field>
           {/* The password screen's paragraph takes no numbers (site/copy.ts). */}
-          {slot.kind === 'block' && slot.key !== 'lock_intro' ? (
+          {/* Figures are refused in front of the password and in the emergency notice. */}
+          {slot.kind === 'block' && slot.key !== 'lock_intro' && slot.key !== 'help_now' ? (
             <div className="flex flex-col gap-2">
               <div>
                 <Button
