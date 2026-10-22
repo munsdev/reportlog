@@ -32,6 +32,7 @@ import type { ListSettings } from './lists/retention.ts';
 import { listRoutes } from './lists/routes.ts';
 import { linkKeySource } from './links/keys.ts';
 import { linkRoutes } from './links/routes.ts';
+import { lookRoutes } from './looks/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
@@ -181,6 +182,7 @@ export async function buildApp({
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
+  await lookRoutes(app, db);
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   await templateRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   sitePeopleRoutes(app, db);

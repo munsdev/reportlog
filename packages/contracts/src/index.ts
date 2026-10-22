@@ -21,3 +21,4 @@ export * from './links.ts';
 export * from './door.ts';
 export * from './flood.ts';
 export * from './twoFactor.ts';
+export * from './looks.ts';

@@ -1,0 +1,126 @@
+{
+  "format": 1,
+  "id": "tideline",
+  "label": "Tideline",
+  "version": "1.0.0",
+  "author": "The ReportLog tests",
+  "fonts": [
+    {
+      "family": "Tideline Sans",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/TidelineSans-400.woff2",
+          "weight": 400
+        }
+      ]
+    }
+  ],
+  "palettes": [
+    {
+      "id": "tideline",
+      "label": "Tideline",
+      "description": "A light test palette.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e3de",
+        "background-alt": "#d7d6d0",
+        "background-deep": "#1c1c1a",
+        "surface": "#faf9f5",
+        "border": "#9e9d97",
+        "text": "#141413",
+        "text-alt": "#3e3d39",
+        "text-muted": "#55534d",
+        "text-on-deep": "#f2f1ec",
+        "action": "#2348b8",
+        "on-action": "#ffffff",
+        "brand": "#2348b8",
+        "brand-on-deep": "#a9bcff",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "tideline-night",
+      "label": "Tideline night",
+      "description": "A dark test palette.",
+      "dark": true,
+      "colors": {
+        "background": "#121a24",
+        "background-alt": "#1a2430",
+        "background-deep": "#0a1017",
+        "surface": "#1b2531",
+        "border": "#5e7286",
+        "text": "#e8eef5",
+        "text-alt": "#bac7d6",
+        "text-muted": "#a2b2c4",
+        "text-on-deep": "#e8eef5",
+        "action": "#e9a81c",
+        "on-action": "#0a1017",
+        "brand": "#e9a81c",
+        "brand-on-deep": "#7fb2e0",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    }
+  ],
+  "themes": [
+    {
+      "id": "tideline",
+      "label": "Tideline",
+      "description": "Tideline, for the tests.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "Tideline Sans",
+          "size": 17
+        },
+        "label": {
+          "family": "Tideline Sans",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 2,
+        "radiusSmall": 2,
+        "border": 2,
+        "shadow": 3,
+        "press": 2
+      },
+      "pageMax": 880,
+      "panelHead": "title-bar",
+      "texture": "none"
+    }
+  ],
+  "looks": [
+    {
+      "id": "tideline",
+      "label": "Tideline",
+      "palette": "tideline",
+      "theme": "tideline"
+    },
+    {
+      "id": "tideline-night",
+      "label": "Tideline night",
+      "palette": "tideline-night",
+      "theme": "tideline"
+    }
+  ]
+}

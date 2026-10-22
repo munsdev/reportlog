@@ -22,6 +22,7 @@
  *   - the puzzle switch, bulk decline     moderation/floodRoutes.ts
  *   - exports and backups                 anchor/copies.ts, anchor/routes.ts
  *   - publishing an agreement             moderation/platformRoutes.ts
+ *   - installing, replacing or removing a look pack   looks/routes.ts
  */
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import { HttpError } from '../http/errors.ts';

@@ -13,6 +13,7 @@ import { parseBrand, plainName } from '@reportlog/contracts';
 import type { Database } from '../db/database.ts';
 import { resolveCopy } from './copy.ts';
 import { getDevMode } from './devMode.ts';
+import { lookCatalogue } from '../looks/packs.ts';
 import { paintedLook } from './look.ts';
 import { resolveSiteName } from './identity.ts';
 import { readCopy, readSettings } from './settings.ts';
@@ -35,7 +36,13 @@ export async function devModeUntil(db: Database): Promise<string | null> {
   return (await getDevMode(db)).until;
 }
 
-/** The site's look, for the lock screen and the doors, which never ask /api/site. */
+/**
+ * The site's look, for the lock screen and the doors, which never ask
+ * /api/site. With the installed packs' stylesheets (decision 60), which
+ * `GET /api/looks/*` serves in front of the password: a site wearing a
+ * pack's look would otherwise show the default there.
+ */
 export async function lookInFront(db: Database): Promise<PaintedLook> {
-  return paintedLook(await readSettings(db));
+  const [settings, looks] = await Promise.all([readSettings(db), lookCatalogue(db)]);
+  return paintedLook(settings, looks);
 }

@@ -11,12 +11,25 @@
  * first render, so a returning reader of a dark deployment does not get a
  * flash of the light default while the settings load. It is only a hint:
  * the server's answer always wins.
+ *
+ * Stage 6 adds two things to the same path, so both happen before the first
+ * paint too: the installed look packs' stylesheets are linked
+ * (features/looks/stylesheets.ts), and Easier reading, when this reader has
+ * turned it on, is worn instead of the site's look
+ * (features/easy-reading/easyReading.ts). What is remembered is always the
+ * site's own look, never the Easier reading one.
  */
 import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf } from '@reportlog/contracts';
 import type { BrandPart, Look, Site } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
+import {
+  easyLook,
+  easyReadingOn,
+  onEasyReadingChange,
+} from '@/features/easy-reading/easyReading.ts';
 import { useGateMode } from '@/features/identity/gateMode.ts';
+import { linkStylesheets } from '@/features/looks/stylesheets.ts';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -41,15 +54,14 @@ export function useSite() {
   return useQuery({ ...siteQuery, enabled: !onDoor });
 }
 
+/** The site's look as last applied, so Easier reading can be switched without asking again. */
+let siteLook: { look: PaintedLook; root: HTMLElement } | null = null;
+
 /** Paint a look onto the page. Remembers it for the next visit. */
 export function applyLook(
   look: Look | PaintedLook,
   root: HTMLElement = document.documentElement,
 ): void {
-  for (const axis of ['palette', 'theme'] as const) {
-    if (look[axis] === DEFAULT_LOOK[axis]) root.removeAttribute(`data-${axis}`);
-    else root.setAttribute(`data-${axis}`, look[axis]);
-  }
   // The server sends the theme's layout with the look; a bare palette and
   // theme (the setup wizard's choice, say) takes a built-in theme's.
   let painted: PaintedLook;
@@ -58,13 +70,41 @@ export function applyLook(
     const layout = layoutOf(look.theme);
     painted = { ...look, panel_head: layout.panelHead, texture: layout.texture };
   }
-  root.setAttribute('data-panel-head', painted.panel_head);
-  root.setAttribute('data-texture', painted.texture);
+  // A look the page made itself names no pack stylesheets: keep the linked ones.
+  const stylesheets = painted.stylesheets ?? siteLook?.look.stylesheets;
+  if (stylesheets && !painted.stylesheets) painted = { ...painted, stylesheets };
+  siteLook = { look: painted, root };
+  paint(painted, root);
   try {
     localStorage.setItem(REMEMBERED, JSON.stringify(painted));
   } catch {
     // Storage refused (a private window, say): the look still applies.
   }
+}
+
+/** Easier reading, if this reader turned it on, else the site's look. */
+function paint(site: PaintedLook, root: HTMLElement): void {
+  const worn = easyLook(site);
+  for (const axis of ['palette', 'theme'] as const) {
+    if (worn[axis] === DEFAULT_LOOK[axis]) root.removeAttribute(`data-${axis}`);
+    else root.setAttribute(`data-${axis}`, worn[axis]);
+  }
+  root.setAttribute('data-panel-head', worn.panel_head);
+  root.setAttribute('data-texture', worn.texture);
+  if (site.stylesheets) linkStylesheets(site.stylesheets, root.ownerDocument);
+}
+
+/** Paint the site's look again: after Easier reading is switched, here or in another tab. */
+export function repaintLook(): void {
+  if (siteLook) {
+    paint(siteLook.look, siteLook.root);
+    return;
+  }
+  const layout = layoutOf(DEFAULT_LOOK.theme);
+  paint(
+    { ...DEFAULT_LOOK, panel_head: layout.panelHead, texture: layout.texture },
+    document.documentElement,
+  );
 }
 
 /** The look remembered from last time, if it is still one the site could send. */
@@ -80,6 +120,8 @@ export function rememberedLook(): PaintedLook | null {
 if (typeof document !== 'undefined') {
   const remembered = rememberedLook();
   if (remembered) applyLook(remembered);
+  else if (easyReadingOn()) repaintLook();
+  onEasyReadingChange(repaintLook);
 }
 
 /** Keeps the page wearing the site's look. Renders nothing. */

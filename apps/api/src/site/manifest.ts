@@ -6,15 +6,26 @@
  * Not gated. A manifest carries no writing from the site (a name, icons and
  * two colours) and a locked deployment still has to be installable.
  */
-import { DEFAULT_LOOK, PALETTES } from '@reportlog/contracts';
+import { DEFAULT_LOOK } from '@reportlog/contracts';
 import type { Look, WebManifest } from '@reportlog/contracts';
+import { BUILT_IN_CATALOGUE } from '../looks/packs.ts';
+import type { LookCatalogue } from '../looks/packs.ts';
 
-export function buildManifest(plainSiteName: string, look: Look): WebManifest {
+/**
+ * `catalogue` is the built-in pack plus the installed ones, so a phone's
+ * status bar follows a palette from a look pack too: the two colours come
+ * from whichever pack holds the site's palette.
+ */
+export function buildManifest(
+  plainSiteName: string,
+  look: Look,
+  catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
+): WebManifest {
   // An unknown palette is not a reason to serve no manifest; the default is
   // what the page falls back to too, so the two agree.
   const palette =
-    PALETTES.find((p) => p.id === look.palette) ??
-    PALETTES.find((p) => p.id === DEFAULT_LOOK.palette);
+    catalogue.palettes.find((p) => p.id === look.palette) ??
+    catalogue.palettes.find((p) => p.id === DEFAULT_LOOK.palette);
   if (!palette) throw new Error('The built-in look pack has no default palette.');
   return {
     id: '/',

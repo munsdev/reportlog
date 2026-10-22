@@ -48,6 +48,14 @@ export * from './look/pack.ts';
  * one it has no stylesheet for (`resolveLook`).
  */
 const LookId = z.string().regex(/^[a-z][a-z0-9-]{1,39}$/);
+
+/**
+ * An installed pack's stylesheet: a path on this site, named by its hash.
+ * Held to this exact shape wherever it is read (a remembered look in
+ * localStorage included), so nothing can make the page link another host.
+ */
+export const LOOK_STYLESHEET = /^\/api\/looks\/[a-z][a-z0-9-]{1,39}\/[0-9a-f]{64}\.css$/;
+export const LookStylesheet = z.string().regex(LOOK_STYLESHEET);
 export const Look = z.object({ palette: LookId, theme: LookId });
 export type Look = z.infer<typeof Look>;
 
@@ -59,6 +67,20 @@ export type Look = z.infer<typeof Look>;
 export const PaintedLook = Look.extend({
   panel_head: z.enum(ENUMS.panelHead),
   texture: z.enum(ENUMS.texture),
+  /**
+   * Whether the palette's page is dark, so Easier reading can pick High
+   * contrast or High contrast dark for a palette from an installed pack too.
+   * Optional because a look the page made itself (a preview, the setup
+   * wizard's choice) does not know it; the server always sends it.
+   */
+  dark: z.boolean().optional(),
+  /**
+   * Every installed look pack's stylesheet, on this site only (stage 6).
+   * The page links each after the built-in looks. Absent on a look the page
+   * made itself, which leaves the links as they are; the server always
+   * sends it, empty when there are no packs.
+   */
+  stylesheets: z.array(LookStylesheet).max(100).optional(),
 });
 export type PaintedLook = z.infer<typeof PaintedLook>;
 

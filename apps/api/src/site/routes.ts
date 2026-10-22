@@ -35,6 +35,7 @@ import { validateCopy } from './copy.ts';
 import * as dev from './devMode.ts';
 import { validateSiteName } from './identity.ts';
 import { validateLegalText } from './legal.ts';
+import { lookCatalogue } from '../looks/packs.ts';
 import { validateLook } from './look.ts';
 import { buildManifest } from './manifest.ts';
 import { readSettings, writeCopy, writeSettings } from './settings.ts';
@@ -57,8 +58,8 @@ export function siteRoutes(app: FastifyInstance, db: Database): void {
   });
   route(app, getWebManifest, async ({ reply }) => {
     void reply.type('application/manifest+json');
-    const site = await publicSite(db);
-    return buildManifest(site.plain_name, site.look);
+    const [site, looks] = await Promise.all([publicSite(db), lookCatalogue(db)]);
+    return buildManifest(site.plain_name, site.look, looks);
   });
 }
 
@@ -97,7 +98,7 @@ export async function siteAdminRoutes(
     route(scoped, getSiteEditor, () => editorState(db));
 
     route(scoped, setLook, async ({ request }) => {
-      const look = accept(validateLook(bodyOf(setLook, request)));
+      const look = accept(validateLook(bodyOf(setLook, request), await lookCatalogue(db)));
       await writeSettings(db, look);
       return editorState(db);
     });
