@@ -24,6 +24,7 @@ async function makeTipList(page: Page, project: string): Promise<{ slug: string;
   const slug = unique('tips', project);
   const title = `Tips ${slug}`;
   await page.goto('/lists');
+  await page.getByRole('button', { name: 'Make a list' }).click();
   await page.getByRole('radio', { name: 'No: links, check-ins or messages' }).click();
   await page.getByRole('radio', { name: 'Send a link' }).click();
   await page.getByLabel('Title (optional)').fill(title);
@@ -199,6 +200,7 @@ test('a moderator approves the entries ticked on screen, and a published count m
 
 test('making a list asks first whether it should be a logbook', async ({ page }) => {
   await page.goto('/lists');
+  await page.getByRole('button', { name: 'Make a list' }).click();
   await page.getByRole('radio', { name: 'Yes, it has to be permanent and checkable' }).click();
   await expect(page.getByText('Make a logbook instead')).toBeVisible();
   await expect(page.getByRole('link', { name: 'Go to the logbooks' })).toBeVisible();

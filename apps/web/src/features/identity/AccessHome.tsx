@@ -26,6 +26,7 @@ import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { desksFor } from './desks.ts';
 import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
@@ -40,25 +41,19 @@ export function AccessHome() {
   const user = me.data;
   return (
     <SecondFactorGate>
-      <div className="space-y-8">
-        <h1 className="font-display text-title font-bold">
-          {user.grantsAccess ? 'Access' : 'Your account'}
-        </h1>
-        {/* settings-and-admin.md §12: in this order, each only to whom may use it. */}
+      <StaffPage
+        title={user.grantsAccess ? 'Access' : 'Your account'}
+        lede={
+          user.grantsAccess
+            ? 'Who may do what on this site. Each panel is shown only to those who may use it.'
+            : 'Your role on this site and how you sign in.'
+        }
+      >
+        {/* settings-and-admin.md §12: in this order, each only to whom may use
+            it. Organizations, the roster and the record are the area's tabs. */}
         <YourAccount me={user} />
         {user.grantsAccess && (
           <>
-            <nav aria-label="Access" className="flex flex-wrap gap-4">
-              <Link to="/access/orgs" className="underline">
-                Organizations
-              </Link>
-              <Link to="/access/roster" className="underline">
-                Roster
-              </Link>
-              <Link to="/access/audit" className="underline">
-                Who changed what
-              </Link>
-            </nav>
             <People />
             <GrantRole me={user} />
           </>
@@ -66,7 +61,7 @@ export function AccessHome() {
         {user.role === 'owner' && <ResetSecondFactor />}
         {hasAdminAuthority(user.role) && <SitePassword />}
         <OwnerSeat me={user} />
-      </div>
+      </StaffPage>
     </SecondFactorGate>
   );
 }
@@ -512,7 +507,7 @@ function SitePassword() {
 /**
  * The owner clears somebody else's second factor (plan E, E3): for the
  * person who lost their phone and their recovery codes. Asks for the
- * owner's own factor first, and is recorded in "Who changed what". The
+ * owner's own factor first, and is recorded in "Who granted what". The
  * owner's own is reset only on the server.
  */
 function ResetSecondFactor() {

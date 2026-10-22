@@ -25,6 +25,8 @@ import { Field } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
+import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { useMe } from '../identity/session.ts';
@@ -43,7 +45,7 @@ export function IntakeLinksPage() {
   const orgs = useQuery(orgsQuery);
   const managed = orgs.data?.organizations.filter((o) => o.role === 'manager') ?? [];
   return (
-    <Page
+    <StaffPage
       title="Volunteer links"
       lede="A link for your organization’s volunteers. Whoever opens it, signed in, joins as a coordinator and files for the organization. Each link works a set number of times, and you can switch it off."
       width="prose"
@@ -56,7 +58,7 @@ export function IntakeLinksPage() {
       {managed.map((o) => (
         <OrgLinks key={o.id} id={o.id} name={o.name} />
       ))}
-    </Page>
+    </StaffPage>
   );
 }
 
@@ -192,10 +194,15 @@ function NewLink({ url }: { url: string }) {
   );
 }
 
-/** What a volunteer opens. Nothing happens until they press the button. */
+/**
+ * What a volunteer opens (account.md §06). Nothing happens until they press
+ * the button. Reading what the link offers needs somebody signed in, so a
+ * visitor who is not is asked to sign in first and comes straight back.
+ */
 export function JoinPage({ token }: { token: string }) {
   const me = useMe();
   const signedIn = me.data?.signedIn === true;
+  const siteName = plainSiteName(useSite().data);
   const link = useQuery({
     queryKey: ['intake-links', 'describe', token],
     queryFn: ({ signal }) => call(describeIntakeLink, { params: { token }, signal }),
@@ -205,39 +212,67 @@ export function JoinPage({ token }: { token: string }) {
   const join = useMutation({ mutationFn: () => call(joinByIntakeLink, { params: { token } }) });
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!signedIn) return <SignInPrompt next={`/organizations/join/${token}`} />;
-  return (
-    <Page title="Join an organization" width="prose">
-      {link.isPending ? <p role="status">Reading the link…</p> : null}
-      {link.isError ? <Alert>{link.error.message}</Alert> : null}
-      {link.data && !link.data.usable ? <Alert>{link.data.why}</Alert> : null}
-      {link.data?.usable && !join.data ? (
-        <>
-          <p>
-            {`This link makes you a coordinator of ${link.data.organization}: you can file accounts for it while signed in. You cannot manage it, and you can leave at any time.`}
-          </p>
-          <Button
-            type="button"
-            className="self-start"
-            disabled={join.isPending}
-            onClick={() => {
-              join.mutate();
-            }}
-          >
-            {`Join ${link.data.organization}`}
-          </Button>
-        </>
-      ) : null}
-      {join.isError ? <Alert tone="serious">{join.error.message}</Alert> : null}
-      {join.data ? (
+  if (link.isPending) return <p role="status">Checking this link…</p>;
+  if (link.isError) {
+    return (
+      <Page eyebrow={siteName} title="This link could not be checked" width="prose">
+        <p>{link.error.message}</p>
+      </Page>
+    );
+  }
+  if (!link.data.usable) {
+    return (
+      <Page eyebrow={siteName} title="This link does not work any more" width="prose">
+        <p>{link.data.why ?? 'It has been used up or switched off.'}</p>
+      </Page>
+    );
+  }
+  if (join.data) {
+    return (
+      <Page eyebrow={siteName} title="Welcome" width="prose">
         <Alert tone="done">
           {join.data.already_member
             ? `You are already in ${join.data.organization}.`
-            : `You are now a coordinator of ${join.data.organization}.`}{' '}
+            : `You are now a coordinator of ${join.data.organization}.`}
+        </Alert>
+        <p>
           <Link to="/intake" className="underline">
             Go to intake
           </Link>
-        </Alert>
-      ) : null}
+        </p>
+      </Page>
+    );
+  }
+  return (
+    <Page
+      eyebrow={siteName}
+      title="Join an organization"
+      lede={`This link makes you a coordinator of ${link.data.organization}.`}
+      width="prose"
+    >
+      <Card variant="quiet" heading="A coordinator">
+        <ul className="list-disc space-y-1 pl-6">
+          <li>files accounts for {link.data.organization} while signed in;</li>
+          <li>cannot manage it, or invite anybody;</li>
+          <li>can leave at any time.</li>
+        </ul>
+      </Card>
+      <p>
+        You are signed in as <strong>{me.data?.signedIn ? me.data.email : ''}</strong>.
+      </p>
+      {join.isError ? <Alert tone="serious">{join.error.message}</Alert> : null}
+      <div>
+        <Button
+          type="button"
+          busy={join.isPending}
+          busyLabel="Joining…"
+          onClick={() => {
+            join.mutate();
+          }}
+        >
+          Join
+        </Button>
+      </div>
     </Page>
   );
 }

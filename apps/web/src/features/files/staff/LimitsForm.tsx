@@ -45,10 +45,16 @@ export function LimitsForm({
   layers,
   mine,
   onSave,
+  onSaved,
+  onCancel,
 }: {
   layers: FileLimitLayers;
   mine: Layer;
   onSave: (body: LimitsBody) => Promise<unknown>;
+  /** Inside a panel: told the sentence once saved, so the panel can close and say it. */
+  onSaved?: ((text: string) => void) | undefined;
+  /** Inside a panel: a Cancel beside Save. */
+  onCancel?: (() => void) | undefined;
 }) {
   const own = (k: NumberKey) => (mine === 'logbook' ? layers[k].logbook : layers[k].site);
   const under = (k: NumberKey) =>
@@ -80,7 +86,9 @@ export function LimitsForm({
     setOutcome(null);
     try {
       await onSave(body);
-      setOutcome({ ok: true, text: 'Saved. The new limits apply to the next file anybody sends.' });
+      const text = 'Saved. The new limits apply to the next file anybody sends.';
+      setOutcome({ ok: true, text });
+      onSaved?.(text);
     } catch (e) {
       setOutcome({ ok: false, text: e instanceof Error ? e.message : 'That was not saved.' });
     } finally {
@@ -110,7 +118,7 @@ export function LimitsForm({
       </p>
 
       <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 font-semibold">Which kinds of file</legend>
+        <legend className="mb-2 label-face text-xs text-ink">Which kinds of file</legend>
         <RadioGroup
           value={choosing ? 'choose' : 'under'}
           onValueChange={(v) => {
@@ -203,6 +211,11 @@ export function LimitsForm({
             ? 'Use the site’s limits for everything'
             : 'Clear every limit set here'}
         </Button>
+        {onCancel ? (
+          <Button type="button" variant="quiet" disabled={busy} onClick={onCancel}>
+            Cancel
+          </Button>
+        ) : null}
       </div>
     </form>
   );

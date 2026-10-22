@@ -29,8 +29,8 @@ test.describe('an administrator', () => {
     const email = `team-${run}@example.org`;
     const outside = outsideRequests(page);
     await page.goto('/access');
-    await page.getByRole('link', { name: 'Roster', exact: true }).click();
-    await expect(page.getByRole('heading', { level: 1, name: 'Roster' })).toBeVisible();
+    await page.getByRole('link', { name: 'Who is doing what', exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Who is doing what' })).toBeVisible();
     await expect(page.getByRole('table')).toBeVisible();
 
     await page.getByLabel('Their email address').fill(email);
@@ -52,7 +52,7 @@ test.describe('an administrator', () => {
     await expect(page.getByRole('status')).toHaveText(`${email} is not on the team.`);
 
     await goViaMenu(page, 'Roles', { area: 'People and access' });
-    await page.getByRole('link', { name: 'Who changed what' }).click();
+    await page.getByRole('link', { name: 'Who granted what' }).click();
     await expect(page.getByText(`took from ${email}: team member`)).toBeVisible();
     expect(outside).toEqual([]);
   });
@@ -71,7 +71,7 @@ test.describe('an administrator', () => {
     const { organization } = (await made.json()) as { organization: { id: number } };
 
     await page.goto(`/access/orgs/${String(organization.id)}`);
-    await expect(page.getByRole('heading', { level: 2, name: 'Logo' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 3, name: 'Logo' })).toBeVisible();
     await expect(page.getByText('There is no logo yet.')).toBeVisible();
     const png = execFileSync('convert', ['-size', '40x40', 'xc:green', 'png:-']);
     await page.getByLabel('A logo', { exact: true }).setInputFiles({

@@ -102,7 +102,8 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       { to: '/lists', label: 'Lists', for: ADMIN, under: ['/lists/'] },
       { to: '/maps', label: 'Maps', for: ADMIN, under: ['/maps/'] },
       { to: '/lists/search', label: 'Find entries', for: ADMIN },
-      { to: '/files/settings', label: 'File limits', for: ADMIN },
+      // A logbook's own limits are this page's too, not the files queue's.
+      { to: '/files/settings', label: 'File limits', for: ADMIN, under: ['/files/logbooks/'] },
     ],
   },
   {
@@ -144,15 +145,13 @@ export const STAFF_AREAS: readonly StaffArea[] = [
     pages: [
       { to: '/transparency-log', label: 'Transparency log', for: ADMIN },
       { to: '/backups', label: 'Backups and exports', for: ['owner'] },
-      // The access log, which lives inside Moderation settings until it is
-      // given a route of its own (navigation.md, section 07).
+      // The access log, a page of its own (settings-and-admin.md §13); it
+      // was a section of Moderation settings until then.
       {
-        to: '/moderate/settings',
-        hash: 'who-opened-what',
+        to: '/who-opened-what',
         label: 'Who opened protected data',
         tab: 'Who opened what',
         for: ADMIN,
-        alias: true,
       },
     ],
   },

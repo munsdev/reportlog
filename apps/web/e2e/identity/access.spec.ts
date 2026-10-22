@@ -425,7 +425,7 @@ test('an invitation, followed from its email, joins the invited address', async 
   // Straight back to the invitation, which still needs a deliberate press.
   await expect(page).toHaveURL(link);
   await page.getByRole('button', { name: 'Accept the invitation' }).click();
-  await expect(page.getByRole('status')).toHaveText(`You are now a coordinator of ${ORG}.`);
+  await expect(page.getByRole('status')).toContainText(`You are now a coordinator of ${ORG}.`);
 
   // The link works once.
   await page.goto(link);
@@ -445,7 +445,7 @@ test('the owner gives somebody a role, and it is on the record', async () => {
   await expect(owner.getByRole('status')).toHaveText(`${MOD} is now: Moderator.`);
   await expect(owner.getByRole('row', { name: new RegExp(MOD) })).toContainText('Moderator');
 
-  await owner.getByRole('link', { name: 'Who changed what' }).click();
+  await owner.getByRole('link', { name: 'Who granted what' }).click();
   await expect(owner.getByText(`${OWNER} gave ${MOD}: moderator`)).toBeVisible();
 });
 

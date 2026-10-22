@@ -300,7 +300,7 @@ describe('the access screens open for the people the server admits', () => {
       server(signedIn(role), { '/api/access/audit': { entries: [] } });
       open('/access/audit');
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'Who changed what' }),
+        await screen.findByRole('heading', { level: 1, name: 'Who granted what' }),
       ).toBeInTheDocument();
       cleanup();
       server(signedIn(role), { '/api/orgs': { organizations: [] } });

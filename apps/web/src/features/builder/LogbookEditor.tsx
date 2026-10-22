@@ -1,5 +1,9 @@
 /**
- * One logbook: its questions, launching it, and what can still change after.
+ * One logbook: its questions, launching it, and what can still change after
+ * (settings-and-admin.md §09). The title with its state as a chip and the
+ * two downloads beside it; each question a raised card with its kind and
+ * what it needs as chips; after launch, a quiet panel saying what is frozen
+ * and why; the switches; then launching or the times it takes reports.
  *
  * A launched logbook's questions are fixed, and the screen says WHY where the
  * controls used to be, rather than greying them out and leaving somebody to
@@ -7,6 +11,7 @@
  */
 import {
   addQuestion,
+  getCompleteChainFile,
   deleteLogbook,
   launchLogbook,
   removeQuestion,
@@ -22,7 +27,12 @@ import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Button, buttonVariants } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { Chip } from '../../components/ui/chip.tsx';
+import { KeyValueList } from '../../components/ui/key-value-list.tsx';
+import { StepUpDownload } from '../identity/StepUp.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Check, Field, Panel, Problem, TextArea, TextInput } from './controls.tsx';
 import { logbookQuery, logbooksQuery } from './queries.ts';
@@ -63,68 +73,108 @@ function Editor({ lb }: { lb: LogbookDetail }) {
   };
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <Link to="/logbooks" className="text-sm underline">
-          ← All logbooks
-        </Link>
-        <h1 className="font-display text-title font-bold">{lb.title}</h1>
+    <StaffPage
+      eyebrow={`Logbook · ${stateLabel[lb.state]}`}
+      title={lb.title}
+      lede={stateWords(lb)}
+      actions={<Downloads lb={lb} />}
+    >
+      <div className="flex flex-col gap-3">
         <p>
-          <span className="mr-2 rounded-card border border-line px-2 py-0.5 text-sm font-semibold">
-            {stateLabel[lb.state]}
-          </span>
-          <span>{stateWords(lb)}</span>
+          <Link to="/logbooks" className="text-sm underline">
+            ← All logbooks
+          </Link>
         </p>
-        <p className="font-mono text-sm text-muted">/file/{lb.slug}</p>
-      </header>
+        <p className="flex flex-wrap items-center gap-2">
+          <Chip tone="tag">{stateLabel[lb.state]}</Chip>
+          {lb.asks_for_files ? <Chip tone="tag">Takes files</Chip> : null}
+          <span data-filing-address className="font-mono text-sm break-all text-muted">
+            /file/{lb.slug}
+          </span>
+        </p>
+        {launched ? (
+          // Only a launched logbook has a form a reporter can open; a draft's
+          // is not served to anybody, so the button is left out until then.
+          <p>
+            <a
+              href={`/file/${lb.slug}`}
+              target="_blank"
+              rel="noopener"
+              className={buttonVariants({ variant: 'secondary' })}
+            >
+              Read it as a reporter
+            </a>
+          </p>
+        ) : null}
+      </div>
 
       <Details lb={lb} refresh={refresh} />
       <EmailRule lb={lb} refresh={refresh} />
 
       <Panel title="Questions">
         {launched && (
-          <p className="rounded-card border-l-4 border-brand bg-paper p-3">
-            This logbook has launched, so what its questions ask is fixed: a question whose answers
-            could change afterwards would leave every answer to it meaning something nobody can
-            check. You can still reword a question, and the words of a choice that has a code, add a
-            new optional question at the end, and choose which questions the board offers as
-            filters.
-          </p>
+          <Card variant="quiet">
+            <p>
+              {lb.launched_at ? `Launched on ${day(lb.launched_at)}. ` : ''}The questions’ keys,
+              kinds, order, conditions and codes are frozen, so every sealed report still checks.
+              You can reword a label or help, add an optional question at the end, and choose which
+              questions the board offers as filters.
+            </p>
+          </Card>
         )}
         <QuestionList lb={lb} refresh={refresh} />
-        <h3 className="font-display text-lg font-bold">Add a question</h3>
-        <QuestionForm
-          earlier={lb.fields}
-          launched={launched}
-          submitLabel="Add the question"
-          onSubmit={async (body: QuestionBody, kind: string) => {
-            await call(addQuestion, { params, body: { ...body, kind } });
-            await refresh();
-          }}
-        />
+        <Card variant="quiet" heading="Add a question" headingLevel={3}>
+          <QuestionForm
+            earlier={lb.fields}
+            launched={launched}
+            submitLabel="Add the question"
+            onSubmit={async (body: QuestionBody, kind: string) => {
+              await call(addQuestion, { params, body: { ...body, kind } });
+              await refresh();
+            }}
+          />
+        </Card>
       </Panel>
 
-      {!launched && <Launch lb={lb} refresh={refresh} />}
       {launched && <Lifecycle lb={lb} refresh={refresh} />}
-
-      <FreezePanel lb={lb} refresh={refresh} />
       <OutsidePanel lb={lb} refresh={refresh} />
+      <FreezePanel lb={lb} refresh={refresh} />
 
-      <Panel title="As a file">
-        <p className="text-ink-alt">
-          Its title and its questions, in a file you can keep, edit, or upload to start another
-          logbook. Its reports are not in it.
-        </p>
+      {!launched && <Launch lb={lb} refresh={refresh} />}
+      {!launched && <DeleteDraft lb={lb} />}
+    </StaffPage>
+  );
+}
+
+const day = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+/**
+ * "As a file", beside the title: the logbook file (its title and
+ * questions, to keep or to start another from), and, once it has launched,
+ * its complete chain, which asks for the step-up first (plan E, E3).
+ */
+function Downloads({ lb }: { lb: LogbookDetail }) {
+  return (
+    <div className="flex flex-col gap-2">
+      <span className="label-face text-xs text-ink-alt">As a file</span>
+      <div className="flex flex-wrap gap-2">
         <a
           href={`/api/admin/logbooks/${String(lb.id)}/file`}
           download={`logbook-${lb.slug}.json`}
-          className="underline"
+          className={buttonVariants({ variant: 'secondary' })}
         >
-          Download this logbook as a file
+          The logbook file
         </a>
-      </Panel>
-
-      {!launched && <DeleteDraft lb={lb} />}
+        {lb.state !== 'draft' ? (
+          <StepUpDownload
+            href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
+            className={buttonVariants({ variant: 'secondary' })}
+          >
+            Its chain
+          </StepUpDownload>
+        ) : null}
+      </div>
     </div>
   );
 }
@@ -260,7 +310,10 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
       <Problem error={error} />
       <ol className="space-y-3" aria-label="The questions, in order">
         {lb.fields.map((q, i) => (
-          <li key={q.id} className="space-y-2 rounded-card border border-line p-3">
+          <li
+            key={q.id}
+            className="flex flex-col gap-2 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised"
+          >
             {editing === q.id && launched ? (
               <RewordForm
                 question={q}
@@ -291,16 +344,18 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
               />
             ) : (
               <>
-                <p className="font-semibold">
+                <p className="font-display text-lg font-bold">
                   {i + 1}. {q.label}
                 </p>
-                <p className="text-sm text-muted">
-                  {fieldType(q.kind)?.label ?? q.kind} ·{' '}
-                  {q.required ? 'needs an answer' : 'optional'} · key{' '}
-                  <span className="font-mono">{q.key}</span>
-                  {q.filterable ? ' · a board filter' : ''}
+                <p className="flex flex-wrap items-center gap-2">
+                  <Chip tone="tag" className="font-mono">
+                    {fieldType(q.kind)?.label ?? q.kind}
+                  </Chip>
+                  {q.required ? <Chip tone="tag">Needed</Chip> : null}
+                  {q.filterable ? <Chip tone="tag">Filter</Chip> : null}
+                  {q.shown_when ? <Chip tone="tag">Sometimes</Chip> : null}
                 </p>
-                {q.help && <p className="text-sm">{q.help}</p>}
+                {q.help && <p className="text-sm text-ink-alt">{q.help}</p>}
                 {q.shown_when && (
                   <p className="text-sm">{describeCondition(q.shown_when, defs(lb.fields))}</p>
                 )}
@@ -316,7 +371,11 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                     {String(q.settings.option_sets.length)} lists).
                   </p>
                 )}
-                <div className="flex flex-wrap gap-2">
+                <p className="text-sm text-ink-alt">
+                  {q.required ? 'Needs an answer' : 'Optional'} · answered under{' '}
+                  <span className="font-mono text-ink">{q.key}</span>
+                </p>
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   {!launched && (
                     <>
                       <Button
@@ -439,6 +498,13 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
 
   return (
     <Panel title="Taking reports">
+      <KeyValueList
+        items={[
+          { key: 'Now', value: isClosed ? 'Closed' : stateLabel[lb.state] },
+          { key: 'Opens', value: lb.opens_at ? day(lb.opens_at) : 'When it launched' },
+          { key: 'Closes', value: lb.closes_at ? day(lb.closes_at) : 'No end set' },
+        ]}
+      />
       <p className="text-ink-alt">
         Closing stops new reports and keeps every report already filed. It can be undone.
       </p>
@@ -460,7 +526,7 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           schedule.mutate();
         }}
       >
-        <h3 className="font-display text-lg font-bold">Opening times</h3>
+        <h3 className="font-display text-lg font-bold">Opening and closing times</h3>
         <Field label="Opens (leave empty to open now)">
           {(p) => (
             <TextInput

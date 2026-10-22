@@ -12,10 +12,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { ROLE_LABELS } from '../identity/session.ts';
 import { testersQuery } from './queries.ts';
@@ -33,57 +35,65 @@ export function Testers() {
   });
 
   return (
-    <Page
+    <StaffPage
       title="Testers"
       width="prose"
       lede="Testers can file feedback and read what other testers filed. That is all the flag does: it shows no report and grants no role."
     >
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          change.mutate({ email, tester: true });
-        }}
-      >
-        <Field>
-          <Label>Make somebody a tester</Label>
-          <FieldDescription>
-            Testers recognise each other by a shortened form of their address, so add only people
-            the others would be comfortable being identifiable to.
-          </FieldDescription>
-          <Input
-            type="email"
-            autoComplete="off"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-            }}
-          />
-        </Field>
-        {change.isError ? (
-          <Alert tone="serious" title="That did not change.">
-            {change.error.message}
-          </Alert>
-        ) : null}
-        <div>
-          <Button type="submit" disabled={change.isPending}>
-            Add the tester
-          </Button>
-        </div>
-      </form>
+      <p className="text-ink-alt">
+        Testers see each other’s issues under a masked handle (the first letters of an address),
+        never the address itself.
+      </p>
+      <Card heading="Make somebody a tester">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            change.mutate({ email, tester: true });
+          }}
+        >
+          <Field>
+            <Label>Their email address</Label>
+            <FieldDescription>
+              Testers recognise each other by a shortened form of their address, so add only people
+              the others would be comfortable being identifiable to.
+            </FieldDescription>
+            <Input
+              type="email"
+              autoComplete="off"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+              }}
+            />
+          </Field>
+          {change.isError ? (
+            <Alert tone="serious" title="That did not change.">
+              {change.error.message}
+            </Alert>
+          ) : null}
+          <div>
+            <Button type="submit" variant="secondary" disabled={change.isPending}>
+              Give the flag
+            </Button>
+          </div>
+        </form>
+      </Card>
 
       <section className="flex flex-col gap-3" aria-labelledby="testers-now">
-        <h2 id="testers-now" className="font-display text-xl font-bold">
+        <h2 id="testers-now" className="font-display text-2xl font-bold">
           Testers now
         </h2>
         {list.isPending ? <p role="status">Loading…</p> : null}
         {list.isError ? <p role="alert">{list.error.message}</p> : null}
-        {list.data?.testers.length === 0 ? <p>Nobody has the flag.</p> : null}
-        <ul className="flex flex-col gap-2">
+        {list.data?.testers.length === 0 ? (
+          <Empty title="Nobody has the flag">Give it above to let somebody file feedback.</Empty>
+        ) : null}
+        <ul className="flex flex-col divide-y divide-line">
           {list.data?.testers.map((t) => (
-            <li key={t.email} className="flex flex-wrap items-center justify-between gap-2">
+            <li key={t.email} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
-                {t.email}
+                <span className="font-mono text-sm break-all">{t.email}</span>
                 {t.role !== 'user' ? (
                   <span className="text-sm text-ink-alt">
                     {' '}
@@ -92,7 +102,7 @@ export function Testers() {
                 ) : null}
               </span>
               <Button
-                variant="secondary"
+                variant="quiet"
 
                 disabled={change.isPending}
                 onClick={() => {
@@ -105,6 +115,6 @@ export function Testers() {
           ))}
         </ul>
       </section>
-    </Page>
+    </StaffPage>
   );
 }

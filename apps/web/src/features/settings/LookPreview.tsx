@@ -21,7 +21,7 @@
  * the tab order and made inert; the status line above them says in words
  * what is being previewed.
  */
-import { layoutOf, parseBrand } from '@reportlog/contracts';
+import { parseBrand } from '@reportlog/contracts';
 import type { BrandPart, Look } from '@reportlog/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
@@ -32,10 +32,16 @@ import { Chip } from '@/components/ui/chip.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
 import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
 import { cn } from '@/lib/utils.ts';
+import { BUILT_IN_CATALOGUE, layoutIn } from './looks.ts';
+import type { LookCatalogue } from './looks.ts';
 
 /** Name the look on a document's root, as site.tsx does, without remembering it. */
-export function paintFrame(root: HTMLElement, look: Look): void {
-  const layout = layoutOf(look.theme);
+export function paintFrame(
+  root: HTMLElement,
+  look: Look,
+  catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
+): void {
+  const layout = layoutIn(look.theme, catalogue);
   root.setAttribute('data-palette', look.palette);
   root.setAttribute('data-theme', look.theme);
   root.setAttribute('data-panel-head', layout.panelHead);
@@ -69,12 +75,13 @@ const SIZES = {
 
 interface FrameProps {
   look: Look;
+  catalogue: LookCatalogue;
   size: keyof typeof SIZES;
   label: string;
   children: ReactNode;
 }
 
-function PreviewFrame({ look, size, label, children }: FrameProps) {
+function PreviewFrame({ look, catalogue, size, label, children }: FrameProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
@@ -102,8 +109,8 @@ function PreviewFrame({ look, size, label, children }: FrameProps) {
 
   const root = mount?.ownerDocument.documentElement;
   useEffect(() => {
-    if (root) paintFrame(root, look);
-  }, [root, look]);
+    if (root) paintFrame(root, look, catalogue);
+  }, [root, look, catalogue]);
 
   return (
     <figure className="m-0 flex flex-col gap-2">
@@ -182,7 +189,16 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
  * The two frames. On a phone, the phone frame only, with a button to show
  * the desktop one under it: a 704px picture would not fit.
  */
-export function LookFrames({ look, name }: { look: Look; name?: readonly BrandPart[] }) {
+export function LookFrames({
+  look,
+  name,
+  catalogue = BUILT_IN_CATALOGUE,
+}: {
+  look: Look;
+  name?: readonly BrandPart[];
+  /** Where a pack's theme finds its panel heading and texture. */
+  catalogue?: LookCatalogue;
+}) {
   const site = useSite();
   const parts = name ?? site.data?.name_parts ?? DEFAULT_PARTS;
   const [showDesktop, setShowDesktop] = useState(false);
@@ -190,11 +206,11 @@ export function LookFrames({ look, name }: { look: Look; name?: readonly BrandPa
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-start gap-7">
         <div className={cn(showDesktop ? 'block' : 'hidden', 'lg:block')}>
-          <PreviewFrame look={look} size="desktop" label="Desktop">
+          <PreviewFrame look={look} catalogue={catalogue} size="desktop" label="Desktop">
             <PreviewPage parts={parts} />
           </PreviewFrame>
         </div>
-        <PreviewFrame look={look} size="phone" label="Phone">
+        <PreviewFrame look={look} catalogue={catalogue} size="phone" label="Phone">
           <PreviewPage parts={parts} />
         </PreviewFrame>
       </div>

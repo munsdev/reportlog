@@ -32,7 +32,7 @@ test.describe('signed out', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Guides' })).toBeVisible();
     await page.getByRole('link', { name: 'Your first logbook' }).click();
     await expect(
-      page.getByRole('heading', { name: '4 · Launch it: this is the one-way door' }),
+      page.getByRole('heading', { name: 'Launch it: this is the one-way door' }),
     ).toBeVisible();
     await page.goto('/docs/checking');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Checking it actually works');

@@ -17,7 +17,7 @@ import { Alert } from '@/components/ui/alert.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SaveBar } from '@/components/ui/save-bar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -28,13 +28,13 @@ import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Name"
         width="prose"
         lede="What this site calls itself in its header, its emails and its browser tab."
       >
         <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   ),
 });

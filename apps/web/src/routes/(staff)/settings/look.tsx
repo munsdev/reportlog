@@ -19,25 +19,25 @@ import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { LookChooser } from '../../../features/settings/LookChooser.tsx';
 import { LookFrames } from '../../../features/settings/LookPreview.tsx';
 import { LookPacks } from '../../../features/settings/LookPacks.tsx';
-import { lookName, sameLook } from '../../../features/settings/looks.ts';
+import { lookName, sameLook, useLookCatalogue } from '../../../features/settings/looks.ts';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
 import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/look')({
   component: () => (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Look"
         lede="Pick a look and see it on a desktop and a phone. Nothing on the site changes until you apply it."
       >
         <WithEditor>{(state) => <LookScreen state={state} />}</WithEditor>
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   ),
 });
@@ -46,6 +46,8 @@ export function LookScreen({ state }: { state: SiteEditor }) {
   const current = state.look;
   const [chosen, setChosen] = useState<Look>(current);
   const toast = useToast();
+  // The built-in looks and every installed pack's (stage 6).
+  const catalogue = useLookCatalogue();
   const apply = useSave((value: Look) => call(setLook, { body: value }));
   const previewing = !sameLook(chosen, current);
   useUnsavedChanges('the look', previewing);
@@ -58,10 +60,11 @@ export function LookScreen({ state }: { state: SiteEditor }) {
           {previewing ? (
             <>
               <span className="label-face block text-xs text-brand-on-deep">Preview only</span> The
-              site is still showing {lookName(current)}. You are previewing {lookName(chosen)}.
+              site is still showing {lookName(current, catalogue)}. You are previewing{' '}
+              {lookName(chosen, catalogue)}.
             </>
           ) : (
-            <>The site is showing {lookName(current)}.</>
+            <>The site is showing {lookName(current, catalogue)}.</>
           )}
         </p>
         {previewing ? (
@@ -99,9 +102,9 @@ export function LookScreen({ state }: { state: SiteEditor }) {
         </Alert>
       ) : null}
 
-      <LookFrames look={chosen} />
+      <LookFrames look={chosen} catalogue={catalogue} />
 
-      <LookChooser value={chosen} onChange={setChosen} current={current} />
+      <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
 
       <LookPacks />
     </div>

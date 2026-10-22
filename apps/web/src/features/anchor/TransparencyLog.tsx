@@ -21,7 +21,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Card } from '../../components/ui/card.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 
@@ -70,7 +70,7 @@ const day = (iso: string) => new Date(iso).toLocaleString();
 export function TransparencyLogPage() {
   const query = useQuery(anchorQuery);
   return (
-    <Page
+    <StaffPage
       title="Transparency log"
       lede="Once a day the newest report of every logbook is timestamped by an outside authority and published to a public repository. Anybody can then check that nothing filed before that day was changed."
       width="prose"
@@ -169,7 +169,7 @@ export function TransparencyLogPage() {
           be made to remove.
         </p>
       </Section>
-    </Page>
+    </StaffPage>
   );
 }
 

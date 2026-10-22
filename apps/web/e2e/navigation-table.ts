@@ -53,7 +53,7 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: PEOPLE, label: 'Who granted what', href: '/access/audit' },
   { area: REC, label: 'Transparency log', href: '/transparency-log' },
   { area: REC, label: 'Backups and exports', href: '/backups' },
-  { area: REC, label: 'Who opened protected data', href: '/moderate/settings#who-opened-what' },
+  { area: REC, label: 'Who opened protected data', href: '/who-opened-what' },
   { label: 'Intake', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { label: 'Journalist desk', href: '/desk' },

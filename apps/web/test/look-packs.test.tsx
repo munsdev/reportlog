@@ -9,12 +9,16 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LOOKS } from '@reportlog/contracts';
 import type { InstalledLookPack, LookPackSummary } from '@reportlog/contracts';
 import { applyLook, rememberedLook } from '../src/components/ui/site.tsx';
 import { AddLookPack } from '../src/features/looks/AddLookPack.tsx';
 import { InstalledLookPacks } from '../src/features/looks/InstalledLookPacks.tsx';
 import { addsWhat, groupProblems } from '../src/features/looks/queries.ts';
 import { linkStylesheets, linkedStylesheets } from '../src/features/looks/stylesheets.ts';
+import { SettingsFrame } from '../src/features/settings/panels.tsx';
+import { LookScreen } from '../src/routes/(staff)/settings/look.tsx';
+import { editorState } from './site-fixture.ts';
 
 const A = `/api/looks/tideline/${'a'.repeat(64)}.css`;
 const B = `/api/looks/harbour-lights/${'b'.repeat(64)}.css`;
@@ -360,5 +364,56 @@ describe('the installed packs', () => {
       'The look "Tideline day" in the pack "Tideline extra" uses its palette.',
     );
     expect(sent.map((s) => `${s.method} ${s.url}`)).toContain('DELETE /api/admin/looks/tideline');
+  });
+});
+
+describe('the Look screen offers what the packs add', () => {
+  it('shows an installed pack’s looks as cards, its palettes and themes in the selects, and previews them', async () => {
+    server({ 'GET /api/admin/looks': { body: { packs: [INSTALLED] } } });
+    const user = userEvent.setup();
+    wrap(
+      <SettingsFrame>
+        <LookScreen state={editorState()} />
+      </SettingsFrame>,
+    );
+    const looks = screen.getByRole('radiogroup', { name: 'Looks' });
+    const card = await within(looks).findByRole('radio', { name: /^Tideline\s*From Tideline$/ });
+    expect(within(looks).getAllByRole('radio')).toHaveLength(LOOKS.length + 2);
+    expect(
+      within(screen.getByLabelText('Palette, the colours')).getByRole('option', {
+        name: 'Tideline night · dark',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText('Theme, the type and shapes')).getByRole('option', {
+        name: 'Tideline',
+      }),
+    ).toBeInTheDocument();
+
+    await user.click(card);
+    expect(screen.getAllByRole('status')[0]).toHaveTextContent('You are previewing Tideline.');
+    // The frames are named with the pack's ids, and its theme's own heading shape.
+    for (const name of ['Desktop preview', 'Phone preview']) {
+      const frame = document.querySelector<HTMLIFrameElement>(`iframe[title="${name}"]`);
+      expect(frame).toHaveAttribute('data-palette', 'tideline');
+      await vi.waitFor(() => {
+        expect(frame?.contentDocument?.documentElement).toHaveAttribute(
+          'data-panel-head',
+          'title-bar',
+        );
+      });
+    }
+  });
+
+  it('offers the built-in looks alone when the packs cannot be read', () => {
+    server({});
+    wrap(
+      <SettingsFrame>
+        <LookScreen state={editorState()} />
+      </SettingsFrame>,
+    );
+    expect(
+      within(screen.getByRole('radiogroup', { name: 'Looks' })).getAllByRole('radio'),
+    ).toHaveLength(LOOKS.length);
   });
 });

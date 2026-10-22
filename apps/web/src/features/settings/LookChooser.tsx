@@ -5,9 +5,10 @@
  * the caller does with it (preview it, save it) is the caller's.
  *
  * Each card's strip is painted by its own palette (`data-palette` on the
- * strip), so the stylesheet draws it, never a colour computed here.
+ * strip), so the stylesheet draws it, never a colour computed here. A look
+ * from an installed pack is painted the same way: its pack's stylesheet is
+ * linked on every page, and its card says which pack it came with.
  */
-import { LOOKS, PALETTES, THEMES } from '@reportlog/contracts';
 import type { Look } from '@reportlog/contracts';
 import { useId } from 'react';
 import { Chip } from '@/components/ui/chip.tsx';
@@ -15,7 +16,8 @@ import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Select } from '@/components/ui/select.tsx';
-import { namedLookFor, sameLook } from './looks.ts';
+import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
+import type { LookCatalogue } from './looks.ts';
 
 function Strip({ palette, theme }: { palette: string; theme: string }) {
   return (
@@ -38,11 +40,19 @@ export interface LookChooserProps {
   onChange: (look: Look) => void;
   /** What the site wears now: its card says "On the site". */
   current?: Look | undefined;
+  /** What may be chosen: the built-in pack unless the caller adds installed ones. */
+  catalogue?: LookCatalogue | undefined;
 }
 
-export function LookChooser({ value, onChange, current }: LookChooserProps) {
+export function LookChooser({
+  value,
+  onChange,
+  current,
+  catalogue = BUILT_IN_CATALOGUE,
+}: LookChooserProps) {
   const headingId = useId();
-  const chosen = namedLookFor(value);
+  const chosen = namedLookFor(value, catalogue);
+  const { looks: LOOKS, palettes: PALETTES, themes: THEMES } = catalogue;
   const palettes = PALETTES.length;
   const themes = THEMES.length;
   return (
@@ -74,6 +84,7 @@ export function LookChooser({ value, onChange, current }: LookChooserProps) {
                       <span>{l.label}</span>
                       {onSite ? <Chip tone="tag">On the site</Chip> : null}
                     </span>
+                    {l.pack ? <span className="text-sm text-ink-alt">From {l.pack}</span> : null}
                   </span>
                 }
               />

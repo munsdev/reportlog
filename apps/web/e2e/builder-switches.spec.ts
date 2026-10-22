@@ -51,7 +51,7 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
   await launch.getByLabel(/Type the title/).fill(title);
   await launch.getByRole('button', { name: 'Launch this logbook' }).click();
   await expect(page.getByText(/^Open, and taking reports/)).toBeVisible();
-  const slug = (await page.locator('header p.font-mono').innerText()).replace('/file/', '');
+  const slug = (await page.locator('[data-filing-address]').innerText()).replace('/file/', '');
 
   // THE FREEZE: asked first, then frozen, and the form stops offering files.
   const files = page.getByRole('region', { name: 'Files' });

@@ -50,12 +50,14 @@ import {
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
+import { KeyValueList } from '../../components/ui/key-value-list.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
@@ -79,11 +81,25 @@ const STANCES: [Stance | '', string][] = [
 export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask } = {}) {
   const maps = useQuery(adminMapsQuery());
   const cands = useQuery(mapCandidatesQuery());
+  const [making, setMaking] = useState(false);
+  const none = maps.data?.maps.length === 0;
+  const make = (
+    <Button
+      aria-expanded={making}
+      onClick={() => {
+        setMaking(!making);
+      }}
+    >
+      Make a map
+    </Button>
+  );
   return (
     <UnsavedMaps ask={ask}>
-      <Page
+      <StaffPage
         title="Maps"
         lede="Where published reports came from, as counts. Make as many maps as you want. Each is off until you turn it on, and an area with fewer reports than its threshold is never published with its number."
+        // One "Make" button at a time: an empty page carries it in its empty state.
+        actions={making || none ? null : make}
       >
         {maps.isError ? <Alert tone="serious">{maps.error.message}</Alert> : null}
         {cands.isError ? <Alert tone="serious">{cands.error.message}</Alert> : null}
@@ -93,14 +109,25 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
         {maps.isPending || cands.isPending ? <p role="status">Reading the maps…</p> : null}
         {maps.isSuccess && cands.isSuccess ? (
           <>
-            <NewMap />
-            {maps.data.maps.length === 0 ? <p>No maps yet.</p> : null}
+            {making ? (
+              <NewMap
+                onDone={() => {
+                  setMaking(false);
+                }}
+              />
+            ) : null}
+            {none && !making ? (
+              <Empty title="No maps yet">
+                Make one, choose what feeds it, then turn it on.
+                <span className="mt-3 flex justify-center">{make}</span>
+              </Empty>
+            ) : null}
             {maps.data.slots.map((slot) => {
               const here = maps.data.maps.filter((m) => m.slot === slot.id);
               if (!here.length) return null;
               return (
                 <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
-                  <h2 className="font-display text-xl font-bold">{slot.label}</h2>
+                  <h2 className="font-display text-2xl font-bold">{slot.label}</h2>
                   <p className="text-sm text-muted">{slot.description}</p>
                   <ul className="flex flex-col gap-3">
                     {here.map((m, i) => (
@@ -121,7 +148,7 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
             })}
           </>
         ) : null}
-      </Page>
+      </StaffPage>
     </UnsavedMaps>
   );
 }
@@ -216,11 +243,8 @@ function PlaceQuestions({
     },
   });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Which question places a report</CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
+    <Card heading="Which question places a report">
+      <div className="flex flex-col gap-4">
         <p className="max-w-prose text-sm text-ink-alt">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
           pick the one that says where it happened. This can be set after a logbook has launched: it
@@ -257,7 +281,7 @@ function PlaceQuestions({
             </li>
           ))}
         </ul>
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -305,24 +329,22 @@ function PlacePicker({
 
 // ── making one ──────────────────────────────────────────────────────────
 
-function NewMap() {
+function NewMap({ onDone }: { onDone: () => void }) {
   const qc = useQueryClient();
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const make = useMutation({
     mutationFn: () => call(createHeatMap, { body: { title, slug } }),
-    onSuccess: () => {
+    onSuccess: async () => {
       setTitle('');
       setSlug('');
-      void qc.invalidateQueries({ queryKey: adminMapsQuery().queryKey });
+      await qc.invalidateQueries({ queryKey: adminMapsQuery().queryKey });
+      onDone();
     },
   });
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Make a map</CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Card heading="Make a map">
+      <div>
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
@@ -353,8 +375,11 @@ function NewMap() {
               spellCheck={false}
             />
           </Field>
-          <Button type="submit" variant="secondary" disabled={make.isPending}>
+          <Button type="submit" disabled={make.isPending}>
             Make the map
+          </Button>
+          <Button type="button" variant="quiet" onClick={onDone}>
+            Cancel
           </Button>
         </form>
         {make.isError ? (
@@ -365,7 +390,7 @@ function NewMap() {
         <p className="mt-3 text-sm text-muted">
           A new map is off. Nothing is published until you turn it on.
         </p>
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -405,25 +430,36 @@ function MapCard({
     ids[j] = here;
     arrange.mutate(ids);
   };
+  const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
+    ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          {map.title}{' '}
-          <span className="font-mono text-sm font-normal text-muted">/map/{map.slug}</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <p className="text-sm">
-          <strong>{map.enabled ? 'On' : 'Off'}</strong>
-          {' · '}
-          {thresholdInWords(map.min_area)}
-          {' · '}
-          {map.logbook_ids.length
-            ? `${String(map.logbook_ids.length)} logbook(s)`
-            : 'every logbook'}
-          {map.list_ids.length ? ` and ${String(map.list_ids.length)} list(s)` : ''}
-        </p>
+    <Card heading={map.title}>
+      <div className="flex flex-col gap-3">
+        <KeyValueList
+          items={[
+            { key: 'Shown', value: map.enabled ? 'On: readers can see it' : 'Off' },
+            { key: 'Short name', value: map.slug, mono: true },
+            { key: 'Threshold', value: thresholdInWords(map.min_area) },
+            {
+              key: 'Fed by',
+              value: [
+                map.logbook_ids.length ? named(map.logbook_ids, logbooks) : 'every logbook',
+                map.list_ids.length ? named(map.list_ids, lists) : null,
+              ]
+                .filter(Boolean)
+                .join('; '),
+            },
+            {
+              key: 'Planes',
+              value: map.planes.map((pl) => PLANES.find(([id]) => id === pl)?.[1] ?? pl).join('; '),
+            },
+            {
+              key: 'Where it appears',
+              value: slots.find((sl) => sl.id === map.slot)?.label ?? map.slot,
+            },
+            { key: 'Public address', value: `/map/${map.slug}`, mono: true },
+          ]}
+        />
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -472,7 +508,7 @@ function MapCard({
         {open ? (
           <MapEditor map={map} slots={slots} logbooks={logbooks} lists={lists} onSaved={refresh} />
         ) : null}
-      </CardContent>
+      </div>
     </Card>
   );
 }

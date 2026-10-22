@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
@@ -119,12 +119,12 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
 export const Route = createFileRoute('/(staff)/settings/words')({
   component: () => (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Wording"
         lede="What this archive is for, in your own words. Each piece shows what it says now; open one to change it and see it where it sits."
       >
         <WithEditor>{(state) => <WordingList slots={state.copy} />}</WithEditor>
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   ),
 });

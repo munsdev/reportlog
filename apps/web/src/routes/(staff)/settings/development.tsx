@@ -8,7 +8,7 @@
  * (features/settings/Switches.tsx, shared with the settings overview).
  */
 import { createFileRoute } from '@tanstack/react-router';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
 import { DevNotice } from '../../../features/settings/Switches.tsx';
 
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/(staff)/settings/development')({
 function DevelopmentPage() {
   return (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Development notice"
         width="prose"
         lede="A note in the corner of every page saying the site is being worked on and may change while somebody uses it."
@@ -31,7 +31,7 @@ function DevelopmentPage() {
           things have settled.
         </p>
         <DevNotice />
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   );
 }

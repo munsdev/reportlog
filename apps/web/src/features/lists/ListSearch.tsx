@@ -20,7 +20,7 @@ import { Card, CardContent } from '../../components/ui/card.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { REVIEW, TRIAGE, said } from './words.ts';
 
@@ -30,7 +30,7 @@ export function ListSearch() {
     mutationFn: (words: string) => call(searchListEntries, { body: { q: words } }),
   });
   return (
-    <Page
+    <StaffPage
       title="Find somebody's entries"
       lede="For when somebody asks what this site holds about them. This looks through what people wrote on every list, and the email addresses they gave. Anything already deleted, by the timer or by its sender, is not found, because it is not kept."
       actions={
@@ -68,7 +68,7 @@ export function ListSearch() {
       {search.isPending ? <p role="status">Looking…</p> : null}
       {search.isError ? <Alert tone="serious">{search.error.message}</Alert> : null}
       {search.data ? <Results result={search.data} /> : null}
-    </Page>
+    </StaffPage>
   );
 }
 

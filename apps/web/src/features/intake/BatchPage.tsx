@@ -14,6 +14,9 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Empty } from '@/components/ui/empty.tsx';
+import { CountLine } from '@/components/ui/type.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import {
@@ -23,7 +26,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
 import { AccountDialog } from './AccountDialog.tsx';
 import { BATCH_STATEMENT } from './parts.tsx';
@@ -59,12 +62,12 @@ export function BatchPage({ id }: { id: number }) {
   if (batch.isPending) return <p role="status">Loading…</p>;
   if (batch.isError) {
     return (
-      <Page title="Not one of your batches" width="prose">
+      <StaffPage title="Not one of your batches" width="prose">
         <p>{batch.error.message}</p>
         <Link to="/intake" className="underline">
           All your batches
         </Link>
-      </Page>
+      </StaffPage>
     );
   }
   const { batch: b, drafts } = batch.data;
@@ -73,7 +76,7 @@ export function BatchPage({ id }: { id: number }) {
     logbooks.data?.logbooks.find((l) => l.slug === slug)?.title ?? slug;
 
   return (
-    <Page
+    <StaffPage
       title={`Batch for ${b.organization}`}
       lede={
         open
@@ -82,9 +85,22 @@ export function BatchPage({ id }: { id: number }) {
       }
       width="prose"
     >
-      <Link to="/intake" className="underline">
-        All your batches
-      </Link>
+      <p>
+        <Link to="/intake" className="underline">
+          All your batches
+        </Link>
+      </p>
+      {review.data && open ? (
+        <CountLine
+          parts={[
+            plural(drafts.length, 'account', 'accounts'),
+            `${String(review.data.ready)} ready`,
+            review.data.blocked
+              ? `${String(review.data.blocked)} ${review.data.blocked === 1 ? 'needs' : 'need'} an answer`
+              : null,
+          ]}
+        />
+      ) : null}
       {filed ? (
         <Alert
           tone="done"
@@ -103,20 +119,25 @@ export function BatchPage({ id }: { id: number }) {
       ) : null}
 
       <section aria-labelledby="accounts" className="flex flex-col gap-3">
-        <h2 id="accounts" className="font-display text-xl font-bold">
+        <h2 id="accounts" className="font-display text-2xl font-bold">
           Accounts
         </h2>
-        {drafts.length === 0 ? <p>No accounts entered yet.</p> : null}
+        {drafts.length === 0 ? (
+          <Empty title="No accounts entered yet">
+            Add one for each account somebody gave you. Nothing is filed until you file the batch.
+          </Empty>
+        ) : null}
         <ul className="flex flex-col gap-3">
           {drafts.map((d) => {
             const first = Object.values(d.payload.answers ?? {}).find(
               (v) => typeof v === 'string' && v.trim(),
             );
             const n = String(d.ordinal);
+            const needs = review.data?.entries.find((e) => e.id === d.id && !e.filed)?.problems;
             return (
               <li
                 key={d.id}
-                className="flex flex-col gap-1 rounded-card border border-line bg-surface p-4"
+                className="flex flex-col gap-1 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised"
               >
                 <p className="font-semibold">
                   Account {n}
@@ -130,6 +151,9 @@ export function BatchPage({ id }: { id: number }) {
                 <p className="text-sm">
                   {typeof first === 'string' ? first.slice(0, 160) : '(nothing entered yet)'}
                 </p>
+                {needs?.length ? (
+                  <p className="text-sm text-ink-alt">Not ready: {needs.join('; ')}</p>
+                ) : null}
                 {d.public_ref && d.thread_id ? (
                   <p className="text-sm">
                     Filed as <span className="font-mono">{d.public_ref}</span> ·{' '}
@@ -192,10 +216,7 @@ export function BatchPage({ id }: { id: number }) {
       </section>
 
       {open ? (
-        <section aria-labelledby="before-filing" className="flex flex-col gap-3">
-          <h2 id="before-filing" className="font-display text-xl font-bold">
-            Before filing
-          </h2>
+        <Card heading="Before filing">
           {review.data ? (
             <>
               <p className="font-semibold">
@@ -236,7 +257,11 @@ export function BatchPage({ id }: { id: number }) {
               File the ready accounts
             </Button>
           </div>
-        </section>
+          <p className="text-sm text-ink-alt">
+            Filing cannot be undone: a filed account can be corrected, which keeps both versions,
+            never edited or deleted.
+          </p>
+        </Card>
       ) : null}
 
       {editing ? (
@@ -264,7 +289,7 @@ export function BatchPage({ id }: { id: number }) {
           }}
         />
       ) : null}
-    </Page>
+    </StaffPage>
   );
 }
 

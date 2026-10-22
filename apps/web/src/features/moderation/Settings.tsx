@@ -13,9 +13,11 @@
  */
 import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -24,9 +26,8 @@ import { Textarea } from '../../components/ui/textarea.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
-import { ClosedRow } from './ClosedRow.tsx';
 import { StaffHead } from './parts.tsx';
-import { accessLogQuery, archiveQuery, keywordsQuery, notesSwitchesQuery } from './queries.ts';
+import { archiveQuery, keywordsQuery, notesSwitchesQuery } from './queries.ts';
 
 export function SettingsPage() {
   return (
@@ -272,63 +273,21 @@ function NotesSwitches() {
 }
 
 /**
- * Closed, it says only what the log holds and that reading it is recorded:
- * a count of looks would need the log read, and reading it is a look of its
- * own, so nothing is read until somebody opens it.
+ * The access log has its own page under Records (settings-and-admin.md §13).
+ * This says where it went, for anybody who still looks for it here, and
+ * reads nothing: reading the log is a look of its own.
  */
 function AccessLog() {
   return (
-    <ClosedRow
-      id="access-log"
-      title="Who opened what"
-      action="Open"
-      summary={
-        <p>
-          Every opening of a reporter’s contact details or of a file’s original, with who and why.
-          Reading this list is itself recorded.
-        </p>
-      }
-    >
-      <p className="text-sm text-ink-alt">
-        Every opening of a reporter’s contact details or of a file’s original, with who and why;
-        every time an address was opened to ask a reporter for files; and every look at a file’s
-        cleaned copy. The last twelve months.
+    <Card variant="quiet" heading="Who opened what" id="who-opened-what">
+      <p>
+        Every opening of a reporter’s contact details or of a file’s original, with who and why, is
+        now its own page under Records:{' '}
+        <Link to="/who-opened-what" className="underline">
+          Who opened protected data
+        </Link>
+        . Opening it is recorded.
       </p>
-      <AccessLogEntries />
-    </ClosedRow>
-  );
-}
-
-const LOOKED: Record<string, string> = {
-  contact: 'opened the contact details of',
-  contact_used: 'had the address opened, to ask for files, of',
-  file_original: 'opened a file’s original on',
-  file_preview: 'looked at a file’s cleaned copy on',
-  chain_file: 'downloaded the complete chain file of',
-  desk_link: 'read a checked link on the journalist desk',
-  desk_report: 'read, on the journalist desk, the Sources of',
-};
-
-function AccessLogEntries() {
-  const query = useQuery(accessLogQuery(12));
-  if (query.isPending) return <p role="status">Reading the log…</p>;
-  if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
-  // A read of the log itself is recorded, and not listed back here.
-  const entries = query.data.entries.filter((e) => e.kind !== 'audit_log');
-  if (!entries.length) return <p>Nobody has opened anything protected.</p>;
-  return (
-    <ul className="flex flex-col gap-2 text-sm">
-      {entries.map((e) => (
-        <li key={e.id}>
-          <span className="font-semibold">{e.staff_email}</span> {LOOKED[e.kind] ?? 'opened'}{' '}
-          <span className="font-mono">
-            {e.public_ref ?? e.logbook ?? (e.kind === 'desk_link' ? '' : 'a report')}
-          </span>
-          {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`},{' '}
-          {new Date(e.accessed_at).toLocaleString()}
-          {e.reason ? `: ${e.reason}` : ''}
-        </li>
-      ))}
-    </ul>
+    </Card>
   );
 }

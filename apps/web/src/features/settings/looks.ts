@@ -3,28 +3,111 @@
  * settings overview. A look is a palette and a theme; a named look is a pair
  * somebody drew and named ("Morning edition"). A pair nobody named is still
  * a look, and is called by its two parts.
+ *
+ * THE CATALOGUE is what may be chosen: the built-in pack, plus every pack an
+ * operator installed (stage 6). The packs' stylesheets are linked on every
+ * page already, so a pack's palette id on a strip or a preview frame paints
+ * it; this file only decides what is offered and what it is called.
  */
 import { CORE_PACK, LOOKS, PALETTES, THEMES } from '@reportlog/contracts';
-import type { Look, NamedLook } from '@reportlog/contracts';
+import type { InstalledLookPack, Look, PanelHead, Texture } from '@reportlog/contracts';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { lookPacksQuery } from '../looks/queries.ts';
+
+export interface CatalogueLook {
+  id: string;
+  label: string;
+  palette: string;
+  theme: string;
+  /** The pack it came with, or undefined for a built-in look. */
+  pack?: string | undefined;
+}
+
+export interface CataloguePalette {
+  id: string;
+  label: string;
+  description: string;
+  dark: boolean;
+}
+
+export interface CatalogueTheme {
+  id: string;
+  label: string;
+  description: string;
+  panelHead: PanelHead;
+  texture: Texture;
+}
+
+export interface LookCatalogue {
+  looks: readonly CatalogueLook[];
+  palettes: readonly CataloguePalette[];
+  themes: readonly CatalogueTheme[];
+}
+
+export const BUILT_IN_CATALOGUE: LookCatalogue = {
+  looks: LOOKS.map((l) => ({ id: l.id, label: l.label, palette: l.palette, theme: l.theme })),
+  palettes: PALETTES,
+  themes: THEMES,
+};
+
+/** The built-in pack, then each installed pack's looks, palettes and themes in its own order. */
+export function catalogueWith(packs: readonly InstalledLookPack[]): LookCatalogue {
+  return {
+    looks: [
+      ...BUILT_IN_CATALOGUE.looks,
+      ...packs.flatMap((p) => p.looks.map((l) => ({ ...l, pack: p.label }))),
+    ],
+    palettes: [...BUILT_IN_CATALOGUE.palettes, ...packs.flatMap((p) => p.palettes)],
+    themes: [...BUILT_IN_CATALOGUE.themes, ...packs.flatMap((p) => p.themes)],
+  };
+}
+
+/**
+ * Everything installed on this site, for the owner's and administrators'
+ * screens (the packs' list is theirs only). While it loads, or if it cannot
+ * be read, the built-in pack alone: what is offered then is still all valid.
+ */
+export function useLookCatalogue(): LookCatalogue {
+  const packs = useQuery(lookPacksQuery).data?.packs;
+  return useMemo(() => (packs ? catalogueWith(packs) : BUILT_IN_CATALOGUE), [packs]);
+}
 
 /** The named look this pair is, if any. */
-export function namedLookFor(look: Look): NamedLook | undefined {
-  return LOOKS.find((l) => l.palette === look.palette && l.theme === look.theme);
+export function namedLookFor(
+  look: Look,
+  catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
+): CatalogueLook | undefined {
+  return catalogue.looks.find((l) => l.palette === look.palette && l.theme === look.theme);
 }
 
-export function paletteLabel(id: string): string {
-  return PALETTES.find((p) => p.id === id)?.label ?? id;
+export function paletteLabel(id: string, catalogue: LookCatalogue = BUILT_IN_CATALOGUE): string {
+  return catalogue.palettes.find((p) => p.id === id)?.label ?? id;
 }
 
-export function themeLabel(id: string): string {
-  return THEMES.find((t) => t.id === id)?.label ?? id;
+export function themeLabel(id: string, catalogue: LookCatalogue = BUILT_IN_CATALOGUE): string {
+  return catalogue.themes.find((t) => t.id === id)?.label ?? id;
 }
 
 /** "Morning edition", or "Midnight with Docket" for a pair nobody named. */
-export function lookName(look: Look): string {
+export function lookName(look: Look, catalogue: LookCatalogue = BUILT_IN_CATALOGUE): string {
   return (
-    namedLookFor(look)?.label ?? `${paletteLabel(look.palette)} with ${themeLabel(look.theme)}`
+    namedLookFor(look, catalogue)?.label ??
+    `${paletteLabel(look.palette, catalogue)} with ${themeLabel(look.theme, catalogue)}`
   );
+}
+
+/**
+ * How a theme heads its panels and textures its page, for a preview frame's
+ * root. A theme from a pack carries its own; an id nobody offers falls back
+ * to the plain shapes rather than drawing nothing.
+ */
+export function layoutIn(
+  themeId: string,
+  catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
+): { panelHead: PanelHead; texture: Texture } {
+  const t = catalogue.themes.find((x) => x.id === themeId);
+  return { panelHead: t?.panelHead ?? 'plain', texture: t?.texture ?? 'none' };
 }
 
 export function sameLook(a: Look, b: Look): boolean {
@@ -33,8 +116,7 @@ export function sameLook(a: Look, b: Look): boolean {
 
 /**
  * What is installed, in words: the built-in pack's line on the Look screen
- * and the count on the settings overview. Packs from a file are thread E's
- * (stage 6); until the site can list them, the built-in pack is all there is.
+ * and the count on the settings overview.
  */
 export const BUILT_IN = {
   label: 'ReportLog, built in',

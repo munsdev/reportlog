@@ -73,9 +73,7 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await launch.getByLabel(/Type the title/).fill(title);
   await go.click();
 
-  await expect(
-    page.getByText('This logbook has launched, so what its questions ask is fixed'),
-  ).toBeVisible();
+  await expect(page.getByText(/are frozen, so every sealed report still checks/)).toBeVisible();
   await expect(page.getByText(/^Open, and taking reports/)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Move/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Remove/ })).toHaveCount(0);
@@ -94,7 +92,7 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await expect(list.getByText('1. Were you hurt at all?')).toBeVisible();
 
   // The public form now exists, and has the condition on it.
-  const slug = (await page.locator('header p.font-mono').innerText()).replace('/file/', '');
+  const slug = (await page.locator('[data-filing-address]').innerText()).replace('/file/', '');
   const res = await page.request.get(`/api/logbooks/${slug}`);
   expect(res.status()).toBe(200);
   const form = (await res.json()) as { fields: { key: string; shown_when?: unknown }[] };
