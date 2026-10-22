@@ -29,7 +29,7 @@ test.describe('an administrator', () => {
     const email = `team-${run}@example.org`;
     const outside = outsideRequests(page);
     await page.goto('/access');
-    await page.getByRole('link', { name: 'Who is doing what', exact: true }).click();
+    await goViaMenu(page, 'Who is doing what', { area: 'People and access' });
     await expect(page.getByRole('heading', { level: 1, name: 'Who is doing what' })).toBeVisible();
     await expect(page.getByRole('table')).toBeVisible();
 

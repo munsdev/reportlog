@@ -14,7 +14,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, BrowserContext } from '@playwright/test';
 import { codeIn, countTo, identityState, lastMessageTo } from '../identity/mail.ts';
 import { passSecondFactor, stepUp } from '../second-factor.ts';
-import { goViaMenu, menuLink, named, openMenu } from '../menu.ts';
+import { goViaMenu, menuLink, named, staffNav } from '../menu.ts';
 import { ALL_PAGES, MENU_FOR, pageByLabel } from '../navigation-table.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
@@ -120,7 +120,7 @@ test('an administrator who is not the owner is turned away, by the page and the 
 
 // Navigation (stage 3, docs/design/checks.md section 02): the owner's menu,
 // here because this is the one project that holds the owner's seat.
-test('the owner’s menu reaches every page the owner may open, and no other', async ({
+test('the owner’s staff sidebar reaches every page the owner may open, and no other', async ({
   browser,
 }) => {
   const context = await contextFor(browser, OWNER);
@@ -132,10 +132,10 @@ test('the owner’s menu reaches every page the owner may open, and no other', a
     const link = await menuLink(page, label, target.area ? { area: target.area } : {});
     await expect(link, label).toBeVisible();
   }
-  const nav = await openMenu(page);
+  const nav = await staffNav(page);
   for (const other of ALL_PAGES.filter((p) => !mine.includes(p.label)))
     await expect(nav.getByRole('link', { name: named(other.label) }), other.label).toHaveCount(0);
-  // Two activations: Menu, then the page.
+  // In the staff area, one activation: the page in the sidebar.
   await nav.getByRole('link', { name: named('Journalists') }).click();
   await expect(page).toHaveURL(/\/access\/journalists\/?$/);
   await context.close();

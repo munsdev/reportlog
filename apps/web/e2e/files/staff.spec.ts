@@ -15,7 +15,7 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
-import { goViaMenu } from '../menu.ts';
+import { goViaMenu, tabLink } from '../menu.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 import { doorFields } from '../door.ts';
@@ -234,10 +234,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
   await expect(page.getByLabel('Largest photo (MB)')).toBeVisible();
 
-  await page
-    .getByRole('navigation', { name: 'File settings' })
-    .getByRole('link', { name: 'Each logbook' })
-    .click();
+  await (await tabLink(page, 'File settings', 'Each logbook')).click();
   await page.getByRole('link', { name: new RegExp(title) }).click();
   await expect(page.getByRole('heading', { level: 1, name: `Files: ${title}` })).toBeVisible();
   await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();

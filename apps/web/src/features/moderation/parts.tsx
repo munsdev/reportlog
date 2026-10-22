@@ -13,7 +13,6 @@ import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { publicLogbookQuery } from '../form/FilingForm.tsx';
 import { askedQuestions, rawFromAnswers, shownAnswer } from '../form/walk.ts';
-import { AreaTabs } from '../nav/AreaTabs.tsx';
 import { SEVERITY_WORDS } from './words.ts';
 
 /**
@@ -53,8 +52,6 @@ export function StaffHead({
       </h1>
       {lede ? <Lede>{lede}</Lede> : null}
       {children}
-      {/* The area's tabs under the heading; this takes the frame's row. */}
-      <AreaTabs className="mt-4" />
     </header>
   );
 }

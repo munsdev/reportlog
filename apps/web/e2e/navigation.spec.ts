@@ -6,13 +6,17 @@
  *     never scrolls sideways, with the menu shut or open.
  *   - Menu opens and closes by click, Enter, Space and Escape; focus moves
  *     in, stays in, and comes back to the Menu button.
- *   - Each role reaches every staff page it may open from the menu, in two
- *     activations on a desktop and three on a phone (Menu, the area, the
- *     page), and sees no page it may not open. The owner's case is in
- *     owner/backups.spec.ts, the only project that holds the owner's seat.
+ *   - The staff area's top bar is one row at every width, and nothing in it
+ *     scrolls sideways.
+ *   - Each role with staff pages finds one way into the staff area in the
+ *     public menu, and none of the pages themselves there; in the staff
+ *     area's sidebar it reaches every staff page it may open, and sees no
+ *     page it may not open. The owner's case is in owner/backups.spec.ts,
+ *     the only project that holds the owner's seat.
  *   - Sign out is reachable by keyboard and by tap at 390 wide, for every
- *     signed-in role. (The bug that started the redesign.)
- *   - The current page is marked in the menu and in its area tabs.
+ *     signed-in role, on the public site and in the staff area. (The bug
+ *     that started the redesign.)
+ *   - The current page is marked in the staff sidebar, once.
  *   - The Menu button's count is the queue's, in words.
  *
  * The filing door's header (no Menu button, no call outside the filing
@@ -23,10 +27,10 @@
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
-import type { Browser, Page } from '@playwright/test';
+import type { Browser } from '@playwright/test';
 import { ADMIN, MODERATOR } from './auth.ts';
 import { identityState } from './identity/mail.ts';
-import { isPhone, menuLink, named, openMenu } from './menu.ts';
+import { accountMenu, isPhone, menuLink, named, openMenu, staffNav } from './menu.ts';
 import { ALL_PAGES, MENU_FOR, pageByLabel } from './navigation-table.ts';
 import type { MenuRole } from './navigation-table.ts';
 
@@ -87,15 +91,6 @@ async function visitor(browser: Browser) {
   return { context, page: await context.newPage(), email: '' };
 }
 
-/** On a phone, every area unfolded, so a page that is not offered cannot hide in a fold. */
-async function unfoldAll(page: Page) {
-  const nav = await openMenu(page);
-  if (!isPhone(page)) return nav;
-  const folds = nav.getByRole('button', { expanded: false });
-  while ((await folds.count()) > 0) await folds.first().click();
-  return nav;
-}
-
 // ── the header ───────────────────────────────────────────────────────────
 
 test.describe('the header', () => {
@@ -129,6 +124,37 @@ test.describe('the header', () => {
         expect(Math.max(...box.tops), state).toBeLessThan(Math.min(...box.bottoms));
         expect(box.height, state).toBeLessThanOrEqual(64);
         expect(box.sideways, state).toBe(false);
+      }
+    });
+  }
+});
+
+test.describe('the staff area’s top bar', () => {
+  test.use({ storageState: ADMIN });
+  for (const width of [320, 390, 768, 1280]) {
+    test(`is one row at ${String(width)}px, and nothing scrolls sideways`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto('/settings/look');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      const banner = page.getByRole('banner');
+      await expect(banner.getByRole('button', { name: /^Account:/ })).toBeVisible();
+      const box = await banner.evaluate((el) => ({
+        height: el.firstElementChild?.getBoundingClientRect().height ?? 0,
+        sideways: document.documentElement.scrollWidth > window.innerWidth,
+      }));
+      expect(box.height).toBeLessThanOrEqual(56);
+      expect(box.sideways).toBe(false);
+      if (width < 768) {
+        // The drawer: open, Escape closes it, and focus is back on its button.
+        const button = banner.getByRole('button', { name: 'Staff menu' });
+        await button.click();
+        await expect(page.getByRole('navigation', { name: 'Staff areas' })).toBeVisible();
+        await expect(page.locator('#staff-drawer :focus')).toHaveCount(1);
+        await page.keyboard.press('Escape');
+        await expect(page.locator('#staff-drawer')).toHaveCount(0);
+        await expect(button).toBeFocused();
+      } else {
+        await expect(page.getByRole('navigation', { name: 'Staff areas' })).toBeVisible();
       }
     });
   }
@@ -221,29 +247,40 @@ for (const role of ROLES) {
     await page.goto('/');
     const mine = MENU_FOR[role];
 
+    // The public menu: one way into the staff area, and no staff page itself.
+    const menu = await openMenu(page);
+    const door = menu.getByRole('link', { name: /^Open the staff area/ });
+    await expect(door).toHaveCount(mine.length ? 1 : 0);
+    for (const p of ALL_PAGES)
+      await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
+    if (role === 'visitor') {
+      await expect(menu.getByRole('link', { name: 'Sign in' })).toBeVisible();
+      await expect(menu.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
+    } else {
+      await expect(menu.getByText(who.email)).toBeVisible();
+    }
+    if (!mine.length) {
+      await who.context.close();
+      return;
+    }
+
+    // The staff area's sidebar: exactly this person's pages.
+    const side = await staffNav(page);
     for (const label of mine) {
       const target = pageByLabel(label);
-      // Menu (1); on a phone the area (2); then the page. menuLink makes
-      // exactly those activations, and no more.
-      const link = await menuLink(page, label, target.area ? { area: target.area } : {});
+      const link = side.getByRole('link', { name: named(label) });
       await expect(link, label).toBeVisible();
       await expect(link, label).toHaveAttribute(
         'href',
         new RegExp(`^${target.href.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/?$`),
       );
     }
-
-    const nav = await unfoldAll(page);
     for (const other of ALL_PAGES.filter((p) => !mine.includes(p.label))) {
-      await expect(nav.getByRole('link', { name: named(other.label) }), other.label).toHaveCount(0);
+      await expect(side.getByRole('link', { name: named(other.label) }), other.label).toHaveCount(
+        0,
+      );
     }
-    if (role === 'visitor') {
-      await expect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
-      await expect(nav.getByRole('button', { name: 'Sign out' })).toHaveCount(0);
-    } else {
-      await expect(nav.getByText(who.email)).toBeVisible();
-    }
-    await page.keyboard.press('Escape');
+    if (isPhone(page)) await page.keyboard.press('Escape');
 
     // And they really go there: the first page of each area, and the rest.
     const firsts = new Map<string, string>();
@@ -255,7 +292,7 @@ for (const role of ROLES) {
       const target = pageByLabel(label);
       await (await menuLink(page, label, target.area ? { area: target.area } : {})).click();
       await expect(page).toHaveURL(new RegExp(`${target.href.split('#')[0] ?? ''}/?(#.*)?$`));
-      await expect(page.getByRole('navigation', { name: 'Main menu' })).toBeHidden();
+      await expect(page.locator('#staff-drawer')).toHaveCount(0);
     }
     await who.context.close();
   });
@@ -319,27 +356,48 @@ for (const role of [
   });
 }
 
+test('signs out from the staff area at 390 wide, by keyboard', async ({ browser }) => {
+  const { context, page } = await as(browser, 'moderator');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/moderate/flood');
+  const button = page.getByRole('banner').getByRole('button', { name: /^Account:/ });
+  await button.focus();
+  await page.keyboard.press('Enter');
+  const panel = await accountMenu(page);
+  const out = panel.getByRole('button', { name: 'Sign out' });
+  let found = false;
+  for (let i = 0; i < 20 && !found; i += 1) {
+    await page.keyboard.press('Tab');
+    found = await out.evaluate((el) => el === document.activeElement).catch(() => false);
+  }
+  expect(found, 'Sign out is in the Tab order').toBe(true);
+  await page.keyboard.press('Enter');
+  await expect
+    .poll(async () => (await (await page.request.get('/api/auth/me')).json()) as unknown)
+    .toEqual({ signedIn: false });
+  await expect(page.locator('[data-staff-app]')).toHaveCount(0);
+  await context.close();
+});
+
 // ── where you are ───────────────────────────────────────────────────────
 
 test.describe('the current page', () => {
   test.use({ storageState: ADMIN });
 
-  test('is marked in the menu and in its area tabs, once each', async ({ page }) => {
+  test('is marked in the staff sidebar, once', async ({ page }) => {
     await page.goto('/settings/look');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    const tabs = page.getByRole('navigation', { name: 'Site settings' });
-    await expect(tabs.getByRole('link', { name: 'Look', exact: true })).toHaveAttribute(
+    const side = await staffNav(page);
+    await expect(side.getByRole('link', { name: 'Look', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
-    await expect(tabs.locator('[aria-current="page"]')).toHaveCount(1);
-    const link = await menuLink(page, 'Look', { area: 'Site settings' });
-    await expect(link).toHaveAttribute('aria-current', 'page');
-    const nav = page.getByRole('navigation', { name: 'Main menu' });
-    await expect(nav.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(side.locator('[aria-current="page"]')).toHaveCount(1);
+    // No row of area tabs any more: the sidebar is the only list of them.
+    await expect(page.getByRole('navigation', { name: 'Site settings' })).toHaveCount(0);
   });
 
-  test('a report’s own page is the queue’s, in the menu', async ({ browser }) => {
+  test('a report’s own page is the queue’s, in the sidebar', async ({ browser }) => {
     const context = await browser.newContext({ storageState: MODERATOR });
     const page = await context.newPage();
     await page.goto('/moderate/00000000-0000-4000-8000-000000000000');

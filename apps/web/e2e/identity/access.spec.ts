@@ -25,7 +25,7 @@ import {
   subscriptionOf,
 } from './mail.ts';
 import { rememberSecret, stepUp, totp } from '../second-factor.ts';
-import { menuLink, signOut } from '../menu.ts';
+import { openMenu, signOut } from '../menu.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -235,7 +235,10 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
   await finish.click();
 
   await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
-  await expect(await menuLink(owner, 'Roles', { area: 'People and access' })).toBeVisible();
+  // Signed in with a role: the menu offers the way into the staff area.
+  await expect(
+    (await openMenu(owner)).getByRole('link', { name: /^Open the staff area/ }),
+  ).toBeVisible();
   await owner.keyboard.press('Escape');
   await expect(owner.getByRole('banner')).toContainText('Polling Watch');
 
