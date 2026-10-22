@@ -171,7 +171,11 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   await dialog.getByLabel('Why publish it?').fill('It shows the queue the report describes');
   await dialog.getByRole('button', { name: 'Publish this file' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByText('Now: Published')).toBeVisible();
+  await expect(
+    page
+      .getByRole('list', { name: 'Files on this report' })
+      .getByText('Published', { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText('“A queue outside a polling station door”')).toBeVisible();
 
   // The original needs a reason first; the link then carries it.

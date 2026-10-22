@@ -19,6 +19,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
@@ -43,17 +44,12 @@ export function CountsOnlySettings() {
   });
   if (!query.data) return null;
   return (
-    <section
-      aria-labelledby="counts-only"
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 id="counts-only" className="font-display text-xl font-bold">
-        Publish as counts only
-      </h2>
+    <Card heading="Publish as counts only">
       <p className="text-sm text-ink-alt">
         A logbook published as counts only shows its accepted reports as counts by place and time,
         and never one by one: not on the board, a report’s page, the spreadsheet, the chain file,
-        the daily snapshot or a digest. Every change is shown publicly with its time.
+        the daily snapshot or a digest. Every change, the threshold included, is recorded as a
+        public switch use and shown publicly with its time.
       </p>
       {query.data.logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
       <ul className="flex flex-col gap-4">
@@ -73,7 +69,7 @@ export function CountsOnlySettings() {
         ))}
       </ul>
       {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
-    </section>
+    </Card>
   );
 }
 

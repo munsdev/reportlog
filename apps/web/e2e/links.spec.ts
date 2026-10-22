@@ -84,7 +84,10 @@ test('a moderator checks a link as text, comments for journalists, and erases an
     .check();
   await card(good).getByRole('button', { name: 'Record the check' }).click();
   await expect(card(good)).toHaveCount(0);
-  await page.getByLabel('Showing').selectOption({ label: 'Checked: journalists may see it' });
+  await page
+    .getByRole('group', { name: 'Show links that are' })
+    .getByRole('button', { name: 'Passed' })
+    .click();
   await expect(card(good)).toBeVisible();
   await expect(card(good).getByText(/Journalists will read this/)).toBeVisible();
   await card(good).getByLabel('Comment for journalists').fill('The station’s own upload.');
@@ -93,7 +96,10 @@ test('a moderator checks a link as text, comments for journalists, and erases an
   await card(good).getByRole('button', { name: 'Show the history' }).click();
   await expect(card(good).getByRole('list', { name: 'History' })).toContainText('comment');
 
-  await page.getByLabel('Showing').selectOption({ label: 'Not checked yet' });
+  await page
+    .getByRole('group', { name: 'Show links that are' })
+    .getByRole('button', { name: 'Waiting' })
+    .click();
   await card(bad)
     .getByLabel(/^Illegal/)
     .check();

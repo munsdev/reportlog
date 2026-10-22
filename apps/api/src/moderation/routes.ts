@@ -62,7 +62,15 @@ import {
   versionsFor,
   writeNote,
 } from './notes.ts';
-import { decide, historyFor, listQueue, markRead, restore, withdraw } from './queue.ts';
+import {
+  decide,
+  historyFor,
+  listQueue,
+  markRead,
+  queueCounts,
+  restore,
+  withdraw,
+} from './queue.ts';
 
 export interface ModerationRouteDeps {
   db: Kysely<DB>;
@@ -171,7 +179,7 @@ export async function moderationRoutes(
     route(scope, C.listQueue, async ({ query }) => {
       const archive = await publicArchiveAvailable(db);
       const threats = await threatRefs();
-      const rows = await listQueue(db, {
+      const filter = {
         status: query.status,
         q: query.q,
         flagged: query.flagged === 'true',
@@ -184,11 +192,26 @@ export async function moderationRoutes(
         answerSet: query.answer_set,
         organization: query.organization ? Number(query.organization) : undefined,
         lane: query.lane,
+      };
+      // The counts first: the page asked for is clamped to the pages there
+      // are, so a page left over from a longer list shows its last page
+      // rather than an empty one.
+      const counts = await queueCounts(db, filter);
+      const total = counts[query.status ?? 'pending'];
+      const pages = Math.max(1, Math.ceil(total / C.QUEUE_PAGE_SIZE));
+      const page = Math.min(Number(query.page ?? 1), pages);
+      const rows = await listQueue(db, filter, {
+        limit: C.QUEUE_PAGE_SIZE,
+        offset: (page - 1) * C.QUEUE_PAGE_SIZE,
       });
       return {
         reports: rows.map((r) => present(r, archive, threats)),
         open_flags: await openFlagCount(db),
         archive_published: archive,
+        counts,
+        total,
+        page,
+        pages,
       };
     });
 

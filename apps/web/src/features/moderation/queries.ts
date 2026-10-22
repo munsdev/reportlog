@@ -33,6 +33,17 @@ export interface QueueSearch {
   answer_set?: string | undefined;
   organization?: string | undefined;
   lane?: 'organization' | 'open_form' | undefined;
+  /** 1-based. */
+  page?: number | undefined;
+}
+
+/**
+ * The order the queue is read in: what was asked, or oldest first while
+ * looking at what is waiting (the longest wait is the first to clear) and
+ * newest first otherwise.
+ */
+export function sortOf(s: QueueSearch): 'newest' | 'oldest' {
+  return s.sort ?? ((s.status ?? 'pending') === 'pending' ? 'oldest' : 'newest');
 }
 
 export const queueQuery = (s: QueueSearch) =>
@@ -46,13 +57,14 @@ export const queueQuery = (s: QueueSearch) =>
           ...(s.flagged ? { flagged: 'true' as const } : {}),
           ...(s.logbook ? { logbook: s.logbook } : {}),
           ...(s.severity ? { severity: s.severity } : {}),
-          ...(s.sort ? { sort: s.sort } : {}),
+          sort: sortOf(s),
           ...(s.from ? { from: s.from } : {}),
           ...(s.to ? { to: s.to } : {}),
           ...(s.place ? { place: s.place } : {}),
           ...(s.answer_set ? { answer_set: s.answer_set } : {}),
           ...(s.organization ? { organization: s.organization } : {}),
           ...(s.lane ? { lane: s.lane } : {}),
+          ...(s.page && s.page > 1 ? { page: String(s.page) } : {}),
         },
         signal,
       }),
@@ -99,3 +111,54 @@ export const accessLogQuery = (months: number) =>
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
+
+const STATUSES: readonly QueueStatus[] = [
+  'all',
+  'pending',
+  'valid',
+  'invalid',
+  'unknown',
+  'withdrawn',
+];
+const SEVERITY_FILTERS: readonly QueueSeverity[] = [
+  'note',
+  'irregularity',
+  'serious',
+  'systemic',
+  'none',
+];
+
+/**
+ * The queue's filters from the address, each checked again by the server.
+ * The report page takes the same ones, so "Back to the queue" and "Next
+ * waiting report" keep the queue as it was left.
+ */
+export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
+  const out: QueueSearch = {};
+  if (STATUSES.includes(s.status as QueueStatus)) out.status = s.status as QueueStatus;
+  if (typeof s.q === 'string' && s.q) out.q = s.q.slice(0, 200);
+  if (s.flagged === true || s.flagged === 'true') out.flagged = true;
+  if (typeof s.logbook === 'string' && s.logbook) out.logbook = s.logbook.slice(0, 63);
+  if (SEVERITY_FILTERS.includes(s.severity as QueueSeverity)) {
+    out.severity = s.severity as QueueSeverity;
+  }
+  if (s.sort === 'oldest' || s.sort === 'newest') out.sort = s.sort;
+  const page = Number(s.page);
+  if (Number.isInteger(page) && page > 1 && page < 1e6) out.page = page;
+  // Plan E: the flood filters, checked again by the server.
+  const text = (v: unknown, max: number) =>
+    typeof v === 'string' && v ? v.slice(0, max) : undefined;
+  const from = text(s.from, 40);
+  if (from) out.from = from;
+  const to = text(s.to, 40);
+  if (to) out.to = to;
+  const place = text(s.place, 16);
+  if (place && /^[A-Z]{2}(-[A-Z0-9]{1,3}(-\d{5})?)?$/.test(place)) out.place = place;
+  const set = text(s.answer_set, 32);
+  if (set && /^[0-9a-f]{32}$/.test(set)) out.answer_set = set;
+  const org =
+    typeof s.organization === 'number' ? String(s.organization) : text(s.organization, 16);
+  if (org && /^[1-9]\d*$/.test(org)) out.organization = org;
+  if (s.lane === 'organization' || s.lane === 'open_form') out.lane = s.lane;
+  return out;
+}

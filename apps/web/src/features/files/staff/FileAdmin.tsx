@@ -247,12 +247,16 @@ export function EraseFilePage() {
   });
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <Page
-      title="Erasing a file"
-      lede="Erasing destroys the key the file was locked with, so nobody can ever open it again, this site included. Its fingerprint stays in the report, which still checks out. It cannot be undone."
-      width="prose"
-    >
+    <Page title="Erasing a file" width="prose">
       <FileAdminSections />
+      <Card variant="deep" heading="What erasing does">
+        <p>
+          Erasing destroys the key the file was locked with, so nobody can ever open it again, this
+          site included. Its fingerprint stays in the report, which still checks out. It cannot be
+          undone.
+        </p>
+        <p>Every erasure is recorded on the file’s record, with your name and your reason.</p>
+      </Card>
       <form
         className="flex flex-col gap-3"
         onSubmit={(e) => {

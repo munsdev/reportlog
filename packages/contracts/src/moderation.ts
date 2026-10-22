@@ -118,13 +118,31 @@ export const listQueue = defineRoute({
       .regex(/^[1-9]\d{0,15}$/)
       .optional(),
     lane: z.enum(['organization', 'open_form']).optional(),
+    /** 1-based, QUEUE_PAGE_SIZE reports to a page. */
+    page: z
+      .string()
+      .regex(/^[1-9]\d{0,5}$/)
+      .optional(),
   }),
   response: z.object({
     reports: z.array(QueueItem),
     open_flags: z.number().int(),
     archive_published: z.boolean(),
+    /**
+     * How many reports each status button would show under the same
+     * filters (search, logbook, severity, dates, place, answer set, lane,
+     * organization, second read): every filter except the status itself.
+     */
+    counts: z.record(QueueStatusFilter, z.number().int()),
+    /** Reports matching the whole filter, status included, across every page. */
+    total: z.number().int(),
+    page: z.number().int(),
+    pages: z.number().int(),
   }),
 });
+
+/** Reports on one page of the queue. */
+export const QUEUE_PAGE_SIZE = 50;
 
 export const HistoryEntry = z.object({
   action: z.string(),

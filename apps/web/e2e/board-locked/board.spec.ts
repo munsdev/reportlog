@@ -91,39 +91,54 @@ test('a moderator rates a report and links it to another; the queue says so', as
   await page.goto(`/moderate?status=all&q=${first}`);
   await page.getByRole('link', { name: `Open ${first}` }).click();
   const severity = page.getByRole('region', { name: 'Severity' });
-  await expect(severity).toContainText('Nobody has rated it yet.');
+  await expect(severity).toContainText('Not set.');
+  // A closed row: Edit opens it, and the Save bar names what it records.
+  await severity.getByRole('button', { name: 'Edit Severity' }).click();
+  const bar = page.getByRole('region', { name: 'Save changes' });
   // Nothing is preselected: saving is a deliberate act.
-  await expect(severity.getByRole('button', { name: 'Record the rating' })).toBeDisabled();
+  await bar.getByRole('button', { name: 'Record the rating' }).click();
+  await expect(severity.getByText('Choose a rating, or clear it.')).toBeVisible();
   await severity.getByLabel('Rate it').selectOption('serious');
   await severity.getByLabel('Why this rating').fill('People were shut out of the hall.');
-  await severity.getByRole('button', { name: 'Record the rating' }).click();
-  await expect(severity).toContainText('Rated Serious');
+  await bar.getByRole('button', { name: 'Record the rating' }).click();
+  await expect(severity).toContainText('Serious: Somebody was');
 
   const incident = page.getByRole('region', { name: 'Same incident' });
-  await expect(incident).toContainText('Not linked to any other report.');
+  await expect(incident).toContainText('Not linked.');
+  await incident.getByRole('button', { name: 'Link Same incident' }).click();
   await incident.getByLabel('Link it to').fill(second);
   await incident.getByLabel('Why they are the same incident').fill('Same hall, same morning.');
-  await incident.getByRole('button', { name: 'Link them' }).click();
-  await expect(incident.getByRole('list', { name: 'Linked reports' })).toContainText(second);
+  await bar.getByRole('button', { name: 'Link them' }).click();
+  await expect(incident).toContainText(`Linked with ${second}`);
   // Both are waiting for a moderator, so neither counts as corroboration yet.
   await expect(incident).toContainText('0 of the 2 accounts are published');
-  await expect(page.getByRole('region', { name: 'What happened to it' })).toContainText(
+  await expect(page.getByRole('region', { name: 'The record' })).toContainText(
     'Rated its severity: serious',
   );
 
   await page.goto('/moderate');
-  await page.getByLabel('Showing').selectOption('all');
-  await page.getByLabel('Severity').selectOption('serious');
-  await page.getByLabel('Search the words or a reference').fill(first);
-  await page.getByRole('button', { name: 'Show' }).click();
-  const row = page.getByRole('link', { name: `Open ${first}` });
-  await expect(row).toContainText('Severity: Serious');
+  await page
+    .getByRole('group', { name: 'Show reports that are' })
+    .getByRole('button', { name: /^All/ })
+    .click();
+  await page.getByRole('button', { name: /^Filter/ }).click();
+  const filter = page.getByRole('form', { name: 'Filter the queue' });
+  await filter.getByLabel('Severity').selectOption('serious');
+  await filter.getByRole('button', { name: 'Apply' }).click();
+  const search = page.getByLabel('Search words or a reference');
+  await search.fill(first);
+  await search.press('Enter');
+  const row = page
+    .getByRole('list', { name: 'Reports' })
+    .getByRole('listitem')
+    .filter({ has: page.getByRole('link', { name: `Open ${first}` }) });
+  await expect(row).toContainText('Serious');
   await expect(row).toContainText('Linked with 1 other report · 0 of the 2 published');
   // The other one is linked but not rated, so a filter on the rating leaves it out.
-  await page.getByLabel('Search the words or a reference').fill(second);
-  await page.getByRole('button', { name: 'Show' }).click();
-  await expect(page.getByRole('status').filter({ hasText: 'Nothing here.' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Corroboration' })).toContainText(
+  await search.fill(second);
+  await search.press('Enter');
+  await expect(page.getByText('Nothing matches')).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Across the published reports' })).toContainText(
     'Accounts corroborated by at least one other',
   );
   expect(v.outside).toEqual([]);

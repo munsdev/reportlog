@@ -24,51 +24,66 @@ import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
 import { Checkbox } from '../../components/ui/checkbox.tsx';
+import { Chip } from '../../components/ui/chip.tsx';
+import { Count } from '../../components/ui/count.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
 import { Select } from '../../components/ui/select.tsx';
+import { Meta } from '../../components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
+import { StaffHead } from '../moderation/parts.tsx';
 import { reviewBatchQuery, reviewQueuesQuery } from './queries.ts';
 import { LINK_OUTCOME, REVIEW, TRIAGE, said } from './words.ts';
 
 export function ReviewQueues() {
   const query = useQuery(reviewQueuesQuery());
+  const waiting = query.data?.queues.some((q) => q.waiting > 0);
   return (
-    <Page
-      title="List entries to review"
-      lede="Nothing on a list is counted publicly until it is approved here. Entries are read a page at a time and approved together."
-      actions={
-        <Button asChild variant="secondary">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <StaffHead
+          title="List entries to review"
+          lede="Entries, not reports: nothing on a list is sealed, and nothing is counted publicly until it is approved here. Entries are read a page at a time and approved together."
+        />
+        <Button asChild variant="secondary" className="self-start sm:self-end">
           <Link to="/lists/links">Check links</Link>
         </Button>
-      }
-    >
+      </div>
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
-      {query.data ? (
-        query.data.queues.length === 0 ? (
-          <p>There are no lists.</p>
-        ) : (
-          <ul className="space-y-2" aria-label="Lists to review">
-            {query.data.queues.map((q) => (
-              <li key={q.id}>
-                <Link
-                  to="/lists/review/$id"
-                  params={{ id: q.id }}
-                  className="block rounded-card border border-line bg-surface p-4 hover:bg-paper-alt"
-                >
-                  <span className="font-semibold">{q.title}</span>{' '}
-                  <span className="text-ink-alt">
-                    · {String(q.waiting)} waiting
-                    {q.oldest ? `, the oldest from ${new Date(q.oldest).toLocaleString()}` : ''}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )
+      {query.data && !waiting ? (
+        <Empty title="No list has entries waiting">
+          New entries appear here as they arrive. This page does not refresh by itself.
+        </Empty>
       ) : null}
-    </Page>
+      {query.data?.queues.length ? (
+        <ul className="flex flex-col gap-3" aria-label="Lists to review">
+          {query.data.queues.map((q) => (
+            <li key={q.id}>
+              <Card className="flex-row flex-wrap items-center gap-3 p-4">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <p className="flex flex-wrap items-center gap-2 font-semibold">
+                    {q.title}
+                    <Count
+                      value={q.waiting}
+                      label={`${String(q.waiting)} ${q.waiting === 1 ? 'entry' : 'entries'} waiting`}
+                    />
+                  </p>
+                  {q.oldest ? (
+                    <Meta>{`The oldest from ${new Date(q.oldest).toLocaleString()}`}</Meta>
+                  ) : null}
+                </div>
+                <Button asChild variant="secondary">
+                  <Link to="/lists/review/$id" params={{ id: q.id }} aria-label={`Open ${q.title}`}>
+                    Open
+                  </Link>
+                </Button>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 
@@ -76,34 +91,35 @@ export function ReviewPage({ id }: { id: number }) {
   const [state, setState] = useState<ReviewState>('received');
   const query = useQuery(reviewBatchQuery(id, state));
   return (
-    <Page
-      title={query.data ? `Review: ${query.data.list.title}` : 'Review'}
-      actions={
-        <Button asChild variant="secondary">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <StaffHead title={query.data ? `Review: ${query.data.list.title}` : 'Review'} />
+        <Button asChild variant="secondary" className="self-start sm:self-end">
           <Link to="/lists/review">All lists</Link>
         </Button>
-      }
-    >
-      <div className="max-w-xs">
-        <Label htmlFor="review-state">Showing</Label>
-        <Select
-          id="review-state"
-          value={state}
-          onChange={(e) => {
-            setState(e.target.value as ReviewState);
-          }}
-        >
+      </div>
+      <div className="-mx-1 overflow-x-auto px-1 pt-1 pb-2">
+        <div role="group" aria-label="Show entries that are" className="flex shrink-0 gap-2">
           {(Object.keys(REVIEW) as ReviewState[]).map((s) => (
-            <option key={s} value={s}>
+            <Button
+              key={s}
+              type="button"
+              variant="secondary"
+              aria-pressed={state === s}
+              className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
+              onClick={() => {
+                setState(s);
+              }}
+            >
               {REVIEW[s]}
-            </option>
+            </Button>
           ))}
-        </Select>
+        </div>
       </div>
       {query.isPending ? <p role="status">Reading the entries…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? <Batch key={`${String(id)}-${state}`} batch={query.data} /> : null}
-    </Page>
+    </div>
   );
 }
 
@@ -121,7 +137,12 @@ function Batch({ batch }: { batch: ReviewBatch }) {
         params: { id: batch.list.id },
         body: { state: to, ids: ticked },
       }),
-    onSuccess: refresh,
+    onSuccess: async (_out, to) => {
+      setTold(
+        `${String(ticked.length)} ${ticked.length === 1 ? 'entry' : 'entries'} ${to === 'approved' ? 'approved' : 'rejected'}.`,
+      );
+      await refresh();
+    },
   });
   const mark = useMutation({
     mutationFn: () =>
@@ -129,21 +150,50 @@ function Batch({ batch }: { batch: ReviewBatch }) {
         params: { id: batch.list.id },
         body: { state: triage, ids: ticked },
       }),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      setTold(
+        `${String(ticked.length)} ${ticked.length === 1 ? 'entry' : 'entries'} marked as ${TRIAGE[triage].toLowerCase()}.`,
+      );
+      await refresh();
+    },
   });
   const labels = new Map(batch.fields.map((f) => [f.key, f.label]));
   const all = batch.entries.map((e) => e.id);
+  const [told, setTold] = useState('');
+  const hosts = new Set(batch.entries.flatMap((e) => e.links.map((l) => l.host)));
+  const unfamiliar = new Set(
+    batch.entries.flatMap((e) => e.links.filter((l) => !l.known_host).map((l) => l.host)),
+  );
+  const busiest = batch.clusters.busiest_minutes[0];
 
-  if (!batch.entries.length) return <p>Nothing here.</p>;
+  if (!batch.entries.length) {
+    return (
+      <Empty title="Nothing here">
+        {batch.state === 'received'
+          ? 'No entry on this list is waiting.'
+          : 'No entry on this list has been given this answer.'}
+      </Empty>
+    );
+  }
   return (
-    <div className="space-y-4">
-      {batch.clusters.busiest_minutes[0] && batch.clusters.busiest_minutes[0].count > 1 ? (
-        <Alert title="At a glance">
-          <p>
-            Busiest minute: {String(batch.clusters.busiest_minutes[0].count)} entries at{' '}
-            {new Date(`${batch.clusters.busiest_minutes[0].minute}:00Z`).toLocaleString()}.
-          </p>
-        </Alert>
+    <div className="flex flex-col gap-4">
+      {hosts.size || (busiest && busiest.count > 1) ? (
+        <Card variant="quiet" heading="At a glance">
+          <ul className="flex flex-col gap-1">
+            {hosts.size ? (
+              <li>
+                {`${String(hosts.size)} site${hosts.size === 1 ? '' : 's'} linked`}
+                {unfamiliar.size ? `, ${String(unfamiliar.size)} of them unfamiliar` : ''}.
+              </li>
+            ) : null}
+            {busiest && busiest.count > 1 ? (
+              <li>
+                Busiest minute: {String(busiest.count)} entries at{' '}
+                {new Date(`${busiest.minute}:00Z`).toLocaleString()}.
+              </li>
+            ) : null}
+          </ul>
+        </Card>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
@@ -157,8 +207,10 @@ function Batch({ batch }: { batch: ReviewBatch }) {
           />
           <Label htmlFor="tick-all">Tick every entry on this page</Label>
         </div>
-        <span className="text-sm text-ink-alt">{String(ticked.length)} ticked</span>
       </div>
+      <p role="status" className="text-sm">
+        {told}
+      </p>
 
       <ul className="space-y-3" aria-label="Entries">
         {batch.entries.map((e) => {
@@ -166,7 +218,7 @@ function Batch({ batch }: { batch: ReviewBatch }) {
           return (
             <li key={e.id}>
               <Card>
-                <CardContent className="space-y-2 pt-4">
+                <CardContent className="space-y-2">
                   <div className="flex items-start gap-3">
                     <Checkbox
                       id={box}
@@ -177,10 +229,17 @@ function Batch({ batch }: { batch: ReviewBatch }) {
                         );
                       }}
                     />
-                    <Label htmlFor={box} className="font-normal">
-                      Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()} ·{' '}
-                      {REVIEW[e.review_state]} · {TRIAGE[e.triage_state]}
-                    </Label>
+                    <div className="flex min-w-0 flex-col gap-1.5">
+                      <Label htmlFor={box} className="font-normal">
+                        Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
+                      </Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        <Chip tone={e.review_state === 'received' ? 'open' : 'tag'}>
+                          {REVIEW[e.review_state]}
+                        </Chip>
+                        <Chip tone="tag">{TRIAGE[e.triage_state]}</Chip>
+                      </div>
+                    </div>
                   </div>
                   {e.links.length ? (
                     // Checked one address at a time, for every tip that sent it.
@@ -223,58 +282,64 @@ function Batch({ batch }: { batch: ReviewBatch }) {
 
       {review.isError ? <Alert tone="serious">{review.error.message}</Alert> : null}
       {mark.isError ? <Alert tone="serious">{mark.error.message}</Alert> : null}
-      <div className="flex flex-wrap items-end gap-3">
-        {batch.state === 'received' ? (
-          <>
-            <Button
-              type="button"
-              disabled={!ticked.length || review.isPending}
-              onClick={() => {
-                review.mutate('approved');
-              }}
-            >
-              Approve the ticked entries
-            </Button>
+      {/* Like the queue's bar: on the deep surface, held at the foot of a phone's screen. */}
+      <div className="sticky bottom-0 z-30">
+        <Card variant="deep" className="flex-row flex-wrap items-end gap-3 px-4 py-3">
+          <p className="label-face text-sm self-center">{`${String(ticked.length)} ticked`}</p>
+          {batch.state === 'received' ? (
+            <>
+              <Button
+                type="button"
+                disabled={!ticked.length || review.isPending}
+                onClick={() => {
+                  review.mutate('approved');
+                }}
+              >
+                Approve the ticked entries
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!ticked.length || review.isPending}
+                onClick={() => {
+                  review.mutate('rejected');
+                }}
+              >
+                Reject the ticked entries
+              </Button>
+            </>
+          ) : null}
+          <div className="flex items-end gap-2">
+            <div>
+              <Label htmlFor="triage" className="text-on-deep">
+                Mark the ticked entries as
+              </Label>
+              <Select
+                id="triage"
+                value={triage}
+                onChange={(e) => {
+                  setTriage(e.target.value as TriageState);
+                }}
+              >
+                {(Object.keys(TRIAGE) as TriageState[]).map((t) => (
+                  <option key={t} value={t}>
+                    {TRIAGE[t]}
+                  </option>
+                ))}
+              </Select>
+            </div>
             <Button
               type="button"
               variant="secondary"
-              disabled={!ticked.length || review.isPending}
+              disabled={!ticked.length || mark.isPending}
               onClick={() => {
-                review.mutate('rejected');
+                mark.mutate();
               }}
             >
-              Reject the ticked entries
+              Mark them
             </Button>
-          </>
-        ) : null}
-        <div className="flex items-end gap-2">
-          <div>
-            <Label htmlFor="triage">Mark the ticked entries as</Label>
-            <Select
-              id="triage"
-              value={triage}
-              onChange={(e) => {
-                setTriage(e.target.value as TriageState);
-              }}
-            >
-              {(Object.keys(TRIAGE) as TriageState[]).map((t) => (
-                <option key={t} value={t}>
-                  {TRIAGE[t]}
-                </option>
-              ))}
-            </Select>
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={!ticked.length || mark.isPending}
-            onClick={() => {
-              mark.mutate();
-            }}
-          >
-            Mark them
-          </Button>
-        </div>
+        </Card>
       </div>
     </div>
   );
