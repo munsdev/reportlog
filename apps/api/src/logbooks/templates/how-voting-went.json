@@ -1,7 +1,7 @@
 {
   "reportlog_logbook": 1,
   "title": "Log how voting went",
-  "slug": "electionlog",
+  "slug": "how-voting-went",
   "blurb": "One logbook for every voter in the US or abroad, every voting method, good and bad.",
   "accepts_files": false,
   "questions": [

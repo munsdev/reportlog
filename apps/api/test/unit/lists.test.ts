@@ -742,13 +742,13 @@ describe('the shipped templates', () => {
       'check-ins',
       'contact',
       'election-tips',
-      'electionlog-tips',
+      'link-tips',
       'tips',
     ]);
   });
 
-  it('ElectionLog’s tip list asks three rows of a link and its kind, strictly, and no email', () => {
-    const t = by['electionlog-tips'];
+  it('The link tip list asks three rows of a link and its kind, strictly, and no email', () => {
+    const t = by['link-tips'];
     expect(t?.strict).toBe(true);
     expect(t?.requiresEmail).toBe(false);
     expect(t?.email_mode).toBe('auto');

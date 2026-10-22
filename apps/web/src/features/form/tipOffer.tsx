@@ -1,6 +1,6 @@
 /**
  * "Thank you. Have a link, photo or video? Send it as a tip." (the owner's
- * wording, ElectionLog questionnaires §03) shown after a report is filed, and the browser-only carry-over of where and when it happened.
+ * wording, voting questionnaires §03) shown after a report is filed, and the browser-only carry-over of where and when it happened.
  *
  * NOTHING HERE TELLS THE SERVER WHICH REPORT THE TIP FOLLOWS. The state,
  * county and time are copied from the answers in this browser into this

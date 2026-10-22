@@ -283,6 +283,12 @@ describe('the good pack', () => {
       theme: 'tideline',
       panel_head: 'title-bar',
       texture: 'none',
+      // A pack from before the layout fields: its pageMax (880) read as the
+      // nearest named width, and every other choice as before.
+      width: 'regular',
+      columns: 'split',
+      scale: 'standard',
+      surface: 'outlined',
       dark: true,
       stylesheets: [stylesheet],
     });
@@ -445,7 +451,7 @@ describe('the good pack', () => {
     const site = (await h.app.inject({ method: 'GET', url: '/api/site' })).json<{
       look: { palette: string; theme: string };
     }>();
-    expect(site.look).toMatchObject({ palette: 'platinum', theme: 'desk' });
+    expect(site.look).toMatchObject({ palette: 'newsdesk', theme: 'newsdesk' });
     await writeSettings(h.db, { palette: 'flint', theme: 'signal' });
   });
 });

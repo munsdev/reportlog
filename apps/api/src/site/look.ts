@@ -8,7 +8,7 @@
  * caller that has not read the installed packs still never names a look the
  * page has no stylesheet for: it falls back to the default instead.
  */
-import { DEFAULT_LOOK, RETIRED_IDS } from '@reportlog/contracts';
+import { DEFAULT_LOOK, RETIRED_IDS, paintedLayout, themeLayout } from '@reportlog/contracts';
 import type { Look, PaintedLook } from '@reportlog/contracts';
 import { BUILT_IN_CATALOGUE } from '../looks/packs.ts';
 import type { LookCatalogue } from '../looks/packs.ts';
@@ -51,8 +51,8 @@ export function resolveLook(
 }
 
 /**
- * The look as the public pages paint it: the two ids, the theme's two
- * layout choices, whether the palette is dark (for Easier reading), and
+ * The look as the public pages paint it: the two ids, the theme's layout
+ * choices, whether the palette is dark (for Easier reading), and
  * the installed packs' stylesheets for the page to link.
  */
 export function paintedLook(
@@ -65,8 +65,7 @@ export function paintedLook(
     catalogue.themes.find((t) => t.id === DEFAULT_LOOK.theme);
   return {
     ...look,
-    panel_head: theme?.panelHead ?? 'plain',
-    texture: theme?.texture ?? 'none',
+    ...paintedLayout(themeLayout(theme ?? { panelHead: 'plain', texture: 'none' })),
     dark: catalogue.palettes.some((p) => p.id === look.palette && p.dark),
     stylesheets: [...catalogue.stylesheets],
   };

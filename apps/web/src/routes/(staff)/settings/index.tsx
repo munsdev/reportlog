@@ -72,7 +72,7 @@ function SettingsHome() {
         title="Site settings"
         lede="Everything set here applies to the whole site. Each panel shows what is set now; open one to change it. None of it is part of any report: renaming the site or changing its look never changes how a report checks out."
       >
-        <div className="grid items-start gap-6 lg:grid-cols-2">
+        <div className="layout-split grid items-start gap-6 lg:grid-cols-2">
           <AcceptingReportsPanel />
           <PublishingPanel />
           <NamePanel />

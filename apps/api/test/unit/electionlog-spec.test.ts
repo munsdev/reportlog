@@ -1,6 +1,6 @@
 /**
- * The shipped ElectionLog presets against the owner's own document
- * (docs/electionlog-questionnaires.md, 21 October 2026), read from the file:
+ * The shipped voting presets against the owner's own document
+ * (docs/voting-questionnaires.md, 21 October 2026), read from the file:
  * every card's question, every code and label, in order, every "only if", the
  * tip list's kinds of link, and the fixed words on the cards. A change to
  * either side that the other does not share turns this red.
@@ -15,7 +15,7 @@ import { templateLogbook } from '../../src/logbooks/templates.ts';
 import { templateById } from '../../src/site/templates.ts';
 
 const SPEC = readFileSync(
-  fileURLToPath(new URL('../../../../docs/electionlog-questionnaires.md', import.meta.url)),
+  fileURLToPath(new URL('../../../../docs/voting-questionnaires.md', import.meta.url)),
   'utf8',
 );
 
@@ -44,7 +44,7 @@ function rows(text: string): string[][] {
 /** The first quoted line: what a card asks. */
 const question = (text: string) => /\n> (.+)\n/.exec(text)?.[1]?.trim() ?? '';
 
-const file: LogbookFile = templateLogbook('electionlog');
+const file: LogbookFile = templateLogbook('how-voting-went');
 const q = (key: string) => {
   const found = file.questions.find((x) => x.key === key);
   if (!found) throw new Error(`the logbook has no ${key}`);
@@ -172,7 +172,7 @@ describe('the logbook, card by card (§03)', () => {
 });
 
 describe('the tip list (§04)', () => {
-  const tips = shippedTemplate('electionlog-tips');
+  const tips = shippedTemplate('link-tips');
   const text = SPEC.slice(SPEC.indexOf('**Tip list: fields**'));
 
   it('asks three rows of a link and its kind, row 1 required, and nothing else', () => {
@@ -201,7 +201,7 @@ describe('the site starting point (§02, §03)', () => {
     expect(t?.settings.copy?.submit_question).toBe(ask);
     expect(answers).toBe(`${file.title} · ${t?.settings.list?.title ?? ''}`);
     expect(t?.settings.list).toEqual({
-      template: 'electionlog-tips',
+      template: 'link-tips',
       slug: 'tips',
       title: 'Send a link',
     });
@@ -216,7 +216,7 @@ describe('the site starting point (§02, §03)', () => {
     expect(t?.settings).toMatchObject({
       attachments: false,
       publicArchive: true,
-      logbook: 'electionlog',
+      logbook: 'how-voting-went',
     });
   });
 });

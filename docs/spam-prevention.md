@@ -1,6 +1,6 @@
-# ElectionLog: spam and flood prevention, without email
+# A voting site: spam and flood prevention, without email
 
-21 October 2026. Build brief for the ReportLog rewrite. Goes with `claude/plan-d-technical-spec.md` (section 8) and `electionlog-questionnaires.md`.
+21 October 2026. Build brief for the ReportLog rewrite. Goes with `claude/plan-d-technical-spec.md` (section 8) and `voting-questionnaires.md`.
 
 ---
 

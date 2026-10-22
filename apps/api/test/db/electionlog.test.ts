@@ -1,5 +1,5 @@
 /**
- * ElectionLog's logbook and tip list (docs/electionlog-questionnaires.md),
+ * The voting logbook and the link tip list (docs/voting-questionnaires.md),
  * from the shipped presets, filed for real through the routes:
  *
  *   the site starting point makes the draft logbook and the hidden tip list,
@@ -51,9 +51,9 @@ beforeAll(async () => {
   await recordCardTexts(h.db);
   keys = await linkKeys(h.db);
   const made = await createFromStartingPoint(h.db, {
-    starting_point: 'electionlog',
+    starting_point: 'how-voting-went',
     title: 'Log how voting went',
-    slug: uniqueSlug('electionlog'),
+    slug: uniqueSlug('voting'),
   });
   await L.launch(h.db, made.id);
   slug = made.slug;
@@ -74,9 +74,9 @@ const IN_PERSON_FINE = {
   wait: 'under_30',
 };
 
-function shippedElectionlog(): Template {
+function shippedVoting(): Template {
   const t = templateById('electionlog');
-  if (!t) throw new Error('the ElectionLog starting point does not ship');
+  if (!t) throw new Error('the voting starting point does not ship');
   return t;
 }
 
@@ -108,7 +108,7 @@ describe('the site starting point', () => {
         .where('id', '=', true)
         .executeTakeFirstOrThrow(),
     };
-    const shipped = shippedElectionlog();
+    const shipped = shippedVoting();
     // The shipped one names /list/tips; another test file may hold that
     // address, so this applies the same settings at an address of its own.
     const listSlug = uniqueSlug('tips');
@@ -116,11 +116,11 @@ describe('the site starting point', () => {
       ...shipped,
       settings: {
         ...shipped.settings,
-        list: { template: 'electionlog-tips', slug: listSlug, title: 'Send a link' },
+        list: { template: 'link-tips', slug: listSlug, title: 'Send a link' },
       },
     };
     try {
-      const out = await applyTemplateDefinition(h.db, t, 'electionlog-test@example.org');
+      const out = await applyTemplateDefinition(h.db, t, 'voting-test@example.org');
       const lb = await L.logbookBySlug(h.db, out.logbook?.slug ?? '');
       expect(lb?.state).toBe('draft');
       expect(lb?.asks_for_files).toBe(false);
@@ -152,7 +152,7 @@ describe('the site starting point', () => {
   });
 
   it('refuses the whole template when /list/tips is taken, writing nothing', async () => {
-    const shipped = shippedElectionlog();
+    const shipped = shippedVoting();
     const taken = uniqueSlug('taken');
     await h.db.insertInto('lists').values({ slug: taken, title: 'Taken' }).execute();
     const drafts = async () =>
@@ -164,9 +164,9 @@ describe('the site starting point', () => {
         h.db,
         {
           ...shipped,
-          settings: { ...shipped.settings, list: { template: 'electionlog-tips', slug: taken } },
+          settings: { ...shipped.settings, list: { template: 'link-tips', slug: taken } },
         },
-        'electionlog-test@example.org',
+        'voting-test@example.org',
       ),
     ).rejects.toThrow(/already uses that web address/);
     expect(await drafts()).toBe(n);
@@ -466,7 +466,7 @@ describe('the tip list (§04)', () => {
   beforeAll(async () => {
     listSlug = uniqueSlug('el-tips');
     const { createFromTemplate } = await import('../../src/lists/manage.ts');
-    await createFromTemplate(h.db, 'electionlog-tips', { slug: listSlug });
+    await createFromTemplate(h.db, 'link-tips', { slug: listSlug });
   });
   const file = (links: unknown, extra: Record<string, unknown> = {}) =>
     fileEntry(

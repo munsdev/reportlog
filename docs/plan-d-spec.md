@@ -1,4 +1,4 @@
-# ElectionLog under Plan D: technical spec for the ReportLog rewrite
+# A voting site under Plan D: technical spec for the ReportLog rewrite
 
 20 October 2026, revision 2 (afternoon: owner rulings on moderator access, link comments, link independence, uploads, Caddy). Casey Muns. Source: Plan D, revised (project file `claude/plan-d-page.html`).
 
@@ -33,11 +33,11 @@ Not legal advice. No lawyer has reviewed it.
 
 ## 2. Entry point
 
-| ID  | Rule                                                                                                                                                                                                                                 |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| E1  | One "File" entry point.                                                                                                                                                                                                              |
-| E2  | The first card asks one question with two answers (ElectionLog questionnaires §02, 21 October 2026): "What do you want to do?", answered "Log how voting went", which opens the logbook, or "Send a link", which opens the tip list. |
-| E3  | Choosing an answer does not advance by itself. The person confirms on that card.                                                                                                                                                     |
+| ID  | Rule                                                                                                                                                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| E1  | One "File" entry point.                                                                                                                                                                                                         |
+| E2  | The first card asks one question with two answers (voting questionnaires §02, 21 October 2026): "What do you want to do?", answered "Log how voting went", which opens the logbook, or "Send a link", which opens the tip list. |
+| E3  | Choosing an answer does not advance by itself. The person confirms on that card.                                                                                                                                                |
 
 ---
 

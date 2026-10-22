@@ -130,7 +130,7 @@ export const confirmEmail = (logbookTitle: string, link: string, eraseLink?: str
 });
 
 /**
- * THE STRICT READING, for every path that seals (ruling 49, the ElectionLog
+ * THE STRICT READING, for every path that seals (ruling 49, the voting
  * questionnaires §01). Refused, each in a sentence:
  *
  *   L7  a key the logbook does not ask. The shared `buildAnswers` still drops

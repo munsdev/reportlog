@@ -80,6 +80,10 @@
   --color-on-confirmed: var(--rl-on-confirmed);
   --radius-card: var(--rl-radius);
   --radius-control: var(--rl-radius-sm);
+  /* Chips and counts. A stylesheet an installed pack was given before the
+     pill radius existed does not set it: such a theme's chips take its
+     control radius. */
+  --radius-pill: var(--rl-radius-pill, var(--rl-radius-sm));
   --shadow-raised: var(--rl-shadow-offset) var(--rl-shadow-offset) 0 var(--rl-text);
   --container-page: var(--rl-page-max);
   --font-sans: var(--rl-font-sans);
@@ -87,11 +91,11 @@
   --font-mono: var(--rl-font-mono);
   --font-label: var(--rl-font-label);
   /* Page titles: fluid from a phone to a desktop, between the theme's sizes. */
-  --text-title: var(--rl-h1-size);
+  --text-title: calc(var(--rl-h1-size) * var(--rl-scale-title, 1));
   --text-title--line-height: 1.08;
-  --text-section: clamp(1.5rem, 1.2rem + 1vw, 2.125rem);
+  --text-section: calc(clamp(1.5rem, 1.2rem + 1vw, 2.125rem) * var(--rl-scale-title, 1));
   --text-section--line-height: 1.15;
-  --text-lede: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --text-lede: calc(clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem) * var(--rl-scale-lede, 1));
   --text-lede--line-height: 1.5;
 }
 
@@ -109,7 +113,7 @@
   /* On body rather than html, so a theme's larger text does not also
      stretch every rem of spacing on the page. */
   body {
-    font-size: var(--rl-body-size);
+    font-size: calc(var(--rl-body-size) + var(--rl-scale-body, 0px));
   }
   h1 {
     font-weight: var(--rl-h1-weight);
@@ -283,6 +287,105 @@
     color: var(--rl-brand);
     font-family: var(--rl-font-mono);
   }
+}
+
+/* ---- layout: width, columns, scale, surface ----------------------------
+   A theme's four layout choices, set on <html> as data-width, data-columns,
+   data-scale and data-surface (components/ui/site.tsx). Like panelHead, a
+   theme picks between these; it cannot describe a new one. With no
+   attribute at all the page is what it was before themes could choose:
+   split, standard, outlined. */
+
+/* A page-level region in two parts (content and its aside, a list of
+   cards, a settings form and its preview). Two columns on a desktop unless
+   the theme says one; always one on a phone. A region that names its own
+   columns with a utility keeps them in a split theme. */
+@layer components {
+  .layout-split {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  @media (min-width: 1024px) {
+    .layout-split {
+      gap: 2.5rem;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+  }
+}
+
+/* The rest is unlayered on purpose: it has to win over the utilities a
+   component was written with (a panel's p-5, a region's lg:grid-cols-2),
+   which live in Tailwind's utilities layer. */
+html[data-columns='single'] .layout-split {
+  grid-template-columns: minmax(0, 1fr);
+}
+html[data-columns='single'] .layout-split > * {
+  grid-column: 1 / -1;
+}
+
+/* Full width: the main column and the bars that line up with it run edge to
+   edge; the theme's --rl-page-max keeps a margin that grows with the
+   screen. Nothing else to do here. */
+
+/* Large: bigger titles and lede, a point more body text, more room between
+   a page's sections, and taller controls. Factors rather than sizes, so the
+   theme's own fluid title is what gets bigger. */
+html[data-scale='large'] {
+  --rl-scale-title: 1.2;
+  --rl-scale-lede: 1.12;
+  --rl-scale-body: 1px;
+}
+html[data-scale='large'] .page-sections {
+  row-gap: 2.75rem;
+}
+html[data-scale='large'] .page-sections > header {
+  row-gap: 1rem;
+}
+html[data-scale='large'] .button-face {
+  min-height: 3rem;
+  font-size: 0.9375rem;
+}
+html[data-scale='large'] .control-face {
+  min-height: 3rem;
+  font-size: 1.0625rem;
+}
+
+/* Filled: soft panels on the page's second ground, no edge, a gentle
+   shadow, so a page reads as a few surfaces rather than boxes in boxes.
+   The shadow is mixed from the palette's text, so it reads on a dark page
+   too; the edge stays (transparent) so nothing shifts by a pixel. */
+html[data-surface='filled'] .panel[data-variant='raised'] {
+  border-color: transparent;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--rl-text) 8%, transparent),
+    0 12px 32px -16px color-mix(in srgb, var(--rl-text) 28%, transparent);
+}
+html[data-surface='filled'] .panel[data-variant='raised'] .panel[data-variant='raised'] {
+  background-color: var(--rl-background);
+  box-shadow: none;
+}
+
+/* Ruled: a rule across the top and nothing else, like a section of a
+   newspaper. No fill, no edge, no shadow, no corners, and the content lines
+   up with the page's text. A panel heading in the double-rule style keeps
+   its double rule. */
+html[data-surface='ruled'] .panel[data-variant='raised'] {
+  border-width: 0;
+  border-top: 2px solid var(--rl-text);
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  padding-left: 0;
+  padding-right: 0;
+}
+html[data-surface='ruled'] .panel[data-variant='raised'] > .panel-head,
+html[data-surface='ruled'] .panel[data-variant='raised'] > .panel-head + div {
+  padding-left: 0;
+  padding-right: 0;
+}
+html[data-surface='ruled'][data-panel-head='double-rule'] .panel[data-variant='raised'] {
+  border-top: 4px double var(--rl-text);
 }
 
 /* ---- printing one thing only ---------------------------------------------

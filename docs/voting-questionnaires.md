@@ -1,4 +1,4 @@
-# ELECTIONLOG
+# HOW VOTING WENT
 
 ## L O G B O O K A N D T I P L I S T Q U E S T I O N N A I R E S
 

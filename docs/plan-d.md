@@ -3,7 +3,7 @@
 > **Approved 2026-10-20.** Where this plan and `docs/plan-d-spec.md` (the spec, revision 2)
 > differ, this plan wins: its "Spec changes to make" list is approved and applies to the spec.
 
-20 October 2026, evening. Answers "ElectionLog under Plan D: technical spec for the ReportLog
+20 October 2026, evening. Answers "A voting site under Plan D: technical spec for the ReportLog
 rewrite", **revision 2**, item by item, and proposes the changes the owner agreed today. Prepared
 from the ReportLog rebuild (`munsdev/reportlog`, branch `ccr-c9c93698-ev856l`, commit `d70e923`).
 
@@ -392,17 +392,17 @@ message, not publishing it.
 
 ## 13. Must not have
 
-| Item                                                                  | Status                                                                                                                                                                      |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No file accepted anywhere (switch off + test)                         | **Setup + test** (L6)                                                                                                                                                       |
-| No free-text question in the logbook (+ test)                         | **Setup + test** (L3)                                                                                                                                                       |
-| No automatic link fetching                                            | **Met (Check) + test**                                                                                                                                                      |
-| No public link or link comment                                        | **New** (K4 sweep)                                                                                                                                                          |
-| No journalist view of tip comments, emails, withheld or illegal links | **New** (J10)                                                                                                                                                               |
-| No bulk export for journalists                                        | **New** (J11)                                                                                                                                                               |
-| No UPDATE or DELETE on reports                                        | **Met**                                                                                                                                                                     |
-| No auto-advance                                                       | **Met**                                                                                                                                                                     |
-| **(new) No link field on any logbook**                                | **Closed (PD4a).** Means ElectionLog is set up without one; no code ban (ruling 42). **New**: the server refuses a link question in a logbook's setup, and a test proves it |
+| Item                                                                  | Status                                                                                                                                                                          |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No file accepted anywhere (switch off + test)                         | **Setup + test** (L6)                                                                                                                                                           |
+| No free-text question in the logbook (+ test)                         | **Setup + test** (L3)                                                                                                                                                           |
+| No automatic link fetching                                            | **Met (Check) + test**                                                                                                                                                          |
+| No public link or link comment                                        | **New** (K4 sweep)                                                                                                                                                              |
+| No journalist view of tip comments, emails, withheld or illegal links | **New** (J10)                                                                                                                                                                   |
+| No bulk export for journalists                                        | **New** (J11)                                                                                                                                                                   |
+| No UPDATE or DELETE on reports                                        | **Met**                                                                                                                                                                         |
+| No auto-advance                                                       | **Met**                                                                                                                                                                         |
+| **(new) No link field on any logbook**                                | **Closed (PD4a).** Means the voting site is set up without one; no code ban (ruling 42). **New**: the server refuses a link question in a logbook's setup, and a test proves it |
 
 ---
 
@@ -535,10 +535,10 @@ Roughly four to five sessions, one fewer than revision 2, with the seal untouche
 21. **Spec changes to add** to the list above: L3 (text kinds are refused at setup, not "Setup"),
     P1 ("hour" comes from a choice question), and the tip `ip_hash` ruling.
 
-## ElectionLog's forms: known limitations (PD8, 21 October 2026)
+## The voting site's forms: known limitations (PD8, 21 October 2026)
 
-The owner's questionnaires (`docs/electionlog-questionnaires.md`) are built as the
-`electionlog` logbook, the `electionlog-tips` list and the ElectionLog site starting point
+The owner's questionnaires (`docs/voting-questionnaires.md`) are built as the
+`electionlog` logbook, the `electionlog-tips` list and the voting site starting point
 (`docs/status/PD8-electionlog-forms.md`). What §05 of the questionnaires leaves open, and what
 building them found:
 

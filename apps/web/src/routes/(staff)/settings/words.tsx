@@ -225,7 +225,7 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
       onCancel={cancel}
       onSave={() => write(body)}
     >
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="layout-split grid items-start gap-6 lg:grid-cols-2">
         <div className="lg:order-2">
           <SlotInContext slot={slot} text={body} figures={figures} />
         </div>

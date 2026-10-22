@@ -112,7 +112,7 @@ export function CheckOption({ label, hint, className, ...props }: CheckOptionPro
   return (
     <label htmlFor={controlId} className={cn(choiceCardClass, className)}>
       <CheckboxPrimitive.Root
-        className={cn(choiceMarkClass, 'rounded-[3px]')}
+        className={cn(choiceMarkClass, 'rounded-[min(var(--rl-radius-sm),6px)]')}
         {...props}
         {...wired}
         id={controlId}

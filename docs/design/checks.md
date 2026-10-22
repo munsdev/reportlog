@@ -108,6 +108,6 @@ Turning it on paints the High contrast palette and Commons theme for this browse
 
 ### K N O W N L I M I T A T I O N S , P R E C I S E L Y
 
-- Axe in 17 pairs on 11 screens is 187 runs. If that is too slow for every push, run it nightly and on release, and run Desk and ElectionLog on every push.
+- Axe in 17 pairs on 11 screens is 187 runs. If that is too slow for every push, run it nightly and on release, and run Newsdesk and Civic on every push.
 - "Looked at beside it" is a person's check, or a model's with a screenshot. It is not a pixel diff on purpose: the mock-ups use fallback fonts.
 - The role list in 02 is the roles that exist today. A new role needs a line there.

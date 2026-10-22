@@ -9,8 +9,18 @@
  * page already, so a pack's palette id on a strip or a preview frame paints
  * it; this file only decides what is offered and what it is called.
  */
-import { CORE_PACK, LOOKS, PALETTES, THEMES } from '@reportlog/contracts';
-import type { InstalledLookPack, Look, PanelHead, Texture } from '@reportlog/contracts';
+import { CORE_PACK, LOOKS, PALETTES, THEMES, themeLayout } from '@reportlog/contracts';
+import type {
+  Columns,
+  InstalledLookPack,
+  Look,
+  PanelHead,
+  Scale,
+  Surface,
+  Texture,
+  ThemeLayout,
+  Width,
+} from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { lookPacksQuery } from '../looks/queries.ts';
@@ -37,6 +47,10 @@ export interface CatalogueTheme {
   description: string;
   panelHead: PanelHead;
   texture: Texture;
+  width?: Width | undefined;
+  columns?: Columns | undefined;
+  scale?: Scale | undefined;
+  surface?: Surface | undefined;
 }
 
 export interface LookCatalogue {
@@ -98,16 +112,17 @@ export function lookName(look: Look, catalogue: LookCatalogue = BUILT_IN_CATALOG
 }
 
 /**
- * How a theme heads its panels and textures its page, for a preview frame's
- * root. A theme from a pack carries its own; an id nobody offers falls back
- * to the plain shapes rather than drawing nothing.
+ * How a theme lays out its page (panel headings, texture, width, columns,
+ * scale, surface), for a preview frame's root. A theme from a pack carries
+ * its own; an id nobody offers falls back to the plain shapes rather than
+ * drawing nothing.
  */
 export function layoutIn(
   themeId: string,
   catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
-): { panelHead: PanelHead; texture: Texture } {
+): ThemeLayout {
   const t = catalogue.themes.find((x) => x.id === themeId);
-  return { panelHead: t?.panelHead ?? 'plain', texture: t?.texture ?? 'none' };
+  return themeLayout(t ?? { panelHead: 'plain', texture: 'none' });
 }
 
 export function sameLook(a: Look, b: Look): boolean {

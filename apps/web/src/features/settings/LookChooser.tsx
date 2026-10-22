@@ -25,7 +25,7 @@ function Strip({ palette, theme }: { palette: string; theme: string }) {
       data-palette={palette}
       data-theme={theme}
       aria-hidden="true"
-      className="flex h-7 overflow-hidden rounded-[3px] border border-ink-alt"
+      className="flex h-7 overflow-hidden rounded-control border border-ink-alt"
     >
       <span className="flex-[2] bg-deep" />
       <span className="flex-[3] bg-paper" />

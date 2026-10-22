@@ -43,7 +43,7 @@ export type UnblockReason = keyof typeof UNBLOCK_REASONS;
 /**
  * K2: directly above every link field, part of the field type, so every form
  * that asks for a link shows it. Logbooks ask for none (Plan D §2). The
- * owner's wording of 21 October 2026 (ElectionLog questionnaires §04),
+ * owner's wording of 21 October 2026 (voting questionnaires §04),
  * replacing the spec's first version.
  */
 export const LINK_FIELD_WORDING =

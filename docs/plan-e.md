@@ -1,7 +1,7 @@
 # Plan E: anonymous intake and flood prevention
 
-21 October 2026. The owner's decisions on `docs/electionlog-spam-prevention.md`
-(the ElectionLog brief) as they apply to ReportLog as a whole. ReportLog
+21 October 2026. The owner's decisions on `docs/spam-prevention.md`
+(the voting site brief) as they apply to ReportLog as a whole. ReportLog
 stays general (decision 42): every item is a capability any site can use,
 and nothing here removes a feature from the base software. Where this plan
 and the brief differ, this plan wins.

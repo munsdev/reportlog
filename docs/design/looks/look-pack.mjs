@@ -76,7 +76,13 @@ export const ENUMS = {
   case: ['none', 'upper'],
   panelHead: ['plain', 'title-bar', 'double-rule', 'bar', 'rule', 'prompt'],
   texture: ['none', 'ruled', 'grid', 'dots'],
+  // Optional in a theme; absent means what every page did before (themeMeta).
+  width: ['narrow', 'regular', 'wide', 'full'],
+  columns: ['single', 'split'],
+  scale: ['standard', 'large'],
+  surface: ['outlined', 'filled', 'ruled'],
 };
+export const WIDTHS = { narrow: 760, regular: 1000, wide: 1200 };
 export const RANGES = {
   weight: [300, 900],
   size: [15, 20],
@@ -295,7 +301,12 @@ export function check(pack, installed = emptyInstalled(), files = null, { builtI
       say(`Theme "${t.id}": the smallest h1 is larger than the largest.`);
     for (const k of ['radius', 'radiusSmall', 'border', 'shadow', 'press'])
       inRange(`Theme "${t.id}" ${k}`, t.shape?.[k], RANGES[k]);
-    inRange(`Theme "${t.id}" page width`, t.pageMax, RANGES.pageMax);
+    if (t.pageMax !== undefined) inRange(`Theme "${t.id}" page width`, t.pageMax, RANGES.pageMax);
+    else if (t.width === undefined)
+      say(`Theme "${t.id}" needs a width (${ENUMS.width.join(', ')}) or a pageMax in px.`);
+    for (const k of ['width', 'columns', 'scale', 'surface'])
+      if (t[k] !== undefined && !ENUMS[k].includes(t[k]))
+        say(`Theme "${t.id}" ${k} must be one of ${ENUMS[k].join(', ')}.`);
     if (!ENUMS.panelHead.includes(t.panelHead))
       say(`Theme "${t.id}" panel heading must be one of ${ENUMS.panelHead.join(', ')}.`);
     if (!ENUMS.texture.includes(t.texture))
@@ -388,9 +399,10 @@ export function toCss(pack, fontUrl = (id, file) => `/api/looks/${id}/${file}`, 
     const base = h1.min - (slope * 390) / 16;
     lines.push(
       `${sel} {`,
-      `  --rl-page-max: ${t.pageMax}px;`,
+      `  --rl-page-max: ${pageMax(t)};`,
       `  --rl-radius: ${t.shape.radius}px;`,
       `  --rl-radius-sm: ${t.shape.radiusSmall}px;`,
+      `  --rl-radius-pill: ${pill(t.shape)}px;`,
       `  --rl-border-main: ${t.shape.border}px;`,
       `  --rl-shadow-offset: ${t.shape.shadow}px;`,
       `  --rl-press: ${t.shape.press}px;`,
@@ -413,9 +425,31 @@ export function toCss(pack, fontUrl = (id, file) => `/api/looks/${id}/${file}`, 
   return lines.join('\n');
 }
 
-/** What the site API sends with the look, so the page can set the two layout attributes. */
+// `full`: edge to edge, less a margin that grows from nothing on a phone to 4rem.
+function pageMax(t) {
+  if (t.width === 'full') return 'calc(100% - 2 * clamp(0rem, 4vw - 1rem, 4rem))';
+  if (t.width) return `${WIDTHS[t.width]}px`;
+  return `${t.pageMax ?? WIDTHS.regular}px`;
+}
+
+// Chips and counts: square in a square theme, a full pill in a round one.
+function pill(shape) {
+  if (shape.radiusSmall === 0) return 0;
+  return shape.radius >= 12 ? 999 : shape.radiusSmall;
+}
+
+const widthOf = (px) => (px <= 860 ? 'narrow' : px <= 1100 ? 'regular' : 'wide');
+
+/** What the site API sends with the look, so the page can set the layout attributes on <html>. */
 export function themeMeta(theme) {
-  return { panelHead: theme.panelHead, texture: theme.texture };
+  return {
+    panelHead: theme.panelHead,
+    texture: theme.texture,
+    width: theme.width ?? widthOf(theme.pageMax ?? WIDTHS.regular),
+    columns: theme.columns ?? 'split',
+    scale: theme.scale ?? 'standard',
+    surface: theme.surface ?? 'outlined',
+  };
 }
 
 // ---- command line -------------------------------------------------------------

@@ -45,7 +45,7 @@ The file wins. The canvas is drawn by hand; a difference is a bug in the canvas.
 | `reference/components.css`                | The same components as plain CSS on the look variables. A visual reference, not for shipping           |
 | `navigation.md`                           | Header, menu panel, phone sheet, staff areas, area tabs, footer                                        |
 | `screens/public.md`                       | Front page, board and its pages, a report, verify, about pages, journalists' public pages, lock screen |
-| `screens/filing.md`                       | Every filing screen and card, ElectionLog's forms, confirmation, evidence, erase                       |
+| `screens/filing.md`                       | Every filing screen and card, the voting site's forms, confirmation, evidence, erase                   |
 | `screens/moderation.md`                   | Queue, one report, flood screen, tip links, list review, notices, files, settings                      |
 | `screens/settings-and-admin.md`           | Site settings, Look with previews, setup wizard, logbooks, lists, maps, access, records                |
 | `screens/account.md`                      | Sign in, two-factor, security, my reports, email updates, desk, intake, feedback                       |
@@ -64,7 +64,7 @@ The canvas "ReportLog Navigation" (an Artifact) holds the same screens with a lo
 
 **STAGE 1, THE LOOK SYSTEM**
 
-Port `check()` into `test/ui/look.test.ts` and `toCss()` into the build, generate the built-in blocks of `styles.css` from `reportlog-core.look.json`, add the new theme variables and the three derived colours, bundle the 9 font families, retire Red Hat Mono, add `panelHead` and `texture` to the site response and apply them as `data-` attributes, ship the migration that pins existing sites to Flint and Signal. No screen changes yet. An existing site looks as it does today except for two deliberate changes: page titles become fluid again (2rem on a phone to 3rem on a desktop, as the old app had), and the mono face becomes IBM Plex Mono (as ElectionLog's brand sheet requires).
+Port `check()` into `test/ui/look.test.ts` and `toCss()` into the build, generate the built-in blocks of `styles.css` from `reportlog-core.look.json`, add the new theme variables and the three derived colours, bundle the 9 font families, retire Red Hat Mono, add `panelHead` and `texture` to the site response and apply them as `data-` attributes, ship the migration that pins existing sites to Flint and Signal. No screen changes yet. An existing site looks as it does today except for two deliberate changes: page titles become fluid again (2rem on a phone to 3rem on a desktop, as the old app had), and the mono face becomes IBM Plex Mono (as the voting site's brand sheet requires).
 
 **STAGE 2, COMPONENTS**
 

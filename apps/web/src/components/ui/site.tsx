@@ -4,8 +4,9 @@
  * The look is applied by naming the palette and theme on <html>
  * (`data-palette`, `data-theme`); styles.css holds every value, so nothing
  * here computes a colour. The shipped choice is the bare page, so its
- * attributes are removed rather than set. The theme's two layout choices
- * ride along as `data-panel-head` and `data-texture`.
+ * attributes are removed rather than set. The theme's layout choices ride
+ * along as `data-panel-head`, `data-texture`, `data-width`, `data-columns`,
+ * `data-scale` and `data-surface`.
  *
  * The last look seen is remembered in this browser and put back before the
  * first render, so a returning reader of a dark deployment does not get a
@@ -19,15 +20,11 @@
  * (features/easy-reading/easyReading.ts). What is remembered is always the
  * site's own look, never the Easier reading one.
  */
-import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf } from '@reportlog/contracts';
-import type { BrandPart, Look, Site } from '@reportlog/contracts';
+import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf, paintedLayout } from '@reportlog/contracts';
+import type { BrandPart, Look, Site, ThemeLayout } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-import {
-  easyLook,
-  easyReadingOn,
-  onEasyReadingChange,
-} from '@/features/easy-reading/easyReading.ts';
+import { easyLook, onEasyReadingChange } from '@/features/easy-reading/easyReading.ts';
 import { useGateMode } from '@/features/identity/gateMode.ts';
 import { linkStylesheets } from '@/features/looks/stylesheets.ts';
 import { call } from '@/lib/api.ts';
@@ -66,10 +63,7 @@ export function applyLook(
   // theme (the setup wizard's choice, say) takes a built-in theme's.
   let painted: PaintedLook;
   if ('panel_head' in look) painted = look;
-  else {
-    const layout = layoutOf(look.theme);
-    painted = { ...look, panel_head: layout.panelHead, texture: layout.texture };
-  }
+  else painted = { ...look, ...paintedLayout(layoutOf(look.theme)) };
   // A look the page made itself names no pack stylesheets: keep the linked ones.
   const stylesheets = painted.stylesheets ?? siteLook?.look.stylesheets;
   if (stylesheets && !painted.stylesheets) painted = { ...painted, stylesheets };
@@ -89,8 +83,18 @@ function paint(site: PaintedLook, root: HTMLElement): void {
     if (worn[axis] === DEFAULT_LOOK[axis]) root.removeAttribute(`data-${axis}`);
     else root.setAttribute(`data-${axis}`, worn[axis]);
   }
-  root.setAttribute('data-panel-head', worn.panel_head);
-  root.setAttribute('data-texture', worn.texture);
+  // A look remembered before the theme chose width, columns, scale and
+  // surface lacks them: the built-in theme's (or the default's) stand in
+  // until the server answers.
+  const fallback = layoutOf(worn.theme);
+  setLayoutAttributes(root, {
+    panelHead: worn.panel_head,
+    texture: worn.texture,
+    width: worn.width ?? fallback.width,
+    columns: worn.columns ?? fallback.columns,
+    scale: worn.scale ?? fallback.scale,
+    surface: worn.surface ?? fallback.surface,
+  });
   if (site.stylesheets) linkStylesheets(site.stylesheets, root.ownerDocument);
 }
 
@@ -100,11 +104,23 @@ export function repaintLook(): void {
     paint(siteLook.look, siteLook.root);
     return;
   }
-  const layout = layoutOf(DEFAULT_LOOK.theme);
   paint(
-    { ...DEFAULT_LOOK, panel_head: layout.panelHead, texture: layout.texture },
+    { ...DEFAULT_LOOK, ...paintedLayout(layoutOf(DEFAULT_LOOK.theme)) },
     document.documentElement,
   );
+}
+
+/**
+ * A theme's layout choices, set on a root as the attributes styles.css
+ * reads. Every one is always set, never left over from the look before.
+ */
+export function setLayoutAttributes(root: HTMLElement, layout: ThemeLayout): void {
+  root.setAttribute('data-panel-head', layout.panelHead);
+  root.setAttribute('data-texture', layout.texture);
+  root.setAttribute('data-width', layout.width);
+  root.setAttribute('data-columns', layout.columns);
+  root.setAttribute('data-scale', layout.scale);
+  root.setAttribute('data-surface', layout.surface);
 }
 
 /** The look remembered from last time, if it is still one the site could send. */
@@ -120,7 +136,10 @@ export function rememberedLook(): PaintedLook | null {
 if (typeof document !== 'undefined') {
   const remembered = rememberedLook();
   if (remembered) applyLook(remembered);
-  else if (easyReadingOn()) repaintLook();
+  // Nothing remembered: the default's layout attributes now, so a first
+  // visit does not draw the default's colours in another theme's layout
+  // until the server answers.
+  else repaintLook();
   onEasyReadingChange(repaintLook);
 }
 

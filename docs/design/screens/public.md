@@ -46,10 +46,10 @@ The operator's slots (`home_headline`, `home_lede`, `home_intro`, `about_archive
 
 **`/` · everyone · the operator's headline, the ways in, the map, checking a report**
 
-**PHONE** (canvas "Front page · phone · ElectionLog front door")
+**PHONE** (canvas "Front page · phone · the voting site front door")
 
 1. Eyebrow, H1 `home_headline`, lede `home_lede`.
-2. The front-page buttons, full width, `lg`, stacked, 16px apart, in the operator's order (`/logbooks/front-page`). The first is primary; every other is secondary. A button may carry a second line in body face, its `blurb` (the ElectionLog buttons use it: "Good or bad, in person or by mail").
+2. The front-page buttons, full width, `lg`, stacked, 16px apart, in the operator's order (`/logbooks/front-page`). The first is primary; every other is secondary. A button may carry a second line in body face, its `blurb` (the voting buttons use it: "Good or bad, in person or by mail").
 3. The meta line "Anyone can file. Sealed and timestamped on arrival."
 4. `home_intro`, as written, when there is one.
 5. A `deep` panel "If someone needs help right now" with the `help_now` wording slot. It ships with wording, an operator can reword it but cannot blank or remove it, and it is always drawn here and on the filing landing.
@@ -68,9 +68,9 @@ Kinds come from `getHomeButtons`: a logbook, a list, or a built-in (`submit`, `b
 - **The alerts button is drawn again** (the rebuild skips it because it has an `action`, not an `href`). The built-in `alerts` is the journalist alert list sign-up (`apps/api/src/logbooks/homeButtons.ts`), so it is a link to `/journalists/alerts`, with no sign-in.
 - When the call fails, `FALLBACK_BUTTONS` (Submit, Board) are shown, as now. The page is never a dead end.
 
-**ELECTIONLOG'S FRONT DOOR**
+**A VOTING SITE'S FRONT DOOR**
 
-ElectionLog does not need its own home page. Its operator orders the buttons: the logbook "Log how voting went" (accent, with its blurb), the tip list "Send a link" (with its blurb), the board, alerts. The two big buttons go straight to the logbook and the tip list; the entry card "What do you want to do?" is the first card of `/submit` for anyone who arrives there instead. Same answers, same codes, two ways in.
+The voting site does not need its own home page. Its operator orders the buttons: the logbook "Log how voting went" (accent, with its blurb), the tip list "Send a link" (with its blurb), the board, alerts. The two big buttons go straight to the logbook and the tip list; the entry card "What do you want to do?" is the first card of `/submit` for anyone who arrives there instead. Same answers, same codes, two ways in.
 
 **STATES**
 

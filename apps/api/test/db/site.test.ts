@@ -125,6 +125,10 @@ describe('the settings routes', () => {
       theme: 'docket',
       panel_head: THEMES.find((t) => t.id === 'docket')?.panelHead,
       texture: THEMES.find((t) => t.id === 'docket')?.texture,
+      width: 'narrow',
+      columns: 'split',
+      scale: 'standard',
+      surface: 'outlined',
       // Stage 6: Easier reading's dark flag, and no look packs installed.
       dark: true,
       stylesheets: [],

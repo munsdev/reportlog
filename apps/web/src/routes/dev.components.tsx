@@ -6,7 +6,7 @@
  * `data-texture` on <html> directly, without remembering it, so trying a look
  * here never becomes this browser's remembered look for the real site.
  */
-import { PALETTES, THEMES, layoutOf } from '@reportlog/contracts';
+import { DEFAULT_LOOK, PALETTES, THEMES, layoutOf } from '@reportlog/contracts';
 import { createFileRoute, notFound } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
@@ -27,6 +27,7 @@ import { Pagination } from '../components/ui/pagination.tsx';
 import { RadioGroup, RadioOption } from '../components/ui/radio-group.tsx';
 import { Select } from '../components/ui/select.tsx';
 import { SettingPanel, SettingPanels } from '../components/ui/setting-panel.tsx';
+import { setLayoutAttributes } from '../components/ui/site.tsx';
 import { Textarea } from '../components/ui/textarea.tsx';
 import { ToastProvider, useToast } from '../components/ui/toast.tsx';
 import { CountLine, Eyebrow, Lede, Meta } from '../components/ui/type.tsx';
@@ -45,8 +46,7 @@ function wear(palette: string, theme: string) {
   const layout = layoutOf(theme);
   root.setAttribute('data-palette', palette);
   root.setAttribute('data-theme', theme);
-  root.setAttribute('data-panel-head', layout.panelHead);
-  root.setAttribute('data-texture', layout.texture);
+  setLayoutAttributes(root, layout);
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
@@ -101,10 +101,10 @@ function Settings() {
 
 function ComponentsPage() {
   const [palette, setPalette] = useState(
-    () => document.documentElement.getAttribute('data-palette') ?? 'platinum',
+    () => document.documentElement.getAttribute('data-palette') ?? DEFAULT_LOOK.palette,
   );
   const [theme, setTheme] = useState(
-    () => document.documentElement.getAttribute('data-theme') ?? 'desk',
+    () => document.documentElement.getAttribute('data-theme') ?? DEFAULT_LOOK.theme,
   );
   const [choice, setChoice] = useState('yes');
   const [page, setPage] = useState(2);

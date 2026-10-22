@@ -552,7 +552,7 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
           </Empty>
         )
       ) : (
-        <ul className="grid gap-5 lg:grid-cols-2">
+        <ul className="layout-split grid gap-5 lg:grid-cols-2">
           {reports.map((r) => (
             <li key={r.public_ref} className="flex">
               <ReportCard r={r} logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title} />

@@ -1,21 +1,21 @@
-# Plan D session 8 · ElectionLog's forms: status
+# Plan D session 8 · The voting site's forms: status
 
 - **Branch:** `claude/electionlog-forms`, from `ccr-c9c93698-ev856l` at `eb5fca2`.
 - **State:** built; PR into `ccr-c9c93698-ev856l`.
-- **Spec:** `docs/electionlog-questionnaires.md` (the owner's, 21 October 2026).
+- **Spec:** `docs/voting-questionnaires.md` (the owner's, 21 October 2026).
 - **Rulings:** 48 (rewording after launch) and 49 (the strict reading) recorded in
   `docs/decisions.md`. Ruling 42 holds: every engine change is a general capability, and nothing
-  reads "is this ElectionLog".
+  reads "is this the voting site".
 
 ## The presets
 
 | Preset                                                       | What it is                                                                                                                                                                                                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Logbook starting point `electionlog` ("Log how voting went") | The eight cards of §03, eleven questions, every key, code, label and "only if" as written. No file question.                                                                                                              |
-| List template `electionlog-tips` ("ElectionLog tips")        | §04: one card, three fixed rows of a link and what kind of link it is, row 1 required. Strict. Asks no email and no comment.                                                                                              |
-| Site starting point `electionlog` ("ElectionLog")            | Public archive on, uploads off, intake open; makes the logbook (a draft) and the list at `/list/tips`, named "Send a link" (hidden until listed); the entry card's question; the send card's line; the front page's text. |
+| List template `electionlog-tips` ("the voting site tips")    | §04: one card, three fixed rows of a link and what kind of link it is, row 1 required. Strict. Asks no email and no comment.                                                                                              |
+| Site starting point `electionlog` ("the voting site")        | Public archive on, uploads off, intake open; makes the logbook (a draft) and the list at `/list/tips`, named "Send a link" (hidden until listed); the entry card's question; the send card's line; the front page's text. |
 
-Setting up test3 from the admin screens: apply "ElectionLog" in Settings → Starting points (or
+Setting up test3 from the admin screens: apply "the voting site" in Settings → Starting points (or
 the setup wizard), launch the logbook, and set the list to Listed. Launching and listing are the
 operator's own steps, as for every starting point. `apps/api/test/unit/electionlog-spec.test.ts`
 reads the owner's document itself and checks every code and label in the presets against its
@@ -87,7 +87,7 @@ All in `packages/fields` (pure, browser-safe), with the server, the cards and li
    - **K2's wording** is now the owner's (§04), everywhere a link is asked.
 7. **Entry card, send card, thank you.** `/submit` (PD4a's card) reads its question from a new
    copy slot, `submit_question` ("What are you reporting?" until written), and names the tip list
-   by its own title, so the ElectionLog setup asks "What do you want to do?", answered "Log how
+   by its own title, so the voting setup asks "What do you want to do?", answered "Log how
    voting went" or "Send a link". The send card shows a new optional slot, `send_note`, beside
    Send. The page after sending, and the confirmation page, say "Thank you. Have a link, photo or
    video? Send it as a tip." with the link to `/list/tips`. Nothing sent to the server connects
@@ -99,7 +99,7 @@ All in `packages/fields` (pure, browser-safe), with the server, the cards and li
 
 - **The send card's line is now true** (Plan E, session PE2, `docs/status/PE2-door.md`). "This
   report can't be changed or withdrawn after you send it" was the owner's wording before it held.
-  The ElectionLog logbook asks no text question and takes no files, so under decision E1 it asks
+  The voting logbook asks no text question and takes no files, so under decision E1 it asks
   for no email: a report is sealed on arrival with no contact row, so there is nothing to sign in
   with, and My reports has nothing to correct or withdraw. Checked by
   `apps/api/test/db/door.test.ts` (the starting point asks no email) and the browser test.
@@ -165,10 +165,10 @@ Added:
 
 The first full browser run had 18 failures, all mine, all fixed: a second list template titled
 "Send a link" made the older tests' `name: 'Send a link'` match two (the template is now
-"ElectionLog tips"; the starting point names the list it makes); the builder's banner wording;
+"the voting site tips"; the starting point names the list it makes); the builder's banner wording;
 a tick box drawn as yes/no tiles; the tip rows' selects taking the list Field's id (now inside
 `FieldReset`, as PD6's county picker); and my own test reading a one-part card's control by the
-part's label. The first full db run had one failure, also mine: the ElectionLog test left the
+part's label. The first full db run had one failure, also mine: the voting test left the
 intake switch set for the next file. It now puts the site back as it found it.
 
 ## Outside my folders (kept minimal)

@@ -18,7 +18,7 @@
 - **The progress rule** is published by `useFilingProgress()` (and as `data-filing-progress` and
   `--rl-filing-progress` on `<html>`) for the header to draw. The page keeps a visually hidden
   `role="progressbar"`. The thick in-page bar is gone.
-- **The tab title** is restored: "How did it go? (2 of 8) · ElectionLog", counted against the cards
+- **The tab title** is restored: "How did it go? (2 of 8) · Our Town Votes", counted against the cards
   still possible; the opening card is the logbook's title, the review "Check your answers".
 - **The opening card**: eyebrow "File a report", the title, the blurb, **the emergency notice**
   (`HelpNow`), "What happens next" in three numbered lines (the second follows `asks_email`), Start,
@@ -177,7 +177,7 @@
 | browser suite                         | **not run** (shared ports; it runs once after merge). Specs updated for every changed word, and `e2e/filing/card-frame.spec.ts` added: the opening card, an error that takes focus, page and browser Back keeping answers, the absent-key rule on what is sent, the tab title, the fixed phone bar, the review, and `/verify` asking no other host |
 
 **A smoke check, not a suite:** the built site against a throwaway database, at 390px and 1280px,
-in Desk, ElectionLog, Evening News, Green Screen and High contrast: 26 public and filing addresses
+in Desk, Civic, Evening News, Green Screen and High contrast: 26 public and filing addresses
 each, plus a walk through a form. No axe violation (WCAG 2.0 to 2.2 A and AA), no page scrolling
 sideways, no request to another host, no script error. Screenshots were looked at by a model, not a
 person.

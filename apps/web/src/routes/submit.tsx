@@ -7,7 +7,7 @@
  * somebody, and no card advances by itself).
  *
  * THE QUESTION IS THE OPERATOR'S WORDING (`submit_question`, "What are you
- * reporting?" until they write one; ElectionLog's is "What do you want to
+ * reporting?" until they write one; the voting starting point's is "What do you want to
  * do?"), on the same card frame as every filing card, and each answer is named by what it opens: a logbook by its title,
  * the tips list by its own title ("Send a link"), so renaming one renames its
  * answer. The operator's intro (`submit_intro`) is drawn under the question,

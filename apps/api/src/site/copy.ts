@@ -103,7 +103,7 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
   },
   {
     // OPTIONAL, beside the Send button. What the operator says about sending
-    // (ElectionLog: "This report can't be changed or withdrawn after you send
+    // (the voting starting point: "This report can't be changed or withdrawn after you send
     // it."). Unwritten, nothing is shown. Not a statement this software
     // makes: the operator's, about their own archive.
     key: 'send_note',

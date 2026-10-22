@@ -3,9 +3,9 @@
 - **Branch:** `claude/plan-e-door`, from `ccr-c9c93698-ev856l` at `7bc3059` (PD8), with the base
   merged again at `3fb70a7` (PE1 two-factor, PE3 moderation).
 - **State:** built; PR into `ccr-c9c93698-ev856l`.
-- **Brief:** `docs/plan-e.md` (E1, E2, E4, "At the door"), `docs/electionlog-spam-prevention.md`
+- **Brief:** `docs/plan-e.md` (E1, E2, E4, "At the door"), `docs/spam-prevention.md`
   §01, §02, §07, §08. Ruling 42 holds: every piece is a general capability; nothing reads "is this
-  ElectionLog".
+  the voting site".
 
 ## What was built
 
@@ -44,7 +44,7 @@
 - **Lists** already had E1's rule (`lists/fields.ts`: a personal kind asks, `email_mode:
 required` adds). Checked, unchanged: an entry on a no-email list has no erasure token or link, and
   its retention timer (`personal_expires_at`) still applies.
-- **PD8's send-card line is now true** for the ElectionLog preset; the flag is removed from
+- **PD8's send-card line is now true** for the voting preset; the flag is removed from
   `docs/status/PD8-electionlog-forms.md`.
 
 ### The door (`apps/api/src/door/`)
@@ -122,7 +122,7 @@ Every report and tip route runs `door.pass` first: `POST /api/reports` and
 - Authored in the builder (two boxes on a date/time question, draft only like every setting), in
   logbook files and starting points; carried to the page, where they are the picker's `min` and
   `max`.
-- **ElectionLog's preset**: the date question has a placeholder window of **2026-09-18 to
+- **The voting site's preset**: the date question has a placeholder window of **2026-09-18 to
   2026-11-10** (the earliest early voting for 3 November 2026 through a week after it). **The
   operator edits it before launch**: like every setting it cannot change after.
 
@@ -185,7 +185,7 @@ Added:
   operator's switch through the route; a decline recording no notice; E4 refusals and the edge; the
   limits on the public form; on a door with the password on: both reads, a report, a tip and a
   refused tip; the door settings behind the password; a logbook file round trip; a bad limit; the
-  ElectionLog starting point.
+  the voting site starting point.
 - **Db, `apps/api/test/db/door-privacy.test.ts`**: no address or its hash in any table, log line
   or error report, after every kind of submission and refusal; refusals counted with nothing else.
 - **Browser, `apps/web/e2e/door.spec.ts`** (chromium and phone): the puzzle solved in the page by a
@@ -196,7 +196,7 @@ Added:
   "Check your email"; the tip sends a fresh solution with each send.
 
 Changed to the new behaviour: every test that sends a report or tip through the routes now sends
-the door's fields (`test/door-pass.ts`, `e2e/door.ts`); the ElectionLog and L7/L3 tests send no
+the door's fields (`test/door-pass.ts`, `e2e/door.ts`); the voting and L7/L3 tests send no
 address (their forms ask none); the list-route test of the old filters now expects the plain
 refusal; the copy-slot test knows the one server-read slot; the invariants and sweep tests know the
 new prefix and table.
@@ -218,7 +218,7 @@ count did not yet know the door.
 
 `identity/gate.ts` (two IN_FRONT lines) and `identity/limiter.ts` (hash the key) — PE1's;
 `moderation/rejection.ts` (no address, no notice) — PE3's; `filing/*`, `lists/routes.ts`,
-`lists/values.ts`, `lists/refusals.ts`, `logbooks/*` and `templates/electionlog.json`, `site/copy.ts`
+`lists/values.ts`, `lists/refusals.ts`, `logbooks/*` and `templates/how-voting-went.json`, `site/copy.ts`
 (one slot), `jobs/sweep.ts` (one table), `app.ts` (the door, registered first), `config.ts`,
 `packages/fields` (email rule, limits), contracts (`door.ts`, and `filing`, `lists`, `logbooks`,
 `site`), the web filing and list forms, builder, deploy (`install.sh`, README), `.env.example`, the

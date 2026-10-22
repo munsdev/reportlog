@@ -1,6 +1,6 @@
 /**
  * The shipped starting points for a list: the Tip List, check-ins, a contact
- * form, election tips (owner decision 45), and ElectionLog's tip list (the
+ * form, election tips (owner decision 45), and the link tip list (the
  * owner's questionnaires of 21 October 2026, §04): three rows of a link and
  * what kind of link it is, nothing else asked, strict, no email. The Tip List stays general;
  * election tips is the election-specific one beside it, as
@@ -32,7 +32,7 @@ import type { Retention } from './retention.ts';
 import checkIns from './templates/check-ins.json' with { type: 'json' };
 import contact from './templates/contact.json' with { type: 'json' };
 import electionTips from './templates/election-tips.json' with { type: 'json' };
-import electionlogTips from './templates/electionlog-tips.json' with { type: 'json' };
+import linkTips from './templates/link-tips.json' with { type: 'json' };
 import tips from './templates/tips.json' with { type: 'json' };
 
 export const LIST_FILE_VERSION = 1;
@@ -133,7 +133,7 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
 const FILES = {
   tips,
   'election-tips': electionTips,
-  'electionlog-tips': electionlogTips,
+  'link-tips': linkTips,
   'check-ins': checkIns,
   contact,
 } as const;

@@ -687,10 +687,10 @@ describe('E1 and E4 in a logbook file and a starting point', () => {
     ).rejects.toThrow(/earliest or latest/);
   });
 
-  it('ElectionLog’s starting point asks no email, and its date carries the placeholder window', async () => {
+  it('The voting starting point asks no email, and its date carries the placeholder window', async () => {
     const lb = await createFromStartingPoint(h.db, {
-      starting_point: 'electionlog',
-      title: 'ElectionLog window',
+      starting_point: 'how-voting-went',
+      title: 'Voting window',
       slug: uniqueSlug('el-window'),
     });
     expect(lb.asks_email).toBe(false);
