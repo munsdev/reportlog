@@ -33,6 +33,7 @@ import type { SignedInMe } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInPrompt } from './SignInPrompt.tsx';
 import { Done, ErrorText, Panel, TextField } from './ui.tsx';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 export function AccessHome() {
   const me = useMe();
@@ -224,7 +225,7 @@ function People() {
       <ErrorText error={people.error} />
       {people.data?.people.length === 0 && <p>Nobody holds a role yet.</p>}
       {people.data && people.data.people.length > 0 && (
-        <div className="overflow-x-auto">
+        <ScrollX label="People with a role">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">People with a role</caption>
             <thead>
@@ -252,7 +253,7 @@ function People() {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollX>
       )}
     </Panel>
   );

@@ -91,7 +91,8 @@ test.describe('as an administrator', () => {
     const imprint = page.getByRole('region', { name: 'Imprint' });
     const privacy = page.getByRole('region', { name: 'Privacy policy' });
     await imprint.getByRole('button', { name: 'Edit Imprint' }).click();
-    await page.getByRole('textbox', { name: 'Imprint' }).press('End');
+    // The end of the whole text, not of its first line.
+    await page.getByRole('textbox', { name: 'Imprint' }).press('ControlOrMeta+End');
     await page.getByRole('textbox', { name: 'Imprint' }).pressSequentially(' x');
 
     await privacy.getByRole('button', { name: 'Edit Privacy policy' }).click();

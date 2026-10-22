@@ -118,7 +118,7 @@ test('a reporter files a report card by card, and confirms it from the email', a
 
   const before = countTo(email);
   await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(page.getByText('Confirm the statement above to send the report.')).toBeVisible();
+  await expect(page.getByText('Tick the statement above to send the report.')).toBeVisible();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   await page.getByRole('button', { name: 'Send report' }).click();
   await expect(heading(page, 'Check your email')).toBeVisible();

@@ -37,6 +37,7 @@ import { switchWords } from '../board/Activity.tsx';
 import { StaffHead } from '../moderation/parts.tsx';
 import { intakePauseQuery } from './IntakePaused.tsx';
 import { floodQuery, laneQuery, switchesQuery } from './queries.ts';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 const hour = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { timeStyle: 'short' });
 const when = (iso: string) =>
@@ -100,7 +101,7 @@ function FloodBody() {
       {flood.data ? (
         <>
           <Section title="Submissions per hour, the last 24 hours">
-            <div className="overflow-x-auto">
+            <ScrollX label="Reports and tips that arrived, by hour">
               <table className="w-full border-collapse text-sm">
                 <caption className="sr-only">Reports and tips that arrived, by hour</caption>
                 <thead>
@@ -134,7 +135,7 @@ function FloodBody() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollX>
           </Section>
           <Section title="Refused at the door, per hour, by check">
             <p className="text-sm text-ink-alt">
@@ -144,7 +145,7 @@ function FloodBody() {
             {flood.data.refusals.length === 0 ? (
               <p>Nothing has been refused in the last 24 hours.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <ScrollX label="Refusals by hour and check">
                 <table className="w-full border-collapse text-sm">
                   <caption className="sr-only">Refusals by hour and check</caption>
                   <thead>
@@ -181,7 +182,7 @@ function FloodBody() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollX>
             )}
           </Section>
           <Section title="Identical answers, the last 24 hours">
@@ -246,7 +247,7 @@ function Totals({ totals }: { totals: TotalsData }) {
         For staff only: the public sees accepted reports, and declined ones counted by reason.
         Waiting means not yet decided, or marked unclear. Received is the other four together.
       </p>
-      <div className="overflow-x-auto">
+      <ScrollX label="Reports by logbook and where they stand">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">Reports by logbook and where they stand</caption>
           <thead>
@@ -276,7 +277,7 @@ function Totals({ totals }: { totals: TotalsData }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </ScrollX>
       <p className="text-sm">
         {`Sent and not yet confirmed from the emailed link: ${String(totals.unconfirmed)}.`}
       </p>

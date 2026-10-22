@@ -19,6 +19,7 @@ import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { ProseSection } from '../components/ui/prose-section.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { CopyButton } from '../features/site-pages/CopyButton.tsx';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 export const Route = createFileRoute('/public-api')({
   component: PublicApiPage,
@@ -55,7 +56,7 @@ function Table({
   rows: readonly (readonly [string, ReactNode])[];
 }) {
   return (
-    <div className="overflow-x-auto">
+    <ScrollX label="The calls">
       <table className="w-full border-collapse text-left text-sm">
         <thead>
           <tr className="border-b border-line">
@@ -76,7 +77,7 @@ function Table({
           ))}
         </tbody>
       </table>
-    </div>
+    </ScrollX>
   );
 }
 

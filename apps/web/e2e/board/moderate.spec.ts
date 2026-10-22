@@ -112,7 +112,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   // Not on the board yet.
   await page.goto(`/board?q=${word}`);
   await expect(
-    page.getByRole('status').filter({ hasText: 'No published report matches that.' }),
+    page.getByText('No published report matches that', { exact: true }),
   ).toBeVisible();
 
   // Waiting in the queue, asking for a second read.

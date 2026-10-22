@@ -19,6 +19,7 @@ import { StaffPage } from '../nav/StaffPage.tsx';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 import { ErrorText } from './ui.tsx';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 type AuditEntry = ResponseOf<typeof listAudit>['entries'][number];
 
@@ -69,7 +70,7 @@ export function AuditPage() {
               'times in UTC',
             ]}
           />
-          <div className="overflow-x-auto">
+          <ScrollX label="Changes to who may do what, newest first">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">Changes to who may do what, newest first</caption>
               <thead>
@@ -96,7 +97,7 @@ export function AuditPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollX>
           <Pagination page={page} pages={pages} onPage={setPage} label="Pages of changes" />
         </Card>
       ) : null}

@@ -24,6 +24,7 @@ import { Card } from '../../components/ui/card.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { StepUpDownload } from '../identity/StepUp.tsx';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 const anchorQuery = queryOptions({
   queryKey: ['anchor', 'status'],
@@ -92,7 +93,7 @@ export function TransparencyLogPage() {
             {query.data.anchors.length === 0 ? (
               <p>Nothing has been anchored yet.</p>
             ) : (
-              <div className="overflow-x-auto">
+              <ScrollX label="Anchors, newest first">
                 <table className="w-full text-left text-sm">
                   <caption className="sr-only">Anchors, newest first</caption>
                   <thead>
@@ -126,7 +127,7 @@ export function TransparencyLogPage() {
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ScrollX>
             )}
           </Section>
           <Section title="What happened at each run">

@@ -49,7 +49,9 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  * count's words after a comma ("Queue, 2 reports waiting for a moderator").
  */
 export function named(label: string): RegExp {
-  return new RegExp(`^${escape(label)}(,|$)`);
+  // The browser joins the label and the count's hidden words with a space
+  // ("Queue , 2 reports…"), so the space is allowed before the comma.
+  return new RegExp(`^${escape(label)}\\s*(,|$)`);
 }
 
 /** Go somewhere from the menu, as a person would. */

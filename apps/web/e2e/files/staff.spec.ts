@@ -172,7 +172,9 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   await expect(
     page
       .getByRole('list', { name: 'Files on this report' })
-      .getByText('Published', { exact: true }),
+      .getByText('Published', { exact: true })
+      // The file's chip; its record below says Published too.
+      .first(),
   ).toBeVisible();
   await expect(page.getByText('“A queue outside a polling station door”')).toBeVisible();
 

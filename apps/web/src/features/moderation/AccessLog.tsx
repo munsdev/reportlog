@@ -19,6 +19,7 @@ import { Pagination } from '../../components/ui/pagination.tsx';
 import { CountLine } from '../../components/ui/type.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { accessLogQuery } from './queries.ts';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 /** The longest span the access-log call answers for. */
 const EVERYTHING = 120;
@@ -69,7 +70,7 @@ export function AccessLogPage() {
               'times in UTC',
             ]}
           />
-          <div className="overflow-x-auto">
+          <ScrollX label="Every opening of protected data, newest first">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">Every opening of protected data, newest first</caption>
               <thead>
@@ -116,7 +117,7 @@ export function AccessLogPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollX>
           <Pagination page={page} pages={pages} onPage={setPage} label="Pages of the log" />
         </Card>
       ) : null}

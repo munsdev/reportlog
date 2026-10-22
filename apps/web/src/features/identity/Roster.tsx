@@ -26,6 +26,7 @@ import { deskLabel } from './desks.ts';
 import { ROLE_LABELS, useIdentityChanged } from './session.ts';
 import { StaffOnly } from './StaffOnly.tsx';
 import { Done, ErrorText, TextField } from './ui.tsx';
+import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 const PERIODS = [7, 30, 90, 365] as const;
 
@@ -96,7 +97,7 @@ function Roster() {
                 `reports from the last ${roster.data.days === 365 ? 'year' : `${String(roster.data.days)} days`}`,
               ]}
             />
-            <div className="overflow-x-auto">
+            <ScrollX label="Who is doing what">
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">
                   The roster, counting reports from the last {String(roster.data.days)} days
@@ -170,7 +171,7 @@ function Roster() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollX>
           </>
         )}
       </Card>

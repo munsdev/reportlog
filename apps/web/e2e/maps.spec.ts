@@ -210,7 +210,7 @@ test('the staff screen says "No maps yet." when there are none, and draws no map
   });
   await page.goto('/maps');
   await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
-  await expect(page.getByText('No maps yet.')).toBeVisible();
+  await expect(page.getByText('No maps yet', { exact: true })).toBeVisible();
   await page.unrouteAll({ behavior: 'wait' });
 
   // With a map listed, its threshold is said in words, not as a bare number.

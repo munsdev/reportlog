@@ -34,9 +34,13 @@ export const choiceCardClass = cn(
   'has-[[aria-invalid=true]]:border-serious',
 );
 
-/** The round or square mark, filled with a tick when chosen. */
+/**
+ * The round or square mark, filled with a tick when chosen. 24px, not the
+ * reference's 22px: the mark is the control itself, and WCAG 2.2 asks 24px
+ * of a target however large the card around it.
+ */
 export const choiceMarkClass =
-  'peer flex size-[1.375rem] shrink-0 items-center justify-center border-2 border-ink bg-surface text-surface outline-none data-[state=checked]:bg-ink';
+  'peer flex size-6 shrink-0 items-center justify-center border-2 border-ink bg-surface text-surface outline-none data-[state=checked]:bg-ink';
 
 export function Tick() {
   return (

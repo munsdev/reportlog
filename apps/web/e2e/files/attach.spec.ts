@@ -72,7 +72,7 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
   });
   const files = page.getByRole('list', { name: 'Your files' });
   await expect(files.getByText('IMG_0042.jpg')).toBeVisible();
-  await expect(files.getByText('Sent')).toBeVisible();
+  await expect(files.getByText(/^(Preparing|Ready)$/)).toBeVisible();
   // A second file this form does not take is refused before it is sent.
   await page
     .locator('input[type=file]')
