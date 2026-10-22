@@ -15,3 +15,6 @@ playwright-report/
 .files/
 **/e2e/.files/
 **/e2e/.bugsink.jsonl
+
+# Parallel sessions' working copies (git worktrees); never part of the repository.
+.claude/worktrees/
