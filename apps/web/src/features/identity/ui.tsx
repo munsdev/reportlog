@@ -73,6 +73,41 @@ export function Done({ children }: { children: ReactNode }) {
 }
 
 /** A panel with the theme's heading. */
-export function Panel({ title, children }: { title: string; children: ReactNode }) {
-  return <Card heading={title}>{children}</Card>;
+export function Panel({
+  title,
+  level = 2,
+  children,
+}: {
+  title: string;
+  /** 3 when the panel sits under a section heading of its own. */
+  level?: 2 | 3;
+  children: ReactNode;
+}) {
+  return (
+    <Card heading={title} headingLevel={level}>
+      {children}
+    </Card>
+  );
+}
+
+/** A section of a page: a heading, then its panels. */
+export function Section({
+  title,
+  lede,
+  children,
+}: {
+  title: string;
+  lede?: ReactNode;
+  children: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <section aria-labelledby={id} className="flex flex-col gap-4">
+      <h2 id={id} className="font-display text-2xl font-bold">
+        {title}
+      </h2>
+      {lede ? <p className="max-w-prose text-ink-alt">{lede}</p> : null}
+      {children}
+    </section>
+  );
 }

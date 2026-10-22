@@ -9,10 +9,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Count } from '../../components/ui/count.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
+import { CountLine } from '../../components/ui/type.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
@@ -27,42 +30,57 @@ export function FeedbackQueue() {
   const [openId, setOpenId] = useState<number | null>(null);
 
   return (
-    <Page
+    <StaffPage
       title="Feedback"
       lede="Every issue testers have filed. Anything still open is in the weekly email until somebody moves it."
     >
-      <Field className="max-w-xs">
-        <Label>Show</Label>
-        <Select
-          value={filter}
-          onChange={(e) => {
-            setFilter(e.target.value);
-          }}
-        >
-          <option value="open">
-            Everything open{queue.data ? ` (${String(queue.data.open)})` : ''}
-          </option>
-          <option value="all">Everything</option>
-          {FEEDBACK_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {FEEDBACK_STATUS_LABELS[s]} ({String(queue.data?.counts[s] ?? 0)})
-            </option>
-          ))}
-        </Select>
-      </Field>
+      {/* Pressed buttons with counts, as the moderation queue filters. */}
+      <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
+        {(['open', 'all', ...FEEDBACK_STATUSES] as const).map((f) => {
+          const label =
+            f === 'open'
+              ? 'Everything open'
+              : f === 'all'
+                ? 'Everything'
+                : FEEDBACK_STATUS_LABELS[f];
+          const n =
+            f === 'open' ? queue.data?.open : f === 'all' ? undefined : queue.data?.counts[f];
+          return (
+            <Button
+              key={f}
+              variant="secondary"
+              aria-pressed={filter === f}
+              className={filter === f ? 'border-2 bg-paper-alt' : undefined}
+              onClick={() => {
+                setFilter(f);
+              }}
+            >
+              {label}
+              {n === undefined ? null : <Count value={n} label={`${String(n)} issues`} />}
+            </Button>
+          );
+        })}
+      </div>
+      {queue.data ? (
+        <CountLine
+          parts={[`${String(queue.data.issues.length)} shown`, `${String(queue.data.open)} open`]}
+        />
+      ) : null}
       {queue.isPending ? <p role="status">Loading…</p> : null}
       {queue.isError ? (
         <Alert tone="serious" title="The feedback could not be loaded.">
           {queue.error.message}
         </Alert>
       ) : null}
-      {queue.data?.issues.length === 0 ? <p>Nothing here.</p> : null}
+      {queue.data?.issues.length === 0 ? (
+        <Empty title="Nothing here">Nothing filed has this status.</Empty>
+      ) : null}
       <ul className="flex flex-col gap-3">
         {queue.data?.issues.map((issue) => (
           <li key={issue.id}>
             <Card>
               <CardContent className="flex flex-col gap-2">
-                <h2 className="font-semibold">{issue.title}</h2>
+                <h2 className="font-display text-lg font-bold">{issue.title}</h2>
                 <IssueLine issue={issue} author={issue.submitter_email} />
                 <div>
                   <Button
@@ -82,7 +100,7 @@ export function FeedbackQueue() {
           </li>
         ))}
       </ul>
-    </Page>
+    </StaffPage>
   );
 }
 

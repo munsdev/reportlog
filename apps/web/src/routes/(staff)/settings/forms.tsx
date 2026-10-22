@@ -21,7 +21,7 @@ import { Card } from '@/components/ui/card.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SaveBar } from '@/components/ui/save-bar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -116,7 +116,7 @@ export function MinFormTime({ seconds }: { seconds: number }) {
 function FormsPage() {
   const state = useQuery(doorQuery);
   return (
-    <Page
+    <StaffPage
       title="Report and tip forms"
       width="prose"
       lede="The checks every report and tip passes before this site reads it."
@@ -160,6 +160,6 @@ function FormsPage() {
           </li>
         </ul>
       </Card>
-    </Page>
+    </StaffPage>
   );
 }

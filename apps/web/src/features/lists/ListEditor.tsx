@@ -27,7 +27,7 @@ import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { optionArray } from '@reportlog/fields';
@@ -104,7 +104,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
     await qc.invalidateQueries({ queryKey: listsQuery().queryKey, exact: true });
   };
   return (
-    <Page
+    <StaffPage
       title={list.title}
       lede={
         <>
@@ -128,7 +128,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
       <Questions key={list.fields.map((f) => f.id).join('-')} list={list} onSaved={refresh} />
       <Counts list={list} />
       <Remove list={list} />
-    </Page>
+    </StaffPage>
   );
 }
 

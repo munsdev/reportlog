@@ -17,6 +17,7 @@ import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { useMe } from '../identity/session.ts';
@@ -42,8 +43,10 @@ const FREQUENCY_WORDS: Record<DigestFrequency, { label: string; hint: string }> 
 export function NotificationsPage() {
   const me = useMe();
   const query = useQuery({ ...notificationsQuery, enabled: Boolean(me.data?.signedIn) });
+  const siteName = plainSiteName(useSite().data);
   return (
     <Page
+      eyebrow={siteName}
       title="Email updates"
       width="prose"
       lede="Hear about reports when a moderator publishes them. Only what anybody can read on the board is ever emailed."
@@ -106,7 +109,7 @@ export function NotificationsForm({ current }: { current: Notifications }) {
 
       {frequency !== 'none' ? (
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-2 font-semibold">From which logbooks</legend>
+          <legend className="mb-2 label-face text-xs text-ink">From which logbooks</legend>
           <CheckOption
             id={allId}
             checked={all}
@@ -146,20 +149,18 @@ export function NotificationsForm({ current }: { current: Notifications }) {
           {save.error.message}
         </Alert>
       ) : null}
-      {save.isSuccess ? (
-        <Alert
-          tone="done"
-          title={
-            save.data.frequency === 'none'
-              ? 'Saved. You will not be emailed.'
-              : `Saved. You will be emailed ${save.data.frequency === 'hourly' ? 'at most once an hour' : 'once a week'}.`
-          }
-        />
-      ) : null}
-      <div>
+      {/* A one-line save is a sentence beside the button (account.md §01). */}
+      <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={save.isPending || nothingPicked}>
           Save
         </Button>
+        {save.isSuccess ? (
+          <p role="status">
+            {save.data.frequency === 'none'
+              ? 'Saved. You will not be emailed.'
+              : `Saved. You will be emailed ${save.data.frequency === 'hourly' ? 'at most once an hour' : 'once a week'}.`}
+          </p>
+        ) : null}
       </div>
     </form>
   );

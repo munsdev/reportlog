@@ -16,19 +16,20 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Card } from '@/components/ui/card.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { archiveQuery } from '../../../features/moderation/queries.ts';
 import {
-  BUILT_IN,
   lookName,
   paletteLabel,
   plural,
   themeLabel,
+  useLookCatalogue,
 } from '../../../features/settings/looks.ts';
+import { lookPacksQuery } from '../../../features/looks/queries.ts';
 import { GuardedPanel, LinkPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
 import { AcceptingReportsPanel, DevNotice } from '../../../features/settings/Switches.tsx';
 import { LEGAL_TITLES } from '../../../features/settings/wording.tsx';
@@ -67,7 +68,7 @@ export function wordingSummary(copy: SiteEditor['copy']) {
 function SettingsHome() {
   return (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Site settings"
         lede="Everything set here applies to the whole site. Each panel shows what is set now; open one to change it. None of it is part of any report: renaming the site or changing its look never changes how a report checks out."
       >
@@ -80,7 +81,7 @@ function SettingsHome() {
           <FormsPanel />
           <DevNotice />
         </div>
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   );
 }
@@ -197,17 +198,20 @@ function NamePanel() {
 function LookPanel() {
   const editor = useQuery(editorQuery);
   const look = editor.data?.look;
+  const catalogue = useLookCatalogue();
+  const packs = useQuery(lookPacksQuery).data?.packs.length ?? 0;
   return (
     <LinkPanel
       title="How this site looks"
       to="/settings/look"
       summary={[
-        { key: 'Look', value: look ? lookName(look) : '…' },
-        { key: 'Palette', value: look ? paletteLabel(look.palette) : '…' },
-        { key: 'Theme', value: look ? themeLabel(look.theme) : '…' },
+        { key: 'Look', value: look ? lookName(look, catalogue) : '…' },
+        { key: 'Palette', value: look ? paletteLabel(look.palette, catalogue) : '…' },
+        { key: 'Theme', value: look ? themeLabel(look.theme, catalogue) : '…' },
         {
           key: 'Installed looks',
-          value: `${plural(BUILT_IN.looks, 'look', 'looks')}, from 1 pack`,
+          // The built-in pack counts as one.
+          value: `${plural(catalogue.looks.length, 'look', 'looks')}, from ${plural(packs + 1, 'pack', 'packs')}`,
         },
       ]}
     />

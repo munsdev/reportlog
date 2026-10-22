@@ -18,7 +18,7 @@ import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
@@ -30,7 +30,7 @@ import { WithEditor, useSave } from './-editor.tsx';
 export const Route = createFileRoute('/(staff)/settings/legal')({
   component: () => (
     <SettingsFrame>
-      <Page
+      <StaffPage
         title="Legal notices"
         width="prose"
         lede="Your imprint and privacy policy, published exactly as you write them."
@@ -44,7 +44,7 @@ export const Route = createFileRoute('/(staff)/settings/legal')({
             </div>
           )}
         </WithEditor>
-      </Page>
+      </StaffPage>
     </SettingsFrame>
   ),
 });

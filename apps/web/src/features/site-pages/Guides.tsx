@@ -13,68 +13,147 @@
  */
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { Card } from '../../components/ui/card.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { ProseSection } from '../../components/ui/prose-section.tsx';
+import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 
+/**
+ * One section of a guide. A numbered title ("1 · Make the draft") puts its
+ * number in the eyebrow above the heading, so the steps read as steps.
+ */
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  const step = /^(\d+) · (.*)$/.exec(title);
   return (
-    <section aria-labelledby={id} className="flex flex-col gap-3">
-      <h2 id={id} className="font-display text-2xl font-bold">
-        {title}
-      </h2>
+    <ProseSection
+      id={id}
+      {...(step ? { label: `Step ${step[1] ?? ''}` } : {})}
+      title={step?.[2] ?? title}
+    >
       {children}
-    </section>
+    </ProseSection>
   );
 }
 
+/** A "Why" that folds out: the reason behind a rule, for whoever wants it. */
 function Why({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <details className="rounded-card border border-line bg-surface p-4">
-      <summary className="cursor-pointer font-semibold">{title}</summary>
-      <div className="mt-3 flex flex-col gap-3">{children}</div>
+    <details className="group">
+      <summary className="flex min-h-11 cursor-pointer items-center label-face text-sm">
+        {title}
+      </summary>
+      <Card variant="quiet" className="mt-2">
+        {children}
+      </Card>
     </details>
   );
 }
 
 const linkClass = 'underline underline-offset-2';
 
+/**
+ * A guide's frame: its contents at the top, and on a desktop in a left
+ * column of 14rem that does not follow the page down (the old sticky strip
+ * stays dropped, decision 28). Printed, the guide alone.
+ */
+function Guide({
+  title,
+  lede,
+  contents,
+  children,
+}: {
+  title: string;
+  lede: string;
+  contents: readonly { id: string; title: string }[];
+  children: ReactNode;
+}) {
+  const siteName = plainSiteName(useSite().data);
+  return (
+    <Page eyebrow={`${siteName} · Guides`} title={title} lede={lede}>
+      <div className="grid items-start gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
+        {/* Not numbered by the list: the steps carry their own numbers. */}
+        <nav aria-label="Contents" className="print:hidden">
+          <Card variant="quiet" heading="Contents" headingLevel={2}>
+            <ul className="flex flex-col">
+              {contents.map((c) => (
+                <li key={c.id}>
+                  <a
+                    href={`#${c.id}`}
+                    className="inline-flex min-h-11 items-center underline underline-offset-2"
+                  >
+                    {c.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </nav>
+        <div className="flex max-w-prose flex-col gap-8">{children}</div>
+      </div>
+    </Page>
+  );
+}
+
 export function GuidesIndex() {
+  const siteName = plainSiteName(useSite().data);
   return (
     <Page
+      eyebrow={siteName}
       title="Guides"
       width="prose"
       lede="How to run this archive once it is installed: making a logbook, deciding who reviews, and checking it all works."
     >
       <ul className="flex flex-col gap-4">
         <li>
-          <Link to="/docs/first-logbook" className={`${linkClass} font-semibold`}>
-            Your first logbook
-          </Link>
-          <p>
-            Building the questions, the one decision that cannot be undone, appointing somebody to
-            review, and filing a report through the whole path.
-          </p>
+          <Card>
+            <h2 className="font-display text-xl font-bold">
+              <Link to="/docs/first-logbook" className={linkClass}>
+                Your first logbook
+              </Link>
+            </h2>
+            <p>
+              Building the questions, the one decision that cannot be undone, appointing somebody to
+              review, and filing a report through the whole path.
+            </p>
+          </Card>
         </li>
         <li>
-          <Link to="/docs/checking" className={`${linkClass} font-semibold`}>
-            Checking it actually works
-          </Link>
-          <p>What to try in a browser on every new deployment, and how anybody checks a report.</p>
+          <Card>
+            <h2 className="font-display text-xl font-bold">
+              <Link to="/docs/checking" className={linkClass}>
+                Checking it actually works
+              </Link>
+            </h2>
+            <p>
+              What to try in a browser on every new deployment, and how anybody checks a report.
+            </p>
+          </Card>
         </li>
       </ul>
-      <p className="text-sm text-ink-alt">
-        Installing the software on a server is described in the deployment’s own runbook, which
-        ships with the deployment files rather than on this site.
-      </p>
+      <Card variant="quiet">
+        <p className="text-sm">
+          Installing the software on a server is described in the deployment’s own runbook, which
+          ships with the deployment files rather than on this site.
+        </p>
+      </Card>
     </Page>
   );
 }
 
 export function FirstLogbookGuide() {
   return (
-    <Page
+    <Guide
       title="Your first logbook"
-      width="prose"
       lede="A deployment with no logbook accepts no reports at all, and that is deliberate. Every report is filed through a logbook, and a logbook is a questionnaire you build."
+      contents={[
+        { id: 'logbook-or-list', title: 'A logbook or a list' },
+        { id: 'create', title: '1 · Make the draft' },
+        { id: 'questions', title: '2 · Ask your questions' },
+        { id: 'read', title: '3 · Read it as a reporter, before you launch' },
+        { id: 'launch', title: '4 · Launch it: this is the one-way door' },
+        { id: 'review', title: '5 · Somebody to review what arrives' },
+        { id: 'walk', title: '6 · File one for real, through the whole path' },
+      ]}
     >
       <p>
         There is no built-in form to fall back on and no second way in. Until one logbook is
@@ -271,16 +350,19 @@ export function FirstLogbookGuide() {
         </Why>
         <p>Then you have a working archive, and its address is worth giving out.</p>
       </Section>
-    </Page>
+    </Guide>
   );
 }
 
 export function CheckingGuide() {
   return (
-    <Page
+    <Guide
       title="Checking it actually works"
-      width="prose"
       lede="What to try in a browser on a new deployment, and how anybody can check a report without trusting this site."
+      contents={[
+        { id: 'browser', title: 'In a browser' },
+        { id: 'report', title: 'Checking a report' },
+      ]}
     >
       <Section id="browser" title="In a browser">
         <ol className="list-decimal pl-6">
@@ -314,6 +396,6 @@ export function CheckingGuide() {
           whole logbook cannot quietly disappear.
         </p>
       </Section>
-    </Page>
+    </Guide>
   );
 }

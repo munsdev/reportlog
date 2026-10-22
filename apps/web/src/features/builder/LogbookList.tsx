@@ -20,7 +20,7 @@ import { Card } from '../../components/ui/card.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { FileDrop } from '../../components/ui/file-drop.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
@@ -41,10 +41,11 @@ export function LogbookList() {
     </Button>
   );
   return (
-    <Page
+    <StaffPage
       title="Logbooks"
       lede="A logbook is one named place to file reports, with its own questions. Every report in it is fingerprinted and chained to the one before."
-      actions={making ? null : make}
+      // One "Make" button at a time: an empty page carries it in its empty state.
+      actions={making || query.data?.logbooks.length === 0 ? null : make}
     >
       <p className="text-ink-alt">
         Whether the site takes new reports at all is set under{' '}
@@ -109,7 +110,7 @@ export function LogbookList() {
             ))}
           </ul>
         ))}
-    </Page>
+    </StaffPage>
   );
 }
 

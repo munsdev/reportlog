@@ -11,10 +11,13 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Chip } from '@/components/ui/chip.tsx';
+import { Empty } from '@/components/ui/empty.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
-import { Select } from '@/components/ui/select.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
+import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '@/lib/api.ts';
 import { batchesQuery, organizationsQuery, useIntakeRefresh } from './queries.ts';
 
@@ -35,30 +38,29 @@ export function IntakeHome() {
   });
 
   return (
-    <Page
+    <StaffPage
       title="Filing for an organization"
       lede="Type up accounts somebody gave you on paper, by phone or in person. Nothing is filed until you have checked the whole batch and said so."
       width="prose"
     >
-      <section aria-labelledby="new-batch" className="flex flex-col gap-3">
-        <h2 id="new-batch" className="font-display text-xl font-bold">
-          A new batch
-        </h2>
+      <Card heading="A new batch">
         {list.length > 1 ? (
           <Field>
             <Label>Which organization are these accounts for?</Label>
-            <Select
+            <RadioGroup
               value={orgId === undefined ? '' : String(orgId)}
-              onChange={(e) => {
-                setChosen(Number(e.target.value));
+              onValueChange={(v) => {
+                setChosen(Number(v));
               }}
             >
               {list.map((o) => (
-                <option key={o.organization_id} value={o.organization_id}>
-                  {o.name}
-                </option>
+                <RadioOption
+                  key={o.organization_id}
+                  value={String(o.organization_id)}
+                  label={o.name}
+                />
               ))}
-            </Select>
+            </RadioGroup>
           </Field>
         ) : list[0] ? (
           <p>The accounts will be filed for {list[0].name}.</p>
@@ -67,7 +69,9 @@ export function IntakeHome() {
         <div>
           <Button
             type="button"
-            disabled={orgId === undefined || start.isPending}
+            disabled={orgId === undefined}
+            busy={start.isPending}
+            busyLabel="Starting…"
             onClick={() => {
               start.mutate();
             }}
@@ -75,38 +79,57 @@ export function IntakeHome() {
             Start a new batch
           </Button>
         </div>
-      </section>
+      </Card>
 
       <section aria-labelledby="your-batches" className="flex flex-col gap-3">
-        <h2 id="your-batches" className="font-display text-xl font-bold">
+        <h2 id="your-batches" className="font-display text-2xl font-bold">
           Your batches
         </h2>
         {batches.isPending ? <p role="status">Loading…</p> : null}
         {batches.isError ? <Alert tone="serious" title={batches.error.message} /> : null}
-        {batches.data?.batches.length === 0 ? <p>You have not started a batch yet.</p> : null}
+        {batches.data?.batches.length === 0 ? (
+          <Empty title="You have not started a batch yet">
+            A batch holds the accounts you type up until you file them together.
+          </Empty>
+        ) : null}
         <ul className="flex flex-col gap-3">
-          {batches.data?.batches.map((b) => (
-            <li key={b.id} className="rounded-card border border-line bg-surface p-4">
-              <p className="font-semibold">{b.organization}</p>
-              <p className="text-sm text-ink-alt">
-                Started{' '}
-                <time dateTime={b.created_at}>{new Date(b.created_at).toLocaleString()}</time> ·{' '}
-                {b.status === 'submitted'
-                  ? `Filed (${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'})`
-                  : `${String(b.entries - b.filed)} waiting, ${String(b.filed)} filed`}
-              </p>
-              <Link
-                to="/intake/$id"
-                params={{ id: String(b.id) }}
-                className="underline"
-                aria-label={`Open the batch started ${new Date(b.created_at).toLocaleString()}`}
-              >
-                Open
-              </Link>
-            </li>
-          ))}
+          {batches.data?.batches.map((b) => {
+            const started = new Date(b.created_at).toLocaleString();
+            const filed = b.status === 'submitted';
+            return (
+              <li key={b.id}>
+                <Card className="gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-lg font-bold">
+                        <time dateTime={b.created_at}>{started}</time>
+                      </span>
+                      <Chip tone={filed ? 'tag' : 'open'}>{filed ? 'Filed' : 'Open'}</Chip>
+                    </span>
+                    <span className="text-sm text-ink-alt">{b.organization}</span>
+                    <span className="font-mono text-sm">
+                      {filed
+                        ? `${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'} filed`
+                        : `${String(b.entries)} ${b.entries === 1 ? 'account' : 'accounts'} · ${String(b.entries - b.filed)} waiting · ${String(b.filed)} filed`}
+                    </span>
+                  </div>
+                  <div className="shrink-0">
+                    <Button asChild variant="secondary">
+                      <Link
+                        to="/intake/$id"
+                        params={{ id: String(b.id) }}
+                        aria-label={`Open the batch started ${started}`}
+                      >
+                        Open
+                      </Link>
+                    </Button>
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
         </ul>
       </section>
-    </Page>
+    </StaffPage>
   );
 }

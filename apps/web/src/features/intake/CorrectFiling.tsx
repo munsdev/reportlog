@@ -17,7 +17,7 @@ import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import {
@@ -39,12 +39,12 @@ export function CorrectFiling({ threadId }: { threadId: string }) {
   if (filing.isPending) return <p role="status">Loading…</p>;
   if (filing.isError) {
     return (
-      <Page title="Not an account you filed" width="prose">
+      <StaffPage title="Not an account you filed" width="prose">
         <p>{filing.error.message}</p>
         <Link to="/intake" className="underline">
           All your batches
         </Link>
-      </Page>
+      </StaffPage>
     );
   }
   // Keyed by the version, so a new version starts the form from what it says.
@@ -91,7 +91,7 @@ function CorrectForm({
   const asked = askedQuestions(f.questions, raw);
 
   return (
-    <Page
+    <StaffPage
       title={`Correct ${f.public_ref}`}
       lede={`${f.logbook_title} · filed through ${f.filed_via} · ${f.moderation_status === 'pending' ? 'waiting for a moderator' : 'read by a moderator'}`}
       width="prose"
@@ -228,6 +228,6 @@ function CorrectForm({
           ))}
         </ul>
       </section>
-    </Page>
+    </StaffPage>
   );
 }

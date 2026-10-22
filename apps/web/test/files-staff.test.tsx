@@ -17,6 +17,8 @@ import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EvidenceRequests } from '../src/features/files/staff/EvidenceRequests.tsx';
 import { LimitsForm } from '../src/features/files/staff/LimitsForm.tsx';
+import { LimitsPanel } from '../src/features/files/staff/LimitsPanel.tsx';
+import { ToastProvider } from '../src/components/ui/toast.tsx';
 import { ReportFiles } from '../src/features/files/staff/ReportFiles.tsx';
 import { fromBox, whyNotPublishable } from '../src/features/files/staff/words.ts';
 
@@ -324,5 +326,30 @@ describe('limits', () => {
     await user.click(screen.getByRole('button', { name: 'Save the limits' }));
     expect(screen.getByText('Between 1 and 50 files.')).toBeInTheDocument();
     expect(onSave).not.toHaveBeenCalled();
+  });
+
+  it('closed, the panel shows each limit, "not set" where this layer sets none, and the site’s beside a logbook’s', async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn(() => Promise.resolve());
+    const logbook = { ...LAYERS, maxFiles: row(10, null, 3) };
+    render(
+      <ToastProvider>
+        <LimitsPanel layers={logbook} mine="logbook" onSave={onSave} />
+      </ToastProvider>,
+    );
+    expect(screen.getByText('Largest photo').nextElementSibling).toHaveTextContent(
+      'not set · the site’s 10 MB',
+    );
+    expect(screen.getByText('Most files on one report').nextElementSibling).toHaveTextContent(
+      '3 files · site 10 files',
+    );
+    expect(screen.queryByLabelText('Largest photo (MB)')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Edit How big, how long, how many' }));
+    await user.click(screen.getByRole('button', { name: 'Save the limits' }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    // Saved: closed again, and said in a toast.
+    expect(await screen.findByText(/^Saved\. The new limits apply/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Largest photo (MB)')).toBeNull();
   });
 });

@@ -4,7 +4,7 @@
  * The page starts a backup or an export on the server and offers the
  * finished file. Nothing here goes through anybody else: the link is this
  * site's own address, and the file comes from this server's disk. Each
- * download is written to the audit trail ("Who changed what") before the
+ * download is written to the audit trail ("Who granted what") before the
  * file leaves, which the page says beside every link.
  *
  * NOTHING HERE RESTORES. Restoring rebuilds the database this site answers
@@ -21,7 +21,7 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 
@@ -105,7 +105,7 @@ function Files({
               Download <span className="sr-only">{f.name}</span>
             </StepUpDownload>
             <span className="text-xs text-ink-alt">
-              Downloading is recorded in Who changed what before the file leaves.
+              Downloading is recorded in Who granted what before the file leaves.
             </span>
           </span>
         </li>
@@ -152,7 +152,7 @@ export function BackupsPage() {
     },
   });
   return (
-    <Page
+    <StaffPage
       title="Backups and exports"
       width="prose"
       lede="A copy of the whole archive, made on this server and downloaded straight from it. Only the owner can see this page."
@@ -164,7 +164,7 @@ export function BackupsPage() {
           {query.data.unavailable ? <Alert tone="serious">{query.data.unavailable}</Alert> : null}
           <Alert tone="note" title="Every download is recorded">
             Each file holds every report, every account, and people’s contact details. Downloading
-            one is written to “Who changed what”, where the people who grant access can read it, and
+            one is written to “Who granted what”, where the people who grant access can read it, and
             it cannot be removed from there. Keep a downloaded copy as carefully as the server.
           </Alert>
           <Running state={query.data} />
@@ -239,6 +239,6 @@ export function BackupsPage() {
           </Section>
         </>
       ) : null}
-    </Page>
+    </StaffPage>
   );
 }

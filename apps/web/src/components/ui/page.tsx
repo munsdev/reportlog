@@ -11,6 +11,8 @@ import { plainSiteName, useSite } from './site.tsx';
 
 export interface PageProps extends Omit<ComponentProps<'section'>, 'title'> {
   title: string;
+  /** The line above the title, in the label face: the site's name on a staff page. */
+  eyebrow?: ReactNode;
   lede?: ReactNode;
   /** Buttons or links that act on the whole page. At most one primary. */
   actions?: ReactNode;
@@ -20,6 +22,7 @@ export interface PageProps extends Omit<ComponentProps<'section'>, 'title'> {
 
 export function Page({
   title,
+  eyebrow,
   lede,
   actions,
   width = 'wide',
@@ -38,6 +41,7 @@ export function Page({
     >
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
+          {eyebrow ? <p className="label-face text-xs text-muted">{eyebrow}</p> : null}
           <h1 className="font-display text-title font-bold">{title}</h1>
           {lede ? <p className="max-w-prose text-ink-alt">{lede}</p> : null}
         </div>

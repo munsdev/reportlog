@@ -175,9 +175,13 @@ describe('which page an address is', () => {
   );
 
   it('an alias is never the page you are on', () => {
-    const alias = STAFF_ENTRIES.find((e) => e.alias);
-    expect(alias).toBeDefined();
-    expect(entryAt('/moderate/settings')?.alias).toBeUndefined();
+    // No entry is an alias today (the access log has its own page); the rule
+    // is kept for the next second way to a page.
+    const page = { to: '/moderate/settings' as const, label: 'Settings', for: ['admin'] as const };
+    const alias = { ...page, hash: 'part', label: 'A part of it', alias: true };
+    expect(entryAt('/moderate/settings', [alias, page])?.label).toBe('Settings');
+    expect(entryAt('/moderate/settings', [alias])).toBeNull();
+    expect(entryAt('/who-opened-what')?.label).toBe('Who opened protected data');
   });
 
   it('every area page belongs to its area', () => {

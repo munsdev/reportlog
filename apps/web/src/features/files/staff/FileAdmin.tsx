@@ -15,45 +15,47 @@ import {
 } from '@reportlog/contracts';
 import type { BodyOf, FileSettings, ResponseOf } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '../../../components/ui/alert.tsx';
 import { Button } from '../../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card.tsx';
+import { Chip } from '../../../components/ui/chip.tsx';
+import { Empty } from '../../../components/ui/empty.tsx';
+import { KeyValueList } from '../../../components/ui/key-value-list.tsx';
+import { ToastProvider, useToast } from '../../../components/ui/toast.tsx';
+import { TabRow } from '../../nav/AreaTabs.tsx';
 import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
 import { Input } from '../../../components/ui/input.tsx';
 import { Label } from '../../../components/ui/label.tsx';
-import { Page } from '../../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '../../../components/ui/radio-group.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
-import { LimitsForm } from './LimitsForm.tsx';
+import { LimitsPanel } from './LimitsPanel.tsx';
 import { fileSettingsQuery, logbookLimitsQuery } from './queries.ts';
 import { PUBLICATION, describeFile } from './words.ts';
 
-/** The pages under /files that are for administrators, as one row of links. */
+/**
+ * The pages under /files that are for administrators, as the page's own
+ * tabs under the area's: the site's limits, each logbook's, and erasing.
+ */
 export function FileAdminSections() {
+  const { pathname } = useLocation();
+  const here = pathname.replace(/\/+$/, '');
   return (
-    <nav aria-label="File settings">
-      <ul className="flex flex-wrap gap-x-4 gap-y-2 border-b border-line pb-3 text-sm font-semibold">
-        {(
-          [
-            { to: '/files/settings', label: 'The site' },
-            { to: '/files/logbooks', label: 'Each logbook' },
-            { to: '/files/erase', label: 'Erasing a file' },
-          ] as const
-        ).map((s) => (
-          <li key={s.to}>
-            <Link
-              to={s.to}
-              className="underline-offset-4 hover:underline aria-[current=page]:underline"
-            >
-              {s.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </nav>
+    <TabRow
+      label="File settings"
+      tabs={[
+        { to: '/files/settings', label: 'The site', current: here === '/files/settings' },
+        {
+          to: '/files/logbooks',
+          label: 'Each logbook',
+          current: here.startsWith('/files/logbooks'),
+        },
+        { to: '/files/erase', label: 'Erasing a file', current: here === '/files/erase' },
+      ]}
+    />
   );
 }
 
@@ -66,29 +68,31 @@ export function FileSettingsPage() {
       return d;
     });
   return (
-    <Page
-      title="Files: the site"
-      lede="Whether this site takes files with reports, which kinds, and how large. A logbook can narrow these, never widen them."
-      width="prose"
-    >
-      <FileAdminSections />
-      {query.isPending ? <p role="status">Reading the settings…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
-      {query.data ? (
-        <>
-          <Switch settings={query.data} put={put} />
-          <section className="flex flex-col gap-4" aria-labelledby="site-limits">
-            <h2 id="site-limits" className="font-display text-2xl font-bold">
-              Kinds and limits
-            </h2>
-            <LimitsForm layers={query.data.limits} mine="site" onSave={put} />
-          </section>
-        </>
-      ) : null}
-    </Page>
+    <ToastProvider>
+      <StaffPage
+        title="Files: the site"
+        lede="Whether this site takes files with reports, which kinds, and how large. A logbook can narrow these, never widen them."
+        width="prose"
+      >
+        <FileAdminSections />
+        {query.isPending ? <p role="status">Reading the settings…</p> : null}
+        {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+        {query.data ? (
+          <>
+            <Switch settings={query.data} put={put} />
+            <LimitsPanel layers={query.data.limits} mine="site" onSave={put} />
+          </>
+        ) : null}
+      </StaffPage>
+    </ToastProvider>
   );
 }
 
+/**
+ * Whether the site takes files: a switch that applies at once (§02), two
+ * choice cards and one button that does what the chosen card says, then a
+ * toast. Choosing a card sends nothing.
+ */
 function Switch({
   settings,
   put,
@@ -96,8 +100,17 @@ function Switch({
   settings: FileSettings;
   put: (body: { enabled: boolean }) => Promise<unknown>;
 }) {
-  const [on, setOn] = useState(settings.enabled);
-  const save = useMutation({ mutationFn: () => put({ enabled: on }) });
+  const toast = useToast();
+  const now = settings.enabled ? 'on' : 'off';
+  const [choice, setChoice] = useState<'on' | 'off' | null>(null);
+  const chosen = choice ?? now;
+  const save = useMutation({
+    mutationFn: (on: boolean) => put({ enabled: on }),
+    onSuccess: (_d, on) => {
+      setChoice(null);
+      toast.show(on ? 'This site now takes files.' : 'This site no longer takes files.');
+    },
+  });
   if (!settings.configured) {
     return (
       <Alert title="This site cannot take files yet">
@@ -108,26 +121,27 @@ function Switch({
     );
   }
   return (
-    <form
-      className="flex flex-col gap-4"
-      onSubmit={(e) => {
-        e.preventDefault();
-        save.mutate();
-      }}
-    >
-      <p>
-        <span className="font-semibold">Now:</span>{' '}
-        {settings.enabled
-          ? 'files are taken, on logbooks with a question asking for them.'
-          : 'no files are taken.'}
-        {settings.enabled_stored === null
-          ? ' (Nobody has chosen here; this is the server’s setting.)'
-          : ''}
-      </p>
+    <Card heading="Taking files">
+      <KeyValueList
+        items={[
+          {
+            key: 'Takes files',
+            value: settings.enabled ? 'Yes, on logbooks with a question asking for them' : 'No',
+          },
+          {
+            key: 'Set by',
+            value:
+              settings.enabled_stored === null
+                ? 'Nobody has chosen here; this is the server’s setting'
+                : 'This page',
+          },
+        ]}
+      />
       <RadioGroup
-        value={on ? 'on' : 'off'}
+        value={chosen}
         onValueChange={(v) => {
-          setOn(v === 'on');
+          save.reset();
+          setChoice(v === now ? null : v === 'on' ? 'on' : 'off');
         }}
         aria-label="Does this site take files?"
       >
@@ -142,14 +156,25 @@ function Switch({
           hint="Files already sent stay with their reports. Nobody can send more, and no new evidence can be asked for."
         />
       </RadioGroup>
-      {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-      {save.isSuccess ? <Alert tone="done">Saved.</Alert> : null}
-      <div>
-        <Button type="submit" disabled={save.isPending}>
-          Save
-        </Button>
-      </div>
-    </form>
+      {save.isError ? (
+        <Alert tone="serious" title="That did not change.">
+          {save.error.message}
+        </Alert>
+      ) : null}
+      {chosen !== now ? (
+        <div>
+          <Button
+            busy={save.isPending}
+            busyLabel="Changing…"
+            onClick={() => {
+              save.mutate(chosen === 'on');
+            }}
+          >
+            {chosen === 'on' ? 'Turn it on' : 'Turn it off'}
+          </Button>
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
@@ -162,7 +187,7 @@ export function LogbookLimitsList() {
     refetchOnWindowFocus: false,
   });
   return (
-    <Page
+    <StaffPage
       title="Files: each logbook"
       lede="A logbook takes files only if it has a question asking for them. Its limits can be tighter than the site’s, and can be changed after it is launched."
       width="prose"
@@ -172,27 +197,28 @@ export function LogbookLimitsList() {
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? (
         query.data.logbooks.length === 0 ? (
-          <p>There are no logbooks yet.</p>
+          <Empty title="No logbooks yet">
+            Each logbook’s own limits are set here once it has been made.
+          </Empty>
         ) : (
-          <ul className="flex flex-col gap-2" aria-label="Logbooks">
+          <ul className="flex flex-col gap-3" aria-label="Logbooks">
             {query.data.logbooks.map((lb) => (
               <li key={lb.id}>
                 <Link
                   to="/files/logbooks/$id"
                   params={{ id: String(lb.id) }}
-                  className="block rounded-card border border-line bg-surface p-4 hover:bg-paper-alt"
+                  className="flex min-h-11 flex-wrap items-center gap-3 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised hover:bg-paper-alt"
                 >
-                  <span className="font-semibold">{lb.title}</span>{' '}
-                  <span className="text-ink-alt">
-                    · {lb.asks_for_files ? 'asks for files' : 'asks for no files'}
-                  </span>
+                  <span className="flex-1 font-display text-lg font-bold">{lb.title}</span>
+                  <Chip tone="tag">{lb.asks_for_files ? 'Asks for files' : 'No files'}</Chip>
+                  {lb.files_frozen_at ? <Chip tone="tag">Uploads frozen</Chip> : null}
                 </Link>
               </li>
             ))}
           </ul>
         )
       ) : null}
-    </Page>
+    </StaffPage>
   );
 }
 
@@ -206,28 +232,30 @@ export function LogbookLimitsPage({ id }: { id: number }) {
   });
   const lb = books.data?.logbooks.find((l) => l.id === id);
   return (
-    <Page title={lb ? `Files: ${lb.title}` : 'Files: one logbook'} width="prose">
-      <FileAdminSections />
-      {lb && !lb.asks_for_files ? (
-        <Alert>
-          This logbook has no question asking for files, so it takes none whatever its limits say.
-          Add one in the logbook’s questions.
-        </Alert>
-      ) : null}
-      {query.isPending ? <p role="status">Reading the limits…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
-      {query.data ? (
-        <LimitsForm
-          layers={query.data}
-          mine="logbook"
-          onSave={(body) =>
-            call(setLogbookFileLimits, { params: { id }, body }).then((d) => {
-              qc.setQueryData(logbookLimitsQuery(id).queryKey, d);
-            })
-          }
-        />
-      ) : null}
-    </Page>
+    <ToastProvider>
+      <StaffPage title={lb ? `Files: ${lb.title}` : 'Files: one logbook'} width="prose">
+        <FileAdminSections />
+        {lb && !lb.asks_for_files ? (
+          <Alert>
+            This logbook has no question asking for files, so it takes none whatever its limits say.
+            Add one in the logbook’s questions.
+          </Alert>
+        ) : null}
+        {query.isPending ? <p role="status">Reading the limits…</p> : null}
+        {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+        {query.data ? (
+          <LimitsPanel
+            layers={query.data}
+            mine="logbook"
+            onSave={(body) =>
+              call(setLogbookFileLimits, { params: { id }, body }).then((d) => {
+                qc.setQueryData(logbookLimitsQuery(id).queryKey, d);
+              })
+            }
+          />
+        ) : null}
+      </StaffPage>
+    </ToastProvider>
   );
 }
 
@@ -247,7 +275,7 @@ export function EraseFilePage() {
   });
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <Page title="Erasing a file" width="prose">
+    <StaffPage title="Erasing a file" width="prose">
       <FileAdminSections />
       <Card variant="deep" heading="What erasing does">
         <p>
@@ -287,7 +315,7 @@ export function EraseFilePage() {
       {query.isFetching ? <p role="status">Finding the report…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? <ErasingList data={query.data} /> : null}
-    </Page>
+    </StaffPage>
   );
 }
 

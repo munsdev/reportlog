@@ -23,30 +23,35 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
+import { Chip } from '../../components/ui/chip.tsx';
+import { Empty } from '../../components/ui/empty.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
 import { feedbackListQuery, feedbackQuery } from './queries.ts';
-import { IssueLine, when } from './words.tsx';
+import { IssueLine, pageNameFor, when } from './words.tsx';
 
 export function FeedbackPage({ from }: { from?: string | undefined }) {
   return (
-    <Page
+    <StaffPage
       title="Feedback"
       lede="Tell us what is broken, what is confusing, or what would help. This is about the site itself, not about any report."
     >
       <FileForm from={from} />
       <Issues />
-    </Page>
+    </StaffPage>
   );
 }
 
 function FileForm({ from }: { from?: string | undefined }) {
   const client = useQueryClient();
+  // Which screen it is about: the one the menu's link came from, until the
+  // tester says it is not about that page.
+  const [about, setAbout] = useState(from);
   const [type, setType] = useState('');
   const [severity, setSeverity] = useState('');
   const [title, setTitle] = useState('');
@@ -62,7 +67,7 @@ function FileForm({ from }: { from?: string | undefined }) {
           body,
           ...(ref.trim() ? { related_ref: ref.trim() } : {}),
           context: {
-            ...(from ? { page: from } : {}),
+            ...(about ? { page: about } : {}),
             viewport: `${String(window.innerWidth)}x${String(window.innerHeight)}`,
             browser: navigator.userAgent,
           },
@@ -77,8 +82,8 @@ function FileForm({ from }: { from?: string | undefined }) {
   });
 
   return (
-    <Card>
-      <CardContent>
+    <Card heading="File something new">
+      <div>
         <form
           className="flex flex-col gap-5"
           onSubmit={(e) => {
@@ -86,10 +91,23 @@ function FileForm({ from }: { from?: string | undefined }) {
             file.mutate();
           }}
         >
-          <h2 className="font-display text-xl font-bold">File something new</h2>
+          {about ? (
+            <p className="flex flex-wrap items-center gap-2">
+              <Chip tone="tag">About: {pageNameFor(about) ?? about}</Chip>
+              <Button
+                type="button"
+                variant="quiet"
+                onClick={() => {
+                  setAbout(undefined);
+                }}
+              >
+                Not about this page
+              </Button>
+            </p>
+          ) : null}
           <Field>
             <Label>What kind of feedback is it?</Label>
-            <RadioGroup value={type} onValueChange={setType}>
+            <RadioGroup value={type} onValueChange={setType} className="sm:grid sm:grid-cols-2">
               {FEEDBACK_TYPES.map((t) => (
                 <RadioOption key={t} value={t} label={FEEDBACK_TYPE_LABELS[t]} />
               ))}
@@ -97,7 +115,11 @@ function FileForm({ from }: { from?: string | undefined }) {
           </Field>
           <Field>
             <Label>How much does it get in your way?</Label>
-            <RadioGroup value={severity} onValueChange={setSeverity}>
+            <RadioGroup
+              value={severity}
+              onValueChange={setSeverity}
+              className="sm:grid sm:grid-cols-2"
+            >
               {FEEDBACK_SEVERITIES.map((s) => (
                 <RadioOption key={s} value={s} label={FEEDBACK_SEVERITY_LABELS[s]} />
               ))}
@@ -132,6 +154,7 @@ function FileForm({ from }: { from?: string | undefined }) {
             <Label>A report’s reference, if it is about one (optional)</Label>
             <Input
               value={ref}
+              className="font-mono"
               maxLength={60}
               onChange={(e) => {
                 setRef(e.target.value);
@@ -154,7 +177,7 @@ function FileForm({ from }: { from?: string | undefined }) {
             </Button>
           </div>
         </form>
-      </CardContent>
+      </div>
     </Card>
   );
 }
@@ -171,10 +194,15 @@ function Issues() {
   }
   return (
     <section className="flex flex-col gap-3" aria-labelledby="filed">
-      <h2 id="filed" className="font-display text-xl font-bold">
+      <h2 id="filed" className="font-display text-2xl font-bold">
         What has been filed
       </h2>
-      {list.data.issues.length === 0 ? <p>Nothing yet.</p> : null}
+      <p className="text-sm text-ink-alt">
+        Newest first, so a duplicate is seen before it is filed.
+      </p>
+      {list.data.issues.length === 0 ? (
+        <Empty title="Nothing filed yet">What testers file appears here, newest first.</Empty>
+      ) : null}
       <ul className="flex flex-col gap-3">
         {list.data.issues.map((issue) => (
           <li key={issue.id}>
@@ -191,7 +219,7 @@ function IssueCard({ issue }: { issue: FeedbackIssue }) {
   return (
     <Card>
       <CardContent className="flex flex-col gap-2">
-        <h3 className="font-semibold">{issue.title}</h3>
+        <h3 className="font-display text-lg font-bold">{issue.title}</h3>
         <IssueLine issue={issue} />
         <div>
           <Button

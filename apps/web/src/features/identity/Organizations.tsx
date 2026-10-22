@@ -28,11 +28,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Chip } from '@/components/ui/chip.tsx';
+import { Empty } from '@/components/ui/empty.tsx';
 import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { CountLine } from '@/components/ui/type.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
-import { Done, ErrorText, Panel, TextField } from './ui.tsx';
+import { Done, ErrorText, Panel, Section, TextField } from './ui.tsx';
 
 export function OrganizationsPage() {
   const me = useMe();
@@ -55,24 +61,47 @@ export function OrganizationsPage() {
 
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next="/access/orgs" />;
+  const list = orgs.data?.organizations ?? [];
 
   return (
-    <div className="space-y-8">
-      <h1 className="font-display text-title font-bold">Organizations</h1>
+    <StaffPage
+      title="Organizations"
+      lede="Groups that file reports under their own name: their managers and coordinators, their invitations, and how they appear in the public directory."
+    >
       <ErrorText error={orgs.error} />
-      {orgs.data && (
-        <ul className="space-y-2">
-          {orgs.data.organizations.length === 0 && <li>There are no organizations yet.</li>}
-          {orgs.data.organizations.map((o) => (
-            <li key={o.id}>
-              <Link to="/access/orgs/$id" params={{ id: String(o.id) }} className="underline">
-                {o.name}
-              </Link>
-              {o.role && <span className="text-muted"> · you are its {o.role}</span>}
-            </li>
-          ))}
-        </ul>
-      )}
+      {orgs.isPending ? <p role="status">Reading the organizations…</p> : null}
+      {orgs.data && list.length === 0 ? (
+        <Empty title="No organizations yet">
+          {me.data.grantsAccess
+            ? 'Make the first one below. Its manager can then invite its coordinators.'
+            : 'You do not belong to an organization.'}
+        </Empty>
+      ) : null}
+      {list.length > 0 ? (
+        <>
+          <CountLine
+            parts={[
+              `${String(list.length)} ${list.length === 1 ? 'organization' : 'organizations'}`,
+            ]}
+          />
+          <ul className="flex flex-col gap-3">
+            {list.map((o) => (
+              <li key={o.id}>
+                <Card className="flex-row flex-wrap items-center gap-3 py-3">
+                  <Link
+                    to="/access/orgs/$id"
+                    params={{ id: String(o.id) }}
+                    className="min-h-11 flex-1 content-center font-display text-lg font-bold underline"
+                  >
+                    {o.name}
+                  </Link>
+                  {o.role ? <Chip tone="tag">You are its {o.role}</Chip> : null}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
       {me.data.grantsAccess && (
         <Panel title="Make an organization">
           <p className="text-ink-alt">
@@ -80,7 +109,7 @@ export function OrganizationsPage() {
             start; they can invite its coordinators themselves.
           </p>
           <form
-            className="space-y-4"
+            className="flex flex-col gap-4"
             onSubmit={(e) => {
               e.preventDefault();
               create.mutate();
@@ -104,14 +133,16 @@ export function OrganizationsPage() {
               }}
             />
             <ErrorText error={create.error} />
-            <Button type="submit" disabled={create.isPending}>
-              Make it
-            </Button>
+            <div>
+              <Button type="submit" disabled={create.isPending}>
+                Make it
+              </Button>
+            </div>
             {create.isSuccess && <Done>Made {create.data.organization.name}.</Done>}
           </form>
         </Panel>
       )}
-    </div>
+    </StaffPage>
   );
 }
 
@@ -140,77 +171,106 @@ export function OrganizationPage({ id }: { id: number }) {
   if (!org.data) return <p role="status">Loading…</p>;
   const { organization, members, youGrantAccess } = org.data;
 
+  const listingAllowed =
+    me.data.memberships.some((m) => m.organization_id === id && m.role === 'manager') ||
+    me.data.role === 'admin' ||
+    me.data.role === 'owner';
+
   return (
-    <div className="space-y-8">
-      <h1 className="font-display text-title font-bold">{organization.name}</h1>
-      {organization.details && <p className="text-ink-alt">{organization.details}</p>}
-      {/* Workstream G2: the organization's own decision to be in the public directory. */}
-      {me.data.memberships.some((m) => m.organization_id === id && m.role === 'manager') ||
-      me.data.role === 'admin' ||
-      me.data.role === 'owner' ? (
-        <p>
-          <Link to="/organizations/$id/listing" params={{ id: String(id) }} className="underline">
-            Listing in the public directory
-          </Link>
-        </p>
-      ) : null}
-
-      <Panel title="People">
-        <ul className="space-y-2">
-          {members.map((m) => (
-            <li key={m.email} className="flex flex-wrap items-center gap-x-4 gap-y-1">
-              <span className="break-all">{m.email}</span>
-              <span className="text-muted">
-                {m.role}
-                {m.pending ? ', not joined yet' : ''}
-              </span>
-              <Button
-                type="button"
-                variant="quiet"
-
-                onClick={() => {
-                  remove.mutate(m.email);
-                }}
-              >
-                Remove
-              </Button>
-            </li>
-          ))}
-        </ul>
-        <ErrorText error={remove.error} />
-        {remove.isSuccess && (
-          <Done>Removed. Everything they filed stays filed under {organization.name}.</Done>
-        )}
-      </Panel>
-
-      <InvitePanel id={id} youGrantAccess={youGrantAccess} onChange={refresh} />
-
-      {invites.data && (
-        <Panel title="Invitations waiting">
-          {invites.data.invitations.length === 0 ? (
-            <p>Nothing is waiting.</p>
+    <StaffPage title={organization.name} lede={organization.details ?? undefined}>
+      <p>
+        <Link to="/access/orgs" className="underline">
+          ← All organizations
+        </Link>
+      </p>
+      <Section title="People">
+        <Panel title="Who is in it" level={3}>
+          <CountLine
+            parts={[
+              `${String(organization.manager_count)} ${organization.manager_count === 1 ? 'manager' : 'managers'}`,
+              `${String(organization.coordinator_count)} ${organization.coordinator_count === 1 ? 'coordinator' : 'coordinators'}`,
+            ]}
+          />
+          {members.length === 0 ? (
+            <p>Nobody belongs to it yet.</p>
           ) : (
-            <ul className="space-y-3">
-              {invites.data.invitations.map((i) => (
-                <InvitationRow
-                  key={i.email}
-                  id={id}
-                  invitation={i}
-                  youGrantAccess={youGrantAccess}
-                  onChange={refresh}
-                />
+            <ul className="flex flex-col divide-y divide-line">
+              {members.map((m) => (
+                <li key={m.email} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
+                  <span className="flex-1 font-mono text-sm break-all">{m.email}</span>
+                  <Chip tone="tag">{m.role}</Chip>
+                  {m.pending ? <Chip tone="open">Not joined yet</Chip> : null}
+                  <Button
+                    type="button"
+                    variant="quiet"
+                    aria-label={`Remove ${m.email}`}
+                    onClick={() => {
+                      remove.mutate(m.email);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </li>
               ))}
             </ul>
           )}
+          <ErrorText error={remove.error} />
+          {remove.isSuccess && (
+            <Done>Removed. Everything they filed stays filed under {organization.name}.</Done>
+          )}
         </Panel>
-      )}
 
-      {youGrantAccess && <AddDirectly id={id} onChange={refresh} />}
+        <InvitePanel id={id} youGrantAccess={youGrantAccess} onChange={refresh} />
 
-      {(org.data.youManageIt || youGrantAccess) && (
-        <LogoPanel id={id} logo={organization.logo} onChange={refresh} />
-      )}
-    </div>
+        {invites.data && (
+          <Panel title="Invitations waiting" level={3}>
+            {invites.data.invitations.length === 0 ? (
+              <p>Nothing is waiting.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-line">
+                {invites.data.invitations.map((i) => (
+                  <InvitationRow
+                    key={i.email}
+                    id={id}
+                    invitation={i}
+                    youGrantAccess={youGrantAccess}
+                    onChange={refresh}
+                  />
+                ))}
+              </ul>
+            )}
+          </Panel>
+        )}
+
+        {youGrantAccess && <AddDirectly id={id} onChange={refresh} />}
+      </Section>
+
+      {listingAllowed || org.data.youManageIt || youGrantAccess ? (
+        <Section title="How it appears">
+          {/* Workstream G2: the organization's own decision to be in the public directory. */}
+          {listingAllowed ? (
+            <Panel title="The public directory" level={3}>
+              <p>
+                Whether it is listed among the participating organizations, and what the listing
+                says, is the organization’s own decision.
+              </p>
+              <p>
+                <Link
+                  to="/organizations/$id/listing"
+                  params={{ id: String(id) }}
+                  className="underline"
+                >
+                  Listing in the public directory
+                </Link>
+              </p>
+            </Panel>
+          ) : null}
+          {(org.data.youManageIt || youGrantAccess) && (
+            <LogoPanel id={id} logo={organization.logo} onChange={refresh} />
+          )}
+        </Section>
+      ) : null}
+    </StaffPage>
   );
 }
 
@@ -242,7 +302,7 @@ function LogoPanel({
     onSuccess: onChange,
   });
   return (
-    <Panel title="Logo">
+    <Panel title="Logo" level={3}>
       <p className="text-ink-alt">
         Shown beside the organization’s name in the public directory, while it is listed. Until then
         only its managers and the people who grant access see it. A PNG, JPEG or WebP image of at
@@ -266,7 +326,7 @@ function LogoPanel({
         }}
       >
         <div className="flex flex-col gap-1">
-          <p id={`${inputId}-label`} className="font-semibold">
+          <p id={`${inputId}-label`} className="label-face text-xs text-ink">
             {logo ? 'A new logo' : 'A logo'}
           </p>
           <FileDrop
@@ -341,14 +401,14 @@ function InvitePanel({
     },
   });
   return (
-    <Panel title="Invite somebody">
+    <Panel title="Invite somebody" level={3}>
       <p className="text-ink-alt">
         One address at a time. They are emailed a link that works once, shows them what the role can
         and cannot do, and does nothing until they accept.
         {!youGrantAccess && ' Inviting another manager waits for an administrator to approve it.'}
       </p>
       <form
-        className="flex flex-col gap-4 sm:flex-row sm:items-end"
+        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           invite.mutate();
@@ -364,25 +424,27 @@ function InvitePanel({
             setEmail(e.target.value);
           }}
         />
-        <div className="flex flex-col gap-1">
-          <label htmlFor={roleId} className="font-semibold">
+        <div className="flex flex-col gap-1.5">
+          <p id={roleId} className="label-face text-xs text-ink">
             As
-          </label>
-          <select
-            id={roleId}
+          </p>
+          <RadioGroup
+            aria-labelledby={roleId}
             value={role}
-            onChange={(e) => {
-              setRole(e.target.value === 'manager' ? 'manager' : 'coordinator');
+            onValueChange={(v) => {
+              setRole(v === 'manager' ? 'manager' : 'coordinator');
             }}
-            className="rounded-card border border-line bg-surface px-3 py-2"
+            className="sm:flex-row"
           >
-            <option value="coordinator">Coordinator</option>
-            <option value="manager">Manager</option>
-          </select>
+            <RadioOption value="coordinator" label="Coordinator" hint="Files for it." />
+            <RadioOption value="manager" label="Manager" hint="Files for it and runs it." />
+          </RadioGroup>
         </div>
-        <Button type="submit" disabled={invite.isPending}>
-          Send the invitation
-        </Button>
+        <div>
+          <Button type="submit" disabled={invite.isPending}>
+            Send the invitation
+          </Button>
+        </div>
       </form>
       <ErrorText error={invite.error} />
       {invite.isSuccess && <Done>{invite.data.message}</Done>}
@@ -428,9 +490,9 @@ function InvitationRow({
           ? 'the link has expired'
           : 'link sent, not accepted yet';
   return (
-    <li className="space-y-1">
+    <li className="flex flex-col gap-2 py-2">
       <p>
-        <span className="break-all font-semibold">{i.email}</span> as {i.role}: {state}.
+        <span className="font-mono text-sm break-all">{i.email}</span> as {i.role}: {state}.
       </p>
       <div className="flex flex-wrap gap-2">
         {i.status === 'pending' && (
@@ -483,7 +545,7 @@ function AddDirectly({ id, onChange }: { id: number; onChange: () => Promise<voi
     },
   });
   return (
-    <Panel title="Add a manager directly">
+    <Panel title="Add a manager directly" level={3}>
       <p className="text-ink-alt">
         Without an invitation, for an organization’s first manager or a repair. Everybody else
         should be invited, so they can read what the role means before they have it.

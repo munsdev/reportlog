@@ -28,7 +28,7 @@ import {
 import { Card } from '@/components/ui/card.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '@/lib/api.ts';
 
@@ -63,7 +63,7 @@ export function StartingPointsPage() {
   const chosen = templates.find((t) => t.id === chosenId);
 
   return (
-    <Page
+    <StaffPage
       title="Starting points"
       width="prose"
       lede="The bundles of settings the setup wizard offered, for starting again or adding another kind of logbook."
@@ -192,6 +192,6 @@ export function StartingPointsPage() {
           </DialogContent>
         ) : null}
       </Dialog>
-    </Page>
+    </StaffPage>
   );
 }

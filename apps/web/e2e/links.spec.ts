@@ -17,6 +17,7 @@ const unique = (stem: string, project: string) =>
 async function makeTipList(page: Page, project: string): Promise<string> {
   const slug = unique('links', project);
   await page.goto('/lists');
+  await page.getByRole('button', { name: 'Make a list' }).click();
   await page.getByRole('radio', { name: 'No: links, check-ins or messages' }).click();
   await page.getByRole('radio', { name: 'Send a link' }).click();
   await page.getByLabel('Title (optional)').fill(`Links ${slug}`);

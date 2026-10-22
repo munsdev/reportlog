@@ -220,3 +220,138 @@ changed here; reported because it happened.
 - **The Save bar above a real phone keyboard and the frames on a real phone**: not tried on a device.
 - **Looked at** only through tests and the mock-ups' text; no screenshot comparison against
   `mockups/S-settings-desktop.html` or `S-look-*.html` was made, because the browser could not be run.
+
+## Stage 5 follow-up (D2)
+
+- **Branch:** `worktree-agent-ad904115eacce77a8`, from `dc199b9` (stages 1 to 3, 5 and 6 merged;
+  thread B, public and filing, still running elsewhere).
+- **State:** built; one commit; not merged; not pushed. Website only: no server, contract or
+  migration change.
+
+### What was built
+
+- **The staff page frame** (`features/nav/StaffPage.tsx`, new): eyebrow "<site> · Staff", H1, lede,
+  then `<AreaTabs />` under them, which takes the frame's fallback row. `Page` gained one optional
+  prop, `eyebrow`. Every settings, access, records, logbooks-and-lists and files page uses it; the
+  moderation screens get the tabs from `StaffHead` (`features/moderation/parts.tsx`), which now draws
+  `<AreaTabs />` under its lede. The fallback row should no longer show on any staff area page.
+- **Look offers installed packs**: `features/settings/looks.ts` has a catalogue (the built-in pack
+  plus `lookPacksQuery`'s packs, `useLookCatalogue()`). The chooser's cards (a pack's look says
+  "From Tideline"), both selects, the status line, the overview's panel ("17 looks, from 2 packs")
+  and the preview frames (a pack theme's own panel heading and texture) all read it. Installing a
+  pack says so in a toast and its looks join the grid. If the packs cannot be read, the built-in
+  looks alone are offered.
+- **Who opened protected data** is its own Records page, `/who-opened-what`
+  (`features/moderation/AccessLog.tsx`): a table of every opening (when, in UTC and mono; who; what;
+  which report, mono; the reason in full), newest first, a count line ("214 openings · since 1 Oct
+  2026"), pages of 50, nothing that filters. It asks for 120 months, the most the call answers.
+  **The menu entry in `features/staff-nav/entries.ts` now points at the new route** (it was an alias
+  of `/moderate/settings#who-opened-what`). Moderation settings keeps a quiet panel with that id
+  linking to the page. `e2e/navigation-table.ts` and `test/staff-nav.test.tsx` follow.
+- **People and access**: Roles (`/access`) in the frame, its own link row gone (the tabs replace
+  it). Organizations as rows with a "You are its manager" chip and an `Empty`; one organization as
+  two sections, People (who is in it, with role chips and "Not joined yet"; Invite somebody, the role
+  as two choice cards; Invitations waiting; Add a manager directly) and How it appears (the directory
+  listing, the logo). "Who is doing what" (the roster: sorted by address, mono counts, a count line,
+  the shared select). "Who granted what" (the audit as a table, mono UTC times, pages of 25).
+  Journalists: status chips, the facts as a `KeyValueList`, links as selectable mono text, Reject
+  asks in a dialog that it deletes what they sent and leaves them on the alert list, Revoke says it
+  takes effect on their next request, and "Requests" and "The agreement" as the page's own tabs.
+- **Logbooks and lists**: the lists page matches the logbooks list (raised rows, visibility and
+  "Taking entries" chips, mono address and counts, Open; "Make a list" opens the existing form).
+  Maps: "Make a map" primary, `Empty` "No maps yet", each map closed shows title, short name, on or
+  off, threshold in words, what feeds it, planes, where it appears and the public address in mono.
+  File limits: "How big, how long, how many" shows the eight limits and the kinds before it is
+  opened ("not set" in the second text colour; on a logbook the site's number beside each), and
+  "Taking files" is a switch that applies at once with a toast; the file pages' link row is a
+  `TabRow`. The front page editor draws a phone-width picture of the button stack beside the list
+  (above it on a phone), following moves and wording before saving. The builder (§09): eyebrow with
+  the state, a state chip and the filing address; "As a file" beside the title with "The logbook
+  file" and, once launched, "Its chain" (step-up first); each question a raised card with chips
+  (kind, Needed, Filter, Sometimes) and "answered under `key`"; the after-launch quiet panel in the
+  spec's words; "Add a question" as its own quiet panel inside Questions; "Taking reports" showing
+  what is set first; panels in the spec's order; "Read it as a reporter" once launched.
+- **Account screens**: invitations (two quiet panels; the three signed-in states, including signed
+  in as somebody else, with "Sign out and use the invited address" and no accept button; Welcome
+  with the Done alert). The volunteer-link join page (its four states, one "Join"). The declaration
+  (a quiet "Nothing you type here is sent anywhere.", `data-print-only` instead of its own inline
+  print rules, 11pt in print, the fingerprint wraps). Email updates (the save is a status sentence
+  beside Save). The journalist desk (anchors as a `TabRow`, the deep "Before you use a link", each
+  item a raised panel with the link as selectable mono text and "Copy the link", the tip count as a
+  neutral `Count`, answers as pills, `Pagination`, `Empty`, the access-log line at the foot).
+  Intake (the organization as choice cards; batches as raised rows with Open or Filed chips and mono
+  counts; `Empty`; one batch with a count line, "Not ready: …" on each account, "Before filing" as a
+  raised panel). Feedback ("About: Site settings" as a chip with "Not about this page"; the two
+  questions as two-column choice cards; the reference in mono; issues with "#42" in mono and a
+  status chip, `open` while open; the queue's filter as pressed buttons with counts and a count
+  line; Testers with "Give the flag", mono addresses, quiet "Take the flag away", `Empty`). Guides
+  (`/docs` as raised panels; each guide with its contents in a 14rem left column on a desktop,
+  numbered steps as eyebrows, the "Why" fold-outs with a quiet panel inside).
+
+### Judgement calls
+
+1. **The audit page is called "Who granted what"**, the menu's name for it, and the roster "Who is
+   doing what". The backups sentence now says "Who granted what" too: the spec says "Who changed
+   what" there and "Who granted what" in §12, and one page should have one name.
+2. **File limits and the builder keep their own Save buttons inside their panels** rather than the
+   Save bar: the limits form checks every box before sending, and the builder is many small forms.
+   The file-limits panel is closed by default and closes again after a save, with a toast.
+3. **"Add a question" stays inside the Questions panel** (as a quiet panel of its own), so the
+   browser tests' "Questions" region still holds the form. "A filter on the board" is still beside
+   Reword, not inside the reword form: moving it would change what RewordForm sends.
+4. **"Read it as a reporter" appears only after launch.** The server serves a draft's form to
+   nobody, as §14 foresaw.
+5. **The desk's "Your alerts" stays an open form** in a panel, not a closed `SettingPanel`: it is
+   the journalist's only setting, and the browser test reads its radios straight after a reload.
+6. **One "Make" button at a time**: the lists, logbooks and maps pages hide the header's button
+   while the page is empty, because the empty state carries it.
+7. **Left out because the server does not send it**: organization rows have no logo, listed state
+   or people count (`listOrganizations` sends id, name and your role); testers have no "since"; the
+   front page's built-in alerts button is still skipped (`homeButtons.ts` gives it no address). Each
+   needs a small server change; none was made.
+
+### Files outside this thread's folders
+
+- `components/ui/page.tsx`: one optional prop, `eyebrow`.
+- `features/moderation/parts.tsx` (`StaffHead` draws the tabs), `features/moderation/Settings.tsx`
+  (the access-log section links to its page), `features/platform/Agreement.tsx` (`StaffPage`, an
+  optional `tabs` slot), `features/staff-nav/entries.ts` (the access-log entry; File limits is also
+  "here" under `/files/logbooks/`).
+- New route `routes/(staff)/who-opened-what.tsx`; `routeTree.gen.ts` regenerated by the Vite plugin.
+- Not touched: `routes/__root.tsx`, the public and filing screens, the journalist doors, the server.
+
+### Checks
+
+| Suite                                     | Result                                                     |
+| ----------------------------------------- | ---------------------------------------------------------- |
+| web unit (`vitest run` in `apps/web`)     | 481 passed in 44 files                                     |
+| `tsc -p apps/web` (src, test and e2e)     | clean                                                      |
+| eslint and Prettier on every changed file | clean                                                      |
+| `pnpm boundaries`                         | no errors; the one existing `boot-guard.js` orphan warning |
+| api unit, `test:db`                       | not run: nothing on the server changed                     |
+| browser suite                             | **not run** (fixed ports); runs once after merge           |
+
+New unit tests: `test/staff-screens.test.tsx` (the access-log page, the journalist queue's reject
+question, the front page picture following a move, the feedback page name, the audit sentence);
+two in `test/look-packs.test.tsx` (a pack's looks, palettes and themes on the Look screen and in its
+frames; the built-in looks alone when the packs cannot be read); one in `test/files-staff.test.tsx`
+(the closed limits panel, and closing after a save).
+
+**Browser specs changed for the new selectors, not run:** `access-a2` (the tabs' "Who is doing
+what" and "Who granted what"; the Logo heading at level 3), `identity/access` (the audit link; the
+Done alert after accepting), `files/staff` (Edit the limits panel first), `lists` and `links` ("Make
+a list" first), `maps` ("Make a map" first), `builder` and `builder-switches` (the filing address by
+`data-filing-address`; the after-launch sentence), `site-g2` (a guide step's heading without its
+number), `navigation-table` (the access log's address).
+
+### Still not done
+
+- The list editor's panels (§10: Questions, Taking entries, Without the site password, Who can see
+  it and the rest as closed panels); it took the frame only.
+- The journalist doors (`/journalists/alerts`, `/journalists/access` and its link page, the alert
+  settings and stop pages): they are public pages too, and thread B has that set.
+- The intake account dialog (§12), the correction page beyond the frame, and the volunteer links'
+  rows.
+- Whether the server's own refusal of a wrong address on an invitation reads well beside the page's
+  new "signed in as somebody else" state was not traced.
+- Nothing here was looked at in a browser; no screenshot comparison.

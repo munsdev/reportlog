@@ -13,12 +13,14 @@ import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { publicLogbookQuery } from '../form/FilingForm.tsx';
 import { askedQuestions, rawFromAnswers, shownAnswer } from '../form/walk.ts';
+import { AreaTabs } from '../nav/AreaTabs.tsx';
 import { SEVERITY_WORDS } from './words.ts';
 
 /**
  * A staff page's head: eyebrow, title, lede. Its own rather than `Page`'s,
  * because one report's title is its reference, set in the mono face so it
- * reads as one code. It names the browser tab, as `Page` does.
+ * reads as one code. It names the browser tab, as `Page` does, and draws
+ * the staff area's tabs under the lede (navigation.md, section 05).
  */
 export function StaffHead({
   eyebrow,
@@ -51,6 +53,8 @@ export function StaffHead({
       </h1>
       {lede ? <Lede>{lede}</Lede> : null}
       {children}
+      {/* The area's tabs under the heading; this takes the frame's row. */}
+      <AreaTabs className="mt-4" />
     </header>
   );
 }

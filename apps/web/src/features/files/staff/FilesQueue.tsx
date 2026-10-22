@@ -18,7 +18,7 @@ import { Empty } from '../../../components/ui/empty.tsx';
 import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
 import { Input } from '../../../components/ui/input.tsx';
 import { Label } from '../../../components/ui/label.tsx';
-import { Page } from '../../../components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Meta } from '../../../components/ui/type.tsx';
 import { EvidenceRequests } from './EvidenceRequests.tsx';
 import { ReportFiles } from './ReportFiles.tsx';
@@ -29,7 +29,7 @@ const plural = (n: number, one: string, many: string) => `${String(n)} ${n === 1
 export function FilesQueue() {
   const query = useQuery(fileQueueQuery(''));
   return (
-    <Page
+    <StaffPage
       title="Files"
       lede="Files sent with reports are never public until a moderator publishes them, and only if the reporter allows it. These reports have files nobody has decided on yet."
     >
@@ -81,7 +81,7 @@ export function FilesQueue() {
           </ul>
         )
       ) : null}
-    </Page>
+    </StaffPage>
   );
 }
 
@@ -130,7 +130,7 @@ export function ReportFilesPage({ reference }: { reference: string }) {
   const query = useQuery(fileQueueQuery(reference));
   const report = query.data?.reports[0];
   return (
-    <Page
+    <StaffPage
       title={report ? `Files of ${report.public_ref}` : 'A report’s files'}
       lede={
         report
@@ -160,6 +160,6 @@ export function ReportFilesPage({ reference }: { reference: string }) {
           <EvidenceRequests threadId={report.thread_id} />
         </>
       ) : null}
-    </Page>
+    </StaffPage>
   );
 }

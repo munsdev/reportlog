@@ -65,6 +65,8 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await page.getByLabel(lb.title).selectOption('where');
   await expect(page.getByLabel(lb.title)).toHaveValue('where');
 
+  // Other projects may have left maps, or none: one "Make a map" either way.
+  await page.getByRole('button', { name: 'Make a map' }).click();
   await page.getByLabel('Title').first().fill(title);
   await page.getByLabel('Short name').first().fill(slug);
   await page.getByRole('button', { name: 'Make the map' }).click();

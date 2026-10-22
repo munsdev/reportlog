@@ -9,8 +9,10 @@
  * page, printed, and forgotten: a name is exactly what the archive does not
  * keep. Printing happens in the browser, as a PDF if the reporter chooses.
  *
- * The page prints only the declaration: the print rules below hide
- * everything else on the page, the site's header included.
+ * The page prints only the declaration: it is marked `data-print-only`, and
+ * the site's print rules (styles.css) then hide everything else on the page,
+ * the header included. Printed, it is set in the theme's body face at 11pt
+ * (account.md §09).
  */
 import { getMyReport } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
@@ -18,6 +20,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { Card } from '@/components/ui/card.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
@@ -44,14 +47,6 @@ const DECLARATION = {
 } as const;
 
 const BLANK = '________________________';
-
-// Print the declaration and nothing else. An inline style is allowed by the
-// site's policy (style-src 'unsafe-inline'); nothing here loads from elsewhere.
-const PRINT_RULES = `@media print {
-  body * { visibility: hidden; }
-  #declaration, #declaration * { visibility: visible; }
-  #declaration { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; }
-}`;
 
 export function DeclarationPage({ threadId }: { threadId: string }) {
   const me = useMe();
@@ -89,10 +84,14 @@ function Declaration({ threadId }: { threadId: string }) {
       lede="Print your report as a statement you sign, for a lawyer or an organization that asks for one. What you type here stays on this page: it is not sent or kept."
       width="prose"
     >
-      <style>{PRINT_RULES}</style>
-      <Link to="/mine/$threadId" params={{ threadId }} className="underline">
-        Back to the report
-      </Link>
+      <p>
+        <Link to="/mine/$threadId" params={{ threadId }} className="underline">
+          ← Back to the report
+        </Link>
+      </p>
+      <Card variant="quiet">
+        <p>Nothing you type here is sent anywhere.</p>
+      </Card>
       {r.versions > 1 ? (
         <Alert tone="note" title="This is the newest version">
           It declares what the report says now, after {String(r.versions - 1)}{' '}
@@ -123,7 +122,7 @@ function Declaration({ threadId }: { threadId: string }) {
         />
       </Field>
       <fieldset className="flex flex-col gap-2">
-        <legend id="signing-where" className="font-semibold">
+        <legend id="signing-where" className="label-face text-xs text-ink">
           Will you sign it in the United States?
         </legend>
         <RadioGroup
@@ -148,16 +147,18 @@ function Declaration({ threadId }: { threadId: string }) {
         </Button>
       </div>
 
+      {/* The document as it will print: a surface with an edge and no shadow. */}
       <section
         id="declaration"
+        data-print-only
         aria-labelledby="declaration-title"
-        className="flex flex-col gap-4 rounded-card border border-line bg-surface p-6 text-ink"
+        className="flex flex-col gap-4 rounded-card border border-ink-alt bg-surface p-6 font-sans text-ink print:w-full print:rounded-none print:border-0 print:p-0 print:text-[11pt]"
       >
         <h2 id="declaration-title" className="sr-only">
           The declaration
         </h2>
         <p className="font-display text-xl font-bold">{site}: witness statement</p>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
           <dt className="font-semibold">Reference</dt>
           <dd className="font-mono">{r.public_ref}</dd>
           <dt className="font-semibold">Logbook</dt>

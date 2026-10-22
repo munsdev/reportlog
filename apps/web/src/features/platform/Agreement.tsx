@@ -24,6 +24,7 @@ import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
+import { StaffPage } from '../nav/StaffPage.tsx';
 
 export const agreementQuery = (audience: AgreementAudience) =>
   queryOptions({
@@ -85,7 +86,14 @@ export function AgreementGate({
   );
 }
 
-export function AgreementAdminPage({ audience }: { audience: AgreementAudience }) {
+export function AgreementAdminPage({
+  audience,
+  tabs,
+}: {
+  audience: AgreementAudience;
+  /** A page's own tabs under the area's (the journalists' Requests and Agreement). */
+  tabs?: ReactNode;
+}) {
   const client = useQueryClient();
   const state = useQuery(agreementQuery(audience));
   const accepted = useQuery(
@@ -103,10 +111,11 @@ export function AgreementAdminPage({ audience }: { audience: AgreementAudience }
     },
   });
   return (
-    <Page
+    <StaffPage
       title={audience === 'journalist' ? 'Journalist agreement' : 'Moderator agreement'}
       lede={`The words every ${audience === 'journalist' ? 'journalist accepts before they open the desk' : 'moderator accepts before they work on reports'}. Publishing a new version asks everybody to accept it again; the old versions and who accepted them stay on the record.`}
     >
+      {tabs}
       {state.data?.current ? (
         <div className="rounded-card border border-line bg-surface p-5">
           <h2 className="font-display text-xl font-bold">
@@ -160,6 +169,6 @@ export function AgreementAdminPage({ audience }: { audience: AgreementAudience }
           <p className="text-ink-alt">Nobody yet.</p>
         )}
       </section>
-    </Page>
+    </StaffPage>
   );
 }
