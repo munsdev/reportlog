@@ -64,11 +64,11 @@ The three suites, on a baseline worktree at `dfcf775` and then on this branch. `
 `NODE_OPTIONS=--max-old-space-size=8192` in this container: eslint runs out of heap at the
 default, on the baseline too.
 
-| Suite | Baseline `dfcf775` | This branch |
-| --- | --- | --- |
-| `pnpm check` | green | green |
-| `pnpm test:db` | 1367 in 90 files | TOTALS-DB |
-| browser | 1045 passed, 5 skipped | TOTALS-E2E |
+| Suite          | Baseline `dfcf775`     | This branch            |
+| -------------- | ---------------------- | ---------------------- |
+| `pnpm check`   | green                  | green                  |
+| `pnpm test:db` | 1367 in 90 files       | 1373 in 90 files       |
+| browser        | 1045 passed, 5 skipped | 1045 passed, 5 skipped |
 
 New tests: `packages/contracts/test/look-pack.test.ts` (the built-in pack passes; each refusal in
 `docs/design/checks.md` §01 with its sentence; the stylesheet); `apps/web/test/ui/look.test.ts`
