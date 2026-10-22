@@ -75,6 +75,7 @@ import {
   withChange,
 } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
+import { HeaderProgress } from '../nav/progress.tsx';
 
 export const publicLogbookQuery = (slug: string) =>
   queryOptions({
@@ -374,6 +375,7 @@ function Cards({
     <section className="relative mx-auto flex max-w-prose flex-col gap-6">
       <Honeypot door={door} />
       <DoorPuzzle door={door} />
+      <HeaderProgress percent={progress === null ? null : Math.min(progress, 100)} />
       <p className="text-sm font-semibold text-ink-alt">{title}</p>
       {progress !== null ? (
         <div

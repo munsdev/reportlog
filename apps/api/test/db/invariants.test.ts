@@ -742,6 +742,9 @@ const NOT_STAFF_PREFIXES = [
   '/api/intake-pause',
   '/api/intake-links/',
   '/api/site',
+  // The menu's waiting totals (stage 3 navigation): anybody signed in, each
+  // total only for the people its own screen admits (menu/waiting.ts).
+  '/api/menu/',
   '/api/setup/',
   '/api/doors',
   // The puzzle and start token every report and tip form asks for (door/).

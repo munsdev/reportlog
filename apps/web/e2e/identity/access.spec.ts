@@ -25,6 +25,7 @@ import {
   subscriptionOf,
 } from './mail.ts';
 import { rememberSecret, stepUp, totp } from '../second-factor.ts';
+import { menuLink, signOut } from '../menu.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -233,7 +234,8 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
   await finish.click();
 
   await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
-  await expect(owner.getByRole('link', { name: 'Access' })).toBeVisible();
+  await expect(await menuLink(owner, 'Roles', { area: 'People and access' })).toBeVisible();
+  await owner.keyboard.press('Escape');
   await expect(owner.getByRole('banner')).toContainText('Polling Watch');
 
   // Done means done: a reload shows the site, and setup refuses to run again.
@@ -505,8 +507,7 @@ test('a digest is stopped from the link in its email, in front of the password, 
 
 test('signing out', async () => {
   await owner.goto('/');
-  await owner.getByRole('button', { name: 'Sign out' }).click();
-  await expect(owner.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await signOut(owner);
   await owner.goto('/access');
   await expect(owner.getByRole('heading', { name: 'Sign in first' })).toBeVisible();
 });

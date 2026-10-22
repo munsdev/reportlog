@@ -38,6 +38,7 @@ import { moderationRoutes } from './moderation/routes.ts';
 import { floodRoutes } from './moderation/floodRoutes.ts';
 import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
+import { menuRoutes } from './menu/routes.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
@@ -248,5 +249,6 @@ export async function buildApp({
     ...(config.ANCHOR_MAX_AGE_HOURS ? { maxAgeHours: config.ANCHOR_MAX_AGE_HOURS } : {}),
   });
   copyRoutes(app, { db, config });
+  await menuRoutes(app, { db });
   return app;
 }

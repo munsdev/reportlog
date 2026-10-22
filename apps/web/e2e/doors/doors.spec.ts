@@ -197,10 +197,16 @@ test.describe('a logbook behind the password', () => {
     await v.page.getByRole('link', { name: 'Demo logbook' }).click();
     await expect(lockHeading(v.page)).toHaveCount(0);
     await expect(heading(v.page, 'Demo logbook')).toBeVisible();
+    // The header on a door: the wordmark, and no Menu button (navigation.md).
+    const banner = v.page.getByRole('banner');
+    await expect(banner.getByRole('link', { name: 'ReportLog' })).toBeVisible();
+    await expect(banner.getByRole('button')).toHaveCount(0);
     await v.page.getByRole('button', { name: 'Start' }).click();
     await v.page.getByRole('textbox', { name: 'What happened?' }).fill('Seen from the door.');
     await v.page.getByRole('button', { name: 'Next' }).click();
     await expect(heading(v.page, 'What happened?')).toHaveCount(0);
+    // Past the intro card the header's rule is the progress track.
+    await expect(banner.locator('[data-progress]')).toBeAttached();
 
     // The browser's Back goes back one question, on a door as anywhere.
     await v.page.goBack();

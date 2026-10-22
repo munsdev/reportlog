@@ -5,6 +5,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { goViaMenu, menuLink, openMenu } from './menu.ts';
 
 /** Every request a page makes to a host other than this site's. */
 function outsideRequests(page: Page): string[] {
@@ -20,7 +21,9 @@ test.describe('signed out', () => {
   test('there is no staff menu', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Staff' })).toHaveCount(0);
+    const nav = await openMenu(page);
+    await expect(nav.getByRole('heading', { name: 'Staff' })).toHaveCount(0);
+    await expect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
   });
 
   test('the guides and the directory ask no third party for anything', async ({ page }) => {
@@ -48,16 +51,21 @@ test.describe('an administrator', () => {
 
   test('reaches the staff screens from the menu', async ({ page }) => {
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: 'Staff' });
-    await expect(nav).toBeVisible();
-    for (const name of ['Access', 'Logbooks', 'Lists', 'List review', 'Settings', 'Feedback']) {
-      await expect(nav.getByRole('link', { name, exact: true })).toBeVisible();
+    for (const [area, name] of [
+      ['People and access', 'Roles'],
+      ['Logbooks and lists', 'Logbooks'],
+      ['Logbooks and lists', 'Lists'],
+      ['Moderation', 'List review'],
+      ['Site settings', 'Overview'],
+    ] as const) {
+      await expect(await menuLink(page, name, { area })).toBeVisible();
     }
-    await nav.getByRole('link', { name: 'Logbooks', exact: true }).click();
+    await expect(await menuLink(page, 'Feedback')).toBeVisible();
+    await goViaMenu(page, 'Logbooks', { area: 'Logbooks and lists' });
     await expect(page).toHaveURL(/\/logbooks$/);
-    await nav.getByRole('link', { name: 'Settings', exact: true }).click();
+    await goViaMenu(page, 'Overview', { area: 'Site settings' });
     await expect(page).toHaveURL(/\/settings$/);
-    await expect(nav.getByRole('link', { name: 'Settings', exact: true })).toHaveAttribute(
+    await expect(await menuLink(page, 'Overview', { area: 'Site settings' })).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -66,10 +74,8 @@ test.describe('an administrator', () => {
   test('files feedback, then answers it from the queue', async ({ page }, info) => {
     const title = `Nothing happens on save (${info.project.name} ${Date.now().toString(36)})`;
     await page.goto('/settings');
-    await page
-      .getByRole('navigation', { name: 'Staff' })
-      .getByRole('link', { name: 'Feedback' })
-      .click();
+    // The menu's bug link says which screen it was opened from.
+    await goViaMenu(page, 'Report a bug on this page');
     await expect(page.getByRole('heading', { level: 1, name: 'Feedback' })).toBeVisible();
     await page.getByRole('radio', { name: 'Something is broken' }).click();
     await page.getByRole('radio', { name: 'It gets in the way' }).click();
@@ -96,7 +102,7 @@ test.describe('an administrator', () => {
 
   test('chooses email updates from some logbooks, and the choice is kept', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('link', { name: 'Email updates' }).click();
+    await goViaMenu(page, 'Email updates');
     await expect(page.getByRole('heading', { level: 1, name: 'Email updates' })).toBeVisible();
     await page.getByRole('radio', { name: /Once a week/ }).click();
     await page.getByRole('button', { name: 'Save' }).click();

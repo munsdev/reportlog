@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
 import { passSecondFactor } from '../second-factor.ts';
+import { goViaMenu } from '../menu.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const filingState = (...args: string[]) =>
@@ -49,12 +50,9 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
   filingState('intake-logbook', slug, `Paper accounts ${id}`);
   await signIn(page, email);
 
-  // Reached from the staff menu, which shows it by organization membership.
+  // Reached from the menu, which shows it by organization membership.
   await page.goto('/');
-  await page
-    .getByRole('navigation', { name: 'Staff' })
-    .getByRole('link', { name: 'Intake' })
-    .click();
+  await goViaMenu(page, 'Intake');
   await expect(
     page.getByRole('heading', { level: 1, name: 'Filing for an organization' }),
   ).toBeVisible();

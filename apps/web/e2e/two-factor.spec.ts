@@ -14,6 +14,7 @@ import { expect, test } from '@playwright/test';
 import type { CDPSession, Page } from '@playwright/test';
 import { axe, describeViolation } from './a11y.ts';
 import { codeIn, countTo, identityState, lastMessageTo } from './identity/mail.ts';
+import { signOut } from './menu.ts';
 import { rememberSecret, totp } from './second-factor.ts';
 
 const run = `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e4))}`;
@@ -104,8 +105,7 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   });
 
   // Signing in again: the emailed code, then a code from the app.
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await signOut(page);
   await emailCode(page, email);
   await expect(page.getByRole('heading', { name: 'One more step' })).toBeVisible();
   await noViolations(page);
@@ -213,8 +213,7 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
     secondFactor: 'done',
   });
 
-  await page.getByRole('button', { name: 'Sign out' }).click();
-  await expect(page.getByRole('link', { name: 'Sign in' })).toBeVisible();
+  await signOut(page);
   await signIn();
   await expect(page.getByRole('heading', { name: 'One more step' })).toBeVisible();
   await page.getByRole('button', { name: 'Use a passkey' }).click();
