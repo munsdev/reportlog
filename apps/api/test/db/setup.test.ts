@@ -11,6 +11,8 @@
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { writeSiteAccess } from '../../src/identity/siteAccess.ts';
+import { paintedLook } from '../../src/site/look.ts';
+import { readSettings } from '../../src/site/settings.ts';
 import {
   address,
   codeFor,
@@ -66,6 +68,9 @@ afterAll(async () => {
   await liftCurtain(h.db);
   await h.close();
 });
+
+/** The site's look, which the password check carries in every answer (decision 60). */
+const look = async () => paintedLook(await readSettings(h.db));
 
 describe('a deployment with no site password at all', () => {
   it('will not be set up, so a stranger who finds it cannot claim it', async () => {
@@ -210,7 +215,7 @@ describe('the curtain password decision, which cannot be skipped', () => {
   it('lets the owner change the password, which ends setup and retires the installer’s cookie', async () => {
     const installer = cookieFrom(await unlock(INSTALL_PW), 'site_access') ?? '';
     const before = await call({ url: '/api/site-access/status' }, { site_access: installer });
-    expect(before.json()).toEqual({ locked: false, dev_mode_until: null });
+    expect(before.json()).toEqual({ locked: false, dev_mode_until: null, look: await look() });
     const res = await asOwner({
       method: 'POST',
       url: '/api/setup/curtain',
@@ -224,6 +229,7 @@ describe('the curtain password decision, which cannot be skipped', () => {
     expect((await behind({ url: '/api/site-access/status' })).json()).toEqual({
       locked: false,
       dev_mode_until: null,
+      look: await look(),
     });
   });
 });

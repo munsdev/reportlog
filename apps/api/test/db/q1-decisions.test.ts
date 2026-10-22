@@ -344,7 +344,11 @@ describe('with the site password on', () => {
         dev_mode_until: dev.until,
       });
       const past = await get('/api/site-access/status', await unlockCookie());
-      expect(past.json()).toEqual({ locked: false, dev_mode_until: dev.until });
+      expect(past.json()).toEqual({
+        locked: false,
+        dev_mode_until: dev.until,
+        look: paintedLook(await readSettings(h.db)),
+      });
       await setDevMode(h.db, null);
     });
 

@@ -72,20 +72,30 @@ test('the manifest is served in the site’s name and the browser finds it', asy
   expect(icon.headers()['content-type']).toBe('image/png');
 });
 
+/**
+ * The server's look replaced, so the dev database is not changed; what is
+ * under test is the browser applying it. Both calls that carry the look are
+ * answered, or whichever arrived last would decide the page (decision 60
+ * put it on the password check too).
+ */
+async function wearLook(page: Page, look: Record<string, string>) {
+  for (const path of ['**/api/site', '**/api/site-access/status']) {
+    await page.route(path, async (route) => {
+      const real = await route.fetch();
+      const body = (await real.json()) as Record<string, unknown>;
+      await route.fulfill({ json: { ...body, look } });
+    });
+  }
+}
+
 test('an operator’s palette and theme repaint every screen, through the stylesheet alone', async ({
   page,
 }) => {
-  // The server's answer is replaced here so the dev database is not
-  // changed; what is under test is the browser applying it.
-  await page.route('**/api/site', async (route) => {
-    const real = await route.fetch();
-    const body = (await real.json()) as Record<string, unknown>;
-    await route.fulfill({
-      json: {
-        ...body,
-        look: { palette: 'midnight', theme: 'docket', panel_head: 'rule', texture: 'none' },
-      },
-    });
+  await wearLook(page, {
+    palette: 'midnight',
+    theme: 'docket',
+    panel_head: 'rule',
+    texture: 'none',
   });
   await page.goto('/legal');
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'midnight');
@@ -104,20 +114,18 @@ test('an operator’s palette and theme repaint every screen, through the styles
 test('the look is remembered, so a returning reader is not shown the default first', async ({
   page,
 }) => {
-  await page.route('**/api/site', async (route) => {
-    const real = await route.fetch();
-    const body = (await real.json()) as Record<string, unknown>;
-    await route.fulfill({
-      json: {
-        ...body,
-        look: { palette: 'phosphor', theme: 'signal', panel_head: 'plain', texture: 'none' },
-      },
-    });
+  await wearLook(page, {
+    palette: 'phosphor',
+    theme: 'signal',
+    panel_head: 'plain',
+    texture: 'none',
   });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'phosphor');
-  // Hold the settings back on the next visit: the remembered look is applied first.
-  await page.route('**/api/site', () => new Promise(() => undefined));
+  // Hold both answers back on the next visit: the remembered look is applied first.
+  await page.unrouteAll({ behavior: 'ignoreErrors' });
+  for (const path of ['**/api/site', '**/api/site-access/status'])
+    await page.route(path, () => new Promise(() => undefined));
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'phosphor');
 });
