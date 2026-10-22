@@ -53,10 +53,10 @@ describe('the look screen', () => {
     wrap(<LookForm state={editorState()} />);
     expect(
       within(screen.getByRole('radiogroup', { name: 'Palette' })).getAllByRole('radio'),
-    ).toHaveLength(18);
+    ).toHaveLength(17);
     expect(
       within(screen.getByRole('radiogroup', { name: 'Theme' })).getAllByRole('radio'),
-    ).toHaveLength(6);
+    ).toHaveLength(10);
     expect(screen.getByRole('radio', { name: 'Midnight' })).toHaveAccessibleDescription(/Dark\./);
   });
 });

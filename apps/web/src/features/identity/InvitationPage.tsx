@@ -54,7 +54,7 @@ export function InvitationPage({ token }: { token: string }) {
   return (
     <article className="space-y-6">
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold">
+        <h1 className="font-display text-title font-bold">
           Join {o.organization} as {o.permissions.label.toLowerCase()}
         </h1>
         <p className="text-ink-alt">

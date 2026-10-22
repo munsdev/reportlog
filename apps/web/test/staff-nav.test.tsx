@@ -12,6 +12,7 @@ import { SiteGate } from '../src/features/identity/gate.tsx';
 import { STAFF_ENTRIES, entriesFor } from '../src/features/staff-nav/entries.ts';
 import type { Viewer } from '../src/features/staff-nav/entries.ts';
 import { StaffNav } from '../src/features/staff-nav/StaffNav.tsx';
+import { DESK } from './look-fixture.ts';
 
 const labels = (v: Viewer) => entriesFor(v).map((e) => e.label);
 const as = (role: Viewer['role'], tester = false): Viewer => ({ role, tester });
@@ -165,7 +166,7 @@ afterEach(() => {
 describe('the staff menu on a page', () => {
   it('shows a signed-in administrator their screens', async () => {
     server({
-      '/api/site-access/status': { locked: false, dev_mode_until: null },
+      '/api/site-access/status': { locked: false, dev_mode_until: null, look: DESK },
       '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
       '/api/auth/me': ADMIN_ME,
     });
@@ -183,7 +184,7 @@ describe('the staff menu on a page', () => {
 
   it('on a door renders nothing and asks the server nothing beyond the gate’s own question', async () => {
     const fetchMock = server({
-      '/api/site-access/status': { locked: true, dev_mode_until: null },
+      '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
       '/api/auth/me': ADMIN_ME,
     });
     page('/file/some-logbook');

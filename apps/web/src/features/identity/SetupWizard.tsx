@@ -121,7 +121,7 @@ export function SetupWizard({
         <p className="text-sm font-semibold text-muted">
           Setting up · step {n + 1} of {SETUP_STEPS.length}
         </p>
-        <h1 className="font-display text-3xl font-bold">{TITLES[step]}</h1>
+        <h1 className="font-display text-title font-bold">{TITLES[step]}</h1>
       </header>
       {/* The owner, once seated, sets up a second factor before the rest
           (plan E, E3): the server lets the seat do nothing until then. */}
@@ -641,7 +641,7 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
         <RadioGroup
           value={look.palette}
           onValueChange={(v) => {
-            setLookState({ ...look, palette: v as Look['palette'] });
+            setLookState({ ...look, palette: v });
           }}
           className="grid gap-3 sm:grid-cols-2"
         >
@@ -662,7 +662,7 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
         <RadioGroup
           value={look.theme}
           onValueChange={(v) => {
-            setLookState({ ...look, theme: v as Look['theme'] });
+            setLookState({ ...look, theme: v });
           }}
         >
           {THEMES.map((t) => (

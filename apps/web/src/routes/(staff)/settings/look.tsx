@@ -62,7 +62,7 @@ export function LookForm({ state }: { state: SiteEditor }) {
         <RadioGroup
           value={look.palette}
           onValueChange={(v) => {
-            setLookState({ ...look, palette: v as Look['palette'] });
+            setLookState({ ...look, palette: v });
           }}
           className="grid gap-3 sm:grid-cols-2"
         >
@@ -84,7 +84,7 @@ export function LookForm({ state }: { state: SiteEditor }) {
         <RadioGroup
           value={look.theme}
           onValueChange={(v) => {
-            setLookState({ ...look, theme: v as Look['theme'] });
+            setLookState({ ...look, theme: v });
           }}
         >
           {THEMES.map((t) => (

@@ -38,7 +38,7 @@ export function Page({
     >
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="flex flex-col gap-2">
-          <h1 className="font-display text-3xl font-bold">{title}</h1>
+          <h1 className="font-display text-title font-bold">{title}</h1>
           {lede ? <p className="max-w-prose text-ink-alt">{lede}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}

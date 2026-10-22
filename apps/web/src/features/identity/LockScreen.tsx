@@ -48,7 +48,7 @@ export function LockScreen({
             <BrandName parts={site.name_parts} />
           </p>
         ) : null}
-        <h1 className="font-display text-3xl font-bold">This site needs a password</h1>
+        <h1 className="font-display text-title font-bold">This site needs a password</h1>
         {site?.intro ? (
           // The operator's own words: plain text with their line breaks, never HTML.
           <p data-copy="lock_intro" className="max-w-prose whitespace-pre-wrap">

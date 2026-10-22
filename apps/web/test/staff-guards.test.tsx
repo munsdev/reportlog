@@ -28,6 +28,7 @@ import type * as StaffOnlyModule from '../src/features/identity/StaffOnly.tsx';
 import type * as ListAdminModule from '../src/features/lists/ListAdmin.tsx';
 import type * as OnlyForModule from '../src/features/staff-nav/OnlyFor.tsx';
 import { routeTree } from '../src/routeTree.gen.ts';
+import { DESK } from './look-fixture.ts';
 
 vi.mock('../src/features/identity/StaffOnly.tsx', async (original) => {
   const m = await original<typeof StaffOnlyModule>();
@@ -179,7 +180,7 @@ function server(me: unknown, more: Record<string, unknown> = {}) {
       const answers: Record<string, unknown> = {
         '/api/auth/me': me,
         '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
-        '/api/site-access/status': { locked: false, dev_mode_until: null },
+        '/api/site-access/status': { locked: false, dev_mode_until: null, look: DESK },
         ...more,
       };
       const body = answers[path];

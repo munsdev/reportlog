@@ -57,7 +57,7 @@ export function OrganizationsPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-bold">Organizations</h1>
+      <h1 className="font-display text-title font-bold">Organizations</h1>
       <ErrorText error={orgs.error} />
       {orgs.data && (
         <ul className="space-y-2">
@@ -141,7 +141,7 @@ export function OrganizationPage({ id }: { id: number }) {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-bold">{organization.name}</h1>
+      <h1 className="font-display text-title font-bold">{organization.name}</h1>
       {organization.details && <p className="text-ink-alt">{organization.details}</p>}
       {/* Workstream G2: the organization's own decision to be in the public directory. */}
       {me.data.memberships.some((m) => m.organization_id === id && m.role === 'manager') ||

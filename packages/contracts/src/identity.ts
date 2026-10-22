@@ -7,7 +7,7 @@
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
-import { BrandPartSchema } from './site.ts';
+import { BrandPartSchema, PaintedLook } from './site.ts';
 
 const Email = z.string().max(320);
 const Ok = z.object({ ok: z.literal(true) });
@@ -395,6 +395,12 @@ export const getSiteAccessStatus = defineRoute({
      * the lock screen and on a door, where /api/site is not asked.
      */
     dev_mode_until: z.string().nullable(),
+    /**
+     * The site's look, so the lock screen and a door wear it rather than
+     * the default (decision 60). Only colours and type: nothing the
+     * password protects.
+     */
+    look: PaintedLook,
   }),
 });
 

@@ -4,15 +4,16 @@
  * The look is applied by naming the palette and theme on <html>
  * (`data-palette`, `data-theme`); styles.css holds every value, so nothing
  * here computes a colour. The shipped choice is the bare page, so its
- * attributes are removed rather than set.
+ * attributes are removed rather than set. The theme's two layout choices
+ * ride along as `data-panel-head` and `data-texture`.
  *
  * The last look seen is remembered in this browser and put back before the
  * first render, so a returning reader of a dark deployment does not get a
  * flash of the light default while the settings load. It is only a hint:
  * the server's answer always wins.
  */
-import { DEFAULT_LOOK, Look, getSite } from '@reportlog/contracts';
-import type { BrandPart, Site } from '@reportlog/contracts';
+import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf } from '@reportlog/contracts';
+import type { BrandPart, Look, Site } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useGateMode } from '@/features/identity/gateMode.ts';
@@ -41,22 +42,35 @@ export function useSite() {
 }
 
 /** Paint a look onto the page. Remembers it for the next visit. */
-export function applyLook(look: Look, root: HTMLElement = document.documentElement): void {
+export function applyLook(
+  look: Look | PaintedLook,
+  root: HTMLElement = document.documentElement,
+): void {
   for (const axis of ['palette', 'theme'] as const) {
     if (look[axis] === DEFAULT_LOOK[axis]) root.removeAttribute(`data-${axis}`);
     else root.setAttribute(`data-${axis}`, look[axis]);
   }
+  // The server sends the theme's layout with the look; a bare palette and
+  // theme (the setup wizard's choice, say) takes a built-in theme's.
+  let painted: PaintedLook;
+  if ('panel_head' in look) painted = look;
+  else {
+    const layout = layoutOf(look.theme);
+    painted = { ...look, panel_head: layout.panelHead, texture: layout.texture };
+  }
+  root.setAttribute('data-panel-head', painted.panel_head);
+  root.setAttribute('data-texture', painted.texture);
   try {
-    localStorage.setItem(REMEMBERED, JSON.stringify(look));
+    localStorage.setItem(REMEMBERED, JSON.stringify(painted));
   } catch {
     // Storage refused (a private window, say): the look still applies.
   }
 }
 
-/** The look remembered from last time, if it is still one the site offers. */
-export function rememberedLook(): Look | null {
+/** The look remembered from last time, if it is still one the site could send. */
+export function rememberedLook(): PaintedLook | null {
   try {
-    const parsed = Look.safeParse(JSON.parse(localStorage.getItem(REMEMBERED) ?? 'null'));
+    const parsed = PaintedLook.safeParse(JSON.parse(localStorage.getItem(REMEMBERED) ?? 'null'));
     return parsed.success ? parsed.data : null;
   } catch {
     return null;

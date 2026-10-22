@@ -14,220 +14,53 @@
  */
 import { z } from 'zod';
 import { Figure } from './board.ts';
+import { ENUMS } from './look/pack.ts';
 import { defineRoute } from './route.ts';
 
 // ── the look ────────────────────────────────────────────────────────────
 
 /**
  * PALETTE owns every colour; THEME owns type, corners, shadow and width,
- * and sets no colour. Any theme works with any palette. Every id here has a
- * block in apps/web/src/styles.css and every block has an id here; the
- * website's suite checks both directions.
- *
- * `background` and `deep` repeat two of each palette's colours as literals,
- * because a web manifest cannot reference a CSS variable: a phone paints
- * its splash screen and status bar from them. The website's suite checks
- * they match the stylesheet, so a palette edit cannot leave the status bar
- * the old colour.
+ * and sets no colour. Any theme works with any palette. The catalogue is the
+ * built-in look pack (look/reportlog-core.look.json), and the website's
+ * stylesheet is written from the same file, so every id here has a block in
+ * styles.css and every block has an id here; the website's suite checks both
+ * directions.
  */
-export const PALETTES = [
-  {
-    id: 'flint',
-    label: 'Flint',
-    description: 'The shipped look: cool grey paper, gold for the action.',
-    dark: false,
-    background: '#e7ecef',
-    deep: '#121a24',
-  },
-  {
-    id: 'paper',
-    label: 'Paper',
-    description: 'Warm off-white, the colour of a printed document.',
-    dark: false,
-    background: '#f6f4ef',
-    deep: '#1f1d1a',
-  },
-  {
-    id: 'bureau',
-    label: 'Bureau',
-    description: 'Cool official grey-blue, the colour of a form.',
-    dark: false,
-    background: '#f3f5f8',
-    deep: '#121a26',
-  },
-  {
-    id: 'sage',
-    label: 'Sage',
-    description: 'A warm green ground, quiet and low-contrast.',
-    dark: false,
-    background: '#f2f5f0',
-    deep: '#17211a',
-  },
-  {
-    id: 'gallery',
-    label: 'Gallery',
-    description: 'The warm white of a gallery wall label.',
-    dark: false,
-    background: '#f7f3eb',
-    deep: '#2b2620',
-  },
-  {
-    id: 'parchment',
-    label: 'Parchment',
-    description: 'Older paper with softer ink, like a filed document.',
-    dark: false,
-    background: '#ede3cc',
-    deep: '#1e3a5f',
-  },
-  {
-    id: 'ledger',
-    label: 'Ledger',
-    description: 'Accounting blue-green on a white ground.',
-    dark: false,
-    background: '#f1f2ed',
-    deep: '#1c2620',
-  },
-  {
-    id: 'indigo',
-    label: 'Indigo',
-    description: 'Deep blue on a cool pale ground.',
-    dark: false,
-    background: '#f2f3f8',
-    deep: '#191c33',
-  },
-  {
-    id: 'bone',
-    label: 'Bone',
-    description: 'Near-white, with very little colour in it at all.',
-    dark: false,
-    background: '#fafaf8',
-    deep: '#111111',
-  },
-  {
-    id: 'midnight',
-    label: 'Midnight',
-    description: 'Deep navy, gold for the action. The shipped look after dark.',
-    dark: true,
-    background: '#121a24',
-    deep: '#0a1017',
-  },
-  {
-    id: 'ink',
-    label: 'Ink',
-    description: 'Blue-black, with a pale indigo accent.',
-    dark: true,
-    background: '#14172a',
-    deep: '#0a0c18',
-  },
-  {
-    id: 'graphite',
-    label: 'Graphite',
-    description: 'Neutral dark grey with no colour cast at all.',
-    dark: true,
-    background: '#191b1e',
-    deep: '#0e1012',
-  },
-  {
-    id: 'harbour',
-    label: 'Harbour',
-    description: 'Teal-tinted slate, warm amber for the action.',
-    dark: true,
-    background: '#10212b',
-    deep: '#081419',
-  },
-  {
-    id: 'dusk',
-    label: 'Dusk',
-    description: 'A violet-tinted dark, quieter than the navy.',
-    dark: true,
-    background: '#1b1524',
-    deep: '#110c18',
-  },
-  {
-    id: 'blackedition',
-    label: 'Black edition',
-    description: 'Near-black, minimal, high contrast.',
-    dark: true,
-    background: '#101010',
-    deep: '#000000',
-  },
-  {
-    id: 'moss',
-    label: 'Moss',
-    description: 'A dark green ground, low and even.',
-    dark: true,
-    background: '#131a15',
-    deep: '#0a0f0b',
-  },
-  {
-    id: 'umber',
-    label: 'Umber',
-    description: 'Warm dark brown, the colour of an old desk.',
-    dark: true,
-    background: '#1c1712',
-    deep: '#110d09',
-  },
-  {
-    id: 'slate',
-    label: 'Slate',
-    description: 'Cool grey-blue, the dark counterpart to Bureau.',
-    dark: true,
-    background: '#161b22',
-    deep: '#0c1016',
-  },
-] as const;
+export {
+  CORE_PACK,
+  DEFAULT_LOOK,
+  LEGACY_LOOK,
+  LOOKS,
+  PALETTES,
+  PALETTE_IDS,
+  RETIRED_IDS,
+  THEMES,
+  THEME_IDS,
+  isDarkPalette,
+  layoutOf,
+} from './look/core.ts';
+export * from './look/pack.ts';
 
-export const THEMES = [
-  {
-    id: 'signal',
-    label: 'Signal',
-    description:
-      'The shipped type: Archivo headings, Public Sans text, soft corners and a raised edge.',
-  },
-  {
-    id: 'plain',
-    label: 'Plain',
-    description: 'The same type with nothing raised off the page. Quieter.',
-  },
-  {
-    id: 'docket',
-    label: 'Docket',
-    description:
-      'A typewritten record. One monospace family throughout, square corners, no shadow.',
-  },
-  {
-    id: 'broadsheet',
-    label: 'Broadsheet',
-    description: 'Heavier headings, tighter set, hard edges.',
-  },
-  {
-    id: 'bulletin',
-    label: 'Bulletin',
-    description: 'One family throughout, set tight and dense. A wider column for a busy board.',
-  },
-  {
-    id: 'register',
-    label: 'Register',
-    description: 'Monospace headings over ordinary text. Square, and the widest of them.',
-  },
-] as const;
-
-export type PaletteId = (typeof PALETTES)[number]['id'];
-export type ThemeId = (typeof THEMES)[number]['id'];
-export const PALETTE_IDS = PALETTES.map((p) => p.id) as [PaletteId, ...PaletteId[]];
-export const THEME_IDS = THEMES.map((t) => t.id) as [ThemeId, ...ThemeId[]];
-
-export const Look = z.object({
-  palette: z.enum(PALETTE_IDS),
-  theme: z.enum(THEME_IDS),
-});
+/**
+ * Ids rather than an enum: look packs add palettes and themes without a
+ * deploy, so which ids exist is the server's to say. The server never sends
+ * one it has no stylesheet for (`resolveLook`).
+ */
+const LookId = z.string().regex(/^[a-z][a-z0-9-]{1,39}$/);
+export const Look = z.object({ palette: LookId, theme: LookId });
 export type Look = z.infer<typeof Look>;
 
-export const DEFAULT_LOOK: Look = { palette: 'flint', theme: 'signal' };
-
-export function isDarkPalette(id: string): boolean {
-  return PALETTES.some((p) => p.id === id && p.dark);
-}
+/**
+ * The look as the page paints it: the two ids, and the theme's two layout
+ * choices, which become `data-panel-head` and `data-texture` on <html>. A
+ * theme picks between layouts the app already has; it cannot describe one.
+ */
+export const PaintedLook = Look.extend({
+  panel_head: z.enum(ENUMS.panelHead),
+  texture: z.enum(ENUMS.texture),
+});
+export type PaintedLook = z.infer<typeof PaintedLook>;
 
 // ── the name ────────────────────────────────────────────────────────────
 
@@ -380,7 +213,7 @@ export const Site = z.object({
   name: z.string(),
   name_parts: z.array(BrandPartSchema).min(1),
   plain_name: z.string(),
-  look: Look,
+  look: PaintedLook,
   /**
    * Every slot resolved: what the operator wrote, or what ships. Never
    * missing; an optional slot nobody wrote is ''. Any {{ … }} figure in it is

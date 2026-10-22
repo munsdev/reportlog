@@ -25,6 +25,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { applyLook } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
 import { GateContext, siteStatusQuery } from './gateMode.ts';
 import { LockScreen } from './LockScreen.tsx';
@@ -113,6 +114,13 @@ export function SiteGate({
   const door = status.isSuccess && locked && isDoorPath(pathname) && !doorRefused;
   const open = status.isSuccess && !locked;
   const setup = useQuery({ ...setupStatusQuery, enabled: open });
+
+  // The lock screen and a door never ask /api/site, so the look comes with
+  // the status (decision 60). Past the password, SiteLook paints the same.
+  const look = status.data?.look;
+  useEffect(() => {
+    if (look) applyLook(look);
+  }, [look]);
 
   // A refusal while inside means the password has lapsed; ask again. On a
   // door, it means the server did not open this one.

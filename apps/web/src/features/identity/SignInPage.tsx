@@ -8,7 +8,7 @@ export function SignInPage({ next }: { next: string | undefined }) {
   const changed = useIdentityChanged();
   return (
     <section className="max-w-xl space-y-6">
-      <h1 className="font-display text-3xl font-bold">Sign in</h1>
+      <h1 className="font-display text-title font-bold">Sign in</h1>
       <SignInForm
         intro="There is no password. We email you a code each time, so only somebody holding your mailbox can sign in as you."
         onSignedIn={async (me) => {

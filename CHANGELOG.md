@@ -31,6 +31,15 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- Settings › Look offers a new library: 17 palettes and 10 themes, from typewritten to
+  broadsheet, among them a High contrast pair for the clearest reading. A site keeps the look it
+  has: one that never chose stays on Flint with Signal, and a choice made among the old palettes
+  and themes is shown as the nearest new one and saved as it the next time the look is saved. A
+  new site starts on Desk.
+- Page titles grow from a phone to a desktop again, and the monospace type is IBM Plex Mono. Every
+  font is still served from your own site.
+- The password screen, and a form opened in front of the password, wear the site's colours and
+  type rather than the default.
 - The builder can require an email address on a form that would not otherwise ask for one, and
   can set the earliest and latest answer a date or time question takes (before launch).
 - Reports and tips are checked at the door: a puzzle solved in the visitor's browser (ALTCHA,

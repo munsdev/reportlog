@@ -20,6 +20,8 @@ import { gateApplies, siteAccessSettings } from '../../src/identity/siteAccess.t
 import { launchedLogbook, testDatabase, uniqueSlug } from './helpers.ts';
 import { address, cookieFrom, liftCurtain, seat, trustSession } from './identity-helpers.ts';
 import { codeFor } from './identity-helpers.ts';
+import { paintedLook } from '../../src/site/look.ts';
+import { readSettings } from '../../src/site/settings.ts';
 
 const db = testDatabase();
 const mailer = capturingMailer();
@@ -81,6 +83,7 @@ describe('a gate with no password is not a gate', () => {
     expect((await get('/api/site-access/status')).json()).toEqual({
       locked: false,
       dev_mode_until: null,
+      look: paintedLook(await readSettings(db)),
     });
     expect((await get('/api/auth/me')).statusCode).toBe(200);
     const live = await siteAccessSettings(db);
@@ -182,6 +185,7 @@ describe('with the password on', () => {
     expect((await get('/api/site-access/status', { site_access: token })).json()).toEqual({
       locked: false,
       dev_mode_until: null,
+      look: paintedLook(await readSettings(db)),
     });
     expect((await get('/api/auth/me', { site_access: token })).statusCode).toBe(200);
   });

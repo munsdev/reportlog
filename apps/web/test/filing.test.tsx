@@ -21,6 +21,7 @@ import {
   toSubmission,
 } from '../src/features/form/walk.ts';
 import { SiteGate } from '../src/features/identity/gate.tsx';
+import { DESK } from './look-fixture.ts';
 
 const QS: FormQuestion[] = [
   { key: 'what', kind: 'long_text', label: 'What happened?', required: true, settings: {} },
@@ -124,7 +125,7 @@ describe('the cards', () => {
     // jsdom lays nothing out, so there is nowhere to scroll to.
     vi.stubGlobal('scrollTo', vi.fn());
     const answers: Record<string, unknown> = {
-      'GET /api/site-access/status': { locked: true, dev_mode_until: null },
+      'GET /api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
       'GET /api/logbooks/demo': {
         slug: 'demo',
         title: 'Demo logbook',

@@ -40,7 +40,7 @@ export function AccessHome() {
   return (
     <SecondFactorGate>
       <div className="space-y-8">
-        <h1 className="font-display text-3xl font-bold">
+        <h1 className="font-display text-title font-bold">
           {user.grantsAccess ? 'Access' : 'Your account'}
         </h1>
         <YourAccount me={user} />

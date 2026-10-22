@@ -22,7 +22,7 @@ function VerifyPage() {
 
   return (
     <section className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">
+      <h1 className="font-display text-title font-bold">
         Report <span className="font-mono">{ref}</span>
       </h1>
       {query.isPending && <p role="status">Checking…</p>}

@@ -22,7 +22,7 @@ import { hashPassword } from '../../src/identity/secrets.ts';
 import { setPermission } from '../../src/permissions/log.ts';
 import { validateCopy } from '../../src/site/copy.ts';
 import { setDevMode } from '../../src/site/devMode.ts';
-import { writeCopy, writeSettings } from '../../src/site/settings.ts';
+import { readSettings, writeCopy, writeSettings } from '../../src/site/settings.ts';
 import type { FilingHarness } from './filing-helpers.ts';
 import { RING, confirm, look, send, spine, tokenFor } from './filing-helpers.ts';
 import { QUESTIONS, launchedLogbook } from './helpers.ts';
@@ -35,6 +35,7 @@ import {
   resetModerationSettings,
   staff,
 } from './moderation-helpers.ts';
+import { paintedLook } from '../../src/site/look.ts';
 
 const Q: FieldDefinition[] = [
   { key: 'what', kind: 'long_text', label: 'What happened?', required: true },
@@ -294,7 +295,24 @@ describe('with the site password on', () => {
         locked: true,
         site: { name_parts: [{ text: 'ReportLog', mark: '' }], plain_name: 'ReportLog' },
         dev_mode_until: null,
+        look: paintedLook(await readSettings(h.db)),
       });
+    });
+
+    it('wears the site’s look (decision 60, amending 3): colours and type, nothing more', async () => {
+      const before = await readSettings(h.db);
+      await writeSettings(h.db, { palette: 'midnight', theme: 'docket' });
+      try {
+        const body = (await get('/api/site-access/status')).json<Record<string, unknown>>();
+        expect(body.look).toEqual({
+          palette: 'midnight',
+          theme: 'docket',
+          panel_head: 'rule',
+          texture: 'none',
+        });
+      } finally {
+        await writeSettings(h.db, { palette: before.palette, theme: before.theme });
+      }
     });
 
     it('brings the operator’s name and paragraph as written, and nothing else', async () => {
@@ -308,7 +326,7 @@ describe('with the site password on', () => {
       expect(validateCopy('how_intro', 'We hold {{ [reports] }} reports.').ok).toBe(true);
       await writeCopy(h.db, 'lock_intro', intro);
       const body = (await get('/api/site-access/status')).json<Record<string, unknown>>();
-      expect(Object.keys(body).sort()).toEqual(['dev_mode_until', 'locked', 'site']);
+      expect(Object.keys(body).sort()).toEqual(['dev_mode_until', 'locked', 'look', 'site']);
       expect(body.site).toEqual({
         name_parts: [{ text: 'Harbour Watch', mark: '' }],
         plain_name: 'Harbour Watch',

@@ -5,6 +5,7 @@
  * primary key, and an operator who has just corrected their privacy policy
  * should not find the old one still being served.
  */
+import { DEFAULT_LOOK } from '@reportlog/contracts';
 import type { Look } from '@reportlog/contracts';
 import { sql } from 'kysely';
 import type { Database } from '../db/database.ts';
@@ -20,8 +21,8 @@ export interface SettingsRow {
 
 const EMPTY: SettingsRow = {
   site_name: null,
-  palette: 'flint',
-  theme: 'signal',
+  palette: DEFAULT_LOOK.palette,
+  theme: DEFAULT_LOOK.theme,
   impressum_text: null,
   privacy_text: null,
 };

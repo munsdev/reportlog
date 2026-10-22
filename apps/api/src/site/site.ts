@@ -8,7 +8,7 @@ import { editorCopy, resolveCopy } from './copy.ts';
 import { getDevMode } from './devMode.ts';
 import { resolveSiteName } from './identity.ts';
 import { editorStartingText, resolveLegalText } from './legal.ts';
-import { resolveLook } from './look.ts';
+import { paintedLook, resolveLook } from './look.ts';
 import { readCopy, readSettings } from './settings.ts';
 import type { SettingsRow } from './settings.ts';
 
@@ -47,7 +47,7 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     name,
     name_parts: parseBrand(name),
     plain_name: plainName(name),
-    look: resolveLook(settings),
+    look: paintedLook(settings),
     copy: await renderCopy(db, resolveCopy(rows)),
     dev_mode_until: dev.until,
     version,

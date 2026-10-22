@@ -47,10 +47,13 @@ describe('the Client-First layer', () => {
     expect(found).toEqual([]);
   });
 
-  it('writes no colour outside the stylesheet, except the maps’ scale', () => {
+  it('writes no colour outside the stylesheets, except the maps’ scale', () => {
     const colour = /#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(|\[#/;
     const found = files
-      .filter((f) => f.name !== 'styles.css' && f.name !== join('features', 'maps', 'scale.ts'))
+      .filter(
+        (f) =>
+          !['styles.css', 'looks.gen.css', join('features', 'maps', 'scale.ts')].includes(f.name),
+      )
       .filter((f) => !f.name.startsWith(join('fonts') + '/'))
       .flatMap((f) =>
         f.text

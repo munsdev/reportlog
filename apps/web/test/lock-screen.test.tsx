@@ -18,6 +18,7 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SiteGate } from '../src/features/identity/gate.tsx';
 import { Route as RootRoute } from '../src/routes/__root.tsx';
+import { DESK } from './look-fixture.ts';
 
 /** Answers these paths; anything else is refused as locked. Returns what was asked. */
 function server(answers: Record<string, unknown>) {
@@ -73,6 +74,7 @@ describe('the lock screen', () => {
         locked: true,
         site: { ...SITE, intro: 'Run by the harbour residents.\nAsk at the office.' },
         dev_mode_until: null,
+        look: DESK,
       },
       '/api/doors': { doors: [] },
     });
@@ -92,7 +94,7 @@ describe('the lock screen', () => {
 
   it('with no paragraph written shows none', async () => {
     server({
-      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: null },
+      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: null, look: DESK },
       '/api/doors': { doors: [] },
     });
     lockScreen();
@@ -102,7 +104,12 @@ describe('the lock screen', () => {
 
   it('wears the development badge while the notice is on, still asking nothing more', async () => {
     const asked = server({
-      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: inAnHour() },
+      '/api/site-access/status': {
+        locked: true,
+        site: SITE,
+        dev_mode_until: inAnHour(),
+        look: DESK,
+      },
       '/api/doors': { doors: [] },
     });
     lockScreen();
@@ -113,12 +120,40 @@ describe('the lock screen', () => {
 
   it('wears no badge when the notice is off', async () => {
     server({
-      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: null },
+      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: null, look: DESK },
       '/api/doors': { doors: [] },
     });
     lockScreen();
     expect(await screen.findByText('Harbour')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Under active development' })).toBeNull();
+  });
+});
+
+describe('the lock screen’s look (decision 60)', () => {
+  afterEach(() => {
+    for (const a of ['data-palette', 'data-theme', 'data-panel-head', 'data-texture'])
+      document.documentElement.removeAttribute(a);
+    localStorage.clear();
+  });
+
+  it('wears the site’s look, from the password check, asking nothing behind the gate', async () => {
+    const asked = server({
+      '/api/site-access/status': {
+        locked: true,
+        site: SITE,
+        dev_mode_until: null,
+        look: { palette: 'flint', theme: 'signal', panel_head: 'plain', texture: 'none' },
+      },
+      '/api/doors': { doors: [] },
+    });
+    lockScreen();
+    expect(await screen.findByText('Harbour')).toBeVisible();
+    const html = document.documentElement;
+    expect(html).toHaveAttribute('data-palette', 'flint');
+    expect(html).toHaveAttribute('data-theme', 'signal');
+    expect(html).toHaveAttribute('data-panel-head', 'plain');
+    await settle();
+    expect(asked().sort()).toEqual(['/api/doors', '/api/site-access/status']);
   });
 });
 
@@ -130,7 +165,12 @@ describe('the development badge on a door', () => {
 
   it('shows from the password check’s answer, and the door asks nothing beyond it', async () => {
     const asked = server({
-      '/api/site-access/status': { locked: true, site: SITE, dev_mode_until: inAnHour() },
+      '/api/site-access/status': {
+        locked: true,
+        site: SITE,
+        dev_mode_until: inAnHour(),
+        look: DESK,
+      },
     });
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const router = createRouter({

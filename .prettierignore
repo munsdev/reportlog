@@ -8,3 +8,4 @@ tools/geo/data/
 # Generated static copies of the design canvas, compared by eye, not edited.
 docs/design/mockups/
 docs/design/looks/looks.css
+apps/web/src/looks.gen.css

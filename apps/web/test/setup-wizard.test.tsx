@@ -234,7 +234,7 @@ describe('walking the screens after the owner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Continue' }));
 
     await heading('How should it look?');
-    await userEvent.click(screen.getByRole('radio', { name: /Harbour/ }));
+    await userEvent.click(screen.getByRole('radio', { name: /Darkroom/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Use this and continue' }));
 
     await heading('The site password');
@@ -254,12 +254,12 @@ describe('walking the screens after the owner', () => {
       {
         method: 'PUT',
         path: '/api/admin/site/look',
-        body: { palette: 'harbour', theme: 'signal' },
+        body: { palette: 'darkroom', theme: 'signal' },
       },
       { method: 'POST', path: '/api/setup/curtain', body: { decision: 'keep' } },
     ]);
     // The look is painted once it is saved.
-    expect(document.documentElement).toHaveAttribute('data-palette', 'harbour');
+    expect(document.documentElement).toHaveAttribute('data-palette', 'darkroom');
   });
 
   it('Back shows what was saved, and Skip moves on without writing anything', async () => {

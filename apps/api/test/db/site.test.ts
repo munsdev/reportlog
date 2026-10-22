@@ -4,6 +4,9 @@
  * home-buttons.test.ts), and checks that only an administrator reaches the
  * settings routes.
  */
+import { readFileSync } from 'node:fs';
+import { DEFAULT_LOOK, THEMES } from '@reportlog/contracts';
+import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SKELETONS } from '../../src/site/legal.ts';
 import { readSettings, writeSettings } from '../../src/site/settings.ts';
@@ -120,6 +123,8 @@ describe('the settings routes', () => {
     expect((await get<{ look: unknown }>('/api/site')).look).toEqual({
       palette: 'midnight',
       theme: 'docket',
+      panel_head: THEMES.find((t) => t.id === 'docket')?.panelHead,
+      texture: THEMES.find((t) => t.id === 'docket')?.texture,
     });
     const refused = await admin('PUT', '/api/admin/site/look', { palette: 'retired' });
     expect(refused.statusCode).toBe(400);
@@ -130,12 +135,84 @@ describe('the settings routes', () => {
   });
 
   it('a palette the code no longer offers reads as the default', async () => {
-    await writeSettings(db, { palette: 'retired' as 'flint' });
-    expect((await get<{ look: unknown }>('/api/site')).look).toEqual({
-      palette: 'flint',
+    await writeSettings(db, { palette: 'retired', theme: 'signal' });
+    expect((await get<{ look: unknown }>('/api/site')).look).toMatchObject({
+      palette: DEFAULT_LOOK.palette,
       theme: 'signal',
     });
     await writeSettings(db, { palette: 'flint' });
+  });
+
+  it('a look stored before the look library reads as its replacement, and is saved as it', async () => {
+    await writeSettings(db, { palette: 'harbour', theme: 'register' });
+    expect((await get<{ look: unknown }>('/api/site')).look).toMatchObject({
+      palette: 'darkroom',
+      theme: 'console',
+    });
+    await admin('PUT', '/api/admin/site/look', { palette: 'harbour' });
+    expect(await readSettings(db)).toMatchObject({ palette: 'darkroom' });
+    await writeSettings(db, { palette: 'flint', theme: 'signal' });
+  });
+});
+
+describe('the migration that brought in the look library', () => {
+  const MIGRATION = readFileSync(
+    new URL('../../migrations/20261022045623_look_library.sql', import.meta.url),
+    'utf8',
+  );
+
+  /** Runs the migration again on the given state, reads the result, and undoes it all. */
+  async function afterMigration(owner: boolean, before: { palette: string; theme: string }) {
+    let seen: { palette: string; theme: string } | undefined;
+    await db
+      .transaction()
+      .execute(async (trx) => {
+        if (owner) await seat(trx, address('look-migration-owner'), 'owner');
+        else
+          await trx
+            .updateTable('users')
+            .set({ role: 'user' })
+            .where('role', '=', 'owner')
+            .execute();
+        await trx.updateTable('site_settings').set(before).execute();
+        await sql.raw(MIGRATION).execute(trx);
+        seen = await trx
+          .selectFrom('site_settings')
+          .select(['palette', 'theme'])
+          .executeTakeFirstOrThrow();
+        throw new Undo();
+      })
+      .catch((e: unknown) => {
+        if (!(e instanceof Undo)) throw e;
+      });
+    return seen;
+  }
+  class Undo extends Error {}
+
+  it('a site with an owner keeps Flint and Signal, the look it was wearing', async () => {
+    expect(await afterMigration(true, { palette: 'flint', theme: 'signal' })).toEqual({
+      palette: 'flint',
+      theme: 'signal',
+    });
+  });
+
+  it('a site with an owner keeps a look it chose', async () => {
+    expect(await afterMigration(true, { palette: 'harbour', theme: 'docket' })).toEqual({
+      palette: 'harbour',
+      theme: 'docket',
+    });
+  });
+
+  it('an installation nobody has set up yet gets Desk', async () => {
+    expect(await afterMigration(false, { palette: 'flint', theme: 'signal' })).toEqual({
+      palette: 'platinum',
+      theme: 'desk',
+    });
+  });
+
+  it('a new row gets Desk', () => {
+    expect(MIGRATION).toMatch(/ALTER COLUMN palette SET DEFAULT 'platinum'/);
+    expect(MIGRATION).toMatch(/ALTER COLUMN theme SET DEFAULT 'desk'/);
   });
 
   it('rename the site, marks and all, and the plain name loses the marks', async () => {

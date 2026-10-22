@@ -1,17 +1,19 @@
 /**
  * What the password screen may show: the site's name, the operator's
- * paragraph for it, and when the development notice ends (decisions.md §3).
+ * paragraph for it, when the development notice ends (decisions.md §3), and
+ * the site's look (decision 60).
  *
  * Read by the lock screen's own call, which is in front of the password
  * (identity/curtainRoutes.ts), so a locked visitor gets these without any
  * other call behind the gate. Nothing else of the site's settings is here on
- * purpose: not the look, not the other wording, not a figure.
+ * purpose: not the other wording, not a figure.
  */
-import type { LockScreenSite } from '@reportlog/contracts';
+import type { LockScreenSite, PaintedLook } from '@reportlog/contracts';
 import { parseBrand, plainName } from '@reportlog/contracts';
 import type { Database } from '../db/database.ts';
 import { resolveCopy } from './copy.ts';
 import { getDevMode } from './devMode.ts';
+import { paintedLook } from './look.ts';
 import { resolveSiteName } from './identity.ts';
 import { readCopy, readSettings } from './settings.ts';
 
@@ -31,4 +33,9 @@ export async function lockScreenSite(db: Database): Promise<LockScreenSite> {
 /** The development notice's end, for the badge on the lock screen and on a door. */
 export async function devModeUntil(db: Database): Promise<string | null> {
   return (await getDevMode(db)).until;
+}
+
+/** The site's look, for the lock screen and the doors, which never ask /api/site. */
+export async function lookInFront(db: Database): Promise<PaintedLook> {
+  return paintedLook(await readSettings(db));
 }

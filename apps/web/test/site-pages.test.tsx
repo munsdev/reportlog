@@ -39,7 +39,7 @@ function site(overrides: Partial<Site> = {}): Site {
       { text: 'Archive', mark: 'a' },
     ],
     plain_name: 'Munich Archive',
-    look: { palette: 'flint', theme: 'signal' },
+    look: { palette: 'flint', theme: 'signal', panel_head: 'plain', texture: 'none' },
     copy: {
       home_headline: 'h',
       home_lede: 'l',

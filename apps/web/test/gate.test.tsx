@@ -3,6 +3,7 @@ import type { RouterHistory } from '@tanstack/react-router';
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SiteGate, isDoorPath, useGateMode } from '../src/features/identity/gate.tsx';
+import { DESK } from './look-fixture.ts';
 
 /** A server that answers these paths with these bodies, and 401 locked to anything else. */
 function server(answers: Record<string, unknown>) {
@@ -50,7 +51,7 @@ afterEach(() => {
 describe('the gate', () => {
   it('shows only the password screen while locked: nothing behind it renders', async () => {
     server({
-      '/api/site-access/status': { locked: true, dev_mode_until: null },
+      '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
       '/api/doors': { doors: [] },
     });
     const { history, block } = fakeHistory();
@@ -65,7 +66,7 @@ describe('the gate', () => {
 
   it('offers what an administrator opened, as plain links', async () => {
     server({
-      '/api/site-access/status': { locked: true, dev_mode_until: null },
+      '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
       '/api/doors': {
         doors: [{ kind: 'logbook', slug: 'open', title: 'Open logbook', href: '/file/open' }],
       },
@@ -77,7 +78,7 @@ describe('the gate', () => {
 
   it('renders the site once past the password, unless it still needs setting up', async () => {
     server({
-      '/api/site-access/status': { locked: false, dev_mode_until: null },
+      '/api/site-access/status': { locked: false, dev_mode_until: null, look: DESK },
       '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
     });
     gate('/', fakeHistory().history);
@@ -86,7 +87,7 @@ describe('the gate', () => {
 
   it('shows the setup wizard instead of the site on a deployment nobody has set up', async () => {
     server({
-      '/api/site-access/status': { locked: false, dev_mode_until: null },
+      '/api/site-access/status': { locked: false, dev_mode_until: null, look: DESK },
       '/api/setup/status': { needed: true, hasOwner: false, minPassword: 8 },
       '/api/auth/me': { signedIn: false },
     });
@@ -98,7 +99,7 @@ describe('the gate', () => {
   });
 
   it('lets one door page render while locked, with navigation blocked', async () => {
-    server({ '/api/site-access/status': { locked: true, dev_mode_until: null } });
+    server({ '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK } });
     const { history, block } = fakeHistory();
     gate('/file/open', history);
     expect(await screen.findByText('The site behind the curtain (door)')).toBeVisible();

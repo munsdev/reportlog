@@ -68,7 +68,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
         <Link to="/logbooks" className="text-sm underline">
           ← All logbooks
         </Link>
-        <h1 className="font-display text-3xl font-bold">{lb.title}</h1>
+        <h1 className="font-display text-title font-bold">{lb.title}</h1>
         <p>
           <span className="mr-2 rounded-card border border-line px-2 py-0.5 text-sm font-semibold">
             {stateLabel[lb.state]}

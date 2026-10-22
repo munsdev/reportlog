@@ -32,7 +32,7 @@ export function HomeButtonsEditor() {
           <Link to="/logbooks" className="text-sm underline">
             ← All logbooks
           </Link>
-          <h1 className="font-display text-3xl font-bold">The front page’s buttons</h1>
+          <h1 className="font-display text-title font-bold">The front page’s buttons</h1>
           <p className="max-w-prose text-ink-alt">
             Every open logbook is a button on the front page. The first button is the main one; to
             make a different button the main one, move it to the top.

@@ -23,6 +23,7 @@ import { render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DOOR_PATHS, SiteGate, isDoorPath } from '../src/features/identity/gate.tsx';
 import { Route as RootRoute } from '../src/routes/__root.tsx';
+import { DESK } from './look-fixture.ts';
 
 const ADMIN_ME = {
   signedIn: true,
@@ -148,7 +149,7 @@ describe('the frame around every page, on a door', () => {
     'on %s renders the header and footer and asks nothing beyond the gate',
     async (door) => {
       const asked = server({
-        '/api/site-access/status': { locked: true, dev_mode_until: null },
+        '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
         // Answered as if signed in, so nothing stays quiet for want of a session.
         '/api/auth/me': ADMIN_ME,
       });
@@ -170,7 +171,7 @@ describe('the frame around every page, on a door', () => {
 
   it('and the same frame past the password DOES ask, so the test above would see it', async () => {
     const asked = server({
-      '/api/site-access/status': { locked: false, dev_mode_until: null },
+      '/api/site-access/status': { locked: false, dev_mode_until: null, look: DESK },
       '/api/setup/status': { needed: false, hasOwner: true, minPassword: 8 },
       '/api/auth/me': ADMIN_ME,
     });

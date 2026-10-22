@@ -20,7 +20,7 @@ export function AuditPage() {
   if (!me.data?.signedIn) return <SignInPrompt next="/access/audit" />;
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-3xl font-bold">Who changed what</h1>
+      <h1 className="font-display text-title font-bold">Who changed what</h1>
       <p className="text-ink-alt">
         Every change to who may do what, and every copy of the whole archive taken off the server,
         as it was made. Nothing here can be edited or removed.

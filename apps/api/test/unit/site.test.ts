@@ -22,7 +22,7 @@ import {
   resolveLegalText,
   validateLegalText,
 } from '../../src/site/legal.ts';
-import { resolveLook, validateLook } from '../../src/site/look.ts';
+import { paintedLook, resolveLook, validateLook } from '../../src/site/look.ts';
 import { buildManifest } from '../../src/site/manifest.ts';
 
 describe('the look', () => {
@@ -37,8 +37,40 @@ describe('the look', () => {
   });
 
   it('one axis may be set without disturbing the other', () => {
-    expect(validateLook({ palette: 'bureau' })).toEqual({ ok: true, value: { palette: 'bureau' } });
+    expect(validateLook({ palette: 'boardroom' })).toEqual({
+      ok: true,
+      value: { palette: 'boardroom' },
+    });
     expect(validateLook({}).ok).toBe(false);
+  });
+
+  it('nobody having chosen is Desk, the default of the look library', () => {
+    expect(DEFAULT_LOOK).toEqual({ palette: 'platinum', theme: 'desk' });
+  });
+
+  it('an id stored before the look library paints the one that replaced it', () => {
+    expect(resolveLook({ palette: 'harbour', theme: 'plain' })).toEqual({
+      palette: 'darkroom',
+      theme: 'firm',
+    });
+    expect(resolveLook({ palette: 'flint', theme: 'signal' })).toEqual({
+      palette: 'flint',
+      theme: 'signal',
+    });
+    // An old settings page left open in a tab saves the replacement.
+    expect(validateLook({ palette: 'bureau', theme: 'register' })).toEqual({
+      ok: true,
+      value: { palette: 'boardroom', theme: 'console' },
+    });
+  });
+
+  it('sends the theme’s layout with the look', () => {
+    expect(paintedLook({ palette: 'legal-pad', theme: 'notebook' })).toMatchObject({
+      palette: 'legal-pad',
+      theme: 'notebook',
+      panel_head: THEMES.find((t) => t.id === 'notebook')?.panelHead,
+      texture: THEMES.find((t) => t.id === 'notebook')?.texture,
+    });
   });
 
   it('ignores the retired layout axis rather than refusing it', () => {
@@ -50,9 +82,9 @@ describe('the look', () => {
     ]);
   });
 
-  it('offers nine light palettes and nine dark ones', () => {
-    expect(PALETTES.filter((p) => p.dark)).toHaveLength(9);
-    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(9);
+  it('offers ten light palettes and seven dark ones', () => {
+    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(10);
+    expect(PALETTES.filter((p) => p.dark)).toHaveLength(7);
     expect(isDarkPalette('midnight')).toBe(true);
     expect(isDarkPalette('flint')).toBe(false);
     expect(isDarkPalette('nonesuch')).toBe(false);

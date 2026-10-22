@@ -64,7 +64,7 @@ const LATER_STEPS: [Method, string, object | undefined][] = [
   ['PUT', '/api/admin/moderation/archive', { published: true }],
   ['GET', '/api/admin/files/settings', undefined],
   ['PUT', '/api/admin/files/settings', { enabled: true }],
-  ['PUT', '/api/admin/site/look', { palette: 'harbour', theme: 'plain' }],
+  ['PUT', '/api/admin/site/look', { palette: 'darkroom', theme: 'firm' }],
 ];
 
 beforeAll(async () => {
@@ -232,10 +232,10 @@ describe('walking the wizard', () => {
 
   it('the look, through the look screen’s own route', async () => {
     const res = await asOwner('PUT', '/api/admin/site/look', {
-      palette: 'harbour',
-      theme: 'plain',
+      palette: 'darkroom',
+      theme: 'firm',
     });
-    expect(res.json()).toMatchObject({ look: { palette: 'harbour', theme: 'plain' } });
+    expect(res.json()).toMatchObject({ look: { palette: 'darkroom', theme: 'firm' } });
   });
 
   it('and setup is STILL not finished: only the password decision ends it', async () => {

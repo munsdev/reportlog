@@ -28,7 +28,7 @@ export function SecurityPage() {
   if (me.data.secondFactor === 'not-needed') {
     return (
       <section className="max-w-xl space-y-3">
-        <h1 className="font-display text-3xl font-bold">Signing in</h1>
+        <h1 className="font-display text-title font-bold">Signing in</h1>
         <p>
           Your account has no role on this site, so it signs in with the emailed code alone. A
           second factor is asked of everybody with a role.
@@ -94,7 +94,7 @@ function Factors() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="font-display text-3xl font-bold">Signing in</h1>
+      <h1 className="font-display text-title font-bold">Signing in</h1>
       <p>
         After the emailed code, your account asks for a second factor: a code from your
         authenticator app or one of your passkeys. Either works wherever one is asked for.

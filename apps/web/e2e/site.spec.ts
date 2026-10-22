@@ -80,18 +80,24 @@ test('an operator’s palette and theme repaint every screen, through the styles
   await page.route('**/api/site', async (route) => {
     const real = await route.fetch();
     const body = (await real.json()) as Record<string, unknown>;
-    await route.fulfill({ json: { ...body, look: { palette: 'midnight', theme: 'docket' } } });
+    await route.fulfill({
+      json: {
+        ...body,
+        look: { palette: 'midnight', theme: 'docket', panel_head: 'rule', texture: 'none' },
+      },
+    });
   });
   await page.goto('/legal');
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'midnight');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'docket');
+  await expect(page.locator('html')).toHaveAttribute('data-panel-head', 'rule');
   const look = await page.evaluate(() => {
     const html = getComputedStyle(document.documentElement);
     const h1 = getComputedStyle(document.querySelector('h1') ?? document.body);
     return { bg: html.backgroundColor, font: h1.fontFamily, transform: h1.textTransform };
   });
   expect(look.bg).toBe('rgb(18, 26, 36)');
-  expect(look.font).toMatch(/Red Hat Mono/);
+  expect(look.font).toMatch(/Courier Prime/);
   expect(look.transform).toBe('uppercase');
 });
 
@@ -101,14 +107,19 @@ test('the look is remembered, so a returning reader is not shown the default fir
   await page.route('**/api/site', async (route) => {
     const real = await route.fetch();
     const body = (await real.json()) as Record<string, unknown>;
-    await route.fulfill({ json: { ...body, look: { palette: 'moss', theme: 'signal' } } });
+    await route.fulfill({
+      json: {
+        ...body,
+        look: { palette: 'phosphor', theme: 'signal', panel_head: 'plain', texture: 'none' },
+      },
+    });
   });
   await page.goto('/');
-  await expect(page.locator('html')).toHaveAttribute('data-palette', 'moss');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'phosphor');
   // Hold the settings back on the next visit: the remembered look is applied first.
   await page.route('**/api/site', () => new Promise(() => undefined));
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-palette', 'moss');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'phosphor');
 });
 
 test('the settings ask a visitor to sign in, rather than showing an empty form', async ({

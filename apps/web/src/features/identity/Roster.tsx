@@ -47,7 +47,7 @@ function Roster() {
 
   return (
     <div className="space-y-8">
-      <h1 className="font-display text-3xl font-bold">Roster</h1>
+      <h1 className="font-display text-title font-bold">Roster</h1>
       <p className="text-ink-alt">
         Everybody with a role, a flag or an organization. The numbers are reports typed up through
         intake: by the person themselves, and by anybody for the organizations they belong to.

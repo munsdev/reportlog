@@ -1,34 +1,69 @@
-import { COPY_KEYS } from '@reportlog/contracts';
+import { COPY_KEYS, THEMES } from '@reportlog/contracts';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrandName, applyLook, rememberedLook } from '../../src/components/ui/site.tsx';
 import { HomeButtons } from '../../src/routes/index.tsx';
 
 afterEach(() => {
   document.documentElement.removeAttribute('data-palette');
   document.documentElement.removeAttribute('data-theme');
+  document.documentElement.removeAttribute('data-panel-head');
+  document.documentElement.removeAttribute('data-texture');
   localStorage.clear();
 });
 
 describe('applying the look', () => {
-  it('names the choice on <html>, and the shipped one by naming nothing', () => {
+  it('names the choice on <html>, and the default (Desk) by naming nothing', () => {
     const root = document.documentElement;
-    applyLook({ palette: 'midnight', theme: 'docket' });
+    applyLook({ palette: 'midnight', theme: 'signal', panel_head: 'bar', texture: 'none' });
     expect(root).toHaveAttribute('data-palette', 'midnight');
-    expect(root).toHaveAttribute('data-theme', 'docket');
-    applyLook({ palette: 'flint', theme: 'signal' });
+    expect(root).toHaveAttribute('data-theme', 'signal');
+    applyLook({ palette: 'platinum', theme: 'desk', panel_head: 'title-bar', texture: 'none' });
     expect(root).not.toHaveAttribute('data-palette');
     expect(root).not.toHaveAttribute('data-theme');
   });
 
-  it('remembers the last look for the next visit, and only one the site offers', () => {
-    applyLook({ palette: 'moss', theme: 'plain' });
-    expect(rememberedLook()).toEqual({ palette: 'moss', theme: 'plain' });
-    localStorage.setItem('rl-look', JSON.stringify({ palette: 'retired', theme: 'plain' }));
+  it('sets the theme’s layout as the server sent it', () => {
+    const root = document.documentElement;
+    applyLook({ palette: 'legal-pad', theme: 'notebook', panel_head: 'rule', texture: 'ruled' });
+    expect(root).toHaveAttribute('data-panel-head', 'rule');
+    expect(root).toHaveAttribute('data-texture', 'ruled');
+  });
+
+  it('a bare palette and theme takes the built-in theme’s layout', () => {
+    const root = document.documentElement;
+    applyLook({ palette: 'phosphor', theme: 'console' });
+    const console = THEMES.find((t) => t.id === 'console');
+    expect(root).toHaveAttribute('data-panel-head', console?.panelHead);
+    expect(root).toHaveAttribute('data-texture', console?.texture);
+  });
+
+  it('remembers the last look for the next visit, and only one the site could send', () => {
+    const look = {
+      palette: 'amber',
+      theme: 'desk',
+      panel_head: 'title-bar',
+      texture: 'none',
+    } as const;
+    applyLook(look);
+    expect(rememberedLook()).toEqual(look);
+    localStorage.setItem('rl-look', JSON.stringify({ palette: 'Not an id!', theme: 'desk' }));
     expect(rememberedLook()).toBeNull();
     localStorage.setItem('rl-look', 'not json');
     expect(rememberedLook()).toBeNull();
+  });
+
+  it('still paints when storage refuses', () => {
+    const refuse = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('refused');
+    });
+    try {
+      applyLook({ palette: 'midnight', theme: 'signal' });
+      expect(document.documentElement).toHaveAttribute('data-palette', 'midnight');
+    } finally {
+      refuse.mockRestore();
+    }
   });
 });
 

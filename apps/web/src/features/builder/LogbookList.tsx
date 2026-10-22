@@ -22,7 +22,7 @@ export function LogbookList() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h1 className="font-display text-3xl font-bold">Logbooks</h1>
+        <h1 className="font-display text-title font-bold">Logbooks</h1>
         <p className="max-w-prose text-ink-alt">
           A logbook is one named place to file reports, with its own questions. Every report in it
           is fingerprinted and chained to the one before.

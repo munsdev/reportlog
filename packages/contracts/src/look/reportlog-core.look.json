@@ -1,0 +1,1106 @@
+{
+  "format": 1,
+  "id": "reportlog-core",
+  "label": "ReportLog",
+  "version": "1.0.0",
+  "author": "ReportLog",
+  "fonts": [
+    {
+      "family": "Public Sans",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/PublicSans-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/PublicSans-500.woff2",
+          "weight": 500,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/PublicSans-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "Archivo",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/Archivo-variable.woff2",
+          "weight": "500 800",
+          "stretch": "62 125",
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "IBM Plex Sans",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/IBMPlexSans-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/IBMPlexSans-500.woff2",
+          "weight": 500,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/IBMPlexSans-600.woff2",
+          "weight": 600,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/IBMPlexSans-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "IBM Plex Mono",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/IBMPlexMono-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/IBMPlexMono-500.woff2",
+          "weight": 500,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/IBMPlexMono-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "Courier Prime",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/CourierPrime-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/CourierPrime-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "Newsreader",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/Newsreader-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/Newsreader-600.woff2",
+          "weight": 600,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/Newsreader-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "Bitter",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/Bitter-600.woff2",
+          "weight": 600,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/Bitter-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/Bitter-800.woff2",
+          "weight": 800,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "JetBrains Mono",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/JetBrainsMono-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/JetBrainsMono-500.woff2",
+          "weight": 500,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/JetBrainsMono-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    },
+    {
+      "family": "Atkinson Hyperlegible",
+      "licence": "OFL-1.1",
+      "files": [
+        {
+          "file": "fonts/AtkinsonHyperlegible-400.woff2",
+          "weight": 400,
+          "style": "normal"
+        },
+        {
+          "file": "fonts/AtkinsonHyperlegible-700.woff2",
+          "weight": 700,
+          "style": "normal"
+        }
+      ]
+    }
+  ],
+  "palettes": [
+    {
+      "id": "platinum",
+      "label": "Platinum",
+      "description": "Old Mac and Linux desktop, newsroom grey.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e3de",
+        "background-alt": "#d7d6d0",
+        "background-deep": "#1c1c1a",
+        "surface": "#faf9f5",
+        "border": "#9e9d97",
+        "text": "#141413",
+        "text-alt": "#3e3d39",
+        "text-muted": "#55534d",
+        "text-on-deep": "#f2f1ec",
+        "action": "#2348b8",
+        "on-action": "#ffffff",
+        "brand": "#2348b8",
+        "brand-on-deep": "#a9bcff",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "flint",
+      "label": "Flint",
+      "description": "Steel and signal gold (ElectionLog).",
+      "dark": false,
+      "colors": {
+        "background": "#e7ecef",
+        "background-alt": "#dde4e8",
+        "background-deep": "#121a24",
+        "surface": "#ffffff",
+        "border": "#a4b4be",
+        "text": "#0e151c",
+        "text-alt": "#46586a",
+        "text-muted": "#566470",
+        "text-on-deep": "#ffffff",
+        "action": "#e9a81c",
+        "on-action": "#0e151c",
+        "brand": "#7d5b10",
+        "brand-on-deep": "#e9a81c",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "newsprint",
+      "label": "Newsprint",
+      "description": "Old newspaper, black ink on cream.",
+      "dark": false,
+      "colors": {
+        "background": "#f1ede4",
+        "background-alt": "#e6e0d3",
+        "background-deep": "#22201c",
+        "surface": "#fbf9f4",
+        "border": "#bdb5a5",
+        "text": "#1a1814",
+        "text-alt": "#44403a",
+        "text-muted": "#5f594f",
+        "text-on-deep": "#f1ede4",
+        "action": "#1a1814",
+        "on-action": "#fbf9f4",
+        "brand": "#6e5b2f",
+        "brand-on-deep": "#e2c27a",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "press-pass",
+      "label": "Press pass",
+      "description": "Manila folders and carbon copies on a press desk.",
+      "dark": false,
+      "colors": {
+        "background": "#ece3cf",
+        "background-alt": "#e0d4ba",
+        "background-deep": "#262421",
+        "surface": "#f8f3e7",
+        "border": "#b8a882",
+        "text": "#1d1a14",
+        "text-alt": "#463f31",
+        "text-muted": "#5a5140",
+        "text-on-deep": "#f3ecdc",
+        "action": "#7a4e0f",
+        "on-action": "#ffffff",
+        "brand": "#7a4e0f",
+        "brand-on-deep": "#e8c27a",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "legal-pad",
+      "label": "Legal pad",
+      "description": "Yellow notebook paper, blue ruled ink.",
+      "dark": false,
+      "colors": {
+        "background": "#f8f0c8",
+        "background-alt": "#efe4b4",
+        "background-deep": "#1e2a44",
+        "surface": "#fffceb",
+        "border": "#cdbf85",
+        "text": "#1b1a12",
+        "text-alt": "#3f3c2a",
+        "text-muted": "#57523a",
+        "text-on-deep": "#fffceb",
+        "action": "#23439a",
+        "on-action": "#ffffff",
+        "brand": "#23439a",
+        "brand-on-deep": "#f3d66b",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "ranger",
+      "label": "Ranger",
+      "description": "National park signs: forest, cream and trail brown.",
+      "dark": false,
+      "colors": {
+        "background": "#efe8da",
+        "background-alt": "#e3d9c5",
+        "background-deep": "#1f3326",
+        "surface": "#faf6ee",
+        "border": "#b7a98e",
+        "text": "#1b1712",
+        "text-alt": "#463d31",
+        "text-muted": "#5b5141",
+        "text-on-deep": "#f3ecdd",
+        "action": "#5a3b26",
+        "on-action": "#f8f1e3",
+        "brand": "#5a3b26",
+        "brand-on-deep": "#e8b34e",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "old-glory",
+      "label": "Old Glory",
+      "description": "Americana: navy, cream and mustard.",
+      "dark": false,
+      "colors": {
+        "background": "#f4eee2",
+        "background-alt": "#e9e0cf",
+        "background-deep": "#1b2747",
+        "surface": "#fcf9f2",
+        "border": "#bdb19a",
+        "text": "#161a26",
+        "text-alt": "#3a3f52",
+        "text-muted": "#555a6a",
+        "text-on-deep": "#f4eee2",
+        "action": "#1f2f5c",
+        "on-action": "#fcf9f2",
+        "brand": "#1f2f5c",
+        "brand-on-deep": "#e8b547",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "boardroom",
+      "label": "Boardroom",
+      "description": "Corporate firm: cool white and a firm blue.",
+      "dark": false,
+      "colors": {
+        "background": "#f3f5f8",
+        "background-alt": "#e6eaf0",
+        "background-deep": "#142033",
+        "surface": "#ffffff",
+        "border": "#c0c8d4",
+        "text": "#101722",
+        "text-alt": "#364354",
+        "text-muted": "#535f70",
+        "text-on-deep": "#eef2f7",
+        "action": "#0b57b0",
+        "on-action": "#ffffff",
+        "brand": "#0b57b0",
+        "brand-on-deep": "#8ec0ff",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "porch",
+      "label": "Porch light",
+      "description": "Neighbourhood group: warm white and a friendly violet.",
+      "dark": false,
+      "colors": {
+        "background": "#fbf6ee",
+        "background-alt": "#f1e9dc",
+        "background-deep": "#2a2340",
+        "surface": "#ffffff",
+        "border": "#d3c7b6",
+        "text": "#1d1a24",
+        "text-alt": "#423c4d",
+        "text-muted": "#5c5566",
+        "text-on-deep": "#f6f1fa",
+        "action": "#5b45a8",
+        "on-action": "#ffffff",
+        "brand": "#5b45a8",
+        "brand-on-deep": "#ffc86b",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#296b60",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "contrast",
+      "label": "High contrast",
+      "description": "Black on white, 7:1 everywhere.",
+      "dark": false,
+      "colors": {
+        "background": "#ffffff",
+        "background-alt": "#f0f0f0",
+        "background-deep": "#000000",
+        "surface": "#ffffff",
+        "border": "#595959",
+        "text": "#000000",
+        "text-alt": "#1f1f1f",
+        "text-muted": "#333333",
+        "text-on-deep": "#ffffff",
+        "action": "#0033a0",
+        "on-action": "#ffffff",
+        "brand": "#0033a0",
+        "brand-on-deep": "#ffd54f",
+        "serious": "#9e0020",
+        "on-serious": "#ffffff",
+        "confirmed": "#00594f",
+        "on-confirmed": "#ffffff"
+      }
+    },
+    {
+      "id": "midnight",
+      "label": "Midnight",
+      "description": "Flint after dark (ElectionLog dark).",
+      "dark": true,
+      "colors": {
+        "background": "#121a24",
+        "background-alt": "#1a2430",
+        "background-deep": "#0a1017",
+        "surface": "#1b2531",
+        "border": "#5e7286",
+        "text": "#e8eef5",
+        "text-alt": "#bac7d6",
+        "text-muted": "#a2b2c4",
+        "text-on-deep": "#e8eef5",
+        "action": "#e9a81c",
+        "on-action": "#0a1017",
+        "brand": "#e9a81c",
+        "brand-on-deep": "#7fb2e0",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "newsroom",
+      "label": "Newsroom",
+      "description": "News channel: broadcast navy and chyron yellow.",
+      "dark": true,
+      "colors": {
+        "background": "#0d1630",
+        "background-alt": "#13203f",
+        "background-deep": "#070c1c",
+        "surface": "#15234a",
+        "border": "#5a6e9e",
+        "text": "#eef2fa",
+        "text-alt": "#c3cce2",
+        "text-muted": "#a9b5d2",
+        "text-on-deep": "#eef2fa",
+        "action": "#ffcf3f",
+        "on-action": "#0d1630",
+        "brand": "#ffcf3f",
+        "brand-on-deep": "#ffffff",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "phosphor",
+      "label": "Phosphor",
+      "description": "Green-screen terminal.",
+      "dark": true,
+      "colors": {
+        "background": "#0a110c",
+        "background-alt": "#0f1912",
+        "background-deep": "#050906",
+        "surface": "#111c14",
+        "border": "#3f6b4b",
+        "text": "#c9f7d3",
+        "text-alt": "#9eddb0",
+        "text-muted": "#86c79a",
+        "text-on-deep": "#c9f7d3",
+        "action": "#3be07a",
+        "on-action": "#04140a",
+        "brand": "#3be07a",
+        "brand-on-deep": "#e5f86b",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "amber",
+      "label": "Amber",
+      "description": "Amber CRT monitor.",
+      "dark": true,
+      "colors": {
+        "background": "#130e06",
+        "background-alt": "#1b140a",
+        "background-deep": "#0a0703",
+        "surface": "#1e160b",
+        "border": "#7a5f33",
+        "text": "#ffe2ae",
+        "text-alt": "#e8c58a",
+        "text-muted": "#d2ae73",
+        "text-on-deep": "#ffe2ae",
+        "action": "#ffb000",
+        "on-action": "#130e06",
+        "brand": "#ffb000",
+        "brand-on-deep": "#ffe2ae",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "darkroom",
+      "label": "Darkroom",
+      "description": "Modern code editor.",
+      "dark": true,
+      "colors": {
+        "background": "#15171c",
+        "background-alt": "#1c1f26",
+        "background-deep": "#0d0f13",
+        "surface": "#1e2129",
+        "border": "#5d6475",
+        "text": "#e4e7ee",
+        "text-alt": "#bbc1ce",
+        "text-muted": "#a1a8b8",
+        "text-on-deep": "#e4e7ee",
+        "action": "#8ab4ff",
+        "on-action": "#0d0f13",
+        "brand": "#c3a6ff",
+        "brand-on-deep": "#8ab4ff",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "campfire",
+      "label": "Campfire",
+      "description": "Park at night: umber and lantern gold.",
+      "dark": true,
+      "colors": {
+        "background": "#1a1712",
+        "background-alt": "#231f18",
+        "background-deep": "#100e0a",
+        "surface": "#26211a",
+        "border": "#7b6c5a",
+        "text": "#f2eadf",
+        "text-alt": "#cfc2b1",
+        "text-muted": "#b7a994",
+        "text-on-deep": "#f2eadf",
+        "action": "#e8b04b",
+        "on-action": "#100e0a",
+        "brand": "#e8b04b",
+        "brand-on-deep": "#9cc9a4",
+        "serious": "#ff7b87",
+        "on-serious": "#101010",
+        "confirmed": "#6fc7b6",
+        "on-confirmed": "#101010"
+      }
+    },
+    {
+      "id": "contrast-dark",
+      "label": "High contrast dark",
+      "description": "White on black, 7:1 everywhere.",
+      "dark": true,
+      "colors": {
+        "background": "#0a0a0a",
+        "background-alt": "#161616",
+        "background-deep": "#000000",
+        "surface": "#141414",
+        "border": "#a6a6a6",
+        "text": "#ffffff",
+        "text-alt": "#e6e6e6",
+        "text-muted": "#cccccc",
+        "text-on-deep": "#ffffff",
+        "action": "#ffd54f",
+        "on-action": "#000000",
+        "brand": "#ffd54f",
+        "brand-on-deep": "#ffffff",
+        "serious": "#ff8a94",
+        "on-serious": "#000000",
+        "confirmed": "#7fdbc9",
+        "on-confirmed": "#000000"
+      }
+    }
+  ],
+  "themes": [
+    {
+      "id": "desk",
+      "label": "Desk",
+      "description": "Old-school Mac and Linux windows, typewritten headings.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "IBM Plex Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "IBM Plex Mono",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.0,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 2,
+        "radiusSmall": 2,
+        "border": 2,
+        "shadow": 3,
+        "press": 2
+      },
+      "pageMax": 880,
+      "panelHead": "title-bar",
+      "texture": "none"
+    },
+    {
+      "id": "signal",
+      "label": "Signal",
+      "description": "Civic, sturdy, pressable (ElectionLog).",
+      "type": {
+        "heading": {
+          "family": "Archivo",
+          "weight": 700,
+          "case": "none",
+          "tracking": -0.015
+        },
+        "body": {
+          "family": "Public Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "Archivo",
+          "case": "upper",
+          "tracking": 0.09
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.0,
+          "max": 3.0
+        }
+      },
+      "shape": {
+        "radius": 10,
+        "radiusSmall": 5,
+        "border": 1,
+        "shadow": 4,
+        "press": 3
+      },
+      "pageMax": 760,
+      "panelHead": "plain",
+      "texture": "none"
+    },
+    {
+      "id": "broadsheet",
+      "label": "Broadsheet",
+      "description": "Old-school newspaper: serif, hairline rules, columns.",
+      "type": {
+        "heading": {
+          "family": "Newsreader",
+          "weight": 700,
+          "case": "none",
+          "tracking": -0.02
+        },
+        "body": {
+          "family": "Newsreader",
+          "size": 16
+        },
+        "label": {
+          "family": "Archivo",
+          "stretch": 72,
+          "case": "upper",
+          "tracking": 0.12
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.25,
+          "max": 3.5
+        }
+      },
+      "shape": {
+        "radius": 0,
+        "radiusSmall": 0,
+        "border": 1,
+        "shadow": 0,
+        "press": 1
+      },
+      "pageMax": 1080,
+      "panelHead": "double-rule",
+      "texture": "none"
+    },
+    {
+      "id": "broadcast",
+      "label": "Broadcast",
+      "description": "News channel: condensed caps, heavy bars.",
+      "type": {
+        "heading": {
+          "family": "Archivo",
+          "stretch": 72,
+          "weight": 800,
+          "case": "upper",
+          "tracking": 0
+        },
+        "body": {
+          "family": "Public Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "Archivo",
+          "stretch": 72,
+          "case": "upper",
+          "tracking": 0.04
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.25,
+          "max": 3.5
+        }
+      },
+      "shape": {
+        "radius": 0,
+        "radiusSmall": 0,
+        "border": 2,
+        "shadow": 0,
+        "press": 1
+      },
+      "pageMax": 1080,
+      "panelHead": "bar",
+      "texture": "none"
+    },
+    {
+      "id": "docket",
+      "label": "Docket",
+      "description": "Press desk notes: all typewriter, narrow column.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "upper",
+          "tracking": 0.01
+        },
+        "body": {
+          "family": "Courier Prime",
+          "size": 16
+        },
+        "label": {
+          "family": "Courier Prime",
+          "case": "upper",
+          "tracking": 0.08
+        },
+        "mono": {
+          "family": "Courier Prime"
+        },
+        "h1": {
+          "min": 1.875,
+          "max": 2.5
+        }
+      },
+      "shape": {
+        "radius": 0,
+        "radiusSmall": 0,
+        "border": 2,
+        "shadow": 0,
+        "press": 1
+      },
+      "pageMax": 760,
+      "panelHead": "rule",
+      "texture": "none"
+    },
+    {
+      "id": "notebook",
+      "label": "Notebook",
+      "description": "Scratchpad: ruled page, typed notes.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "Public Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "IBM Plex Mono",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.0,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 4,
+        "radiusSmall": 3,
+        "border": 1,
+        "shadow": 2,
+        "press": 2
+      },
+      "pageMax": 840,
+      "panelHead": "plain",
+      "texture": "ruled"
+    },
+    {
+      "id": "trailhead",
+      "label": "Trailhead",
+      "description": "Park signs and Americana posters: slab caps, thick borders.",
+      "type": {
+        "heading": {
+          "family": "Bitter",
+          "weight": 800,
+          "case": "upper",
+          "tracking": 0.01
+        },
+        "body": {
+          "family": "Public Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "Archivo",
+          "stretch": 118,
+          "case": "upper",
+          "tracking": 0.1
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.125,
+          "max": 3.25
+        }
+      },
+      "shape": {
+        "radius": 12,
+        "radiusSmall": 8,
+        "border": 3,
+        "shadow": 0,
+        "press": 1
+      },
+      "pageMax": 960,
+      "panelHead": "plain",
+      "texture": "none"
+    },
+    {
+      "id": "firm",
+      "label": "Firm",
+      "description": "Corporate: quiet, even, wide.",
+      "type": {
+        "heading": {
+          "family": "IBM Plex Sans",
+          "weight": 600,
+          "case": "none",
+          "tracking": -0.01
+        },
+        "body": {
+          "family": "IBM Plex Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "IBM Plex Sans",
+          "case": "none",
+          "tracking": 0.0
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 1.875,
+          "max": 2.5
+        }
+      },
+      "shape": {
+        "radius": 6,
+        "radiusSmall": 4,
+        "border": 1,
+        "shadow": 0,
+        "press": 0
+      },
+      "pageMax": 1120,
+      "panelHead": "plain",
+      "texture": "none"
+    },
+    {
+      "id": "console",
+      "label": "Console",
+      "description": "Terminal, old or new: one monospace, square.",
+      "type": {
+        "heading": {
+          "family": "JetBrains Mono",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "JetBrains Mono",
+          "size": 16
+        },
+        "label": {
+          "family": "JetBrains Mono",
+          "case": "upper",
+          "tracking": 0.04
+        },
+        "mono": {
+          "family": "JetBrains Mono"
+        },
+        "h1": {
+          "min": 1.75,
+          "max": 2.375
+        }
+      },
+      "shape": {
+        "radius": 0,
+        "radiusSmall": 0,
+        "border": 1,
+        "shadow": 0,
+        "press": 0
+      },
+      "pageMax": 1024,
+      "panelHead": "prompt",
+      "texture": "none"
+    },
+    {
+      "id": "commons",
+      "label": "Commons",
+      "description": "Neighbourhood board: friendly, rounded, larger text.",
+      "type": {
+        "heading": {
+          "family": "Atkinson Hyperlegible",
+          "weight": 700,
+          "case": "none",
+          "tracking": -0.01
+        },
+        "body": {
+          "family": "Atkinson Hyperlegible",
+          "size": 18
+        },
+        "label": {
+          "family": "Atkinson Hyperlegible",
+          "case": "none",
+          "tracking": 0.01
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.0,
+          "max": 2.75
+        }
+      },
+      "shape": {
+        "radius": 16,
+        "radiusSmall": 10,
+        "border": 2,
+        "shadow": 0,
+        "press": 1
+      },
+      "pageMax": 880,
+      "panelHead": "plain",
+      "texture": "none"
+    }
+  ],
+  "looks": [
+    {
+      "id": "desk",
+      "label": "Desk",
+      "palette": "platinum",
+      "theme": "desk",
+      "default": true
+    },
+    {
+      "id": "electionlog",
+      "label": "ElectionLog",
+      "palette": "flint",
+      "theme": "signal"
+    },
+    {
+      "id": "morning-edition",
+      "label": "Morning edition",
+      "palette": "newsprint",
+      "theme": "broadsheet"
+    },
+    {
+      "id": "press-desk",
+      "label": "Press desk",
+      "palette": "press-pass",
+      "theme": "docket"
+    },
+    {
+      "id": "field-notes",
+      "label": "Field notes",
+      "palette": "legal-pad",
+      "theme": "notebook"
+    },
+    {
+      "id": "ranger-station",
+      "label": "Ranger station",
+      "palette": "ranger",
+      "theme": "trailhead"
+    },
+    {
+      "id": "main-street",
+      "label": "Main Street",
+      "palette": "old-glory",
+      "theme": "trailhead"
+    },
+    {
+      "id": "evening-news",
+      "label": "Evening news",
+      "palette": "newsroom",
+      "theme": "broadcast"
+    },
+    {
+      "id": "the-firm",
+      "label": "The firm",
+      "palette": "boardroom",
+      "theme": "firm"
+    },
+    {
+      "id": "block-club",
+      "label": "Block club",
+      "palette": "porch",
+      "theme": "commons"
+    },
+    {
+      "id": "green-screen",
+      "label": "Green screen",
+      "palette": "phosphor",
+      "theme": "console"
+    },
+    {
+      "id": "amber-terminal",
+      "label": "Amber terminal",
+      "palette": "amber",
+      "theme": "desk"
+    },
+    {
+      "id": "devtools",
+      "label": "Devtools",
+      "palette": "darkroom",
+      "theme": "console"
+    },
+    {
+      "id": "campfire",
+      "label": "Campfire",
+      "palette": "campfire",
+      "theme": "trailhead"
+    },
+    {
+      "id": "electionlog-night",
+      "label": "ElectionLog at night",
+      "palette": "midnight",
+      "theme": "signal"
+    },
+    {
+      "id": "high-contrast",
+      "label": "High contrast",
+      "palette": "contrast",
+      "theme": "commons"
+    }
+  ]
+}

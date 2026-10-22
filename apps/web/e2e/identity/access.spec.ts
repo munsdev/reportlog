@@ -210,14 +210,14 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
 
   // The look, with the name just given in its preview.
   await expect(owner.getByRole('heading', { name: 'How should it look?' })).toBeVisible();
-  await owner.getByRole('radio', { name: /^Harbour/ }).click();
+  await owner.getByRole('radio', { name: /^Darkroom/ }).click();
   await owner.getByRole('button', { name: 'Use this and continue' }).click();
-  await expect(owner.locator('html')).toHaveAttribute('data-palette', 'harbour');
+  await expect(owner.locator('html')).toHaveAttribute('data-palette', 'darkroom');
 
   // Back shows what was saved.
   await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
   await owner.getByRole('button', { name: 'Back' }).click();
-  await expect(owner.getByRole('radio', { name: /^Harbour/ })).toBeChecked();
+  await expect(owner.getByRole('radio', { name: /^Darkroom/ })).toBeChecked();
   await owner.getByRole('button', { name: 'Use this and continue' }).click();
 
   await expect(owner.getByRole('heading', { name: 'The site password' })).toBeVisible();
@@ -270,7 +270,7 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
         }).then((r) => r.status);
       return [
         await put('/api/admin/site/name', { name: null }),
-        await put('/api/admin/site/look', { palette: 'flint', theme: 'signal' }),
+        await put('/api/admin/site/look', { palette: 'platinum', theme: 'desk' }),
       ];
     }),
   ).toEqual([200, 200]);
