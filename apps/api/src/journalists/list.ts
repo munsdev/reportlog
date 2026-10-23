@@ -511,6 +511,24 @@ async function ownSubscription(db: Kysely<DB>, ring: ContactKeyring, email: stri
   return row;
 }
 
+/**
+ * The states a signed-in journalist chose for alerts, for the desk's "My
+ * states" filter. Empty if their address is not on the list.
+ */
+export async function deskStates(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  email: string,
+): Promise<string[]> {
+  const row = await db
+    .selectFrom('journalist_subscribers')
+    .select('states')
+    .where('email_hmac', 'in', emailDigests(ring, email))
+    .where('status', '=', 'active')
+    .executeTakeFirst();
+  return row?.states ?? [];
+}
+
 export async function deskSettings(
   db: Kysely<DB>,
   ring: ContactKeyring,

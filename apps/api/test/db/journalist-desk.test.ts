@@ -490,6 +490,81 @@ describe('J9 to J12 · the desk', () => {
     }
   });
 
+  it('decision 72 · q finds words in the link or the moderator comment, and nothing else', async () => {
+    const find = async (path: string, q: string) =>
+      (await call({ method: 'GET', url: `${path}?q=${encodeURIComponent(q)}` })).json<{
+        links?: unknown[];
+        reports?: unknown[];
+      }>();
+    // The address (sealed in the database) and the comment, in any case.
+    expect((await find('/api/desk/links', `CHECKED-${run}`)).links).toHaveLength(1);
+    expect((await find('/api/desk/links', 'verified against')).links).toHaveLength(1);
+    expect((await find('/api/desk/links', 'nothing-like-this')).links).toEqual([]);
+    // Words from a tip's own comment are never on the desk, so never found.
+    expect((await find('/api/desk/links', TIP_COMMENT)).links).toEqual([]);
+    // A withheld link's comment is not searchable.
+    expect((await find('/api/desk/links', 'WITHHELD-COMMENT')).links).toEqual([]);
+    // Sources: the title, the address, the note.
+    expect((await find('/api/desk/sources', 'coverage')).reports).toHaveLength(1);
+    expect((await find('/api/desk/sources', `sources-${run}`)).reports).toHaveLength(1);
+    expect((await find('/api/desk/sources', 'archive about this')).reports).toHaveLength(1);
+    expect((await find('/api/desk/sources', `unpublished-${run}`)).reports).toEqual([]);
+    // % and _ mean themselves.
+    expect((await find('/api/desk/sources', '%')).reports).toEqual([]);
+  });
+
+  it('decision 72 · a search that finds nothing logs nothing, and what it finds is logged', async () => {
+    const count = async () =>
+      (
+        await h.db
+          .selectFrom('contact_access_log')
+          .select('id')
+          .where('staff_email', '=', journalist)
+          .execute()
+      ).length;
+    const before = await count();
+    await call({ method: 'GET', url: '/api/desk/links?q=nothing-like-this' });
+    expect(await count()).toBe(before);
+    await call({ method: 'GET', url: `/api/desk/links?q=checked-${run}` });
+    expect(await count()).toBe(before + 1);
+  });
+
+  it('decision 72 · mine keeps what falls in the journalist’s own alert states', async () => {
+    const links = async (qs = '') =>
+      (await call({ method: 'GET', url: `/api/desk/links?mine=true${qs}` })).json<{
+        links: unknown[];
+      }>().links;
+    // They chose Arizona, and one of the link's tips is in a county there.
+    expect(await links()).toHaveLength(1);
+    expect(await links(`&q=checked-${run}`)).toHaveLength(1);
+    // The published report's logbook has no location question: no state, so left out.
+    const sources = await call({ method: 'GET', url: '/api/desk/sources?mine=true' });
+    expect(sources.json()).toMatchObject({ reports: [] });
+    // Other states: nothing is left.
+    const states = await h.db
+      .selectFrom('journalist_subscribers')
+      .select(['id', 'states'])
+      .execute();
+    await h.db
+      .updateTable('journalist_subscribers')
+      .set({ states: ['US-NY'] })
+      .execute();
+    try {
+      expect(await links()).toEqual([]);
+    } finally {
+      for (const row of states) {
+        await h.db
+          .updateTable('journalist_subscribers')
+          .set({ states: row.states })
+          .where('id', '=', row.id)
+          .execute();
+      }
+    }
+    // mine=false is the whole list.
+    const all = await call({ method: 'GET', url: '/api/desk/links?mine=false' });
+    expect(all.json<{ links: unknown[] }>().links).toHaveLength(1);
+  });
+
   it('J12 · every link and every report shown is in the access log, under the journalist', async () => {
     const before = await h.db
       .selectFrom('contact_access_log')

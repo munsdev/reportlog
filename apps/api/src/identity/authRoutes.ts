@@ -12,7 +12,7 @@ import { limiter } from './limiter.ts';
 import { claimWaitingMemberships } from './organizations.ts';
 import { CODE_TTL_MS, createCode, subjects, verifyCode } from './otp.ts';
 import { ensureUser } from './roles.ts';
-import { PENDING_SESSION_MS, needsSecondFactor } from './secondFactor.ts';
+import { PENDING_SESSION_MS, usesSecondFactor } from './secondFactor.ts';
 import {
   SESSION_COOKIE,
   SESSION_TTL_MS,
@@ -74,7 +74,7 @@ export function authRoutes(
     });
     // A role holder's session is short until it proves a second factor
     // (secondFactor.ts); until then it acts with no role at all.
-    const ttl = needsSecondFactor(user.roles, await membershipsFor(db, user.id))
+    const ttl = (await usesSecondFactor(db, user.id, user.roles, await membershipsFor(db, user.id)))
       ? PENDING_SESSION_MS
       : SESSION_TTL_MS;
     const token = await createSession(db, user.id, ttl);

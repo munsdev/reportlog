@@ -1,5 +1,6 @@
 /**
- * Join the journalist alert list: /journalists/alerts.
+ * Alerts and desk access: /journalists/alerts. `askForAccess` (from the
+ * landing page's second card) starts with the desk-access box ticked.
  *
  * One sign-up for alerts, desk access, or both (owner decision 69). A name
  * and an address; then, each behind its own tick, the states to get alerts
@@ -28,13 +29,13 @@ import { call } from '../../lib/api.ts';
 import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 import { StatesPicker } from './StatesPicker.tsx';
 
-export function SignupPage() {
+export function SignupPage({ askForAccess = false }: { askForAccess?: boolean }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [alerts, setAlerts] = useState(true);
   const [states, setStates] = useState<string[]>([]);
   const [noStates, setNoStates] = useState(false);
-  const [asking, setAsking] = useState(false);
+  const [asking, setAsking] = useState(askForAccess);
   const [draft, setDraft] = useState(EMPTY_ACCESS);
   const [nothing, setNothing] = useState(false);
   const signUp = useMutation({
@@ -70,7 +71,7 @@ export function SignupPage() {
   }
   return (
     <PublicPage
-      title="Journalist alerts"
+      title="Alerts and desk access"
       width="prose"
       lede="An email when new approved reports appear in the states you cover. It says how many, and nothing more. Journalists can ask for access to the journalist desk here too."
     >

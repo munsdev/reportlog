@@ -115,7 +115,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
 
   // Waiting in the queue, asking for a second read.
   await page.goto('/');
-  await goViaMenu(page, 'Queue', { area: 'Moderation' });
+  await goViaMenu(page, 'Reports queue', { area: 'Review' });
   await expect(page.getByRole('heading', { level: 1, name: 'Moderation' })).toBeVisible();
   await expect(
     page.getByRole('group', { name: 'Show reports that are' }).getByRole('button', {

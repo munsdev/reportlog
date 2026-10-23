@@ -32,6 +32,7 @@ import { describeAnswer, placeLabel } from '@reportlog/fields';
 import type { FieldSettings } from '@reportlog/fields';
 import type { DeskLink, DeskReport } from '@reportlog/contracts';
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
+import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import { publishedReportIds } from '../board/published.ts';
 import type { DB } from '../db/schema.gen.ts';
@@ -104,6 +105,30 @@ export function deskGuard(db: Kysely<DB>): preHandlerAsyncHookHandler {
   };
 }
 
+/**
+ * The two ways to narrow a desk list, and the only two (decision 72): words
+ * to find, and the journalist's own alert states.
+ */
+export interface DeskFilter {
+  q?: string | undefined;
+  /** Their alert states when "My states" is on. An item whose state cannot be derived is left out. */
+  states?: readonly string[] | undefined;
+}
+
+/** A LIKE pattern for the words as typed: % and _ mean themselves. */
+const likeOf = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+/**
+ * The state a location answer rolls up to, in SQL: the same rule as the
+ * alert job's (journalists/alerts.ts), with the answers and field given.
+ * A question written as bare FIPS has no state of its own, so it gives NULL.
+ */
+const stateOfAnswer = (answers: ReturnType<typeof sql.ref>, key: ReturnType<typeof sql.ref>) =>
+  sql<string | null>`CASE f.settings ->> 'code'
+    WHEN 'postal' THEN 'US-' || (${answers} ->> ${key})
+    WHEN 'fips' THEN NULL
+    ELSE regexp_replace(${answers} ->> ${key}, '-[0-9]{5}$', '') END`;
+
 const pageOf = (raw: number | undefined) => Math.max(1, Math.floor(raw ?? 1));
 const pagesOf = (total: number) => Math.max(1, Math.ceil(total / DESK_PAGE_SIZE));
 
@@ -112,27 +137,73 @@ export async function deskLinkPage(
   keys: LinkKeys,
   reader: string,
   rawPage: number | undefined,
+  filter: DeskFilter = {},
 ): Promise<{ page: number; pages: number; links: DeskLink[] }> {
   const page = pageOf(rawPage);
-  const checked = db
+  const states = filter.states;
+  let checked = db
     .selectFrom('link_groups as g')
     .where('g.outcome', '=', 'checked')
     .where((eb) =>
       eb.exists(eb.selectFrom('links as l').select('l.id').whereRef('l.group_id', '=', 'g.id')),
     );
-  const { n } = await checked
-    .select((eb) => eb.fn.countAll<string>().as('n'))
-    .executeTakeFirstOrThrow();
-  const ids = (
-    await checked
-      .select('g.id')
-      .orderBy('g.checked_at', 'desc')
-      .orderBy('g.id', 'desc')
-      .offset((page - 1) * DESK_PAGE_SIZE)
-      .limit(DESK_PAGE_SIZE)
-      .execute()
-  ).map((r) => r.id);
-  const pages = pagesOf(Number(n));
+  if (states) {
+    // A tip's state is its list's location answer rolled up to the state.
+    checked = checked.where((eb) =>
+      eb.exists(
+        eb
+          .selectFrom('links as sl')
+          .innerJoin('list_entries as e', 'e.id', 'sl.entry_id')
+          .innerJoin('list_fields as f', (j) =>
+            j.onRef('f.list_id', '=', 'e.list_id').on('f.kind', '=', 'location'),
+          )
+          .select('sl.id')
+          .whereRef('sl.group_id', '=', 'g.id')
+          .where(
+            sql<boolean>`${stateOfAnswer(sql.ref('e.answers'), sql.ref('f.key'))} = any(${[...states]}::text[])`,
+          ),
+      ),
+    );
+  }
+  const words = filter.q?.trim().toLowerCase();
+  let ids: number[];
+  let total: number;
+  if (words) {
+    // The address is sealed in the database, so words in it can only be found
+    // by opening the candidates here, in the server. Nothing is sent to the
+    // reader but the groups that match, and those are logged below before
+    // they go, as on any page.
+    const all = (
+      await checked.select('g.id').orderBy('g.checked_at', 'desc').orderBy('g.id', 'desc').execute()
+    ).map((r) => r.id);
+    const open = await checkedLinks(db, keys, { groupIds: all });
+    const hits = new Set(
+      open
+        .filter(
+          (g) =>
+            g.url.toLowerCase().includes(words) || (g.comment ?? '').toLowerCase().includes(words),
+        )
+        .map((g) => g.group_id),
+    );
+    const found = all.filter((id) => hits.has(id));
+    total = found.length;
+    ids = found.slice((page - 1) * DESK_PAGE_SIZE, page * DESK_PAGE_SIZE);
+  } else {
+    const { n } = await checked
+      .select((eb) => eb.fn.countAll<string>().as('n'))
+      .executeTakeFirstOrThrow();
+    total = Number(n);
+    ids = (
+      await checked
+        .select('g.id')
+        .orderBy('g.checked_at', 'desc')
+        .orderBy('g.id', 'desc')
+        .offset((page - 1) * DESK_PAGE_SIZE)
+        .limit(DESK_PAGE_SIZE)
+        .execute()
+    ).map((r) => r.id);
+  }
+  const pages = pagesOf(total);
   if (!ids.length) return { page, pages, links: [] };
 
   await db
@@ -259,9 +330,12 @@ export async function deskSourcePage(
   db: Kysely<DB>,
   reader: string,
   rawPage: number | undefined,
+  filter: DeskFilter = {},
 ): Promise<{ page: number; pages: number; reports: DeskReport[] }> {
   const page = pageOf(rawPage);
-  const withSources = db
+  const states = filter.states;
+  const words = filter.q?.trim();
+  let withSources = db
     .selectFrom('editorial_notes as n')
     .innerJoin('report_heads as h', 'h.thread_id', 'n.thread_id')
     .where('h.current_report_id', 'in', publishedReportIds(db))
@@ -274,6 +348,43 @@ export async function deskSourcePage(
           .where('x.removed_at', 'is', null),
       ),
     );
+  if (words) {
+    const like = likeOf(words);
+    // The note's newest wording counts only while it is published: the desk
+    // shows nothing of one under review or withdrawn, so it cannot be found by it.
+    withSources = withSources.where((eb) =>
+      eb.or([
+        eb.exists(
+          eb
+            .selectFrom('editorial_note_links as x')
+            .select('x.id')
+            .whereRef('x.note_id', '=', 'n.id')
+            .where('x.removed_at', 'is', null)
+            .where(
+              sql<boolean>`(x.title ILIKE ${like} OR x.url ILIKE ${like} OR x.publisher ILIKE ${like})`,
+            ),
+        ),
+        sql<boolean>`(n.state = 'published' AND (SELECT v.body FROM editorial_note_versions v
+          WHERE v.note_id = n.id ORDER BY v.id DESC LIMIT 1) ILIKE ${like})`,
+      ]),
+    );
+  }
+  if (states) {
+    withSources = withSources.where((eb) =>
+      eb.exists(
+        eb
+          .selectFrom('reports as sr')
+          .innerJoin('logbook_fields as f', (j) =>
+            j.onRef('f.logbook_id', '=', 'sr.logbook_id').on('f.kind', '=', 'location'),
+          )
+          .select('sr.id')
+          .whereRef('sr.id', '=', 'h.current_report_id')
+          .where(
+            sql<boolean>`${stateOfAnswer(sql.ref('sr.answers'), sql.ref('f.key'))} = any(${[...states]}::text[])`,
+          ),
+      ),
+    );
+  }
   const { n } = await withSources
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .executeTakeFirstOrThrow();

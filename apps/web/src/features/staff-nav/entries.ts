@@ -232,7 +232,12 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
   {
     id: 'desk',
     label: 'Journalist desk',
-    pages: [{ to: '/desk', label: 'Journalist desk', for: ['journalist'] }],
+    // Account is the "You" group's own entry, so it is not named twice here.
+    pages: [
+      { to: '/desk', label: 'Checked links', for: ['journalist'] },
+      { to: '/desk/sources', label: 'Sources', for: ['journalist'] },
+      { to: '/desk/alerts', label: 'Alerts', for: ['journalist'] },
+    ],
   },
   {
     id: 'organization',

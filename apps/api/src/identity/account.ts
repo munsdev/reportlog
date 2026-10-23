@@ -34,7 +34,7 @@ import { route } from '../http/route.ts';
 import { requireUser } from './guards.ts';
 import { bodyOf, refused } from './http.ts';
 import { recordRoleChange } from './roles.ts';
-import { needsSecondFactor } from './secondFactor.ts';
+import { usesSecondFactor } from './secondFactor.ts';
 import { normalizeEmail } from './secrets.ts';
 import { SESSION_COOKIE } from './sessions.ts';
 import { requireStepUp } from './stepUp.ts';
@@ -64,7 +64,7 @@ export async function deletionNeedsStepUp(db: Kysely<DB>, userId: number): Promi
     .select('id')
     .where('user_id', '=', userId)
     .execute();
-  return needsSecondFactor(user.roles, memberships);
+  return usesSecondFactor(db, userId, user.roles, memberships);
 }
 
 export async function deleteAccount(db: Kysely<DB>, userId: number): Promise<DeleteAccountResult> {

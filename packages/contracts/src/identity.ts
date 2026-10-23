@@ -55,7 +55,7 @@ export const Me = z.discriminatedUnion('signedIn', [
      * acts with no role (`roles` and `memberships` empty) until it is
      * done; `heldRoles` are the roles it will then have.
      */
-    secondFactor: z.enum(['not-needed', 'set-up', 'verify', 'done']),
+    secondFactor: z.enum(['not-needed', 'optional', 'set-up', 'verify', 'done']),
     heldRoles: z.array(HeldRoleName),
     /** Until when a step-up proved in this session counts, if one does. */
     stepUpUntil: Iso.nullable(),

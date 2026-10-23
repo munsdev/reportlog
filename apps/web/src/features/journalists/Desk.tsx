@@ -1,12 +1,16 @@
 /**
- * The journalist desk (J9 to J11): /desk.
+ * The journalist desk (J9 to J11): a panel of sections, as the moderator's is.
+ * /desk is the checked links, /desk/sources the moderators' Sources links on
+ * published reports, /desk/alerts the journalist's own alert settings
+ * (decision 47). The sidebar's "Journalist desk" group (staff-nav/entries.ts)
+ * reaches each, and Account is the account page every signed-in person has.
  *
  * For a vetted journalist who has accepted the journalist agreement (the
  * gate below, then the server's own guard on every call). Read-only, a page
- * at a time, with nothing to download: checked links with how many tips
- * carried each, the moderator's comment and the tips' multiple-choice
- * answers, and moderators' Sources links on published reports. Below them,
- * the journalist's own alert settings (decision 47).
+ * at a time, with nothing to download. Each list has a search box and, for a
+ * journalist who chose alert states, a "My states" tick, and those are the
+ * only filters (decision 72). They apply when the button is pressed, never
+ * as the reader types, so the list does not change under them.
  *
  * Every link is text, never an anchor: the site never fetches one, and a
  * journalist copies it into a browser on purpose. Every page shown is in the
@@ -16,50 +20,51 @@ import { DESK_PAGE_SIZE, deskLinks, deskSources } from '@reportlog/contracts';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
+import { CheckOption } from '@/components/ui/choice.tsx';
 import { Count } from '@/components/ui/count.tsx';
 import { Empty } from '@/components/ui/empty.tsx';
+import { Field } from '@/components/ui/field.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
 import { Pagination } from '@/components/ui/pagination.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { TabRow } from '@/features/nav/AreaTabs.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
-import { DeskAlerts } from './AlertSettings.tsx';
+import { DeskAlerts, deskQuery } from './AlertSettings.tsx';
 
-export function DeskPage() {
+/**
+ * What every section shares: the role, the agreement before anything is
+ * shown, the page, and the notes that apply to the whole desk.
+ */
+function DeskSection({
+  title,
+  lede,
+  warn = true,
+  children,
+}: {
+  title: string;
+  lede: string;
+  warn?: boolean;
+  children: ReactNode;
+}) {
   const siteName = plainSiteName(useSite().data);
   return (
     <StaffOnly needs="journalist">
       <AgreementGate audience="journalist">
-        <Page
-          eyebrow={siteName}
-          title="Journalist desk"
-          lede="Links moderators have checked, and the sources they cite on published reports. Read only; nothing here is public."
-        >
-          {/* Anchors on this page, not separate pages (account.md §11). */}
-          <TabRow
-            label="On this page"
-            tabs={[
-              { to: '/desk', hash: 'desk-links', label: 'Checked links', current: false },
-              {
-                to: '/desk',
-                hash: 'desk-sources',
-                label: 'Sources on published reports',
-                current: false,
-              },
-            ]}
-          />
-          <Alert tone="warning" title="Before you use a link">
-            A moderator checked each link, but did not verify what it shows. Treat it as a lead, not
-            as a fact. Copying one is your choice: this site never opens it.
-          </Alert>
-          <CheckedLinks />
-          <Sources />
-          <DeskAlerts />
+        <Page eyebrow={siteName} title={title} lede={lede}>
+          {warn ? (
+            <Alert tone="warning" title="Before you use a link">
+              A moderator checked each link, but did not verify what it shows. Treat it as a lead,
+              not as a fact. Copying one is your choice: this site never opens it.
+            </Alert>
+          ) : null}
+          {children}
           <p className="text-sm text-ink-alt">
             Every page you open here is recorded in the access log.
           </p>
@@ -67,6 +72,98 @@ export function DeskPage() {
       </AgreementGate>
     </StaffOnly>
   );
+}
+
+export function DeskLinksPage() {
+  return (
+    <DeskSection
+      title="Checked links"
+      lede="Links moderators have checked, with how many tips sent each. Read only; nothing here is public."
+    >
+      <CheckedLinks />
+    </DeskSection>
+  );
+}
+
+export function DeskSourcesPage() {
+  return (
+    <DeskSection
+      title="Sources on published reports"
+      lede="The sources moderators cite on published reports. Read only; nothing here is public."
+    >
+      <Sources />
+    </DeskSection>
+  );
+}
+
+export function DeskAlertsPage() {
+  return (
+    <DeskSection
+      title="Your alerts"
+      lede="Which states you get an email about, and whether alerts are on."
+      warn={false}
+    >
+      <DeskAlerts />
+    </DeskSection>
+  );
+}
+
+interface Applied {
+  q: string;
+  mine: boolean;
+}
+
+/**
+ * The search box and the "My states" tick above a list. Nothing is applied
+ * until the button (or Enter) is pressed. The tick is offered only to a
+ * journalist who has states, and the server reads those states itself.
+ */
+function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode } {
+  const settings = useQuery(deskQuery);
+  const hasStates = settings.data?.state === 'open' && settings.data.states.length > 0;
+  const [draft, setDraft] = useState<Applied>({ q: '', mine: false });
+  const [applied, setApplied] = useState<Applied>({ q: '', mine: false });
+  const box = (
+    <form
+      role="search"
+      aria-label="Search this list"
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setApplied({ q: draft.q.trim(), mine: hasStates && draft.mine });
+        // A new search starts at its first page.
+        onApply();
+      }}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Field className="sm:flex-1">
+          <Label>Search</Label>
+          <Input
+            type="search"
+            maxLength={100}
+            value={draft.q}
+            onChange={(e) => {
+              setDraft({ ...draft, q: e.target.value });
+            }}
+          />
+        </Field>
+        <Button type="submit" variant="secondary">
+          Search
+        </Button>
+      </div>
+      {hasStates ? (
+        <CheckOption
+          label="My states"
+          hint={`Only what is in the states you chose for alerts: ${settings.data?.state === 'open' ? settings.data.states.join(', ') : ''}.`}
+          checked={draft.mine}
+          onCheckedChange={(on) => {
+            setDraft({ ...draft, mine: on === true });
+          }}
+        />
+      ) : null}
+    </form>
+  );
+  return { applied, box };
 }
 
 /**
@@ -109,26 +206,30 @@ function CopyableLink({ url }: { url: string }) {
 
 function CheckedLinks() {
   const [page, setPage] = useState(1);
+  const { applied, box } = useDeskFilter(() => {
+    setPage(1);
+  });
+  const query = {
+    page,
+    ...(applied.q ? { q: applied.q } : {}),
+    ...(applied.mine ? { mine: 'true' as const } : {}),
+  };
   const q = useQuery({
-    queryKey: ['desk', 'links', page],
-    queryFn: ({ signal }) => call(deskLinks, { query: { page }, signal }),
+    queryKey: ['desk', 'links', query],
+    queryFn: ({ signal }) => call(deskLinks, { query, signal }),
     placeholderData: keepPreviousData,
     retry: false,
   });
   return (
-    <section
-      aria-labelledby="desk-links-title"
-      id="desk-links"
-      className="flex scroll-mt-24 flex-col gap-4"
-    >
-      <h2 id="desk-links-title" className="font-display text-2xl font-bold">
-        Checked links
-      </h2>
+    <section aria-label="Checked links" className="flex flex-col gap-4">
+      {box}
       {q.isPending ? <p role="status">Loading…</p> : null}
       {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
       {q.data && !q.data.links.length ? (
-        <Empty title="No checked links yet">
-          When a moderator checks a link sent in a tip, it appears here.
+        <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No checked links yet'}>
+          {applied.q || applied.mine
+            ? 'No checked link matches that search. Try other words, or clear the My states tick.'
+            : 'When a moderator checks a link sent in a tip, it appears here.'}
         </Empty>
       ) : null}
       <ul className="flex flex-col gap-4">
@@ -188,25 +289,29 @@ function CheckedLinks() {
 
 function Sources() {
   const [page, setPage] = useState(1);
+  const { applied, box } = useDeskFilter(() => {
+    setPage(1);
+  });
+  const query = {
+    page,
+    ...(applied.q ? { q: applied.q } : {}),
+    ...(applied.mine ? { mine: 'true' as const } : {}),
+  };
   const q = useQuery({
-    queryKey: ['desk', 'sources', page],
-    queryFn: ({ signal }) => call(deskSources, { query: { page }, signal }),
+    queryKey: ['desk', 'sources', query],
+    queryFn: ({ signal }) => call(deskSources, { query, signal }),
     placeholderData: keepPreviousData,
     retry: false,
   });
   return (
-    <section
-      aria-labelledby="desk-sources-title"
-      id="desk-sources"
-      className="flex scroll-mt-24 flex-col gap-4"
-    >
-      <h2 id="desk-sources-title" className="font-display text-2xl font-bold">
-        Sources on published reports
-      </h2>
+    <section aria-label="Sources on published reports" className="flex flex-col gap-4">
+      {box}
       {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
       {q.data && !q.data.reports.length ? (
-        <Empty title="No sources yet">
-          When a moderator cites a source on a published report, it appears here.
+        <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No sources yet'}>
+          {applied.q || applied.mine
+            ? 'No source matches that search. A report with no place on it is left out of My states.'
+            : 'When a moderator cites a source on a published report, it appears here.'}
         </Empty>
       ) : null}
       <ul className="flex flex-col gap-4">

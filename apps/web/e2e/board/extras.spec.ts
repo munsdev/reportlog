@@ -28,7 +28,7 @@ test.describe('the transparency log', () => {
   }) => {
     const outside = watchOutside(page);
     await page.goto('/');
-    await goViaMenu(page, 'Transparency log', { area: 'Records' });
+    await goViaMenu(page, 'Transparency log', { area: 'Logs and system' });
     await expect(page.getByRole('heading', { level: 1, name: 'Transparency log' })).toBeVisible();
     // The test server anchors nothing and has no mirror, and the page says so.
     await expect(page.getByText('The anchor is not working')).toBeVisible();

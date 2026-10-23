@@ -22,7 +22,9 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Email updates', href: '/notifications' },
   { label: 'Account', href: '/access' },
   { label: 'Account and security', href: '/access/security' },
-  { label: 'Journalist desk', href: '/desk' },
+  { label: 'Checked links', href: '/desk' },
+  { label: 'Sources', href: '/desk/sources' },
+  { label: 'Alerts', href: '/desk/alerts' },
   { label: 'Intake', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
@@ -81,6 +83,7 @@ const YOU_STAFF = [...YOU, 'Account and security'];
 const ALL = ALL_PAGES.map((p) => p.label);
 const WITHOUT = (...gone: string[]) => ALL.filter((l) => !gone.includes(l));
 const ORG = ['Intake', 'Volunteer links'];
+const DESK = ['Checked links', 'Sources', 'Alerts'];
 
 /** The pages each role's sidebar shows, by label, in the sidebar's order. */
 export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
@@ -102,10 +105,10 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
     'Journalist agreement',
     'Journalist requests',
     'Backups and exports',
-    'Journalist desk',
+    ...DESK,
     ...ORG,
   ),
-  owner: WITHOUT('Journalist desk', ...ORG),
+  owner: WITHOUT(...DESK, ...ORG),
   access_manager: [
     ...YOU_STAFF,
     ...pick(
@@ -118,7 +121,7 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
       'Feedback',
     ),
   ],
-  journalist: [...YOU_STAFF, 'Journalist desk'],
+  journalist: [...YOU_STAFF, ...DESK],
   coordinator: [...YOU, ...ORG],
   tester: [...YOU, 'Feedback'],
 };

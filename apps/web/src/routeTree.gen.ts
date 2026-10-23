@@ -11,9 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
-import { Route as DeskRouteImport } from './routes/desk'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HowRouteImport } from './routes/how'
+import { Route as JournalistsRouteImport } from './routes/journalists'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PublicApiRouteImport } from './routes/public-api'
@@ -36,6 +36,9 @@ import { Route as BoardActivityRouteImport } from './routes/board/activity'
 import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as BoardPressRouteImport } from './routes/board/press'
+import { Route as DeskIndexRouteImport } from './routes/desk/index'
+import { Route as DeskAlertsRouteImport } from './routes/desk/alerts'
+import { Route as DeskSourcesRouteImport } from './routes/desk/sources'
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
@@ -121,11 +124,6 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DeskRoute = DeskRouteImport.update({
-  id: '/desk',
-  path: '/desk',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const HomeRoute = HomeRouteImport.update({
   id: '/home',
   path: '/home',
@@ -134,6 +132,11 @@ const HomeRoute = HomeRouteImport.update({
 const HowRoute = HowRouteImport.update({
   id: '/how',
   path: '/how',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalistsRoute = JournalistsRouteImport.update({
+  id: '/journalists',
+  path: '/journalists',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LegalRoute = LegalRouteImport.update({
@@ -244,6 +247,21 @@ const BoardNumbersRoute = BoardNumbersRouteImport.update({
 const BoardPressRoute = BoardPressRouteImport.update({
   id: '/board/press',
   path: '/board/press',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeskIndexRoute = DeskIndexRouteImport.update({
+  id: '/desk/',
+  path: '/desk/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeskAlertsRoute = DeskAlertsRouteImport.update({
+  id: '/desk/alerts',
+  path: '/desk/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeskSourcesRoute = DeskSourcesRouteImport.update({
+  id: '/desk/sources',
+  path: '/desk/sources',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
@@ -628,9 +646,9 @@ const staffListsReviewIdRoute = staffListsReviewIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/desk': typeof DeskRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
+  '/journalists': typeof JournalistsRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
   '/public-api': typeof PublicApiRoute
@@ -652,6 +670,8 @@ export interface FileRoutesByFullPath {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/desk/alerts': typeof DeskAlertsRoute
+  '/desk/sources': typeof DeskSourcesRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -665,6 +685,7 @@ export interface FileRoutesByFullPath {
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board/': typeof BoardIndexRoute
+  '/desk/': typeof DeskIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/feedback/': typeof FeedbackIndexRoute
   '/illegal-content/': typeof IllegalContentIndexRoute
@@ -731,9 +752,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/desk': typeof DeskRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
+  '/journalists': typeof JournalistsRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
   '/public-api': typeof PublicApiRoute
@@ -749,6 +770,8 @@ export interface FileRoutesByTo {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/desk/alerts': typeof DeskAlertsRoute
+  '/desk/sources': typeof DeskSourcesRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -762,6 +785,7 @@ export interface FileRoutesByTo {
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board': typeof BoardIndexRoute
+  '/desk': typeof DeskIndexRoute
   '/docs': typeof DocsIndexRoute
   '/feedback': typeof FeedbackIndexRoute
   '/illegal-content': typeof IllegalContentIndexRoute
@@ -829,9 +853,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/desk': typeof DeskRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
+  '/journalists': typeof JournalistsRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
   '/public-api': typeof PublicApiRoute
@@ -853,6 +877,8 @@ export interface FileRoutesById {
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
+  '/desk/alerts': typeof DeskAlertsRoute
+  '/desk/sources': typeof DeskSourcesRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -866,6 +892,7 @@ export interface FileRoutesById {
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board/': typeof BoardIndexRoute
+  '/desk/': typeof DeskIndexRoute
   '/docs/': typeof DocsIndexRoute
   '/feedback/': typeof FeedbackIndexRoute
   '/illegal-content/': typeof IllegalContentIndexRoute
@@ -934,9 +961,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
-    | '/desk'
     | '/home'
     | '/how'
+    | '/journalists'
     | '/legal'
     | '/notifications'
     | '/public-api'
@@ -958,6 +985,8 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/desk/alerts'
+    | '/desk/sources'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -971,6 +1000,7 @@ export interface FileRouteTypes {
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board/'
+    | '/desk/'
     | '/docs/'
     | '/feedback/'
     | '/illegal-content/'
@@ -1037,9 +1067,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
-    | '/desk'
     | '/home'
     | '/how'
+    | '/journalists'
     | '/legal'
     | '/notifications'
     | '/public-api'
@@ -1055,6 +1085,8 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/desk/alerts'
+    | '/desk/sources'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -1068,6 +1100,7 @@ export interface FileRouteTypes {
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board'
+    | '/desk'
     | '/docs'
     | '/feedback'
     | '/illegal-content'
@@ -1134,9 +1167,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
-    | '/desk'
     | '/home'
     | '/how'
+    | '/journalists'
     | '/legal'
     | '/notifications'
     | '/public-api'
@@ -1158,6 +1191,8 @@ export interface FileRouteTypes {
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
+    | '/desk/alerts'
+    | '/desk/sources'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -1171,6 +1206,7 @@ export interface FileRouteTypes {
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board/'
+    | '/desk/'
     | '/docs/'
     | '/feedback/'
     | '/illegal-content/'
@@ -1238,9 +1274,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  DeskRoute: typeof DeskRoute
   HomeRoute: typeof HomeRoute
   HowRoute: typeof HowRoute
+  JournalistsRoute: typeof JournalistsRoute
   LegalRoute: typeof LegalRoute
   NotificationsRoute: typeof NotificationsRoute
   PublicApiRoute: typeof PublicApiRoute
@@ -1262,6 +1298,8 @@ export interface RootRouteChildren {
   BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
   BoardPressRoute: typeof BoardPressRoute
+  DeskAlertsRoute: typeof DeskAlertsRoute
+  DeskSourcesRoute: typeof DeskSourcesRoute
   DevComponentsRoute: typeof DevComponentsRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
@@ -1275,6 +1313,7 @@ export interface RootRouteChildren {
   MineThreadIdRoute: typeof MineThreadIdRoute
   VerifyRefRoute: typeof VerifyRefRoute
   BoardIndexRoute: typeof BoardIndexRoute
+  DeskIndexRoute: typeof DeskIndexRoute
   DocsIndexRoute: typeof DocsIndexRoute
   FeedbackIndexRoute: typeof FeedbackIndexRoute
   IllegalContentIndexRoute: typeof IllegalContentIndexRoute
@@ -1321,13 +1360,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/desk': {
-      id: '/desk'
-      path: '/desk'
-      fullPath: '/desk'
-      preLoaderRoute: typeof DeskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/home': {
       id: '/home'
       path: '/home'
@@ -1340,6 +1372,13 @@ declare module '@tanstack/react-router' {
       path: '/how'
       fullPath: '/how'
       preLoaderRoute: typeof HowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journalists': {
+      id: '/journalists'
+      path: '/journalists'
+      fullPath: '/journalists'
+      preLoaderRoute: typeof JournalistsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/legal': {
@@ -1494,6 +1533,27 @@ declare module '@tanstack/react-router' {
       path: '/board/press'
       fullPath: '/board/press'
       preLoaderRoute: typeof BoardPressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desk/': {
+      id: '/desk/'
+      path: '/desk'
+      fullPath: '/desk/'
+      preLoaderRoute: typeof DeskIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desk/alerts': {
+      id: '/desk/alerts'
+      path: '/desk/alerts'
+      fullPath: '/desk/alerts'
+      preLoaderRoute: typeof DeskAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desk/sources': {
+      id: '/desk/sources'
+      path: '/desk/sources'
+      fullPath: '/desk/sources'
+      preLoaderRoute: typeof DeskSourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/components': {
@@ -2144,9 +2204,9 @@ const staffSettingsRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  DeskRoute: DeskRoute,
   HomeRoute: HomeRoute,
   HowRoute: HowRoute,
+  JournalistsRoute: JournalistsRoute,
   LegalRoute: LegalRoute,
   NotificationsRoute: NotificationsRoute,
   PublicApiRoute: PublicApiRoute,
@@ -2168,6 +2228,8 @@ const rootRouteChildren: RootRouteChildren = {
   BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
   BoardPressRoute: BoardPressRoute,
+  DeskAlertsRoute: DeskAlertsRoute,
+  DeskSourcesRoute: DeskSourcesRoute,
   DevComponentsRoute: DevComponentsRoute,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,
@@ -2181,6 +2243,7 @@ const rootRouteChildren: RootRouteChildren = {
   MineThreadIdRoute: MineThreadIdRoute,
   VerifyRefRoute: VerifyRefRoute,
   BoardIndexRoute: BoardIndexRoute,
+  DeskIndexRoute: DeskIndexRoute,
   DocsIndexRoute: DocsIndexRoute,
   FeedbackIndexRoute: FeedbackIndexRoute,
   IllegalContentIndexRoute: IllegalContentIndexRoute,

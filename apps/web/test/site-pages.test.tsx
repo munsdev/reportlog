@@ -135,7 +135,7 @@ describe('the footer', () => {
       '/illegal-content',
       '/organizations',
       '/public-api',
-      '/journalists/alerts',
+      '/journalists',
     ]);
   });
 

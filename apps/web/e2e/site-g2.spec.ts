@@ -52,20 +52,20 @@ test.describe('an administrator', () => {
   test('reaches the staff screens from the menu', async ({ page }) => {
     await page.goto('/');
     for (const [area, name] of [
-      ['People and access', 'Roles'],
-      ['Logbooks and lists', 'Logbooks'],
-      ['Logbooks and lists', 'Lists'],
-      ['Moderation', 'List review'],
-      ['Site settings', 'Overview'],
+      ['People', 'People and roles'],
+      ['Content', 'Logbooks'],
+      ['Content', 'Lists'],
+      ['Review', 'List entries'],
+      ['Site', 'Name'],
     ] as const) {
       await expect(await menuLink(page, name, { area })).toBeVisible();
     }
     await expect(await menuLink(page, 'Feedback')).toBeVisible();
-    await goViaMenu(page, 'Logbooks', { area: 'Logbooks and lists' });
+    await goViaMenu(page, 'Logbooks', { area: 'Content' });
     await expect(page).toHaveURL(/\/logbooks$/);
-    await goViaMenu(page, 'Overview', { area: 'Site settings' });
-    await expect(page).toHaveURL(/\/settings$/);
-    await expect(await menuLink(page, 'Overview', { area: 'Site settings' })).toHaveAttribute(
+    await goViaMenu(page, 'Name', { area: 'Site' });
+    await expect(page).toHaveURL(/\/settings\/name$/);
+    await expect(await menuLink(page, 'Name', { area: 'Site' })).toHaveAttribute(
       'aria-current',
       'page',
     );

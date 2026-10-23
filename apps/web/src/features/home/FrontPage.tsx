@@ -146,7 +146,7 @@ export function FiguresSection({ published }: { published: number | undefined })
 
 const MORE: readonly { to: string; label: string }[] = [
   { to: '/board', label: 'Read the published reports' },
-  { to: '/journalists/alerts', label: 'Get an email as reports come in' },
+  { to: '/journalists', label: 'For journalists: alerts and desk access' },
   { to: '/how', label: 'How to use this site' },
   { to: '/standards', label: 'How reports are moderated' },
 ];

@@ -227,7 +227,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await admin.dispose();
 
   await page.goto('/');
-  await goViaMenu(page, 'File limits', { area: 'Logbooks and lists' });
+  await goViaMenu(page, 'File limits', { area: 'Rules' });
   await expect(page.getByRole('heading', { level: 1, name: 'Files: the site' })).toBeVisible();
   // The limits show what is set before they are opened.
   await expect(page.getByText('Largest photo', { exact: true })).toBeVisible();

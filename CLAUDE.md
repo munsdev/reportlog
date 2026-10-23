@@ -98,13 +98,17 @@ make a feature easier. Change the feature.
   Lists share answer normalizing through `packages/fields`, which is kept
   apart from sealing for exactly this reason.
 - **The transparency log is never rewritten**, not even to correct it.
-- **Every role holder proves a second factor** (decision 50, plan E E3). Until
-  a session has, `userForSession` hands every route a person with no role and
-  no memberships, so no guard needs to ask. The actions plan-e.md lists also
-  take `stepUpGuard()` (`apps/api/src/identity/stepUp.ts`) on a scope of their
-  own; a new one joins `LISTED` in `apps/api/test/db/second-factor.test.ts`.
+- **Every staff role holder proves a second factor** (decision 50, plan E E3;
+  decision 72 amends it). Until a session has, `userForSession` hands every
+  route a person with no role and no memberships, so no guard needs to ask.
+  A person whose only role is journalist is OFFERED one (state `optional`),
+  never required: they keep the role without it, and once they set one up it
+  is asked at sign-in like anyone's. The actions plan-e.md lists also take
+  `stepUpGuard()` (`apps/api/src/identity/stepUp.ts`) on a scope of their own;
+  a new one joins `LISTED` in `apps/api/test/db/second-factor.test.ts`.
 - **Nothing is filterable unless an operator said so.** No built-in date or
-  location filter.
+  location filter. The one exception is the journalist desk: text search and
+  "My states" (the journalist's own alert states), nothing more (decision 72).
 - **No third-party requests from the site.** No CDN, no web fonts from
   elsewhere, no analytics, and no map tile layer. `apps/web/e2e/verify.spec.ts`
   fails if a page requests another host; give each new public page the same

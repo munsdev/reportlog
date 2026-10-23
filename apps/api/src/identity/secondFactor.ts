@@ -2,9 +2,11 @@
  * The second factor (plan E, decision E3): who needs one, what they have,
  * checking a code, and what a session has proved.
  *
- * WHO NEEDS ONE: anybody holding a role. That is every system role but
- * `user` (owner, administrator, access manager, moderator, journalist) and
- * anybody in an organization (managers and intake coordinators). Until the
+ * WHO NEEDS ONE: anybody holding a staff role (owner, administrator, access
+ * manager, moderator) and anybody in an organization (managers and intake
+ * coordinators). A person whose only role is journalist is OFFERED one and
+ * never required to have it (decision 72); once they set one up it is used
+ * at sign-in like anyone's. Until the
  * session has proved a factor, `userForSession` (sessions.ts) hands every
  * route a person with no role and no memberships, so nothing behind a role
  * opens, whichever guard a route uses and whether or not it remembered to
@@ -36,16 +38,41 @@ export const MAX_FAILURES = 5;
 export const LOCK_MS = 15 * 60 * 1000;
 export const RECOVERY_CODE_COUNT = 10;
 
+/**
+ * Whether a second factor is REQUIRED: any role but journalist, or any
+ * organization membership. A person whose only role is journalist is not
+ * required to (decision 72); see `usesSecondFactor` for them.
+ */
 export function needsSecondFactor(
   roles: readonly string[],
   memberships: readonly unknown[],
 ): boolean {
-  // Any role at all, however many: holding several changes nothing here.
-  return roles.length > 0 || memberships.length > 0;
+  // Any staff role at all, however many: holding several changes nothing here.
+  return roles.some((r) => r !== 'journalist') || memberships.length > 0;
+}
+
+/** Holds the journalist role and nothing else that would require a factor. */
+export function journalistOnly(roles: readonly string[], memberships: readonly unknown[]): boolean {
+  return roles.length > 0 && !needsSecondFactor(roles, memberships);
+}
+
+/**
+ * Whether sign-in must go through a second factor now: always for staff, and
+ * for a journalist only once they have set one up. It is offered to them,
+ * never forced, so a journalist with none signs in on the emailed code alone.
+ */
+export async function usesSecondFactor(
+  db: Kysely<DB>,
+  userId: number,
+  roles: readonly string[],
+  memberships: readonly unknown[],
+): Promise<boolean> {
+  if (needsSecondFactor(roles, memberships)) return true;
+  return journalistOnly(roles, memberships) && (await hasFactor(db, userId));
 }
 
 /** What a signed-in person's second factor stands at, as the website is told it. */
-export type SecondFactorState = 'not-needed' | 'set-up' | 'verify' | 'done';
+export type SecondFactorState = 'not-needed' | 'optional' | 'set-up' | 'verify' | 'done';
 
 export interface Factors {
   totp: boolean;

@@ -46,7 +46,7 @@ const LINKS = [
   { to: '/public-api', label: 'Public API' },
   // A plain link: the sign-up page asks the server for nothing until its
   // form is sent, so this is safe on a door, where the footer also shows.
-  { to: '/journalists/alerts', label: 'For journalists' },
+  { to: '/journalists', label: 'For journalists' },
 ] as const;
 
 export function SiteFooter() {

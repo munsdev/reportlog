@@ -251,10 +251,11 @@ function DeskSection({
       {desk === 'approved' ? (
         <p role="status">
           You have access to the journalist desk.{' '}
-          <Link to="/desk" className="underline">
+          <Link to="/access/sign-in" search={{ next: '/desk' }} className="underline">
             Sign in with this address
           </Link>{' '}
-          to open it. Turning alerts off does not change that.
+          (we email you a code, then you accept the agreement and the desk opens). Turning alerts
+          off does not change that.
         </p>
       ) : desk === 'pending' ? (
         <p role="status">
@@ -347,7 +348,7 @@ function ConfirmRemove({ pending, onConfirm }: { pending: boolean; onConfirm: ()
   );
 }
 
-const deskQuery = queryOptions({
+export const deskQuery = queryOptions({
   queryKey: ['desk', 'alerts'],
   queryFn: ({ signal }) => call(deskAlertSettings, { signal }),
 });

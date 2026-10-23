@@ -125,7 +125,16 @@ export function AccessLinkPage({ token }: { token: string }) {
     return (
       <PublicPage title="You already have access" width="prose">
         <p>
-          <strong>{s.address}</strong> is approved. Sign in with it to open the desk.
+          <strong>{s.address}</strong> is approved.
+        </p>
+        <p>
+          Sign in with that address and we email you a code. Type it, accept the journalist
+          agreement when it is shown, and the desk opens.
+        </p>
+        <p>
+          <Link to="/access/sign-in" search={{ next: '/desk' }} className="underline">
+            Sign in to open the desk
+          </Link>
         </p>
       </PublicPage>
     );

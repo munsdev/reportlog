@@ -111,7 +111,13 @@ describe('who sees which staff area and page', () => {
 
   it('a journalist sees the desk and no area', () => {
     expect(areasFor(as('journalist'))).toEqual([]);
-    expect(others(as('journalist'))).toEqual([...YOU, 'Account and security', 'Journalist desk']);
+    expect(others(as('journalist'))).toEqual([
+      ...YOU,
+      'Account and security',
+      'Checked links',
+      'Sources',
+      'Alerts',
+    ]);
   });
 
   it('the tester flag shows feedback, whatever the role, and not the testers page', () => {

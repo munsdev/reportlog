@@ -138,7 +138,6 @@ const BEHIND: Record<string, { method: 'GET' | 'POST'; url: string }> = {
   admin: { method: 'GET', url: '/api/admin/site' },
   access_manager: { method: 'GET', url: '/api/access/people' },
   moderator: { method: 'GET', url: '/api/moderation/reports' },
-  journalist: { method: 'GET', url: '/api/desk/links' },
 };
 
 describe('a role holder without a second factor reaches nothing behind the role', () => {
@@ -167,6 +166,38 @@ describe('a role holder without a second factor reaches nothing behind the role'
       );
     });
   }
+
+  // Decision 72: a journalist is offered a second factor and never required to
+  // have one, but once they set one up it is asked for like anyone's.
+  it('journalist: keeps the role without a factor, and may set one up', async () => {
+    const email = address('nofactor-journalist');
+    await seat(h.db, email, 'journalist');
+    const session = await signInByEmailOnly(h, email);
+    const call = live(session);
+    expect(await me(call)).toMatchObject({
+      roles: ['journalist'],
+      secondFactor: 'optional',
+    });
+    const desk = { method: 'GET', url: '/api/desk/links' } as const;
+    // Past the role check: the desk's own guard speaks (no approved request here), not "your role may not".
+    expect((await call(desk)).json<{ error: { code: string } }>().error.code).not.toBe('forbidden');
+    // The session is an ordinary one, not the short one a required factor gets.
+    const row = await h.db
+      .selectFrom('sessions')
+      .select(['expires_at', 'created_at'])
+      .where('token_hash', '=', sha256Hex(session))
+      .executeTakeFirstOrThrow();
+    expect(
+      Math.abs(row.expires_at.getTime() - row.created_at.getTime() - SESSION_TTL_MS),
+    ).toBeLessThan(10_000);
+
+    call.use((await setUpTotp(h, session)).session);
+    expect(await me(call)).toMatchObject({ roles: ['journalist'], secondFactor: 'done' });
+    // Having set one up, the next sign-in must prove it.
+    const next = live(await signInByEmailOnly(h, email));
+    expect(await me(next)).toMatchObject({ roles: [], secondFactor: 'verify' });
+    expect((await next(desk)).statusCode).toBe(403);
+  });
 
   for (const orgRole of ['coordinator', 'manager'] as const) {
     it(`an organization's ${orgRole}: no membership until they prove one`, async () => {

@@ -76,7 +76,7 @@ const OPEN_IN_STAFF = {
 } as const;
 
 /** Staff screens outside the `(staff)` folder. */
-const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers', '/desk'] as const;
+const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers', '/desk/', '/desk/sources', '/desk/alerts'] as const;
 
 /** Every other page: for anybody, or for any signed-in person (not staff). */
 const OPEN = [
@@ -122,6 +122,7 @@ const OPEN = [
   // Plan E (PE3): any signed-in person joins by an organization's intake link.
   '/organizations/join/$token',
   '/notifications_/stop/$token',
+  '/journalists',
   '/journalists_/alerts',
   '/journalists_/confirm/$token',
   '/journalists_/stop/$token',

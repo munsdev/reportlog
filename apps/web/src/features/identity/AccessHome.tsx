@@ -129,6 +129,15 @@ function YourAccount({ me }: { me: SignedInMe }) {
           .
         </p>
       )}
+      {me.secondFactor === 'optional' && (
+        <p>
+          A second factor is optional for journalists, and we encourage it.{' '}
+          <Link to="/access/security" className="underline">
+            Set one up on Account and security
+          </Link>
+          .
+        </p>
+      )}
       {me.tester && <p>You are a tester: you can open the feedback tracker.</p>}
       {me.teamMember && <TeamDesks me={me} />}
     </Panel>

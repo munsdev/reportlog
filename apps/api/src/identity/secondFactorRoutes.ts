@@ -93,7 +93,7 @@ export function secondFactorRoutes(app: FastifyInstance, deps: SecondFactorDeps)
    */
   function changingFactors(request: FastifyRequest): SignedIn {
     const user = holder(request);
-    if (user.secondFactor === 'set-up') return user;
+    if (user.secondFactor === 'set-up' || user.secondFactor === 'optional') return user;
     if (user.secondFactor === 'verify') throw verifyFirst();
     requireStepUp(request);
     return user;
@@ -117,7 +117,7 @@ export function secondFactorRoutes(app: FastifyInstance, deps: SecondFactorDeps)
 
   /** The first factor set up also proves it, and gives the recovery codes. */
   async function firstFactorDone(user: SignedIn, request: FastifyRequest, reply: FastifyReply) {
-    if (user.secondFactor !== 'set-up') return null;
+    if (user.secondFactor !== 'set-up' && user.secondFactor !== 'optional') return null;
     const codes = await newRecoveryCodes(db, user.id);
     await proved(user, request, reply);
     return codes;
@@ -155,7 +155,7 @@ export function secondFactorRoutes(app: FastifyInstance, deps: SecondFactorDeps)
 
   route(app, C.verifySecondFactor, async ({ request, reply }) => {
     const user = holder(request);
-    if (user.secondFactor === 'set-up') {
+    if (user.secondFactor === 'set-up' || user.secondFactor === 'optional') {
       throw refused(
         409,
         'second_factor_not_set_up',

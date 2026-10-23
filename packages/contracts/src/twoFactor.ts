@@ -22,7 +22,7 @@ const PasskeyOptions = z.looseObject({ challenge: z.string() });
 const PasskeyResponse = z.looseObject({ id: z.string().max(1400), type: z.string().max(40) });
 
 export const SecondFactorStatus = z.object({
-  state: z.enum(['not-needed', 'set-up', 'verify', 'done']),
+  state: z.enum(['not-needed', 'optional', 'set-up', 'verify', 'done']),
   /** Whether this server can hold an authenticator app's secret (TWO_FACTOR_KEY). */
   totpAvailable: z.boolean(),
   totp: z.boolean(),

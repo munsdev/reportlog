@@ -65,7 +65,7 @@ test('the owner makes an export and downloads it, and the trail says so', async 
   });
 
   await page.goto('/');
-  await goViaMenu(page, 'Backups and exports', { area: 'Records' });
+  await goViaMenu(page, 'Backups and exports', { area: 'Logs and system' });
   await expect(page.getByRole('heading', { level: 1, name: 'Backups and exports' })).toBeVisible();
   await expect(page.getByText(/Every download is recorded/)).toBeVisible();
 
@@ -113,7 +113,9 @@ test('an administrator who is not the owner is turned away, by the page and the 
   await page.goto('/backups');
   await expect(page.getByRole('heading', { name: 'Not for this account' })).toBeVisible();
   await expect(page.getByText('Only the owner can open this page.')).toBeVisible();
-  await expect(await menuLink(page, 'Backups and exports', { area: 'Records' })).toHaveCount(0);
+  await expect(
+    await menuLink(page, 'Backups and exports', { area: 'Logs and system' }),
+  ).toHaveCount(0);
   expect((await context.request.get('/api/admin/copies')).status()).toBe(403);
   await context.close();
 });
@@ -136,7 +138,7 @@ test('the owner’s staff sidebar reaches every page the owner may open, and no 
   for (const other of ALL_PAGES.filter((p) => !mine.includes(p.label)))
     await expect(nav.getByRole('link', { name: named(other.label) }), other.label).toHaveCount(0);
   // In the staff area, one activation: the page in the sidebar.
-  await nav.getByRole('link', { name: named('Journalists') }).click();
+  await nav.getByRole('link', { name: named('Journalist requests') }).click();
   await expect(page).toHaveURL(/\/access\/journalists\/?$/);
   await context.close();
 });

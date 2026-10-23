@@ -249,7 +249,7 @@ for (const role of ROLES) {
 
     // The public menu: one way into the staff area, and no staff page itself.
     const menu = await openMenu(page);
-    const door = menu.getByRole('link', { name: /^Open the staff area/ });
+    const door = menu.getByRole('link', { name: /^Your dashboard/ });
     await expect(door).toHaveCount(mine.length ? 1 : 0);
     for (const p of ALL_PAGES)
       await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
@@ -302,7 +302,7 @@ test('an administrator reaches the maps from the menu', async ({ browser }) => {
   const context = await browser.newContext({ storageState: ADMIN });
   const page = await context.newPage();
   await page.goto('/');
-  await (await menuLink(page, 'Maps', { area: 'Logbooks and lists' })).click();
+  await (await menuLink(page, 'Maps', { area: 'Content' })).click();
   await expect(page).toHaveURL(/\/maps\/?$/);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await context.close();
@@ -401,7 +401,7 @@ test.describe('the current page', () => {
     const context = await browser.newContext({ storageState: MODERATOR });
     const page = await context.newPage();
     await page.goto('/moderate/00000000-0000-4000-8000-000000000000');
-    const link = await menuLink(page, 'Queue', { area: 'Moderation' });
+    const link = await menuLink(page, 'Reports queue', { area: 'Review' });
     await expect(link).toHaveAttribute('aria-current', 'page');
     await context.close();
   });

@@ -67,7 +67,9 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   // J1, J6: a name, an address and the states (alerts are ticked to begin
   // with), and the legal notice and privacy policy before sending.
   await page.goto('/journalists/alerts');
-  await expect(page.getByRole('heading', { level: 1, name: 'Journalist alerts' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Alerts and desk access' }),
+  ).toBeVisible();
   await expect(page.getByRole('link', { name: 'imprint and privacy policy' })).toHaveAttribute(
     'href',
     '/legal',

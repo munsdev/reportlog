@@ -237,7 +237,7 @@ test('the setup wizard seats the owner, asks every question, and ends on the pas
   await expect(owner.getByRole('heading', { name: 'Check a report' })).toBeVisible();
   // Signed in with a role: the menu offers the way into the staff area.
   await expect(
-    (await openMenu(owner)).getByRole('link', { name: /^Open the staff area/ }),
+    (await openMenu(owner)).getByRole('link', { name: /^Your dashboard/ }),
   ).toBeVisible();
   await owner.keyboard.press('Escape');
   await expect(owner.getByRole('banner')).toContainText('Polling Watch');

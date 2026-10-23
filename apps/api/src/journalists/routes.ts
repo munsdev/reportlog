@@ -25,6 +25,7 @@ import type { LinkKeys } from '../links/keys.ts';
 import { deskGuard, deskLinkPage, deskSourcePage } from './desk.ts';
 import {
   applyConfirm,
+  deskStates,
   applyStop,
   changeDeskSettings,
   changeSettings,
@@ -178,21 +179,33 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
   };
   void app.register((desk, _opts, done) => {
     desk.addHook('preHandler', deskGuard(deps.db));
-    route(desk, C.deskLinks, async ({ query, request }) =>
-      deskLinkPage(
+    // "My states" is read from the signed-in account, never from the request.
+    const filterOf = async (
+      query: { q?: string | undefined; mine?: string | undefined },
+      email: string,
+    ) => ({
+      q: query.q,
+      states: query.mine === 'true' ? await deskStates(deps.db, needRing(), email) : undefined,
+    });
+    route(desk, C.deskLinks, async ({ query, request }) => {
+      const email = requireUser(request).email;
+      return deskLinkPage(
         deps.db,
         await needKeys(),
-        requireUser(request).email,
+        email,
         query.page === undefined ? undefined : Number(query.page),
-      ),
-    );
-    route(desk, C.deskSources, ({ query, request }) =>
-      deskSourcePage(
+        await filterOf(query, email),
+      );
+    });
+    route(desk, C.deskSources, async ({ query, request }) => {
+      const email = requireUser(request).email;
+      return deskSourcePage(
         deps.db,
-        requireUser(request).email,
+        email,
         query.page === undefined ? undefined : Number(query.page),
-      ),
-    );
+        await filterOf(query, email),
+      );
+    });
     // Their own alerts only: found by the signed-in account's address.
     route(desk, C.deskAlertSettings, ({ request }) =>
       deskSettings(deps.db, needRing(), requireUser(request).email),

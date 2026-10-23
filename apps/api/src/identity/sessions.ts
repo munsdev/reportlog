@@ -10,7 +10,7 @@ import type { HeldRole, OrgRole } from '@reportlog/access';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import { STAFF_SESSION_MS, hasFactor, needsSecondFactor } from './secondFactor.ts';
+import { STAFF_SESSION_MS, hasFactor, journalistOnly, needsSecondFactor } from './secondFactor.ts';
 import type { SecondFactorState } from './secondFactor.ts';
 import { randomToken, sha256Hex } from './secrets.ts';
 
@@ -140,16 +140,23 @@ export async function userForSession(
   const held = toRoleSet(row.roles);
   const memberships = await membershipsFor(db, row.id);
   const needed = needsSecondFactor(held, memberships);
+  // A journalist-only person is offered a factor, not required to have one:
+  // 'optional' until they set one up, then it is used like anyone's.
+  const optional = !needed && journalistOnly(held, memberships);
   // A proof older than a staff session is no proof, whatever expires_at says.
   const proved =
     row.second_factor_at !== null && Date.now() - row.second_factor_at.getTime() < STAFF_SESSION_MS;
-  const secondFactor: SecondFactorState = !needed
-    ? 'not-needed'
-    : proved
-      ? 'done'
-      : (await hasFactor(db, row.id))
-        ? 'verify'
-        : 'set-up';
+  const hasOne = needed || optional ? await hasFactor(db, row.id) : false;
+  const secondFactor: SecondFactorState =
+    !needed && !optional
+      ? 'not-needed'
+      : proved
+        ? 'done'
+        : hasOne
+          ? 'verify'
+          : optional
+            ? 'optional'
+            : 'set-up';
   const pending = secondFactor === 'set-up' || secondFactor === 'verify';
   return {
     id: row.id,

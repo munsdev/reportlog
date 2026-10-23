@@ -306,7 +306,13 @@ export const revokeJournalist = defineRoute({
 
 export const DESK_PAGE_SIZE = 20;
 
-const PageQuery = z.object({ page: z.coerce.number().int().min(1).max(10000).optional() });
+const PageQuery = z.object({
+  page: z.coerce.number().int().min(1).max(10000).optional(),
+  /** Words to find (decision 72); the only free filter on the desk. */
+  q: z.string().trim().max(100).optional(),
+  /** `true` keeps what falls in the states the journalist chose for alerts. */
+  mine: z.enum(['true', 'false']).optional(),
+});
 
 /** One answer of a tip's multiple-choice questions, and how many tips gave it. */
 export const DeskContext = z.object({

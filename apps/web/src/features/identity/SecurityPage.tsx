@@ -136,6 +136,8 @@ function Factors() {
   const [open, setOpen] = useState<PanelId | null>(null);
   const [adding, setAdding] = useState<'app' | 'passkey' | null>(null);
   const [codes, setCodes] = useState<string[] | null>(null);
+  // The codes shown after a journalist's first factor, which was their choice.
+  const [firstCodes, setFirstCodes] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
   const done = useRef<HTMLDivElement>(null);
@@ -178,13 +180,19 @@ function Factors() {
         codes={codes}
         onKept={() => {
           setCodes(null);
-          setSaid('New recovery codes made. The old ones no longer work.');
+          setFirstCodes(false);
+          setSaid(
+            firstCodes
+              ? 'Done. Keep the recovery codes safe; each works once.'
+              : 'New recovery codes made. The old ones no longer work.',
+          );
         }}
       />
     );
   }
   if (!status.data) return <p role="status">Loading…</p>;
   const s = status.data;
+  const optional = s.state === 'optional';
   const ways = (s.totp ? 1 : 0) + s.passkeys.length;
   const openPanel = (id: PanelId) => {
     setAdding(null);
@@ -200,10 +208,19 @@ function Factors() {
     <section className="flex max-w-3xl flex-col gap-6">
       <div className="flex flex-col gap-3">
         <Heading />
-        <Lede>
-          After the emailed code, your account asks for a second factor: a code from your
-          authenticator app or one of your passkeys. Either works wherever one is asked for.
-        </Lede>
+        {optional ? (
+          <Lede>
+            A second factor is optional for journalists, and we encourage it. Your desk shows links
+            people sent in, and an email code alone is the only thing between a stranger and your
+            inbox. With one set up, sign-in asks for a code from your authenticator app or a passkey
+            after the emailed code. You can add one now and remove it later.
+          </Lede>
+        ) : (
+          <Lede>
+            After the emailed code, your account asks for a second factor: a code from your
+            authenticator app or one of your passkeys. Either works wherever one is asked for.
+          </Lede>
+        )}
       </div>
       {said ? (
         <div ref={done} tabIndex={-1} className="outline-none">
@@ -220,7 +237,16 @@ function Factors() {
         onClose={close}
       >
         {adding === 'app' ? (
-          <AddAuthenticatorApp onAdded={() => changed('Done. Your authenticator app is set up.')} />
+          <AddAuthenticatorApp
+            onAdded={async (fresh) => {
+              // Somebody's first factor brings recovery codes, shown once.
+              if (fresh) {
+                setCodes(fresh);
+                setFirstCodes(true);
+              }
+              await changed('Done. Your authenticator app is set up.');
+            }}
+          />
         ) : (
           <div className="flex flex-wrap gap-3">
             {s.totpAvailable ? (
@@ -311,7 +337,15 @@ function Factors() {
           </p>
         ) : null}
         {adding === 'passkey' ? (
-          <AddPasskey onAdded={() => changed('Done. Added.')} />
+          <AddPasskey
+            onAdded={async (fresh) => {
+              if (fresh) {
+                setCodes(fresh);
+                setFirstCodes(true);
+              }
+              await changed('Done. Added.');
+            }}
+          />
         ) : (
           <div>
             <Button

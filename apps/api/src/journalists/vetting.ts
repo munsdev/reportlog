@@ -37,6 +37,9 @@ const TOKEN = /^[a-f0-9]{64}$/;
 export const accessLinkFor = (siteOrigin: string, token: string) =>
   `${siteOrigin}/journalists/access/${token}`;
 export const deskLinkFor = (siteOrigin: string) => `${siteOrigin}/desk`;
+/** Where an approved journalist starts: sign in, and the desk is where they land. */
+export const deskSignInLinkFor = (siteOrigin: string) =>
+  `${siteOrigin}/access/sign-in?next=%2Fdesk`;
 
 export function accessLinkEmail(link: string): { subject: string; text: string } {
   return {
@@ -59,7 +62,12 @@ export function approvedEmail(desk: string): { subject: string; text: string } {
     text: [
       'The owner of this site approved your request for access to the journalist desk.',
       '',
-      'Sign in with this address here. You will be asked to read and accept the journalist agreement first:',
+      'What happens next:',
+      '1. Open the link below and type this email address. We email you a sign-in code.',
+      '2. Type the code. (A second factor is optional for journalists, and you can add one under Account and security.)',
+      '3. Read and accept the journalist agreement. It is the first thing you see.',
+      '4. The journalist desk opens.',
+      '',
       desk,
     ].join('\n'),
   };
@@ -277,7 +285,7 @@ export async function approve(deps: ListDeps, id: number, owner: string): Promis
   });
   // After the commit: a failed email does not undo an approval.
   await deps.mailer
-    .send({ to: email, ...approvedEmail(deskLinkFor(deps.siteOrigin)) })
+    .send({ to: email, ...approvedEmail(deskSignInLinkFor(deps.siteOrigin)) })
     .catch(() => undefined);
 }
 
