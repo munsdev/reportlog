@@ -1,0 +1,17 @@
+{
+  "name": "@reportlog/site",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The project's own site (www.reportlog.org): the homepage, and the install guide and release notes built from deploy/README.md and CHANGELOG.md. Not a deployment of the application.",
+  "scripts": {
+    "build": "node src/build.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "6.0.3",
+    "vitest": "5.0.5"
+  }
+}
