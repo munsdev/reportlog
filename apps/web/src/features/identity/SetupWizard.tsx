@@ -101,7 +101,7 @@ export function SetupWizard({
 }) {
   const me = useQuery(meQuery);
   const [seated, setSeated] = useState(false);
-  const isOwner = seated || (me.data?.signedIn === true && me.data.role === 'owner');
+  const isOwner = seated || (me.data?.signedIn === true && me.data.roles.includes('owner'));
   // A reloaded tab with an owner already seated resumes at the first screen
   // that can still be answered, not at one the server now refuses.
   const [at, setAt] = useState<Exclude<Step, 'owner'>>('name');

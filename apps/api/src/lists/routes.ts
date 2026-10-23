@@ -134,7 +134,7 @@ const days = (s: ListSettings) => (s.personalDays === NEVER ? null : s.personalD
 export function maySee(list: Pick<LoadedList, 'visibility'>, request: FastifyRequest): boolean {
   if (list.visibility === 'listed') return true;
   if (list.visibility === 'password') return Boolean(request.user);
-  return Boolean(request.user && roleSatisfies(request.user.role, 'admin'));
+  return Boolean(request.user && roleSatisfies(request.user.roles, 'admin'));
 }
 
 /**

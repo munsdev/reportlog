@@ -14,7 +14,8 @@
 import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import { recordRoleChange } from './roles.ts';
+import { toRoleSet } from '@reportlog/access';
+import { recordRoleChange, withRole } from './roles.ts';
 import { looksLikeEmail, normalizeEmail } from './secrets.ts';
 
 /** How long an offer stands before it lapses. */
@@ -42,14 +43,14 @@ export async function currentOwner(db: Kysely<DB>): Promise<string | null> {
   const row = await db
     .selectFrom('users')
     .select('email')
-    .where('role', '=', 'owner')
+    .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
     .executeTakeFirst();
   return row?.email ?? null;
 }
 
 interface Actor {
   email: string;
-  role: string;
+  roles: readonly string[];
 }
 
 /**
@@ -66,7 +67,7 @@ export async function proposeTransfer(
   | { ok: false; reason: 'not-owner' | 'bad-email' | 'self' }
 > {
   const to = normalizeEmail(email);
-  if (actor.role !== 'owner') return { ok: false, reason: 'not-owner' };
+  if (!actor.roles.includes('owner')) return { ok: false, reason: 'not-owner' };
   if (!looksLikeEmail(to)) return { ok: false, reason: 'bad-email' };
   if (to === normalizeEmail(actor.email)) return { ok: false, reason: 'self' };
   const expiresAt = new Date(Date.now() + TRANSFER_TTL_DAYS * 86_400_000);
@@ -94,7 +95,7 @@ export async function cancelTransfer(
   db: Kysely<DB>,
   { actor }: { actor: Actor },
 ): Promise<{ ok: true } | { ok: false; reason: 'not-owner' }> {
-  if (actor.role !== 'owner') return { ok: false, reason: 'not-owner' };
+  if (!actor.roles.includes('owner')) return { ok: false, reason: 'not-owner' };
   await db.deleteFrom('ownership_transfers').where('id', '=', true).execute();
   return { ok: true };
 }
@@ -137,18 +138,48 @@ export async function acceptTransfer(
 
     // The seat as it is now, inside the lock, not as it was when offered.
     const outgoing = await currentOwner(trx);
+    // The seat is emptied before it is filled (one owner, by a unique index).
+    // The outgoing owner steps down to administrator and keeps any other role.
     if (outgoing) {
+      const before = await trx
+        .selectFrom('users')
+        .select('roles')
+        .where('email', '=', outgoing)
+        .executeTakeFirstOrThrow();
+      const stepped = withRole(
+        toRoleSet(before.roles).filter((r) => r !== 'owner'),
+        'admin',
+      );
       await trx
         .updateTable('users')
-        .set({ role: 'admin', updated_at: new Date() })
+        .set({ roles: stepped, updated_at: new Date() })
         .where('email', '=', outgoing)
         .execute();
     }
+    const incoming = await trx
+      .selectFrom('users')
+      .select('roles')
+      .where('email', '=', me)
+      .executeTakeFirst();
+    const incomingBefore = toRoleSet(incoming?.roles);
+    const incomingAfter = withRole(incomingBefore, 'owner');
     await trx
       .insertInto('users')
-      .values({ email: me, role: 'owner' })
-      .onConflict((oc) => oc.column('email').doUpdateSet({ role: 'owner', updated_at: new Date() }))
+      .values({ email: me, roles: incomingAfter })
+      .onConflict((oc) =>
+        oc.column('email').doUpdateSet({ roles: incomingAfter, updated_at: new Date() }),
+      )
       .execute();
+    // The seat is staff, so a journalist role cannot ride along with it: say so on the record.
+    if (incomingBefore.includes('journalist')) {
+      await recordRoleChange(trx, {
+        actorEmail: me,
+        subjectEmail: me,
+        axis: 'system',
+        action: 'revoke',
+        detail: 'journalist (took the owner’s seat)',
+      });
+    }
     await trx.deleteFrom('ownership_transfers').where('id', '=', true).execute();
 
     if (outgoing) {

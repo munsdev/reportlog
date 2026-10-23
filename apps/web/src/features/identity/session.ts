@@ -42,6 +42,11 @@ export const ROLE_LABELS: Record<SystemRoleName, string> = {
   journalist: 'Journalist',
 };
 
+/** Everything somebody holds, in words: "Moderator, Access Manager", or "No role". */
+export function rolesLabel(roles: readonly SystemRoleName[]): string {
+  return roles.length ? roles.map((r) => ROLE_LABELS[r]).join(', ') : ROLE_LABELS.user;
+}
+
 export const ROLE_EXPLAINED: Record<SystemRoleName, string> = {
   user: 'Can sign in and see their own reports. No access to anybody else’s.',
   moderator: 'Reads and moderates reports.',

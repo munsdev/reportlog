@@ -6,8 +6,15 @@
  * TRANSACTION, so the two cannot be separated: a path that could change a
  * role without writing the trail is a path that will one day forget to.
  */
-import { canChangeSubject, canGrantSystemRole, isSystemRole } from '@reportlog/access';
-import type { SystemRole } from '@reportlog/access';
+import {
+  STAFF_ROLES,
+  canChangeSubject,
+  canGrantSystemRole,
+  canHoldTogether,
+  isSystemRole,
+  toRoleSet,
+} from '@reportlog/access';
+import type { HeldRole, SystemRole } from '@reportlog/access';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { normalizeEmail } from './secrets.ts';
@@ -42,85 +49,103 @@ export async function recordRoleChange(trx: Kysely<DB>, entry: AuditEntry): Prom
 export async function ensureUser(
   trx: Kysely<DB>,
   email: string,
-): Promise<{ id: number; role: string }> {
-  return trx
+): Promise<{ id: number; roles: HeldRole[] }> {
+  const row = await trx
     .insertInto('users')
     .values({ email: normalizeEmail(email) })
     .onConflict((oc) => oc.column('email').doUpdateSet({ updated_at: new Date() }))
-    .returning(['id', 'role'])
+    .returning(['id', 'roles'])
     .executeTakeFirstOrThrow();
+  return { id: row.id, roles: toRoleSet(row.roles) };
 }
 
-export type SetRoleResult =
-  | { ok: true; unchanged: true }
-  | { ok: true; unchanged: false; from: SystemRole; to: SystemRole }
+/**
+ * The set after adding one role. Taking a staff seat (the owner's, by
+ * handover or first-run setup) drops a journalist role, because a journalist
+ * holds no staff role and the database refuses the pair (decision 70).
+ */
+export function withRole(roles: readonly HeldRole[], role: HeldRole): HeldRole[] {
+  const base = (STAFF_ROLES as readonly string[]).includes(role)
+    ? roles.filter((r) => r !== 'journalist')
+    : [...roles];
+  return base.includes(role) ? base : [...base, role];
+}
+
+export type ChangeRoleResult =
+  | { ok: true; unchanged: boolean; roles: HeldRole[] }
   | {
       ok: false;
-      reason: 'unknown-role' | 'not-permitted' | 'self' | 'protected-subject' | 'bad-email';
+      reason:
+        | 'unknown-role'
+        | 'not-permitted'
+        | 'self'
+        | 'protected-subject'
+        | 'bad-email'
+        | 'cannot-combine';
     };
 
 /**
- * Set somebody's system role.
+ * Grant or revoke ONE system role. Roles are changed one at a time, each with
+ * its own audit row, under the same ceiling (decision 70): the actor needs
+ * `canGrantSystemRole` for the role being added or taken away, and
+ * `canChangeSubject` protects the owner's seat, administrators and journalists.
  *
  * The account is created if the address has never signed in: a moderator can
  * be appointed before they have ever logged in, and signing in later keeps
  * the role rather than resetting it.
  */
-export async function setSystemRole(
+export async function changeSystemRole(
   db: Kysely<DB>,
   {
     actor,
     email,
     role,
-  }: { actor: { email: string; role: SystemRole }; email: string; role: string },
-): Promise<SetRoleResult> {
+    action,
+  }: {
+    actor: { email: string; roles: readonly SystemRole[] };
+    email: string;
+    role: string;
+    action: 'grant' | 'revoke';
+  },
+): Promise<ChangeRoleResult> {
   const subjectEmail = normalizeEmail(email);
-  if (!isSystemRole(role)) return { ok: false, reason: 'unknown-role' };
+  // `user` is no role at all, so there is nothing to grant or revoke.
+  if (!isSystemRole(role) || role === 'user') return { ok: false, reason: 'unknown-role' };
   if (!subjectEmail) return { ok: false, reason: 'bad-email' };
-  if (!canGrantSystemRole(actor.role, role)) return { ok: false, reason: 'not-permitted' };
-  // Changing your own role is how somebody either locks themselves out or
-  // promotes themselves; neither should be possible by accident.
-  if (subjectEmail === normalizeEmail(actor.email) && role !== actor.role) {
-    return { ok: false, reason: 'self' };
-  }
+  if (!canGrantSystemRole(actor.roles, role)) return { ok: false, reason: 'not-permitted' };
+  if (!canChangeSubject(actor.roles, role)) return { ok: false, reason: 'protected-subject' };
 
-  return db.transaction().execute(async (trx): Promise<SetRoleResult> => {
+  return db.transaction().execute(async (trx): Promise<ChangeRoleResult> => {
     const existing = await trx
       .selectFrom('users')
-      .select('role')
+      .select('roles')
       .where('email', '=', subjectEmail)
       .forUpdate()
       .executeTakeFirst();
-    const current: SystemRole = existing && isSystemRole(existing.role) ? existing.role : 'user';
-    if (!canChangeSubject(actor.role, current)) return { ok: false, reason: 'protected-subject' };
-    if (current === role) return { ok: true, unchanged: true };
+    const current = toRoleSet(existing?.roles);
+    const has = current.includes(role);
+    if (action === 'grant' ? has : !has) return { ok: true, unchanged: true, roles: current };
+    // Changing your own roles is how somebody either locks themselves out or
+    // promotes themselves; neither should be possible by accident.
+    if (subjectEmail === normalizeEmail(actor.email)) return { ok: false, reason: 'self' };
+
+    const next = action === 'grant' ? [...current, role] : current.filter((r) => r !== role);
+    // Refused here with a sentence; the CHECK on users.roles is what holds if
+    // a path forgets to ask.
+    if (!canHoldTogether(next)) return { ok: false, reason: 'cannot-combine' };
 
     await trx
       .insertInto('users')
-      .values({ email: subjectEmail, role })
-      .onConflict((oc) => oc.column('email').doUpdateSet({ role, updated_at: new Date() }))
+      .values({ email: subjectEmail, roles: next })
+      .onConflict((oc) => oc.column('email').doUpdateSet({ roles: next, updated_at: new Date() }))
       .execute();
-
-    // Both directions, always. "Revoked moderator, granted admin" reads as
-    // two halves of one change, which is what it was.
-    if (current !== 'user') {
-      await recordRoleChange(trx, {
-        actorEmail: actor.email,
-        subjectEmail,
-        axis: 'system',
-        action: 'revoke',
-        detail: current,
-      });
-    }
-    if (role !== 'user') {
-      await recordRoleChange(trx, {
-        actorEmail: actor.email,
-        subjectEmail,
-        axis: 'system',
-        action: 'grant',
-        detail: role,
-      });
-    }
-    return { ok: true, unchanged: false, from: current, to: role };
+    await recordRoleChange(trx, {
+      actorEmail: actor.email,
+      subjectEmail,
+      axis: 'system',
+      action,
+      detail: role,
+    });
+    return { ok: true, unchanged: false, roles: next };
   });
 }

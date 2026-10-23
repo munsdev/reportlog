@@ -33,14 +33,14 @@ export function toMe(user: SignedIn | null): Me {
   return {
     signedIn: true,
     email: user.email,
-    role: user.role,
+    roles: user.roles,
     memberships: user.memberships,
     grantsAccess: grantsAccess(user),
     tester: user.tester,
     teamMember: user.teamMember,
     desks: user.desks,
     secondFactor: user.secondFactor,
-    heldRole: user.heldRole,
+    heldRoles: user.heldRoles,
     stepUpUntil:
       user.stepUpAt && stepUpFresh(user.stepUpAt)
         ? new Date(user.stepUpAt.getTime() + STEP_UP_MS).toISOString()

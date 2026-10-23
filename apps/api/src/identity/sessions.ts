@@ -5,8 +5,8 @@
  * holds a random token; the database holds its hash. Every request with the
  * cookie is resolved to a person once, here, and routes read `request.user`.
  */
-import { isSystemRole } from '@reportlog/access';
-import type { OrgRole, SystemRole } from '@reportlog/access';
+import { toRoleSet } from '@reportlog/access';
+import type { HeldRole, OrgRole } from '@reportlog/access';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
@@ -27,14 +27,15 @@ export interface SignedIn {
   id: number;
   email: string;
   /**
-   * The role this request may act with. A role holder whose session has not
-   * proved a second factor gets `user` here, and no memberships: every guard
-   * reads these, so none of them can forget to ask (secondFactor.ts).
+   * The roles this request may act with (a person may hold several, decision
+   * 70). A role holder whose session has not proved a second factor gets none
+   * here, and no memberships: every guard reads these, so none of them can
+   * forget to ask (secondFactor.ts).
    */
-  role: SystemRole;
+  roles: HeldRole[];
   memberships: Membership[];
-  /** The role on their account, whatever this session has proved. For the website only. */
-  heldRole: SystemRole;
+  /** The roles on their account, whatever this session has proved. For the website only. */
+  heldRoles: HeldRole[];
   secondFactor: SecondFactorState;
   /** When this session last proved the factor for a step-up (stepUp.ts). */
   stepUpAt: Date | null;
@@ -124,7 +125,7 @@ export async function userForSession(
     .select([
       'u.id',
       'u.email',
-      'u.role',
+      'u.roles',
       'u.is_tester',
       'u.is_team_member',
       'u.desks',
@@ -135,9 +136,10 @@ export async function userForSession(
     .where('s.token_hash', '=', sha256Hex(token))
     .where('s.expires_at', '>', new Date())
     .executeTakeFirst();
-  if (!row || !isSystemRole(row.role)) return null;
+  if (!row) return null;
+  const held = toRoleSet(row.roles);
   const memberships = await membershipsFor(db, row.id);
-  const needed = needsSecondFactor(row.role, memberships);
+  const needed = needsSecondFactor(held, memberships);
   // A proof older than a staff session is no proof, whatever expires_at says.
   const proved =
     row.second_factor_at !== null && Date.now() - row.second_factor_at.getTime() < STAFF_SESSION_MS;
@@ -152,9 +154,9 @@ export async function userForSession(
   return {
     id: row.id,
     email: row.email,
-    role: pending ? 'user' : row.role,
+    roles: pending ? [] : held,
     memberships: pending ? [] : memberships,
-    heldRole: row.role,
+    heldRoles: held,
     secondFactor,
     stepUpAt: pending ? null : row.step_up_at,
     sessionHash: row.token_hash,

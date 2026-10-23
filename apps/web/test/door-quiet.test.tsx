@@ -28,7 +28,7 @@ import { DESK } from './look-fixture.ts';
 const ADMIN_ME = {
   signedIn: true,
   email: 'admin@example.org',
-  role: 'admin',
+  roles: ['admin'],
   memberships: [],
   grantsAccess: true,
   tester: false,

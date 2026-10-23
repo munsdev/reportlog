@@ -87,7 +87,7 @@ describe('deleting your own account', () => {
     expect(res.cookies.find((c) => c.name === 'session_token')?.value).toBe('');
 
     const row = await userRow(id);
-    expect(row).toMatchObject({ email: tombstoneEmail(id), role: 'user', is_tester: false });
+    expect(row).toMatchObject({ email: tombstoneEmail(id), roles: [], is_tester: false });
     expect(
       await h.db.selectFrom('sessions').select('user_id').where('user_id', '=', id).execute(),
     ).toEqual([]);
@@ -128,11 +128,11 @@ describe('deleting your own account', () => {
     const second = await signIn(h, email);
     const fresh = await h.db
       .selectFrom('users')
-      .select(['id', 'role'])
+      .select(['id', 'roles'])
       .where('email', '=', email)
       .executeTakeFirstOrThrow();
     expect(fresh.id).not.toBe(oldId);
-    expect(fresh.role).toBe('user');
+    expect(fresh.roles).toEqual([]);
     const me = await as(h, second)({ method: 'GET', url: '/api/auth/me' });
     expect(me.json()).toMatchObject({ signedIn: true, email });
   });
@@ -145,7 +145,7 @@ describe('deleting your own account', () => {
     expect(res.statusCode).toBe(409);
     expect(res.json()).toMatchObject({ error: { code: 'owner_cannot_delete' } });
     expect(res.body).toMatch(/Hand the deployment on/);
-    expect(await userRow(id)).toMatchObject({ email, role: 'owner' });
+    expect(await userRow(id)).toMatchObject({ email, roles: ['owner'] });
   });
 
   it('A ROLE HOLDER needs a step-up, read from the database, then loses the role on the record', async () => {
@@ -167,7 +167,7 @@ describe('deleting your own account', () => {
 
     const fresh = await signIn(h, email);
     expect((await del(fresh, email)).statusCode).toBe(200);
-    expect(await userRow(id)).toMatchObject({ email: tombstoneEmail(id), role: 'user' });
+    expect(await userRow(id)).toMatchObject({ email: tombstoneEmail(id), roles: [] });
     const trail = await h.db
       .selectFrom('role_audit')
       .select(['axis', 'action', 'detail', 'actor_email'])

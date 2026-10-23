@@ -20,6 +20,7 @@ import {
   harness,
   liftCurtain,
   setUpTotp,
+  clearStaffSeats,
 } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
@@ -47,11 +48,7 @@ beforeAll(async () => {
   // A deployment as the installer leaves it: a password it chose, no owner,
   // setup not finished. Anybody earlier test files left holding a seat would
   // make it look set up already.
-  await h.db
-    .updateTable('users')
-    .set({ role: 'user' })
-    .where('role', 'in', ['owner', 'admin'])
-    .execute();
+  await clearStaffSeats(h.db);
   await h.db
     .updateTable('site_access')
     .set({ setup_completed_at: null })
@@ -60,11 +57,7 @@ beforeAll(async () => {
   await writeSiteAccess(h.db, { password: INSTALL_PW });
 });
 afterAll(async () => {
-  await h.db
-    .updateTable('users')
-    .set({ role: 'user' })
-    .where('role', 'in', ['owner', 'admin'])
-    .execute();
+  await clearStaffSeats(h.db);
   await liftCurtain(h.db);
   await h.close();
 });
@@ -155,14 +148,14 @@ describe('walking the wizard', () => {
     expect(res.json()).toMatchObject({
       signedIn: true,
       email: OWNER,
-      role: 'user',
-      heldRole: 'owner',
+      roles: [],
+      heldRoles: ['owner'],
       secondFactor: 'set-up',
     });
     session = cookieFrom(res, 'session_token') ?? '';
     expect(session).toMatch(/^[a-f0-9]{64}$/);
     session = (await setUpTotp(h, session, { site_access: curtain })).session;
-    expect((await asOwner({ url: '/api/auth/me' })).json()).toMatchObject({ role: 'owner' });
+    expect((await asOwner({ url: '/api/auth/me' })).json()).toMatchObject({ roles: ['owner'] });
   });
 
   it('is STILL needed once the owner exists: the last screen must not refuse itself', async () => {

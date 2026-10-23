@@ -21,7 +21,7 @@ import { notSignedIn } from './guards.ts';
 import { addressFrom, bodyOf, refused, toMe } from './http.ts';
 import { limiter } from './limiter.ts';
 import { CODE_TTL_MS, createCode, subjects, verifyCode } from './otp.ts';
-import { recordRoleChange } from './roles.ts';
+import { ensureUser, recordRoleChange, withRole } from './roles.ts';
 import { PENDING_SESSION_MS } from './secondFactor.ts';
 import { createSession, setSessionCookie, userForSession } from './sessions.ts';
 import { setupState } from './setup.ts';
@@ -139,20 +139,20 @@ export function curtainRoutes(
       const existing = await trx
         .selectFrom('users')
         .select('id')
-        .where('role', 'in', ['owner', 'admin'])
+        .where(sql<boolean>`roles && ARRAY['owner', 'admin']::text[]`)
         .executeTakeFirst();
       if (existing) throw alreadySetUp();
       // The OWNER, not an administrator: the seat cannot be granted, so a
       // wizard that made an admin would leave a deployment that could never
       // have an owner, nor a second administrator.
-      const user = await trx
-        .insertInto('users')
-        .values({ email, role: 'owner' })
-        .onConflict((oc) =>
-          oc.column('email').doUpdateSet({ role: 'owner', updated_at: new Date() }),
-        )
-        .returning('id')
-        .executeTakeFirstOrThrow();
+      const known = await ensureUser(trx, email);
+      const roles = withRole(known.roles, 'owner');
+      await trx
+        .updateTable('users')
+        .set({ roles, updated_at: new Date() })
+        .where('id', '=', known.id)
+        .execute();
+      const user = { id: known.id };
       await recordRoleChange(trx, {
         actorEmail: email,
         subjectEmail: email,
@@ -178,7 +178,7 @@ export function curtainRoutes(
     if (!state.needed) throw alreadySetUp();
     if (!request.user) throw notSignedIn();
     // Only the person who just proved they own this deployment may finish it.
-    if (request.user.role !== 'owner')
+    if (!request.user.roles.includes('owner'))
       throw refused(403, 'forbidden', 'Only the new owner can finish setting this up.');
     const body = bodyOf(C.decideCurtain, request);
     if (body.decision !== 'keep' && body.decision !== 'change') {

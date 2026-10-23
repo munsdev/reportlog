@@ -23,7 +23,7 @@ import { CountLine } from '@/components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { deskLabel } from './desks.ts';
-import { ROLE_LABELS, useIdentityChanged } from './session.ts';
+import { rolesLabel, useIdentityChanged } from './session.ts';
 import { StaffOnly } from './StaffOnly.tsx';
 import { Done, ErrorText, TextField } from './ui.tsx';
 import { ScrollX } from '@/components/ui/scroll-x.tsx';
@@ -133,7 +133,7 @@ function Roster() {
                       <td className="py-2 pr-4 font-mono break-all">{p.email}</td>
                       <td className="py-2 pr-4">
                         {[
-                          ROLE_LABELS[p.role],
+                          p.roles.length ? rolesLabel(p.roles) : null,
                           p.tester ? 'tester' : null,
                           p.teamMember
                             ? `team${p.desks.length ? ` (${p.desks.map((d) => deskLabel(d) ?? d).join(', ')})` : ''}`

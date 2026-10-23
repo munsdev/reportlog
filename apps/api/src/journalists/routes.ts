@@ -156,7 +156,7 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
       route(decide, C.revokeJournalist, async ({ params, request }) => {
         await revoke(listDeps(), Number(params.id), {
           email: requireUser(request).email,
-          role: 'owner',
+          roles: ['owner'],
         });
         return { ok: true as const };
       });

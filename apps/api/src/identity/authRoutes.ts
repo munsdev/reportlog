@@ -74,7 +74,7 @@ export function authRoutes(
     });
     // A role holder's session is short until it proves a second factor
     // (secondFactor.ts); until then it acts with no role at all.
-    const ttl = needsSecondFactor(user.role, await membershipsFor(db, user.id))
+    const ttl = needsSecondFactor(user.roles, await membershipsFor(db, user.id))
       ? PENDING_SESSION_MS
       : SESSION_TTL_MS;
     const token = await createSession(db, user.id, ttl);

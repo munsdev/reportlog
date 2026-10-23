@@ -100,7 +100,7 @@ describe('trading the code for a session', () => {
     expect(res.json()).toMatchObject({
       signedIn: true,
       email,
-      role: 'user',
+      roles: [],
       memberships: [],
       grantsAccess: false,
     });
@@ -222,7 +222,7 @@ describe('trading the code for a session', () => {
       url: '/api/auth/me',
       cookies: { session_token: token },
     });
-    expect(me.json()).toMatchObject({ signedIn: true, role: 'moderator' });
+    expect(me.json()).toMatchObject({ signedIn: true, roles: ['moderator'] });
   });
 });
 

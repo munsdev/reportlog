@@ -79,7 +79,7 @@ describe('the tester flag', () => {
       { axis: 'flag', action: 'grant', detail: 'tester', actor_email: amEmail },
     ]);
     const me = await call('tester')({ method: 'GET', url: '/api/auth/me' });
-    expect(me.json()).toMatchObject({ signedIn: true, tester: true, role: 'user' });
+    expect(me.json()).toMatchObject({ signedIn: true, tester: true, roles: [] });
   });
 
   it('and by an administrator; giving it twice changes nothing and writes nothing', async () => {
@@ -105,10 +105,10 @@ describe('the tester flag', () => {
   it('is not a role: a tester keeps their role, and the flag grants no role', async () => {
     const row = await h.db
       .selectFrom('users')
-      .select(['role', 'is_tester'])
+      .select(['roles', 'is_tester'])
       .where('email', '=', testerEmail)
       .executeTakeFirstOrThrow();
-    expect(row).toEqual({ role: 'user', is_tester: true });
+    expect(row).toEqual({ roles: [], is_tester: true });
   });
 
   it('cannot be given by a moderator, a tester, or anybody with no role', async () => {

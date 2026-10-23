@@ -36,7 +36,7 @@ import { SiteFooter } from '@/components/ui/site-footer.tsx';
 import { cn } from '@/lib/utils.ts';
 import { PauseBanner } from '../flood/IntakePaused.tsx';
 import type { SignedInMe } from '../identity/session.ts';
-import { ROLE_LABELS, useSignOut } from '../identity/session.ts';
+import { rolesLabel, useSignOut } from '../identity/session.ts';
 import { areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
 import type { StaffEntry } from '../staff-nav/entries.ts';
 import { AccountLinks, BugLink } from './Menu.tsx';
@@ -332,7 +332,7 @@ function AccountMenu({ me, pathname }: { me: SignedInMe; pathname: string }) {
         <p className="border-b border-line px-3 pt-1 pb-2 text-sm">
           <span className="block text-muted">Signed in as</span>
           <span className="block font-mono break-all">{me.email}</span>
-          <span className="block text-muted">{ROLE_LABELS[me.role]}</span>
+          <span className="block text-muted">{rolesLabel(me.roles)}</span>
         </p>
         <ul className="py-1">
           <li className="md:hidden">

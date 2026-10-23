@@ -25,7 +25,7 @@
  * Signing in again with the same address afterwards makes a new, empty
  * account: the old row no longer holds it.
  */
-import { isSystemRole } from '@reportlog/access';
+import { toRoleSet } from '@reportlog/access';
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
@@ -55,7 +55,7 @@ export type DeleteAccountResult =
 export async function deletionNeedsStepUp(db: Kysely<DB>, userId: number): Promise<boolean> {
   const user = await db
     .selectFrom('users')
-    .select('role')
+    .select('roles')
     .where('id', '=', userId)
     .executeTakeFirst();
   if (!user) return false;
@@ -64,18 +64,18 @@ export async function deletionNeedsStepUp(db: Kysely<DB>, userId: number): Promi
     .select('id')
     .where('user_id', '=', userId)
     .execute();
-  return needsSecondFactor(user.role, memberships);
+  return needsSecondFactor(user.roles, memberships);
 }
 
 export async function deleteAccount(db: Kysely<DB>, userId: number): Promise<DeleteAccountResult> {
   return db.transaction().execute(async (trx): Promise<DeleteAccountResult> => {
     const user = await trx
       .selectFrom('users')
-      .select(['id', 'email', 'role', 'is_tester', 'is_team_member'])
+      .select(['id', 'email', 'roles', 'is_tester', 'is_team_member'])
       .where('id', '=', userId)
       .forUpdate()
       .executeTakeFirstOrThrow();
-    if (user.role === 'owner') return { ok: false, reason: 'owner' };
+    if (user.roles.includes('owner')) return { ok: false, reason: 'owner' };
     const email = user.email;
 
     const memberships = await trx
@@ -109,13 +109,14 @@ export async function deleteAccount(db: Kysely<DB>, userId: number): Promise<Del
 
     // The trail, for what was a position of trust. A plain account leaves no
     // row: an audit entry would keep the very address being deleted.
-    if (isSystemRole(user.role) && user.role !== 'user') {
+    // One row per role held: each is revoked on its own (decision 70).
+    for (const held of toRoleSet(user.roles)) {
       await recordRoleChange(trx, {
         actorEmail: email,
         subjectEmail: email,
         axis: 'system',
         action: 'revoke',
-        detail: `${user.role} (account deleted)`,
+        detail: `${held} (account deleted)`,
       });
     }
     for (const m of memberships) {
@@ -173,7 +174,7 @@ export async function deleteAccount(db: Kysely<DB>, userId: number): Promise<Del
       .updateTable('users')
       .set({
         email: tombstoneEmail(userId),
-        role: 'user',
+        roles: [],
         is_tester: false,
         is_team_member: false,
         desks: [],

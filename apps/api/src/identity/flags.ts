@@ -24,7 +24,7 @@ import { looksLikeEmail, normalizeEmail } from './secrets.ts';
 
 export interface FlagActor {
   email: string;
-  role: SystemRole;
+  roles: readonly SystemRole[];
 }
 
 /** Keep only desks that exist, once each, in the list's own order. Never throws. */
@@ -42,7 +42,7 @@ function subjectOf(email: string): string {
 }
 
 function mayOrRefuse(actor: FlagActor, flag: Flag): void {
-  if (!canSetFlag(actor.role, flag)) {
+  if (!canSetFlag(actor.roles, flag)) {
     throw notAllowed('Only administrators and Access Managers can change that.');
   }
 }

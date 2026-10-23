@@ -11,7 +11,7 @@
  * because they answer different questions: what this person typed up
  * themselves, and what their organizations filed through anybody.
  */
-import { isSystemRole } from '@reportlog/access';
+import { toRoleSet } from '@reportlog/access';
 import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
@@ -25,7 +25,7 @@ export async function roster(db: Kysely<DB>, days: number) {
     .select((eb) => [
       'u.id',
       'u.email',
-      'u.role',
+      'u.roles',
       'u.is_tester',
       'u.is_team_member',
       'u.desks',
@@ -63,7 +63,7 @@ export async function roster(db: Kysely<DB>, days: number) {
     ])
     .where((eb) =>
       eb.or([
-        eb('u.role', '<>', 'user'),
+        eb('u.roles', '<>', sql<string[]>`'{}'::text[]`),
         eb('u.is_tester', '=', true),
         eb('u.is_team_member', '=', true),
         eb.exists(
@@ -85,12 +85,10 @@ export async function roster(db: Kysely<DB>, days: number) {
     .execute();
 
   return people.flatMap((p) => {
-    const role = p.role;
-    if (!isSystemRole(role)) return [];
     return [
       {
         email: p.email,
-        role,
+        roles: toRoleSet(p.roles),
         tester: p.is_tester,
         teamMember: p.is_team_member,
         desks: p.desks,

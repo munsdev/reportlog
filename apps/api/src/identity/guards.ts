@@ -3,7 +3,8 @@
  *
  * Rank comes from @reportlog/access (`roleSatisfies`), so a route asking for
  * `admin` admits the owner without every guard having to name the owner, and
- * admin still does not imply moderator.
+ * admin still does not imply moderator. A person may hold several roles; a
+ * guard admits them when ANY one satisfies any one of the roles it lists.
  */
 import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
@@ -24,13 +25,13 @@ export function requireUser(request: FastifyRequest): SignedIn {
 
 export function requireRole(request: FastifyRequest, roles: readonly SystemRole[]): SignedIn {
   const user = requireUser(request);
-  if (!roles.some((r) => roleSatisfies(user.role, r))) throw notAllowed();
+  if (!roles.some((r) => roleSatisfies(user.roles, r))) throw notAllowed();
   return user;
 }
 
 /** Administrators and Access Managers: the people who grant access. */
 export function grantsAccess(user: SignedIn): boolean {
-  return roleSatisfies(user.role, 'admin') || user.role === 'access_manager';
+  return roleSatisfies(user.roles, 'admin') || user.roles.includes('access_manager');
 }
 
 export function requireGranter(request: FastifyRequest): SignedIn {

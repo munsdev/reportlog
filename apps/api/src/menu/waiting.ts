@@ -26,7 +26,7 @@ import type { SignedIn } from '../identity/sessions.ts';
 import { hasAccepted } from '../moderation/agreement.ts';
 
 const moderates = (user: SignedIn) =>
-  roleSatisfies(user.role, 'moderator') || roleSatisfies(user.role, 'admin');
+  roleSatisfies(user.roles, 'moderator') || roleSatisfies(user.roles, 'admin');
 
 /** Waiting for a moderator: the queue's default view ("pending", withdrawn ones apart). */
 export async function reportsWaiting(db: Database): Promise<number> {

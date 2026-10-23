@@ -4,6 +4,9 @@
  * a code and reading it out of the email).
  */
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
+import { sql } from 'kysely';
+import type { Kysely } from 'kysely';
+import type { DB } from '../../src/db/schema.gen.ts';
 import { buildApp } from '../../src/app.ts';
 import type { Database } from '../../src/db/database.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
@@ -129,18 +132,44 @@ export async function signInByEmailOnly(
   return token;
 }
 
-/** Give an address a role directly, as a fixture. The owner seat is cleared first. */
+/**
+ * Give an address its roles directly, as a fixture, replacing what it held.
+ * `role` may be a comma-separated list; "user" is none. The owner seat is
+ * cleared first (the previous owner steps down to administrator).
+ */
 export async function seat(db: Database, email: string, role: string): Promise<number> {
-  if (role === 'owner') {
-    await db.updateTable('users').set({ role: 'admin' }).where('role', '=', 'owner').execute();
+  const roles = role.split(',').filter((r) => r && r !== 'user');
+  if (roles.includes('owner')) {
+    await db
+      .updateTable('users')
+      .set({
+        roles: sql<string[]>`CASE WHEN 'admin' = ANY(roles) THEN array_remove(roles, 'owner')
+          ELSE array_append(array_remove(roles, 'owner'), 'admin') END`,
+      })
+      .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
+      .execute();
   }
   const row = await db
     .insertInto('users')
-    .values({ email, role })
-    .onConflict((oc) => oc.column('email').doUpdateSet({ role }))
+    .values({ email, roles })
+    .onConflict((oc) => oc.column('email').doUpdateSet({ roles }))
     .returning('id')
     .executeTakeFirstOrThrow();
   return row.id;
+}
+
+/** Take the owner's and administrators' seats off whoever holds them, as the setup tests need. */
+export async function clearStaffSeats(db: Kysely<DB>): Promise<void> {
+  await db
+    .updateTable('users')
+    .set({ roles: sql<string[]>`array_remove(array_remove(roles, 'owner'), 'admin')` })
+    .where(sql<boolean>`roles && ARRAY['owner', 'admin']::text[]`)
+    .execute();
+}
+
+/** Leave an address holding no role at all. */
+export async function clearRoles(db: Kysely<DB>, email: string): Promise<void> {
+  await db.updateTable('users').set({ roles: [] }).where('email', '=', email).execute();
 }
 
 /** Calls as a signed-in person (and, optionally, past the site password). */
@@ -155,13 +184,14 @@ export function as(h: Harness, session?: string, siteAccess?: string) {
     });
 }
 
+/** What an address holds, as one word ("user" for none, roles joined by a comma), or undefined with no account. */
 export async function roleOf(db: Database, email: string): Promise<string | undefined> {
   const row = await db
     .selectFrom('users')
-    .select('role')
+    .select('roles')
     .where('email', '=', email)
     .executeTakeFirst();
-  return row?.role;
+  return row && (row.roles.length ? [...row.roles].sort().join(',') : 'user');
 }
 
 /** Put the site password back off, as the other test files expect to find it. */

@@ -66,10 +66,10 @@ describe('the team-member flag', () => {
     expect(res.json()).toEqual({ ok: true, unchanged: false, desks: ['moderating', 'outreach'] });
     const row = await h.db
       .selectFrom('users')
-      .select(['role', 'is_team_member', 'desks'])
+      .select(['roles', 'is_team_member', 'desks'])
       .where('email', '=', email)
       .executeTakeFirstOrThrow();
-    expect(row).toEqual({ role: 'user', is_team_member: true, desks: ['moderating', 'outreach'] });
+    expect(row).toEqual({ roles: [], is_team_member: true, desks: ['moderating', 'outreach'] });
     // What was granted is in the trail, desks and all.
     expect(await auditFor(email)).toEqual([
       {
@@ -89,7 +89,7 @@ describe('the team-member flag', () => {
     const me = (await as(h, session)({ method: 'GET', url: '/api/auth/me' })).json<unknown>();
     expect(me).toMatchObject({
       signedIn: true,
-      role: 'user',
+      roles: [],
       teamMember: true,
       desks: ['testing'],
       grantsAccess: false,
@@ -270,7 +270,7 @@ describe('the roster', () => {
     expect(body.days).toBe(30);
     const byEmail = new Map(body.people.map((p) => [p.email, p] as const));
     expect(byEmail.get(coordEmail)).toMatchObject({
-      role: 'user',
+      roles: [],
       filedByThem: 2,
       filedForTheirOrganizations: 3,
       organizations: [{ name: `Roster Org ${String(process.pid)}`, role: 'coordinator' }],

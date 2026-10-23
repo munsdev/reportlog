@@ -20,13 +20,14 @@
  */
 import type { AccessLink, AccessRequestBody, AccessRequestView } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
+import type { SystemRole } from '@reportlog/access';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { emailDigests, openWithDek } from '../filing/contactKeys.ts';
 import { HttpError } from '../http/errors.ts';
 import { partlyHidden } from '../identity/digestStop.ts';
 import { addressFrom } from '../identity/http.ts';
-import { recordRoleChange, setSystemRole } from '../identity/roles.ts';
+import { changeSystemRole, recordRoleChange } from '../identity/roles.ts';
 import { sha256Hex } from '../identity/secrets.ts';
 import { dekOf, issueLink, type ListDeps } from './list.ts';
 import { type Details, writeRequest } from './request.ts';
@@ -238,13 +239,13 @@ export async function approve(deps: ListDeps, id: number, owner: string): Promis
   await deps.db.transaction().execute(async (trx) => {
     const existing = await trx
       .selectFrom('users')
-      .select('role')
+      .select('roles')
       .where('email', '=', email)
       .forUpdate()
       .executeTakeFirst();
     // Somebody who already holds a role here keeps it: approving a request
     // must never quietly turn a moderator into a journalist.
-    if (existing && existing.role !== 'user') {
+    if (existing && existing.roles.length > 0) {
       throw new HttpError(
         409,
         'has_role',
@@ -253,9 +254,9 @@ export async function approve(deps: ListDeps, id: number, owner: string): Promis
     }
     const user = await trx
       .insertInto('users')
-      .values({ email, role: 'journalist' })
+      .values({ email, roles: ['journalist'] })
       .onConflict((oc) =>
-        oc.column('email').doUpdateSet({ role: 'journalist', updated_at: new Date() }),
+        oc.column('email').doUpdateSet({ roles: ['journalist'], updated_at: new Date() }),
       )
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -298,7 +299,7 @@ export async function reject(deps: ListDeps, id: number): Promise<void> {
 export async function revoke(
   deps: ListDeps,
   id: number,
-  owner: { email: string; role: 'owner' },
+  owner: { email: string; roles: readonly SystemRole[] },
 ): Promise<void> {
   const row = await requestRow(deps.db, id);
   if (row.status !== 'approved') {
@@ -311,12 +312,17 @@ export async function revoke(
   const email = openWithDek(dekOf(deps.ring, row.dek_wrapped), row.email_enc);
   const current = await deps.db
     .selectFrom('users')
-    .select('role')
+    .select('roles')
     .where('email', '=', email)
     .executeTakeFirst();
   // The same path every role change takes, so the revoke is in role_audit.
-  if (current?.role === 'journalist') {
-    const out = await setSystemRole(deps.db, { actor: owner, email, role: 'user' });
+  if (current?.roles.includes('journalist')) {
+    const out = await changeSystemRole(deps.db, {
+      actor: owner,
+      email,
+      role: 'journalist',
+      action: 'revoke',
+    });
     if (!out.ok) throw new HttpError(403, 'forbidden', 'That account cannot be changed here.');
   }
   await deps.db

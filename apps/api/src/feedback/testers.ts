@@ -22,7 +22,7 @@ export function setTesterFlag(
     actor,
     email,
     tester,
-  }: { actor: { email: string; role: SystemRole }; email: string; tester: boolean },
+  }: { actor: { email: string; roles: readonly SystemRole[] }; email: string; tester: boolean },
 ): Promise<{ unchanged: boolean }> {
   return setTester(db, { actor, email, tester });
 }
@@ -30,7 +30,7 @@ export function setTesterFlag(
 export async function listTesters(db: Database) {
   return db
     .selectFrom('users')
-    .select(['email', 'role'])
+    .select(['email', 'roles'])
     .where('is_tester', '=', true)
     .orderBy('email')
     .execute();

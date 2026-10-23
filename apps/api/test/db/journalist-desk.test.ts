@@ -291,7 +291,7 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
       const r = await who.call({
         method: 'POST',
         url: '/api/access/system-role',
-        payload: { email: address('sidestep'), role: 'journalist' },
+        payload: { email: address('sidestep'), role: 'journalist', action: 'grant' },
       });
       expect(r.statusCode, r.body).toBe(403);
     }

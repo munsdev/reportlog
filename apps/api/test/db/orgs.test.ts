@@ -15,8 +15,8 @@ import {
   membersOf,
   removeMember,
 } from '../../src/identity/organizations.ts';
-import { setSystemRole } from '../../src/identity/roles.ts';
-import { address, as, harness, roleOf, seat, signIn } from './identity-helpers.ts';
+import { changeSystemRole } from '../../src/identity/roles.ts';
+import { address, as, harness, roleOf, seat, signIn, clearRoles } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
 let h: Harness;
@@ -25,9 +25,17 @@ const amEmail = address('am');
 const modEmail = address('mod');
 const mgrEmail = address('mgr');
 const coordEmail = address('coord');
-const admin = { email: adminEmail, role: 'admin' as const };
-const am = { email: amEmail, role: 'access_manager' as const };
-const mgr = { email: mgrEmail, role: 'user' as const };
+const admin = { email: adminEmail, roles: ['admin' as const] };
+const am = { email: amEmail, roles: ['access_manager' as const] };
+const mgr = { email: mgrEmail, roles: [] };
+interface Actor {
+  email: string;
+  roles: readonly ('admin' | 'access_manager')[];
+}
+const grant = (actor: Actor, email: string, role: string) =>
+  changeSystemRole(h.db, { actor, email, role, action: 'grant' });
+const revoke = (actor: Actor, email: string, role: string) =>
+  changeSystemRole(h.db, { actor, email, role, action: 'revoke' });
 
 beforeAll(async () => {
   h = await harness();
@@ -35,39 +43,31 @@ beforeAll(async () => {
   for (const e of [amEmail, modEmail, mgrEmail, coordEmail]) await seat(h.db, e, 'user');
 });
 afterAll(async () => {
-  await h.db.updateTable('users').set({ role: 'user' }).where('email', '=', adminEmail).execute();
+  await clearRoles(h.db, adminEmail);
   await h.close();
 });
 
 describe('roles', () => {
   it('lets an admin appoint an Access Manager, who can appoint a Moderator', async () => {
-    expect(
-      (await setSystemRole(h.db, { actor: admin, email: amEmail, role: 'access_manager' })).ok,
-    ).toBe(true);
-    expect((await setSystemRole(h.db, { actor: am, email: modEmail, role: 'moderator' })).ok).toBe(
-      true,
-    );
+    expect((await grant(admin, amEmail, 'access_manager')).ok).toBe(true);
+    expect((await grant(am, modEmail, 'moderator')).ok).toBe(true);
     expect(await roleOf(h.db, modEmail)).toBe('moderator');
   });
 
   it('stops an Access Manager appointing another Access Manager', async () => {
-    expect(
-      await setSystemRole(h.db, { actor: am, email: address('someone'), role: 'access_manager' }),
-    ).toEqual({
+    expect(await grant(am, address('someone'), 'access_manager')).toEqual({
       ok: false,
       reason: 'not-permitted',
     });
   });
 
   it('stops an Access Manager demoting an admin', async () => {
-    expect((await setSystemRole(h.db, { actor: am, email: adminEmail, role: 'user' })).ok).toBe(
-      false,
-    );
+    expect((await revoke(am, adminEmail, 'admin')).ok).toBe(false);
     expect(await roleOf(h.db, adminEmail)).toBe('admin');
   });
 
-  it('stops anybody changing their own role', async () => {
-    expect(await setSystemRole(h.db, { actor: am, email: amEmail, role: 'user' })).toEqual({
+  it('stops anybody changing their own roles', async () => {
+    expect(await grant(am, amEmail, 'moderator')).toEqual({
       ok: false,
       reason: 'self',
     });
@@ -75,19 +75,19 @@ describe('roles', () => {
 
   it('appoints an address that has never signed in, which keeps the role when it does', async () => {
     const fresh = address('fresh');
-    expect((await setSystemRole(h.db, { actor: am, email: fresh, role: 'moderator' })).ok).toBe(
-      true,
-    );
+    expect((await grant(am, fresh, 'moderator')).ok).toBe(true);
     const token = await signIn(h, fresh);
     expect((await as(h, token)({ method: 'GET', url: '/api/auth/me' })).json()).toMatchObject({
-      role: 'moderator',
+      roles: ['moderator'],
     });
   });
 
-  it('writes both halves of a change into the trail, in the same transaction', async () => {
+  it('writes each role change into the trail on its own, in the same transaction', async () => {
     const subject = address('both');
-    await setSystemRole(h.db, { actor: admin, email: subject, role: 'moderator' });
-    await setSystemRole(h.db, { actor: admin, email: subject, role: 'access_manager' });
+    await grant(admin, subject, 'moderator');
+    await grant(admin, subject, 'access_manager');
+    await revoke(admin, subject, 'moderator');
+    expect(await roleOf(h.db, subject)).toBe('access_manager');
     const trail = await h.db
       .selectFrom('role_audit')
       .select(['actor_email', 'action', 'detail', 'axis'])
@@ -96,14 +96,14 @@ describe('roles', () => {
       .execute();
     expect(trail).toEqual([
       { actor_email: adminEmail, axis: 'system', action: 'grant', detail: 'moderator' },
-      { actor_email: adminEmail, axis: 'system', action: 'revoke', detail: 'moderator' },
       { actor_email: adminEmail, axis: 'system', action: 'grant', detail: 'access_manager' },
+      { actor_email: adminEmail, axis: 'system', action: 'revoke', detail: 'moderator' },
     ]);
   });
 
   it('writes no trail for a refusal, and no change without a trail', async () => {
     const subject = address('refused');
-    await setSystemRole(h.db, { actor: am, email: subject, role: 'admin' });
+    await grant(am, subject, 'admin');
     expect(await roleOf(h.db, subject)).toBeUndefined();
     const trail = await h.db
       .selectFrom('role_audit')
@@ -121,7 +121,7 @@ describe('roles', () => {
     )({
       method: 'POST',
       url: '/api/access/system-role',
-      payload: { email: modEmail, role: 'user' },
+      payload: { email: modEmail, role: 'moderator', action: 'revoke' },
     });
     expect(res.statusCode).toBe(403);
     const amToken = await signIn(h, amEmail);
@@ -131,7 +131,7 @@ describe('roles', () => {
     )({
       method: 'POST',
       url: '/api/access/system-role',
-      payload: { email: address('x'), role: 'access_manager' },
+      payload: { email: address('x'), role: 'access_manager', action: 'grant' },
     });
     expect(res.statusCode).toBe(403);
     expect(res.json<{ error: { message: string } }>().error.message).toMatch(/spread on its own/);

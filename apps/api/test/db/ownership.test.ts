@@ -15,8 +15,18 @@ import {
   pendingTransfer,
   proposeTransfer,
 } from '../../src/identity/ownership.ts';
-import { setSystemRole } from '../../src/identity/roles.ts';
-import { address, as, codeFor, harness, roleOf, seat, signIn } from './identity-helpers.ts';
+import { sql } from 'kysely';
+import { changeSystemRole } from '../../src/identity/roles.ts';
+import {
+  address,
+  as,
+  codeFor,
+  harness,
+  roleOf,
+  seat,
+  signIn,
+  clearStaffSeats,
+} from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
 let h: Harness;
@@ -25,13 +35,25 @@ const heir = address('heir');
 const adm = address('adm');
 const other = address('other');
 const ghost = address('ghost');
-const owner = { email: own, role: 'owner' as const };
-const admin = { email: adm, role: 'admin' as const };
+const owner = { email: own, roles: ['owner' as const] };
+const admin = { email: adm, roles: ['admin' as const] };
+interface Actor {
+  email: string;
+  roles: readonly ('owner' | 'admin')[];
+}
+const grant = (actor: Actor, email: string, role: string) =>
+  changeSystemRole(h.db, { actor, email, role, action: 'grant' });
+const revoke = (actor: Actor, email: string, role: string) =>
+  changeSystemRole(h.db, { actor, email, role, action: 'revoke' });
 
 const owners = async () =>
-  (await h.db.selectFrom('users').select('email').where('role', '=', 'owner').execute()).map(
-    (r) => r.email,
-  );
+  (
+    await h.db
+      .selectFrom('users')
+      .select('email')
+      .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
+      .execute()
+  ).map((r) => r.email);
 
 beforeAll(async () => {
   h = await harness();
@@ -39,11 +61,7 @@ beforeAll(async () => {
 afterAll(async () => {
   // Leave no owner behind: the setup test needs a deployment that looks new.
   await h.db.deleteFrom('ownership_transfers').execute();
-  await h.db
-    .updateTable('users')
-    .set({ role: 'user' })
-    .where('role', 'in', ['owner', 'admin'])
-    .execute();
+  await clearStaffSeats(h.db);
   await h.close();
 });
 beforeEach(async () => {
@@ -58,7 +76,7 @@ describe('the seat is singular', () => {
     await expect(
       h.db
         .insertInto('users')
-        .values({ email: address('second'), role: 'owner' })
+        .values({ email: address('second'), roles: ['owner'] })
         .execute(),
     ).rejects.toThrow(/users_single_owner_idx/);
     expect(await owners()).toEqual([own]);
@@ -67,7 +85,7 @@ describe('the seat is singular', () => {
 
 describe('the seat cannot be granted', () => {
   it('not even by the owner, through the role path', async () => {
-    expect(await setSystemRole(h.db, { actor: owner, email: heir, role: 'owner' })).toEqual({
+    expect(await grant(owner, heir, 'owner')).toEqual({
       ok: false,
       reason: 'not-permitted',
     });
@@ -82,7 +100,7 @@ describe('the seat cannot be granted', () => {
     )({
       method: 'POST',
       url: '/api/access/system-role',
-      payload: { email: heir, role: 'owner' },
+      payload: { email: heir, role: 'owner', action: 'grant' },
     });
     expect(res.statusCode).toBe(403);
     expect(res.json<{ error: { message: string } }>().error.message).toMatch(/handed over/);
@@ -91,17 +109,17 @@ describe('the seat cannot be granted', () => {
 
 describe('only the owner makes an administrator', () => {
   it('lets the owner appoint and demote one, to wherever they choose', async () => {
-    const r = await setSystemRole(h.db, { actor: owner, email: other, role: 'admin' });
+    const r = await grant(owner, other, 'admin');
     expect(r.ok).toBe(true);
     expect(await roleOf(h.db, other)).toBe('admin');
-    expect((await setSystemRole(h.db, { actor: owner, email: other, role: 'moderator' })).ok).toBe(
-      true,
-    );
+    // One role at a time: moving somebody down is a revoke and a grant.
+    expect((await grant(owner, other, 'moderator')).ok).toBe(true);
+    expect((await revoke(owner, other, 'admin')).ok).toBe(true);
     expect(await roleOf(h.db, other)).toBe('moderator');
   });
 
   it('refuses an admin appointing another admin', async () => {
-    expect(await setSystemRole(h.db, { actor: admin, email: other, role: 'admin' })).toEqual({
+    expect(await grant(admin, other, 'admin')).toEqual({
       ok: false,
       reason: 'not-permitted',
     });
@@ -110,18 +128,17 @@ describe('only the owner makes an administrator', () => {
 
 describe('the owner is untouchable through the role path', () => {
   it('cannot be demoted by an admin', async () => {
-    expect(await setSystemRole(h.db, { actor: admin, email: own, role: 'user' })).toEqual({
+    expect(await revoke(admin, own, 'owner')).toEqual({
       ok: false,
-      reason: 'protected-subject',
+      reason: 'not-permitted',
     });
     expect(await roleOf(h.db, own)).toBe('owner');
   });
 
-  it('cannot demote themselves, to admin or to user (the ownerless state)', async () => {
-    for (const role of ['admin', 'user']) {
-      expect((await setSystemRole(h.db, { actor: owner, email: own, role })).ok).toBe(false);
-      expect(await owners()).toEqual([own]);
-    }
+  it('cannot revoke their own seat (the ownerless state), nor take another role themselves', async () => {
+    expect((await revoke(owner, own, 'owner')).ok).toBe(false);
+    expect((await grant(owner, own, 'moderator')).ok).toBe(false);
+    expect(await owners()).toEqual([own]);
   });
 });
 

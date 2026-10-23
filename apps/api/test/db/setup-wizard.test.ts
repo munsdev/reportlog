@@ -17,6 +17,7 @@
  * legacy setup-selftest); this file is the steps legacy's script left to
  * "G's and F's", and the journey through all of them.
  */
+import { sql } from 'kysely';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { storedPublicArchive } from '../../src/board/publication.ts';
 import { siteLayer } from '../../src/files/limits.ts';
@@ -30,6 +31,7 @@ import {
   liftCurtain,
   roleOf,
   setUpTotp,
+  clearStaffSeats,
 } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
@@ -78,11 +80,7 @@ beforeAll(async () => {
         ?.intake_enabled ?? null,
   };
   // A deployment as the installer leaves it (as setup.test.ts does).
-  await h.db
-    .updateTable('users')
-    .set({ role: 'user' })
-    .where('role', 'in', ['owner', 'admin'])
-    .execute();
+  await clearStaffSeats(h.db);
   await h.db
     .updateTable('site_access')
     .set({ setup_completed_at: null })
@@ -92,11 +90,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await h.db
-    .updateTable('users')
-    .set({ role: 'user' })
-    .where('role', 'in', ['owner', 'admin'])
-    .execute();
+  await clearStaffSeats(h.db);
   await h.db
     .updateTable('site_settings')
     .set({
@@ -168,8 +162,8 @@ describe('walking the wizard', () => {
 
   it('and nothing behind the seat opens until the owner sets up a second factor (E3)', async () => {
     expect((await asOwner('GET', '/api/auth/me')).json()).toMatchObject({
-      role: 'user',
-      heldRole: 'owner',
+      roles: [],
+      heldRoles: ['owner'],
       secondFactor: 'set-up',
     });
     expect((await asOwner('PUT', '/api/admin/site/name', { name: 'Too soon' })).statusCode).toBe(
@@ -185,7 +179,7 @@ describe('walking the wizard', () => {
     session = set.session;
     expect(recoveryCodes).toHaveLength(10);
     expect((await asOwner('GET', '/api/auth/me')).json()).toMatchObject({
-      role: 'owner',
+      roles: ['owner'],
       secondFactor: 'done',
     });
   });
@@ -301,10 +295,10 @@ describe('once setup is done', () => {
     expect(res.statusCode).toBe(200);
     const holders = await h.db
       .selectFrom('users')
-      .select(['email', 'role'])
-      .where('role', 'in', ['owner', 'admin'])
+      .select(['email', 'roles'])
+      .where(sql<boolean>`roles && ARRAY['owner', 'admin']::text[]`)
       .execute();
-    expect(holders).toEqual([{ email: OWNER, role: 'owner' }]);
+    expect(holders).toEqual([{ email: OWNER, roles: ['owner'] }]);
   });
 
   it('left the seating and the decision in the trail, and nothing else about the seat', async () => {

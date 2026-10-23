@@ -1,28 +1,173 @@
 /* Look pack reportlog-core. Written from look.json; never edit by hand. */
-@font-face { font-family: 'Public Sans'; src: url('./fonts/PublicSans-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Public Sans'; src: url('./fonts/PublicSans-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Public Sans'; src: url('./fonts/PublicSans-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Archivo'; src: url('./fonts/Archivo-variable.woff2') format('woff2'); font-weight: 500 800; font-style: normal; font-stretch: 62% 125%; font-display: swap; }
-@font-face { font-family: 'IBM Plex Sans'; src: url('./fonts/IBMPlexSans-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Sans'; src: url('./fonts/IBMPlexSans-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Sans'; src: url('./fonts/IBMPlexSans-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Sans'; src: url('./fonts/IBMPlexSans-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Mono'; src: url('./fonts/IBMPlexMono-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Mono'; src: url('./fonts/IBMPlexMono-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'IBM Plex Mono'; src: url('./fonts/IBMPlexMono-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Courier Prime'; src: url('./fonts/CourierPrime-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Courier Prime'; src: url('./fonts/CourierPrime-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Newsreader'; src: url('./fonts/Newsreader-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Newsreader'; src: url('./fonts/Newsreader-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Newsreader'; src: url('./fonts/Newsreader-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Bitter'; src: url('./fonts/Bitter-600.woff2') format('woff2'); font-weight: 600; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Bitter'; src: url('./fonts/Bitter-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Bitter'; src: url('./fonts/Bitter-800.woff2') format('woff2'); font-weight: 800; font-style: normal; font-display: swap; }
-@font-face { font-family: 'JetBrains Mono'; src: url('./fonts/JetBrainsMono-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'JetBrains Mono'; src: url('./fonts/JetBrainsMono-500.woff2') format('woff2'); font-weight: 500; font-style: normal; font-display: swap; }
-@font-face { font-family: 'JetBrains Mono'; src: url('./fonts/JetBrainsMono-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Atkinson Hyperlegible'; src: url('./fonts/AtkinsonHyperlegible-400.woff2') format('woff2'); font-weight: 400; font-style: normal; font-display: swap; }
-@font-face { font-family: 'Atkinson Hyperlegible'; src: url('./fonts/AtkinsonHyperlegible-700.woff2') format('woff2'); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./fonts/PublicSans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./fonts/PublicSans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Public Sans';
+  src: url('./fonts/PublicSans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Archivo';
+  src: url('./fonts/Archivo-variable.woff2') format('woff2');
+  font-weight: 500 800;
+  font-style: normal;
+  font-stretch: 62% 125%;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('./fonts/IBMPlexSans-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('./fonts/IBMPlexSans-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('./fonts/IBMPlexSans-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Sans';
+  src: url('./fonts/IBMPlexSans-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('./fonts/IBMPlexMono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('./fonts/IBMPlexMono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('./fonts/IBMPlexMono-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Courier Prime';
+  src: url('./fonts/CourierPrime-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Courier Prime';
+  src: url('./fonts/CourierPrime-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Newsreader';
+  src: url('./fonts/Newsreader-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Newsreader';
+  src: url('./fonts/Newsreader-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Newsreader';
+  src: url('./fonts/Newsreader-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bitter';
+  src: url('./fonts/Bitter-600.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bitter';
+  src: url('./fonts/Bitter-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bitter';
+  src: url('./fonts/Bitter-800.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('./fonts/JetBrainsMono-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('./fonts/AtkinsonHyperlegible-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Atkinson Hyperlegible';
+  src: url('./fonts/AtkinsonHyperlegible-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 :root,
 [data-palette='newsdesk'] {
   --rl-background: #f3f0e8;

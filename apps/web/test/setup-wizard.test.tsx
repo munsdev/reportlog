@@ -77,14 +77,14 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
         return ok({
           signedIn: true,
           email: 'owner@example.org',
-          role: 'owner',
+          roles: ['owner'],
           memberships: [],
           grantsAccess: true,
           tester: false,
           teamMember: false,
           desks: [],
           secondFactor: 'done',
-          heldRole: 'owner',
+          heldRoles: ['owner'],
           stepUpUntil: null,
         });
       case 'GET /api/admin/site':

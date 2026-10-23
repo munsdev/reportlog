@@ -72,7 +72,7 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   await expect(page.getByRole('heading', { name: 'Set up a second way to sign in' })).toBeVisible();
   await noViolations(page);
   const me = (await (await page.request.get('/api/auth/me')).json()) as Record<string, unknown>;
-  expect(me).toMatchObject({ role: 'user', heldRole: 'moderator', secondFactor: 'set-up' });
+  expect(me).toMatchObject({ roles: [], heldRoles: ['moderator'], secondFactor: 'set-up' });
   expect((await page.request.get('/api/moderation/reports')).status()).toBe(403);
 
   await page.getByRole('radio', { name: 'An authenticator app' }).click();
@@ -102,7 +102,7 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   await page.getByRole('button', { name: 'I have kept them' }).click();
   await expect(page.getByRole('heading', { name: 'Your recovery codes' })).toHaveCount(0);
   expect(await (await page.request.get('/api/auth/me')).json()).toMatchObject({
-    role: 'moderator',
+    roles: ['moderator'],
     secondFactor: 'done',
   });
 
@@ -116,7 +116,7 @@ test('a moderator sets up an authenticator app, keeps the recovery codes, and si
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('heading', { name: 'One more step' })).toHaveCount(0);
   expect(await (await page.request.get('/api/auth/me')).json()).toMatchObject({
-    role: 'moderator',
+    roles: ['moderator'],
     secondFactor: 'done',
   });
 
@@ -212,7 +212,7 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
   await expect(page.getByRole('heading', { name: 'Your recovery codes' })).toBeVisible();
   await page.getByRole('button', { name: 'I have kept them' }).click();
   expect(await (await page.request.get(`${LOCAL}/api/auth/me`)).json()).toMatchObject({
-    role: 'moderator',
+    roles: ['moderator'],
     secondFactor: 'done',
   });
 
@@ -222,7 +222,7 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
   await page.getByRole('button', { name: 'Use a passkey' }).click();
   await expect(page.getByRole('heading', { name: 'One more step' })).toHaveCount(0);
   expect(await (await page.request.get(`${LOCAL}/api/auth/me`)).json()).toMatchObject({
-    role: 'moderator',
+    roles: ['moderator'],
     secondFactor: 'done',
   });
 

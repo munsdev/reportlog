@@ -390,7 +390,7 @@ describe('the import', () => {
       db.selectFrom('report_heads').selectAll().orderBy('thread_id').execute();
     expect(await heads(dst)).toEqual(await heads(src));
     const users = (db: Database) =>
-      db.selectFrom('users').select(['id', 'email', 'role']).orderBy('id').execute();
+      db.selectFrom('users').select(['id', 'email', 'roles']).orderBy('id').execute();
     expect(await users(dst)).toEqual(await users(src));
     expect(await dst.selectFrom('organization_memberships').selectAll().execute()).toHaveLength(1);
     const access = (db: Database) => db.selectFrom('site_access').selectAll().executeTakeFirst();

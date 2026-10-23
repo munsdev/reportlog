@@ -28,10 +28,9 @@ export function mayHaveWaiting(me: Me | undefined): me is Extract<Me, { signedIn
   if (!me?.signedIn) return false;
   return (
     me.tester ||
-    me.role === 'moderator' ||
-    me.role === 'admin' ||
-    me.role === 'owner' ||
-    me.role === 'access_manager'
+    me.roles.some(
+      (r) => r === 'moderator' || r === 'admin' || r === 'owner' || r === 'access_manager',
+    )
   );
 }
 

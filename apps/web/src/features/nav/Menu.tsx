@@ -242,7 +242,7 @@ export function AccountLinks({
       )}
       {/* Role holders' second factor. On the role they HOLD, so somebody who
           has not proved one yet (and so acts with no role) can find it. */}
-      {me.heldRole === 'user' ? null : (
+      {me.heldRoles.length === 0 ? null : (
         <li>
           <Link
             to="/access/security"

@@ -17,7 +17,7 @@ import {
   ROLE_DESCRIPTIONS,
 } from '../../src/identity/invitations.ts';
 import { sha256Hex } from '../../src/identity/secrets.ts';
-import { SITE, address, as, harness, seat, signIn } from './identity-helpers.ts';
+import { SITE, address, as, harness, seat, signIn, clearRoles } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
 let h: Harness;
@@ -75,7 +75,7 @@ beforeAll(async () => {
   asOther = as(h, await signIn(h, otherEmail));
 });
 afterAll(async () => {
-  await h.db.updateTable('users').set({ role: 'user' }).where('email', '=', adminEmail).execute();
+  await clearRoles(h.db, adminEmail);
   await h.close();
 });
 

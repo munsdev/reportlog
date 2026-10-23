@@ -54,7 +54,7 @@ export interface FeedbackDeps {
 
 /** May open the tracker: the flag, or the people who could give it. */
 export function mayUseTracker(user: SignedIn): boolean {
-  return user.tester || roleSatisfies(user.role, 'admin') || user.role === 'access_manager';
+  return user.tester || roleSatisfies(user.roles, 'admin') || user.roles.includes('access_manager');
 }
 
 function requireTester(request: FastifyRequest): SignedIn {

@@ -211,7 +211,8 @@ export const STAFF_ENTRIES: readonly StaffEntry[] = [
 ];
 
 export interface Viewer {
-  role: SystemRole;
+  /** Every role held; an entry opens when any one of them satisfies it (decision 70). */
+  roles: readonly SystemRole[];
   tester: boolean;
   teamMember?: boolean;
   memberships?: readonly { role: string }[];
@@ -227,7 +228,7 @@ export function mayOpen(entry: Pick<StaffEntry, 'for'>, viewer: Viewer): boolean
         ? viewer.teamMember === true
         : a === 'organization'
           ? (viewer.memberships ?? []).some((m) => ORGANIZATION_ROLES.includes(m.role))
-          : roleSatisfies(viewer.role, a),
+          : roleSatisfies(viewer.roles, a),
   );
 }
 

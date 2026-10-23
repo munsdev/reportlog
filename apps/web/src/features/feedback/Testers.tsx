@@ -94,10 +94,12 @@ export function Testers() {
             <li key={t.email} className="flex flex-wrap items-center justify-between gap-2 py-2">
               <span>
                 <span className="font-mono text-sm break-all">{t.email}</span>
-                {t.role !== 'user' ? (
+                {t.roles.length ? (
                   <span className="text-sm text-ink-alt">
                     {' '}
-                    ({(ROLE_LABELS as Record<string, string>)[t.role] ?? t.role})
+                    (
+                    {t.roles.map((r) => (ROLE_LABELS as Record<string, string>)[r] ?? r).join(', ')}
+                    )
                   </span>
                 ) : null}
               </span>

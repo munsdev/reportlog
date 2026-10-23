@@ -36,14 +36,14 @@ import { SignInForm } from '../src/features/identity/SignInForm.tsx';
 const me = (over: Record<string, unknown>) => ({
   signedIn: true,
   email: 'mod@example.org',
-  role: 'moderator',
+  roles: ['moderator'],
   memberships: [],
   grantsAccess: false,
   tester: false,
   teamMember: false,
   desks: [],
   secondFactor: 'done',
-  heldRole: 'moderator',
+  heldRoles: ['moderator'],
   stepUpUntil: null,
   ...over,
 });
@@ -119,7 +119,7 @@ describe('signing in', () => {
   });
 
   it('the second step says who is signed in, and "Start again" signs out', async () => {
-    let now: unknown = me({ role: 'user', secondFactor: 'verify' });
+    let now: unknown = me({ roles: [], secondFactor: 'verify' });
     const sent = serve({
       'GET /api/auth/me': () => now,
       'GET /api/auth/second-factor': { ...STATUS, state: 'verify', totp: true },

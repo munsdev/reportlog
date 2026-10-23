@@ -89,7 +89,9 @@ make a feature easier. Change the feature.
   make Access Managers. Only the owner appoints or removes an administrator.
   The owner's seat is in no row of `MAY_GRANT` (`packages/access`), so no
   grant can produce one. Rank: owner satisfies admin; nothing else outranks
-  anything; admin does not imply moderator.
+  anything; admin does not imply moderator. A person may hold several roles
+  (`users.roles`, decision 70), granted and revoked one at a time; a guard
+  admits them when any one satisfies it, and a journalist holds no staff role.
 - **An entry is not a report.** A list (as opposed to a logbook) seals
   nothing and never reaches the chain. `apps/api/src/lists/` may not reach
   `packages/seal` or `apps/api/src/chain` even transitively. _Boundary check._

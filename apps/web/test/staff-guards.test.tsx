@@ -164,14 +164,14 @@ const SIGNED_OUT = { signedIn: false };
 const NO_ROLE = {
   signedIn: true,
   email: 'somebody@example.org',
-  role: 'user',
+  roles: [],
   memberships: [],
   grantsAccess: false,
   tester: false,
   teamMember: false,
   desks: [],
   secondFactor: 'not-needed',
-  heldRole: 'user',
+  heldRoles: [],
   stepUpUntil: null,
 };
 
@@ -278,7 +278,7 @@ describe('the staff screens in the route tree', () => {
 describe('the access screens open for the people the server admits', () => {
   const signedIn = (role: string, memberships: unknown[] = []) => ({
     ...NO_ROLE,
-    role,
+    roles: role === 'user' ? [] : [role],
     memberships,
     grantsAccess: role === 'admin' || role === 'owner' || role === 'access_manager',
   });

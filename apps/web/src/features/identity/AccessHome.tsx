@@ -6,7 +6,7 @@
  * out, so the form never offers what the server would refuse. The server
  * checks again regardless.
  */
-import { MAY_GRANT, hasAdminAuthority } from '@reportlog/access';
+import { canGrantSystemRole, hasAdminAuthority } from '@reportlog/access';
 import {
   acceptHandover,
   cancelHandover,
@@ -19,17 +19,18 @@ import {
   setSystemRole,
   updateSiteAccess,
 } from '@reportlog/contracts';
-import type { SystemRoleName } from '@reportlog/contracts';
+import type { HeldRoleName } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { DeleteAccount } from './DeleteAccount.tsx';
 import { desksFor } from './desks.ts';
-import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
+import { ROLE_EXPLAINED, ROLE_LABELS, rolesLabel, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInPrompt } from './SignInPrompt.tsx';
@@ -60,9 +61,9 @@ export function AccessHome() {
             <GrantRole me={user} />
           </>
         )}
-        {user.role === 'owner' && <ResetSecondFactor />}
+        {user.roles.includes('owner') && <ResetSecondFactor />}
         {/* An anchor of its own: the staff sidebar links straight here. */}
-        {hasAdminAuthority(user.role) && (
+        {hasAdminAuthority(user.roles) && (
           <div id="site-password" className="scroll-mt-24">
             <SitePassword />
           </div>
@@ -83,9 +84,22 @@ function YourAccount({ me }: { me: SignedInMe }) {
       <p>
         Signed in as <strong>{me.email}</strong>.
       </p>
-      <p>
-        Role: <strong>{ROLE_LABELS[me.role]}</strong>. {ROLE_EXPLAINED[me.role]}
-      </p>
+      {me.heldRoles.length === 0 ? (
+        <p>
+          Role: <strong>{ROLE_LABELS.user}</strong>. {ROLE_EXPLAINED.user}
+        </p>
+      ) : (
+        <>
+          <p>{me.heldRoles.length > 1 ? 'Roles:' : 'Role:'}</p>
+          <ul className="list-disc space-y-1 pl-6">
+            {me.heldRoles.map((r) => (
+              <li key={r}>
+                <strong>{ROLE_LABELS[r]}</strong>. {ROLE_EXPLAINED[r]}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       {me.memberships.length > 0 && (
         <ul className="list-disc space-y-1 pl-6">
           {me.memberships.map((m) => (
@@ -151,31 +165,65 @@ function TeamDesks({ me }: { me: SignedInMe }) {
   );
 }
 
+/** The staff roles offered as boxes. The journalist is shown apart: it is never ticked here. */
+const STAFF_CHOICES = ['moderator', 'access_manager', 'admin'] as const;
+
+const peopleQuery = {
+  queryKey: ['identity', 'people'],
+  queryFn: ({ signal }: { signal: AbortSignal }) => call(listPeople, { signal }),
+};
+
+/**
+ * Roles are granted and revoked one at a time (decision 70). The boxes show
+ * what the person holds now; Save sends one call for each box that changed,
+ * each its own line in the record. Only roles this person may hand out
+ * (packages/access, MAY_GRANT) can be changed: the server checks again.
+ */
 function GrantRole({ me }: { me: SignedInMe }) {
   const client = useQueryClient();
   const changed = useIdentityChanged();
-  const roleId = useId();
-  const grantable = MAY_GRANT[me.role];
+  const staffId = useId();
+  const people = useQuery(peopleQuery);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<SystemRoleName>(grantable[1] ?? 'user');
-  const grant = useMutation({
-    mutationFn: () => call(setSystemRole, { body: { email, role } }),
+  // null follows what the person holds now; a list is what has been ticked.
+  const [picked, setPicked] = useState<readonly HeldRoleName[] | null>(null);
+  const typed = email.trim().toLowerCase();
+  const current: readonly HeldRoleName[] =
+    people.data?.people.find((p) => p.email.toLowerCase() === typed)?.roles ?? [];
+  const wanted = picked ?? current;
+  const isJournalist = current.includes('journalist');
+  const isMe = typed === me.email.toLowerCase();
+  const changes = STAFF_CHOICES.filter((r) => current.includes(r) !== wanted.includes(r));
+
+  const save = useMutation({
+    mutationFn: async () => {
+      let roles: readonly HeldRoleName[] = current;
+      for (const r of changes) {
+        const out = await call(setSystemRole, {
+          body: { email: typed, role: r, action: wanted.includes(r) ? 'grant' : 'revoke' },
+        });
+        roles = out.roles;
+      }
+      return roles;
+    },
     onSuccess: async () => {
+      setPicked(null);
       await client.invalidateQueries({ queryKey: ['identity', 'people'] });
       await changed();
     },
   });
+
   return (
     <Panel title="Give somebody a role">
       <p className="text-ink-alt">
-        They do not need an account yet: the role waits for them and is theirs the first time they
-        sign in. To take a role away, give them “No role”.
+        A person can hold more than one staff role. They do not need an account yet: a role waits
+        for them and is theirs the first time they sign in. To take a role away, untick it.
       </p>
       <form
         className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          grant.mutate();
+          save.mutate();
         }}
       >
         <TextField
@@ -185,40 +233,64 @@ function GrantRole({ me }: { me: SignedInMe }) {
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            grant.reset();
+            setPicked(null);
+            save.reset();
           }}
         />
-        {/* Only the roles this person may grant (packages/access, MAY_GRANT): the
-            role ceiling is the server's, and the cards never offer past it. */}
-        <div className="flex flex-col gap-1.5">
-          <p id={roleId} className="label-face text-xs">
-            Role
+        <fieldset className="flex flex-col gap-3" aria-labelledby={staffId}>
+          <legend id={staffId} className="label-face text-xs">
+            Staff roles
+          </legend>
+          {STAFF_CHOICES.map((r) => {
+            const box = `${staffId}-${r}`;
+            // A journalist holds no staff role, and nobody changes their own roles.
+            const allowed = canGrantSystemRole(me.roles, r) && !isJournalist && !isMe;
+            return (
+              <div key={r} className="flex items-start gap-3">
+                <Checkbox
+                  id={box}
+                  checked={wanted.includes(r)}
+                  disabled={!allowed}
+                  onCheckedChange={(on) => {
+                    setPicked(on === true ? [...wanted, r] : wanted.filter((x) => x !== r));
+                    save.reset();
+                  }}
+                />
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <Label htmlFor={box} className="font-normal">
+                    {ROLE_LABELS[r]}
+                  </Label>
+                  <span className="text-sm text-ink-alt">{ROLE_EXPLAINED[r]}</span>
+                </div>
+              </div>
+            );
+          })}
+        </fieldset>
+        <div className="flex flex-col gap-1">
+          <p className="label-face text-xs">Journalist</p>
+          <p className="text-sm text-ink-alt">
+            {isJournalist ? 'This person is a journalist. ' : ''}
+            Only by approving an access request. A journalist cannot also hold a staff role.
           </p>
-          <RadioGroup
-            aria-labelledby={roleId}
-            value={role}
-            onValueChange={(v) => {
-              const next = grantable.find((r) => r === v);
-              if (next) setRole(next);
-            }}
-          >
-            {grantable.map((r) => (
-              <RadioOption key={r} value={r} label={ROLE_LABELS[r]} hint={ROLE_EXPLAINED[r]} />
-            ))}
-          </RadioGroup>
         </div>
+        {isMe && <p className="text-sm text-ink-alt">You cannot change your own roles.</p>}
         <div>
-          <Button type="submit" busy={grant.isPending} busyLabel="Saving…">
+          <Button
+            type="submit"
+            busy={save.isPending}
+            busyLabel="Saving…"
+            disabled={!changes.length}
+          >
             Save
           </Button>
         </div>
       </form>
-      <ErrorText error={grant.error} />
-      {grant.isSuccess && (
+      <ErrorText error={save.error} />
+      {save.isSuccess && (
         <Done>
-          {grant.data.unchanged
-            ? `${email.trim()} already had that role.`
-            : `${email.trim()} is now: ${ROLE_LABELS[role]}.`}
+          {save.data.length
+            ? `${typed} now holds: ${rolesLabel(save.data)}.`
+            : `${typed} now holds no role.`}
         </Done>
       )}
     </Panel>
@@ -226,10 +298,7 @@ function GrantRole({ me }: { me: SignedInMe }) {
 }
 
 function People() {
-  const people = useQuery({
-    queryKey: ['identity', 'people'],
-    queryFn: ({ signal }) => call(listPeople, { signal }),
-  });
+  const people = useQuery(peopleQuery);
   return (
     <Panel title="People with a role">
       <ErrorText error={people.error} />
@@ -255,7 +324,7 @@ function People() {
               {people.data.people.map((p) => (
                 <tr key={p.email} className="border-b border-line last:border-0">
                   <td className="py-2 pr-4 break-all">{p.email}</td>
-                  <td className="py-2 pr-4">{ROLE_LABELS[p.role]}</td>
+                  <td className="py-2 pr-4">{rolesLabel(p.roles)}</td>
                   <td className="py-2">
                     {p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}
                   </td>

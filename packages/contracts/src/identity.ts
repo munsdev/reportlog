@@ -21,6 +21,9 @@ export const SystemRoleName = z.enum([
   'owner',
   'journalist',
 ]);
+/** A role somebody can hold: every system role except `user`, which is holding none. */
+export const HeldRoleName = SystemRoleName.exclude(['user']);
+export type HeldRoleName = z.infer<typeof HeldRoleName>;
 export const OrgRoleName = z.enum(['manager', 'coordinator']);
 export type SystemRoleName = z.infer<typeof SystemRoleName>;
 export type OrgRoleName = z.infer<typeof OrgRoleName>;
@@ -36,7 +39,8 @@ export const Me = z.discriminatedUnion('signedIn', [
   z.object({
     signedIn: z.literal(true),
     email: z.string(),
-    role: SystemRoleName,
+    /** The roles this session acts with (a person may hold several). */
+    roles: z.array(HeldRoleName),
     memberships: z.array(Membership),
     /** An administrator, the owner or an Access Manager: may open the access screens. */
     grantsAccess: z.boolean(),
@@ -48,11 +52,11 @@ export const Me = z.discriminatedUnion('signedIn', [
     desks: z.array(z.string()),
     /**
      * The second factor (plan E, E3). `set-up` and `verify` mean this session
-     * acts with no role (`role` is `user`, `memberships` empty) until it is
-     * done; `heldRole` is the role it will then have.
+     * acts with no role (`roles` and `memberships` empty) until it is
+     * done; `heldRoles` are the roles it will then have.
      */
     secondFactor: z.enum(['not-needed', 'set-up', 'verify', 'done']),
-    heldRole: SystemRoleName,
+    heldRoles: z.array(HeldRoleName),
     /** Until when a step-up proved in this session counts, if one does. */
     stepUpUntil: Iso.nullable(),
   }),
@@ -111,19 +115,24 @@ export const deleteAccount = defineRoute({
 export const setSystemRole = defineRoute({
   method: 'POST',
   path: '/api/access/system-role',
-  summary: 'Give somebody a system role. The ceiling is in @reportlog/access.',
-  body: z.object({ email: Email, role: z.string().max(40) }),
+  summary:
+    'Grant or revoke ONE system role. Roles are changed one at a time, each in the audit trail, under the ceiling in @reportlog/access.',
+  body: z.object({
+    email: Email,
+    role: z.string().max(40),
+    action: z.enum(['grant', 'revoke']),
+  }),
   response: z.object({
     ok: z.literal(true),
     unchanged: z.boolean(),
-    from: SystemRoleName.optional(),
-    to: SystemRoleName.optional(),
+    /** Every role the person holds afterwards. */
+    roles: z.array(HeldRoleName),
   }),
 });
 
 export const Person = z.object({
   email: z.string(),
-  role: SystemRoleName,
+  roles: z.array(HeldRoleName),
   organizations: z.array(z.object({ name: z.string(), role: OrgRoleName })),
 });
 
@@ -553,7 +562,7 @@ export const setTeamMember = defineRoute({
 
 export const RosterPerson = z.object({
   email: z.string(),
-  role: SystemRoleName,
+  roles: z.array(HeldRoleName),
   tester: z.boolean(),
   teamMember: z.boolean(),
   desks: z.array(z.string()),

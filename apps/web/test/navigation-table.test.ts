@@ -16,14 +16,14 @@ import type { Viewer } from '../src/features/staff-nav/entries.ts';
 
 const VIEWERS: Record<MenuRole, Viewer | null> = {
   visitor: null,
-  reporter: { role: 'user', tester: false },
-  moderator: { role: 'moderator', tester: false },
-  admin: { role: 'admin', tester: false },
-  access_manager: { role: 'access_manager', tester: false },
-  owner: { role: 'owner', tester: false },
-  journalist: { role: 'journalist', tester: false },
-  coordinator: { role: 'user', tester: false, memberships: [{ role: 'coordinator' }] },
-  tester: { role: 'user', tester: true },
+  reporter: { roles: [], tester: false },
+  moderator: { roles: ['moderator'], tester: false },
+  admin: { roles: ['admin'], tester: false },
+  access_manager: { roles: ['access_manager'], tester: false },
+  owner: { roles: ['owner'], tester: false },
+  journalist: { roles: ['journalist'], tester: false },
+  coordinator: { roles: [], tester: false, memberships: [{ role: 'coordinator' }] },
+  tester: { roles: [], tester: true },
 };
 
 const shown = (v: Viewer | null) =>

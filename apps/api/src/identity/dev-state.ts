@@ -58,8 +58,8 @@ try {
     await db.deleteFrom('ownership_transfers').execute();
     await db
       .updateTable('users')
-      .set({ role: 'user' })
-      .where('role', 'in', ['owner', 'admin'])
+      .set({ roles: sql<string[]>`array_remove(array_remove(roles, 'owner'), 'admin')` })
+      .where(sql<boolean>`roles && ARRAY['owner', 'admin']::text[]`)
       .execute();
     await db.updateTable('logbooks').set({ outside_access: 'closed' }).execute();
     await db
@@ -68,12 +68,14 @@ try {
       .where('id', '=', true)
       .execute();
     await writeSiteAccess(db, { password });
-  } else if (mode === 'seat' && password && role && role !== 'owner') {
+  } else if (mode === 'seat' && password && role && !role.split(',').includes('owner')) {
     // `password` is the address in this mode: the arguments are positional.
+    // `role` may be a comma-separated list; "user" is no role at all.
+    const seated = role.split(',').filter((r) => r && r !== 'user');
     await db
       .insertInto('users')
-      .values({ email: password.toLowerCase(), role })
-      .onConflict((oc) => oc.column('email').doUpdateSet({ role }))
+      .values({ email: password.toLowerCase(), roles: seated })
+      .onConflict((oc) => oc.column('email').doUpdateSet({ roles: seated }))
       .execute();
   } else if (mode === 'session' && password) {
     // `password` is the address in this mode.

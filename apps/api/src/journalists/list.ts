@@ -148,7 +148,7 @@ export function confirmationEmail(
  *
  * NOT `setSystemRole`. That refuses anyone but the owner for `journalist`,
  * and must keep refusing: loosening it for this caller loosens it for all.
- * This can do exactly one thing, journalist to user, for the account an
+ * This can do exactly one thing, journalist taken off the roles, for the account an
  * approved request names, and the WHERE says so: it cannot touch any other
  * role. role_audit records it as the owner's revoke is recorded, `revoke`
  * of `journalist`, with the journalist's own address as the actor, because
@@ -161,8 +161,11 @@ export async function removeSubscribers(db: Kysely<DB>, ids: readonly number[]):
   await db.transaction().execute(async (trx) => {
     const ended = await trx
       .updateTable('users')
-      .set({ role: 'user', updated_at: new Date() })
-      .where('role', '=', 'journalist')
+      .set({
+        roles: sql<string[]>`array_remove(roles, 'journalist')`,
+        updated_at: new Date(),
+      })
+      .where(sql<boolean>`roles @> ARRAY['journalist']::text[]`)
       .where('id', 'in', (q) =>
         q
           .selectFrom('journalist_access_requests')

@@ -706,7 +706,7 @@ function EvidenceRow({ r }: { r: QueueItem }) {
 function NoteRow({ r }: { r: QueueItem }) {
   const query = useQuery(noteQuery(r.thread_id));
   const me = useMe();
-  const isAdmin = me.data?.signedIn ? roleSatisfies(me.data.role, 'admin') : false;
+  const isAdmin = me.data?.signedIn ? roleSatisfies(me.data.roles, 'admin') : false;
   const [body, setBody] = useState<string | null>(null);
   const [why, setWhy] = useState('');
   const [problem, setProblem] = useState('');

@@ -5,9 +5,10 @@
  * checked twice on purpose: once by the guard at the route, once by
  * @reportlog/access inside the module that makes the change.
  */
-import { SYSTEM_ROLES } from '@reportlog/access';
+import { toRoleSet } from '@reportlog/access';
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance } from 'fastify';
+import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
@@ -33,7 +34,7 @@ import {
   pendingTransfer,
   proposeTransfer,
 } from './ownership.ts';
-import { recordRoleChange, setSystemRole } from './roles.ts';
+import { changeSystemRole, recordRoleChange } from './roles.ts';
 import { normalizeEmail } from './secrets.ts';
 import {
   keepCurrentToken,
@@ -44,7 +45,9 @@ import {
 } from './siteAccess.ts';
 
 const ROLE_REFUSALS = {
-  self: 'You cannot change your own role.',
+  self: 'You cannot change your own roles.',
+  'cannot-combine':
+    'A journalist cannot also be staff. A journalist reads the desk of checked links and has no staff role, so the two are never held by one person.',
   'unknown-role': 'There is no such role.',
   'bad-email': 'Enter a valid email address.',
   'protected-subject':
@@ -90,12 +93,14 @@ export function accessRoutes(
     granting.addHook('preHandler', stepUpGuard());
     route(granting, C.setSystemRole, async ({ request }) => {
       const actor = requireGranter(request);
-      const { email, role } = bodyOf(C.setSystemRole, request);
+      const { email, role, action } = bodyOf(C.setSystemRole, request);
       // A journalist is made only by approving an access request (journalists/vetting.ts),
       // so every one has a request, an agreement and a recorded approval behind it.
-      if (role === 'journalist') throw notAllowed(notPermittedMessage(role));
-      const out = await setSystemRole(db, { actor, email, role });
-      if (out.ok) return out.unchanged ? { ok: true as const, unchanged: true } : out;
+      if (role === 'journalist' && action === 'grant') {
+        throw notAllowed(notPermittedMessage(role));
+      }
+      const out = await changeSystemRole(db, { actor, email, role, action });
+      if (out.ok) return { ok: true as const, unchanged: out.unchanged, roles: out.roles };
       if (out.reason === 'not-permitted') throw notAllowed(notPermittedMessage(role));
       throw refused(
         out.reason === 'unknown-role' || out.reason === 'bad-email' ? 400 : 403,
@@ -110,10 +115,10 @@ export function accessRoutes(
     requireGranter(request);
     const users = await db
       .selectFrom('users')
-      .select(['id', 'email', 'role'])
+      .select(['id', 'email', 'roles'])
       .where((eb) =>
         eb.or([
-          eb('role', '<>', 'user'),
+          eb('roles', '<>', sql<string[]>`'{}'::text[]`),
           eb.exists(
             eb
               .selectFrom('organization_memberships as m')
@@ -131,20 +136,16 @@ export function accessRoutes(
       .orderBy('o.name')
       .execute();
     return {
-      people: users
-        .filter((u): u is typeof u & { role: (typeof SYSTEM_ROLES)[number] } =>
-          (SYSTEM_ROLES as readonly string[]).includes(u.role),
-        )
-        .map((u) => ({
-          email: u.email,
-          role: u.role,
-          organizations: memberships
-            .filter((m) => m.user_id === u.id)
-            .map((m) => ({
-              name: m.name,
-              role: m.role === 'manager' ? ('manager' as const) : ('coordinator' as const),
-            })),
-        })),
+      people: users.map((u) => ({
+        email: u.email,
+        roles: toRoleSet(u.roles),
+        organizations: memberships
+          .filter((m) => m.user_id === u.id)
+          .map((m) => ({
+            name: m.name,
+            role: m.role === 'manager' ? ('manager' as const) : ('coordinator' as const),
+          })),
+      })),
     };
   });
 
@@ -182,7 +183,7 @@ export function accessRoutes(
     return {
       awaitingMyAcceptance,
       owner: await currentOwner(db),
-      iAmOwner: user.role === 'owner',
+      iAmOwner: user.roles.includes('owner'),
       pending: pending
         ? { from: pending.from_email, to: pending.to_email, expiresAt: iso(pending.expires_at) }
         : null,
@@ -193,7 +194,7 @@ export function accessRoutes(
   // again, as above.
   void app.register((handing, _opts, done) => {
     handing.addHook('preHandler', (request) => {
-      if (requireUser(request).role !== 'owner') {
+      if (!requireUser(request).roles.includes('owner')) {
         throw notAllowed('Only the owner can hand the deployment on.');
       }
       return Promise.resolve();
@@ -208,7 +209,8 @@ export function accessRoutes(
      */
     route(handing, C.requestHandoverCode, async ({ request }) => {
       const user = requireUser(request);
-      if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
+      if (!user.roles.includes('owner'))
+        throw notAllowed('Only the owner can hand the deployment on.');
       // Checked before a code is minted: a code for an address that can never
       // receive the seat would fail at the last step for a reason nobody gave.
       const to = addressFrom(bodyOf(C.requestHandoverCode, request).email);
@@ -222,7 +224,8 @@ export function accessRoutes(
     route(handing, C.offerHandover, async ({ request }) => {
       const user = requireUser(request);
       // The role first, then the code, so nobody else can burn codes here.
-      if (user.role !== 'owner') throw notAllowed('Only the owner can hand the deployment on.');
+      if (!user.roles.includes('owner'))
+        throw notAllowed('Only the owner can hand the deployment on.');
       const { email, code } = bodyOf(C.offerHandover, request);
       const to = addressFrom(email);
       // Against THIS recipient, so the address in the owner's mailbox and the

@@ -176,14 +176,14 @@ describe('the backups and exports screen', () => {
       'GET /api/auth/me': {
         signedIn: true,
         email: 'admin@example.org',
-        role: 'admin',
+        roles: ['admin'],
         memberships: [],
         tester: false,
         teamMember: false,
         grantsAccess: true,
         desks: [],
         secondFactor: 'done',
-        heldRole: 'admin',
+        heldRoles: ['admin'],
         stepUpUntil: null,
       },
     });

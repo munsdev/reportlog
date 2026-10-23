@@ -36,8 +36,12 @@ export const MAX_FAILURES = 5;
 export const LOCK_MS = 15 * 60 * 1000;
 export const RECOVERY_CODE_COUNT = 10;
 
-export function needsSecondFactor(role: string, memberships: readonly unknown[]): boolean {
-  return role !== 'user' || memberships.length > 0;
+export function needsSecondFactor(
+  roles: readonly string[],
+  memberships: readonly unknown[],
+): boolean {
+  // Any role at all, however many: holding several changes nothing here.
+  return roles.length > 0 || memberships.length > 0;
 }
 
 /** What a signed-in person's second factor stands at, as the website is told it. */

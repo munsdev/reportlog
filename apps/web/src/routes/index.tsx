@@ -56,7 +56,7 @@ export const Route = createFileRoute('/')({
 function useCanEdit(): boolean {
   const onDoor = useGateMode() === 'door';
   const me = useMe().data;
-  return !onDoor && Boolean(me?.signedIn) && roleSatisfies(me?.signedIn ? me.role : null, 'admin');
+  return !onDoor && Boolean(me?.signedIn) && roleSatisfies(me?.signedIn ? me.roles : null, 'admin');
 }
 
 function Home() {

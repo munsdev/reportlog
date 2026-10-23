@@ -164,10 +164,13 @@ describe('the settings routes', () => {
 });
 
 describe('the migration that brought in the look library', () => {
+  // The migration is replayed as written (applied migrations never change),
+  // except that "has an owner" now reads the roles list, which replaced the
+  // `users.role` column it was written against (decision 70).
   const MIGRATION = readFileSync(
     new URL('../../migrations/20261022045623_look_library.sql', import.meta.url),
     'utf8',
-  );
+  ).replaceAll("role = 'owner'", "roles @> ARRAY['owner']::text[]");
 
   /** Runs the migration again on the given state, reads the result, and undoes it all. */
   async function afterMigration(owner: boolean, before: { palette: string; theme: string }) {
@@ -179,8 +182,8 @@ describe('the migration that brought in the look library', () => {
         else
           await trx
             .updateTable('users')
-            .set({ role: 'user' })
-            .where('role', '=', 'owner')
+            .set({ roles: sql<string[]>`array_remove(roles, 'owner')` })
+            .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
             .execute();
         await trx.updateTable('site_settings').set(before).execute();
         await sql.raw(MIGRATION).execute(trx);

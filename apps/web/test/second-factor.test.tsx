@@ -32,14 +32,14 @@ import { ApiRequestError, call, setStepUpHandler } from '../src/lib/api.ts';
 const me = (over: Record<string, unknown>) => ({
   signedIn: true,
   email: 'mod@example.org',
-  role: 'user',
+  roles: [],
   memberships: [],
   grantsAccess: false,
   tester: false,
   teamMember: false,
   desks: [],
   secondFactor: 'set-up',
-  heldRole: 'moderator',
+  heldRoles: ['moderator'],
   stepUpUntil: null,
   ...over,
 });
@@ -139,7 +139,7 @@ describe('a staff screen, for a role holder without a second factor', () => {
   });
 
   it('without the role at all: refused, and offered nothing', async () => {
-    serve({ 'GET /api/auth/me': me({ heldRole: 'journalist' }) });
+    serve({ 'GET /api/auth/me': me({ heldRoles: ['journalist'] }) });
     wrap(
       <StaffOnly needs="moderator">
         <p>The queue</p>
@@ -160,7 +160,7 @@ describe('a staff screen, for a role holder without a second factor', () => {
         uri: 'otpauth://totp/reports.example.org:mod%40example.org?secret=JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP&issuer=reports.example.org&algorithm=SHA1&digits=6&period=30',
       },
       'POST /api/auth/second-factor/totp/confirm': () => {
-        now = me({ role: 'moderator', secondFactor: 'done' });
+        now = me({ roles: ['moderator'], secondFactor: 'done' });
         return { status: 200, body: { recoveryCodes: codes } };
       },
     });
@@ -201,7 +201,7 @@ describe('a step-up', () => {
     const sent = serve({
       'POST /api/access/system-role': () =>
         fresh
-          ? { status: 200, body: { ok: true, unchanged: true } }
+          ? { status: 200, body: { ok: true, unchanged: true, roles: ['moderator'] } }
           : {
               status: 403,
               body: { error: { code: 'step_up_required', message: 'Confirm it is you first.' } },
@@ -212,8 +212,10 @@ describe('a step-up', () => {
       return Promise.resolve(true);
     });
     setStepUpHandler(asked);
-    const out = await call(setSystemRole, { body: { email: 'a@example.org', role: 'moderator' } });
-    expect(out).toEqual({ ok: true, unchanged: true });
+    const out = await call(setSystemRole, {
+      body: { email: 'a@example.org', role: 'moderator', action: 'grant' as const },
+    });
+    expect(out).toEqual({ ok: true, unchanged: true, roles: ['moderator'] });
     expect(asked).toHaveBeenCalledTimes(1);
     expect(sent.filter((s) => s.url === '/api/access/system-role')).toHaveLength(2);
   });
@@ -227,7 +229,9 @@ describe('a step-up', () => {
     });
     setStepUpHandler(() => Promise.resolve(false));
     await expect(
-      call(setSystemRole, { body: { email: 'a@example.org', role: 'moderator' } }),
+      call(setSystemRole, {
+        body: { email: 'a@example.org', role: 'moderator', action: 'grant' as const },
+      }),
     ).rejects.toBeInstanceOf(ApiRequestError);
     expect(sent).toHaveLength(1);
   });
@@ -241,16 +245,16 @@ describe('a step-up', () => {
         return {
           status: 200,
           body: me({
-            role: 'moderator',
+            roles: ['moderator'],
             secondFactor: 'done',
             stepUpUntil: new Date().toISOString(),
           }),
         };
       },
-      'GET /api/auth/me': me({ role: 'moderator', secondFactor: 'done' }),
+      'GET /api/auth/me': me({ roles: ['moderator'], secondFactor: 'done' }),
       'POST /api/access/system-role': () =>
         fresh
-          ? { status: 200, body: { ok: true, unchanged: true } }
+          ? { status: 200, body: { ok: true, unchanged: true, roles: ['moderator'] } }
           : {
               status: 403,
               body: { error: { code: 'step_up_required', message: 'Confirm it is you first.' } },
@@ -265,11 +269,13 @@ describe('a step-up', () => {
     const user = userEvent.setup();
     // Mounted, so it has told the API client it is the one who asks.
     await screen.findByText('Ready');
-    const pending = call(setSystemRole, { body: { email: 'a@example.org', role: 'moderator' } });
+    const pending = call(setSystemRole, {
+      body: { email: 'a@example.org', role: 'moderator', action: 'grant' as const },
+    });
     expect(await screen.findByRole('dialog', { name: 'Confirm it is you' })).toBeInTheDocument();
     await user.type(await screen.findByLabelText('Code from your authenticator app'), '654321');
     await user.click(screen.getByRole('button', { name: 'Confirm' }));
-    await expect(pending).resolves.toEqual({ ok: true, unchanged: true });
+    await expect(pending).resolves.toEqual({ ok: true, unchanged: true, roles: ['moderator'] });
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });

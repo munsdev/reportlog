@@ -24,6 +24,7 @@ import {
   withdrawInvitation,
 } from '@reportlog/contracts';
 import type { OrgRoleName } from '@reportlog/contracts';
+import { roleSatisfies } from '@reportlog/access';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
@@ -173,8 +174,7 @@ export function OrganizationPage({ id }: { id: number }) {
 
   const listingAllowed =
     me.data.memberships.some((m) => m.organization_id === id && m.role === 'manager') ||
-    me.data.role === 'admin' ||
-    me.data.role === 'owner';
+    roleSatisfies(me.data.roles, 'admin');
 
   return (
     <StaffPage title={organization.name} lede={organization.details ?? undefined}>

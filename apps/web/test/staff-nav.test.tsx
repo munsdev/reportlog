@@ -33,7 +33,10 @@ import type { Viewer } from '../src/features/staff-nav/entries.ts';
 import { Route as RootRoute } from '../src/routes/__root.tsx';
 import { DESK } from './look-fixture.ts';
 
-const as = (role: Viewer['role'], tester = false): Viewer => ({ role, tester });
+const as = (role: Viewer['roles'][number] | 'user', tester = false): Viewer => ({
+  roles: role === 'user' ? [] : [role],
+  tester,
+});
 const shape = (v: Viewer) =>
   Object.fromEntries(areasFor(v).map((a) => [a.label, a.pages.map((p) => p.label)]));
 const others = (v: Viewer) => groupsFor(v).flatMap((g) => g.pages.map((p) => p.label));
@@ -109,7 +112,7 @@ describe('who sees which staff area and page', () => {
 
   it('an organization’s coordinator sees their own group, by membership', () => {
     const coordinator = {
-      role: 'user' as const,
+      roles: [] as const,
       tester: false,
       memberships: [{ role: 'coordinator' }],
     };
@@ -233,14 +236,14 @@ describe('the menu’s main action', () => {
 const ME = (role: string, extra: Record<string, unknown> = {}) => ({
   signedIn: true,
   email: `${role}@example.org`,
-  role,
+  roles: role === 'user' ? [] : [role],
   memberships: [],
   grantsAccess: role === 'admin' || role === 'owner' || role === 'access_manager',
   tester: false,
   teamMember: false,
   desks: [],
   secondFactor: role === 'user' ? 'not-needed' : 'done',
-  heldRole: role,
+  heldRoles: role === 'user' ? [] : [role],
   stepUpUntil: null,
   ...extra,
 });
@@ -470,7 +473,7 @@ describe('the menu on a desktop', () => {
 
   it('offers a role holder who has not proved a second factor the way to it, and no staff page', async () => {
     phoneWidth(false);
-    open(ME('user', { heldRole: 'moderator', secondFactor: 'set-up' }));
+    open(ME('user', { heldRoles: ['moderator'], secondFactor: 'set-up' }));
     page('/');
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Menu' }));

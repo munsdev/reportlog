@@ -39,12 +39,12 @@ export function StaffOnly({
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next={pathname} />;
   // Holding the role, without the second factor yet: the way to it, not a refusal.
-  const held = me.data.heldRole;
+  const held = me.data.heldRoles;
   if (pendingSecondFactor(me.data) && roles.some((r) => roleSatisfies(held, r))) {
     return <SecondFactorGate>{null}</SecondFactorGate>;
   }
-  const role = me.data.role;
-  if (!roles.some((r) => roleSatisfies(role, r))) {
+  const acting = me.data.roles;
+  if (!roles.some((r) => roleSatisfies(acting, r))) {
     return (
       <section className="space-y-3">
         <h1 className="font-display text-2xl font-bold">Not for this account</h1>

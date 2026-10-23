@@ -14,6 +14,7 @@
  * @reportlog/access can produce an owner. Refuses to run in production.
  */
 import { loadConfig } from '../config.ts';
+import { sql } from 'kysely';
 import { createDatabase } from '../db/database.ts';
 
 if (process.env.NODE_ENV === 'production') {
@@ -29,14 +30,26 @@ try {
       const held = await trx
         .selectFrom('users')
         .select('email')
-        .where('role', '=', 'owner')
+        .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
         .executeTakeFirst();
       // One owner, by a unique index: the seat is emptied before it is filled.
-      await trx.updateTable('users').set({ role: 'admin' }).where('role', '=', 'owner').execute();
+      await trx
+        .updateTable('users')
+        .set({
+          roles: sql<string[]>`CASE WHEN 'admin' = ANY(roles) THEN array_remove(roles, 'owner')
+            ELSE array_append(array_remove(roles, 'owner'), 'admin') END`,
+        })
+        .where(sql<boolean>`roles @> ARRAY['owner']::text[]`)
+        .execute();
+      // A journalist holds no staff role, so taking the seat drops that one.
       await trx
         .insertInto('users')
-        .values({ email, role: 'owner' })
-        .onConflict((oc) => oc.column('email').doUpdateSet({ role: 'owner' }))
+        .values({ email, roles: ['owner'] })
+        .onConflict((oc) =>
+          oc.column('email').doUpdateSet({
+            roles: sql<string[]>`array_append(array_remove(users.roles, 'journalist'), 'owner')`,
+          }),
+        )
         .execute();
       return held?.email ?? '-';
     });
@@ -45,11 +58,15 @@ try {
     await db.transaction().execute(async (trx) => {
       await trx
         .updateTable('users')
-        .set({ role: 'user' })
+        .set({ roles: sql<string[]>`array_remove(array_remove(roles, 'owner'), 'admin')` })
         .where('email', '=', second.toLowerCase())
         .execute();
       if (first !== '-') {
-        await trx.updateTable('users').set({ role: 'owner' }).where('email', '=', first).execute();
+        await trx
+          .updateTable('users')
+          .set({ roles: sql<string[]>`array_append(array_remove(roles, 'owner'), 'owner')` })
+          .where('email', '=', first)
+          .execute();
       }
     });
   } else {

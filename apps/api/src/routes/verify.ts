@@ -28,7 +28,7 @@ import { notFound } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 
 const mayReadAnyReport = (request: FastifyRequest) =>
-  roleSatisfies(request.user?.role, 'moderator') || roleSatisfies(request.user?.role, 'admin');
+  roleSatisfies(request.user?.roles, 'moderator') || roleSatisfies(request.user?.roles, 'admin');
 
 async function textIsPublic(db: Database, publicRef: string): Promise<boolean> {
   if (!(await publicArchiveAvailable(db))) return false;

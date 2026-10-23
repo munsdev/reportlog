@@ -10,16 +10,17 @@ const labels = (v: Viewer) => entriesFor(v).map((e) => e.label);
 
 describe('who sees the intake screens', () => {
   it('a coordinator or manager of an organization, whatever their system role', () => {
-    expect(labels({ role: 'user', tester: false, memberships: [{ role: 'coordinator' }] })).toEqual(
-      ['Intake', 'Volunteer links'],
-    );
+    expect(labels({ roles: [], tester: false, memberships: [{ role: 'coordinator' }] })).toEqual([
+      'Intake',
+      'Volunteer links',
+    ]);
     expect(
-      labels({ role: 'moderator', tester: false, memberships: [{ role: 'manager' }] }),
+      labels({ roles: ['moderator'], tester: false, memberships: [{ role: 'manager' }] }),
     ).toContain('Intake');
   });
 
   it('not an administrator, or the owner, who is in no organization', () => {
-    expect(labels({ role: 'admin', tester: false, memberships: [] })).not.toContain('Intake');
-    expect(labels({ role: 'owner', tester: false })).not.toContain('Intake');
+    expect(labels({ roles: ['admin'], tester: false, memberships: [] })).not.toContain('Intake');
+    expect(labels({ roles: ['owner'], tester: false })).not.toContain('Intake');
   });
 });

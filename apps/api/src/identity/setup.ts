@@ -12,6 +12,7 @@
  * wizard that ended itself there would refuse its own last screen. The owner
  * check matters only where seating one is concerned: it may happen once.
  */
+import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { siteAccessSettings } from './siteAccess.ts';
@@ -21,7 +22,7 @@ export async function setupState(db: Kysely<DB>): Promise<{ needed: boolean; has
   const owner = await db
     .selectFrom('users')
     .select('id')
-    .where('role', 'in', ['owner', 'admin'])
+    .where(sql<boolean>`roles && ARRAY['owner', 'admin']::text[]`)
     .executeTakeFirst();
   return { needed: settings.setup_completed_at === null, hasOwner: Boolean(owner) };
 }

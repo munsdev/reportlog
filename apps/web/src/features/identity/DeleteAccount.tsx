@@ -31,7 +31,7 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
     },
   });
 
-  if (me.heldRole === 'owner') {
+  if (me.heldRoles.includes('owner')) {
     return (
       <Panel title="Delete your account">
         <p>

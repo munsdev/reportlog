@@ -3,7 +3,11 @@ import {
   FLAGS,
   MAY_GRANT,
   SYSTEM_ROLES,
+  HOLDABLE_ROLES,
   canChangeSubject,
+  canHoldTogether,
+  rolesSatisfy,
+  toRoleSet,
   canSetFlag,
   canGrantSystemRole,
   hasAdminAuthority,
@@ -84,5 +88,38 @@ describe('flags', () => {
     for (const flag of FLAGS) {
       expect(SYSTEM_ROLES as readonly string[]).not.toContain(flag);
     }
+  });
+});
+
+describe('holding several roles', () => {
+  it('lets staff roles combine and keeps the journalist apart', () => {
+    expect(canHoldTogether(['moderator', 'access_manager', 'admin', 'owner'])).toBe(true);
+    expect(canHoldTogether(['journalist'])).toBe(true);
+    expect(canHoldTogether([])).toBe(true);
+    for (const staff of ['moderator', 'access_manager', 'admin', 'owner'] as const) {
+      expect(canHoldTogether(['journalist', staff])).toBe(false);
+    }
+  });
+
+  it('is satisfied by any one role, with owner implying admin and nothing else', () => {
+    expect(rolesSatisfy(['moderator', 'access_manager'], 'moderator')).toBe(true);
+    expect(rolesSatisfy(['moderator', 'access_manager'], 'admin')).toBe(false);
+    expect(rolesSatisfy(['moderator', 'owner'], 'admin')).toBe(true);
+    expect(rolesSatisfy(['admin', 'access_manager'], 'moderator')).toBe(false);
+    expect(rolesSatisfy([], 'moderator')).toBe(false);
+  });
+
+  it('grants and sets flags by the best role held, within the same ceiling', () => {
+    expect(canGrantSystemRole(['moderator', 'access_manager'], 'moderator')).toBe(true);
+    expect(canGrantSystemRole(['moderator', 'access_manager'], 'access_manager')).toBe(false);
+    expect(canGrantSystemRole(['moderator', 'access_manager'], 'admin')).toBe(false);
+    expect(canGrantSystemRole(['moderator', 'admin'], 'owner')).toBe(false);
+    expect(canSetFlag(['moderator', 'access_manager'], 'tester')).toBe(true);
+    expect(canSetFlag(['moderator'], 'tester')).toBe(false);
+  });
+
+  it('reads a stored list as a set without user or unknown values', () => {
+    expect(toRoleSet(['admin', 'user', 'nonsense', 'admin'])).toEqual(['admin']);
+    expect(HOLDABLE_ROLES).not.toContain('user');
   });
 });

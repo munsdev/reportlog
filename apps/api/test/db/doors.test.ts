@@ -18,7 +18,14 @@ import { capturingMailer } from '../../src/email/mailer.ts';
 import { hashPassword } from '../../src/identity/secrets.ts';
 import { gateApplies, siteAccessSettings } from '../../src/identity/siteAccess.ts';
 import { launchedLogbook, testDatabase, uniqueSlug } from './helpers.ts';
-import { address, cookieFrom, liftCurtain, seat, trustSession } from './identity-helpers.ts';
+import {
+  address,
+  cookieFrom,
+  liftCurtain,
+  seat,
+  trustSession,
+  clearRoles,
+} from './identity-helpers.ts';
 import { codeFor } from './identity-helpers.ts';
 import { paintedLook } from '../../src/site/look.ts';
 import { readSettings } from '../../src/site/settings.ts';
@@ -340,7 +347,7 @@ describe('a logbook opened for filing without the password', () => {
     expect(trail).toEqual([
       { detail: `set logbook ${shut.slug} to door without the site password` },
     ]);
-    await db.updateTable('users').set({ role: 'user' }).where('email', '=', adminEmail).execute();
+    await clearRoles(db, adminEmail);
     await db
       .updateTable('logbooks')
       .set({ outside_access: 'closed' })

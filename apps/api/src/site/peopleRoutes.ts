@@ -31,7 +31,7 @@ function requireManagerOf(request: FastifyRequest, organizationId: number) {
   const manages = user.memberships.some(
     (m) => m.organization_id === organizationId && m.role === 'manager',
   );
-  if (!manages && !hasAdminAuthority(user.role)) {
+  if (!manages && !hasAdminAuthority(user.roles)) {
     throw notAllowed('Only a manager of this organization can change whether it is listed.');
   }
   return user;

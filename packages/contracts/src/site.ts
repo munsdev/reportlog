@@ -723,7 +723,7 @@ export const setFeedbackStatus = defineRoute({
   response: AdminFeedbackDetail,
 });
 
-export const Tester = z.object({ email: z.string(), role: z.string() });
+export const Tester = z.object({ email: z.string(), roles: z.array(z.string()) });
 
 export const listTesters = defineRoute({
   method: 'GET',

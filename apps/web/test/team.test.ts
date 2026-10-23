@@ -10,10 +10,10 @@ import { STAFF_ENTRIES, entriesFor } from '../src/features/staff-nav/entries.ts'
 
 describe('the team-member flag in the staff menu', () => {
   it('opens the guides and nothing else', () => {
-    expect(
-      entriesFor({ role: 'user', tester: false, teamMember: true }).map((e) => e.label),
-    ).toEqual(['Guides']);
-    expect(entriesFor({ role: 'user', tester: false, teamMember: false })).toEqual([]);
+    expect(entriesFor({ roles: [], tester: false, teamMember: true }).map((e) => e.label)).toEqual([
+      'Guides',
+    ]);
+    expect(entriesFor({ roles: [], tester: false, teamMember: false })).toEqual([]);
   });
 });
 
@@ -25,7 +25,7 @@ describe('desks', () => {
 
   it('a start the person cannot open is not offered, and the desk is still shown', () => {
     const shown = desksFor(['moderating', 'outreach'], {
-      role: 'user',
+      roles: [],
       tester: false,
       teamMember: true,
     });
@@ -40,12 +40,12 @@ describe('desks', () => {
   });
 
   it('a moderator on the moderating desk is pointed at moderation', () => {
-    const [d] = desksFor(['moderating'], { role: 'moderator', tester: false, teamMember: true });
+    const [d] = desksFor(['moderating'], { roles: ['moderator'], tester: false, teamMember: true });
     expect(d?.start?.to).toBe('/moderate');
   });
 
   it('a desk id the list no longer names is left out', () => {
-    expect(desksFor(['retired-desk'], { role: 'admin', tester: false })).toEqual([]);
+    expect(desksFor(['retired-desk'], { roles: ['admin'], tester: false })).toEqual([]);
   });
 });
 

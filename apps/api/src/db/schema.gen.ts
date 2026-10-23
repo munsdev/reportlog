@@ -1050,7 +1050,7 @@ export interface Users {
   id: Generated<number>;
   is_team_member: Generated<boolean>;
   is_tester: Generated<boolean>;
-  role: Generated<string>;
+  roles: Generated<string[]>;
   updated_at: Generated<Timestamp>;
 }
 
