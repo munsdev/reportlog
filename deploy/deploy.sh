@@ -46,6 +46,16 @@ main() {
     exit 0
   fi
 
+  # DEPLOYED BY ITS OWN SCRIPTS. If this version changes the deploy scripts,
+  # install them first and start again with them, once: otherwise the old
+  # scripts deploy it and the new ones only work from the deploy after. The
+  # lock is handed on through exec (take_lock reopens it in the new run).
+  if [ -z "${REPORTLOG_TOOLING_RENEWED:-}" ] && ! tooling_matches "$sha"; then
+    say "This version changes the deploy scripts: installing them, then starting again"
+    renew_tooling "$sha"
+    exec env REPORTLOG_TOOLING_RENEWED=1 "$LIB/deploy.sh" "$sha"
+  fi
+
   id="$(date -u +%Y%m%dT%H%M%SZ)-${sha:0:12}"
   dir="$RELEASES/$id"
   say "Unpacking into $dir"

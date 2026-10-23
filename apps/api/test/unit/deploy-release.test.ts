@@ -52,6 +52,23 @@ function nothingSwitched(s: Server) {
   expect(s.calls().filter((c) => c.startsWith('caddy '))).toEqual([]);
 }
 
+describe('a version that changes the deploy scripts', () => {
+  it('is deployed by its own scripts: they are installed first, and the deploy starts again once', () => {
+    const s = server();
+    // The release's lib.sh differs from root's installed copy.
+    const lib = join(s.upstream, 'deploy/lib.sh');
+    writeFileSync(lib, `${readFileSync(lib, 'utf8')}\n# a change only this version carries\n`);
+    const sha = s.commit('changes the scripts');
+    const r = s.reportlog('deploy');
+    expect(r.status, r.out).toBe(0);
+    expect(r.out.match(/installing them, then starting again/g) ?? []).toHaveLength(1);
+    expect(s.read('/usr/local/lib/reportlog/lib.sh')).toContain(
+      'a change only this version carries',
+    );
+    expect(s.read(`${CURRENT}/REVISION`).trim()).toBe(sha);
+  });
+});
+
 describe('a first deploy', () => {
   it('builds as the service user, migrates, then switches, in that order', () => {
     const s = server();

@@ -336,6 +336,28 @@ install_tooling() {
   install -m 0755 "$release/deploy/bin/reportlog" /usr/local/bin/reportlog
 }
 
+# THE SAME SCRIPTS, OR NOT? Root's copy against the ones commit $1 carries,
+# read straight out of the mirror. A deploy runs root's copy, so a release
+# that changes these scripts would otherwise be deployed by the OLD ones and
+# only take effect at the deploy after (how the Update button's watcher went
+# uninstalled on test3, 23 October).
+tooling_matches() {
+  local sha=$1 f
+  for f in deploy.sh rollback.sh install.sh lib.sh versions.conf; do
+    git -C "$MIRROR" show "$sha:deploy/$f" 2>/dev/null | cmp -s - "$LIB/$f" || return 1
+  done
+  git -C "$MIRROR" show "$sha:deploy/bin/reportlog" 2>/dev/null | cmp -s - /usr/local/bin/reportlog
+}
+
+# Install commit $1's scripts as root's copy, straight from the mirror.
+renew_tooling() {
+  local sha=$1 tmp
+  tmp=$(mktemp -d)
+  git -C "$MIRROR" archive "$sha" deploy | tar -x -C "$tmp"
+  install_tooling "$tmp"
+  rm -rf "$tmp"
+}
+
 # Fetch the repository into the mirror: the only place code is fetched from.
 # Bounded, so a hung remote cannot hold the deploy lock forever.
 fetch_mirror() {
