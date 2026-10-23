@@ -35,11 +35,12 @@ export function isRetention(v: unknown): v is Retention {
 }
 
 /**
- * Ninety days, the proposal of record: it keeps election material into late
- * January, where thirty days does not. Read from configuration, never written
- * as a literal at a call site.
+ * A year, the owner's decision of 23 October 2026 (it was ninety days): a tip
+ * about an election can matter again at the next one, and the privacy policy
+ * promises a year. Read from configuration, never written as a literal at a
+ * call site.
  */
-export const DEFAULT_PERSONAL_DAYS = 90;
+export const DEFAULT_PERSONAL_DAYS = 365;
 
 /** The spelling for "the personal half is kept until its holder erases it". */
 export const NEVER = 'never';

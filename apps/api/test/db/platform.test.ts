@@ -300,13 +300,13 @@ describe('D1 · reporting illegal content', () => {
     expect(none.json<{ emailed: boolean }>().emailed).toBe(false);
   });
 
-  it('gives a receipt by email, shows status by link, and emails the decision with its reason, then forgets the address', async () => {
+  it('gives a receipt by email, shows status by link, and emails the decision with its reason, then forgets the address and the name', async () => {
     const email = address('sender');
     h.mailer.messages.length = 0;
     const sent = await h.app.inject({
       method: 'POST',
       url: '/api/illegal-content',
-      payload: { ...form, email },
+      payload: { ...form, email, name: 'Ada Sender' },
     });
     const { receipt } = sent.json<{ receipt: string }>();
     expect(receipt).toMatch(/^IC-[A-Z2-9]{8}$/);
@@ -321,6 +321,7 @@ describe('D1 · reporting illegal content', () => {
     }>();
     const row = list.notices.find((n) => n.receipt === receipt);
     expect(row?.has_email).toBe(true);
+    expect(JSON.stringify(row)).toContain('Ada Sender');
     expect(JSON.stringify(list)).not.toContain(email);
     const id = row?.id ?? 0;
 
@@ -347,10 +348,11 @@ describe('D1 · reporting illegal content', () => {
     }
     const stored = await h.db
       .selectFrom('content_notices')
-      .select('sender_email')
+      .select(['sender_email', 'sender_name'])
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
     expect(stored.sender_email).toBeNull();
+    expect(stored.sender_name).toBeNull();
     expect(
       (
         await post(mod.call, `/api/moderation/illegal-content/${String(id)}/decision`, {

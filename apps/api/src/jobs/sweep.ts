@@ -28,6 +28,7 @@
  */
 import { sql } from 'kysely';
 import type { Database } from '../db/database.ts';
+import { forgetOldMessages } from '../evidence/requests.ts';
 import type { JobContext, JobOutcome } from './context.ts';
 
 /**
@@ -145,7 +146,7 @@ export const NOT_SWEPT: readonly { table: string; why: string }[] = [
   },
   {
     table: 'evidence_requests',
-    why: 'the record that a reporter was asked, kept after the link expires (workstream F stamps expired_at); the token is stored only as a hash',
+    why: 'the record that a reporter was asked, kept after the link expires (workstream F stamps expired_at); the token is stored only as a hash. Its words are forgotten after a year, below (forgetOldMessages), and the row stays',
   },
 ];
 
@@ -187,6 +188,18 @@ export async function runSweep(ctx: JobContext): Promise<JobOutcome> {
   const result = await sweepExpired(ctx.db);
   let total = 0;
   let failed = 0;
+  // NOT A DELETE, so not in SWEPT: an evidence request's row stays and only
+  // its words go, a year after they were sent (evidence/requests.ts).
+  let forgotten = 0;
+  try {
+    forgotten = await forgetOldMessages(ctx.db);
+    ctx.log(`${String(forgotten).padStart(7)}  evidence request words older than a year, forgotten`);
+  } catch (err) {
+    failed += 1;
+    ctx.log(
+      `FAILED   evidence request words: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
   for (const { table, what, owner } of SWEPT) {
     const r = result[table];
     if (typeof r === 'number') {
@@ -199,13 +212,18 @@ export async function runSweep(ctx: JobContext): Promise<JobOutcome> {
       ctx.log(`FAILED   ${what} (${table}): ${r.error}`);
     }
   }
+  const alsoForgotten = forgotten
+    ? ` ${String(forgotten)} evidence request(s) a year old had their words forgotten.`
+    : '';
   return failed
     ? {
         ok: false,
-        summary: `${String(failed)} table(s) could not be swept; ${String(total)} row(s) deleted from the rest.`,
+        summary: `${String(failed)} table(s) could not be swept; ${String(total)} row(s) deleted from the rest.${alsoForgotten}`,
       }
     : {
         ok: true,
-        summary: total ? `${String(total)} expired row(s) deleted.` : 'Nothing had expired.',
+        summary:
+          (total ? `${String(total)} expired row(s) deleted.` : 'Nothing had expired.') +
+          alsoForgotten,
       };
 }

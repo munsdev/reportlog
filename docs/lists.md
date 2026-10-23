@@ -185,7 +185,7 @@ gate would.
 
 | Setting                  | Default | Meaning                                                        |
 | ------------------------ | ------- | -------------------------------------------------------------- |
-| `LIST_PERSONAL_DAYS`     | 90      | Days the personal half is kept, or `never`. A typo stops start |
+| `LIST_PERSONAL_DAYS`     | 365     | Days the personal half is kept, or `never`. A typo stops start |
 | `LIST_ERASURE_LINK_DAYS` | 365     | An erasure link's life where nothing expires on its own        |
 | `LIST_KNOWN_HOSTS`       | (none)  | Link hosts a reviewer knows, comma-separated                   |
 | `ADMIN_EMAIL`            | (none)  | Where entries go when a list names no address                  |

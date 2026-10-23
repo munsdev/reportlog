@@ -18,6 +18,8 @@ import {
   attachEvidence,
   cancelRequest,
   createRequest,
+  FORGOTTEN_MESSAGE,
+  forgetOldMessages,
   markLanded,
   markUsed,
   openRequestFor,
@@ -251,6 +253,36 @@ describe('asking, the door, and spending it', () => {
       .where('id', '=', old.request.id)
       .executeTakeFirstOrThrow();
     expect(stamped.expired_at).not.toBeNull();
+    await cancelRequest(h.db, d.threadId, { by: BY });
+  });
+
+  it('A YEAR ON, THE WORDS ARE FORGOTTEN AND THE ROW STAYS; a newer ask keeps its words', async () => {
+    const old = await createRequest(h.db, d.threadId, {
+      message: 'Words that must not outlive a year.',
+      by: BY,
+    });
+    if (!old.ok) throw new Error(old.reason);
+    await cancelRequest(h.db, d.threadId, { by: BY });
+    const fresh = await createRequest(h.db, d.threadId, {
+      message: 'Words asked for this week.',
+      by: BY,
+    });
+    if (!fresh.ok) throw new Error(fresh.reason);
+    await h.db
+      .updateTable('evidence_requests')
+      .set({ asked_at: new Date(Date.now() - 366 * 86_400_000) })
+      .where('id', '=', old.request.id)
+      .execute();
+    expect(await forgetOldMessages(h.db)).toBe(1);
+    const rows = await h.db
+      .selectFrom('evidence_requests')
+      .select(['id', 'message', 'asked_by'])
+      .where('id', 'in', [old.request.id, fresh.request.id])
+      .execute();
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(byId.get(old.request.id)).toMatchObject({ message: FORGOTTEN_MESSAGE, asked_by: BY });
+    expect(byId.get(fresh.request.id)?.message).toBe('Words asked for this week.');
+    expect(await forgetOldMessages(h.db)).toBe(0);
     await cancelRequest(h.db, d.threadId, { by: BY });
   });
 

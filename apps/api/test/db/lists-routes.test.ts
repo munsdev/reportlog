@@ -288,7 +288,7 @@ describe('what a visitor can send', () => {
     expect(json(r)).toEqual({ ok: true, erasure_mailed: true, erasable: true });
     const mail = h.mailer.lastTo('someone@example.org');
     expect(mail?.text).toMatch(new RegExp(`${SITE}/api/forget/[A-Za-z0-9_-]{40,}`));
-    expect(mail?.text).toMatch(/after 90 days/);
+    expect(mail?.text).toMatch(/after 365 days/);
   });
 
   it('a shortened link is refused with a reason a person can act on, naming the question', async () => {

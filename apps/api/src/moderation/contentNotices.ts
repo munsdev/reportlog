@@ -279,10 +279,12 @@ export async function decideNotice(
       }),
     });
   }
-  // Nothing needs the address any more.
+  // Nothing needs the address any more, nor the name: the decision is made
+  // and sent, and the notice keeps what it was about and what was decided.
+  // The privacy policy promises both go here.
   await db
     .updateTable('content_notices')
-    .set({ sender_email: null })
+    .set({ sender_email: null, sender_name: null })
     .where('id', '=', id)
     .execute();
   return { emailed };

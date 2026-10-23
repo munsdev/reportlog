@@ -126,6 +126,32 @@ export async function askableState(db: Kysely<DB>, threadId: string) {
 }
 
 /**
+ * What a forgotten ask says instead of the moderator's words. Long enough for
+ * the column's own length check, which stays as it is: the words become a
+ * sentence a person reads in the history rather than the column being
+ * loosened to allow nothing.
+ */
+export const FORGOTTEN_MESSAGE = 'Removed a year after it was sent.';
+
+/**
+ * Forget what moderators wrote a year after they asked (owner decision,
+ * 23 October 2026). The ROW STAYS: that a reporter was asked, when, by whom
+ * and what came of it is the history the moderator's screen shows, and the
+ * files a request brought in point at it. The words are the part that can
+ * carry somebody's account, so they go. A link lasts 14 days, so nothing a
+ * year old can still be live. Run by the nightly sweep.
+ */
+export async function forgetOldMessages(db: Kysely<DB>): Promise<number> {
+  const out = await db
+    .updateTable('evidence_requests')
+    .set({ message: FORGOTTEN_MESSAGE })
+    .where('asked_at', '<', sql<Date>`now() - interval '1 year'`)
+    .where('message', '<>', FORGOTTEN_MESSAGE)
+    .executeTakeFirst();
+  return Number(out.numUpdatedRows);
+}
+
+/**
  * Stamp asks that have run out. An index predicate cannot read the clock, so
  * the one-live-ask rule needs a stamp, and this is where expiry is noticed.
  * Without it the first ask to age out blocked every later one.
