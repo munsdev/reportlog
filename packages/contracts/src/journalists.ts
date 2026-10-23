@@ -2,19 +2,40 @@
  * The journalist alert list: sign up, confirm by link, change or pause
  * alerts by link or from the desk, and leave.
  *
- * Signing up collects a name, an outlet, an address and the states a
- * journalist covers, and nothing else. Being on the list grants no access
- * to anything that is not public.
+ * Signing up collects a name, an address and the states covered, and, for
+ * somebody also asking for desk access (owner decision 69), their outlet
+ * and the request. Being on the list grants no access to anything that is
+ * not public; only the owner approving a request does.
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
 
+/** What a request for desk access says, apart from the outlet it is made from. */
+export const AccessRequestDetails = z.object({
+  /** What they do there: reporter, editor, producer. */
+  role: z.string().trim().min(1).max(120),
+  /**
+   * Who they are, in their own words, so the owner can tell. Free text: the
+   * form suggests links to published work but does not demand them, because
+   * a freelancer or a local reporter may have none to give, and a list of
+   * URLs was never the only way to show who somebody is.
+   */
+  about: z.string().trim().min(1).max(4000),
+  press_card_number: z.string().trim().max(80).optional(),
+  press_card_issuer: z.string().trim().max(160).optional(),
+});
+
 export const JournalistSignup = z.object({
   name: z.string().trim().min(1).max(120),
-  outlet: z.string().trim().min(1).max(160),
+  /** Asked of somebody asking for desk access, and then required. */
+  outlet: z.string().trim().max(160).optional(),
   email: z.string().trim().min(3).max(254),
-  /** Place codes such as `US-AZ`. */
-  states: z.array(z.string().max(12)).min(1).max(60),
+  /** Absent means on. Off is for somebody who wants only desk access. */
+  alerts: z.enum(['on', 'off']).optional(),
+  /** Place codes such as `US-AZ`. At least one while alerts are on. */
+  states: z.array(z.string().max(12)).max(60),
+  /** Asking for desk access too. Sent to the owner once the address is confirmed. */
+  access: AccessRequestDetails.optional(),
 });
 export type JournalistSignup = z.infer<typeof JournalistSignup>;
 
@@ -22,10 +43,17 @@ export const signUpForAlerts = defineRoute({
   method: 'POST',
   path: '/api/journalists/signup',
   summary:
-    'Ask to be on the journalist alert list. Sends a confirmation email; the answer is the same whether or not the address is already known.',
+    'Sign up for alerts, desk access, or both. Sends a confirmation email; the answer is the same whether or not the address is already known.',
   body: JournalistSignup,
   response: z.object({ ok: z.literal(true) }),
 });
+
+/**
+ * Where a subscriber's request for desk access stands, as the pages behind
+ * their own links show it. A revoked request reads `none`: they may ask again.
+ */
+export const DeskAccess = z.enum(['none', 'pending', 'approved']);
+export type DeskAccess = z.infer<typeof DeskAccess>;
 
 /**
  * What an emailed link says. `gone` is an unknown link and an expired one
@@ -37,13 +65,16 @@ export const AlertLink = z.discriminatedUnion('state', [
     /** Partly hidden: enough to tell one's own addresses apart. */
     address: z.string(),
     states: z.array(z.string()),
+    alerts: z.enum(['on', 'off']),
+    /** Whether confirming also sends a request for desk access. */
+    desk: DeskAccess,
   }),
   z.object({
     state: z.literal('active'),
     address: z.string(),
     states: z.array(z.string()),
   }),
-  z.object({ state: z.literal('confirmed'), address: z.string() }),
+  z.object({ state: z.literal('confirmed'), address: z.string(), desk: DeskAccess }),
   /** Alerts are off; the address is still on the list (decision 47). */
   z.object({ state: z.literal('paused'), address: z.string() }),
   z.object({ state: z.literal('stopped') }),
@@ -92,8 +123,8 @@ export const stopAlerts = defineRoute({
 // off or on; a journalist on the desk changes the same two things there.
 
 export const AlertSettingsBody = z.object({
-  /** Place codes such as `US-AZ`, checked as on signup. */
-  states: z.array(z.string().max(12)).min(1).max(60),
+  /** Place codes such as `US-AZ`, checked as on signup: at least one while alerts are on. */
+  states: z.array(z.string().max(12)).max(60),
   alerts: z.enum(['on', 'off']),
 });
 export type AlertSettingsBody = z.infer<typeof AlertSettingsBody>;
@@ -105,6 +136,8 @@ export const AlertSettings = z.discriminatedUnion('state', [
     /** Place codes, so the page can show them as choices. */
     states: z.array(z.string()),
     alerts: z.enum(['on', 'off']),
+    /** Their request for desk access, so the page can offer one or say where it stands. */
+    desk: DeskAccess,
   }),
   z.object({ state: z.literal('removed') }),
   z.object({ state: z.literal('gone') }),
@@ -167,19 +200,8 @@ export const askForAccessLink = defineRoute({
   response: z.object({ ok: z.literal(true) }),
 });
 
-export const AccessRequestBody = z.object({
+export const AccessRequestBody = AccessRequestDetails.extend({
   outlet: z.string().trim().min(1).max(160),
-  /** What they do there: reporter, editor, producer. */
-  role: z.string().trim().min(1).max(120),
-  /**
-   * Who they are, in their own words, so the owner can tell. Free text: the
-   * form suggests links to published work but does not demand them, because
-   * a freelancer or a local reporter may have none to give, and a list of
-   * URLs was never the only way to show who somebody is.
-   */
-  about: z.string().trim().min(1).max(4000),
-  press_card_number: z.string().trim().max(80).optional(),
-  press_card_issuer: z.string().trim().max(160).optional(),
 });
 export type AccessRequestBody = z.infer<typeof AccessRequestBody>;
 
@@ -207,6 +229,17 @@ export const requestAccess = defineRoute({
   params: LinkParams,
   body: AccessRequestBody,
   response: AccessLink,
+});
+
+/** The same request, from the change page behind every alert (owner decision 69). */
+export const requestAccessFromSettings = defineRoute({
+  method: 'POST',
+  path: '/api/journalists/settings/:token/access',
+  summary:
+    'Ask for desk access from the page an alert links to. Nothing is approved automatically.',
+  params: LinkParams,
+  body: AccessRequestBody,
+  response: AlertSettings,
 });
 
 // ── J7b, J7, J13: the owner's queue ──────────────────────────────────────

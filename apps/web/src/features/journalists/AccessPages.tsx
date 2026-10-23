@@ -15,10 +15,9 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { PublicPage } from '../site-pages/PublicPage.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorText, TextField } from '../identity/ui.tsx';
+import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 
 export function AskAccessPage() {
   const [email, setEmail] = useState('');
@@ -85,23 +84,9 @@ const linkQuery = (token: string) =>
 export function AccessLinkPage({ token }: { token: string }) {
   const client = useQueryClient();
   const state = useQuery(linkQuery(token));
-  const [outlet, setOutlet] = useState('');
-  const [role, setRole] = useState('');
-  const [about, setAbout] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardIssuer, setCardIssuer] = useState('');
+  const [draft, setDraft] = useState(EMPTY_ACCESS);
   const send = useMutation({
-    mutationFn: () =>
-      call(requestAccess, {
-        params: { token },
-        body: {
-          outlet,
-          role,
-          about,
-          ...(cardNumber.trim() ? { press_card_number: cardNumber.trim() } : {}),
-          ...(cardIssuer.trim() ? { press_card_issuer: cardIssuer.trim() } : {}),
-        },
-      }),
+    mutationFn: () => call(requestAccess, { params: { token }, body: accessBody(draft) }),
     onSuccess: (data: AccessLink) => {
       client.setQueryData(linkQuery(token).queryKey, data);
     },
@@ -158,60 +143,7 @@ export function AccessLinkPage({ token }: { token: string }) {
           send.mutate();
         }}
       >
-        <TextField
-          label="Your outlet"
-          autoComplete="organization"
-          required
-          maxLength={160}
-          value={outlet}
-          onChange={(e) => {
-            setOutlet(e.target.value);
-          }}
-        />
-        <TextField
-          label="Your role there"
-          hint="Reporter, editor, producer."
-          required
-          maxLength={120}
-          value={role}
-          onChange={(e) => {
-            setRole(e.target.value);
-          }}
-        />
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="access-about">Who are you?</Label>
-          <p id="access-about-hint" className="text-sm text-muted">
-            Enough for the owner to tell who you are and what you cover. Links to your published
-            work or a profile help most, if you have them.
-          </p>
-          <Textarea
-            id="access-about"
-            aria-describedby="access-about-hint"
-            required
-            maxLength={4000}
-            rows={5}
-            value={about}
-            onChange={(e) => {
-              setAbout(e.target.value);
-            }}
-          />
-        </div>
-        <TextField
-          label="Press card number (optional)"
-          maxLength={80}
-          value={cardNumber}
-          onChange={(e) => {
-            setCardNumber(e.target.value);
-          }}
-        />
-        <TextField
-          label="Who issued the press card (optional)"
-          maxLength={160}
-          value={cardIssuer}
-          onChange={(e) => {
-            setCardIssuer(e.target.value);
-          }}
-        />
+        <AccessFields value={draft} onChange={setDraft} />
         <ErrorText error={send.error} />
         <div>
           <Button type="submit" busy={send.isPending} busyLabel="Sending…">

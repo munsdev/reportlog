@@ -53,6 +53,11 @@ const admin = { email: address('desk-admin'), call: null as unknown as ReturnTyp
 const journalist = address('journalist');
 let reference = '';
 
+// Each sign-up from an address of its own (TEST-NET-3), so the limiter that
+// bounds sign-ups per client (journalists/routes.ts) does not decide a test.
+let client = 0;
+const fromNewClient = () => `203.0.113.${String((client++ % 250) + 1)}`;
+
 const tokenIn = (kind: string, text: string) =>
   new RegExp(`/journalists/${kind}/([a-f0-9]{64})`).exec(text)?.[1] ?? '';
 
@@ -60,6 +65,7 @@ async function subscribe(email: string) {
   const s = await h.app.inject({
     method: 'POST',
     url: '/api/journalists/signup',
+    remoteAddress: fromNewClient(),
     payload: { name: 'Pat Reporter', outlet: 'The Daily Example', email, states: ['US-AZ'] },
   });
   expect(s.statusCode, s.body).toBe(200);
@@ -71,6 +77,7 @@ async function askLink(email: string): Promise<string> {
   const r = await h.app.inject({
     method: 'POST',
     url: '/api/journalists/access',
+    remoteAddress: fromNewClient(),
     payload: { email },
   });
   expect(r.statusCode).toBe(200);
@@ -691,5 +698,158 @@ describe('decision 46 · removing yourself from the alert list closes the desk',
     const r = await call({ method: 'GET', url: '/api/desk/links' });
     expect(r.statusCode).toBe(403);
     expect(r.json<{ error: { code: string } }>().error.code).toBe('desk_access_ended');
+  });
+});
+
+describe('decision 69 · one sign-up for alerts, desk access, or both', () => {
+  const DESK_ONLY = {
+    role: 'SIGNUP-ROLE',
+    about: 'Pat, covering the courts. https://x.example/pat',
+  };
+  const fromSettings = address('asks-from-settings');
+  const signUp = (payload: Record<string, unknown>) =>
+    h.app.inject({
+      method: 'POST',
+      url: '/api/journalists/signup',
+      remoteAddress: fromNewClient(),
+      payload,
+    });
+  const queue = async () =>
+    (await owner.call({ method: 'GET', url: '/api/owner/journalists' })).json<{
+      requests: { id: number; role: string; outlet: string; status: string }[];
+    }>().requests;
+
+  it('refuses a sign-up asking for nothing, a request with no outlet, and alerts with no states', async () => {
+    const email = address('asks-nothing');
+    const cases = [
+      { name: 'Pat', email, alerts: 'off', states: [] },
+      { name: 'Pat', email, alerts: 'off', states: [], access: DESK_ONLY },
+      { name: 'Pat', email, alerts: 'on', states: [] },
+    ];
+    const codes = [];
+    for (const payload of cases) {
+      const r = await signUp(payload);
+      expect(r.statusCode, JSON.stringify(payload)).toBe(400);
+      codes.push(r.json<{ error: { code: string } }>().error.code);
+    }
+    expect(codes).toEqual(['nothing_asked', 'no_outlet', 'bad_states']);
+    expect(await subscriberOf(email)).toBeUndefined();
+  });
+
+  it('desk only: no alerts, no states, and the request waits for the address to be confirmed', async () => {
+    const email = address('desk-only');
+    const r = await signUp({
+      name: 'Pat',
+      email,
+      outlet: 'Courts Weekly',
+      alerts: 'off',
+      states: [],
+      access: DESK_ONLY,
+    });
+    expect(r.statusCode, r.body).toBe(200);
+    const row = await subscriberOf(email);
+    expect(row).toMatchObject({ status: 'pending', states: [] });
+    expect(row?.alerts_paused_at).toBeInstanceOf(Date);
+    const mail = h.mailer.lastTo(email)?.text ?? '';
+    expect(mail).toContain('request for access to the journalist desk');
+
+    // Unconfirmed, it may not even be theirs: not in the queue, and not decidable.
+    expect((await queue()).map((q) => q.role)).not.toContain('SIGNUP-ROLE');
+    const id = await requestId(email);
+    const early = await owner.call({
+      method: 'POST',
+      url: `/api/owner/journalists/${String(id)}/approve`,
+    });
+    expect(early.statusCode).toBe(404);
+
+    const token = tokenIn('confirm', mail);
+    const look = await h.app.inject({ method: 'GET', url: `/api/journalists/confirm/${token}` });
+    expect(look.json()).toMatchObject({ state: 'pending', alerts: 'off', desk: 'pending' });
+    const done = await h.app.inject({ method: 'POST', url: `/api/journalists/confirm/${token}` });
+    expect(done.json()).toMatchObject({ state: 'confirmed', desk: 'pending' });
+    // Confirming keeps alerts off, and puts the request in front of the owner.
+    expect((await subscriberOf(email))?.alerts_paused_at).toBeInstanceOf(Date);
+    expect(await queue()).toContainEqual(
+      expect.objectContaining({
+        id,
+        role: 'SIGNUP-ROLE',
+        outlet: 'Courts Weekly',
+        status: 'pending',
+      }),
+    );
+    expect(await roleOf(h.db, email)).toBeUndefined();
+  });
+
+  it('an address already listed that ticks the box is emailed the request link; the answer is the same', async () => {
+    const email = address('listed-then-asks');
+    await subscribe(email);
+    const r = await signUp({
+      name: 'Pat',
+      email,
+      outlet: 'Courts Weekly',
+      states: ['US-AZ'],
+      access: DESK_ONLY,
+    });
+    expect(r.json()).toEqual({ ok: true });
+    const token = tokenIn('access', h.mailer.lastTo(email)?.text ?? '');
+    const look = await h.app.inject({ method: 'GET', url: `/api/journalists/access/${token}` });
+    expect(look.json()).toMatchObject({ state: 'open' });
+  });
+
+  it('the change page behind every alert asks for desk access, once, and says where it stands', async () => {
+    const email = fromSettings;
+    await subscribe(email);
+    const token = await alertToken(email);
+    const at = `/api/journalists/settings/${token}`;
+    expect((await h.app.inject({ method: 'GET', url: at })).json()).toMatchObject({
+      state: 'open',
+      desk: 'none',
+    });
+    const sent = await h.app.inject({
+      method: 'POST',
+      url: `${at}/access`,
+      payload: { ...REQUEST, role: 'FROM-SETTINGS' },
+    });
+    expect(sent.json()).toMatchObject({ state: 'open', desk: 'pending' });
+    // A second one does not replace the first.
+    await h.app.inject({
+      method: 'POST',
+      url: `${at}/access`,
+      payload: { ...REQUEST, role: 'SECOND-TRY' },
+    });
+    const roles = (await queue()).map((q) => q.role);
+    expect(roles).toContain('FROM-SETTINGS');
+    expect(roles).not.toContain('SECOND-TRY');
+    const bad = await h.app.inject({
+      method: 'POST',
+      url: `/api/journalists/settings/${'0'.repeat(64)}/access`,
+      payload: REQUEST,
+    });
+    expect(bad.json()).toEqual({ state: 'gone' });
+
+    // Alerts off may cover no states; alerts on still needs one.
+    const off = await h.app.inject({
+      method: 'POST',
+      url: at,
+      payload: { alerts: 'off', states: [] },
+    });
+    expect(off.json()).toMatchObject({ state: 'open', alerts: 'off', states: [], desk: 'pending' });
+    const on = await h.app.inject({
+      method: 'POST',
+      url: at,
+      payload: { alerts: 'on', states: [] },
+    });
+    expect(on.statusCode).toBe(400);
+  });
+
+  it('the database refuses alerts that are on with no states', async () => {
+    const email = fromSettings;
+    await expect(
+      h.db
+        .updateTable('journalist_subscribers')
+        .set({ alerts_paused_at: null })
+        .where('email_hmac', '=', emailDigest(ring, email))
+        .execute(),
+    ).rejects.toThrow(/journalist_subscribers_alerts_need_states/);
   });
 });

@@ -10,7 +10,12 @@
  * - The desk, for a signed-in journalist's own subscription, so they need
  *   no email to change it.
  *
- * Turning alerts off keeps a person on the list, with any desk access.
+ * Turning alerts off keeps a person on the list, with any desk access, and
+ * then no states need be chosen (owner decision 69).
+ *
+ * The change page also carries the way to ask for desk access, or says
+ * where a request stands (decision 69): everybody on the list has this page
+ * in every alert, so nobody has to find a separate one.
  */
 import {
   changeAlertSettings,
@@ -18,9 +23,11 @@ import {
   deskAlertSettings,
   describeAlertSettings,
   leaveAlertList,
+  requestAccessFromSettings,
 } from '@reportlog/contracts';
-import type { AlertSettings, AlertSettingsBody } from '@reportlog/contracts';
+import type { AccessRequestBody, AlertSettings, AlertSettingsBody } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Alert } from '@/components/ui/alert.tsx';
@@ -42,6 +49,7 @@ import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { CardError } from '../form/CardFrame.tsx';
 import { ErrorText } from '../identity/ui.tsx';
+import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 import { StatesPicker } from './StatesPicker.tsx';
 
 type Open = Extract<AlertSettings, { state: 'open' }>;
@@ -67,7 +75,7 @@ function SettingsForm({
       onSubmit={(e) => {
         e.preventDefault();
         setSaved(false);
-        if (!states.length) {
+        if (alerts === 'on' && !states.length) {
           setNoStates(true);
           return;
         }
@@ -145,6 +153,11 @@ export function AlertSettingsPage({ token }: { token: string }) {
     mutationFn: () => call(leaveAlertList, { params: { token } }),
     onSuccess: keep,
   });
+  const ask = useMutation({
+    mutationFn: (body: AccessRequestBody) =>
+      call(requestAccessFromSettings, { params: { token }, body }),
+    onSuccess: keep,
+  });
 
   if (state.isPending) return <p role="status">Checking this link…</p>;
   if (state.isError) {
@@ -186,6 +199,14 @@ export function AlertSettingsPage({ token }: { token: string }) {
         error={save.error}
         onSave={(body) => save.mutateAsync(body)}
       />
+      <DeskSection
+        desk={s.desk}
+        sending={ask.isPending}
+        error={ask.error}
+        onSend={(body) => {
+          ask.mutate(body);
+        }}
+      />
       <Card variant="plain" heading="Remove me from the list entirely" className="mt-6">
         <p>
           This deletes your name, outlet and address from the journalist alert list. If you have
@@ -204,6 +225,81 @@ export function AlertSettingsPage({ token }: { token: string }) {
         <ErrorText error={remove.error} />
       </Card>
     </PublicPage>
+  );
+}
+
+/**
+ * Desk access, from the change page (decision 69). The form opens only when
+ * the person asks for it, so the page they came to change alerts on stays
+ * about alerts until then.
+ */
+function DeskSection({
+  desk,
+  sending,
+  error,
+  onSend,
+}: {
+  desk: Open['desk'];
+  sending: boolean;
+  error: unknown;
+  onSend: (body: AccessRequestBody) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(EMPTY_ACCESS);
+  return (
+    <Card variant="plain" heading="The journalist desk" className="mt-6">
+      {desk === 'approved' ? (
+        <p role="status">
+          You have access to the journalist desk.{' '}
+          <Link to="/desk" className="underline">
+            Sign in with this address
+          </Link>{' '}
+          to open it. Turning alerts off does not change that.
+        </p>
+      ) : desk === 'pending' ? (
+        <p role="status">
+          Your request for access is with the owner. You will get an email when they decide.
+        </p>
+      ) : open ? (
+        <form
+          className="flex flex-col gap-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSend(accessBody(draft));
+          }}
+        >
+          <p>
+            Text and links only. The owner reads every request; nothing is approved automatically,
+            and nothing is sent until you press the button.
+          </p>
+          <AccessFields value={draft} onChange={setDraft} />
+          <ErrorText error={error} />
+          <div>
+            <Button type="submit" busy={sending} busyLabel="Sending…">
+              Send my request to the owner
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <>
+          <p>
+            Vetted journalists can read links that moderators have checked. You can have desk access
+            with alerts on or off.
+          </p>
+          <div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                setOpen(true);
+              }}
+            >
+              Ask for access to the journalist desk
+            </Button>
+          </div>
+        </>
+      )}
+    </Card>
   );
 }
 

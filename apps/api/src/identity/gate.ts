@@ -53,6 +53,8 @@ export const IN_FRONT: readonly string[] = [
   'GET /api/journalists/settings/:token',
   'POST /api/journalists/settings/:token',
   'POST /api/journalists/settings/:token/remove',
+  // Asking for desk access from that page (decision 69), on the same token.
+  'POST /api/journalists/settings/:token/access',
   // The access request link (journalists/vetting.ts): the form it opens, and sending it.
   'GET /api/journalists/access/:token',
   'POST /api/journalists/access/:token',

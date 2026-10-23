@@ -22,29 +22,20 @@ import type { AccessLink, AccessRequestBody, AccessRequestView } from '@reportlo
 import { placeLabel } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import { emailDigests, openWithDek, wrapDek } from '../filing/contactKeys.ts';
+import { emailDigests, openWithDek } from '../filing/contactKeys.ts';
 import { HttpError } from '../http/errors.ts';
 import { partlyHidden } from '../identity/digestStop.ts';
 import { addressFrom } from '../identity/http.ts';
 import { recordRoleChange, setSystemRole } from '../identity/roles.ts';
 import { sha256Hex } from '../identity/secrets.ts';
 import { dekOf, issueLink, type ListDeps } from './list.ts';
+import { type Details, writeRequest } from './request.ts';
 
 const TOKEN = /^[a-f0-9]{64}$/;
 
 export const accessLinkFor = (siteOrigin: string, token: string) =>
   `${siteOrigin}/journalists/access/${token}`;
 export const deskLinkFor = (siteOrigin: string) => `${siteOrigin}/desk`;
-
-interface Details {
-  outlet: string;
-  role: string;
-  about?: string;
-  /** Only on requests sent before the form asked for `about` instead. */
-  links?: string[];
-  press_card_number?: string;
-  press_card_issuer?: string;
-}
 
 export function accessLinkEmail(link: string): { subject: string; text: string } {
   return {
@@ -151,27 +142,9 @@ export async function submitRequest(
   const row = await requestLink(deps.db, token);
   if (!row) return { state: 'gone' };
   if (row.status === 'pending' || row.status === 'approved') return linkState(deps, row);
-  const details: Details = {
-    outlet: input.outlet,
-    role: input.role,
-    about: input.about,
-    // Absent, not empty, when not given: the owner sees "none" either way.
-    ...(input.press_card_number ? { press_card_number: input.press_card_number } : {}),
-    ...(input.press_card_issuer ? { press_card_issuer: input.press_card_issuer } : {}),
-  };
-  const sealed = wrapDek(
-    dekOf(deps.ring, row.dek_wrapped),
-    Buffer.from(JSON.stringify(details), 'utf8'),
-  );
+  const dek = dekOf(deps.ring, row.dek_wrapped);
   await deps.db.transaction().execute(async (trx) => {
-    await trx
-      .deleteFrom('journalist_access_requests')
-      .where('subscriber_id', '=', row.id)
-      .execute();
-    await trx
-      .insertInto('journalist_access_requests')
-      .values({ subscriber_id: row.id, details_enc: sealed })
-      .execute();
+    await writeRequest(trx, row.id, dek, input);
     await trx
       .updateTable('journalist_links')
       .set({ used_at: new Date() })
@@ -202,6 +175,9 @@ export async function requestsForOwner(deps: ListDeps): Promise<AccessRequestVie
       's.name_enc',
       's.states',
     ])
+    // A request made while signing up waits for the address to be confirmed
+    // (owner decision 69): until then it may not even be theirs.
+    .where('s.status', '=', 'active')
     // Waiting first, then the approved, then the revoked.
     .orderBy((eb) =>
       eb
@@ -244,6 +220,7 @@ async function requestRow(db: Kysely<DB>, id: number) {
     .innerJoin('journalist_subscribers as s', 's.id', 'q.subscriber_id')
     .select(['q.id', 'q.status', 'q.user_id', 's.dek_wrapped', 's.email_enc'])
     .where('q.id', '=', id)
+    .where('s.status', '=', 'active')
     .executeTakeFirst();
   if (!row)
     throw new HttpError(404, 'not_found', 'There is no such request. It may have been withdrawn.');

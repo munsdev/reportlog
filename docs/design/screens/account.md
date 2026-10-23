@@ -245,7 +245,7 @@ H1 "Email updates", lede as today. "How often": three radio choice cards, "No em
 
 **`/journalists/alerts`, JOINING THE ALERT LIST**
 
-H1 "Journalist alerts", lede "An email when new approved reports appear in the states you cover. It says how many, and nothing more." Four questions on one page (this is a sign-up form, not a filing card): "Your name", "Your outlet", "Your email address", "States you cover" as a searchable checkbox list with a "Selected: 3" count line. Before the button, a quiet panel: "Joining gives no access to anything." and links to the legal notice and privacy policy. Primary "Join the list". The answer is the same page whether or not the address was known: H1 "Check your email".
+H1 "Journalist alerts". One sign-up for alerts, desk access, or both (decision 69); this is a sign-up form, not a filing card, and a section opens only when the person ticks its box. "Your name", "Your email address", then two checkbox choice cards: "Send me alerts" (ticked to begin with; opens "States you cover" as a searchable checkbox list with a "Selected: 3" count line) and "I am a journalist and want access to the journalist desk" (opens "Your request for desk access": "Your outlet", "Your role there", "Who are you?", the two optional press card fields). Before the button, a quiet panel: "Joining gives no access to anything." and links to the legal notice and privacy policy. Primary "Join the list". The answer is the same page whether or not the address was known: H1 "Check your email". The request reaches the owner only when the confirmation link's button is pressed.
 
 **`/journalists/access` and its link page, ASKING FOR THE DESK**
 
@@ -257,7 +257,7 @@ Behind the second factor and the journalist agreement gate (`AgreementGate`, kep
 
 **ALERT SETTINGS, ON THE DESK AND AT `/journalists/settings/:token`**
 
-"Alerts": two radio choice cards, "Send me alerts" and "Turn alerts off for now (you stay on the list)". "States you cover": the same checkbox list. Primary "Save". Status "Your alert settings are saved." Under a rule, a separate panel "Leave the list": "Removing yourself deletes your details and ends any desk access." and secondary "Remove me from the list entirely", which asks in a dialog first (decision 46). Turning alerts back on says "Alerts start again from now. Nothing you missed is sent." (decision 47).
+"Alerts": two radio choice cards, "Send me alerts" and "Turn alerts off for now (you stay on the list)". "States you cover": the same checkbox list. Primary "Save". Status "Your alert settings are saved." On the change page only (not the desk), a `plain` panel "The journalist desk" (decision 69): the request's state ("Your request for access is with the owner.", or access and a link to sign in), or, with none, a secondary "Ask for access to the journalist desk" that opens the request's questions and a primary "Send my request to the owner". Alerts off needs no states. Under a rule, a separate panel "Leave the list": "Removing yourself deletes your details and ends any desk access." and secondary "Remove me from the list entirely", which asks in a dialog first (decision 46). Turning alerts back on says "Alerts start again from now. Nothing you missed is sent." (decision 47).
 
 **`/journalists/confirm/:token`, `/journalists/stop/:token`** (doors)
 
