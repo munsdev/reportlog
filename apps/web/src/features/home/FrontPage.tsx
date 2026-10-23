@@ -56,19 +56,26 @@ export function FrontPageLayout({
       {/* THE SAME WIDTH AS THE SECTIONS BELOW. A narrow centred column on
           top of full-width sections read as two pages stacked. The text keeps
           its own reading measure (LEDE_CLASS); the buttons share a grid. */}
+      {/* TWO COLUMNS ON A DESKTOP, the familiar landing page: what this is
+          on the left, the ways in on the right. Stacked on anything
+          narrower, the buttons under the words. */}
       <div className="flex w-full flex-col gap-6 lg:gap-8">
-        <div className="flex flex-col gap-3">
-          <Eyebrow>{name}</Eyebrow>
-          {headline}
-          {lede}
+        <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
+              <Eyebrow>{name}</Eyebrow>
+              {headline}
+              {lede}
+            </div>
+            <p className="flex flex-col gap-1">
+              <Link to="/about" className="text-base font-semibold underline underline-offset-4">
+                What is this? About this site
+              </Link>
+              <Meta>Anyone can file. Sealed and timestamped on arrival.</Meta>
+            </p>
+          </div>
+          {ways}
         </div>
-        {ways}
-        <p className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <Link to="/about" className="text-base font-semibold underline underline-offset-4">
-            What is this? About this site
-          </Link>
-          <Meta>Anyone can file. Sealed and timestamped on arrival.</Meta>
-        </p>
         {helpNow}
       </div>
       {sections.length ? (
@@ -90,7 +97,7 @@ export function FrontPageLayout({
 }
 
 /** The headline, larger on a desktop so the page reads big and bold rather than a strip. */
-export const HEADLINE_CLASS = 'font-display text-title lg:text-[calc(var(--rl-h1-size)*1.4)]';
+export const HEADLINE_CLASS = 'font-display text-title lg:text-[calc(var(--rl-h1-size)*1.15)]';
 export const LEDE_CLASS = 'max-w-[65ch] text-lede text-ink-alt whitespace-pre-wrap';
 
 // ── the quieter sections, as a visitor sees them ─────────────────────────
