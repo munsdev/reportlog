@@ -52,6 +52,9 @@ export interface ScalewayMailer extends Mailer {
   trySend(message: EmailMessage): Promise<SendResult>;
 }
 
+/** A mailer that really hands mail to a provider: Scaleway or SMTP (smtp.ts). */
+export type ProviderMailer = ScalewayMailer;
+
 export interface ScalewayOptions {
   secretKey: string;
   projectId: string;

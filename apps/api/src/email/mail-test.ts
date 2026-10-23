@@ -9,15 +9,21 @@
  */
 import type { Config } from '../config.ts';
 import type { Mailer } from './mailer.ts';
-import type { ScalewayMailer, SendResult } from './scaleway.ts';
+import type { ProviderMailer, SendResult } from './scaleway.ts';
 import { isSendableAddress } from './scaleway.ts';
 
 export async function mailTest(
   config: Pick<
     Config,
-    'EMAIL_TRANSPORT' | 'EMAIL_FROM_ADDRESS' | 'SCALEWAY_REGION' | 'SITE_ORIGIN' | 'MAIL_OUTBOX'
+    | 'EMAIL_TRANSPORT'
+    | 'EMAIL_FROM_ADDRESS'
+    | 'SCALEWAY_REGION'
+    | 'SITE_ORIGIN'
+    | 'MAIL_OUTBOX'
+    | 'SMTP_HOST'
+    | 'SMTP_PORT'
   >,
-  mailer: Mailer | ScalewayMailer,
+  mailer: Mailer | ProviderMailer,
   to: string | undefined,
   say: (line: string) => void,
 ): Promise<number> {
@@ -25,7 +31,9 @@ export async function mailTest(
     ? `outbox (${config.MAIL_OUTBOX})`
     : config.EMAIL_TRANSPORT === 'scaleway'
       ? `scaleway (${config.SCALEWAY_REGION})`
-      : 'off (standard error)';
+      : config.EMAIL_TRANSPORT === 'smtp'
+        ? `smtp (${config.SMTP_HOST ?? '?'}:${String(config.SMTP_PORT)})`
+        : 'off (standard error)';
   say(`transport  ${transport}`);
   say(`from       ${config.EMAIL_FROM_ADDRESS ?? '(not set)'}`);
 
@@ -60,7 +68,10 @@ export async function mailTest(
     return 0;
   }
   say(`Not sent (${result.reason}): ${result.detail}`);
-  if (result.reason === 'rejected') {
+  if (result.reason === 'rejected' && config.EMAIL_TRANSPORT === 'smtp') {
+    say('Usual causes: a wrong SMTP_USER or SMTP_PASS (for Proton, the SMTP token, not');
+    say('the account password), or a FROM address the server will not send as.');
+  } else if (result.reason === 'rejected') {
     say('Usual causes: the sending domain is not verified in Scaleway yet, the FROM');
     say('address is not on that domain, or the key lacks Transactional Email rights.');
   }

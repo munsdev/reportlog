@@ -32,6 +32,7 @@ const SECRETS: Record<string, Source> = {
   // (deploy/README.md, "Rotating the contact key").
   CONTACT_KEY_PREVIOUS: 'rotation',
   SCALEWAY_SECRET_KEY: 'asked by install.sh',
+  SMTP_PASS: 'asked by install.sh',
   BACKUP_S3_ACCESS_KEY_ID: 'asked by install.sh',
   BACKUP_S3_SECRET_ACCESS_KEY: 'asked by install.sh',
   S3_ACCESS_KEY: 'asked by install.sh',

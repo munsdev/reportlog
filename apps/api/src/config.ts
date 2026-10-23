@@ -152,20 +152,31 @@ const ConfigSchema = z.object({
 
   // --- email (apps/api/src/email/) -------------------------------------
   /**
-   * `scaleway` sends. `off` sends nothing and writes each message to
+   * `scaleway` or `smtp` sends, one or the other, never both. `off` sends nothing and writes each message to
    * standard error instead (workstream A's fallback, so a fresh install can
    * still sign its operator in); the doctor fails a server left on it.
    * MAIL_OUTBOX, for the browser tests, wins over both. Never inferred from
    * which keys happen to be present: a staging box must be able to hold
    * real keys and still be told not to send.
    */
-  EMAIL_TRANSPORT: z.enum(['off', 'scaleway']).default('off'),
+  EMAIL_TRANSPORT: z.enum(['off', 'scaleway', 'smtp']).default('off'),
   EMAIL_FROM_ADDRESS: optional(z.email('EMAIL_FROM_ADDRESS must be an email address')),
   EMAIL_FROM_NAME: optional(z.string().max(100)),
   SCALEWAY_SECRET_KEY: optional(z.string()),
   SCALEWAY_PROJECT_ID: optional(z.uuid('SCALEWAY_PROJECT_ID is a UUID')),
   /** Transactional email is served from Paris. */
   SCALEWAY_REGION: z.enum(['fr-par']).default('fr-par'),
+  /**
+   * EMAIL_TRANSPORT=smtp: any SMTP server, the old application's settings.
+   * For Proton Mail: smtp.protonmail.ch, 587, your custom-domain address as
+   * SMTP_USER and an SMTP token as SMTP_PASS.
+   */
+  SMTP_HOST: optional(z.string()),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_USER: optional(z.string()),
+  SMTP_PASS: optional(z.string()),
+  /** Direct TLS. Unset: on for port 465, STARTTLS otherwise. */
+  SMTP_SECURE: optional(z.enum(['true', 'false'])),
   /** Where a failed scheduled job is reported. Unset: the doctor is the only one who notices. */
   OPS_ALERT_EMAIL: optional(z.email('OPS_ALERT_EMAIL must be an email address')),
 
@@ -337,6 +348,10 @@ const CheckedConfigSchema = ConfigSchema.superRefine((c, ctx) => {
       ['SCALEWAY_SECRET_KEY', 'SCALEWAY_PROJECT_ID', 'EMAIL_FROM_ADDRESS'],
       'required when EMAIL_TRANSPORT=scaleway',
     );
+  }
+  if (c.EMAIL_TRANSPORT === 'smtp') {
+    need(['SMTP_HOST', 'EMAIL_FROM_ADDRESS'], 'required when EMAIL_TRANSPORT=smtp');
+    if (c.SMTP_USER !== undefined) need(['SMTP_PASS'], 'required when SMTP_USER is set');
   }
   const offsite = [
     'BACKUP_S3_ENDPOINT',

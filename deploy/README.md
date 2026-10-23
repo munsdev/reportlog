@@ -116,6 +116,7 @@ repository has every one of them blank.
 | `DOOR_KEY`                                               | made by `install.sh` (32 random bytes); safe to replace at any time |
 | `TWO_FACTOR_KEY`                                         | made by `install.sh` (32 random bytes); a new one resets staff apps |
 | `TRANSPARENCY_LOG_SSH_KEY`                               | a key file made by `install.sh`; its public half is shown to add    |
+| `SMTP_PASS`                                              | asked by `install.sh` when an SMTP server is given                  |
 | `SCALEWAY_SECRET_KEY`                                    | asked by `install.sh`, from the Scaleway console                    |
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | asked by `install.sh`, from the storage provider (upload-only key)  |
 | `S3_ACCESS_KEY`, `S3_SECRET_KEY`                         | asked by `install.sh`, once a files provider is chosen              |
@@ -356,37 +357,38 @@ anything still missing. A server installed before `DOOR_KEY` and
 in the file. A server's other settings, the keys, email, error tracking and
 backups, are explained in their own sections above.
 
-| Setting                                                                          | What it does                                                                                      |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                   | The database. The installer writes it (a socket, no password).                                    |
-| `TEST_DATABASE_URL`                                                              | Development only: where the test suite makes throwaway databases. Never on a server.              |
-| `HOST`, `PORT`                                                                   | Where the API listens. Leave at `127.0.0.1` and `3000`: only Caddy is in front.                   |
-| `LOG_LEVEL`                                                                      | How much the API logs. Logs never hold an address or a full link.                                 |
-| `PUBLIC_REF_PREFIX`                                                              | The letters every public reference starts with (`RL-`). Sealed into every report: chosen once.    |
-| `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                               |
-| `DOOR_SUBMITS_PER_MINUTE`, `DOOR_SUBMITS_PER_HOUR`                               | Reports and tips one network address may send per minute and per hour (6 and 60).                 |
-| `DOOR_REQUESTS_PER_MINUTE`                                                       | Requests of any kind one address may make per minute (600), so reading stays fast in a flood.     |
-| `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                      |
-| `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.            |
-| `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise. `install.sh` writes `false`.       |
-| `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                 |
-| `FILES_DIR`, `FILES_INLINE_WORKER`                                               | Development only: where disk storage keeps files, and running the media worker inside the server. |
-| `FILES_STAGING_QUOTA_REPORTS`                                                    | How many reports' worth of files one address may have waiting. 0 is no limit.                     |
-| `S3_REGION`                                                                      | The files storage region. The installer reads it off the endpoint where it can.                   |
-| `S3_BUCKET_STAGING`, `S3_BUCKET_EVIDENCE`, `S3_BUCKET_RENDITIONS`                | The three buckets for files not yet sent, files with a report, and re-encoded copies.             |
-| `EMAIL_TRANSPORT`                                                                | `off` or `scaleway`. The installer turns it on once it can send.                                  |
-| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain verified in Scaleway.                                                     |
-| `SCALEWAY_PROJECT_ID`, `SCALEWAY_REGION`                                         | The Scaleway project and region (`fr-par`) mail goes through.                                     |
-| `MAIL_OUTBOX`                                                                    | Browser tests only: write each email as a file. Never on a server.                                |
-| `LIST_PERSONAL_DAYS`, `LIST_ERASURE_LINK_DAYS`                                   | How long a list keeps the personal half of an entry (with its links), and an erasure link.        |
-| `LIST_KNOWN_HOSTS`                                                               | Link hosts a moderator knows; others are marked for a look.                                       |
-| `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_MAX_AGE_HOURS`                              | Where local dumps go, how many to keep, and how old the newest may be before the doctor fails it. |
-| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`, `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX` | The off-site bucket. The installer reads the region off the endpoint where it can.                |
-| `STATE_DIR`                                                                      | Where jobs record what they last did, for the doctor.                                             |
-| `TRANSPARENCY_LOG_DIR`, `TRANSPARENCY_LOG_BRANCH`                                | The checkout of the transparency log on this server, and its branch.                              |
-| `TRANSPARENCY_LOG_AUTHOR_NAME`, `TRANSPARENCY_LOG_AUTHOR_EMAIL`                  | Who the log's commits are by.                                                                     |
-| `TSA_URL`                                                                        | The RFC 3161 timestamp authority. Unset, DFN's, in Germany.                                       |
-| `PRESS_DIR`                                                                      | A folder with a press pack built ahead of time. Unset, the press page says there is none.         |
+| Setting                                                                          | What it does                                                                                       |
+| -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                   | The database. The installer writes it (a socket, no password).                                     |
+| `TEST_DATABASE_URL`                                                              | Development only: where the test suite makes throwaway databases. Never on a server.               |
+| `HOST`, `PORT`                                                                   | Where the API listens. Leave at `127.0.0.1` and `3000`: only Caddy is in front.                    |
+| `LOG_LEVEL`                                                                      | How much the API logs. Logs never hold an address or a full link.                                  |
+| `PUBLIC_REF_PREFIX`                                                              | The letters every public reference starts with (`RL-`). Sealed into every report: chosen once.     |
+| `FILING_SENDS_PER_CLIENT`                                                        | How many confirmation emails one visitor may ask for in 15 minutes.                                |
+| `DOOR_SUBMITS_PER_MINUTE`, `DOOR_SUBMITS_PER_HOUR`                               | Reports and tips one network address may send per minute and per hour (6 and 60).                  |
+| `DOOR_REQUESTS_PER_MINUTE`                                                       | Requests of any kind one address may make per minute (600), so reading stays fast in a flood.      |
+| `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                       |
+| `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.             |
+| `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise. `install.sh` writes `false`.        |
+| `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                  |
+| `FILES_DIR`, `FILES_INLINE_WORKER`                                               | Development only: where disk storage keeps files, and running the media worker inside the server.  |
+| `FILES_STAGING_QUOTA_REPORTS`                                                    | How many reports' worth of files one address may have waiting. 0 is no limit.                      |
+| `S3_REGION`                                                                      | The files storage region. The installer reads it off the endpoint where it can.                    |
+| `S3_BUCKET_STAGING`, `S3_BUCKET_EVIDENCE`, `S3_BUCKET_RENDITIONS`                | The three buckets for files not yet sent, files with a report, and re-encoded copies.              |
+| `EMAIL_TRANSPORT`                                                                | `off`, `scaleway` or `smtp`: one provider, never both. The installer turns it on once it can send. |
+| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain verified in Scaleway.                                                      |
+| `SCALEWAY_PROJECT_ID`, `SCALEWAY_REGION`                                         | The Scaleway project and region (`fr-par`) mail goes through.                                      |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`                | For `smtp`. Proton Mail: `smtp.protonmail.ch`, `587`, the sending address, an SMTP token.          |
+| `MAIL_OUTBOX`                                                                    | Browser tests only: write each email as a file. Never on a server.                                 |
+| `LIST_PERSONAL_DAYS`, `LIST_ERASURE_LINK_DAYS`                                   | How long a list keeps the personal half of an entry (with its links), and an erasure link.         |
+| `LIST_KNOWN_HOSTS`                                                               | Link hosts a moderator knows; others are marked for a look.                                        |
+| `BACKUP_DIR`, `BACKUP_KEEP`, `BACKUP_MAX_AGE_HOURS`                              | Where local dumps go, how many to keep, and how old the newest may be before the doctor fails it.  |
+| `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION`, `BACKUP_S3_BUCKET`, `BACKUP_S3_PREFIX` | The off-site bucket. The installer reads the region off the endpoint where it can.                 |
+| `STATE_DIR`                                                                      | Where jobs record what they last did, for the doctor.                                              |
+| `TRANSPARENCY_LOG_DIR`, `TRANSPARENCY_LOG_BRANCH`                                | The checkout of the transparency log on this server, and its branch.                               |
+| `TRANSPARENCY_LOG_AUTHOR_NAME`, `TRANSPARENCY_LOG_AUTHOR_EMAIL`                  | Who the log's commits are by.                                                                      |
+| `TSA_URL`                                                                        | The RFC 3161 timestamp authority. Unset, DFN's, in Germany.                                        |
+| `PRESS_DIR`                                                                      | A folder with a press pack built ahead of time. Unset, the press page says there is none.          |
 
 ## Deploying
 

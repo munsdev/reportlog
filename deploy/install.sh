@@ -229,14 +229,31 @@ note "The site:"
 ask_setting SITE_ORIGIN "The address people will reach the site at (https://reports.example.org)" \
   "$URL" "https:// and a domain"
 
-note "Email (Scaleway Transactional Email; deploy/README.md, \"Email\"):"
+# ONE PROVIDER, EITHER OR: Scaleway Transactional Email, or any SMTP server
+# (Proton Mail's SMTP submission, say). Never both, and no fallback between
+# them (apps/api/src/email/smtp.ts says why).
+note "Email (Scaleway Transactional Email, or an SMTP server such as Proton Mail; deploy/README.md, \"Email\"):"
 ask_setting EMAIL_FROM_ADDRESS "The address mail is sent from, on your verified domain" "$EMAIL" "an email address"
-ask_setting SCALEWAY_PROJECT_ID "The Scaleway project's ID" "$UUID" "a Scaleway ID (8-4-4-4-12)"
-ask_setting SCALEWAY_SECRET_KEY "The Scaleway API key's secret key" "$UUID" "a Scaleway secret key (8-4-4-4-12)" secret
-if [ -n "$(env_value SCALEWAY_SECRET_KEY)" ] && [ -n "$(env_value SCALEWAY_PROJECT_ID)" ] \
-  && [ -n "$(env_value EMAIL_FROM_ADDRESS)" ] && [ "$(env_value EMAIL_TRANSPORT)" = off ]; then
-  set_env EMAIL_TRANSPORT scaleway
-  note "EMAIL_TRANSPORT set to scaleway."
+if [ -z "$(env_value SCALEWAY_SECRET_KEY)" ]; then
+  ask_setting SMTP_HOST "An SMTP server to send through (smtp.protonmail.ch), or Enter to use Scaleway" \
+    '[A-Za-z0-9.-]+' "a host name"
+fi
+if [ -n "$(env_value SMTP_HOST)" ]; then
+  ask_setting SMTP_PORT "Its port (587 for STARTTLS, 465 for TLS)" '[0-9]{2,5}' "a port number"
+  ask_setting SMTP_USER "The user to sign in as (for Proton, the sending address)" '[^[:space:]]+' "a user name"
+  ask_setting SMTP_PASS "Its password (for Proton, an SMTP token, not the account password)" "$TOKEN" "at least 8 characters" secret
+  if [ -n "$(env_value EMAIL_FROM_ADDRESS)" ] && [ "$(env_value EMAIL_TRANSPORT)" = off ]; then
+    set_env EMAIL_TRANSPORT smtp
+    note "EMAIL_TRANSPORT set to smtp."
+  fi
+else
+  ask_setting SCALEWAY_PROJECT_ID "The Scaleway project's ID" "$UUID" "a Scaleway ID (8-4-4-4-12)"
+  ask_setting SCALEWAY_SECRET_KEY "The Scaleway API key's secret key" "$UUID" "a Scaleway secret key (8-4-4-4-12)" secret
+  if [ -n "$(env_value SCALEWAY_SECRET_KEY)" ] && [ -n "$(env_value SCALEWAY_PROJECT_ID)" ] \
+    && [ -n "$(env_value EMAIL_FROM_ADDRESS)" ] && [ "$(env_value EMAIL_TRANSPORT)" = off ]; then
+    set_env EMAIL_TRANSPORT scaleway
+    note "EMAIL_TRANSPORT set to scaleway."
+  fi
 fi
 ask_setting OPS_ALERT_EMAIL "Who is emailed when a scheduled job fails" "$EMAIL" "an email address"
 ask_setting ADMIN_EMAIL "Where a list's new entries go when the list names nobody" "$EMAIL" "an email address"
@@ -285,7 +302,9 @@ ask_setting TRANSPARENCY_LOG_REMOTES "Where the daily record is pushed (git@host
 
 # What a working site still needs, by name, never by value.
 MISSING=""
-for key in SITE_ORIGIN EMAIL_FROM_ADDRESS SCALEWAY_PROJECT_ID SCALEWAY_SECRET_KEY OPS_ALERT_EMAIL \
+if [ -n "$(env_value SMTP_HOST)" ]; then MAIL_KEYS="SMTP_HOST"; else MAIL_KEYS="SCALEWAY_PROJECT_ID SCALEWAY_SECRET_KEY"; fi
+# shellcheck disable=SC2086 # MAIL_KEYS is a list of names
+for key in SITE_ORIGIN EMAIL_FROM_ADDRESS $MAIL_KEYS OPS_ALERT_EMAIL \
   BACKUP_AGE_RECIPIENTS BACKUP_S3_ENDPOINT BACKUP_S3_REGION BACKUP_S3_BUCKET \
   BACKUP_S3_ACCESS_KEY_ID BACKUP_S3_SECRET_ACCESS_KEY; do
   [ -n "$(env_value "$key")" ] || MISSING="$MISSING $key"

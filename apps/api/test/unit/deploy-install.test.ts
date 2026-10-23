@@ -337,6 +337,8 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
   const ANSWERS = [
     'https://reports.example.org',
     'reports@example.org',
+    // No SMTP server: Enter, so Scaleway is asked next.
+    '',
     PROJECT,
     SCALEWAY,
     'ops@example.org',
@@ -470,11 +472,32 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     expect(r.out).not.toContain('Its region (fsn1)');
   });
 
+  it('either or: an SMTP server given, it asks for that and never for Scaleway', () => {
+    const s = machine();
+    const r = ask(s, [
+      'https://reports.example.org',
+      'reports@example.org',
+      'smtp.protonmail.ch',
+      '587',
+      'reports@example.org',
+      'proton-smtp-token-for-the-test',
+    ]);
+    expect(r.status, r.out).toBe(0);
+    const env = s.read(ENV);
+    expect(env).toMatch(/^EMAIL_TRANSPORT=smtp$/m);
+    expect(env).toMatch(/^SMTP_HOST=smtp\.protonmail\.ch$/m);
+    expect(env).toMatch(/^SMTP_PASS=proton-smtp-token-for-the-test$/m);
+    expect(env).not.toMatch(/^SCALEWAY_SECRET_KEY=\S/m);
+    expect(r.out).not.toContain('Scaleway API key');
+    expect(r.out).not.toContain('proton-smtp-token-for-the-test');
+  });
+
   it('reads the region off the endpoint, and asks only when the address does not say', () => {
     // Endpoint, then the bucket and keys: no region question in between.
     const named = machine();
     const r = ask(named, [
       'https://reports.example.org',
+      '',
       '',
       '',
       '',
@@ -495,6 +518,7 @@ describe('install.sh asks for what only a person knows (Q3)', () => {
     const own = machine();
     const asked = ask(own, [
       'https://reports.example.org',
+      '',
       '',
       '',
       '',
