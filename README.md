@@ -10,16 +10,16 @@ and anybody can check a report without trusting the server that holds it.
 
 ## What is here
 
-| Path                 | What                                                                                                                                              |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/api`           | The server: Fastify and PostgreSQL. Node runs it directly, with no build step                                                                     |
-| `apps/web`           | The website: React, TypeScript, Tailwind, built with Vite                                                                                         |
-| `apps/site`          | The project's own site, www.reportlog.org: the homepage, and the install guide and release notes built from `deploy/README.md` and `CHANGELOG.md` |
-| `packages/seal`      | What a report's fingerprint is made of, and how to check one. Runs in a browser                                                                   |
-| `packages/fields`    | Question types and how answers are normalized                                                                                                     |
-| `packages/access`    | Who may grant which role                                                                                                                          |
-| `packages/contracts` | Every request the website and server exchange                                                                                                     |
-| `docs/`              | [Architecture](docs/architecture.md) and [workstreams](docs/workstreams.md)                                                                       |
+| Path                 | What                                                                            |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `apps/api`           | The server: Fastify and PostgreSQL. Node runs it directly, with no build step   |
+| `apps/web`           | The website: React, TypeScript, Tailwind, built with Vite                       |
+| `apps/site`          | The project's own site, www.reportlog.org, built from the runbook and changelog |
+| `packages/seal`      | What a report's fingerprint is made of, and how to check one. Runs in a browser |
+| `packages/fields`    | Question types and how answers are normalized                                   |
+| `packages/access`    | Who may grant which role                                                        |
+| `packages/contracts` | Every request the website and server exchange                                   |
+| `docs/`              | [Architecture](docs/architecture.md) and [workstreams](docs/workstreams.md)     |
 
 ## Running it
 
