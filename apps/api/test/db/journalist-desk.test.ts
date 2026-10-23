@@ -320,7 +320,9 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
     expect(audit).toContainEqual(
       expect.objectContaining({ action: 'grant', detail: 'journalist', actor_email: owner.email }),
     );
-    expect(h.mailer.lastTo(journalist)?.text).toContain('https://reports.example.test/desk');
+    expect(h.mailer.lastTo(journalist)?.text).toContain(
+      'https://reports.example.test/access/sign-in?next=%2Fdesk',
+    );
     // Twice is refused, not repeated.
     const again = await owner.call({
       method: 'POST',

@@ -76,7 +76,13 @@ const OPEN_IN_STAFF = {
 } as const;
 
 /** Staff screens outside the `(staff)` folder. */
-const STAFF_ELSEWHERE = ['/feedback/', '/feedback/testers', '/desk/', '/desk/sources', '/desk/alerts'] as const;
+const STAFF_ELSEWHERE = [
+  '/feedback/',
+  '/feedback/testers',
+  '/desk/',
+  '/desk/sources',
+  '/desk/alerts',
+] as const;
 
 /** Every other page: for anybody, or for any signed-in person (not staff). */
 const OPEN = [
