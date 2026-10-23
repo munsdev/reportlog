@@ -1,5 +1,5 @@
 /**
- * "Thank you. Have a link, photo or video? Send it as a tip." (the owner's
+ * "Thank you. Have a link? Send it as a tip." (the owner's
  * wording, voting questionnaires §03) shown after a report is filed, and the browser-only carry-over of where and when it happened.
  *
  * NOTHING HERE TELLS THE SERVER WHICH REPORT THE TIP FOLLOWS. The state,
@@ -81,7 +81,7 @@ export function clearTipPrefill(): void {
 export function TipOffer() {
   return (
     <div className="flex flex-col items-stretch gap-3 sm:items-start">
-      <p className="max-w-prose">Thank you. Have a link, photo or video? Send it as a tip.</p>
+      <p className="max-w-prose">Thank you. Have a link? Send it as a tip.</p>
       <Button asChild variant="secondary" size="lg" block className="sm:w-auto">
         <a href="/list/tips">Send a link</a>
       </Button>

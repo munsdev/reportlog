@@ -216,7 +216,7 @@ Replaces the form on the same page; focus moves to its heading.
 
 **THE TIP OFFER**
 
-Under the receipt, as owner wording: "Thank you. Have a link, photo or video? Send it as a tip." with "Send a link" as a secondary `lg` button to the tips list. The carry-over of state, county and time stays browser-only (`tipOffer.tsx`): nothing on the page or in the request connects the tip to the report, and the screen must not add a reference, a query string or anything else that would.
+Under the receipt, as owner wording: "Thank you. Have a link? Send it as a tip." with "Send a link" as a secondary `lg` button to the tips list. The carry-over of state, county and time stays browser-only (`tipOffer.tsx`): nothing on the page or in the request connects the tip to the report, and the screen must not add a reference, a query string or anything else that would.
 
 Then "Back to the front page" (quiet) and "See the live board" (quiet).
 

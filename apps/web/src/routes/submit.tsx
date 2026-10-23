@@ -36,7 +36,7 @@ const openListsQuery = queryOptions({
   queryFn: ({ signal }) => call(listOpenLists, { signal }),
 });
 
-/** The list that takes a link, photo or video as a tip. */
+/** The list that takes a link as a tip. */
 export const TIPS_SLUG = 'tips';
 
 export const Route = createFileRoute('/submit')({
