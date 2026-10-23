@@ -3,9 +3,9 @@
  *
  *   - On the PUBLIC site, the Menu button in the header opens the panel
  *     (desktop) or the sheet (phone, below 768px). For somebody with staff
- *     pages it has one staff link, "Open the staff area".
+ *     pages it has one staff link, "Your dashboard".
  *   - In the STAFF AREA (features/nav/StaffShell.tsx) the staff pages are in
- *     the sidebar, which on a phone is a drawer behind "Staff menu" in the
+ *     the sidebar, which on a phone is a drawer behind "Menu" in the
  *     top bar; the person's own links and Sign out are in the account menu.
  *
  * Every browser test that goes somewhere "from the menu" goes through here,
@@ -38,18 +38,18 @@ export async function inStaffArea(page: Page): Promise<boolean> {
 }
 
 /**
- * The staff sidebar: entered from the public menu's "Open the staff area"
+ * The staff sidebar: entered from the public menu's "Your dashboard"
  * when not in the staff area already, and on a phone, its drawer opened.
  */
 export async function staffNav(page: Page): Promise<Locator> {
   if (!(await inStaffArea(page))) {
     const menu = await openMenu(page);
-    await menu.getByRole('link', { name: /^Open the staff area/ }).click();
+    await menu.getByRole('link', { name: /^Your dashboard/ }).click();
     await expect(page.locator('[data-staff-app]')).toBeVisible();
   }
-  const sidebar = page.getByRole('navigation', { name: 'Staff areas' });
+  const sidebar = page.getByRole('navigation', { name: 'Your pages' });
   if (isPhone(page)) {
-    const button = page.getByRole('banner').getByRole('button', { name: 'Staff menu' });
+    const button = page.getByRole('banner').getByRole('button', { name: 'Menu' });
     if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
   }
   await expect(sidebar).toBeVisible();

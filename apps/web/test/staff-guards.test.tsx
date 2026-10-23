@@ -86,6 +86,7 @@ const OPEN = [
   '/dev/components',
   '/about',
   '/how',
+  '/home',
   '/legal',
   '/notifications',
   '/public-api',

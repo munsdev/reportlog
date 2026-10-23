@@ -146,15 +146,15 @@ test.describe('the staff area’s top bar', () => {
       expect(box.sideways).toBe(false);
       if (width < 768) {
         // The drawer: open, Escape closes it, and focus is back on its button.
-        const button = banner.getByRole('button', { name: 'Staff menu' });
+        const button = banner.getByRole('button', { name: 'Menu' });
         await button.click();
-        await expect(page.getByRole('navigation', { name: 'Staff areas' })).toBeVisible();
+        await expect(page.getByRole('navigation', { name: 'Your pages' })).toBeVisible();
         await expect(page.locator('#staff-drawer :focus')).toHaveCount(1);
         await page.keyboard.press('Escape');
         await expect(page.locator('#staff-drawer')).toHaveCount(0);
         await expect(button).toBeFocused();
       } else {
-        await expect(page.getByRole('navigation', { name: 'Staff areas' })).toBeVisible();
+        await expect(page.getByRole('navigation', { name: 'Your pages' })).toBeVisible();
       }
     });
   }

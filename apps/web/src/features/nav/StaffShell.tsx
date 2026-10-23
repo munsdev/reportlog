@@ -11,7 +11,7 @@
  *     public menu used to. The pages that were an area's tabs are its entries
  *     here, so a staff page no longer draws a row of area tabs. The current
  *     page is marked with `aria-current`; the queue carries its waiting count.
- *   - Below 768px the sidebar is a DRAWER behind the "Staff menu" button in
+ *   - Below 768px the sidebar is a DRAWER behind the "Menu" button in
  *     the top bar: focus moves in and stays in, Escape closes it, and focus
  *     goes back to the button. It closes when the address changes.
  *   - The CONTENT is as wide as the window allows up to 75rem, not the public
@@ -37,7 +37,7 @@ import { cn } from '@/lib/utils.ts';
 import { PauseBanner } from '../flood/IntakePaused.tsx';
 import type { SignedInMe } from '../identity/session.ts';
 import { rolesLabel, useSignOut } from '../identity/session.ts';
-import { areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
+import { areasFor, entryAt, groupsFor, mayOpen } from '../staff-nav/entries.ts';
 import type { StaffEntry } from '../staff-nav/entries.ts';
 import { AccountLinks, BugLink } from './Menu.tsx';
 import { usePopup, useNoScroll } from './popup.ts';
@@ -79,7 +79,7 @@ export function StaffShell({
         <div className="flex h-12 items-center gap-2 pr-[max(0.75rem,env(safe-area-inset-right))] pl-[max(0.75rem,env(safe-area-inset-left))] md:gap-4 md:px-5">
           <Wordmark />
           <span className="hidden shrink-0 rounded-control border border-line-on-deep px-1.5 py-0.5 label-face text-[0.6875rem] text-on-deep-muted sm:inline">
-            Staff
+            {me && me.heldRoles.length > 0 ? 'Staff' : 'Account'}
           </span>
           <div className="flex-1" />
           <Link
@@ -107,7 +107,7 @@ export function StaffShell({
                 ON_DEEP_FOCUS,
               )}
             >
-              Staff menu
+              Menu
               <svg width="18" height="12" viewBox="0 0 20 14" aria-hidden="true" focusable="false">
                 <path d="M0 1h20M0 7h20M0 13h20" stroke="currentColor" strokeWidth="2" />
               </svg>
@@ -167,9 +167,13 @@ export function StaffSidebar({
   onChoose?: () => void;
 }) {
   const here = entryAt(pathname);
-  const sections = me ? [...areasFor(me), ...groupsFor(me)] : [];
+  // The Account entry is a second way to /access; for somebody who may not
+  // open People and roles it is the page they are on.
+  const hereAlias = (p: StaffEntry) =>
+    p.alias === true && !p.hash && me !== null && here?.to === p.to && !mayOpen(here, me);
+  const sections = me ? [...groupsFor(me), ...areasFor(me)] : [];
   return (
-    <nav aria-label="Staff areas" className="px-3 py-4">
+    <nav aria-label="Your pages" className="px-3 py-4">
       {me ? null : <p className="px-3 text-sm text-muted">Loading…</p>}
       <ul className="flex flex-col gap-4">
         {sections.map((section) => (
@@ -185,10 +189,15 @@ export function StaffSidebar({
             <ul aria-labelledby={`staff-area-${section.id}`} className="flex flex-col gap-0.5">
               {section.pages.map((p) => (
                 <li key={`${p.to}#${p.hash ?? ''}`}>
-                  <SideLink entry={p} here={here === p} waiting={waiting} onChoose={onChoose} />
+                  <SideLink
+                    entry={p}
+                    here={here === p || hereAlias(p)}
+                    waiting={waiting}
+                    onChoose={onChoose}
+                  />
                 </li>
               ))}
-              {me && section.id === 'work' ? (
+              {me && section.id === 'help' ? (
                 <BugLink
                   me={me}
                   pathname={pathname}

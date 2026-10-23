@@ -29,8 +29,8 @@ const VIEWERS: Record<MenuRole, Viewer | null> = {
 const shown = (v: Viewer | null) =>
   v
     ? [
-        ...areasFor(v).flatMap((a) => a.pages.map((p) => p.label)),
         ...groupsFor(v).flatMap((g) => g.pages.map((p) => p.label)),
+        ...areasFor(v).flatMap((a) => a.pages.map((p) => p.label)),
       ]
     : [];
 

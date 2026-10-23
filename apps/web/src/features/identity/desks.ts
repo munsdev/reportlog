@@ -18,8 +18,8 @@ export const STARTS_AT: Readonly<Record<DeskId, StaffEntry['to']>> = {
   moderating: '/moderate',
   policy: '/moderate',
   group: '/access',
-  translation: '/settings',
-  design: '/settings',
+  translation: '/settings/words',
+  design: '/settings/look',
   outreach: '/docs',
 };
 
@@ -35,7 +35,7 @@ export function desksFor(desks: readonly string[], viewer: Viewer) {
     const label = labelOf.get(id);
     if (!label) return [];
     const to = STARTS_AT[id as DeskId];
-    const entry = STAFF_ENTRIES.find((e) => e.to === to);
+    const entry = STAFF_ENTRIES.find((e) => e.to === to && !e.alias);
     return [{ id, label, start: entry && mayOpen(entry, viewer) ? entry : null }];
   });
 }

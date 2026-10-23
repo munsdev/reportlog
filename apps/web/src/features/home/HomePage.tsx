@@ -1,0 +1,165 @@
+/**
+ * /home: the dashboard every signed-in person lands on. One card for each
+ * thing this person has (their reports and account always; review, the
+ * desk, an organization, site administration when they hold them), each
+ * with a sentence and a link or two.
+ *
+ * It asks for nothing the frame has not already asked: the waiting totals
+ * are the header's own query (useWaiting), so there is no new call. Nothing
+ * on it moves on its own; a total changes only when the page is reloaded
+ * or the person does something that changes it.
+ */
+import { Link } from '@tanstack/react-router';
+import type { LinkProps } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
+import { Card } from '@/components/ui/card.tsx';
+import { Count } from '@/components/ui/count.tsx';
+import { Page } from '@/components/ui/page.tsx';
+import { SignInPrompt } from '../identity/SignInPrompt.tsx';
+import { useMe } from '../identity/session.ts';
+import { mayOpen } from '../staff-nav/entries.ts';
+import { useWaiting, waitingWords } from '../nav/waiting.ts';
+
+const LINK = 'inline-flex min-h-11 items-center text-ink underline underline-offset-4';
+
+type To = NonNullable<LinkProps['to']>;
+
+function Tile({
+  title,
+  children,
+  links,
+}: {
+  title: string;
+  children: ReactNode;
+  links: readonly { to: To; label: string; count?: ReactNode }[];
+}) {
+  return (
+    <Card heading={title} className="gap-3 p-4">
+      <div className="text-ink-alt">{children}</div>
+      <ul className="flex flex-wrap gap-x-5">
+        {links.map((l) => (
+          <li key={l.to} className="flex items-center gap-2">
+            <Link to={l.to} className={LINK}>
+              {l.label}
+            </Link>
+            {l.count}
+          </li>
+        ))}
+      </ul>
+    </Card>
+  );
+}
+
+export function HomePage() {
+  const meQuery = useMe();
+  const me = meQuery.data?.signedIn ? meQuery.data : undefined;
+  const waiting = useWaiting(me);
+  if (meQuery.isPending) return <p role="status">Reading your account…</p>;
+  if (!me) return <SignInPrompt next="/home" />;
+
+  const moderator = mayOpen({ for: ['moderator', 'admin'] }, me);
+  const admin = mayOpen({ for: ['admin'] }, me);
+  const journalist = mayOpen({ for: ['journalist'] }, me);
+  const organization = mayOpen({ for: ['organization'] }, me);
+  const total = (waiting?.reports ?? 0) + (waiting?.list_entries ?? 0) + (waiting?.tip_links ?? 0);
+
+  return (
+    <Page title="Your dashboard" lede="Everything you have here, in one place.">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <Tile
+          title="Your reports"
+          links={[
+            { to: '/mine', label: 'My reports' },
+            { to: '/notifications', label: 'Email updates' },
+          ]}
+        >
+          <p>The reports you have filed, and the emails you have asked for about them.</p>
+        </Tile>
+        <Tile
+          title="Your account"
+          links={[
+            { to: '/access', label: 'Your account' },
+            ...(me.heldRoles.length > 0
+              ? [{ to: '/access/security' as const, label: 'Account and security' }]
+              : []),
+          ]}
+        >
+          <p>Your address, how you sign in, and what you may do here.</p>
+        </Tile>
+        {moderator ? (
+          <Tile
+            title="Review"
+            links={[
+              {
+                to: '/moderate',
+                label: 'Reports queue',
+                count: waiting?.reports ? (
+                  <Count
+                    value={waiting.reports}
+                    label={`, ${waitingWords('reports', waiting.reports)}`}
+                  />
+                ) : null,
+              },
+              {
+                to: '/lists/review',
+                label: 'List entries',
+                count: waiting?.list_entries ? (
+                  <Count
+                    value={waiting.list_entries}
+                    label={`, ${waitingWords('list_entries', waiting.list_entries)}`}
+                  />
+                ) : null,
+              },
+              {
+                to: '/lists/links',
+                label: 'Tip links',
+                count: waiting?.tip_links ? (
+                  <Count
+                    value={waiting.tip_links}
+                    label={`, ${waitingWords('tip_links', waiting.tip_links)}`}
+                  />
+                ) : null,
+              },
+            ]}
+          >
+            <p>
+              {waiting
+                ? total > 0
+                  ? 'Work is waiting for a moderator.'
+                  : 'Nothing is waiting for review.'
+                : 'Reports, tip links and list entries wait here until a moderator decides.'}
+            </p>
+          </Tile>
+        ) : null}
+        {journalist ? (
+          <Tile title="Journalist desk" links={[{ to: '/desk', label: 'Open the desk' }]}>
+            <p>The checked links you may read.</p>
+          </Tile>
+        ) : null}
+        {organization ? (
+          <Tile
+            title="Your organization"
+            links={[
+              { to: '/intake', label: 'Intake' },
+              { to: '/intake/links', label: 'Volunteer links' },
+            ]}
+          >
+            <p>Reports your volunteers bring in, and the links they use.</p>
+          </Tile>
+        ) : null}
+        {admin ? (
+          <Tile
+            title="Site administration"
+            links={[
+              { to: '/logbooks', label: 'Logbooks' },
+              { to: '/settings/name', label: 'Site settings' },
+              { to: '/transparency-log', label: 'Transparency log' },
+            ]}
+          >
+            <p>Run the site: what it collects, how it looks, and the records it keeps.</p>
+          </Tile>
+        ) : null}
+      </div>
+    </Page>
+  );
+}

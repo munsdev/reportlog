@@ -138,3 +138,25 @@ The rebuild's footer stays: About · How to use · Moderation standard · Imprin
 - Which pages carry a `Count` inside the panel (Queue, Tip links, List review, Feedback) is decided here; their numbers come from calls that exist on those pages today and would need a summary endpoint.
 - "Who opened protected data" is listed under Records but today lives inside Moderation settings. Moving it is a route change, not only a menu change.
 - Sixteen pages in Moderation plus Site settings make long tab rows on a phone. They scroll; whether any should merge is not decided.
+
+---
+
+### 07
+
+### T H E A P P F R A M E F O R E V E R Y O N E ( 2 3 O C T O B E R 2 0 2 6 )
+
+Decision 71 amends 66. Anyone signed in gets the app frame (top bar and sidebar, a drawer behind "Menu" on a phone) on `/home`, `/mine`, `/notifications`, `/access`, `/access/security`, `/desk` and `/intake/*`, as well as on the staff pages. Never on a door page. The public menu has one link into it, "Your dashboard", and "Your account" for everybody.
+
+`/home` is the dashboard: one card per thing the person has, one column on a phone, two or three on wider screens. Always "Your reports" and "Your account"; "Review" (with the waiting totals the header already fetches), "Journalist desk", "Your organization" and "Site administration" only for those who hold them. After sign-in, with no `next`, a person lands there.
+
+The sidebar, top to bottom: **You** (Overview, My reports, Email updates, Account, and Account and security for anyone holding a role), **Journalist desk**, **Your organization**, then the staff areas sorted by job:
+
+- **Review** (moderators): Reports queue, Tip links, List entries, Files, Illegal content notices, Flood screen.
+- **Content** (administrators): Logbooks, Lists, Maps, Find entries, Report and tip forms, Starting points, Front page.
+- **Site** (administrators): Name, Look, Wording, Legal notices, Development notice.
+- **Rules** (administrators): Moderation settings, File limits, Moderator agreement, Journalist agreement (owner), Site password.
+- **People** (those who grant access): People and roles, Organizations, Journalist requests (owner), Testers, Who is doing what.
+- **Logs and system**: Transparency log, Who granted what, Who opened protected data, Backups and exports (owner), Updates.
+- **Help**: Guides, Feedback, Feedback queue (administrators; a different screen from Feedback).
+
+The old `/settings` overview keeps its route but has no menu entry; the dashboard took its place.

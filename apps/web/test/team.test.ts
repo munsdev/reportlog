@@ -11,9 +11,12 @@ import { STAFF_ENTRIES, entriesFor } from '../src/features/staff-nav/entries.ts'
 describe('the team-member flag in the staff menu', () => {
   it('opens the guides and nothing else', () => {
     expect(entriesFor({ roles: [], tester: false, teamMember: true }).map((e) => e.label)).toEqual([
+      'Overview',
+      'My reports',
+      'Email updates',
+      'Account',
       'Guides',
     ]);
-    expect(entriesFor({ roles: [], tester: false, teamMember: false })).toEqual([]);
   });
 });
 

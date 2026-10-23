@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as DeskRouteImport } from './routes/desk'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as HowRouteImport } from './routes/how'
 import { Route as LegalRouteImport } from './routes/legal'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -123,6 +124,11 @@ const AboutRoute = AboutRouteImport.update({
 const DeskRoute = DeskRouteImport.update({
   id: '/desk',
   path: '/desk',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowRoute = HowRouteImport.update({
@@ -623,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/desk': typeof DeskRoute
+  '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -725,6 +732,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/desk': typeof DeskRoute
+  '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -822,6 +830,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/desk': typeof DeskRoute
+  '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/legal': typeof LegalRoute
   '/notifications': typeof NotificationsRoute
@@ -926,6 +935,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/desk'
+    | '/home'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -1028,6 +1038,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/desk'
+    | '/home'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -1124,6 +1135,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/desk'
+    | '/home'
     | '/how'
     | '/legal'
     | '/notifications'
@@ -1227,6 +1239,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   DeskRoute: typeof DeskRoute
+  HomeRoute: typeof HomeRoute
   HowRoute: typeof HowRoute
   LegalRoute: typeof LegalRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -1313,6 +1326,13 @@ declare module '@tanstack/react-router' {
       path: '/desk'
       fullPath: '/desk'
       preLoaderRoute: typeof DeskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how': {
@@ -2125,6 +2145,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   DeskRoute: DeskRoute,
+  HomeRoute: HomeRoute,
   HowRoute: HowRoute,
   LegalRoute: LegalRoute,
   NotificationsRoute: NotificationsRoute,

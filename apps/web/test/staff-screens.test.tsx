@@ -220,8 +220,8 @@ describe('the front page editor', () => {
 describe('words', () => {
   it('names the screen feedback came from by the menu’s name', () => {
     expect(pageNameFor('/(staff)/settings/')).toBe('Site settings');
-    expect(pageNameFor('/(staff)/moderate/')).toBe('Queue');
-    expect(pageNameFor('/(staff)/moderate/$threadId')).toBe('Queue');
+    expect(pageNameFor('/(staff)/moderate/')).toBe('Reports queue');
+    expect(pageNameFor('/(staff)/moderate/$threadId')).toBe('Reports queue');
     expect(pageNameFor('/board/')).toBeNull();
   });
 

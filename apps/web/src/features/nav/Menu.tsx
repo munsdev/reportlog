@@ -1,13 +1,12 @@
 /**
  * What the Menu button opens (docs/design/navigation.md, sections 02 to 04):
- * on a desktop a PANEL under the bar with three rows (this site, staff, you);
+ * on a desktop a PANEL under the bar with three rows (this site, dashboard, you);
  * below 768px a SHEET filling the screen under the bar. Both list the same
  * links, from the same lists, for the same person.
  *
- * THE STAFF ROW IS ONE LINK, "Open the staff area", to the first staff page
- * this person may open. The staff pages themselves are listed in the staff
- * area's own sidebar (StaffShell.tsx), not here: the public menu stays the
- * public site's, whoever is reading it.
+ * THE SECOND ROW IS ONE LINK, "Your dashboard" (/home), for every signed-in
+ * person. The pages themselves are listed in the app frame's own sidebar
+ * (StaffShell.tsx), not here: the public menu stays the public site's.
  *
  * Nothing here decides who may open what: the staff pages come from
  * `entries.ts` (each with its route's own guard), and the account links from
@@ -27,7 +26,7 @@ import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 import type { SignedInMe } from '../identity/session.ts';
 import { useSignOut } from '../identity/session.ts';
-import { entriesFor, staffHome } from '../staff-nav/entries.ts';
+import { entriesFor } from '../staff-nav/entries.ts';
 import { EasierReadingSlot } from './EasierReadingSlot.tsx';
 import { waitingWords } from './waiting.ts';
 
@@ -135,31 +134,22 @@ function PublicTiles({ onChoose, phone }: { onChoose: () => void; phone: boolean
 }
 
 /**
- * The one way from the public site into the staff area, with the reports
+ * The one way from the public site into the app frame, with the reports
  * waiting for a moderator beside it for those the queue admits.
  */
 function StaffAreaLink({
-  me,
   waiting,
   onChoose,
   className,
 }: {
-  me: SignedInMe;
   waiting: MenuWaiting | undefined;
   onChoose: () => void;
   className: string;
 }) {
-  const home = staffHome(me);
-  if (!home) return null;
   const n = waiting?.reports;
   return (
-    <Link
-      to={home.to}
-      {...(home.hash ? { hash: home.hash } : {})}
-      onClick={onChoose}
-      className={className}
-    >
-      <span>Open the staff area</span>
+    <Link to="/home" onClick={onChoose} className={className}>
+      <span>Your dashboard</span>
       {n ? <Count tone="onDeep" value={n} label={`, ${waitingWords('reports', n)}`} /> : null}
     </Link>
   );
@@ -231,15 +221,11 @@ export function AccountLinks({
           Email updates
         </Link>
       </li>
-      {/* /access is the account page for everybody; those who grant access
-          reach it as "Roles", under People and access. */}
-      {me.grantsAccess ? null : (
-        <li>
-          <Link to="/access" activeOptions={exact} onClick={onChoose} className={className}>
-            Your account
-          </Link>
-        </li>
-      )}
+      <li>
+        <Link to="/access" activeOptions={exact} onClick={onChoose} className={className}>
+          Your account
+        </Link>
+      </li>
       {/* Role holders' second factor. On the role they HOLD, so somebody who
           has not proved one yet (and so acts with no role) can find it. */}
       {me.heldRoles.length === 0 ? null : (
@@ -299,7 +285,7 @@ const STAFF_TILE = cn(
 );
 
 export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
-  const staff = me ? staffHome(me) !== null : false;
+  const staff = me !== null;
   return (
     <div className="mx-auto max-w-[76rem] px-[max(1rem,env(safe-area-inset-left))] pt-6 md:px-8">
       <section aria-labelledby="menu-this-site" className="border-b border-line-on-deep pb-5">
@@ -317,9 +303,9 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
       {me && staff ? (
         <section aria-labelledby="menu-staff" className="pt-5">
           <h2 id="menu-staff" className="label-face mb-2 text-[0.6875rem] text-on-deep-muted">
-            Staff
+            Dashboard
           </h2>
-          <StaffAreaLink me={me} waiting={waiting} onChoose={onChoose} className={STAFF_TILE} />
+          <StaffAreaLink waiting={waiting} onChoose={onChoose} className={STAFF_TILE} />
         </section>
       ) : null}
 
@@ -365,7 +351,7 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
 // ── the phone sheet ─────────────────────────────────────────────────────
 
 export function MenuSheet({ me, waiting, pathname, onChoose }: MenuProps) {
-  const staff = me ? staffHome(me) !== null : false;
+  const staff = me !== null;
   const ITEM = cn(
     'flex min-h-12 w-full items-center justify-between gap-3 border-b border-line-on-deep px-5 font-label text-base font-semibold text-on-deep hover:bg-deep',
     ON_DEEP_FOCUS,
@@ -387,9 +373,9 @@ export function MenuSheet({ me, waiting, pathname, onChoose }: MenuProps) {
 
       {me && staff ? (
         <section aria-labelledby="menu-staff">
-          <SheetHeading id="menu-staff">Staff</SheetHeading>
+          <SheetHeading id="menu-staff">Dashboard</SheetHeading>
           <div className="border-t border-line-on-deep">
-            <StaffAreaLink me={me} waiting={waiting} onChoose={onChoose} className={ITEM} />
+            <StaffAreaLink waiting={waiting} onChoose={onChoose} className={ITEM} />
           </div>
         </section>
       ) : null}

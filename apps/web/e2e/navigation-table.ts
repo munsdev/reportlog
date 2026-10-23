@@ -12,56 +12,55 @@ export interface MenuPage {
   label: string;
   /** The address, as the link's href ends (no trailing slash). */
   href: string;
-  /** The staff area holding it, or none for the "You" row's groups. */
+  /** The staff area holding it, or none for the groups before the areas. */
   area?: string;
 }
 
-const MOD = 'Moderation';
-const BOOKS = 'Logbooks and lists';
-const SET = 'Site settings';
-const PEOPLE = 'People and access';
-const REC = 'Records';
-
 export const ALL_PAGES: readonly MenuPage[] = [
-  { area: MOD, label: 'Queue', href: '/moderate' },
-  { area: MOD, label: 'Flood screen', href: '/moderate/flood' },
-  { area: MOD, label: 'Tip links', href: '/lists/links' },
-  { area: MOD, label: 'List review', href: '/lists/review' },
-  { area: MOD, label: 'Illegal content notices', href: '/moderate/illegal-content' },
-  { area: MOD, label: 'Files', href: '/files' },
-  { area: MOD, label: 'Agreement', href: '/moderate/agreement' },
-  { area: MOD, label: 'Moderation settings', href: '/moderate/settings' },
-  { area: BOOKS, label: 'Logbooks', href: '/logbooks' },
-  { area: BOOKS, label: 'Front page', href: '/logbooks/front-page' },
-  { area: BOOKS, label: 'Lists', href: '/lists' },
-  { area: BOOKS, label: 'Maps', href: '/maps' },
-  { area: BOOKS, label: 'Find entries', href: '/lists/search' },
-  { area: BOOKS, label: 'File limits', href: '/files/settings' },
-  { area: SET, label: 'Overview', href: '/settings' },
-  { area: SET, label: 'Look', href: '/settings/look' },
-  { area: SET, label: 'Name', href: '/settings/name' },
-  { area: SET, label: 'Wording', href: '/settings/words' },
-  { area: SET, label: 'Legal notices', href: '/settings/legal' },
-  { area: SET, label: 'Report and tip forms', href: '/settings/forms' },
-  { area: SET, label: 'Starting points', href: '/settings/starting-points' },
-  { area: SET, label: 'Development notice', href: '/settings/development' },
-  { area: SET, label: 'Feedback queue', href: '/settings/feedback' },
-  { area: PEOPLE, label: 'Roles', href: '/access' },
-  { area: PEOPLE, label: 'Site password', href: '/access#site-password' },
-  { area: PEOPLE, label: 'Organizations', href: '/access/orgs' },
-  { area: PEOPLE, label: 'Journalists', href: '/access/journalists' },
-  { area: PEOPLE, label: 'Who is doing what', href: '/access/roster' },
-  { area: PEOPLE, label: 'Who granted what', href: '/access/audit' },
-  { area: REC, label: 'Transparency log', href: '/transparency-log' },
-  { area: REC, label: 'Backups and exports', href: '/backups' },
-  { area: REC, label: 'Updates', href: '/updates' },
-  { area: REC, label: 'Who opened protected data', href: '/who-opened-what' },
+  { label: 'Overview', href: '/home' },
+  { label: 'My reports', href: '/mine' },
+  { label: 'Email updates', href: '/notifications' },
+  { label: 'Account', href: '/access' },
+  { label: 'Account and security', href: '/access/security' },
+  { label: 'Journalist desk', href: '/desk' },
   { label: 'Intake', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
-  { label: 'Journalist desk', href: '/desk' },
-  { label: 'Feedback', href: '/feedback' },
-  { label: 'Testers', href: '/feedback/testers' },
-  { label: 'Guides', href: '/docs' },
+  { area: 'Review', label: 'Reports queue', href: '/moderate' },
+  { area: 'Review', label: 'Tip links', href: '/lists/links' },
+  { area: 'Review', label: 'List entries', href: '/lists/review' },
+  { area: 'Review', label: 'Files', href: '/files' },
+  { area: 'Review', label: 'Illegal content notices', href: '/moderate/illegal-content' },
+  { area: 'Review', label: 'Flood screen', href: '/moderate/flood' },
+  { area: 'Content', label: 'Logbooks', href: '/logbooks' },
+  { area: 'Content', label: 'Lists', href: '/lists' },
+  { area: 'Content', label: 'Maps', href: '/maps' },
+  { area: 'Content', label: 'Find entries', href: '/lists/search' },
+  { area: 'Content', label: 'Report and tip forms', href: '/settings/forms' },
+  { area: 'Content', label: 'Starting points', href: '/settings/starting-points' },
+  { area: 'Content', label: 'Front page', href: '/logbooks/front-page' },
+  { area: 'Site', label: 'Name', href: '/settings/name' },
+  { area: 'Site', label: 'Look', href: '/settings/look' },
+  { area: 'Site', label: 'Wording', href: '/settings/words' },
+  { area: 'Site', label: 'Legal notices', href: '/settings/legal' },
+  { area: 'Site', label: 'Development notice', href: '/settings/development' },
+  { area: 'Rules', label: 'Moderation settings', href: '/moderate/settings' },
+  { area: 'Rules', label: 'File limits', href: '/files/settings' },
+  { area: 'Rules', label: 'Moderator agreement', href: '/moderate/agreement' },
+  { area: 'Rules', label: 'Journalist agreement', href: '/access/journalists/agreement' },
+  { area: 'Rules', label: 'Site password', href: '/access#site-password' },
+  { area: 'People', label: 'People and roles', href: '/access' },
+  { area: 'People', label: 'Organizations', href: '/access/orgs' },
+  { area: 'People', label: 'Journalist requests', href: '/access/journalists' },
+  { area: 'People', label: 'Testers', href: '/feedback/testers' },
+  { area: 'People', label: 'Who is doing what', href: '/access/roster' },
+  { area: 'Logs and system', label: 'Transparency log', href: '/transparency-log' },
+  { area: 'Logs and system', label: 'Who granted what', href: '/access/audit' },
+  { area: 'Logs and system', label: 'Who opened protected data', href: '/who-opened-what' },
+  { area: 'Logs and system', label: 'Backups and exports', href: '/backups' },
+  { area: 'Logs and system', label: 'Updates', href: '/updates' },
+  { area: 'Help', label: 'Guides', href: '/docs' },
+  { area: 'Help', label: 'Feedback', href: '/feedback' },
+  { area: 'Help', label: 'Feedback queue', href: '/settings/feedback' },
 ];
 
 export type MenuRole =
@@ -76,46 +75,52 @@ export type MenuRole =
   | 'tester';
 
 const pick = (...labels: string[]) => labels;
-const ADMIN_PAGES = ALL_PAGES.map((p) => p.label).filter(
-  (l) =>
-    ![
-      'Journalists',
-      'Backups and exports',
-      'Intake',
-      'Volunteer links',
-      'Journalist desk',
-    ].includes(l),
-);
+const YOU = ['Overview', 'My reports', 'Email updates', 'Account'];
+/** Anyone holding a role also has the page to prove a second factor. */
+const YOU_STAFF = [...YOU, 'Account and security'];
+const ALL = ALL_PAGES.map((p) => p.label);
+const WITHOUT = (...gone: string[]) => ALL.filter((l) => !gone.includes(l));
+const ORG = ['Intake', 'Volunteer links'];
 
-/** The staff pages each role's menu shows, by label, in the menu's order. */
+/** The pages each role's sidebar shows, by label, in the sidebar's order. */
 export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   visitor: [],
-  reporter: [],
-  moderator: pick(
-    'Queue',
-    'Flood screen',
-    'Tip links',
-    'List review',
-    'Illegal content notices',
-    'Files',
-    'Guides',
+  reporter: YOU,
+  moderator: [
+    ...YOU_STAFF,
+    ...pick(
+      'Reports queue',
+      'Tip links',
+      'List entries',
+      'Files',
+      'Illegal content notices',
+      'Flood screen',
+      'Guides',
+    ),
+  ],
+  admin: WITHOUT(
+    'Journalist agreement',
+    'Journalist requests',
+    'Backups and exports',
+    'Journalist desk',
+    ...ORG,
   ),
-  admin: ADMIN_PAGES,
-  owner: ALL_PAGES.map((p) => p.label).filter(
-    (l) => !['Intake', 'Volunteer links', 'Journalist desk'].includes(l),
-  ),
-  access_manager: pick(
-    'Roles',
-    'Organizations',
-    'Who is doing what',
-    'Who granted what',
-    'Feedback',
-    'Testers',
-    'Guides',
-  ),
-  journalist: pick('Journalist desk'),
-  coordinator: pick('Intake', 'Volunteer links'),
-  tester: pick('Feedback'),
+  owner: WITHOUT('Journalist desk', ...ORG),
+  access_manager: [
+    ...YOU_STAFF,
+    ...pick(
+      'People and roles',
+      'Organizations',
+      'Testers',
+      'Who is doing what',
+      'Who granted what',
+      'Guides',
+      'Feedback',
+    ),
+  ],
+  journalist: [...YOU_STAFF, 'Journalist desk'],
+  coordinator: [...YOU, ...ORG],
+  tester: [...YOU, 'Feedback'],
 };
 
 export const pageByLabel = (label: string): MenuPage => {

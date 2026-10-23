@@ -11,7 +11,7 @@ import { NotFoundPage } from '../features/site-pages/NotFound.tsx';
 import { HeaderProgressProvider } from '../features/nav/progress.tsx';
 import { SiteHeader } from '../features/nav/SiteHeader.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
-import { entryAt, staffHome } from '../features/staff-nav/entries.ts';
+import { inFrame } from '../features/staff-nav/entries.ts';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -35,14 +35,14 @@ function RootLayout() {
 
 /**
  * Which frame this page is drawn in: the staff area's (features/nav/
- * StaffShell.tsx) on a staff page for somebody with any staff page, else the
+ * StaffShell.tsx) on a page of the app for anybody signed in, else the
  * public one. Never the staff frame on a door, which may not ask who is
  * signed in; a door is never a staff page anyway.
  */
 function Frame() {
   const door = useGateMode() === 'door';
   const { pathname } = useLocation();
-  if (door || !entryAt(pathname)) return <PublicFrame />;
+  if (door || !inFrame(pathname)) return <PublicFrame />;
   return <StaffFrame />;
 }
 
@@ -58,9 +58,9 @@ function StaffFrame() {
       </StaffShell>
     );
   const who = me.data?.signedIn ? me.data : null;
-  // Signed out, or with no staff page (a role still waiting for its second
-  // factor, say): the public frame, where the page's own guard explains.
-  if (!who || !staffHome(who)) return <PublicFrame />;
+  // Signed out: the public frame, where the page's own guard explains.
+  // Everybody signed in gets the app frame (decision 71).
+  if (!who) return <PublicFrame />;
   return (
     <StaffShell me={who}>
       <Outlet />

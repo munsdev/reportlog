@@ -18,9 +18,9 @@ export function SignInPage({ next }: { next: string | undefined }) {
       <h1 className="font-display text-title font-bold">Sign in</h1>
       <Lede>We email you a code. No password to remember.</Lede>
       <SignInForm
-        onSignedIn={async (me) => {
+        onSignedIn={async () => {
           await changed();
-          router.history.push(next ?? (me.signedIn && me.grantsAccess ? '/access' : '/'));
+          router.history.push(next ?? '/home');
         }}
       />
       <p className="text-sm text-ink-alt">

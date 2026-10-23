@@ -7,7 +7,7 @@ import {
 } from '@reportlog/contracts';
 import type { FeedbackIssue, FeedbackStatus } from '@reportlog/contracts';
 import { Chip } from '../../components/ui/chip.tsx';
-import { STAFF_AREAS, entryAt } from '../staff-nav/entries.ts';
+import { entryAt } from '../staff-nav/entries.ts';
 
 export const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -29,9 +29,9 @@ export function StatusChip({ status }: { status: FeedbackStatus }) {
 export function pageNameFor(routeId: string): string | null {
   const path = routeId.replace(/\/\([^)]*\)/g, '').replace(/\/+$/, '') || '/';
   const entry = entryAt(path);
-  if (!entry) return null;
-  if (entry.label !== 'Overview') return entry.label;
-  return STAFF_AREAS.find((a) => a.pages.includes(entry))?.label ?? entry.label;
+  // The settings overview has a route but no menu entry any more.
+  if (!entry) return path === '/settings' ? 'Site settings' : null;
+  return entry.label === 'Overview' ? 'Your dashboard' : entry.label;
 }
 
 /** One line under an issue's title: what it is, how bad, where it stands, who filed it. */
