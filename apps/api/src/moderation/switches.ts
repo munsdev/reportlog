@@ -258,8 +258,7 @@ export async function setSmallArea(
     throw new HttpError(
       400,
       'small_area',
-      `The threshold is a whole number of at least ${String(SMALL_AREA_FLOOR)} and at most ${SMALL_AREA_MAX.toLocaleString('en-US')}. ` +
-        'Below 2, a single report would be counted by its place.',
+      `The threshold is a whole number of at least ${String(SMALL_AREA_FLOOR)} and at most ${SMALL_AREA_MAX.toLocaleString('en-US')}.`,
     );
   }
   await db.transaction().execute(async (trx) => {

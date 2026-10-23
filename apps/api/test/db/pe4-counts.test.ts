@@ -240,20 +240,20 @@ describe('the small-area threshold: the setting', () => {
     });
   });
 
-  it('refuses anything under 2, or not a whole number, in a sentence', async () => {
-    for (const bad of [1, 0, -3, 2.5]) {
+  it('refuses anything under 1, or not a whole number, in a sentence', async () => {
+    for (const bad of [0, -3, 2.5]) {
       const r = await smallArea(lb, bad);
       expect(r.status, String(bad)).toBe(400);
       expect(r.body.error?.code).toBe('small_area');
-      expect(r.body.error?.message).toMatch(/at least 2/);
+      expect(r.body.error?.message).toMatch(/at least 1/);
     }
   });
 
-  it('the database refuses a threshold under 2 whatever the code says', async () => {
+  it('the database refuses a threshold under 1 whatever the code says', async () => {
     await expect(
       h.db
         .updateTable('logbook_publication')
-        .set({ small_area: 1 })
+        .set({ small_area: 0 })
         .where('logbook_id', '=', lb.id)
         .execute(),
     ).rejects.toThrow(/check/i);

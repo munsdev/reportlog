@@ -24,7 +24,9 @@ export default defineConfig({
     proxy: { '/api': 'http://127.0.0.1:3000' },
   },
   build: {
-    sourcemap: true,
+    // Off in production: the maps published the source to anybody who asked
+    // (test3 bot review, 23 October).
+    sourcemap: false,
   },
   test: {
     environment: 'jsdom',

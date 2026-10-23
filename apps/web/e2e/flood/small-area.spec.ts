@@ -76,9 +76,9 @@ test('the small-area threshold, set on the settings screen, withholds every thin
   await expect(field).toHaveValue('2');
   const form = section.getByRole('form', { name: `The small-area threshold for ${lb.title}` });
   // Under the floor: refused, in a sentence beside the field.
-  await field.fill('1');
+  await field.fill('0');
   await form.getByRole('button', { name: 'Save the threshold' }).click();
-  await expect(form.getByText(/at least 2/)).toBeVisible();
+  await expect(form.getByText(/at least 1/)).toBeVisible();
   await expect(field).toHaveAttribute('aria-invalid', 'true');
   await noViolations(page);
 

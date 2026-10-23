@@ -76,3 +76,21 @@ Each rule in the brief's section 08 gets a test that fails if the rule
 breaks, plus: two-factor required for every staff role; step-up on each
 listed action; reset paths; no IP or request id in reports, tips, logs or
 error tracking.
+
+## The test3 bot review (23 October)
+
+A scripted run filed 12 reports and 3 tips on test3 with the password off
+and no email. Nothing became public. Outcome:
+
+- Source maps: turned off (`build.sourcemap: false` in `apps/web/vite.config.ts`).
+- Unaccepted reports in public numbers: already covered by
+  `pe4-counts.test.ts` (counts route, numbers, `/api/v1/stats`, heat maps,
+  board, spreadsheet, figures, snapshot).
+- Door refusals: already one operator-set sentence for every check.
+  Answer-validation messages stay detailed; the same formats are public in
+  `/api/logbooks/:slug` anyway.
+- Bursts: the flood screen already covers this.
+- Email after launch: "Ask for an email address anyway"
+  (`logbooks.email_required`) is unsealed and can be turned on at any time.
+- Not adopted, per the 21 October decisions: silent holding or suspicion
+  flags, network or GeoIP checks, decoy questions, reporter codes.

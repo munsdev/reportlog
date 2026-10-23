@@ -106,9 +106,9 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
           While this logbook is counts only, a place (a state, a county, any location answer) with
           fewer accepted reports than this is listed by name with no number, on every public count
           and on any heat map that reads it. The least is {SMALL_AREA_FLOOR}; the usual is{' '}
-          {SMALL_AREA_DEFAULT}. At {SMALL_AREA_FLOOR}, a place listed without a number holds one
-          report; a higher number says less about it. With only one such place, the logbook’s total
-          minus the places shown still gives its count.
+          {SMALL_AREA_DEFAULT}. At 1, every place is counted from its first report; at 2, a place
+          listed without a number holds one report; a higher number says less about it. With only
+          one such place, the logbook’s total minus the places shown still gives its count.
         </FieldDescription>
         <Input
           type="number"

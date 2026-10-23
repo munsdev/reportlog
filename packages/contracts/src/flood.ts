@@ -265,7 +265,8 @@ export const listOrganizationLane = defineRoute({
  * floor is the heat maps' (`MIN_AREA_FLOOR`), and the database has the same
  * CHECK; the default is the floor.
  */
-export const SMALL_AREA_FLOOR = 2;
+// 1 by the owner's decision (23 October), as the heat maps' floor.
+export const SMALL_AREA_FLOOR = 1;
 export const SMALL_AREA_DEFAULT = 2;
 export const SMALL_AREA_MAX = 100_000;
 
