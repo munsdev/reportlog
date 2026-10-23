@@ -13,6 +13,7 @@
 #   reportlog jobs               list scheduled jobs and their schedules
 #   reportlog job <name>         run one scheduled job now
 #   reportlog updates            is there an update, and what would it change?
+#   reportlog contact-key rotate  re-wrap every address under a new CONTACT_KEY
 #
 # Everything that runs the application's code runs as the `reportlog` user
 # with the application's settings, never as root.
@@ -66,6 +67,7 @@ case "$cmd" in
     cd "$CURRENT"
     app_node apps/api/src/identity/reset-two-factor.ts "$1"
     ;;
+  contact-key) cli contact-key "$@" ;;
   jobs) cli jobs ;;
   job) cli run "$@" ;;
   updates)
@@ -81,6 +83,6 @@ case "$cmd" in
     ;;
   # The admin panel's Update button, run by reportlog-update-request.service.
   request) run_update_request ;;
-  help | -h | --help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//' ;;
+  help | -h | --help) sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//' ;;
   *) die "unknown command: $cmd (try: reportlog help)" ;;
 esac

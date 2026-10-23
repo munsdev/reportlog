@@ -535,6 +535,9 @@ describe('the reportlog command', () => {
       [['job', 'sweep'], 'cli.ts run sweep'],
       [['jobs'], 'cli.ts jobs'],
       [['mail-test', 'you@example.org'], 'cli.ts mail-test you@example.org'],
+      // The runbook's "Rotating the contact key" runs this; the wrapper once
+      // had no such command and answered "unknown command".
+      [['contact-key', 'rotate'], 'cli.ts contact-key rotate'],
     ];
     for (const [args, expected] of cases) {
       s.clearCalls();
@@ -601,6 +604,7 @@ describe('the reportlog command', () => {
       'jobs',
       'job <name>',
       'updates',
+      'contact-key rotate',
     ]) {
       expect(help.out).toContain(`reportlog ${c}`);
     }

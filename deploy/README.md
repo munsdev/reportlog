@@ -4,9 +4,12 @@ The runbook: setting up a Hetzner server, deploying, rolling back,
 backups and restoring, and what to look at when something is wrong.
 
 Everything here runs on one machine: PostgreSQL, the API, the scheduled
-jobs and Caddy in front, as systemd services. Nothing in the running system
-is hosted in the US. Mail goes through Scaleway Transactional Email (Paris)
-and off-site backups go to S3-compatible storage in the EU.
+jobs and Caddy in front, as systemd services. Mail goes through Scaleway
+Transactional Email (Paris) or an SMTP server you choose (Proton Mail, say),
+and off-site backups go to S3-compatible storage in the EU. Nothing in the
+running system is hosted in the US. One thing reaches a US service: the code
+itself comes from GitHub, at install, at each deploy and in the daily update
+check (`docs/decisions.md`, 14).
 
 ## What is where
 
@@ -29,14 +32,16 @@ and off-site backups go to S3-compatible storage in the EU.
 Services: `reportlog-api` (the API, on 127.0.0.1:3000), `reportlog-job@<name>`
 (one per scheduled job, started by `reportlog-<name>.timer`),
 `reportlog-alert@` (emails `OPS_ALERT_EMAIL` when a job fails),
-`reportlog-update-check` (root, daily: is there an update?), `caddy` and
-`postgresql`. With error tracking: `bugsink` and `bugsink-snappea` (below).
+`reportlog-update-check` (root, daily: is there an update?),
+`reportlog-update-request` (root: carries out the Updates screen's Check now
+and Install, below), `caddy` and `postgresql`. With error tracking: `bugsink` and `bugsink-snappea` (below).
 
 ## Setting up a server
 
 You need: a Hetzner server running **Debian 12 or Ubuntu 24.04** (x86 or
-Arm), a domain whose DNS you control, a Scaleway project with Transactional
-Email, and an EU object storage bucket.
+Arm), a domain whose DNS you control, a way to send mail (a Scaleway project
+with Transactional Email, or an SMTP account), and an EU object storage
+bucket.
 
 1. **DNS.** Point the domain's A (and AAAA) record at the server. Caddy
    needs this to get a certificate. Check it from your own machine with
@@ -76,9 +81,9 @@ Email, and an EU object storage bucket.
    file by hand. `install.sh` makes the keys a machine can make
    (`CONTACT_KEY`, `FILES_KEY`, `DOOR_KEY`, the transparency log's deploy key), sets
    `TRUST_PROXY=1` (Caddy is one proxy in front), and then asks, one at a
-   time, for what only you know: the site's address, the Scaleway email
-   account (the sending address, the project ID and the API key's secret
-   key), who gets alerts, the off-site backup bucket and its upload-only
+   time, for what only you know: the site's address, how mail is sent (the
+   sending address, then an SMTP server and its sign-in, or Scaleway's
+   project ID and secret key), who gets alerts, the off-site backup bucket and its upload-only
    key, storage for reporters' files, and where the transparency log is
    pushed. Keys and passwords are not shown while you type them. Enter
    skips a question; it ends by naming what is still empty, and running it
@@ -199,14 +204,25 @@ signs them out everywhere. Their next sign-in, after the emailed code, sets
 a new one up. Each reset is recorded in the role audit, which nobody can
 edit. The code is `apps/api/src/identity/reset-two-factor.ts`.
 
-### Email (Scaleway)
+### Email
 
-In the Scaleway console: add and verify the sending domain under
-Transactional Email, publish the SPF, DKIM and DMARC records it shows you,
-and create an API key whose IAM policy allows Transactional Email in that
-project. Mail from a domain without those records is usually accepted and
-then filed as junk, so `mail-test` succeeding is not the end of it: check the
-message arrives.
+One provider, either Scaleway Transactional Email or an SMTP server, never
+both (`EMAIL_TRANSPORT`). The installer asks for an SMTP server first; press
+Enter there to use Scaleway instead.
+
+- **SMTP** (Proton Mail, say): `SMTP_HOST` (`smtp.protonmail.ch`),
+  `SMTP_PORT` (587 for STARTTLS, 465 for TLS), `SMTP_USER` (for Proton, the
+  sending address) and `SMTP_PASS` (for Proton, an SMTP token made in its
+  settings, not the account password). The sending domain must be one the
+  provider has verified for you.
+- **Scaleway**: in the Scaleway console, add and verify the sending domain
+  under Transactional Email, publish the SPF, DKIM and DMARC records it shows
+  you, and create an API key whose IAM policy allows Transactional Email in
+  that project.
+
+Either way, mail from a domain without SPF, DKIM and DMARC records is usually
+accepted and then filed as junk, so `mail-test` succeeding is not the end of
+it: check the message arrives.
 
 ### Error tracking (Bugsink)
 
@@ -307,9 +323,9 @@ answers that error tracking is off.
 
 Reporters' files (evidence) live in three buckets, separate from the backup
 bucket: staging, evidence and renditions (`FILES_STORAGE=s3` and the `S3_`
-settings, explained in the settings file). No provider has been chosen yet.
-Once one is, and before the site takes anybody's files, run the check once
-against it, on the server:
+settings, explained in the settings file). Once you have chosen a provider,
+and before the site takes anybody's files, run the check once against it, on
+the server:
 
 ```sh
 cd /srv/reportlog/current
@@ -376,7 +392,7 @@ backups, are explained in their own sections above.
 | `S3_REGION`                                                                      | The files storage region. The installer reads it off the endpoint where it can.                    |
 | `S3_BUCKET_STAGING`, `S3_BUCKET_EVIDENCE`, `S3_BUCKET_RENDITIONS`                | The three buckets for files not yet sent, files with a report, and re-encoded copies.              |
 | `EMAIL_TRANSPORT`                                                                | `off`, `scaleway` or `smtp`: one provider, never both. The installer turns it on once it can send. |
-| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain verified in Scaleway.                                                      |
+| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME`                                          | The sender, on a domain your mail provider has verified.                                           |
 | `SCALEWAY_PROJECT_ID`, `SCALEWAY_REGION`                                         | The Scaleway project and region (`fr-par`) mail goes through.                                      |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE`                | For `smtp`. Proton Mail: `smtp.protonmail.ch`, `587`, the sending address, an SMTP token.          |
 | `MAIL_OUTBOX`                                                                    | Browser tests only: write each email as a file. Never on a server.                                 |
@@ -424,8 +440,10 @@ The deploy ends by running the doctor.
 
 ```sh
 sudo reportlog updates           # is there an update, and what would it change?
-sudo reportlog deploy <commit>   # the only way one is installed
+sudo reportlog deploy <commit>   # install one from a terminal
 ```
+
+Or, with no terminal: **Records › Updates** on the site, for administrators.
 
 `reportlog updates` fetches the repository (`REPO_URL` and `DEPLOY_REF` in
 `/etc/reportlog/deploy.env`) and says how far the running release is behind
@@ -433,7 +451,7 @@ the branch, which releases lie between them, with their notes from the
 newest `CHANGELOG.md`, the commits, and the exact deploy command. It
 installs nothing. Releases are numbered (`"version"` in the root
 `package.json`, shown in every page's footer) and tagged `vX.Y.Z`; the
-repository's README says how one is cut. `sudo reportlog deploy v0.2.0`
+repository's README says how one is cut. `sudo reportlog deploy vX.Y.Z`
 installs a tagged release.
 
 The same check runs **every morning around 06:00** as root
@@ -444,16 +462,23 @@ credential, DNS, the network), and when the daily check has stopped. To turn
 the check off: `sudo systemctl disable --now reportlog-update-check.timer`
 (a deploy turns it back on).
 
-**Why there is no update button on the website.** The old application had
-one: the website wrote a request and a root process applied it. That is a
-path from a web request to code running as root, on a server holding
-people's reports, and it needed a great deal of care to be safe. Here the
-path does not exist. An update migrates the database and can stop half-way
-with something to read, so a person runs it, at a terminal. The check runs as
-root only because the repository's address and credentials are root's, as
-they are for a deploy; it runs root's own copy of these scripts, never code
-from a release, and writes only what it found (`/var/lib/reportlog/updates/`),
-which nothing reads to decide what to install.
+**The Updates screen.** Records › Updates shows what the last check found,
+with two buttons: **Check now**, and **Install**, which deploys exactly the
+commit `DEPLOY_REF` points at, the one the daily check offered. The website
+never runs git and never deploys anything itself. It writes one small request
+file (`/var/lib/reportlog/update-request/request`), and the root unit
+`reportlog-update-request.path` sees it and runs `reportlog request`, which
+treats the file as untrusted: it accepts a check, or the commit `DEPLOY_REF`
+points at after a fresh fetch, and refuses anything else, including a commit
+that moved since the page was loaded. So the worst a forged request can do is
+install what this server is already configured to install. The deploy is the
+same one `sudo reportlog deploy` runs, with the same checks and the same
+automatic switch back, and the end of its output appears on the screen.
+(Decided 22 October 2026, `docs/decisions.md` 68.)
+
+The check runs as root only because the repository's address and credentials
+are root's, as they are for a deploy; it runs root's own copy of these
+scripts (`/usr/local/lib/reportlog`), never code from a release.
 
 ## Rolling back
 
@@ -511,6 +536,7 @@ differ). All times are UTC.
 | `sweep`             | daily 03:30   | **Delete** expired credentials from named tables                                                              |
 | `lists-sweep`       | daily 03:40   | **Erase** the personal half of expired list entries; the rows stay (workstream E's `sweepLists`)              |
 | `anchor`            | daily 04:00   | Timestamp the chain heads (DFN) and publish them to the transparency log (workstream D2's `runAnchorJob`)     |
+| `files`             | every minute  | Re-encode and encrypt new files, sweep abandoned uploads, delete what was taken down                          |
 | `anchor-watch`      | daily 09:00   | Check from outside the anchor that it ran; fails (and alerts) when the archive has not been anchored          |
 | `digest-hourly`     | hourly        | Email hourly subscribers what the board published since their last email                                      |
 | `digest-weekly`     | Mondays 07:00 | The same, for weekly subscribers                                                                              |
@@ -617,8 +643,10 @@ the Node version. Each line says what to do.
 | Disk filling      | `du -sh /srv/reportlog/releases/* /var/backups/reportlog`                   |
 
 Logs never contain an IP address or a full URL: Caddy keeps no access log,
-it does not forward the client's address to the API, and the API logs route
-patterns.
+and the API logs route patterns. Caddy does pass the visitor's address to the
+API (`X-Forwarded-For`, with `TRUST_PROXY=1`), which uses it only for the
+sign-in and form limits it counts in memory, under keyed hashes; it is never
+written down.
 
 ## Changing a pinned version
 
@@ -636,9 +664,8 @@ The install, deploy, rollback, failure and backup paths have been run end
 to end on fresh Debian 12 and Ubuntu 24.04 machines with systemd. The test
 site was `https://localhost` with Caddy's internal certificate authority,
 and a local S3-compatible server stood in for object storage. That was
-everything except a real domain, Scaleway and real EU object storage. The
-commit messages on the branch that added this list what each run found;
-`docs/status/H-operations.md` summarizes them.
+everything except a real domain, a real mail provider and real EU object
+storage. `docs/status/H-operations.md` summarizes what each run found.
 
 On every CI run (`docs/status/P7-ops-tests.md` and `Q3-quality-ops.md` list
 what each proves):

@@ -50,6 +50,8 @@ and `package.json` disagree. How a release is cut is in the README.
 - `install.sh` makes a new `DOOR_KEY`. The limits are `DOOR_SUBMITS_PER_MINUTE`,
   `DOOR_SUBMITS_PER_HOUR` and `DOOR_REQUESTS_PER_MINUTE`; the wording of a refusal is a page
   wording slot.
+- `sudo reportlog contact-key rotate` works. The runbook's steps for rotating the contact key
+  named it, but the command answered "unknown command" and changed nothing.
 
 ## v0.1.0 — 20 October 2026
 
