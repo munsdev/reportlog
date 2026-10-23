@@ -166,6 +166,8 @@ module.exports = {
           '^apps/web/src/main\\.tsx$',
           // Found by the router plugin from the file name, not by an import.
           '^apps/web/src/routes/',
+          // The project site's build and its search, run or served by name.
+          '^apps/site/src/(build\\.ts|search\\.js)$',
         ],
       },
       to: {},

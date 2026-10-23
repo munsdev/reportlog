@@ -105,6 +105,22 @@ function cells(row: string): string[] {
   return out;
 }
 
+/**
+ * A page's front matter: `key: value` lines between two `---` lines at the
+ * very top. Only flat strings, which is all a page needs (title,
+ * description).
+ */
+export function frontMatter(source: string): { data: Record<string, string>; body: string } {
+  const m = /^---\n([\s\S]*?)\n---\n/.exec(source.replace(/\r\n/g, '\n'));
+  if (!m) return { data: {}, body: source };
+  const data: Record<string, string> = {};
+  for (const line of (m[1] ?? '').split('\n')) {
+    const kv = /^([a-z_]+):\s*(.*)$/.exec(line);
+    if (kv) data[kv[1] ?? ''] = (kv[2] ?? '').trim();
+  }
+  return { data, body: source.replace(/\r\n/g, '\n').slice(m[0].length) };
+}
+
 export function renderMarkdown(source: string, options: Options = {}): Rendered {
   const headings: Heading[] = [];
   const html = blocks(source.replace(/\r\n/g, '\n').split('\n'), options, headings);
@@ -118,6 +134,21 @@ function blocks(lines: string[], options: Options, headings: Heading[]): string 
     const line = lines[i] ?? '';
     if (line.trim() === '') {
       i++;
+      continue;
+    }
+
+    // An indented code block: four spaces, outside a list (a list item's own
+    // lines arrive here already dedented).
+    if (line.startsWith('    ') && !FENCE.test(line)) {
+      const body: string[] = [];
+      while (i < lines.length) {
+        const next = lines[i] ?? '';
+        if (next.trim() !== '' && !next.startsWith('    ')) break;
+        body.push(next.slice(4));
+        i++;
+      }
+      while (body.length > 0 && (body[body.length - 1] ?? '').trim() === '') body.pop();
+      out.push(`<pre><code>${escapeHtml(body.join('\n'))}</code></pre>`);
       continue;
     }
 
@@ -144,7 +175,9 @@ function blocks(lines: string[], options: Options, headings: Heading[]): string 
       const text = heading[2] ?? '';
       const id = uniqueId(slug(text.replace(/`/g, '')), headings);
       headings.push({ level, id, text });
-      out.push(`<h${level} id="${id}">${inline(text, options)}</h${level}>`);
+      out.push(
+        `<h${level} id="${id}">${inline(text, options)}<a class="anchor" href="#${id}" aria-label="Link to this section">#</a></h${level}>`,
+      );
       i++;
       continue;
     }
