@@ -28,14 +28,29 @@ and `package.json` disagree. How a release is cut is in the README.
 - If the site turns a form away, it says so in one plain sentence. Sending again is all it takes.
 - A date or time question may only take answers between two limits, and the picker offers
   nothing outside them.
+- Some logbooks exist to be public: there, the last card tells you that filing means your report
+  may be published once a moderator approves it, instead of asking. The wording you saw is sealed
+  with your report, as before.
+- A location question can ask for the US county as well as the state, from a list that comes with
+  the site. "Not sure which county" stays an answer.
+- Easier reading, in the menu and the footer, shows the site in high contrast with a plainer
+  theme, in your browser only.
+- You can delete your own account, at the foot of Your account. Reports you filed stay sealed;
+  erase your address on them first if you want it gone.
+- If you sign up for journalist alerts, you can ask for access to the journalist desk on the same
+  form, turn alerts off without losing the desk, and change your states from the link in every
+  alert.
 
 **For somebody running a site**
 
-- Settings › Look offers a new library: 17 palettes and 10 themes, from typewritten to
-  broadsheet, among them a High contrast pair for the clearest reading. A site keeps the look it
-  has: one that never chose stays on Flint with Signal, and a choice made among the old palettes
-  and themes is shown as the nearest new one and saved as it the next time the look is saved. A
-  new site starts on Desk.
+- Settings › Look offers a new library: 18 palettes and 11 themes, from typewritten to
+  broadsheet, among them a High contrast pair for the clearest reading. Themes now differ in
+  width, columns, type size and surface, not only type. A site keeps the look it has: one that
+  never chose stays on Flint with Signal, and a choice made among the old palettes and themes is
+  shown as the nearest new one and saved as it the next time the look is saved. A new site starts
+  on Newsdesk.
+- Look packs: an administrator can add more looks as a `.zip`, checked by the same rules as the
+  built-in ones.
 - Page titles grow from a phone to a desktop again, and the monospace type is IBM Plex Mono. Every
   font is still served from your own site.
 - The password screen, and a form opened in front of the password, wear the site's colours and
@@ -50,6 +65,35 @@ and `package.json` disagree. How a release is cut is in the README.
 - `install.sh` makes a new `DOOR_KEY`. The limits are `DOOR_SUBMITS_PER_MINUTE`,
   `DOOR_SUBMITS_PER_HOUR` and `DOOR_REQUESTS_PER_MINUTE`; the wording of a refusal is a page
   wording slot.
+- Everybody with a role proves a second factor after the emailed code: an authenticator app or
+  a passkey, with ten recovery codes. Until they do, they act with no role. Some actions ask for
+  it again: opening a reporter's details, appointing people, downloads of the whole record, and
+  others. The owner's own is reset only on the server, with `sudo reportlog reset-2fa`.
+- Records › Updates has an **Install** button again, as well as **Check now**. It installs only
+  the commit the server is set to follow, through a root service on the server; the website
+  never runs it itself.
+- Email can go through any SMTP server (Proton Mail, say) instead of Scaleway. The installer
+  asks.
+- A launched logbook's wording can be made clearer (labels, help, the labels of coded options),
+  as a new version of its questions; every report keeps the version it was answered against.
+- A logbook can be published as counts only, with a threshold under which a place is named
+  without a number. Heat maps can have a separate threshold for counties. Thresholds may now be
+  as low as 1.
+- The flood screen: reports and refusals per hour, groups of identical reports, declining them
+  in bulk (no email is sent), withholding tip links by time, and two switches, Pause intake and
+  Harder puzzle. Using either is shown on the board's activity page, which also counts declined
+  reports by reason.
+- The front page is simpler, and an administrator can edit it in place. Its buttons can be
+  hidden as well as reordered and relabelled.
+- The staff screens are one app: a top bar and a sidebar of areas.
+- A moderator's note on a decision is optional.
+- Tips keep their personal half for a year by default (it was 90 days). An illegal-content
+  notice's sender's name is erased with their address once the decision is sent, and the words of
+  an evidence request are replaced a year after it was sent.
+- The site password is set on the server, with `sudo reportlog site-password`, after the first
+  deploy. The setup wizard refuses to run without one, so a stranger who finds a fresh install
+  cannot make themselves its owner.
+- New starting points: Log how voting went, and an Election tips list.
 - `sudo reportlog contact-key rotate` works. The runbook's steps for rotating the contact key
   named it, but the command answered "unknown command" and changed nothing.
 

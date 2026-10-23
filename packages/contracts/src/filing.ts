@@ -272,7 +272,7 @@ export const eraseMyContact = defineRoute({
   method: 'POST',
   path: '/api/mine/reports/:threadId/erase',
   summary:
-    'Erase your contact details from a report and withdraw it. The report stays, sealed; it never held your address.',
+    'Erase your contact details from a report. It is not withdrawn: it stays as it was, sealed, and it never held your address.',
   params: ThreadParams,
   body: z.object({ confirm: z.boolean().optional() }),
   response: z.object({ ok: z.literal(true) }),

@@ -170,8 +170,8 @@ export function FirstLogbookGuide() {
         <ul className="list-disc pl-6">
           <li>
             A <strong>logbook</strong> seals every report, chains it to the one before, never lets
-            anything be changed or deleted afterwards, asks every reporter for an address and their
-            consent, and publishes nothing until a moderator approves it, one by one.
+            anything be changed or deleted afterwards, asks every reporter to agree to what the form
+            says, and publishes nothing until a moderator approves it.
           </li>
           <li>
             A <strong>list</strong> seals nothing. Its form can be changed, it erases the personal
@@ -216,9 +216,10 @@ export function FirstLogbookGuide() {
         </ul>
         <p>
           Start from one of the shipped question sets rather than an empty form: Election incidents,
-          Election day: how did it go?, Incident reports, Safety observations, or Complaints about a
-          practitioner. Each arrives as a draft you can change freely. You can also start from a
-          logbook file downloaded from another deployment; it always arrives as a draft.
+          Election day: how did it go?, Log how voting went, Incident reports, Safety observations,
+          or Complaints about a practitioner. Each arrives as a draft you can change freely. You can
+          also start from nothing, or from a logbook file downloaded from another deployment; it
+          always arrives as a draft.
         </p>
       </Section>
 
@@ -236,8 +237,8 @@ export function FirstLogbookGuide() {
             <strong>
               Do not ask for contact details, consent, or whether it may be published.
             </strong>{' '}
-            Every report is asked those, whatever logbook it came through. Asking again stores a
-            second copy in the wrong place.
+            The form already asks for an address when it needs one, and asks the publication
+            question itself. Asking again stores a second copy in the wrong place.
           </li>
           <li>
             <strong>A written account is not built in.</strong> If you want one, and most logbooks
@@ -266,21 +267,24 @@ export function FirstLogbookGuide() {
       <Section id="launch" title="4 · Launch it: this is the one-way door">
         <p>
           <strong>Launching cannot be undone.</strong> Afterwards a logbook may gain a new optional
-          question and nothing else: no rewording, no removing, no reordering, and no making an
-          optional question required.
+          question and have its wording made clearer (labels, help, and the labels of coded
+          options), and nothing else: no removing, no reordering, no changing a kind or a code, and
+          no making an optional question required. Each rewording is a new version of the form.
         </p>
         <Why title="Why a launched form is frozen">
           <p>
             Every report seals the questions it was answered against: the version the reporter was
             actually asked. Changing a launched form would leave reports in one logbook that cannot
             be read against one definition. Adding an optional question is safe only because an
-            unanswered question leaves no trace in a report at all.
+            unanswered question leaves no trace in a report at all, and rewording is safe because
+            each report keeps the version its reporter saw.
           </p>
         </Why>
         <p>
-          A logbook can be given an opening and a closing time. Closing it stops new reports;
-          everything already filed stays published and checkable. Launching puts it on the front
-          page as a button wearing its own title, which you can rearrange under{' '}
+          A logbook can be given an opening and a closing time, and closed or reopened by hand.
+          Closing it stops new reports; everything already filed stays published and checkable.
+          Launching puts it on the front page as a button wearing its own title, which you can
+          rearrange or hide under{' '}
           <Link to="/logbooks/front-page" className={linkClass}>
             Front page
           </Link>
@@ -297,7 +301,8 @@ export function FirstLogbookGuide() {
             Access
           </Link>
           : their email address and a role. They sign in with a one-time code sent to that address,
-          every time, so email has to work first.
+          every time, so email has to work first, and then prove a second factor: an authenticator
+          app or a passkey. Until they have, they act with no role at all.
         </p>
         <table className="w-full border-collapse text-left text-sm">
           <thead>
@@ -322,23 +327,25 @@ export function FirstLogbookGuide() {
             <tr>
               <td className="py-2 pr-4">Owner</td>
               <td className="py-2">
-                All of those, and administrators. There is exactly one owner, and the seat is only
-                ever handed over, never granted.
+                All of those, administrators and journalists. There is exactly one owner, and the
+                seat is only ever handed over, never granted.
               </td>
             </tr>
           </tbody>
         </table>
         <p>
-          An administrator is not automatically a moderator: somebody who should do both is given
-          both. A moderator may publish a report’s text and hold back its files, never the reverse:
-          the reporter’s consent is the ceiling, and moderation the floor.
+          Administrators can moderate too, once they accept the moderator agreement; a moderator
+          cannot administer. A moderator may publish a report’s text and hold back its files, never
+          the reverse: the reporter’s consent is the ceiling, and moderation the floor.
         </p>
       </Section>
 
       <Section id="walk" title="6 · File one for real, through the whole path">
         <p>
-          With the logbook open and a moderator appointed, file a report yourself, and{' '}
-          <strong>follow the confirmation link in the email</strong>.
+          With the logbook open and a moderator appointed, file a report yourself. If the form asks
+          for an email address, <strong>follow the confirmation link in the email</strong>: the
+          report is not filed until you do. A form of choices only files the report the moment it is
+          sent.
         </p>
         <Why title="Why the email link matters most">
           <p>
@@ -366,18 +373,22 @@ export function CheckingGuide() {
     >
       <Section id="browser" title="In a browser">
         <ol className="list-decimal pl-6">
-          <li>The password screen appears, and the site password gets you past it.</li>
+          <li>
+            If the site password is on, the password screen appears, and the password gets you past
+            it.
+          </li>
           <li>Your deployment’s own name, not “ReportLog”, is in the browser tab.</li>
           <li>
             You can{' '}
             <Link to="/access/sign-in" className={linkClass}>
               sign in
             </Link>{' '}
-            with a one-time code sent by email.
+            with a one-time code sent by email, and then your second factor.
           </li>
           <li>
-            You can build a logbook, launch it, file a test report, and confirm it from the link in
-            the email. That path is only reached by a person clicking a link.
+            You can build a logbook, launch it, file a test report, and, if the form asks for an
+            address, confirm it from the link in the email. That path is only reached by a person
+            clicking a link.
           </li>
           <li>A moderator can approve it, and only then does it appear on the board.</li>
         </ol>

@@ -157,14 +157,16 @@ function AboutPage() {
 
       <ProseSection id="database" label="06 · Append-only" title={PART_TWO[3].title}>
         <p>
-          The tables that hold reports, their questions, their files and the daily anchors refuse
-          changes in the database itself: a trigger rejects any attempt to update or delete a row.
-          That is deliberately not left to the application, because an application is one bug away
-          from doing the wrong thing and a trigger is not.
+          The tables that hold reports, the versions of the questions they were answered against,
+          their files and the daily anchors refuse changes in the database itself: a trigger rejects
+          any attempt to update or delete a row. That is deliberately not left to the application,
+          because an application is one bug away from doing the wrong thing and a trigger is not.
         </p>
         <p>
           The database also checks every new report’s link to the one before it, and refuses to let
-          a logbook’s questions change once it has opened, other than by adding an optional one.
+          a logbook’s questions change once it has opened, other than by adding an optional one or
+          making the wording clearer. A rewording is a new version of the questions, and every
+          report keeps the version its reporter was asked.
         </p>
       </ProseSection>
 
@@ -174,9 +176,11 @@ function AboutPage() {
           moderator approves it and the person who filed it has allowed that.
         </p>
         <p>
-          Who filed it is kept apart and encrypted. A moderator can open it only by giving a reason,
-          the opening is recorded before anything is shown, and the person who filed can see that
-          record on their own report, with the reason but without the moderator’s name.
+          Who filed it is kept apart and encrypted. A moderator or administrator can open it only by
+          proving their second factor again and giving a reason, the opening is recorded before
+          anything is shown, and the person who filed can see that record on their own report, with
+          the reason but without the staff member’s name. A report filed through a form that asked
+          for no address holds nobody’s details at all.
         </p>
       </ProseSection>
 

@@ -31,6 +31,10 @@ const ENDPOINTS = [
     'GET /api/v1/stats',
     'The published counts, already broken out. Cached for 60 seconds; please honour that rather than asking more often.',
   ],
+  [
+    'GET /api/v1/consent-texts',
+    'Every wording of the publication question this site has shown, by digest. A published report seals the digest of the exact sentence its reporter answered; this is how that digest is read back and checked.',
+  ],
 ] as const;
 
 const FIELDS = [
@@ -41,8 +45,12 @@ const FIELDS = [
   ['as_of', 'When these figures were computed (ISO 8601, UTC).'],
   ['note', 'What the figures count, in a sentence.'],
   [
+    'not_a_sample',
+    'A sentence to print beside every one of these numbers: they are reports people chose to file, not a sample, and cannot be read as a rate.',
+  ],
+  [
     'published_reports.by_logbook',
-    'For each logbook: its title, how many of its reports are published, and for each question an operator chose to count, how many published reports gave each answer, and how many left it unanswered. A report that ticked several choices counts under each, so these can add up to more than the reports.',
+    'For each logbook: its title, how many of its reports are published, and for each question an operator chose to count, how many published reports gave each answer, and how many left it unanswered. A report that ticked several choices counts under each, so these can add up to more than the reports. Places with fewer reports than a map’s threshold are listed under withheld, without their counts.',
   ],
   ['api_version', 'Always 1 here.'],
   ['licence', 'The terms these figures are offered on.'],
@@ -116,12 +124,12 @@ function PublicApiPage() {
           number stripped of what it counts is how a record like this gets misused. If you need one
           number for a headline, use a published count together with the words that qualify it.
         </p>
-        <h3 className="font-semibold">The denominator is visible</h3>
+        <h3 className="font-semibold">What is and is not counted</h3>
         <p>
-          Reports that were declined, withdrawn or are still under review are counted beside the
-          ones that were published, so you can work out how often reports are approved here and
-          watch it over time. Reports never confirmed by email are counted nowhere: they never
-          entered the record.
+          These counts are of published reports only. Declined reports are counted separately, by
+          the reason they were declined, on the board’s activity page; nothing still under review is
+          counted anywhere. A place with too few reports to show safely is named without a number.
+          Reports never confirmed by email are counted nowhere: they never entered the record.
         </p>
         <p>
           <strong>Published is not the same as true.</strong> It means a moderator judged an account

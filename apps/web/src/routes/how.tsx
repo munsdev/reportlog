@@ -22,7 +22,7 @@ export const Route = createFileRoute('/how')({
 const SECTIONS = [
   { id: 'filing', title: 'Filing a report, one question at a time' },
   { id: 'publishing', title: 'Whether it may be published' },
-  { id: 'confirming', title: 'Confirming by email' },
+  { id: 'confirming', title: 'Confirming by email, when you are asked for an address' },
   { id: 'afterwards', title: 'A moderator reads it before anybody else' },
   { id: 'yours', title: 'Your reports afterwards' },
   { id: 'checking', title: 'Checking a report' },
@@ -56,44 +56,52 @@ function HowPage() {
         <p>
           You are asked whether your report may be published, and the exact wording of that question
           is sealed into your report with your answer. If you say no, it is kept in the archive and
-          never shown on the public board.
+          never shown on the public board. Some logbooks exist to be public: there, the last card
+          tells you that filing means your report may be published once a moderator approves it, and
+          the wording you saw is sealed in the same way.
         </p>
       </ProseSection>
 
       <ProseSection id="confirming" label="03" title={SECTIONS[2].title}>
         <p>
-          You give an email address, and we send a link to it. Nothing is filed until you open that
-          link and confirm. The link works for 24 hours. This stops anybody filing in somebody
-          else’s name.
+          A form that lets you type, takes files, or asks whether you have evidence asks for your
+          email address, and we send a link to it. Nothing is filed until you open that link and
+          confirm. The link works for 24 hours. This stops anybody filing in somebody else’s name.
+          Your address is kept apart from your report and encrypted. It is never published.
         </p>
-        <p>Your address is kept apart from your report and encrypted. It is never published.</p>
+        <p>
+          A form of choices only does not ask for an address. Your report is filed the moment you
+          send it, with no confirmation, and nothing ties it to you, so you cannot come back to
+          correct or withdraw it.
+        </p>
       </ProseSection>
 
       <ProseSection id="afterwards" label="04" title={SECTIONS[3].title}>
         <p>
-          Once confirmed, your report is sealed: it is given a reference and a fingerprint, and it
-          can no longer be changed by anybody. A moderator reads it before it appears anywhere.
-          Nothing is published automatically.
+          Once filed, your report is sealed: it is given a reference and a fingerprint, and it can
+          no longer be changed by anybody. A moderator reads it before it appears anywhere. Nothing
+          is published automatically.
         </p>
       </ProseSection>
 
       <ProseSection id="yours" label="05" title={SECTIONS[4].title}>
         <p>
-          Sign in with the address you filed from and open{' '}
+          If you gave an address, sign in with it and open{' '}
           <Link to="/mine" className={link}>
             your reports
           </Link>
           . From there you can file a correction (a new version; the original is kept beside it),
-          take back permissions you gave, or withdraw a report from the public board. A withdrawn
-          report stays in the archive, and the fact that it was withdrawn is part of the record.
+          change the permissions you give, withdraw a report from the public board, or erase your
+          address for good. A withdrawn report stays in the archive, and the fact that it was
+          withdrawn is part of the record.
         </p>
       </ProseSection>
 
       <ProseSection id="checking" label="06" title={SECTIONS[5].title}>
         <p>
-          Every report has a reference. Enter it in “Check a report” on the{' '}
-          <Link to="/" className={link}>
-            front page
+          Every report has a reference. Enter it on the{' '}
+          <Link to="/verify" className={link}>
+            check page
           </Link>{' '}
           to check, in your own browser, that it has not been changed since it was filed. The{' '}
           <Link to="/docs/checking" className={link}>
