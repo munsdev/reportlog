@@ -27,6 +27,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
+import { DeleteAccount } from './DeleteAccount.tsx';
 import { desksFor } from './desks.ts';
 import { ROLE_EXPLAINED, ROLE_LABELS, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
@@ -66,7 +67,11 @@ export function AccessHome() {
             <SitePassword />
           </div>
         )}
-        <OwnerSeat me={user} />
+        {/* An anchor of its own: "Delete your account" sends the owner here. */}
+        <div id="owner-seat" className="scroll-mt-24">
+          <OwnerSeat me={user} />
+        </div>
+        <DeleteAccount me={user} />
       </StaffPage>
     </SecondFactorGate>
   );

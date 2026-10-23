@@ -92,6 +92,20 @@ export const getMe = defineRoute({
   response: Me,
 });
 
+/**
+ * Delete the signed-in account. The address is typed back as the
+ * confirmation. Refused for the owner, who hands the seat on first; a role
+ * holder confirms with a step-up as well.
+ */
+export const deleteAccount = defineRoute({
+  method: 'POST',
+  path: '/api/auth/account/delete',
+  summary:
+    'Delete your own account: your address, sign-in, second factor, memberships and email updates. Reports already filed stay.',
+  body: z.object({ email: Email }),
+  response: Ok,
+});
+
 // ── the role ladder ─────────────────────────────────────────────────────
 
 export const setSystemRole = defineRoute({

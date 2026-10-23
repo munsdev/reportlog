@@ -23,6 +23,7 @@
  *   - exports and backups                 anchor/copies.ts, anchor/routes.ts
  *   - publishing an agreement             moderation/platformRoutes.ts
  *   - installing, replacing or removing a look pack   looks/routes.ts
+ *   - deleting your own account, for a role holder or member   identity/account.ts
  */
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import { HttpError } from '../http/errors.ts';

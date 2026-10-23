@@ -193,12 +193,12 @@ export async function runSweep(ctx: JobContext): Promise<JobOutcome> {
   let forgotten = 0;
   try {
     forgotten = await forgetOldMessages(ctx.db);
-    ctx.log(`${String(forgotten).padStart(7)}  evidence request words older than a year, forgotten`);
+    ctx.log(
+      `${String(forgotten).padStart(7)}  evidence request words older than a year, forgotten`,
+    );
   } catch (err) {
     failed += 1;
-    ctx.log(
-      `FAILED   evidence request words: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    ctx.log(`FAILED   evidence request words: ${err instanceof Error ? err.message : String(err)}`);
   }
   for (const { table, what, owner } of SWEPT) {
     const r = result[table];

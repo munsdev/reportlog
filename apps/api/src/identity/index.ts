@@ -12,6 +12,7 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
 import { accessRoutes } from './accessRoutes.ts';
+import { accountRoutes } from './account.ts';
 import { authRoutes } from './authRoutes.ts';
 import { curtainRoutes } from './curtainRoutes.ts';
 import { installGate } from './gate.ts';
@@ -40,4 +41,5 @@ export async function identity(app: FastifyInstance, deps: IdentityDeps): Promis
   orgRoutes(app, deps);
   curtainRoutes(app, deps);
   teamRoutes(app, deps);
+  accountRoutes(app, deps);
 }

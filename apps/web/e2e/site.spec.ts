@@ -101,6 +101,9 @@ test('an operator’s palette and theme repaint every screen, through the styles
   await expect(page.locator('html')).toHaveAttribute('data-palette', 'midnight');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'docket');
   await expect(page.locator('html')).toHaveAttribute('data-panel-head', 'rule');
+  // The heading first: read before the page has drawn it, the fallback to
+  // <body> reports no text-transform, which failed about one run in four.
+  await expect(page.locator('h1')).toBeVisible();
   const look = await page.evaluate(() => {
     const html = getComputedStyle(document.documentElement);
     const h1 = getComputedStyle(document.querySelector('h1') ?? document.body);

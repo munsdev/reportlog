@@ -666,6 +666,8 @@ describe('step-up before each listed action', () => {
     method: 'GET' | 'POST' | 'PUT' | 'DELETE';
     url: () => string;
     payload?: () => object;
+    /** Open to everybody signed in, asking a step-up only of role holders. */
+    everybody?: true;
   }[] = [
     {
       what: "opening a reporter's email",
@@ -849,6 +851,17 @@ describe('step-up before each listed action', () => {
       method: 'DELETE',
       url: () => '/api/admin/looks/no-such-pack',
     },
+    // A role holder deleting their own account (identity/account.ts). The
+    // wrong address is refused for itself once the step-up is given, so the
+    // moderator this file shares is never actually deleted.
+    {
+      what: 'deleting your own account, as a role holder',
+      who: () => moderator,
+      method: 'POST',
+      url: () => '/api/auth/account/delete',
+      payload: () => ({ email: someone() }),
+      everybody: true,
+    },
   ];
 
   for (const action of LISTED) {
@@ -905,7 +918,10 @@ describe('step-up before each listed action', () => {
         ...(action.payload ? { payload: action.payload() } : {}),
       });
       expect(res.body, action.what).not.toContain('step_up_required');
-      expect([401, 403], action.what).toContain(res.statusCode);
+      // Somebody with no role may delete their own account: refused here
+      // only because the address typed back is not theirs.
+      if (action.everybody) expect(res.statusCode, action.what).toBe(400);
+      else expect([401, 403], action.what).toContain(res.statusCode);
     }
   });
 

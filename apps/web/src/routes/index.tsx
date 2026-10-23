@@ -18,7 +18,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
-import { ToastProvider } from '../components/ui/toast.tsx';
+import { ToastProvider, useToast } from '../components/ui/toast.tsx';
 import { Lede } from '../components/ui/type.tsx';
 import { boardReportsQuery } from '../features/board/queries.ts';
 import { HelpNow } from '../features/form/HelpNow.tsx';
@@ -39,6 +39,10 @@ import { useMe } from '../features/identity/session.ts';
 import { placedMapsQuery } from '../features/maps/queries.ts';
 
 export const Route = createFileRoute('/')({
+  // `?account=deleted`: where deleting your account lands (DeleteAccount.tsx),
+  // to say it is done. Anything else is ignored.
+  validateSearch: (search: Record<string, unknown>): { account?: 'deleted' } =>
+    search.account === 'deleted' ? { account: 'deleted' } : {},
   // Around the whole page rather than the editor, so "Saved" is still on
   // screen after edit mode closes.
   component: () => (
@@ -67,6 +71,11 @@ function Home() {
   const headline = site?.copy.home_headline ?? 'ReportLog';
   const canEdit = useCanEdit();
   const [editing, setEditing] = useState(false);
+  const { account } = Route.useSearch();
+  const toast = useToast();
+  useEffect(() => {
+    if (account === 'deleted') toast.show('Your account is deleted, and you are signed out.');
+  }, [account, toast]);
   useEffect(() => {
     document.title = `${headline} · ${name}`;
   }, [headline, name]);
