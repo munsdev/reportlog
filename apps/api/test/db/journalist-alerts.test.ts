@@ -220,6 +220,7 @@ describe('stopping, changing and leaving, and what being listed does not do', ()
         address: expect.any(String) as string,
         states: ['US-AZ'],
         alerts: 'on',
+        desk: 'none',
       });
     }
     expect(await rowOf(email)).toEqual(before);

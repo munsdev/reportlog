@@ -33,6 +33,7 @@ import {
   describeStop,
   deskSettings,
   removeByLink,
+  requestFromSettings,
   signUp,
 } from './list.ts';
 import {
@@ -78,10 +79,17 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
     const body = bodyOf(C.signUpForAlerts, request);
     perClient.take(request.ip);
     perAddress.take(body.email.trim().toLowerCase());
-    await signUp(
-      { db: deps.db, mailer: deps.mailer, siteOrigin: deps.siteOrigin, ring: needRing() },
-      body,
-    );
+    const listDeps = {
+      db: deps.db,
+      mailer: deps.mailer,
+      siteOrigin: deps.siteOrigin,
+      ring: needRing(),
+    };
+    // Already on the list and asking for desk access: the request link,
+    // emailed as /journalists/access would. The answer is the same either way.
+    if ((await signUp(listDeps, body)) === 'listed' && body.access) {
+      await askForLink(listDeps, body.email);
+    }
     return { ok: true as const };
   });
 
@@ -96,6 +104,14 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
   );
   route(app, C.changeAlertSettings, ({ params, request }) =>
     changeSettings(deps.db, needRing(), params.token, bodyOf(C.changeAlertSettings, request)),
+  );
+  route(app, C.requestAccessFromSettings, ({ params, request }) =>
+    requestFromSettings(
+      deps.db,
+      needRing(),
+      params.token,
+      bodyOf(C.requestAccessFromSettings, request),
+    ),
   );
   route(app, C.leaveAlertList, ({ params }) => removeByLink(deps.db, params.token));
 

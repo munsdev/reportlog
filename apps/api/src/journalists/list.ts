@@ -1,8 +1,8 @@
 /**
  * The journalist alert list: who is on it, and how they get on and off.
  *
- * WHAT IS KEPT, AND HOW. A name, an outlet, an address and the states
- * covered, nothing else. The first three are encrypted under a key of the
+ * WHAT IS KEPT, AND HOW. A name, an outlet (empty for somebody not asking
+ * for desk access), an address and the states covered, nothing else. The first three are encrypted under a key of the
  * row's own, wrapped by CONTACT_KEY, exactly as a reporter's contact details
  * are (filing/contactKeys.ts). The keyed digest of the address finds a
  * subscriber and keeps one address from being listed twice, so nothing needs
@@ -25,11 +25,18 @@
  * paused subscriber keeps their access request and their desk. Only removing
  * yourself from the list entirely (`removeSubscribers`) ends those.
  *
+ * ONE SIGN-UP FOR ALERTS, DESK ACCESS, OR BOTH (owner decision 69). The
+ * form may carry a request for desk access; it is written with the pending
+ * row, under the row's key, and the owner sees it only once the address is
+ * confirmed (vetting.ts asks). Somebody who wants only the desk signs up
+ * with alerts off, and so may cover no states.
+ *
  * BEING LISTED GRANTS NOTHING. No role, session or permission is created
  * here, and nothing outside this folder reads the table to decide access.
  */
 import { isSubdivisionCode, placeLabel } from '@reportlog/fields';
 import type {
+  AccessRequestBody,
   AlertLink,
   AlertSettings,
   AlertSettingsBody,
@@ -52,6 +59,7 @@ import { partlyHidden } from '../identity/digestStop.ts';
 import { addressFrom } from '../identity/http.ts';
 import { recordRoleChange } from '../identity/roles.ts';
 import { randomToken, sha256Hex } from '../identity/secrets.ts';
+import { deskFrom, deskOf, writeRequest } from './request.ts';
 
 export const CONFIRM_LINK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const STOP_LINK_TTL_MS = 90 * 24 * 60 * 60 * 1000;
@@ -110,7 +118,10 @@ export const stopLinkFor = (siteOrigin: string, token: string) =>
 export const settingsLinkFor = (siteOrigin: string, token: string) =>
   `${siteOrigin}/journalists/settings/${token}`;
 
-export function confirmationEmail(link: string): { subject: string; text: string } {
+export function confirmationEmail(
+  link: string,
+  asksAccess = false,
+): { subject: string; text: string } {
   return {
     subject: 'Confirm your place on the journalist alert list',
     text: [
@@ -119,6 +130,12 @@ export function confirmationEmail(link: string): { subject: string; text: string
       'To be added, open this link and press the button on the page:',
       link,
       '',
+      ...(asksAccess
+        ? [
+            'Pressing it also sends your request for access to the journalist desk to the owner of this site, who reads every request.',
+            '',
+          ]
+        : []),
       'Nothing happens until you press it. If it was not you, ignore this email and the address is never added.',
     ].join('\n'),
   };
@@ -170,18 +187,40 @@ export async function removeSubscribers(db: Kysely<DB>, ids: readonly number[]):
   });
 }
 
-/** Place codes the form may send: US states, once each. */
-export function checkedStates(states: readonly string[]): string[] {
+/**
+ * Place codes the form may send: US states, once each. At least one while
+ * alerts are on; with alerts off there may be none (decision 69).
+ */
+export function checkedStates(states: readonly string[], alerts: 'on' | 'off' = 'on'): string[] {
   const unique = [...new Set(states.map((s) => s.trim().toUpperCase()))];
-  if (!unique.length || unique.some((s) => !isSubdivisionCode(s))) {
+  if ((alerts === 'on' && !unique.length) || unique.some((s) => !isSubdivisionCode(s))) {
     throw new HttpError(400, 'bad_states', 'Choose at least one state from the list.');
   }
   return unique.sort();
 }
 
-export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<void> {
+/**
+ * What the sign-up did, for the route. `listed` is an address already on the
+ * list: the visitor is told the same as anyone, and the route emails it the
+ * access request link if the form asked for access.
+ */
+export type SignUpResult = 'new' | 'listed';
+
+export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<SignUpResult> {
   const email = addressFrom(input.email);
-  const states = checkedStates(input.states);
+  const alerts = input.alerts ?? 'on';
+  const states = checkedStates(input.states, alerts);
+  const outlet = input.outlet?.trim() ?? '';
+  if (alerts === 'off' && !input.access) {
+    throw new HttpError(
+      400,
+      'nothing_asked',
+      'Choose alerts, access to the journalist desk, or both.',
+    );
+  }
+  if (input.access && !outlet) {
+    throw new HttpError(400, 'no_outlet', 'Say which outlet you work for, to ask for desk access.');
+  }
   const { db, ring } = deps;
 
   const known = await db
@@ -190,29 +229,38 @@ export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<v
     .where('email_hmac', 'in', emailDigests(ring, email))
     .executeTakeFirst();
   // Already listed: say nothing different. Pending: the new details replace the old.
-  if (known?.status === 'active') return;
+  if (known?.status === 'active') return 'listed';
   if (known) await removeSubscribers(db, [known.id]);
 
   const dek = randomBytes(32);
-  const row = await db
-    .insertInto('journalist_subscribers')
-    .values({
-      dek_wrapped: wrapDek(ring.wrapKey, dek),
-      email_hmac: emailDigest(ring, email),
-      email_enc: seal(dek, email),
-      name_enc: seal(dek, input.name.trim()),
-      outlet_enc: seal(dek, input.outlet.trim()),
-      states,
-    })
-    .onConflict((oc) => oc.column('email_hmac').doNothing())
-    .returning('id')
-    .executeTakeFirst();
-  if (!row) return; // a second request for the same address got there first
+  const row = await db.transaction().execute(async (trx) => {
+    const inserted = await trx
+      .insertInto('journalist_subscribers')
+      .values({
+        dek_wrapped: wrapDek(ring.wrapKey, dek),
+        email_hmac: emailDigest(ring, email),
+        email_enc: seal(dek, email),
+        name_enc: seal(dek, input.name.trim()),
+        outlet_enc: seal(dek, outlet),
+        states,
+        // Paused from the start: confirming keeps it so (the migration of decision 69).
+        ...(alerts === 'off' ? { alerts_paused_at: new Date() } : {}),
+      })
+      .onConflict((oc) => oc.column('email_hmac').doNothing())
+      .returning('id')
+      .executeTakeFirst();
+    // Written now and shown to the owner only once the address is confirmed.
+    if (inserted && input.access) {
+      await writeRequest(trx, inserted.id, dek, { ...input.access, outlet });
+    }
+    return inserted;
+  });
+  if (!row) return 'new'; // a second request for the same address got there first
   const token = await issueLink(db, row.id, 'confirm');
   try {
     await deps.mailer.send({
       to: email,
-      ...confirmationEmail(confirmLinkFor(deps.siteOrigin, token)),
+      ...confirmationEmail(confirmLinkFor(deps.siteOrigin, token), Boolean(input.access)),
     });
   } catch {
     await removeSubscribers(db, [row.id]);
@@ -222,6 +270,7 @@ export async function signUp(deps: ListDeps, input: JournalistSignup): Promise<v
       'We could not send the confirmation email just now. Please try again later.',
     );
   }
+  return 'new';
 }
 
 async function linkOf(db: Kysely<DB>, token: string, purpose: LinkPurpose) {
@@ -229,6 +278,7 @@ async function linkOf(db: Kysely<DB>, token: string, purpose: LinkPurpose) {
   return db
     .selectFrom('journalist_links as l')
     .innerJoin('journalist_subscribers as s', 's.id', 'l.subscriber_id')
+    .leftJoin('journalist_access_requests as q', 'q.subscriber_id', 's.id')
     .select([
       'l.token_hash',
       's.id',
@@ -237,6 +287,7 @@ async function linkOf(db: Kysely<DB>, token: string, purpose: LinkPurpose) {
       's.email_enc',
       's.dek_wrapped',
       's.alerts_paused_at',
+      'q.status as request_status',
     ])
     .where('l.token_hash', '=', sha256Hex(token))
     .where('l.purpose', '=', purpose)
@@ -260,9 +311,16 @@ export async function describeConfirm(
   const row = await linkOf(db, token, 'confirm');
   if (!row) return { state: 'gone' };
   const address = addressOf(ring, row);
+  const desk = deskFrom(row.request_status);
   return row.status === 'active'
-    ? { state: 'confirmed', address }
-    : { state: 'pending', address, states: namesOf(row.states) };
+    ? { state: 'confirmed', address, desk }
+    : {
+        state: 'pending',
+        address,
+        states: namesOf(row.states),
+        alerts: row.alerts_paused_at ? 'off' : 'on',
+        desk,
+      };
 }
 
 /** Put the address on the list. Using the link twice is harmless. */
@@ -289,7 +347,7 @@ export async function applyConfirm(
       .where('used_at', 'is', null)
       .execute();
   });
-  return { state: 'confirmed', address: addressOf(ring, row) };
+  return { state: 'confirmed', address: addressOf(ring, row), desk: deskFrom(row.request_status) };
 }
 
 /** What the stop link in an alert would do. Reads only. */
@@ -337,12 +395,19 @@ interface SettingsRow {
   alerts_paused_at: Date | null;
 }
 
-const settingsOf = (ring: ContactKeyring, row: SettingsRow): AlertSettings => ({
-  state: 'open',
-  address: partlyHidden(openWithDek(dekOf(ring, row.dek_wrapped), row.email_enc)),
-  states: row.states,
-  alerts: row.alerts_paused_at ? 'off' : 'on',
-});
+async function settingsOf(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  row: SettingsRow,
+): Promise<AlertSettings> {
+  return {
+    state: 'open',
+    address: partlyHidden(openWithDek(dekOf(ring, row.dek_wrapped), row.email_enc)),
+    states: row.states,
+    alerts: row.alerts_paused_at ? 'off' : 'on',
+    desk: await deskOf(db, row.id),
+  };
+}
 
 /**
  * Change the states and turn alerts on or off. Turning them back on starts
@@ -355,7 +420,7 @@ async function writeSettings(
   id: number,
   body: AlertSettingsBody,
 ): Promise<AlertSettings> {
-  const states = checkedStates(body.states);
+  const states = checkedStates(body.states, body.alerts);
   const row = await db
     .updateTable('journalist_subscribers')
     .set(
@@ -372,7 +437,7 @@ async function writeSettings(
     .returning(['id', 'states', 'email_enc', 'dek_wrapped', 'alerts_paused_at'])
     .executeTakeFirst();
   if (!row) return { state: 'gone' };
-  return settingsOf(ring, row);
+  return settingsOf(db, ring, row);
 }
 
 /** The change page behind the link in an alert. Reads only. */
@@ -383,7 +448,7 @@ export async function describeSettings(
 ): Promise<AlertSettings> {
   const row = await linkOf(db, token, 'stop');
   if (row?.status !== 'active') return { state: 'gone' };
-  return settingsOf(ring, row);
+  return settingsOf(db, ring, row);
 }
 
 export async function changeSettings(
@@ -395,6 +460,26 @@ export async function changeSettings(
   const row = await linkOf(db, token, 'stop');
   if (!row) return { state: 'gone' };
   return writeSettings(db, ring, row.id, body);
+}
+
+/**
+ * Ask for desk access from the change page (decision 69): the link proves the
+ * address, as the emailed request link does. One waiting or approved is not
+ * replaced; one revoked may be asked again, as on the request link.
+ */
+export async function requestFromSettings(
+  db: Kysely<DB>,
+  ring: ContactKeyring,
+  token: string,
+  body: AccessRequestBody,
+): Promise<AlertSettings> {
+  const row = await linkOf(db, token, 'stop');
+  if (row?.status !== 'active') return { state: 'gone' };
+  if (row.request_status !== 'pending' && row.request_status !== 'approved') {
+    const dek = dekOf(ring, row.dek_wrapped);
+    await db.transaction().execute((trx) => writeRequest(trx, row.id, dek, body));
+  }
+  return settingsOf(db, ring, row);
 }
 
 /** Remove yourself from the list entirely: the row, every link and any desk access (decision 46). */
@@ -428,7 +513,7 @@ export async function deskSettings(
   ring: ContactKeyring,
   email: string,
 ): Promise<AlertSettings> {
-  return settingsOf(ring, await ownSubscription(db, ring, email));
+  return settingsOf(db, ring, await ownSubscription(db, ring, email));
 }
 
 export async function changeDeskSettings(

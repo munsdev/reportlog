@@ -64,7 +64,8 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   const page = await (await browser.newContext()).newPage();
   const seen = watch(page);
 
-  // J1, J6: four questions, and the legal notice and privacy policy before sending.
+  // J1, J6: a name, an address and the states (alerts are ticked to begin
+  // with), and the legal notice and privacy policy before sending.
   await page.goto('/journalists/alerts');
   await expect(page.getByRole('heading', { level: 1, name: 'Journalist alerts' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'imprint and privacy policy' })).toHaveAttribute(
@@ -73,7 +74,6 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   );
   await noViolations(page);
   await page.getByLabel('Your name').fill('Pat Reporter');
-  await page.getByLabel('Your outlet').fill('The Daily Example');
   await page.getByLabel('Your email address').fill(EMAIL);
   await page.getByLabel(state).check();
   const before = countTo(EMAIL);
@@ -178,5 +178,92 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
   expect(changingSeen.calls.filter((c) => c.startsWith('POST'))).toEqual([
     'POST /api/journalists/settings/:token',
     'POST /api/journalists/settings/:token/remove',
+  ]);
+});
+
+test('one sign-up asks for desk access with alerts off, and the page behind an alert asks for it too', async ({
+  browser,
+}, testInfo) => {
+  // Decision 69. States of this test's own: the projects share a database.
+  const state = testInfo.project.name === 'phone' ? 'Delaware' : 'Rhode Island';
+  const deskOnly = `desk-only-${run}-${testInfo.project.name}@example.org`;
+  const page = await (await browser.newContext()).newPage();
+  const seen = watch(page);
+
+  // The sign-up: alerts unticked, the journalist box ticked, and the request's questions open.
+  await page.goto('/journalists/alerts');
+  await page.getByLabel('Your name').fill('Sam Courts');
+  await page.getByLabel('Your email address').fill(deskOnly);
+  await page.getByRole('checkbox', { name: 'Send me alerts' }).click();
+  await expect(page.getByLabel('Your outlet')).toHaveCount(0);
+  await page
+    .getByRole('checkbox', { name: 'I am a journalist and want access to the journalist desk' })
+    .click();
+  await page.getByLabel('Your outlet').fill('Courts Weekly');
+  await page.getByLabel('Your role there').fill('Reporter');
+  await page.getByLabel('Who are you?').fill('Sam, covering the state courts.');
+  await noViolations(page);
+  let before = countTo(deskOnly);
+  await page.getByRole('button', { name: 'Join the list' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  await expect(page.getByText(/also sends your request for desk access/)).toBeVisible();
+
+  // One confirmation link does both.
+  const confirm = linkIn((await lastMessageTo(deskOnly, before)).text, 'confirm');
+  const link = await (await browser.newContext()).newPage();
+  const linkSeen = watch(link);
+  await link.goto(confirm);
+  await expect(link.getByText(/on the list with alerts off/)).toBeVisible();
+  await expect(link.getByText(/also sends your request for access/)).toBeVisible();
+  await noViolations(link);
+  await link.getByRole('button', { name: 'Join the alert list' }).click();
+  await expect(
+    link.getByRole('heading', { level: 1, name: 'You are on the alert list' }),
+  ).toBeVisible();
+  await expect(
+    link.getByText(/request for access to the journalist desk is with the owner/),
+  ).toBeVisible();
+  await noViolations(link);
+  // On the list, with alerts off from the start.
+  expect(devState('listed', deskOnly)).toBe('paused');
+
+  // Somebody on the list for alerts only asks from the page an alert links to.
+  const reader = `asks-later-${run}-${testInfo.project.name}@example.org`;
+  const join = await (await browser.newContext()).newPage();
+  await join.goto('/journalists/alerts');
+  await join.getByLabel('Your name').fill('Alex Reader');
+  await join.getByLabel('Your email address').fill(reader);
+  await join.getByLabel(state).check();
+  before = countTo(reader);
+  await join.getByRole('button', { name: 'Join the list' }).click();
+  await expect(join.getByRole('heading', { level: 1, name: 'Check your email' })).toBeVisible();
+  await join.goto(linkIn((await lastMessageTo(reader, before)).text, 'confirm'));
+  await join.getByRole('button', { name: 'Join the alert list' }).click();
+  await expect(
+    join.getByRole('heading', { level: 1, name: 'You are on the alert list' }),
+  ).toBeVisible();
+  before = countTo(reader);
+  devState('alert-for', reader);
+  const change = linkIn((await lastMessageTo(reader, before)).text, 'settings');
+  expect(change).not.toBe('');
+
+  const changing = await (await browser.newContext()).newPage();
+  const changingSeen = watch(changing);
+  await changing.goto(change);
+  const desk = changing.getByRole('region', { name: 'The journalist desk' });
+  await desk.getByRole('button', { name: 'Ask for access to the journalist desk' }).click();
+  await desk.getByLabel('Your outlet').fill('The Valley Paper');
+  await desk.getByLabel('Your role there').fill('Editor');
+  await desk.getByLabel('Who are you?').fill('Alex, editing the Valley Paper.');
+  await noViolations(changing);
+  await desk.getByRole('button', { name: 'Send my request to the owner' }).click();
+  await expect(desk.getByText('Your request for access is with the owner.')).toBeVisible();
+  await noViolations(changing);
+  // Still getting alerts: asking for the desk changed nothing else.
+  expect(devState('listed', reader)).toBe('active');
+
+  expect([...seen.outside, ...linkSeen.outside, ...changingSeen.outside]).toEqual([]);
+  expect(changingSeen.calls.filter((c) => c.startsWith('POST'))).toEqual([
+    'POST /api/journalists/settings/:token/access',
   ]);
 });

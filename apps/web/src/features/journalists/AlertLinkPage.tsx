@@ -76,13 +76,20 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
           <strong>{s.address}</strong> will get an email when there are new approved reports in your
           states. Every email has a link to change or stop them.
         </p>
-        <p>
-          A journalist can also{' '}
-          <Link to="/journalists/access" className="underline">
-            ask for access to the journalist desk
-          </Link>
-          , where vetted journalists read links moderators have checked.
-        </p>
+        {s.desk === 'pending' ? (
+          <p>
+            Your request for access to the journalist desk is with the owner. You will get an email
+            when they decide.
+          </p>
+        ) : s.desk === 'approved' ? null : (
+          <p>
+            A journalist can also{' '}
+            <Link to="/journalists/access" className="underline">
+              ask for access to the journalist desk
+            </Link>
+            , where vetted journalists read links moderators have checked.
+          </p>
+        )}
       </PublicPage>
     );
   }
@@ -110,12 +117,27 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
     );
   }
   const joining = s.state === 'pending';
+  // Signed up with alerts off, to ask only for the desk (decision 69).
+  const quiet = joining && s.alerts === 'off';
   return (
     <PublicPage title={joining ? 'Join the alert list?' : 'Stop these alerts?'} width="prose">
-      <p>
-        <strong>{s.address}</strong> {joining ? 'would get' : 'gets'} an email when there are new
-        approved reports in: {s.states.join(', ')}.
-      </p>
+      {quiet ? (
+        <p>
+          <strong>{s.address}</strong> would be on the list with alerts off. You can turn them on
+          later from any email we send.
+        </p>
+      ) : (
+        <p>
+          <strong>{s.address}</strong> {joining ? 'would get' : 'gets'} an email when there are new
+          approved reports in: {s.states.join(', ')}.
+        </p>
+      )}
+      {joining && s.desk === 'pending' ? (
+        <p>
+          Joining also sends your request for access to the journalist desk to the owner, who reads
+          every request.
+        </p>
+      ) : null}
       <p>
         Nothing has changed yet.{' '}
         {joining
