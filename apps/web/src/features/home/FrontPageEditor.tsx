@@ -189,11 +189,18 @@ function Editing({
       if (rowsChanged) {
         await call(setHomeButtons, {
           body: {
-            order: rows.map((r) =>
-              r.label.trim()
-                ? { kind: r.kind, ref: r.ref, label: r.label.trim() }
-                : { kind: r.kind, ref: r.ref },
-            ),
+            order: [
+              ...rows.map((r) =>
+                r.label.trim()
+                  ? { kind: r.kind, ref: r.ref, label: r.label.trim() }
+                  : { kind: r.kind, ref: r.ref },
+              ),
+              // HIDDEN, SAID SO. Left out, a logbook or list is "new" to the
+              // server and is added back to the end of the page.
+              ...hiddenButtons
+                .filter((b) => b.kind !== 'builtin')
+                .map((b) => ({ kind: b.kind, ref: b.ref, hidden: true as const })),
+            ],
           },
         });
       }

@@ -328,6 +328,7 @@ export interface FloodSettings {
 
 export interface HeatMaps {
   blurb: string | null;
+  county_min: number | null;
   created_at: Generated<Timestamp>;
   enabled: Generated<boolean>;
   id: Generated<number>;

@@ -53,9 +53,10 @@ export function FrontPageLayout({
   return (
     <div className="flex flex-col gap-12 lg:gap-16">
       {above}
-      {/* One strong column, centred on a desktop: the page is the headline
-          and the buttons, so nothing sits beside them to compete. */}
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 lg:gap-8">
+      {/* THE SAME WIDTH AS THE SECTIONS BELOW. A narrow centred column on
+          top of full-width sections read as two pages stacked. The text keeps
+          its own reading measure (LEDE_CLASS); the buttons share a grid. */}
+      <div className="flex w-full flex-col gap-6 lg:gap-8">
         <div className="flex flex-col gap-3">
           <Eyebrow>{name}</Eyebrow>
           {headline}

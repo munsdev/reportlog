@@ -45,6 +45,8 @@ function payload(over: Partial<PublishedMap> = {}): PublishedMap {
     filter_key: 'where',
     areas: { 'US-AZ': area(4), 'US-CA': area(9), 'US-AK': area(3) },
     suppressed: { areas: ['US-NV', 'US-WY', 'US-GU'], reports: 4 },
+    county_threshold: null,
+    counties: {},
     ...over,
   };
 }
@@ -229,5 +231,25 @@ describe('the scale', () => {
         ],
       ]),
     ).toBe('M0,0L1,0L1,1Z');
+  });
+});
+
+describe('counties shown on their own', () => {
+  it('draws a county the server sent over its state, and lists it', async () => {
+    const { setCountyLoader } = await import('../../src/features/maps/counties.ts');
+    const countiesText = (await import('../../src/features/maps/counties.json?raw')).default;
+    setCountyLoader(() => Promise.resolve(JSON.parse(countiesText)));
+    const { container } = render(
+      <HeatMapView
+        map={payload({ county_threshold: 2, counties: { 'US-AZ-04013': area(2) } })}
+        outlines={outlines}
+      />,
+    );
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    await screen.findByText(/Counties with 2 or more/);
+    await expect.poll(() => root.querySelector('path[data-code="US-AZ-04013"]')).not.toBeNull();
+    // A county under the threshold was never sent, so nothing draws it.
+    expect(root.querySelector('path[data-code="US-AZ-04019"]')).toBeNull();
   });
 });

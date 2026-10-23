@@ -36,6 +36,17 @@ const Q: FieldDefinition[] = [
     label: 'What kind?',
     settings: { options: ['Police', 'Queue', 'Ballots'] },
   },
+  {
+    key: 'how',
+    kind: 'choice_one',
+    label: 'How did it go?',
+    settings: {
+      options: [
+        { code: 'fine', label: 'It went fine' },
+        { code: 'problem', label: 'Something went wrong' },
+      ],
+    },
+  },
 ];
 
 let h: FilingHarness;
@@ -85,6 +96,7 @@ beforeAll(async () => {
     what: 'A long queue outside, people gave up and left.',
     station: 'Station 7',
     tags: ['Queue', 'Police'],
+    how: 'problem',
   });
   t.c = await file({
     what: 'Pending report about ballots that nobody approved.',
@@ -140,6 +152,19 @@ describe('what the board shows', () => {
   it('never serves moderation’s workings: no status, reasons, flags or contact', async () => {
     const r = await get(`/api/board/reports?logbook=${lb.slug}`);
     expect(r.text).not.toMatch(/moderation_status|needs_review|review_terms|email|thread_id/);
+  });
+});
+
+describe('search by what a reader sees, not what is sealed', () => {
+  it('finds a place by its name, though the answer holds its code', async () => {
+    // `DE` on a world-scope question is Germany.
+    expect(await refs('&q=Germany')).toEqual([t.a?.publicRef]);
+    expect(await refs('&q=germany')).toEqual([t.a?.publicRef]);
+  });
+
+  it('finds a coded choice by its label, though the answer holds its code', async () => {
+    expect(await refs(`&q=${encodeURIComponent('went wrong')}`)).toEqual([t.b?.publicRef]);
+    expect(await refs(`&q=${encodeURIComponent('went fine')}`)).toEqual([]);
   });
 });
 

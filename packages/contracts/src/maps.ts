@@ -153,6 +153,13 @@ export const PublishedMap = z.object({
     areas: z.array(z.string()),
     reports: z.number().int().nullable(),
   }),
+  /**
+   * The county threshold, or null when the map shows states only. A county
+   * under it is never sent on its own: it is only part of its state's count.
+   */
+  county_threshold: z.number().int().nullable(),
+  /** Only counties at or over `county_threshold`, keyed `US-AZ-04013`. */
+  counties: z.record(z.string(), AreaCount),
 });
 export type PublishedMap = z.infer<typeof PublishedMap>;
 
@@ -188,6 +195,8 @@ export const HeatMapAdmin = z.object({
   blurb: z.string().nullable(),
   enabled: z.boolean(),
   min_area: z.number().int(),
+  /** Null: states only. N: a county is shown on its own from N reports. */
+  county_min: z.number().int().nullable(),
   planes: z.array(MapPlane),
   views: z.array(MapView),
   /** Empty means every logbook. */
@@ -260,6 +269,7 @@ const HeatMapInput = z.object({
   blurb: z.unknown().optional(),
   enabled: z.unknown().optional(),
   min_area: z.unknown().optional(),
+  county_min: z.unknown().optional(),
   planes: z.unknown().optional(),
   views: z.unknown().optional(),
   logbook_ids: z.unknown().optional(),

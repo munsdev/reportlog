@@ -436,6 +436,11 @@ export const ArrangementEntry = z.object({
   kind: z.string(),
   ref: z.string(),
   label: z.string().nullable().optional(),
+  /**
+   * Hidden by the operator: never drawn, and never added back as a logbook
+   * or list the arrangement does not mention (apps/api homeButtons.ts).
+   */
+  hidden: z.literal(true).optional(),
 });
 export type ArrangementEntry = z.infer<typeof ArrangementEntry>;
 

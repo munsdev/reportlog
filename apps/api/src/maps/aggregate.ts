@@ -64,6 +64,11 @@ export function areaOf(answer: unknown): string | null {
   return m ? stateOfPlace(m[0]) : null;
 }
 
+/** The county a sealed answer names (`US-AZ-04013`), or null for a state or a country. */
+export function countyOf(answer: unknown): string | null {
+  return typeof answer === 'string' && /^US-[A-Z]{2}-\d{5}$/.test(answer) ? answer : null;
+}
+
 /**
  * The one answer key a click can filter the board on, or null. A map fed by
  * logbooks that seal their place under different keys has no single filter,
@@ -202,6 +207,20 @@ export async function computeMap(
   const reportGroups = await reportQuery.execute();
 
   const tally = new Map<string, AreaCount>();
+  /* COUNTIES ARE TALLIED BESIDE THEIR STATES, never instead of them: a
+     county's reports are always in its state's count. Whether a county is
+     also SENT on its own is decided below, by the map's county threshold. */
+  const countyTally = new Map<string, AreaCount>();
+  const countyCount = (answer: unknown): AreaCount | null => {
+    const code = countyOf(answer);
+    if (!code) return null;
+    let a = countyTally.get(code);
+    if (!a) {
+      a = { n: 0, assessed: 0, pos: 0, neg: 0, neu: 0 };
+      countyTally.set(code, a);
+    }
+    return a;
+  };
   /* ONE PLACE THAT DECIDES WHAT AN AREA DOES WITH A ROW, so the report half
      and the list half cannot drift into counting differently. */
   const place = (answer: unknown, n: number): AreaCount | null => {
@@ -228,17 +247,20 @@ export async function computeMap(
     const n = Number(g.n);
     const a = place(g.place, n);
     if (!a) continue;
-    a.n += n;
-    if (outcome) {
-      const stance = stanceOf(g.outcome, outcome.stances);
-      // ASSESSED MEANS IT HAS A STANCE. Legacy counted every row of the
-      // outcome logbook, so an unanswered question dragged the colour toward
-      // "evenly split", which is a claim about answers nobody gave.
-      if (stance) {
-        a.assessed += n;
-        if (stance === 'positive') a.pos += n;
-        else if (stance === 'negative') a.neg += n;
-        else a.neu += n;
+    const c = countyCount(g.place);
+    for (const t of c ? [a, c] : [a]) {
+      t.n += n;
+      if (outcome) {
+        const stance = stanceOf(g.outcome, outcome.stances);
+        // ASSESSED MEANS IT HAS A STANCE. Legacy counted every row of the
+        // outcome logbook, so an unanswered question dragged the colour toward
+        // "evenly split", which is a claim about answers nobody gave.
+        if (stance) {
+          t.assessed += n;
+          if (stance === 'positive') t.pos += n;
+          else if (stance === 'negative') t.neg += n;
+          else t.neu += n;
+        }
       }
     }
   }
@@ -297,7 +319,11 @@ export async function computeMap(
         const a = place(g.place, n);
         // THE COUNT AND NOTHING ELSE. A list has no outcome reading: it is
         // approved in bulk, so nobody made a judgement about one entry.
-        if (a) a.n += n;
+        if (a) {
+          a.n += n;
+          const c = countyCount(g.place);
+          if (c) c.n += n;
+        }
       }
     }
   }
@@ -315,6 +341,18 @@ export async function computeMap(
     else {
       suppressed.push(code);
       suppressedTotal += a.n;
+    }
+  }
+
+  /* A COUNTY ON ITS OWN only from the county threshold, and never below the
+     map's own: a county is a smaller place than a state, so it is never
+     shown with fewer reports than a state would need. Under it, a county is
+     not sent at all, not even as a bare code; its reports are in its state. */
+  const ck = row.county_min === null ? null : Math.max(k, Math.trunc(row.county_min) || k);
+  const counties: Record<string, AreaCount> = {};
+  if (ck !== null) {
+    for (const [code, a] of [...countyTally.entries()].sort(([x], [y]) => x.localeCompare(y))) {
+      if (a.n >= ck) counties[code] = a;
     }
   }
 
@@ -345,6 +383,8 @@ export async function computeMap(
         areas: suppressed,
         reports: suppressed.length >= 2 ? suppressedTotal : null,
       },
+      county_threshold: ck,
+      counties,
     },
   };
 }

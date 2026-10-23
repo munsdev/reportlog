@@ -4,7 +4,7 @@
  * been changed. Anything not published reads exactly like a reference that
  * does not exist.
  */
-import type { PublicNote } from '@reportlog/contracts';
+import type { PublicNote, PublicReport } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
@@ -18,7 +18,7 @@ import { ApiRequestError } from '../../lib/api.ts';
 import { CheckAReport } from './CheckAReport.tsx';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
-import { ReportAnswers } from './ReportAnswers.tsx';
+import { ReportAnswers, useReportHeadline } from './ReportAnswers.tsx';
 import { ReportTags } from './Board.tsx';
 
 const INTAKE: Record<string, string> = {
@@ -76,11 +76,7 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
       <BackToBoard />
       <div className="flex flex-col gap-2">
         <Eyebrow>{r.logbook_title}</Eyebrow>
-        {/* The reference as it is written, in mono, never in the display
-            face's capitals or stretch. */}
-        <h1 className="font-mono text-[clamp(1.5rem,1.2rem+1.5vw,2.25rem)] leading-tight font-medium tracking-normal break-all normal-case">
-          {r.public_ref}
-        </h1>
+        <ReportHeading r={r} />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           <Meta>Filed {new Date(r.received_at).toLocaleString()}</Meta>
           <ReportTags r={r} />
@@ -163,5 +159,27 @@ function Note({ note }: { note: PublicNote }) {
         <p className="max-w-prose">{note.notice}</p>
       )}
     </Card>
+  );
+}
+
+/**
+ * Where and what as the heading, the reference under it. The reference as it
+ * is written, in mono, never in the display face's capitals or stretch.
+ */
+function ReportHeading({ r }: { r: PublicReport }) {
+  const headline = useReportHeadline(r.logbook_slug, r.answers);
+  return (
+    <h1 className="flex flex-col gap-1">
+      {headline ? <span className="font-display text-title">{headline}</span> : null}
+      <span
+        className={
+          headline
+            ? 'font-mono text-base font-medium tracking-normal break-all text-ink-alt normal-case'
+            : 'font-mono text-[clamp(1.5rem,1.2rem+1.5vw,2.25rem)] leading-tight font-medium tracking-normal break-all normal-case'
+        }
+      >
+        {r.public_ref}
+      </span>
+    </h1>
   );
 }

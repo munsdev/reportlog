@@ -50,7 +50,7 @@ import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 import { boardMetaQuery, boardReportsQuery } from './queries.ts';
 import type { BoardSearch } from './queries.ts';
-import { ReportAnswers } from './ReportAnswers.tsx';
+import { ReportAnswers, useReportHeadline } from './ReportAnswers.tsx';
 
 const filed = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -598,17 +598,26 @@ export function OriginLabel({ r }: { r: Pick<PublicReport, 'origin' | 'label'> }
  * is staff-only (decision 16).
  */
 function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string }) {
+  // Where and what, so a list reads as reports rather than as numbers; the
+  // number is right under it, small.
+  const headline = useReportHeadline(r.logbook_slug, r.answers);
   return (
-    <Card heading={<span className="font-mono">{r.public_ref}</span>} className="w-full">
+    <Card
+      heading={
+        <span className="flex flex-col gap-0.5">
+          <span>{headline ?? logbookTitle}</span>
+          <span className="font-mono text-xs font-normal text-ink-alt">{r.public_ref}</span>
+        </span>
+      }
+      className="w-full"
+    >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <p className="label-face text-xs text-ink-alt">{logbookTitle}</p>
         <ReportTags r={r} />
       </div>
       <ReportAnswers slug={r.logbook_slug} answers={r.answers} only={4} pills />
       <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-        <Meta>
-          {r.public_ref} · {filed(r.received_at)}
-        </Meta>
+        <Meta>{filed(r.received_at)}</Meta>
         <Button asChild variant="quiet" className="-mr-2">
           <Link
             to="/board/$ref"

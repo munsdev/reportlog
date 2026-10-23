@@ -17,7 +17,6 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '../components/ui/button.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { ToastProvider } from '../components/ui/toast.tsx';
 import { Lede } from '../components/ui/type.tsx';
@@ -101,16 +100,20 @@ function Home() {
       name={name}
       above={
         canEdit ? (
-          <div className="flex justify-end">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setEditing(true);
-              }}
-            >
-              Edit this page
-            </Button>
-          </div>
+          // A BUBBLE IN THE CORNER, like the development notice opposite it:
+          // a tool for the administrator, not part of the page visitors see,
+          // so it takes no room in the page's own flow. Above any bar fixed
+          // to the bottom of the screen (components/ui/bottom-bar.tsx).
+          <button
+            type="button"
+            onClick={() => {
+              setEditing(true);
+            }}
+            className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
+          >
+            <span aria-hidden="true">✎</span>
+            Edit this page
+          </button>
         ) : null
       }
       headline={<h1 className={HEADLINE_CLASS}>{headline}</h1>}

@@ -208,6 +208,15 @@ describe("the front page's buttons", () => {
     expect(bs.map((b) => b.ref)).toEqual(['board', 'a', 'b']);
   });
 
+  it('keeps a hidden logbook hidden: mentioned, so never appended, and never drawn', () => {
+    const bs = resolveButtons(available, [
+      { kind: 'builtin', ref: 'board' },
+      { kind: 'logbook', ref: 'a', hidden: true },
+    ]);
+    // 'a' is hidden; 'b' was never mentioned, so it is new and appended.
+    expect(bs.map((b) => b.ref)).toEqual(['board', 'b']);
+  });
+
   it('never reads a label on a built-in, even from a hand-edited row', () => {
     const [b] = resolveButtons(available, [{ kind: 'builtin', ref: 'board', label: 'Renamed' }]);
     expect(b?.label).toBe('board');

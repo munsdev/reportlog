@@ -90,3 +90,25 @@ export function ReportAnswers({
     </dl>
   );
 }
+
+/**
+ * A heading a person can read for one report: where (its first location
+ * answer, by name) and what (its first single choice), as "Arizona ·
+ * Something went wrong". Null until the questions arrive, or when the report
+ * answered neither; the card then falls back to the logbook's title. The
+ * reference stays on the card, small, under it: it is how a report is
+ * checked, not what somebody scans a list for.
+ */
+export function useReportHeadline(slug: string, answers: Record<string, unknown>): string | null {
+  const logbook = useQuery({ ...publicLogbookQuery(slug), staleTime: 5 * 60_000 });
+  const questions: FormQuestion[] = logbook.data?.fields ?? [];
+  if (!questions.length) return null;
+  const raw = rawFromAnswers(questions, answers);
+  const asked = askedQuestions(questions, raw);
+  const pick = (kind: string) => {
+    const q = asked.find((x) => x.kind === kind && shownAnswer(x, raw, questions) !== null);
+    return q ? shownAnswer(q, raw, questions) : null;
+  };
+  const parts = [pick('location'), pick('choice_one')].filter((p): p is string => Boolean(p));
+  return parts.length ? parts.join(' · ') : null;
+}

@@ -4,6 +4,7 @@ pnpm-lock.yaml
 apps/web/src/routeTree.gen.ts
 apps/api/src/db/schema.gen.ts
 **/outlines.json
+**/counties.json
 tools/geo/data/
 # Generated static copies of the design canvas, compared by eye, not edited.
 docs/design/mockups/

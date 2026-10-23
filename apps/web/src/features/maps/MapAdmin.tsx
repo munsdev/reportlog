@@ -441,6 +441,13 @@ function MapCard({
             { key: 'Short name', value: map.slug, mono: true },
             { key: 'Threshold', value: thresholdInWords(map.min_area) },
             {
+              key: 'Counties',
+              value:
+                map.county_min === null
+                  ? 'states only'
+                  : `a county is shown on its own at ${String(Math.max(map.county_min, map.min_area))} reports or more`,
+            },
+            {
               key: 'Fed by',
               value: [
                 map.logbook_ids.length ? named(map.logbook_ids, logbooks) : 'every logbook',
@@ -543,6 +550,7 @@ function fieldsOf(map: HeatMapAdmin) {
     blurb: map.blurb ?? '',
     enabled: map.enabled,
     minArea: String(map.min_area),
+    countyMin: map.county_min === null ? '' : String(map.county_min),
     planes: map.planes,
     views: map.views,
     logbookIds: map.logbook_ids,
@@ -600,6 +608,7 @@ function MapEditor({
   const [blurb, setBlurb] = useState(map.blurb ?? '');
   const [enabled, setEnabled] = useState(map.enabled);
   const [minArea, setMinArea] = useState(String(map.min_area));
+  const [countyMin, setCountyMin] = useState(map.county_min === null ? '' : String(map.county_min));
   const [planes, setPlanes] = useState<MapPlane[]>(map.planes);
   const [views, setViews] = useState<MapView[]>(map.views);
   const [logbookIds, setLogbookIds] = useState<number[]>(map.logbook_ids);
@@ -626,6 +635,7 @@ function MapEditor({
     blurb,
     enabled,
     minArea,
+    countyMin,
     planes,
     views,
     logbookIds,
@@ -645,6 +655,7 @@ function MapEditor({
           blurb,
           enabled,
           min_area: Number(minArea),
+          county_min: countyMin.trim() === '' ? null : Number(countyMin),
           planes,
           views,
           logbook_ids: logbookIds,
@@ -663,6 +674,7 @@ function MapEditor({
       setBlurb(f.blurb);
       setEnabled(f.enabled);
       setMinArea(f.minArea);
+      setCountyMin(f.countyMin);
       setPlanes(f.planes);
       setViews(f.views);
       setLogbookIds(f.logbookIds);
@@ -743,6 +755,27 @@ function MapEditor({
           value={minArea}
           onChange={(e) => {
             setMinArea(e.target.value);
+          }}
+          className="max-w-32"
+        />
+      </Field>
+      <Field>
+        <Label>Show counties from</Label>
+        <FieldDescription>
+          Leave empty for states only. With a number, a county with at least that many reports (and
+          at least the threshold above) is drawn on its own inside its state; under it, its reports
+          only ever count toward the state. Only answers to a question that asks for the county can
+          be placed in one. A county is a smaller place than a state, so a low number here says more
+          about who filed. A state’s count minus the counties shown on their own is what its other
+          counties hold together.
+        </FieldDescription>
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={MIN_AREA_FLOOR}
+          value={countyMin}
+          onChange={(e) => {
+            setCountyMin(e.target.value);
           }}
           className="max-w-32"
         />

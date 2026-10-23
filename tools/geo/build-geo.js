@@ -650,3 +650,63 @@ console.log(
   OUT.replace(/.*\/(?=apps\/)/, ''),
   (readFileSync(OUT).length / 1024).toFixed(0) + ' KB',
 );
+
+/* ------------------------------------------------------------------ */
+/* COUNTIES — the lower 48's, for maps that show a county on its own    */
+/* ------------------------------------------------------------------ */
+/* A SEPARATE FILE, counties.json, so a map that never shows a county
+   never downloads three thousand outlines. Projected through the SAME
+   projection as the states above, so a county lies exactly inside its
+   state. Alaska's and Hawaii's counties, and the territories', are not
+   drawn: they are tiles on the state map, and their counties appear in the
+   map's list instead.
+
+   A county's code is the one a location answer seals: `US-AZ-04013`, the
+   state's code and the five-digit FIPS. Names from the Census 2020 list,
+   as the gazetteer's. Emitted as SVG path strings: the map only ever fills
+   a county, and a path string is the smallest way to carry one.
+
+   SOURCE: us-counties-10m.json, us-atlas 3.0.1 counties-10m.json, from US
+   Census Bureau data. Public domain. */
+const countyNames = {};
+for (const line of readFileSync(here('./data/census/national_county2020.txt'), 'utf8')
+  .split(/\r?\n/)
+  .slice(1)
+  .filter(Boolean)) {
+  const [, statefp, countyfp, , name] = line.split('|');
+  countyNames[`${statefp}${countyfp}`] = name;
+}
+const cRaw = JSON.parse(readFileSync(here('./data/us-counties-10m.json'), 'utf8'));
+const cTopo = thin(cRaw, 0.2);
+const countyAreas = {};
+let unnamed = 0;
+for (const f of feature(cTopo, cTopo.objects.counties).features) {
+  const fips = String(f.id);
+  const m = USPS[fips.slice(0, 2)];
+  if (!m || OFF_MAP.has(fips.slice(0, 2))) continue;
+  const name = countyNames[fips];
+  if (!name) {
+    unnamed += 1;
+    continue;
+  }
+  const polys = ringsOf(f, proj);
+  if (!polys.length) continue;
+  const d = polys
+    .flat()
+    .map((r) => `M${r.map(([x, y]) => `${x},${y}`).join('L')}Z`)
+    .join('');
+  const { at } = measure(polys);
+  countyAreas[`US-${m[0]}-${fips}`] = { name, d, at };
+}
+const COUNTY_OUT = here('../../apps/web/src/features/maps/counties.json');
+writeFileSync(COUNTY_OUT, JSON.stringify({ width: UW, height: UH, areas: countyAreas }));
+console.log(
+  'county areas',
+  Object.keys(countyAreas).length,
+  `(lower 48 + DC; ${String(unnamed)} unnamed, left out)`,
+);
+console.log(
+  'wrote      ',
+  COUNTY_OUT.replace(/.*\/(?=apps\/)/, ''),
+  (readFileSync(COUNTY_OUT).length / 1024).toFixed(0) + ' KB',
+);

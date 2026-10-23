@@ -27,6 +27,8 @@ import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { OutlinePlane, Outlines } from './outlines.ts';
 import { pathOf } from './outlines.ts';
+import type { CountyOutlines } from './counties.ts';
+import { loadCountyOutlines } from './counties.ts';
 import { mapQuery, outlinesQuery } from './queries.ts';
 import { BELOW, ENDS, NO_DATA, SCALES, binner, colourOf } from './scale.ts';
 
@@ -101,7 +103,33 @@ export function HeatMapView({
   const suppressed = useMemo(() => new Set(map.suppressed.areas), [map.suppressed.areas]);
   const k = map.threshold;
 
+  /* COUNTIES, only those the server sent: a county reaches the map's county
+     threshold or it is not in the payload at all (its reports are in its
+     state). Their outlines are a separate download, asked for only when
+     there is a county to draw. */
+  const countyEntries = Object.entries(map.counties);
+  const [countyOutlines, setCountyOutlines] = useState<CountyOutlines | null>(null);
+  useEffect(() => {
+    if (plane !== 'us' || !countyEntries.length || countyOutlines) return;
+    let live = true;
+    loadCountyOutlines()
+      .then((c) => {
+        if (live) setCountyOutlines(c);
+      })
+      // Without the outlines the counties are still in the list below.
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [plane, countyEntries.length, countyOutlines]);
+  const countyStep = binner(
+    view,
+    countyEntries.map(([, a]) => a),
+  );
+
   const status = (code: string): Status => {
+    const c = map.counties[code];
+    if (c) return { kind: 'shown', a: c };
     const a = map.areas[code];
     if (a) return { kind: 'shown', a };
     return suppressed.has(code) ? { kind: 'below' } : { kind: 'none' };
@@ -116,7 +144,9 @@ export function HeatMapView({
     const s = status(code);
     if (s.kind === 'below') return BELOW;
     if (s.kind === 'none') return NO_DATA;
-    return colourOf(view, step(s.a));
+    // A county on its own scale: its counts are a state's small change, and
+    // on the state scale every county would be the palest shade.
+    return colourOf(view, (code in map.counties ? countyStep : step)(s.a));
   };
 
   const units = (n: number) => `${String(n)} ${n === 1 ? map.unit.one : map.unit.many}`;
@@ -175,6 +205,14 @@ export function HeatMapView({
           tip={tip}
           selected={selected}
           onSelect={setSelected}
+          overlay={
+            plane === 'us' && countyOutlines
+              ? countyEntries.flatMap(([code]) => {
+                  const o = countyOutlines.areas[code];
+                  return o ? [{ code, d: o.d, at: o.at }] : [];
+                })
+              : []
+          }
         />
       ) : outlinesFailed ? (
         <Alert tone="serious">
@@ -317,6 +355,7 @@ function Stage({
   tip,
   selected,
   onSelect,
+  overlay = [],
 }: {
   plane: OutlinePlane;
   title: string;
@@ -324,6 +363,8 @@ function Stage({
   tip: (code: string) => string;
   selected: string | null;
   onSelect: (code: string | null) => void;
+  /** Counties drawn over their states: only those shown on their own. */
+  overlay?: { code: string; d: string; at: [number, number] | null }[];
 }) {
   const [[x0, y0], [x1, y1]] = plane.frame;
   const W = x1 - x0;
@@ -394,7 +435,9 @@ function Stage({
   }, []);
 
   const zoomTo = (k: number) => {
-    const at = selected ? plane.areas[selected]?.at : null;
+    const at = selected
+      ? (plane.areas[selected]?.at ?? overlay.find((o) => o.code === selected)?.at)
+      : null;
     setZoom((z) => ({ k, cx: at ? at[0] : clampX(z.cx), cy: at ? at[1] : clampY(z.cy) }));
   };
 
@@ -430,6 +473,22 @@ function Stage({
             </path>
           ),
         )}
+        {/* COUNTIES OVER THEIR STATES, with a hairline so a county reads as
+            a piece of the state it sits in. */}
+        {overlay.map((o) => (
+          <path
+            key={o.code}
+            d={o.d}
+            data-code={o.code}
+            {...(o.code === selected ? { 'data-selected': 'true' } : {})}
+            fill={fill(o.code)}
+            className={o.code === selected ? 'stroke-ink' : 'stroke-surface'}
+            strokeWidth={o.code === selected ? 2.5 : 0.4}
+            vectorEffect="non-scaling-stroke"
+          >
+            <title>{tip(o.code)}</title>
+          </path>
+        ))}
         {/* THE SELECTED OUTLINE IS DRAWN LAST, so its thicker stroke is on
             top: drawn in order, every neighbour would paint over half of it. */}
         {paths
@@ -628,6 +687,25 @@ function AreaList({
           ))}
         </tbody>
       </table>
+      {plane === 'us' && Object.keys(map.counties).length ? (
+        <table className="mt-3 w-full max-w-md">
+          <caption className="text-left font-semibold">
+            Counties with {map.county_threshold ?? map.threshold} or more, shown on their own
+          </caption>
+          <tbody>
+            {Object.entries(map.counties)
+              .sort(([a, x], [b, y]) => y.n - x.n || placeLabel(a).localeCompare(placeLabel(b)))
+              .map(([code, a]) => (
+                <tr key={code} className="border-t border-line">
+                  <th scope="row" className="py-1 text-left font-normal">
+                    {placeLabel(code)}
+                  </th>
+                  <td className="py-1 text-right font-mono">{a.n}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      ) : null}
       <p className="mt-2 text-muted">
         {units(total)} in shaded areas
         {below.length

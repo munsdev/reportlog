@@ -100,6 +100,17 @@
 }
 
 @layer base {
+  /* THE HAND OVER ANYTHING PRESSABLE. Tailwind 4 stopped giving buttons
+     cursor: pointer, so the Menu button and every other <button> showed an
+     arrow while links showed a hand. Disabled ones keep the button's own
+     not-allowed cursor (components/ui/button.tsx). */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary,
+  label:has(> input[type='checkbox']:not(:disabled)),
+  label:has(> input[type='radio']:not(:disabled)) {
+    cursor: pointer;
+  }
   html {
     @apply bg-paper font-sans text-ink antialiased;
     /* The header is sticky. Whatever the page scrolls to (an anchor, the

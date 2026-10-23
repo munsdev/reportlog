@@ -53,9 +53,11 @@ export function HomeButtons({
   });
   if (!drawn.length) return null;
   return (
-    <ul className="flex flex-col gap-4" aria-label="What you can do here">
+    // The accent button has a row of its own; the rest share columns, so a
+    // full-width page is not a stack of buttons a metre wide.
+    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="What you can do here">
       {drawn.map(({ b, href }) => (
-        <li key={`${b.kind}:${b.ref}`}>
+        <li key={`${b.kind}:${b.ref}`} className={cn(b.accent && 'sm:col-span-2 lg:col-span-3')}>
           <Button
             asChild
             size="lg"

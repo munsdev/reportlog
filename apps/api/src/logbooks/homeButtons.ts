@@ -116,6 +116,7 @@ interface Entry {
   kind: ButtonKind;
   ref: string;
   label?: string;
+  hidden?: true;
 }
 
 /** Blank, missing and whitespace are ONE ANSWER: no override, stored as no key. */
@@ -131,13 +132,14 @@ export async function storedOrder(db: Db): Promise<ArrangementEntry[] | null> {
   if (!Array.isArray(raw)) return null;
   return raw
     .filter(
-      (e): e is { kind: ButtonKind; ref: string; label?: unknown } =>
+      (e): e is { kind: ButtonKind; ref: string; label?: unknown; hidden?: unknown } =>
         typeof e === 'object' &&
         e !== null &&
         isKind((e as Entry).kind) &&
         typeof (e as Entry).ref === 'string',
     )
     .map((e) => {
+      if (e.hidden === true) return { kind: e.kind, ref: e.ref, hidden: true as const };
       const label = labelOf(e.label);
       return label ? { kind: e.kind, ref: e.ref, label } : { kind: e.kind, ref: e.ref };
     });
@@ -177,6 +179,11 @@ export function defaultOrder(available: Pick<Available, 'logbooks' | 'lists'>): 
  * A built-in is NOT appended: an operator who removed the board button meant
  * to. A logbook appearing is the safe failure; a deleted button coming back
  * is not.
+ *
+ * AND A LOGBOOK OR LIST THE OPERATOR HID IS NOT APPENDED EITHER. Hiding one
+ * used to mean leaving it out, and the append rule put it straight back, so
+ * Hide on a logbook did nothing. A hidden one is now stored as such: it is
+ * mentioned, so it is not new, and it is never drawn.
  */
 export function resolveButtons(
   available: Available,
@@ -195,6 +202,7 @@ export function resolveButtons(
     const button = byKey.get(key);
     if (seen.has(key) || !button) continue;
     seen.add(key);
+    if (entry.hidden === true) continue;
     // THE FALLBACK IS HERE AND ONLY HERE. `title` carries the record's own
     // name either way, so the arranging screen can show what a blank box falls
     // back to. A built-in's label is never read, even from a hand-edited row.
@@ -252,7 +260,7 @@ export async function setHomeButtons(
   const clean: Entry[] = [];
   const seen = new Set<string>();
   for (const raw of order as unknown[]) {
-    const entry = raw as Partial<Record<'kind' | 'ref' | 'label', unknown>> | null;
+    const entry = raw as Partial<Record<'kind' | 'ref' | 'label' | 'hidden', unknown>> | null;
     if (
       !entry ||
       typeof entry !== 'object' ||
@@ -268,6 +276,10 @@ export async function setHomeButtons(
     if (seen.has(key)) refuse('duplicate');
     seen.add(key);
 
+    if (entry.hidden === true) {
+      clean.push({ kind: entry.kind, ref: entry.ref, hidden: true });
+      continue;
+    }
     if (entry.label !== undefined && entry.label !== null && typeof entry.label !== 'string') {
       refuse('bad-label');
     }

@@ -16,6 +16,7 @@ export interface HeatMapRow {
   blurb: string | null;
   enabled: boolean;
   min_area: number;
+  county_min: number | null;
   planes: MapPlane[];
   views: MapView[];
   logbook_ids: number[];
@@ -52,6 +53,7 @@ export function shape(r: Selectable<HeatMaps>): HeatMapRow {
     blurb: r.blurb,
     enabled: r.enabled,
     min_area: r.min_area,
+    county_min: r.county_min,
     planes: r.planes.filter((p): p is MapPlane => p === 'us' || p === 'world'),
     views: r.views.filter((v): v is MapView => v === 'volume' || v === 'outcome'),
     logbook_ids: ids(r.logbook_ids),
@@ -73,6 +75,7 @@ export function toAdmin(r: HeatMapRow): HeatMapAdmin {
     blurb: r.blurb,
     enabled: r.enabled,
     min_area: r.min_area,
+    county_min: r.county_min,
     planes: r.planes,
     views: r.views,
     logbook_ids: r.logbook_ids,

@@ -806,3 +806,69 @@ describe('over HTTP', () => {
     expect(ok.statusCode).toBe(200);
   });
 });
+
+describe('counties shown on their own, past a threshold of their own', () => {
+  // Its own logbook, asking for the county, as a real one would.
+  const COUNTY_Q: FieldDefinition[] = [
+    {
+      key: 'where',
+      kind: 'location',
+      label: 'Which county',
+      settings: { scope: 'us', depth: 'county' },
+    },
+  ];
+  let cty: { id: number; slug: string };
+  beforeAll(async () => {
+    cty = await launchedLogbook(db, COUNTY_Q);
+    await setLogbookPlace(db, cty.id, 'where');
+    // Maricopa twice and Pima once, both inside Arizona.
+    for (const where of ['US-AZ-04013', 'US-AZ-04013', 'US-AZ-04019'])
+      await report(cty, COUNTY_Q, { where });
+  });
+
+  it('states only when no county threshold is set: counties are not even sent', async () => {
+    const { computed } = await run({ enabled: true, min_area: 1, logbook_ids: [cty.id] });
+    if (!computed.map.published) throw new Error('unpublished');
+    expect(computed.map.county_threshold).toBeNull();
+    expect(computed.map.counties).toEqual({});
+  });
+
+  it('sends a county from its threshold, and every county stays in its state', async () => {
+    const { computed } = await run({
+      enabled: true,
+      min_area: 1,
+      county_min: 2,
+      logbook_ids: [cty.id],
+    });
+    if (!computed.map.published) throw new Error('unpublished');
+    expect(computed.map.county_threshold).toBe(2);
+    expect(Object.keys(computed.map.counties)).toEqual(['US-AZ-04013']);
+    expect(computed.map.counties['US-AZ-04013']?.n).toBe(2);
+    // Pima is under the county threshold: not sent on its own, not even as a code.
+    expect(JSON.stringify(computed.map)).not.toContain('04019');
+    // Both counties are in Arizona's count.
+    expect(computed.map.areas['US-AZ']?.n).toBe(3);
+  });
+
+  it('never shows a county below the map’s own threshold', async () => {
+    const { computed } = await run({
+      enabled: true,
+      min_area: 3,
+      county_min: 1,
+      logbook_ids: [cty.id],
+    });
+    if (!computed.map.published) throw new Error('unpublished');
+    expect(computed.map.county_threshold).toBe(3);
+    expect(computed.map.counties).toEqual({});
+  });
+
+  it('refuses a county threshold under the floor, and the database does too', async () => {
+    expect(
+      await refusal(createMap(db, { slug: uniqueSlug('map'), title: 'x', county_min: 0 })),
+    ).toBe('county_min');
+    const made = await createMap(db, { slug: uniqueSlug('map'), title: 'x' });
+    await expect(
+      db.updateTable('heat_maps').set({ county_min: 0 }).where('id', '=', made.id).execute(),
+    ).rejects.toThrow(/check/i);
+  });
+});

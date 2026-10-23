@@ -87,6 +87,7 @@ interface Columns {
   blurb?: string | null;
   enabled?: boolean;
   min_area?: number;
+  county_min?: number | null;
   planes?: MapPlane[];
   views?: MapView[];
   logbook_ids?: number[];
@@ -147,6 +148,23 @@ async function validate(
     }
     if (n > 100000) throw refused('min_area', 'That threshold is larger than any archive.');
     out.min_area = n;
+  }
+
+  // Empty or null turns counties off; anything else is a threshold like
+  // min_area's, with the same floor.
+  if (Object.hasOwn(patch, 'county_min')) {
+    const v = patch.county_min;
+    if (v === null || v === '' || v === undefined) out.county_min = null;
+    else {
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < MIN_AREA_FLOOR || n > 100000) {
+        throw refused(
+          'county_min',
+          `The county threshold is a whole number of at least ${String(MIN_AREA_FLOOR)}, or empty for states only.`,
+        );
+      }
+      out.county_min = n;
+    }
   }
 
   if (has('planes')) out.planes = cleanList(patch.planes, MAP_PLANES, 'plane');

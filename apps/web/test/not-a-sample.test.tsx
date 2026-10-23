@@ -98,6 +98,8 @@ describe('the line beside every number', () => {
       filter_key: null,
       areas: {},
       suppressed: { areas: [], reports: 0 },
+      county_threshold: null,
+      counties: {},
     };
     render(<HeatMapView map={map} outlines={JSON.parse(outlinesText) as Outlines} />);
     expect(screen.getByText(SENTENCE)).toBeInTheDocument();
