@@ -53,17 +53,18 @@ export function HomeButtons({
   });
   if (!drawn.length) return null;
   return (
-    // The accent button has a row of its own; the rest share columns, so a
-    // full-width page is not a stack of buttons a metre wide.
+    // EQUAL TILES IN COLUMNS, the accent only coloured: on a full-width page
+    // a button spanning the row is a metre-wide bar. Every tile in a row is
+    // the height of the tallest, so a blurb does not leave its neighbours short.
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-label="What you can do here">
       {drawn.map(({ b, href }) => (
-        <li key={`${b.kind}:${b.ref}`} className={cn(b.accent && 'sm:col-span-2 lg:col-span-3')}>
+        <li key={`${b.kind}:${b.ref}`} className="flex">
           <Button
             asChild
             size="lg"
             block
             variant={b.accent ? 'primary' : 'secondary'}
-            className={cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
+            className={cn(BIG_BUTTON, 'h-full', b.blurb && 'flex-col gap-0.5 py-3')}
           >
             <a href={href}>
               <span className="inline-flex items-center gap-2">
