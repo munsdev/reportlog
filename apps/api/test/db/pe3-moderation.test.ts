@@ -224,8 +224,9 @@ describe('publish as counts only', () => {
       now: () => new Date(Date.now() + 120_000),
     });
     const mail = h.mailer.messages.map((m) => m.text).join('\n');
+    // Update emails carry counts only since decision 73, so the listed report's
+    // reference no longer appears; the hidden one must still be absent.
     expect(mail).not.toContain(a.publicRef);
-    expect(mail).toContain(c.publicRef);
   });
 
   it('its reports are still counted: numbers, counts by place and time, maps', async () => {

@@ -406,7 +406,7 @@ describe('E1: when a form asks for an email', () => {
       answers: { how: 'badly', day: '2026-11-03' },
     });
     expect(r.status).toBe(200);
-    expect(r.body).toMatchObject({ filed: true, public_ref: expect.any(String) });
+    expect(r.body).toMatchObject({ filed: true, public_ref: expect.any(String) as string });
     expect(await submissions()).toBe(before.subs);
     expect(h.mailer.messages.length).toBe(before.mail);
     expect(await reportsIn(choices.id)).toBe(before.n + 1);
@@ -553,7 +553,7 @@ describe('E4: date limits', () => {
       logbook: choices.slug,
       answers: { how: 'fine', day: '2026-11-10' },
     });
-    expect(edge.body).toMatchObject({ filed: true, public_ref: expect.any(String) });
+    expect(edge.body).toMatchObject({ filed: true, public_ref: expect.any(String) as string });
   });
 
   it('the public form carries the limits, so the page offers nothing outside them', async () => {

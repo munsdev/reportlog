@@ -104,7 +104,7 @@ beforeAll(async () => {
       answers: { how: 'ok' },
     },
   });
-  expect(sealed.json()).toMatchObject({ filed: true, public_ref: expect.any(String) });
+  expect(sealed.json()).toMatchObject({ filed: true, public_ref: expect.any(String) as string });
 
   // A tip.
   const slug = uniqueSlug('privacy-tips');
