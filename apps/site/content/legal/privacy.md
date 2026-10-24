@@ -40,7 +40,7 @@ If you write to us, we use your address and your message to answer you, and keep
 
 You have the right to ask what information about you we hold (Article 15 GDPR), to have it corrected (Article 16), erased (Article 17) or its use restricted (Article 18), to receive it in a portable form (Article 20), and to object to its use (Article 21). Write to the address above.
 
-You also have the right to complain to a data protection supervisory authority, in particular in the EU member state where you live, where you work, or where you believe the infringement took place (Article 77 GDPR).
+You also have the right to complain to a data protection supervisory authority, in particular in the EU member state where you live, where you work, or where you believe the infringement took place (Article 77 GDPR). The authority responsible for us is the Bavarian State Office for Data Protection Supervision (Bayerisches Landesamt für Datenschutzaufsicht, BayLDA), in Ansbach.
 
 ## ReportLog sites
 

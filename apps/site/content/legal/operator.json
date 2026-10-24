@@ -1,7 +1,12 @@
 {
   "_comment": "Who provides www.reportlog.org, for its imprint and privacy policy. Fill in every field but phone (optional) before the site goes out: a build on Cloudflare Pages refuses to run while name, email or a two-line address is missing. address is a list of lines: street, postcode and town, country.",
-  "name": "",
-  "address": [],
+  "name": "Casey Muns",
+  "address": [
+    "c/o Autorenglück #79979",
+    "Albert-Einstein-Straße 47",
+    "02977 Hoyerswerda",
+    "Germany"
+  ],
   "email": "",
   "phone": ""
 }

@@ -5,6 +5,8 @@ description: Who provides this website.
 
 ## Provider
 
+Information according to § 5 DDG (Digitale-Dienste-Gesetz).
+
 {{name}}
 
 {{address}}
