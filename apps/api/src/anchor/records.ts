@@ -2,7 +2,7 @@
  * The three files a day's anchor publishes, built from the database.
  *
  *   anchors/<date>.json    every logbook's chain head and the token over them
- *   snapshots/<date>.json  every published report, with exactly what was hashed
+ *   snapshots/<date>.json  every published report's fingerprints, and nothing it said
  *   counts/<date>.json     what the published lists add up to, with a token of its own
  *
  * The anchor file's shape is the old application's, key for key, so a reader
@@ -15,13 +15,14 @@ import {
   rebuildSealedObject,
   sha256Hex,
 } from '@reportlog/seal';
-import type { ChainHead, SealedReport } from '@reportlog/seal';
+import type { ChainHead } from '@reportlog/seal';
 import { listedReportIds } from '../board/published.ts';
 import type { Database } from '../db/database.ts';
 import { manifestFor, sealedReportRows, toStoredRecord } from '../chain/record.ts';
 import type { snapshotDocument } from '../lists/aggregates.ts';
 
-export const SNAPSHOT_FORMAT = 2;
+/** 3: fingerprints only. Format 2 carried each report's sealed fields, answers included. */
+export const SNAPSHOT_FORMAT = 3;
 export const COUNTS_FORMAT = 1;
 
 export interface AnchorRecord {
@@ -77,7 +78,6 @@ export interface SnapshotReport {
   public_ref: string;
   logbook: string;
   recipe: number;
-  hashed_fields: SealedReport;
   content_hash: string;
   prev_chain_hash: string;
   chain_hash: string;
@@ -92,7 +92,6 @@ export interface Snapshot {
   reports_not_matching_their_own_hash?: number;
   how_to_check: string;
   notes: string;
-  forms?: { hash: string; definition: string }[];
   reports: SnapshotReport[];
 }
 
@@ -121,26 +120,12 @@ export async function buildSnapshot(
       public_ref: row.public_ref,
       logbook: row.logbook_slug,
       recipe: row.recipe,
-      hashed_fields: sealed,
       content_hash: row.content_hash,
       prev_chain_hash: row.prev_chain_hash,
       chain_hash: row.chain_hash,
       ...(computed === row.content_hash ? {} : { content_hash_recomputed: computed }),
     });
   }
-
-  // The questions those reports were answered against, only the versions in use.
-  const wanted = [
-    ...new Set(reports.map((r) => r.hashed_fields.logbook_form).filter((h) => h !== undefined)),
-  ];
-  const forms = wanted.length
-    ? await db
-        .selectFrom('logbook_forms')
-        .select(['form_hash as hash', 'definition'])
-        .where('form_hash', 'in', wanted)
-        .orderBy('id')
-        .execute()
-    : [];
 
   return {
     snapshot_format: SNAPSHOT_FORMAT,
@@ -149,11 +134,13 @@ export async function buildSnapshot(
     report_count: reports.length,
     ...(mismatches ? { reports_not_matching_their_own_hash: mismatches } : {}),
     how_to_check: [
-      'Each report lists hashed_fields exactly as they were hashed.',
-      'Serialize hashed_fields with RFC 8785 (JCS) and take its SHA-256:',
-      'that is content_hash. Then chain_hash = SHA256(content_hash + prev_chain_hash).',
+      'This file holds fingerprints and nothing a report said, so it can stay',
+      'public for good. chain_hash = SHA256(content_hash + prev_chain_hash).',
       'Every logbook is its own chain. Its first report links to',
       'SHA256("reportlog-chain:" + the logbook\'s slug), not to zeros.',
+      "To check a report's content, take its fields from the site's published",
+      'chain file, serialize them with RFC 8785 (JCS) and take the SHA-256:',
+      'that is content_hash.',
     ].join(' '),
     notes: [
       'Published reports only. A report withdrawn after a snapshot was',
@@ -161,9 +148,8 @@ export async function buildSnapshot(
       'earlier ones, which are already public.',
       'chains covers every report in each logbook, including any not',
       'published here. The daily anchor is what ties it to an outside timestamp.',
-      'Contact details are not part of the fingerprint and are not in this file.',
+      'No answers, contact details or files are in this file.',
     ].join(' '),
-    ...(forms.length ? { forms } : {}),
     reports,
   };
 }

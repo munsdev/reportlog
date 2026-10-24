@@ -44,8 +44,9 @@ listening on port 3000 from the container's start, as A and B also found. I stop
      not checked on the server; anybody holding the published token checks it with
      `openssl ts -verify` and DFN's chain. The default is DFN (`https://zeitstempel.dfn.de`).
 2. **The transparency log** (`translog.ts`, `records.ts`). Each day: `anchors/<date>.json` (the
-   old application's format, key for key), `snapshots/<date>.json` (every published report with
-   exactly what was hashed, in canonical JSON, with a mismatch published rather than hidden), and
+   old application's format, key for key), `snapshots/<date>.json` (every published report's
+   fingerprints only, format 3, in canonical JSON, with a mismatch published rather than hidden; no answers,
+   since the log is public for good and never rewritten), and
    `counts/<date>.json`.
    - Files are written once and never replaced. There are no amends and no force pushes. A mirror
      whose history has gone elsewhere refuses the push, and that refusal is reported.
@@ -144,9 +145,8 @@ refuses for good.
   three conditions: the current version, not withdrawn, `valid`, and the reporter said yes. When
   the board gains a condition (C mentions a public-archive switch), the snapshot and the
   published chain file must gain it in the same change, because the log is never rewritten. One
-  function owned by you, which both call, would be better. The snapshot publishes each report's
-  whole sealed object, as legacy did. If the board ever hides part of what was sealed, say so
-  before it reaches the log.
+  function owned by you, which both call, would be better. The snapshot publishes fingerprints only (format 3);
+  the sealed fields are in the published chain file, not the log.
 - **F (files):** the export carries `attachments` and `report_attachments` rows, **not the stored
   files**. Moving an archive also means copying the bucket. Storage keys travel unchanged.
 - **C (filing):** an export carries `contact_keys` and `report_contacts` as they are, wrapped by

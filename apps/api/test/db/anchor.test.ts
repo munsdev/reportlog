@@ -12,7 +12,7 @@
  * keeps refusing; that is the point. So these tests plant contradictions in a
  * database of their own, never in the one the rest of the suite shares.
  */
-import { contentHash, canonicalJson, headsDigest, sha256Hex } from '@reportlog/seal';
+import { canonicalJson, headsDigest, sha256Hex } from '@reportlog/seal';
 import { execFile } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -228,14 +228,15 @@ describe('the first anchor', () => {
     expect(shown).not.toContain(refs.a2);
     expect(shown).not.toContain(refs.a3);
     for (const r of snap.reports) {
-      expect(contentHash(r.hashed_fields)).toBe(r.content_hash);
       expect(sha256Hex(r.content_hash + r.prev_chain_hash)).toBe(r.chain_hash);
     }
     expect(snap.chains).toEqual(record.chains);
     expect(snap.reports_not_matching_their_own_hash).toBeUndefined();
-    // The questions each report was answered against travel with it.
-    expect(snap.forms?.map((f) => f.hash).sort()).toEqual(
-      [...new Set(snap.reports.map((r) => r.hashed_fields.logbook_form))].sort(),
+    // Fingerprints only: no sealed fields, no answers, no forms.
+    expect(snap).not.toHaveProperty('forms');
+    for (const r of snap.reports) expect(r).not.toHaveProperty('hashed_fields');
+    expect(Object.keys(snap.reports[0] ?? {}).sort()).toEqual(
+      ['chain_hash', 'content_hash', 'logbook', 'prev_chain_hash', 'public_ref', 'recipe'].sort(),
     );
   });
 
