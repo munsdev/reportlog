@@ -268,6 +268,11 @@ install_caddyfile() {
   sed -e "s|@SITE_DOMAIN@|$domain|" \
     -e "s|@ACME_EMAIL_LINE@|${acme:+email $acme}|" \
     "$release/deploy/caddy/Caddyfile" >"$tmp"
+  # www.<domain>, sent to the site, only when asked for: Caddy would otherwise
+  # ask for a certificate for a name that may not point here.
+  if [ "$(env_value WWW_REDIRECT "$DEPLOY_ENV")" = yes ]; then
+    { echo; sed -e "s|@SITE_DOMAIN@|$domain|g" "$release/deploy/caddy/www.caddy"; } >>"$tmp"
+  fi
   # Bugsink's site, on its own domain, when this server runs it. Taken from
   # what install-bugsink.sh installed, not from the release, so a rollback to
   # a release older than Bugsink does not take its site down.

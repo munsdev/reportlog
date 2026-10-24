@@ -35,6 +35,8 @@ if (!hasCaddy && process.env.CI)
   throw new Error(`deploy-caddy: no caddy at "${CADDY}"; CI installs one.`);
 
 const SHIPPED = readFileSync(join(REPO, 'deploy/caddy/Caddyfile'), 'utf8');
+// What deploy/lib.sh appends when WWW_REDIRECT=yes.
+const WWW = readFileSync(join(REPO, 'deploy/caddy/www.caddy'), 'utf8');
 const HASHED = 'index-B3xq9_Zt.js';
 
 async function freePort(): Promise<number> {
@@ -66,6 +68,13 @@ function render(site: string, admin: number, dist: string, api: number): string 
   return out;
 }
 
+/** The www block on a loopback port of its own, sending to `site` (a host:port). */
+function renderWww(www: string, site: string): string {
+  const from = 'www.@SITE_DOMAIN@ {';
+  expect(WWW).toContain(from);
+  return WWW.replace(from, `${www} {`).replaceAll('@SITE_DOMAIN@', site);
+}
+
 // S1 and S3, needing no Caddy: what the shipped file asks for.
 describe('the shipped Caddyfile, read as text', () => {
   const directives = SHIPPED.split('\n')
@@ -86,6 +95,7 @@ describe('the shipped Caddyfile, read as text', () => {
 describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
   let dir: string;
   let base: string;
+  let wwwBase: string;
   let caddy: ChildProcess;
   let api: Server;
   const seenByApi: Record<string, string | string[] | undefined>[] = [];
@@ -114,7 +124,14 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     const port = await freePort();
     base = `http://127.0.0.1:${String(port)}`;
     const file = join(dir, 'Caddyfile');
-    writeFileSync(file, render(base, await freePort(), dist, (api.address() as AddressInfo).port));
+    wwwBase = `http://127.0.0.1:${String(await freePort())}`;
+    writeFileSync(
+      file,
+      `${render(base, await freePort(), dist, (api.address() as AddressInfo).port)}\n${renderWww(
+        wwwBase,
+        `127.0.0.1:${String(port)}`,
+      )}`,
+    );
     caddy = spawn(CADDY, ['run', '--adapter', 'caddyfile', '--config', file], {
       env: {
         ...process.env,
@@ -157,10 +174,10 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     const file = join(dir, 'Caddyfile.real');
     writeFileSync(
       file,
-      SHIPPED.replaceAll('@SITE_DOMAIN@', 'reports.example.org').replace(
+      `${SHIPPED.replaceAll('@SITE_DOMAIN@', 'reports.example.org').replace(
         '@ACME_EMAIL_LINE@',
         'email ops@example.org',
-      ),
+      )}\n${WWW.replaceAll('@SITE_DOMAIN@', 'reports.example.org')}`,
     );
     execFileSync(CADDY, ['validate', '--adapter', 'caddyfile', '--config', file], {
       stdio: 'pipe',
@@ -241,6 +258,16 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     }
   });
 
+  it('sends the www name to the same path on the site, permanently, with HSTS', async () => {
+    for (const path of ['/', '/terms', '/logbooks/noise?x=1', '/api/health']) {
+      const res = await fetch(`${wwwBase}${path}`, { redirect: 'manual' });
+      expect(res.status, path).toBe(301);
+      expect(res.headers.get('location'), path).toBe(`https://${new URL(base).host}${path}`);
+      expect(res.headers.get('strict-transport-security'), path).toContain('includeSubDomains');
+      expect(res.headers.get('server'), path).toBeNull();
+    }
+  });
+
   it('writes nothing about a visitor: no access log, no client address (S1)', async () => {
     const visitor = '203.0.113.77';
     for (const path of [
@@ -252,6 +279,11 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     ]) {
       await get(path, { 'x-forwarded-for': visitor, 'user-agent': 'a-distinctive-agent/9' });
     }
+    // And at the www name, which is a site of its own in Caddy.
+    await fetch(`${wwwBase}/file/erase/${'c'.repeat(64)}`, {
+      headers: { 'x-forwarded-for': visitor, 'user-agent': 'a-distinctive-agent/9' },
+      redirect: 'manual',
+    });
     // Caddy flushes its log lines as it writes them; give it a moment anyway.
     await new Promise((r) => setTimeout(r, 300));
     expect(caddyOutput).not.toContain(visitor);

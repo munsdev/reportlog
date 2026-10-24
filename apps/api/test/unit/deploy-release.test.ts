@@ -203,6 +203,28 @@ describe('a first deploy', () => {
     expect(s.read('/etc/caddy/Caddyfile')).not.toMatch(/^\s*email\b/m);
   });
 
+  it('answers at www only when WWW_REDIRECT=yes, sending it to the same path on the site', () => {
+    const s = server();
+    s.commit('v1');
+    expect(s.reportlog('deploy').status).toBe(0);
+    expect(s.read('/etc/caddy/Caddyfile')).not.toContain('www.');
+
+    writeFileSync(
+      s.at('/etc/reportlog/deploy.env'),
+      `REPO_URL=${s.upstream}\nDEPLOY_REF=main\nWWW_REDIRECT=yes\n`,
+    );
+    // A deploy of the release already running stops before Caddy: a new one.
+    writeFileSync(join(s.upstream, 'CHANGED'), 'x');
+    s.commit('v2');
+    const r = s.reportlog('deploy');
+    expect(r.status, r.out).toBe(0);
+    const caddy = s.read('/etc/caddy/Caddyfile');
+    expect(caddy).toMatch(/^reports\.example\.org \{$/m);
+    expect(caddy).toMatch(/^www\.reports\.example\.org \{$/m);
+    expect(caddy).toContain('redir https://reports.example.org{uri} permanent');
+    expect(caddy).not.toContain('@SITE_DOMAIN@');
+  });
+
   it('checks health on the PORT the settings name', () => {
     const s = server();
     s.commit('v1');

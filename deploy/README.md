@@ -20,7 +20,7 @@ check (`docs/decisions.md`, 14).
 | `/srv/reportlog/previous`      | → the release that ran before it (where rollback goes) | root                       |
 | `/srv/reportlog/repo.git`      | A mirror of the repository, fetched on deploy          | root                       |
 | `/etc/reportlog/reportlog.env` | The application's settings (see `.env.example`)        | root:reportlog, 0640       |
-| `/etc/reportlog/deploy.env`    | Where code comes from; the ACME email                  | root                       |
+| `/etc/reportlog/deploy.env`    | Where code comes from; the ACME email; www redirect    | root                       |
 | `/var/lib/reportlog`           | The application's state (`backup.json` for the doctor) | reportlog, 0750            |
 | `/var/backups/reportlog`       | Local database dumps                                   | reportlog, 0700            |
 | `/usr/local/lib/reportlog`     | The copy of the deploy scripts that root runs          | root                       |
@@ -223,6 +223,30 @@ Enter there to use Scaleway instead.
 Either way, mail from a domain without SPF, DKIM and DMARC records is usually
 accepted and then filed as junk, so `mail-test` succeeding is not the end of
 it: check the message arrives.
+
+### The www name
+
+Optional, and off until you turn it on. With it on, `www.<the site's domain>`
+gets its own certificate and sends every request to the same path on the
+site, so `https://www.reports.example.org/terms` lands on
+`https://reports.example.org/terms`. Without it, a browser at the www name
+gets a certificate error, even if DNS points it here: Caddy has no
+certificate for a name it was not told about.
+
+1. **DNS.** Point `www.<the domain>` at the server, with an A (and AAAA)
+   record like the site's or a CNAME to the site's domain.
+2. **Turn it on and deploy:**
+
+   ```sh
+   sudo sed -i 's/^WWW_REDIRECT=.*/WWW_REDIRECT=yes/' /etc/reportlog/deploy.env
+   grep -q '^WWW_REDIRECT=' /etc/reportlog/deploy.env || echo 'WWW_REDIRECT=yes' | sudo tee -a /etc/reportlog/deploy.env
+   sudo reportlog deploy
+   ```
+
+   A deploy renders the Caddyfile only when there is a new commit to
+   deploy: `Already running ... Nothing to deploy` means the setting waits
+   for the next one. Every later deploy keeps it (`deploy/caddy/www.caddy`).
+   To turn it off, empty the setting; the next deploy takes the name away.
 
 ### Error tracking (Bugsink)
 

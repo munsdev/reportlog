@@ -1,0 +1,18 @@
+# The www name, sent to the site. Appended to the Caddyfile by deploy/lib.sh
+# when WWW_REDIRECT=yes in /etc/reportlog/deploy.env; @SITE_DOMAIN@ is the same
+# domain the main site block gets.
+#
+# Opt-in, not always there: Caddy asks for a certificate for every name it
+# serves, and on a site at reports.example.org nobody points
+# www.reports.example.org here, so it would ask and fail for ever. Turn it on
+# only once the www record points at this server.
+#
+# The redirect keeps the path, so an old www link still lands on its page. No
+# access log here either (see the Caddyfile).
+www.@SITE_DOMAIN@ {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	redir https://@SITE_DOMAIN@{uri} permanent
+}
