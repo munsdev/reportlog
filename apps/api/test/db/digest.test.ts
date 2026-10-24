@@ -135,8 +135,8 @@ describe('only what the board would show', () => {
   });
 
   it('shows each answer under the question’s own words, and links the board and the settings', () => {
-    expect(text).toContain('What happened?: Published and permitted.');
-    expect(text).toContain('Do you have photos?: No');
+    expect(text).toContain('  What happened?\n    Published and permitted.');
+    expect(text).toContain('  Do you have photos?\n    No');
     expect(text).toContain('https://reports.example.test/board');
     expect(text).toContain('https://reports.example.test/notifications');
   });
@@ -227,6 +227,19 @@ describe('answers in words', () => {
     expect(answerText(false, 'evidence_declaration')).toBe('No');
     expect(answerText('US-CA', 'location')).toBe('California');
     expect(answerText(12, 'number')).toBe('12');
+    // Coded answers read as names, never as the code (the hourly email once
+    // sent "State: Albania" for a postal AL and a bare FIPS county).
+    expect(answerText('AL', 'location', { scope: 'us', depth: 'state', code: 'postal' })).toBe(
+      'Alabama',
+    );
+    expect(answerText('01001', 'location', { scope: 'us', depth: 'county', code: 'fips' })).toBe(
+      'Autauga County, Alabama',
+    );
+    expect(
+      answerText('early', 'choice_one', { options: [{ code: 'early', label: 'Early voting' }] }),
+    ).toBe('Early voting');
+    expect(answerText(10, 'number', { picker: 'hour' })).toBe('10 am');
+    expect(answerText('2026-10-22', 'date')).toBe('October 22, 2026');
   });
 });
 

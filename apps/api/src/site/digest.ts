@@ -16,7 +16,8 @@
  * Files are never in an email: only the answers.
  */
 import { NOT_A_SAMPLE } from '@reportlog/contracts';
-import { placeLabel } from '@reportlog/fields';
+import { describeAnswer } from '@reportlog/fields';
+import type { Answers, FieldSettings } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
 import { listedReportIds } from '../board/published.ts';
@@ -37,6 +38,7 @@ export interface DigestQuestion {
   key: string;
   label: string;
   kind: string;
+  settings?: FieldSettings | null;
 }
 
 export interface DigestReport {
@@ -46,13 +48,27 @@ export interface DigestReport {
   questions: readonly DigestQuestion[];
 }
 
-/** One sealed answer as a person reads it. */
-export function answerText(value: unknown, kind: string): string {
-  if (Array.isArray(value)) return value.map((v) => answerText(v, kind)).join(', ');
-  if (value === true) return 'Yes';
-  if (value === false) return 'No';
-  if (kind === 'location' || kind === 'place') return placeLabel(value);
-  return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+/**
+ * One sealed answer as a person reads it: the shared describeAnswer (labels,
+ * never codes; a place's name; the hour in words), plus a date in words,
+ * which it leaves alone. Without the question's settings a choice falls back
+ * to its code, so the digest always passes them.
+ */
+export function answerText(
+  value: unknown,
+  kind: string,
+  settings?: FieldSettings | null,
+  answers?: Partial<Answers>,
+): string {
+  if (kind === 'date' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  return describeAnswer({ kind, settings: settings ?? null }, value, answers);
 }
 
 /**
@@ -67,10 +83,15 @@ export function reportText(report: DigestReport): string {
   for (const q of report.questions) {
     if (!(q.key in answers)) continue;
     named.add(q.key);
-    lines.push(`  ${q.label}: ${answerText(answers[q.key], q.kind)}`);
+    // The question on one line and the answer under it: a label already
+    // ends in its own "?" or ".", and "applies.: No" reads as a typo.
+    lines.push(
+      `  ${q.label}`,
+      `    ${answerText(answers[q.key], q.kind, q.settings, answers as Partial<Answers>)}`,
+    );
   }
   for (const [key, value] of Object.entries(answers)) {
-    if (!named.has(key)) lines.push(`  ${key}: ${answerText(value, '')}`);
+    if (!named.has(key)) lines.push(`  ${key}`, `    ${answerText(value, '')}`);
   }
   return [
     `${report.public_ref}, ${report.logbook_title}`,
@@ -112,14 +133,19 @@ async function questionsFor(deps: EmailJobDeps, logbookIds: readonly number[]) {
   if (!logbookIds.length) return byLogbook;
   const rows = await deps.db
     .selectFrom('logbook_fields')
-    .select(['logbook_id', 'key', 'label', 'kind'])
+    .select(['logbook_id', 'key', 'label', 'kind', 'settings'])
     .where('logbook_id', 'in', [...logbookIds])
     .orderBy('position')
     .orderBy('id')
     .execute();
   for (const r of rows) {
     const list = byLogbook.get(r.logbook_id) ?? [];
-    list.push({ key: r.key, label: r.label, kind: r.kind });
+    list.push({
+      key: r.key,
+      label: r.label,
+      kind: r.kind,
+      settings: r.settings as FieldSettings | null,
+    });
     byLogbook.set(r.logbook_id, list);
   }
   return byLogbook;
