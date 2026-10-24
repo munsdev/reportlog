@@ -261,7 +261,7 @@ function canonical(v: unknown): unknown {
 export async function stageSubmission(
   deps: FilingDeps,
   b: Submission,
-): Promise<{ filed: false; filesDropped: string[] } | { filed: true }> {
+): Promise<{ filed: false; filesDropped: string[] } | { filed: true; publicRef: string }> {
   const { db } = deps;
   if (!(await intakeIsOpen(db))) throw intakeClosed();
 
@@ -356,7 +356,7 @@ export async function stageSubmission(
         );
       }
     }
-    await db.transaction().execute(async (trx) => {
+    const publicRef = await db.transaction().execute(async (trx) => {
       const threadId = randomUUID();
       const { row: report } = await appendReportVersion(trx, {
         logbookId: lb.id,
@@ -366,8 +366,9 @@ export async function stageSubmission(
         publicRefPrefix: deps.publicRefPrefix,
       });
       await startThread(trx, threadId, report);
+      return report.public_ref;
     });
-    return { filed: true };
+    return { filed: true, publicRef };
   }
 
   if (b.draft_token !== undefined && b.draft_token !== '') {

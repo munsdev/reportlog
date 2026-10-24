@@ -384,7 +384,7 @@ function Cards({
     return (
       <FormColumn>
         {'filed' in send.data ? (
-          <FiledReceipt title={title} />
+          <FiledReceipt title={title} reference={send.data.public_ref} />
         ) : (
           <SentReceipt email={email.trim()} title={title} />
         )}
@@ -1023,15 +1023,18 @@ function ReviewRow({
 }
 
 /**
- * Sealed on arrival (E1): nothing to confirm and nothing to come back to. No
- * reference is shown: a reporter is not handed a receipt for a report nobody
- * has yet accepted, and this one has no address to send one to. Quiet, not
- * teal: teal says a moderator confirmed something.
+ * Sealed on arrival (E1): nothing to confirm and nothing to come back to. The
+ * reference is shown here and only here (owner, 2026-10-24), beside the line
+ * that says nobody has accepted it yet, so it is never read as approval.
+ * Quiet, not teal: teal says a moderator confirmed something.
  */
-function FiledReceipt({ title }: { title: string }) {
+function FiledReceipt({ title, reference }: { title: string; reference: string }) {
   return (
     <Receipt heading={`Your report to “${title}” was received`}>
-      <Alert tone="done">It is sealed. A moderator reads it before anything is public.</Alert>
+      <Alert tone="done">
+        Your report’s reference is <span className="font-mono">{reference}</span>. A moderator reads
+        it before anything is public.
+      </Alert>
     </Receipt>
   );
 }

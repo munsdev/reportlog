@@ -211,7 +211,7 @@ The voting site's logbook asks for no address, so it seals on arrival and there 
 
 Replaces the form on the same page; focus moves to its heading.
 
-- No address asked: H1 "Your report to {logbook} was received", a `quiet` panel with a tick and the word "Done": "It is sealed. A moderator reads it before anything is public." Not a teal alert: teal means a moderator confirmed something (components.md, Others). The rebuild's `Alert tone="confirmed"` here changes.
+- No address asked: H1 "Your report to {logbook} was received", a `quiet` panel with a tick and the word "Done": "Your report's reference is {RL-…}. A moderator reads it before anything is public." (decision 73) Not a teal alert: teal means a moderator confirmed something (components.md, Others). The rebuild's `Alert tone="confirmed"` here changes.
 - Address asked: H1 "Check your email", "We have sent a link to {email}. Nothing is filed until you press the button on that page.", and how long the link works.
 
 **THE TIP OFFER**

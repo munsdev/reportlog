@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { loadConfig } from '../../src/config.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
 import { findJob } from '../../src/jobs/registry.ts';
-import { SETTLE_MS, answerText, runDigest } from '../../src/site/digest.ts';
+import { SETTLE_MS, runDigest } from '../../src/site/digest.ts';
 import { fileReport, launchedLogbook } from './helpers.ts';
 import { address, as, harness, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
@@ -117,26 +117,20 @@ describe('only what the board would show', () => {
     );
   });
 
-  it('carries a report a moderator approved and the reporter permitted', () => {
-    expect(text).toContain(refs.published);
+  it('counts only, never a report: no reference and no answer, whatever was published', () => {
+    for (const k of Object.keys(refs)) expect(text, k).not.toContain(refs[k]);
+    expect(text).not.toContain('Published and permitted.');
   });
 
-  it('never one waiting for a moderator, judged not credible, or withdrawn', () => {
-    for (const k of ['pending', 'invalid', 'withdrawn']) expect(text, k).not.toContain(refs[k]);
+  it('counts a report a moderator approved and the reporter permitted, from the logbooks followed only', () => {
+    // pending, invalid, withdrawn and refused are in the followed logbook too;
+    // `elsewhere` is in another one. Only `published` counts.
+    expect(text).toContain(`Logbook ${followed.slug}: 1`);
+    expect(text).not.toContain(`Logbook ${other.slug}:`);
+    expect(text).toMatch(/^One new report published in the last hour:/);
   });
 
-  it('never one whose reporter said no, approved or not', () => {
-    // The old digest checked only approval and withdrawal, and emailed these.
-    expect(text).not.toContain(refs.refused);
-  });
-
-  it('only from the logbooks followed', () => {
-    expect(text).not.toContain(refs.elsewhere);
-  });
-
-  it('shows each answer under the question’s own words, and links the board and the settings', () => {
-    expect(text).toContain('  What happened?\n    Published and permitted.');
-    expect(text).toContain('  Do you have photos?\n    No');
+  it('links the board and the settings', () => {
     expect(text).toContain('https://reports.example.test/board');
     expect(text).toContain('https://reports.example.test/notifications');
   });
@@ -144,7 +138,7 @@ describe('only what the board would show', () => {
 
 describe('the clock', () => {
   it('stops a minute behind its clock, so a moderation still committing is not skipped', async () => {
-    const ref = await report(followed, 'Published a moment ago.', { status: 'valid' });
+    await report(followed, 'Published a moment ago.', { status: 'valid' });
     const soon = new Date(clock + SETTLE_MS / 2);
     const first = capturingMailer();
     await runDigest({
@@ -155,10 +149,10 @@ describe('the clock', () => {
       frequency: 'hourly',
       now: () => soon,
     });
-    expect(first.lastTo(readerEmail)?.text ?? '').not.toContain(ref);
+    expect(first.lastTo(readerEmail)).toBeUndefined();
     // Not sent yet, and not lost: the next run, later, has it.
     const { mailer } = await run('hourly');
-    expect(mailer.lastTo(readerEmail)?.text).toContain(ref);
+    expect(mailer.lastTo(readerEmail)?.text).toContain(`Logbook ${followed.slug}: 1`);
   });
 
   it('a second run sends nothing new, and moves the clock anyway', async () => {
@@ -175,16 +169,15 @@ describe('the clock', () => {
   });
 
   it('a report published after the last email is in the next', async () => {
-    const ref = await report(followed, 'Published later.', { status: 'valid' });
+    await report(followed, 'Published later.', { status: 'valid' });
     const { mailer } = await run('hourly');
     const mail = mailer.lastTo(readerEmail);
     expect(mail?.subject).toBe('Hourly update: one new report');
-    expect(mail?.text).toContain(ref);
-    expect(mail?.text).not.toContain(refs.published);
+    expect(mail?.text).toContain(`Logbook ${followed.slug}: 1`);
   });
 
   it('a failed send is not counted as sent: the same reports are tried again', async () => {
-    const ref = await report(followed, 'Published while the mail was down.', { status: 'valid' });
+    await report(followed, 'Published while the mail was down.', { status: 'valid' });
     const broken = { send: () => Promise.reject(new Error('down')) };
     const out = await runDigest({
       db: h.db,
@@ -197,7 +190,7 @@ describe('the clock', () => {
     expect(out.ok).toBe(false);
     expect(out.summary).toMatch(/tried again/);
     const { mailer } = await run('hourly');
-    expect(mailer.lastTo(readerEmail)?.text).toContain(ref);
+    expect(mailer.lastTo(readerEmail)?.text).toContain(`Logbook ${followed.slug}: 1`);
   });
 });
 
@@ -211,35 +204,11 @@ describe('subscribers who follow every logbook, weekly', () => {
     const { mailer } = await run('weekly');
     const all = mailer.lastTo(everythingEmail);
     expect(all?.subject).toMatch(/^Weekly digest: \d+ new reports$/);
-    expect(all?.text).toContain(refs.published);
-    expect(all?.text).toContain(refs.elsewhere);
-    expect(all?.text).not.toContain(refs.refused);
+    expect(all?.text).toMatch(new RegExp(`Logbook ${followed.slug}: \\d+`));
+    expect(all?.text).toMatch(new RegExp(`Logbook ${other.slug}: \\d+`));
     const one = mailer.lastTo(weeklyEmail)?.text ?? '';
-    expect(one).toContain(refs.elsewhere);
-    expect(one).not.toContain(refs.published);
-  });
-});
-
-describe('answers in words', () => {
-  it('a list joined, yes and no in words, a place by its name', () => {
-    expect(answerText(['a', 'b'], 'choice_many')).toBe('a, b');
-    expect(answerText(true, 'yes_no')).toBe('Yes');
-    expect(answerText(false, 'evidence_declaration')).toBe('No');
-    expect(answerText('US-CA', 'location')).toBe('California');
-    expect(answerText(12, 'number')).toBe('12');
-    // Coded answers read as names, never as the code (the hourly email once
-    // sent "State: Albania" for a postal AL and a bare FIPS county).
-    expect(answerText('AL', 'location', { scope: 'us', depth: 'state', code: 'postal' })).toBe(
-      'Alabama',
-    );
-    expect(answerText('01001', 'location', { scope: 'us', depth: 'county', code: 'fips' })).toBe(
-      'Autauga County, Alabama',
-    );
-    expect(
-      answerText('early', 'choice_one', { options: [{ code: 'early', label: 'Early voting' }] }),
-    ).toBe('Early voting');
-    expect(answerText(10, 'number', { picker: 'hour' })).toBe('10 am');
-    expect(answerText('2026-10-22', 'date')).toBe('October 22, 2026');
+    expect(one).toMatch(new RegExp(`Logbook ${other.slug}: \\d+`));
+    expect(one).not.toContain(`Logbook ${followed.slug}:`);
   });
 });
 

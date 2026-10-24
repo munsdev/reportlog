@@ -104,7 +104,7 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     const email = normalizeEmail(b.email);
     if (email) sendsPerAddress.take(email);
     const out = await stageSubmission(filing, b);
-    if (out.filed) return { filed: true as const };
+    if (out.filed) return { filed: true as const, public_ref: out.publicRef };
     return {
       pending: true as const,
       ...(out.filesDropped.length ? { files_dropped: out.filesDropped } : {}),

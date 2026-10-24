@@ -47,8 +47,8 @@ export const submitReport = defineRoute({
   /**
    * PENDING for a logbook that asks for an email: nothing is filed until the
    * emailed link is followed. FILED for one that does not (owner decision E1):
-   * sealed on arrival, and nothing more to do. No receipt either way: a
-   * reporter is not handed a reference to a report nobody has yet accepted.
+   * sealed on arrival, and nothing more to do; its reference is shown on the
+   * page (below). A pending report gets none until its link is followed.
    */
   response: z.union([
     z.object({
@@ -59,7 +59,12 @@ export const submitReport = defineRoute({
        */
       files_dropped: z.array(z.string()).optional(),
     }),
-    z.object({ filed: z.literal(true) }),
+    /**
+     * The reference is shown once, on the page that sent it (owner,
+     * 2026-10-24; amends 55's "no receipt"), worded so it is never read as
+     * approval. Nothing is emailed.
+     */
+    z.object({ filed: z.literal(true), public_ref: z.string() }),
   ]),
 });
 

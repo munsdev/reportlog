@@ -6,18 +6,16 @@
  * every logbook.
  *
  * ONLY WHAT THE BOARD WOULD SHOW. A subscriber is a member of the public, so
- * a digest carries exactly what the public board carries and nothing more:
+ * a digest counts exactly what the public board shows and nothing more:
  * approved by a moderator, not withdrawn, and the reporter permitted
  * publication. The old digest once checked only the first two and emailed
  * reports whose reporters had said no. The rule is the board's own
  * (`listedReportIds` in board/published.ts, so a counts-only logbook sends
  * none), and a site whose archive is
  * switched off sends no digest at all.
- * Files are never in an email: only the answers.
+ * Counts only: no report, reference or answer is ever in an email.
  */
 import { NOT_A_SAMPLE } from '@reportlog/contracts';
-import { describeAnswer } from '@reportlog/fields';
-import type { Answers, FieldSettings } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publicArchiveAvailable } from '../board/publication.ts';
 import { listedReportIds } from '../board/published.ts';
@@ -34,87 +32,36 @@ const PERIOD_MS: Record<DigestFrequency, number> = {
   weekly: 7 * 24 * 60 * 60 * 1000,
 };
 
-export interface DigestQuestion {
-  key: string;
-  label: string;
-  kind: string;
-  settings?: FieldSettings | null;
-}
-
-export interface DigestReport {
-  public_ref: string;
+/** How many reports a logbook had published in the period. */
+export interface DigestCount {
   logbook_title: string;
-  answers: Record<string, unknown> | null;
-  questions: readonly DigestQuestion[];
+  count: number;
 }
+
+const reportsWord = (n: number) => (n === 1 ? 'one new report' : `${String(n)} new reports`);
 
 /**
- * One sealed answer as a person reads it: the shared describeAnswer (labels,
- * never codes; a place's name; the hour in words), plus a date in words,
- * which it leaves alone. Without the question's settings a choice falls back
- * to its code, so the digest always passes them.
+ * COUNTS ONLY, never a report (owner, 2026-10-24). The email tells a follower
+ * that there is something to look at on the board; it does not deliver the
+ * archive. Its length is bounded by the logbooks followed, never by how many
+ * reports arrived, so a flood (or a spam run that a moderator approved in
+ * bulk) cannot make it long.
  */
-export function answerText(
-  value: unknown,
-  kind: string,
-  settings?: FieldSettings | null,
-  answers?: Partial<Answers>,
-): string {
-  if (kind === 'date' && typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    return new Date(`${value}T00:00:00Z`).toLocaleDateString('en-US', {
-      timeZone: 'UTC',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  }
-  return describeAnswer({ kind, settings: settings ?? null }, value, answers);
-}
-
-/**
- * One report: its reference, its logbook, and each question it answered in
- * the logbook's order and in the words the reporter read. A key no question
- * names any more is shown under its key rather than dropped.
- */
-export function reportText(report: DigestReport): string {
-  const answers = report.answers ?? {};
-  const named = new Set<string>();
-  const lines: string[] = [];
-  for (const q of report.questions) {
-    if (!(q.key in answers)) continue;
-    named.add(q.key);
-    // The question on one line and the answer under it: a label already
-    // ends in its own "?" or ".", and "applies.: No" reads as a typo.
-    lines.push(
-      `  ${q.label}`,
-      `    ${answerText(answers[q.key], q.kind, q.settings, answers as Partial<Answers>)}`,
-    );
-  }
-  for (const [key, value] of Object.entries(answers)) {
-    if (!named.has(key)) lines.push(`  ${key}`, `    ${answerText(value, '')}`);
-  }
-  return [
-    `${report.public_ref}, ${report.logbook_title}`,
-    ...(lines.length ? lines : ['  No answers recorded.']),
-  ].join('\n');
-}
-
 export function digestEmail(
   frequency: DigestFrequency,
-  reports: readonly DigestReport[],
+  counts: readonly DigestCount[],
   siteOrigin: string,
   /** This email's own link that stops these emails without signing in (identity/digestStop.ts). */
   stopLink: string,
 ): { subject: string; text: string } {
-  const n = reports.length;
-  const count = n === 1 ? 'one new report' : `${String(n)} new reports`;
+  const n = counts.reduce((sum, c) => sum + c.count, 0);
+  const count = reportsWord(n);
   const period = frequency === 'hourly' ? 'in the last hour' : 'in the last week';
   return {
     subject: frequency === 'hourly' ? `Hourly update: ${count}` : `Weekly digest: ${count}`,
     text: [
-      `${count.charAt(0).toUpperCase()}${count.slice(1)} published ${period}.`,
-      '',
-      reports.map(reportText).join('\n\n'),
+      `${count.charAt(0).toUpperCase()}${count.slice(1)} published ${period}:`,
+      ...counts.map((c) => `${c.logbook_title}: ${String(c.count)}`),
       '',
       // A count appears in the subject and the first line: the line goes with it.
       NOT_A_SAMPLE,
@@ -126,29 +73,6 @@ export function digestEmail(
       `To change how often they come, or which logbooks they are about, sign in and go to ${siteOrigin}/notifications`,
     ].join('\n'),
   };
-}
-
-async function questionsFor(deps: EmailJobDeps, logbookIds: readonly number[]) {
-  const byLogbook = new Map<number, DigestQuestion[]>();
-  if (!logbookIds.length) return byLogbook;
-  const rows = await deps.db
-    .selectFrom('logbook_fields')
-    .select(['logbook_id', 'key', 'label', 'kind', 'settings'])
-    .where('logbook_id', 'in', [...logbookIds])
-    .orderBy('position')
-    .orderBy('id')
-    .execute();
-  for (const r of rows) {
-    const list = byLogbook.get(r.logbook_id) ?? [];
-    list.push({
-      key: r.key,
-      label: r.label,
-      kind: r.kind,
-      settings: r.settings as FieldSettings | null,
-    });
-    byLogbook.set(r.logbook_id, list);
-  }
-  return byLogbook;
 }
 
 /**
@@ -195,28 +119,37 @@ export async function runDigest(
       .selectFrom('report_heads as h')
       .innerJoin('reports as r', 'r.id', 'h.current_report_id')
       .innerJoin('logbooks as lb', 'lb.id', 'r.logbook_id')
-      .select(['r.public_ref', 'r.answers', 'r.logbook_id', 'lb.title as logbook_title'])
+      .select((eb) => ['lb.title as logbook_title', eb.fn.countAll<string>().as('count')])
       .where('r.id', 'in', listedReportIds(deps.db))
       .where('h.updated_at', '>', since)
       .where('h.updated_at', '<=', until)
-      .orderBy('r.received_at')
-      .orderBy('r.id');
+      // New reports only: a correction moves its thread's head too, and
+      // would otherwise be counted again as new.
+      .where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom('reports as earlier')
+              .whereRef('earlier.thread_id', '=', 'r.thread_id')
+              .whereRef('earlier.id', '<', 'r.id'),
+          ),
+        ),
+      )
+      .groupBy(['lb.id', 'lb.title'])
+      .orderBy('lb.title');
     if (sub.logbooks) q = q.where('lb.slug', 'in', sub.logbooks);
     const rows = await q.execute();
 
     if (rows.length) {
-      const questions = await questionsFor(deps, [...new Set(rows.map((r) => r.logbook_id))]);
-      const reports: DigestReport[] = rows.map((r) => ({
-        public_ref: r.public_ref,
+      const counts: DigestCount[] = rows.map((r) => ({
         logbook_title: r.logbook_title,
-        answers: r.answers as Record<string, unknown> | null,
-        questions: questions.get(r.logbook_id) ?? [],
+        count: Number(r.count),
       }));
       try {
         const stopLink = await stopLinkFor(deps.db, sub.user_id, deps.siteOrigin);
         await deps.mailer.send({
           to: sub.email,
-          ...digestEmail(deps.frequency, reports, deps.siteOrigin, stopLink),
+          ...digestEmail(deps.frequency, counts, deps.siteOrigin, stopLink),
         });
         sent += 1;
       } catch {
