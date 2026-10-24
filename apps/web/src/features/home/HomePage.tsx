@@ -136,17 +136,52 @@ export function HomePage() {
             <p>The checked links you may read.</p>
           </Tile>
         ) : null}
-        {organization ? (
-          <Tile
-            title="Your organization"
-            links={[
-              { to: '/intake', label: 'Intake' },
-              { to: '/intake/links', label: 'Volunteer links' },
-            ]}
-          >
-            <p>Reports your volunteers bring in, and the links they use.</p>
-          </Tile>
-        ) : null}
+        {/* One card per organization: the listing and members pages are an
+            organization's own, so the menu, which cannot name one, leaves
+            them to these cards. */}
+        {organization
+          ? me.memberships.map((m) => (
+              <Card key={m.organization_id} heading={m.name} className="gap-3 p-4">
+                <p className="text-ink-alt">
+                  You are its {m.role}. Reports your volunteers bring in, the links they use, and
+                  how the organization appears in the directory.
+                </p>
+                <ul className="flex flex-wrap gap-x-5">
+                  <li>
+                    <Link to="/intake" className={LINK}>
+                      Intake
+                    </Link>
+                  </li>
+                  <li>
+                    <Link to="/intake/links" className={LINK}>
+                      Volunteer links
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/organizations/$id/listing"
+                      params={{ id: String(m.organization_id) }}
+                      className={LINK}
+                    >
+                      Directory listing
+                    </Link>
+                  </li>
+                  {/* The server admits a manager of this organization only. */}
+                  {m.role === 'manager' ? (
+                    <li>
+                      <Link
+                        to="/access/orgs/$id"
+                        params={{ id: String(m.organization_id) }}
+                        className={LINK}
+                      >
+                        Members
+                      </Link>
+                    </li>
+                  ) : null}
+                </ul>
+              </Card>
+            ))
+          : null}
         {admin ? (
           <Tile
             title="Site administration"
