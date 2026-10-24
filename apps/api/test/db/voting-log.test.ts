@@ -75,7 +75,7 @@ const IN_PERSON_FINE = {
 };
 
 function shippedVoting(): Template {
-  const t = templateById('electionlog');
+  const t = templateById('voting-log');
   if (!t) throw new Error('the voting starting point does not ship');
   return t;
 }

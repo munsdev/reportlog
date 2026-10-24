@@ -193,7 +193,7 @@ describe('the tip list (§04)', () => {
 });
 
 describe('the site starting point (§02, §03)', () => {
-  const t = templateById('electionlog');
+  const t = templateById('voting-log');
 
   it('asks the entry card’s question, its answers named for the logbook and the list', () => {
     const entry = section('**Entry card**');

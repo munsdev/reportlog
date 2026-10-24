@@ -4,7 +4,7 @@
 
 **Every card, field and allowed value for the one logbook and the tip list**
 
-21 October 2026 · Casey Muns · form text and field spec, not legal advice
+21 October 2026 · form text and field spec, not legal advice
 
 ---
 

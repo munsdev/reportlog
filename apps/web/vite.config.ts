@@ -25,7 +25,7 @@ export default defineConfig({
   },
   build: {
     // Off in production: the maps published the source to anybody who asked
-    // (test3 bot review, 23 October).
+    // (a scripted bot review, 23 October).
     sourcemap: false,
   },
   test: {

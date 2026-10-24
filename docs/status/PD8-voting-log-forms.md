@@ -1,6 +1,6 @@
 # Plan D session 8 · The voting site's forms: status
 
-- **Branch:** `claude/electionlog-forms`, from `ccr-c9c93698-ev856l` at `eb5fca2`.
+- **Branch:** `claude/voting-log-forms`, from `ccr-c9c93698-ev856l` at `eb5fca2`.
 - **State:** built; PR into `ccr-c9c93698-ev856l`.
 - **Spec:** `docs/voting-questionnaires.md` (the owner's, 21 October 2026).
 - **Rulings:** 48 (rewording after launch) and 49 (the strict reading) recorded in
@@ -9,15 +9,15 @@
 
 ## The presets
 
-| Preset                                                       | What it is                                                                                                                                                                                                                |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Logbook starting point `electionlog` ("Log how voting went") | The eight cards of §03, eleven questions, every key, code, label and "only if" as written. No file question.                                                                                                              |
-| List template `electionlog-tips` ("the voting site tips")    | §04: one card, three fixed rows of a link and what kind of link it is, row 1 required. Strict. Asks no email and no comment.                                                                                              |
-| Site starting point `electionlog` ("the voting site")        | Public archive on, uploads off, intake open; makes the logbook (a draft) and the list at `/list/tips`, named "Send a link" (hidden until listed); the entry card's question; the send card's line; the front page's text. |
+| Preset                                                      | What it is                                                                                                                                                                                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Logbook starting point `voting-log` ("Log how voting went") | The eight cards of §03, eleven questions, every key, code, label and "only if" as written. No file question.                                                                                                              |
+| List template `voting-log-tips` ("the voting site tips")    | §04: one card, three fixed rows of a link and what kind of link it is, row 1 required. Strict. Asks no email and no comment.                                                                                              |
+| Site starting point `voting-log` ("the voting site")        | Public archive on, uploads off, intake open; makes the logbook (a draft) and the list at `/list/tips`, named "Send a link" (hidden until listed); the entry card's question; the send card's line; the front page's text. |
 
-Setting up test3 from the admin screens: apply "the voting site" in Settings → Starting points (or
+Setting up a server from the admin screens: apply "the voting site" in Settings → Starting points (or
 the setup wizard), launch the logbook, and set the list to Listed. Launching and listing are the
-operator's own steps, as for every starting point. `apps/api/test/unit/electionlog-spec.test.ts`
+operator's own steps, as for every starting point. `apps/api/test/unit/voting-log-spec.test.ts`
 reads the owner's document itself and checks every code and label in the presets against its
 tables, so the two cannot drift apart unnoticed.
 
@@ -124,12 +124,12 @@ Added:
   UM, `US-AZ` or a country), FIPS counties inside their state (parishes, Alaska areas, Virginia
   cities, PR and GU); the hour 0 to 23 whole; the tick box; strict refusals and blanks; cards and
   their refusals; `withoutWording`.
-- **Unit, `apps/api/test/unit/electionlog-spec.test.ts`** (16): the presets against the owner's
+- **Unit, `apps/api/test/unit/voting-log-spec.test.ts`** (16): the presets against the owner's
   document itself, read from the file: every card's question, code and label in order, every
   "only if", card 7's three lists, card 8's provisional, the kinds of link, K2's words, the entry
   card, the send card's line, uploads off and archive on.
 - **Unit:** the tip list template (`lists.test.ts`), the two new slots (`site-pages.test.ts`).
-- **Db, `apps/api/test/db/electionlog.test.ts`** (26): the site starting point applied (draft
+- **Db, `apps/api/test/db/voting-log.test.ts`** (26): the site starting point applied (draft
   logbook, hidden strict list, archive on, files off, the question slot) and refused whole when
   its list address is taken; filing every path through the routes and verifying each seal (in
   person fine, in person problem with the approximate hour, mail problem, overseas problem);
@@ -144,7 +144,7 @@ Added:
   email, no erasure token, nothing in the answers; shown with their kind in the moderators'
   review), its seven refusals, strictness against any other field, a lenient list still dropping
   a stray key, and the desk showing "Kind of link: Livestream" beside a checked link.
-- **Browser, `apps/web/e2e/electionlog.spec.ts`** (chromium and phone, 5 each): in person with a
+- **Browser, `apps/web/e2e/voting-log.spec.ts`** (chromium and phone, 5 each): in person with a
   problem through every card (county inactive until a state, cleared when the state changes; the
   hour and tick box; the in-person lists; provisional; the review in words; the send card's
   line; codes sent; the form version sent); by mail going fine (no clock, straight to the

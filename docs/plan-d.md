@@ -538,8 +538,8 @@ Roughly four to five sessions, one fewer than revision 2, with the seal untouche
 ## The voting site's forms: known limitations (PD8, 21 October 2026)
 
 The owner's questionnaires (`docs/voting-questionnaires.md`) are built as the
-`electionlog` logbook, the `electionlog-tips` list and the voting site starting point
-(`docs/status/PD8-electionlog-forms.md`). What §05 of the questionnaires leaves open, and what
+`voting-log` logbook, the `voting-log-tips` list and the voting site starting point
+(`docs/status/PD8-voting-log-forms.md`). What §05 of the questionnaires leaves open, and what
 building them found:
 
 - **E2** now reads as the questionnaires' entry card (§02): "What do you want to do?", answered

@@ -340,7 +340,7 @@ install_tooling() {
 # read straight out of the mirror. A deploy runs root's copy, so a release
 # that changes these scripts would otherwise be deployed by the OLD ones and
 # only take effect at the deploy after (how the Update button's watcher went
-# uninstalled on test3, 23 October).
+# uninstalled on a test server, 23 October).
 tooling_matches() {
   local sha=$1 f
   for f in deploy.sh rollback.sh install.sh lib.sh versions.conf; do

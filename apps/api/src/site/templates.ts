@@ -148,9 +148,10 @@ export const TEMPLATES: readonly Template[] = [
     // questionnaires.md), as ordinary settings: the one logbook, the tip list
     // at /list/tips (where "Send it as a tip" points), and the choosing card's
     // question. Nothing reads which template this was.
-    // The id keeps an older name because it is stored: an installation
-    // records the id of the template it started from (template_applied).
-    id: 'electionlog',
+    // An installation records the id of the template it started from
+    // (template_applied). It is a record only, so an id stored under an older
+    // name is simply not recognised.
+    id: 'voting-log',
     label: 'How voting went, with a tip list for links',
     description:
       'How voting went, for every voter in the US or abroad and every voting method, good and bad, asked as choices with nothing to type, plus a tip list that takes up to three links and nothing else. No files. Public archive on.',

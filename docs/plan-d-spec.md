@@ -1,6 +1,6 @@
 # A voting site under Plan D: technical spec for the ReportLog rewrite
 
-20 October 2026, revision 2 (afternoon: owner rulings on moderator access, link comments, link independence, uploads, Caddy). Casey Muns. Source: Plan D, revised (project file `claude/plan-d-page.html`).
+20 October 2026, revision 2 (afternoon: owner rulings on moderator access, link comments, link independence, uploads, Caddy). Source: Plan D, revised (project file `claude/plan-d-page.html`).
 
 This is a checklist for reviewing the ReportLog code. Every item is something the app MUST or MUST NOT do. Each has an ID so a review can answer it item by item: met, not met, or not yet built, with the file and line that shows it.
 

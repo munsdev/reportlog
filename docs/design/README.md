@@ -127,7 +127,7 @@ Do not bump the version for this work in progress. Cutting a release is the owne
 - Colour is exclusive: action on buttons only; serious red and confirmed teal on status only.
 - Every page passes the axe check, in every built-in palette, with nothing faded mid-transition.
 - Phone first. 44px targets. Plain language everywhere a person reads.
-- The rebuild is served by Caddy (`deploy/caddy/Caddyfile`, decision 43): `/api/*` goes to the app, anything else falls through to `index.html`. A new path that must reach the server and is not under `/api/` needs a `handle` block and a case in `apps/api/test/unit/deploy-caddy.test.ts`. The project instructions still say nginx and `electionlog.conf`; that describes the old app.
+- The rebuild is served by Caddy (`deploy/caddy/Caddyfile`, decision 43): `/api/*` goes to the app, anything else falls through to `index.html`. A new path that must reach the server and is not under `/api/` needs a `handle` block and a case in `apps/api/test/unit/deploy-caddy.test.ts`. The project instructions still say nginx and `voting-log.conf`; that describes the old app.
 - Merging to master arms a deploy. Ask the owner first.
 
 ---

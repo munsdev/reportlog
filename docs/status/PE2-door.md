@@ -45,7 +45,7 @@
 required` adds). Checked, unchanged: an entry on a no-email list has no erasure token or link, and
   its retention timer (`personal_expires_at`) still applies.
 - **PD8's send-card line is now true** for the voting preset; the flag is removed from
-  `docs/status/PD8-electionlog-forms.md`.
+  `docs/status/PD8-voting-log-forms.md`.
 
 ### The door (`apps/api/src/door/`)
 
@@ -191,7 +191,7 @@ Added:
 - **Browser, `apps/web/e2e/door.spec.ts`** (chromium and phone): the puzzle solved in the page by a
   same-origin worker, a refusal in one plain sentence, sending again working, filed on arrival;
   date limits as the picker's min and max and named on the card; axe on each; no other host.
-- **Browser, `apps/web/e2e/electionlog.spec.ts`**: now filed end to end with the puzzle solving in
+- **Browser, `apps/web/e2e/voting-log.spec.ts`**: now filed end to end with the puzzle solving in
   the page (the body carries a start token and a solution, and no address), "Thank you" instead of
   "Check your email"; the tip sends a fresh solution with each send.
 

@@ -77,9 +77,9 @@ breaks, plus: two-factor required for every staff role; step-up on each
 listed action; reset paths; no IP or request id in reports, tips, logs or
 error tracking.
 
-## The test3 bot review (23 October)
+## The scripted bot review (23 October)
 
-A scripted run filed 12 reports and 3 tips on test3 with the password off
+A scripted run filed 12 reports and 3 tips on a test server with the password off
 and no email. Nothing became public. Outcome:
 
 - Source maps: turned off (`build.sourcemap: false` in `apps/web/vite.config.ts`).
