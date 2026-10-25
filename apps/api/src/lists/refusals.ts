@@ -57,7 +57,8 @@ const SENTENCES = {
   'no-template': 'That is not a starting point this software ships.',
   'bad-file': 'That file is not a list file this software can read.',
   slug: 'A web address may use lowercase letters, numbers and hyphens, and must start with a letter or number.',
-  'slug-taken': 'Another list already uses that web address. Choose a different one.',
+  'slug-taken': 'Another list or logbook already uses that web address. Choose a different one.',
+  'slug-reserved': 'That web address belongs to a page of the site. Choose a different one.',
   title: 'Give it a title of 1 to 120 characters.',
   blurb: 'The description can be up to 1,000 characters.',
   visibility: 'Who can see it is one of: only administrators, anybody signed in, or listed.',
@@ -102,6 +103,7 @@ const STATUS: Partial<Record<ListRefusalCode, number>> = {
   'no-write-back': 403,
   'no-such-list': 404,
   'slug-taken': 409,
+  'slug-reserved': 409,
   'has-entries': 409,
   'no-contact-key': 503,
 };

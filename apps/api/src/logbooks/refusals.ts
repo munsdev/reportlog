@@ -17,7 +17,8 @@ const SENTENCES = {
   'no-field': 'There is no such question in this logbook.',
   title: 'Give it a title of 1 to 120 characters.',
   slug: 'A web address may use lowercase letters, numbers and hyphens, and must start with a letter or number.',
-  'slug-taken': 'Another logbook already uses that web address. Choose a different one.',
+  'slug-taken': 'Another logbook or list already uses that web address. Choose a different one.',
+  'slug-reserved': 'That web address belongs to a page of the site. Choose a different one.',
   kind: 'That is not a kind of question this software can ask.',
   'setting-kind': 'That setting does not apply to this kind of question, so it is not kept.',
   label: 'Give the question some words, up to 160 characters.',
@@ -139,6 +140,7 @@ const STATUS: Partial<Record<RefusalCode, number>> = {
   'already-launched': 409,
   'has-reports': 409,
   'slug-taken': 409,
+  'slug-reserved': 409,
   'key-taken': 409,
 };
 
