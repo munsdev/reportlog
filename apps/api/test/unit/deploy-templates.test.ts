@@ -88,7 +88,7 @@ describe('describing a template', () => {
   });
 
   it('describes its logbook from the file, so the count cannot go stale', () => {
-    const [line] = describeSettings({ logbook: 'elections-choices' });
+    const [line] = describeSettings({ logbook: 'how-voting-went' });
     expect(line).toMatch(
       /^Makes a draft logbook, “.+”, with \d+ questions, all of them choices and no files\./,
     );

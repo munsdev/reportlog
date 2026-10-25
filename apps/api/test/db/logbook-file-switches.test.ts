@@ -92,8 +92,8 @@ describe('the logbook file carries the editorial-notes switch, both ways', () =>
 
   it('a starting point that says so turns notes on, and one that says false does not', async () => {
     const on = await createFromStartingPoint(db, {
-      starting_point: 'safety-log',
-      title: 'Safety, with notes',
+      starting_point: 'elections',
+      title: 'Elections, with notes',
       slug: uniqueSlug('sp-on'),
       by: EDITOR,
     });

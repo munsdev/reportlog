@@ -103,6 +103,12 @@ and `package.json` disagree. How a release is cut is in the README.
   On a phone the previews come first and the named looks sit in a bar along the bottom of the
   screen; the full chooser is still on the page. The setup wizard's look step is laid out the
   same way.
+- The logbook starting points are fewer: How voting went, Election incidents, Workplace incidents,
+  and a new general one, "Reports", that asks what happened, when, about what time, where, whether
+  you saw it yourself and whether you have evidence, and takes up to three files. The deployment
+  starting points follow: "A general record" is new, and the election choices, internal safety
+  log and practitioner complaint ones are gone. A logbook you made from a removed one is
+  untouched; to make another like it, upload its file.
 - `sudo reportlog contact-key rotate` works. The runbook's steps for rotating the contact key
   named it, but the command answered "unknown command" and changed nothing.
 

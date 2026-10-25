@@ -121,27 +121,28 @@ describe('the report filed before any template', () => {
   });
 });
 
-describe('applying the no-files, no-free-text template', () => {
+describe('applying the general template', () => {
   let made: Awaited<ReturnType<typeof applyTemplate>>;
 
   it('applies', async () => {
-    made = await applyTemplate(h.db, 'elections-choices', BY);
-    expect(made.applied).toBe('elections-choices');
+    made = await applyTemplate(h.db, 'general', BY);
+    expect(made.applied).toBe('general');
   });
 
   it('makes the logbook its file describes, AS A DRAFT, with every question in order', async () => {
-    const file = templateLogbook('elections-choices');
+    const file = templateLogbook('general');
     expect(made.logbook?.slug).toBe(file.slug);
     const lb = await L.logbookBySlug(h.db, file.slug ?? '');
     // Launching is never done on anybody's behalf.
     expect(lb?.state).toBe('draft');
-    expect(lb?.asks_for_files).toBe(false);
+    expect(lb?.asks_for_files).toBe(true);
     const qs = await L.fieldsFor(h.db, made.logbook?.id ?? 0);
-    expect(qs.map((q) => q.key)).toEqual(file.questions.map((q) => q.key));
+    // The file says it takes files, which becomes an upload question at the end.
+    expect(qs.map((q) => q.key)).toEqual([...file.questions.map((q) => q.key), 'attachments']);
   });
 
   it('sets the switches it names, each where its own screen would', async () => {
-    expect(await switches()).toEqual({ publicArchive: true, attachments: false, intake: true });
+    expect(await switches()).toEqual({ publicArchive: false, attachments: true, intake: true });
     // Recorded as set by somebody, the way each screen records it.
     const by = await h.db
       .selectFrom('moderation_settings')
@@ -151,12 +152,12 @@ describe('applying the no-files, no-free-text template', () => {
   });
 
   it('writes the page text it carries', async () => {
-    expect((await copyOf()).home_intro).toMatch(/^Voted, worked a polling place/);
+    expect((await copyOf()).home_intro).toMatch(/^File a report\./);
   });
 
   it('records which template was applied, and when, for the record only', async () => {
     const r = await record();
-    expect(r.template_applied).toBe('elections-choices');
+    expect(r.template_applied).toBe('general');
     expect(r.template_applied_at).not.toBeNull();
   });
 
@@ -169,8 +170,8 @@ describe('applying the no-files, no-free-text template', () => {
 
 describe('applying it again', () => {
   it('makes a SECOND draft rather than touching the first, which may be launched by now', async () => {
-    const again = await applyTemplate(h.db, 'elections-choices', BY);
-    expect(again.logbook?.slug).toBe(`${templateLogbook('elections-choices').slug ?? ''}-2`);
+    const again = await applyTemplate(h.db, 'general', BY);
+    expect(again.logbook?.slug).toBe(`${templateLogbook('general').slug ?? ''}-2`);
   });
 });
 
@@ -333,7 +334,10 @@ describe('over HTTP', () => {
     }>();
     expect(body.templates.map((t) => t.id)).toEqual(TEMPLATES.map((t) => t.id));
     expect(body.applied?.id).toBe('blank');
-    const choices = body.templates.find((t) => t.id === 'elections-choices');
+    const general = body.templates.find((t) => t.id === 'general');
+    expect(general?.sets).toContain('Takes files with reports');
+    expect(general?.sets.some((l) => l.includes('and a place for files'))).toBe(true);
+    const choices = body.templates.find((t) => t.id === 'voting-log');
     expect(choices?.sets).toContain('Takes no files');
     expect(choices?.sets.some((l) => l.includes('all of them choices and no files'))).toBe(true);
   });
@@ -345,12 +349,12 @@ describe('over HTTP', () => {
     )({
       method: 'POST',
       url: '/api/admin/templates',
-      payload: { template: 'safety-log' },
+      payload: { template: 'workplace' },
     });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
-      applied: 'safety-log',
-      logbook: { title: 'Safety observations' },
+      applied: 'workplace',
+      logbook: { title: 'Incident reports' },
     });
   });
 
@@ -386,6 +390,6 @@ describe('over HTTP', () => {
       payload: { template: 'blank' },
     });
     expect(res.statusCode).toBe(403);
-    expect((await record()).template_applied).toBe('safety-log');
+    expect((await record()).template_applied).toBe('workplace');
   });
 });

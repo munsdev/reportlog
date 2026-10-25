@@ -114,19 +114,17 @@ test('a logbook made from a starting point arrives as a draft with its questions
 }) => {
   await page.goto('/logbooks');
   await page.getByRole('button', { name: 'Make a logbook' }).click();
-  await page.getByLabel(/^Election day: how did it go\?/).check();
+  await page.getByLabel(/^Log how voting went/).check();
   await page.getByRole('button', { name: 'Make the draft' }).click();
-  await expect(
-    page.getByRole('heading', { level: 1, name: 'Election day: how did it go?' }),
-  ).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Log how voting went' })).toBeVisible();
   await expect(page.getByText('Draft: still being written')).toBeVisible();
   await expect(
     page.getByRole('list', { name: 'The questions, in order' }).getByRole('listitem'),
-  ).toHaveCount(9);
+  ).toHaveCount(11);
 
   // A draft can be deleted, by typing its title.
   const del = page.getByRole('region', { name: 'Delete this draft' });
-  await del.getByLabel(/Type the title/).fill('Election day: how did it go?');
+  await del.getByLabel(/Type the title/).fill('Log how voting went');
   await del.getByRole('button', { name: 'Delete this draft' }).click();
   await expect(page).toHaveURL(/\/logbooks$/);
 });

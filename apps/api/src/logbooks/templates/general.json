@@ -1,0 +1,68 @@
+{
+  "reportlog_logbook": 1,
+  "title": "Reports",
+  "slug": "reports",
+  "blurb": "Something happened. Say what, and when.",
+  "accepts_files": true,
+  "max_files": 3,
+  "questions": [
+    {
+      "key": "account",
+      "kind": "long_text",
+      "label": "What happened?",
+      "help": "In your own words. What you saw, who was involved, what happened next.",
+      "required": true,
+      "filterable": false
+    },
+    {
+      "key": "date",
+      "kind": "date",
+      "label": "What day was it?",
+      "required": true,
+      "filterable": false
+    },
+    {
+      "key": "time",
+      "kind": "time",
+      "label": "About what time?",
+      "required": false,
+      "filterable": false
+    },
+    {
+      "key": "place",
+      "kind": "short_text",
+      "label": "Where?",
+      "help": "The place, the street, or as near as you can say.",
+      "required": false,
+      "filterable": false
+    },
+    {
+      "key": "saw",
+      "kind": "choice_one",
+      "label": "Did you see it yourself?",
+      "required": true,
+      "filterable": false,
+      "options": ["I saw it myself", "Someone told me about it", "I saw it online or in the news"]
+    },
+    {
+      "key": "has_evidence",
+      "kind": "evidence_declaration",
+      "label": "Do you have photos, video, audio or documents of this?",
+      "help": "Nothing is uploaded by answering this. It only tells us something exists, so we can ask you for it if it turns out to matter.",
+      "required": false,
+      "filterable": false
+    },
+    {
+      "key": "evidence_of",
+      "kind": "short_text",
+      "label": "What is it of?",
+      "help": "One line. 'Thirty seconds of the queue outside', or 'a photo of the notice on the door'.",
+      "required": false,
+      "filterable": false,
+      "shown_when": {
+        "field": "has_evidence",
+        "in": ["yes"]
+      }
+    }
+  ]
+}
