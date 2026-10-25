@@ -522,7 +522,7 @@ run_update_request() {
     update_check >/dev/null 2>&1 || true
   fi
   if [ "$rc" -eq 0 ]; then
-    update_status done "$action" "$sha"
+    update_status "done" "$action" "$sha"
   else
     update_status failed "$action" "$sha"
   fi
