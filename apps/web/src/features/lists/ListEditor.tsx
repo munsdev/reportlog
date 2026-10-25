@@ -144,6 +144,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
 
 function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Promise<void> }) {
   const [title, setTitle] = useState(list.title);
+  const [slug, setSlug] = useState(list.slug);
   const [blurb, setBlurb] = useState(list.blurb ?? '');
   const [visibility, setVisibility] = useState<ListVisibility>(list.visibility);
   const [outside, setOutside] = useState<ListOutsideAccess>(list.outside_access);
@@ -169,6 +170,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
         params: { id: list.id },
         body: {
           title,
+          ...(slug.trim() !== list.slug ? { slug: slug.trim() } : {}),
           blurb,
           visibility,
           outside_access: outside,
@@ -205,6 +207,18 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
               value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
+              }}
+            />
+          </Field>
+          <Field>
+            <Label>Web address</Label>
+            <FieldDescription>
+              {`The form is at /${slug.trim() || '…'}. Lowercase letters, numbers and hyphens. Changing it stops the old address working.`}
+            </FieldDescription>
+            <Input
+              value={slug}
+              onChange={(e) => {
+                setSlug(e.target.value);
               }}
             />
           </Field>

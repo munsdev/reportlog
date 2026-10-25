@@ -337,6 +337,8 @@ export const updateList = defineRoute({
   params: ListIdParams,
   body: z.object({
     title: z.string().optional(),
+    /** The web address. Old addresses stop working when it changes. */
+    slug: z.string().optional(),
     blurb: z.string().nullable().optional(),
     visibility: z.string().optional(),
     outside_access: z.string().optional(),
