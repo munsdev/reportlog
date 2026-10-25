@@ -110,6 +110,7 @@ function summaries(db: Db) {
     'logbooks.email_required',
     'logbooks.publish_by_terms',
     'logbooks.show_on_front',
+    'logbooks.short_slug',
     // What E1's email rule reads: each question's kind and settings.
     sql<{ kind: string; settings: FieldSettings | null }[] | null>`(
       SELECT json_agg(json_build_object('kind', f.kind, 'settings', f.settings))
@@ -157,6 +158,7 @@ function present(row: SummaryRow): LogbookSummary {
     asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
     publish_by_terms: row.publish_by_terms,
     show_on_front: row.show_on_front,
+    short_slug: row.short_slug,
   };
 }
 
@@ -211,6 +213,16 @@ export async function launchedLogbooks(db: Db): Promise<LogbookSummary[]> {
 
 export async function logbookById(db: Db, id: number): Promise<LogbookSummary | null> {
   const row = await summaries(db).where('logbooks.id', '=', id).executeTakeFirst();
+  return row ? present(row) : null;
+}
+
+/** By slug, or by the short address an operator gave it. The answer carries the real slug. */
+export async function logbookByAddress(db: Db, address: string): Promise<LogbookSummary | null> {
+  const row = await summaries(db)
+    .where((eb) =>
+      eb.or([eb('logbooks.slug', '=', address), eb('logbooks.short_slug', '=', address)]),
+    )
+    .executeTakeFirst();
   return row ? present(row) : null;
 }
 
@@ -395,6 +407,7 @@ export async function updateDetails(
     email_required?: boolean | undefined;
     publish_by_terms?: boolean | undefined;
     show_on_front?: boolean | undefined;
+    short_slug?: string | null | undefined;
   },
 ): Promise<LogbookSummary> {
   const set: {
@@ -403,6 +416,7 @@ export async function updateDetails(
     email_required?: boolean;
     publish_by_terms?: boolean;
     show_on_front?: boolean;
+    short_slug?: string | null;
     updated_at: Date;
   } = {
     updated_at: new Date(),
@@ -418,6 +432,17 @@ export async function updateDetails(
   // Whether the front page advertises it. Presentation only, so it too stays
   // changeable after launch.
   if (spec.show_on_front !== undefined) set.show_on_front = spec.show_on_front;
+  // The short address is a second name, never sealed, so it stays changeable.
+  if (spec.short_slug !== undefined) {
+    const s = (spec.short_slug ?? '').trim().toLowerCase();
+    if (!s) set.short_slug = null;
+    else {
+      if (!SLUG_RE.test(s)) refuse('slug');
+      const block = await slugBlock(db, s, 'logbook', id);
+      if (block) refuse(block === 'reserved' ? 'slug-reserved' : 'slug-taken');
+      set.short_slug = s;
+    }
+  }
   const done = await db.updateTable('logbooks').set(set).where('id', '=', id).executeTakeFirst();
   if (!done.numUpdatedRows) refuse('no-logbook');
   return (await logbookById(db, id)) ?? refuse('no-logbook');

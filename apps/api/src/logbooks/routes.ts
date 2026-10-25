@@ -63,7 +63,7 @@ import {
   fieldsFor,
   launch,
   launchedLogbooks,
-  logbookBySlug,
+  logbookByAddress,
   logbookDetail,
   listLogbooks,
   openLogbooks,
@@ -125,7 +125,8 @@ export function logbookRoutes(
   });
 
   route(app, getPublicLogbook, async ({ params }) => {
-    const lb = await logbookBySlug(db, params.slug);
+    // The address may be the short one; the answer carries the real slug.
+    const lb = await logbookByAddress(db, params.slug);
     // A draft is not merely closed to filing: it does not exist publicly.
     if (!lb || lb.state === 'draft') throw notFound('There is no logbook at that address.');
     const fields = await fieldsFor(db, lb.id);
@@ -205,6 +206,7 @@ export function logbookRoutes(
           email_required?: boolean;
           publish_by_terms?: boolean;
           show_on_front?: boolean;
+          short_slug?: string | null;
         },
       );
       return logbookDetail(db, id);

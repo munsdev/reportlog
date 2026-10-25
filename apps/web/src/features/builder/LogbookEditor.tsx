@@ -90,6 +90,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
           {lb.asks_for_files ? <Chip tone="tag">Takes files</Chip> : null}
           <span data-filing-address className="font-mono text-sm break-all text-muted">
             /file/{lb.slug}
+            {lb.short_slug ? ` · /${lb.short_slug}` : ''}
           </span>
         </p>
         {launched ? (
@@ -184,14 +185,24 @@ function Downloads({ lb }: { lb: LogbookDetail }) {
 function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
   const [title, setTitle] = useState(lb.title);
   const [blurb, setBlurb] = useState(lb.blurb ?? '');
+  const [short, setShort] = useState(lb.short_slug ?? '');
   const save = useMutation({
-    mutationFn: () => call(updateLogbook, { params: { id: lb.id }, body: { title, blurb } }),
+    mutationFn: () =>
+      call(updateLogbook, {
+        params: { id: lb.id },
+        body: {
+          title,
+          blurb,
+          ...(short.trim() !== (lb.short_slug ?? '') ? { short_slug: short.trim() || null } : {}),
+        },
+      }),
     onSuccess: refresh,
   });
   return (
     <Panel title="Title and description">
       <p className="text-sm text-muted">
-        Neither is part of the questions, so both can change at any time. The web address cannot.
+        Neither is part of the questions, so both can change at any time. The web address /file/
+        {lb.slug} cannot, but the short address below can.
       </p>
       <form
         className="space-y-3"
@@ -212,6 +223,21 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
             />
           )}
         </Field>
+        <Field
+          label="Short web address (optional)"
+          help={`The form also opens at /${short.trim() || '…'}. Lowercase letters, numbers and hyphens. The long address keeps working.`}
+        >
+          {(p) => (
+            <TextInput
+              {...p}
+              value={short}
+              maxLength={63}
+              onChange={(e) => {
+                setShort(e.target.value);
+              }}
+            />
+          )}
+        </Field>
         <Field label="Description (optional)">
           {(p) => (
             <TextArea
@@ -225,7 +251,7 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
         </Field>
         <Problem error={save.error} />
         <Button type="submit" variant="secondary" disabled={save.isPending}>
-          Save the title and description
+          Save
         </Button>
         {save.isSuccess && <p role="status">Saved.</p>}
       </form>

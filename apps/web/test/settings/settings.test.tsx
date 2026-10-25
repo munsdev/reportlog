@@ -105,6 +105,7 @@ const logbook = (id: number, state: 'draft' | 'open' | 'closed') => ({
   email_required: false,
   publish_by_terms: false,
   show_on_front: true,
+  short_slug: null,
   asks_email: true,
 });
 

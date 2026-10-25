@@ -229,6 +229,7 @@ export async function createFromTemplate(
 
 export interface SettingsPatch {
   title?: string | undefined;
+  slug?: string | undefined;
   blurb?: string | null | undefined;
   visibility?: string | undefined;
   outside_access?: string | undefined;
@@ -261,6 +262,23 @@ export async function updateSettings(
     const t = patch.title.trim();
     if (!t || t.length > 120) refuse('title');
     set.title = t;
+  }
+  // A list's address is not sealed anywhere (an entry is not a report), so it
+  // can move; the old address simply stops resolving.
+  if (patch.slug !== undefined) {
+    const s = patch.slug.trim().toLowerCase();
+    if (!SLUG.test(s)) refuse('slug');
+    if (s !== list.slug) {
+      const taken = await db
+        .selectFrom('lists')
+        .select('id')
+        .where('slug', '=', s)
+        .executeTakeFirst();
+      if (taken) refuse('slug-taken');
+      const block = await slugBlock(db, s, 'list');
+      if (block) refuse(block === 'reserved' ? 'slug-reserved' : 'slug-taken');
+      set.slug = s;
+    }
   }
   if (patch.blurb !== undefined) {
     const b = (patch.blurb ?? '').trim();

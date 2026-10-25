@@ -8,9 +8,10 @@
  * logbook's slug answers "locked" to a visitor without it, and the cache's
  * locked handler would send them to the password screen from a logbook that
  * is open to them. Anything that is not a list falls through to the logbook
- * form, which says "not found" itself.
+ * form, which says "not found" itself. A logbook's short address (short_slug)
+ * resolves to its real slug first, and the form files under the real one.
  */
-import { getListForm } from '@reportlog/contracts';
+import { getListForm, getPublicLogbook } from '@reportlog/contracts';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { FilingForm } from '../features/form/FilingForm.tsx';
@@ -25,16 +26,31 @@ export const Route = createFileRoute('/$slug')({
 function RootSlugPage() {
   const { slug } = Route.useParams();
   const { history } = useRouter();
-  const [found, setFound] = useState<{ slug: string; kind: 'list' | 'logbook' } | null>(null);
+  const [found, setFound] = useState<{
+    slug: string;
+    kind: 'list' | 'logbook';
+    real: string;
+  } | null>(null);
 
   useEffect(() => {
     const ac = new AbortController();
     call(getListForm, { params: { slug }, signal: ac.signal }).then(
       () => {
-        setFound({ slug, kind: 'list' });
+        setFound({ slug, kind: 'list', real: slug });
       },
       () => {
-        if (!ac.signal.aborted) setFound({ slug, kind: 'logbook' });
+        if (ac.signal.aborted) return;
+        // A logbook may be reached by its short address; the read answers
+        // with its real slug, which is what the form files under. Anything
+        // else goes on as the address given, and the form says "not found".
+        call(getPublicLogbook, { params: { slug }, signal: ac.signal }).then(
+          (lb) => {
+            setFound({ slug, kind: 'logbook', real: lb.slug });
+          },
+          () => {
+            if (!ac.signal.aborted) setFound({ slug, kind: 'logbook', real: slug });
+          },
+        );
       },
     );
     return () => {
@@ -52,6 +68,6 @@ function RootSlugPage() {
   return found.kind === 'list' ? (
     <ListFormPage slug={slug} />
   ) : (
-    <FilingForm slug={slug} history={history} />
+    <FilingForm slug={found.real} history={history} />
   );
 }

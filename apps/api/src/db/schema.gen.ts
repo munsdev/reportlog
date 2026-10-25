@@ -642,6 +642,7 @@ export interface Logbooks {
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
   publish_by_terms: Generated<boolean>;
+  short_slug: string | null;
   show_on_front: Generated<boolean>;
   slug: string;
   title: string;
