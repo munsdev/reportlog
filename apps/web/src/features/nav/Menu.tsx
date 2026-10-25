@@ -99,9 +99,6 @@ function MainAction({ onChoose, block }: { onChoose: () => void; block: boolean 
 const PUBLIC_LINKS: readonly { to: NonNullable<LinkProps['to']>; label: string; hash?: string }[] =
   [
     { to: '/board', label: 'Board' },
-    // The front page's "Check a report" until /verify has a page of its own
-    // (docs/design/screens/public.md, section 06); then it points there.
-    { to: '/', hash: 'check-a-report', label: 'Check a report' },
     { to: '/how', label: 'How to use' },
     { to: '/about', label: 'About' },
     { to: '/organizations', label: DIRECTORY_NAME },

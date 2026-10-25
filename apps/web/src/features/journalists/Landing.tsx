@@ -43,17 +43,6 @@ export function JournalistsLanding() {
           </p>
         </Card>
       </div>
-      <p>
-        Already approved?{' '}
-        <Link
-          to="/access/sign-in"
-          search={{ next: '/desk' }}
-          className="underline underline-offset-2"
-        >
-          Sign in
-        </Link>{' '}
-        with your address, type the code we email you, accept the agreement, and the desk opens.
-      </p>
     </PublicPage>
   );
 }

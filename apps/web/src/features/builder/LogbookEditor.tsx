@@ -34,6 +34,7 @@ import { KeyValueList } from '../../components/ui/key-value-list.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { CoverPanel } from './CoverPanel.tsx';
 import { Check, Field, Panel, Problem, TextArea, TextInput } from './controls.tsx';
 import { logbookQuery, logbooksQuery } from './queries.ts';
 import { QuestionForm } from './QuestionForm.tsx';
@@ -110,6 +111,14 @@ function Editor({ lb }: { lb: LogbookDetail }) {
       </div>
 
       <Details lb={lb} refresh={refresh} />
+      <CoverPanel
+        kind="logbook"
+        cover={lb.cover}
+        save={async (cover) => {
+          await call(updateLogbook, { params: { id: lb.id }, body: { cover } });
+          await refresh();
+        }}
+      />
       <EmailRule lb={lb} refresh={refresh} />
       <PublicationRule lb={lb} refresh={refresh} />
       <FrontPageSwitch lb={lb} refresh={refresh} />

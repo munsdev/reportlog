@@ -8,8 +8,6 @@
  */
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckAReport } from '@/features/board/CheckAReport.tsx';
 import { PublicPage } from './PublicPage.tsx';
 
 export function NotFoundPage() {
@@ -27,9 +25,6 @@ export function NotFoundPage() {
           </Button>
         </li>
       </ul>
-      <Card variant="quiet">
-        <CheckAReport label="Looking for a report? Enter its reference." help={null} />
-      </Card>
     </PublicPage>
   );
 }

@@ -180,7 +180,7 @@ export async function buttonTargets(db: Db, sources: ButtonSources = {}): Promis
       kind: 'logbook',
       ref: l.slug,
       label: l.title,
-      href: `/file/${l.slug}`,
+      href: l.short_slug ? `/${l.short_slug}` : `/file/${l.slug}`,
       action: null,
       blurb: l.blurb,
       help: null,

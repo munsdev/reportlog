@@ -136,7 +136,16 @@ function Home() {
           <HomeButtons buttons={buttons} published={published} siteName={name} />
         )
       }
-      helpNow={site ? <HelpNow text={site.copy.help_now} /> : null}
+      helpNow={
+        site ? (
+          <HelpNow
+            text={site.copy.help_now}
+            heading={site.copy.cta_heading}
+            buttonLabel={site.copy.cta_button_label}
+            buttonUrl={site.copy.cta_button_url}
+          />
+        ) : null
+      }
       sections={sections}
     />
   );

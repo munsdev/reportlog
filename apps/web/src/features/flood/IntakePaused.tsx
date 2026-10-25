@@ -40,11 +40,6 @@ export function PauseBanner() {
       <Alert title="Intake is paused">
         {/* The operator's words (site copy), sent with the pause. */}
         <span data-copy="intake_paused_notice">{pause.notice}</span>
-        {pause.since ? (
-          <span className="text-sm text-ink-alt">
-            Paused since {new Date(pause.since).toLocaleString()}.
-          </span>
-        ) : null}
       </Alert>
     </div>
   );

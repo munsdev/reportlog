@@ -27,6 +27,7 @@ import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
+import { CoverPanel } from '../builder/CoverPanel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
@@ -135,6 +136,14 @@ function Editor({ list }: { list: ListAdminDetail }) {
       }
     >
       <Settings list={list} onSaved={refresh} />
+      <CoverPanel
+        kind="list"
+        cover={list.cover}
+        save={async (cover) => {
+          await call(updateList, { params: { id: list.id }, body: { cover } });
+          await refresh();
+        }}
+      />
       <Questions key={list.fields.map((f) => f.id).join('-')} list={list} onSaved={refresh} />
       <Counts list={list} />
       <Remove list={list} />

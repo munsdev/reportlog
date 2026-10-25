@@ -50,13 +50,6 @@ export function PressPage() {
       ) : null}
       {d?.state === 'ready' ? (
         <>
-          {d.version || d.built_at ? (
-            <p className="text-sm text-ink-alt">
-              {d.version ? `Version ${d.version}` : ''}
-              {d.version && d.built_at ? ', ' : ''}
-              {d.built_at ? `built ${new Date(d.built_at).toLocaleDateString()}` : ''}.
-            </p>
-          ) : null}
           {d.files.length === 0 ? <NothingYet /> : null}
           <NotASample line={d.not_a_sample} />
           {/* One row per document: its title, its kind and size in mono, and
@@ -76,7 +69,7 @@ export function PressPage() {
                   {f.blurb ? <span className="text-ink-alt">{f.blurb}</span> : null}
                   <Meta>
                     {f.bytes === null
-                      ? 'Listed in the pack, but the file is missing.'
+                      ? 'This file is missing.'
                       : `${kindOf(f.key)} · ${size(f.bytes)}`}
                     {f.version ? ` · its own version, ${f.version}` : ''}
                     {f.note ? ` · ${f.note}` : ''}

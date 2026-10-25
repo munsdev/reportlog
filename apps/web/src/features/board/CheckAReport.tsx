@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label.tsx';
 export function CheckAReport({
   label = 'Report reference',
   button = 'Check it',
-  help = 'Every report has a reference. Enter one to check it has not been changed.',
+  help = null,
 }: {
   label?: string;
   button?: string;

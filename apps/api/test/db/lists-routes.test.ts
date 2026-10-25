@@ -393,7 +393,7 @@ describe('what a visitor can send', () => {
       await anybody({ method: 'GET', url: '/api/home-buttons' }),
     );
     expect(buttons.buttons).toContainEqual(
-      expect.objectContaining({ kind: 'list', ref: SLUG, href: `/list/${SLUG}` }),
+      expect.objectContaining({ kind: 'list', ref: SLUG, href: `/${SLUG}` }),
     );
   });
 
@@ -837,12 +837,12 @@ describe('the site password, decided per list', () => {
       kind: 'list',
       slug: doorSlug,
       title: 'How did it go?',
-      href: `/list/${doorSlug}`,
+      href: `/${doorSlug}`,
     });
     const page = json<{ doors: { href: string }[] }>(
       await anybody({ method: 'GET', url: '/api/doors' }),
     );
-    expect(page.doors.map((d) => d.href)).toContain(`/list/${doorSlug}`);
+    expect(page.doors.map((d) => d.href)).toContain(`/${doorSlug}`);
   });
 
   it('a link list works but is not offered; a closed list stops being a door', async () => {

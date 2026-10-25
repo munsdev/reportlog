@@ -45,7 +45,9 @@ import { CheckOption } from '../../components/ui/choice.tsx';
 import { FieldReset } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
+import { useSite } from '../../components/ui/site.tsx';
 import { Eyebrow, Lede } from '../../components/ui/type.tsx';
+import { Cover } from '../form/Cover.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
@@ -316,7 +318,7 @@ function Cards({ form }: { form: Form }) {
                 }
               : undefined
           }
-          primary={last ? 'Send' : at === 0 ? 'Start' : 'Next'}
+          primary={last ? 'Send' : at === 0 ? form.cover?.button_label?.trim() || 'Start' : 'Next'}
           busy={send.isPending || sending.waiting}
           busyLabel="Sending…"
           above={
@@ -363,43 +365,29 @@ function Sent({ erasureMailed, erasable }: { erasureMailed: boolean; erasable: b
 }
 
 /**
- * The first card: the form's own title and words, then what happens to an
- * entry, in words rather than in a policy nobody opens.
+ * The first card: the shared cover (decision 78). What happens to an entry is
+ * said on the email card, where it matters.
  */
 function Intro({ form }: { form: Form }) {
-  const heading = useFocusOnMount<HTMLHeadingElement>();
-  const gone = `${form.personal_days === null ? 'when you ask' : `after ${keptFor(form.personal_days)}`}, or sooner if you use the link we email you`;
-  const address: Record<Form['email_when'], string> = {
-    always:
-      form.email_reason === 'reply'
-        ? `This form asks for your email address, so whoever runs this site can reply. What you write and your address are deleted ${gone}.`
-        : `This form asks for your email address, so you can have what you send deleted. What you write and your address are deleted ${gone}.`,
-    'if-written': `Writing anything is up to you. If you do, you will be asked for an email address, so you can have it deleted; it is deleted ${gone}. Links and choices are kept.`,
-    never: 'Nothing here asks about you, and no email address is needed.',
-  };
+  const site = useSite().data?.copy;
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>Send something</Eyebrow>
-        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
-          {form.title}
-        </h1>
-        {form.blurb ? <Lede className="whitespace-pre-wrap">{form.blurb}</Lede> : null}
-      </div>
-      <section aria-labelledby="list-before" className="flex max-w-prose flex-col gap-3">
-        <h2 id="list-before" className="label-face text-xs text-muted">
-          Before you start
-        </h2>
-        <p>
-          Nothing you send here is published. A moderator reads it, and at most a count of the
-          answers is ever made public.
-        </p>
-        <p>{address[form.email_when]}</p>
-        {form.write_back ? (
-          <p>The team will use your email address to write back to you about what you send.</p>
-        ) : null}
-      </section>
-    </div>
+    <Cover
+      kind="list"
+      title={form.title}
+      blurb={form.blurb}
+      cover={form.cover}
+      // On a door the site cannot be asked, so a cover that follows it draws nothing.
+      site={
+        site
+          ? {
+              text: site.help_now,
+              heading: site.cta_heading,
+              buttonLabel: site.cta_button_label,
+              buttonUrl: site.cta_button_url,
+            }
+          : null
+      }
+    />
   );
 }
 

@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { GuidesIndex } from '../../features/site-pages/Guides.tsx';
+import { Navigate, createFileRoute } from '@tanstack/react-router';
 
+// The guides are for whoever runs the archive, not for visitors, so the
+// public addresses send visitors to How to use this.
 export const Route = createFileRoute('/docs/')({
-  component: GuidesIndex,
+  component: () => <Navigate to="/how" replace />,
 });

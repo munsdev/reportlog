@@ -5,6 +5,7 @@ export * from './publication.ts';
 export * from './verify.ts';
 export * from './site.ts';
 export * from './identity.ts';
+export * from './cover.ts';
 export * from './logbooks.ts';
 export * from './lists.ts';
 export * from './filing.ts';

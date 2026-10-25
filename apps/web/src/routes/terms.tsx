@@ -36,15 +36,13 @@ function TermsPage() {
         <p>
           A report is published only after a moderator approves it, and only if you said it may be
           published. Approving a report is a judgement that it may be published, not a finding that
-          it is true. Once filed, a report is sealed: if you gave an address, you can correct it
-          with a new version, and a change shows.
+          it is true.
         </p>
         <p>
           If a moderator decides not to publish your report, and your email address is still
           readable, we email you the reason, chosen from a fixed list, and a link to these terms. If
           you erased your address, or the form did not ask for one, we cannot write to you, and the
-          decision stands. Reports declined together during a flood of identical reports are not
-          emailed one by one; declined reports are counted by reason on the board’s activity page.
+          decision stands.
         </p>
       </section>
 

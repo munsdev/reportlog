@@ -71,9 +71,6 @@ export function NumbersPage() {
             </section>
           ))}
           <MapSlot slot="board_numbers" />
-          <p className="text-sm text-ink-alt">
-            As of <Meta>{new Date(d.as_of).toLocaleString()}</Meta>.
-          </p>
         </>
       ) : null}
     </BoardFrame>

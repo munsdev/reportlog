@@ -32,7 +32,9 @@ import type { Retention } from './retention.ts';
 import { pendingCount } from './review.ts';
 import { iso, isAccepting, listById } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
+import { coverOf } from '../site/cover.ts';
 import { slugBlock } from '../site/slugs.ts';
+import type { Cover } from '@reportlog/contracts';
 import { shippedTemplate, shippedTemplates } from './templates.ts';
 import type { ListTemplate } from './templates.ts';
 
@@ -50,6 +52,7 @@ export function describe(list: LoadedList, now: Date = new Date()) {
     slug: list.slug,
     title: list.title,
     blurb: list.blurb,
+    cover: coverOf(list.cover),
     visibility: list.visibility as (typeof VISIBILITIES)[number],
     outside_access: list.outside_access as (typeof OUTSIDE)[number],
     email_mode: list.email_mode as (typeof EMAIL_MODES)[number],
@@ -231,6 +234,7 @@ export interface SettingsPatch {
   title?: string | undefined;
   slug?: string | undefined;
   blurb?: string | null | undefined;
+  cover?: Cover | null | undefined;
   visibility?: string | undefined;
   outside_access?: string | undefined;
   email_mode?: string | undefined;
@@ -285,6 +289,7 @@ export async function updateSettings(
     if (b.length > 1000) refuse('blurb');
     set.blurb = b || null;
   }
+  if (patch.cover !== undefined) set.cover = patch.cover === null ? null : JSON.stringify(patch.cover);
   const visibility = patch.visibility ?? list.visibility;
   if (patch.visibility !== undefined) {
     if (!VISIBILITIES.includes(patch.visibility as 'hidden')) refuse('visibility');
@@ -559,7 +564,7 @@ export async function listButtons(db: Db, now: Date = new Date()) {
     return {
       ref: l.slug,
       label: l.title,
-      href: `/list/${l.slug}`,
+      href: `/${l.slug}`,
       blurb: l.blurb,
       showing: why === null,
       why_not: why,
@@ -575,5 +580,5 @@ export async function listButtons(db: Db, now: Date = new Date()) {
 export async function listDoors(db: Db) {
   return (await openListedLists(db))
     .filter((l) => l.outside_access === 'door')
-    .map((l) => ({ kind: 'list' as const, slug: l.slug, title: l.title, href: `/list/${l.slug}` }));
+    .map((l) => ({ kind: 'list' as const, slug: l.slug, title: l.title, href: `/${l.slug}` }));
 }

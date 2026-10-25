@@ -69,7 +69,15 @@ import {
 } from './FrontPage.tsx';
 
 /** The wording slots that are on the front page. */
-const KEYS = ['home_headline', 'home_lede', 'home_intro', 'help_now'] as const;
+const KEYS = [
+  'home_headline',
+  'home_lede',
+  'home_intro',
+  'help_now',
+  'cta_heading',
+  'cta_button_label',
+  'cta_button_url',
+] as const;
 type FrontKey = (typeof KEYS)[number] & CopyKey;
 type Copy = Record<FrontKey, string>;
 
@@ -491,8 +499,17 @@ function Editing({
         helpNow={
           <Card variant="deep" className="gap-2">
             <h2 className="label-face text-sm text-brand-on-deep">
-              If someone needs help right now
+              {copy.cta_heading.trim() || 'If someone needs help right now'}
             </h2>
+            <Field>
+              <Label className="text-on-deep">{labelOf(editor, 'cta_heading')}</Label>
+              <Input
+                value={copy.cta_heading}
+                onChange={(e) => {
+                  word('cta_heading')(e.target.value);
+                }}
+              />
+            </Field>
             <Field>
               <Label className="text-on-deep">{labelOf(editor, 'help_now')}</Label>
               <Textarea
@@ -503,8 +520,29 @@ function Editing({
                 }}
               />
               <FieldDescription className="text-on-deep">
-                You can reword this notice; you cannot remove it. Left empty, the wording it shipped
-                with comes back.
+                This box shows on the front page and on logbook covers that follow the site. Empty,
+                the box is switched off everywhere.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <Label className="text-on-deep">{labelOf(editor, 'cta_button_label')}</Label>
+              <Input
+                value={copy.cta_button_label}
+                onChange={(e) => {
+                  word('cta_button_label')(e.target.value);
+                }}
+              />
+            </Field>
+            <Field>
+              <Label className="text-on-deep">{labelOf(editor, 'cta_button_url')}</Label>
+              <Input
+                value={copy.cta_button_url}
+                onChange={(e) => {
+                  word('cta_button_url')(e.target.value);
+                }}
+              />
+              <FieldDescription className="text-on-deep">
+                A web address or a page on this site. The button shows when it has both.
               </FieldDescription>
             </Field>
           </Card>

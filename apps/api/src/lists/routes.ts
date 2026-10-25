@@ -43,6 +43,7 @@ import {
   updateList,
   NOT_A_SAMPLE,
 } from '@reportlog/contracts';
+import { coverOf } from '../site/cover.ts';
 import type { BodyOf, ListForm } from '@reportlog/contracts';
 import {
   LOCATION_TYPE,
@@ -164,6 +165,7 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
     slug: list.slug,
     title: list.title,
     blurb: list.blurb,
+    ...(coverOf(list.cover) ? { cover: coverOf(list.cover) ?? {} } : {}),
     accepting: isAccepting(list, now),
     opens_at: iso(list.opens_at),
     closes_at: iso(list.closes_at),

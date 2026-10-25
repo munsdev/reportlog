@@ -558,6 +558,7 @@ export interface Lists {
   blurb: string | null;
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
+  cover: Json | null;
   created_at: Generated<Timestamp>;
   email_mode: Generated<string>;
   id: Generated<number>;
@@ -631,6 +632,7 @@ export interface Logbooks {
   blurb: string | null;
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
+  cover: Json | null;
   created_at: Generated<Timestamp>;
   email_required: Generated<boolean>;
   /**

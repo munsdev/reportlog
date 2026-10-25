@@ -43,7 +43,10 @@ function site(overrides: Partial<Site> = {}): Site {
     plain_name: 'Munich Archive',
     look: { palette: 'flint', theme: 'signal', panel_head: 'plain', texture: 'none' },
     copy: {
-      home_headline: 'h',
+      home_lede: 'l',
+      cta_heading: '',
+      cta_button_label: '',
+      cta_button_url: '',
       home_lede: 'l',
       home_intro: 'i',
       about_archive: 'We are the Munich archive.',
@@ -192,7 +195,7 @@ describe('the development badge', () => {
     await user.click(await screen.findByRole('button', { name: 'Under active development' }));
     expect(
       screen.getByRole('dialog', { name: 'This site is under active development' }),
-    ).toHaveTextContent('Reports you file are not affected');
+    ).toHaveTextContent('You may run into pages that look broken');
   });
 
   it('takes itself down when the window ends, without asking the server again', async () => {

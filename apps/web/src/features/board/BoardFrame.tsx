@@ -1,7 +1,8 @@
 /**
  * The board's pages share a head and a row of tabs (public.md §03, §04):
  * Reports, By the numbers, Maps (only when a map is placed on the board),
- * Arrivals and declines, Press pack. Each tab is its own address, and the one
+ * Press pack (only when it holds a document). Arrivals and declines is
+ * reached from How to use this, not from a tab. Each tab is its own address, and the one
  * being read says so, to a screen reader as `aria-current="page"` and to the
  * eye as a brand-coloured underline, never the action colour.
  *
@@ -17,6 +18,7 @@ import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
+import { pressQuery } from './Press.tsx';
 import { TabRow } from '../nav/AreaTabs.tsx';
 
 type BoardPath = '/board' | '/board/numbers' | '/board/maps' | '/board/activity' | '/board/press';
@@ -25,7 +27,6 @@ const TABS: readonly { to: BoardPath; label: string }[] = [
   { to: '/board', label: 'Reports' },
   { to: '/board/numbers', label: 'By the numbers' },
   { to: '/board/maps', label: 'Maps' },
-  { to: '/board/activity', label: 'Arrivals and declines' },
   { to: '/board/press', label: 'Press pack' },
 ];
 
@@ -34,7 +35,12 @@ export function BoardTabs() {
   const path = useRouterState({ select: (s) => s.location.pathname }).replace(/\/$/, '');
   // A tab to an empty page is a promise the board does not keep.
   const hasMaps = Boolean(placed.data?.maps.some((m) => m.slot === 'board_tab'));
-  const tabs = TABS.filter((t) => t.to !== '/board/maps' || hasMaps);
+  // Nor a Press pack tab with nothing in the pack.
+  const press = useQuery(pressQuery).data;
+  const hasPress = press?.state === 'ready' && press.files.length > 0;
+  const tabs = TABS.filter(
+    (t) => (t.to !== '/board/maps' || hasMaps) && (t.to !== '/board/press' || hasPress),
+  );
   return (
     <TabRow
       label="The board"

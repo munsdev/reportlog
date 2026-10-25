@@ -51,15 +51,14 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     kind: 'line',
     label: 'Front page headline',
     help: 'The first line anybody reads. One sentence.',
-    fallback: 'A record of what happened, that cannot be quietly changed.',
+    fallback: 'What happened, in the words of people who were there.',
   },
   {
     key: 'home_lede',
     kind: 'block',
     label: 'Front page lede',
     help: 'The paragraph under the headline, above the buttons.',
-    fallback:
-      'File a report. A moderator reviews it. Once it is filed, nobody — including whoever runs this archive — can alter or remove it without that being visible.',
+    fallback: 'File a report. A moderator reads it before anything is public.',
   },
   {
     key: 'home_intro',
@@ -234,20 +233,46 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
       'Intake is paused. The moderators have stopped taking new reports and tips for now, usually because of a flood of submissions. Everything already sent is safe. Please try again later.',
   },
   {
-    // DECISION 62. The emergency notice, drawn on the front page and on every
-    // logbook's opening card. NEVER OPTIONAL, so it can be reworded and never
-    // blanked: saving it empty goes back to this wording (null means "use what
-    // ships"), and no stored value can make it vanish. Sent with the logbook's
-    // own form call too (logbooks/routes.ts), because a door may not ask for
-    // the site's wording. No figures: a door shows it, and figures count what
-    // the password protects.
+    // DECISIONS 62 AND 78. The site-wide call to action box, drawn on the
+    // front page and on every logbook's opening card (a logbook or list may
+    // hide it or write its own). Saved empty, it is OFF: that is stored as an
+    // empty row, not as no row (no row means the shipped wording). Sent with
+    // the logbook's own form call too (logbooks/routes.ts), because a door may
+    // not ask for the site's wording. No figures: a door shows it, and
+    // figures count what the password protects.
     key: 'help_now',
     kind: 'block',
     figures: false,
-    label: 'If someone needs help right now',
-    help: 'Shown on the front page and before every report is started. Who to call instead of filing, in an emergency. You can reword it; you cannot remove it. Saved empty, it goes back to the shipped wording.',
+    label: 'Call to action text',
+    help: 'The box shown on the front page and before every report is started, unless a logbook hides it or words its own. By default, who to call instead of filing in an emergency. Saved empty, the box is switched off everywhere.',
     fallback:
       'This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.',
+  },
+  {
+    key: 'cta_heading',
+    kind: 'line',
+    figures: false,
+    label: 'Call to action heading',
+    help: 'The heading of the box. Left empty, the shipped heading comes back.',
+    fallback: 'If someone needs help right now',
+  },
+  {
+    key: 'cta_button_label',
+    kind: 'line',
+    figures: false,
+    label: 'Call to action button text',
+    help: 'Optional. A button under the text. It only shows when a link is set too.',
+    optional: true,
+    fallback: '',
+  },
+  {
+    key: 'cta_button_url',
+    kind: 'line',
+    figures: false,
+    label: 'Call to action button link',
+    help: 'Optional. A web address (https://…) or a path on this site (/about).',
+    optional: true,
+    fallback: '',
   },
 ];
 
@@ -262,6 +287,8 @@ export interface CopyRow {
 
 function written(rows: readonly CopyRow[], key: string): string | null {
   const stored = rows.find((r) => r.key === key)?.body;
+  // Decision 78: an empty call to action text is a choice (the box is off).
+  if (key === 'help_now' && typeof stored === 'string') return stored.trim();
   return typeof stored === 'string' && stored.trim() ? stored : null;
 }
 
@@ -320,7 +347,7 @@ export function validateCopy(
     return {
       ok: false,
       error:
-        'The emergency notice cannot show numbers: it is shown where the figures are not. Take out the {{ }}.',
+        'The call to action cannot show numbers: it is shown where the figures are not. Take out the {{ }}.',
     };
   }
   if (slot.figures === false && raw.includes('{{')) {
@@ -330,5 +357,7 @@ export function validateCopy(
         'The password screen cannot show numbers: they count what the password protects. Take out the {{ }}.',
     };
   }
+  // Decision 78: saved empty, the call to action is OFF (an empty row).
+  if (slot.key === 'help_now') return { ok: true, value: { key: slot.key, body: raw.trim() } };
   return { ok: true, value: { key: slot.key, body: raw.trim() ? raw : null } };
 }

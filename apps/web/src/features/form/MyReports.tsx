@@ -449,8 +449,7 @@ function Withdraw({ r }: { r: MyReportDetail }) {
   return (
     <Section title="Withdraw it">
       <p className="text-ink-alt">
-        It comes off the public board. It stays in the archive, sealed, because nothing in it can be
-        deleted.
+        It comes off the public board. It stays in the archive, because nothing in it can be deleted.
       </p>
       <Field>
         <Label>Why are you withdrawing it?</Label>
@@ -494,8 +493,8 @@ function Erase({ r }: { r: MyReportDetail }) {
   return (
     <Section title="Erase your contact details">
       <p className="text-ink-alt">
-        Your email address is destroyed. Your report is not withdrawn: it stays as it is, sealed (it
-        never held your address), and is published or not exactly as before. Afterwards it no longer
+        Your email address is destroyed. Your report is not withdrawn: it stays as it is (it never
+        held your address), and is published or not exactly as before. Afterwards it no longer
         appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
       <CheckOption

@@ -258,8 +258,5 @@ describe('the page for a wrong address', () => {
     expect(screen.getByText('There is no page at this address.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board');
-    expect(
-      screen.getByRole('textbox', { name: /Looking for a report\? Enter its reference\./ }),
-    ).toBeInTheDocument();
   });
 });

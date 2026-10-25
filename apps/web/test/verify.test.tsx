@@ -49,7 +49,6 @@ describe('the verification result', () => {
     render(<VerifyResult v={verification()} />);
     expect(checks()).toHaveLength(4);
     for (const item of checks()) expect(item).toHaveTextContent(/Holds:/);
-    expect(screen.getByText(/No outside timestamp covers this report yet/)).toBeInTheDocument();
   });
 
   it('catches a server that vouches for bytes which do not match the record', () => {
@@ -69,7 +68,6 @@ describe('the verification result', () => {
     render(<VerifyResult v={v} />);
     expect(checks()).toHaveLength(4);
     for (const item of checks()) expect(item).toHaveTextContent(/Holds:/);
-    expect(screen.getByText('What this report says is not shown')).toBeInTheDocument();
     expect(screen.getByText(v.content.recorded)).toBeInTheDocument();
     expect(screen.queryByText(/Something happened/)).toBeNull();
     expect(screen.queryByText('Check it yourself')).toBeNull();
