@@ -98,6 +98,11 @@ and `package.json` disagree. How a release is cut is in the README.
   ("Or upload a list file", when making a list). The new list is hidden, and an address that is
   already used is refused in a sentence rather than written over. Whether the form asks for an
   email address is worked out from its questions, as it is for any list.
+- Settings › Look no longer makes you scroll away from the preview to choose. On a wide screen the
+  looks scroll on the left while the previews and the Apply button stay in view on the right.
+  On a phone the previews come first and the named looks sit in a bar along the bottom of the
+  screen; the full chooser is still on the page. The setup wizard's look step is laid out the
+  same way.
 - `sudo reportlog contact-key rotate` works. The runbook's steps for rotating the contact key
   named it, but the command answered "unknown command" and changed nothing.
 

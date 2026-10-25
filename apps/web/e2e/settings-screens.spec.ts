@@ -49,6 +49,15 @@ const PAIRS = [
   { name: 'High contrast dark with Commons', palette: 'contrast-dark', theme: 'commons' },
 ];
 
+/**
+ * A named look's radio. On a phone the looks are in two groups, the full
+ * chooser and the bar pinned to the bottom; the bar comes last in the page and
+ * is the one in view, so `.last()` is the bar there and the only one on a desktop.
+ */
+function lookRadio(page: Page, name: string | RegExp) {
+  return page.getByRole('radio', { name }).last();
+}
+
 /** Paint a look on <html> in the test, not by saving it, with nothing mid-transition. */
 async function wear(page: Page, palette: string, theme: string) {
   const t = PACK.themes.find((x) => x.id === theme);
@@ -152,7 +161,7 @@ test.describe('as an administrator', () => {
     page.on('request', (r) => {
       if (r.method() !== 'GET' && r.url().includes('/api/')) writes += 1;
     });
-    await page.getByRole('radio', { name: 'Green screen' }).click();
+    await lookRadio(page, 'Green screen').click();
     await expect(status).toContainText('You are previewing Green screen.');
     // The previews are painted by naming the look on their own document.
     await expect(phone.contentFrame().locator('html')).toHaveAttribute('data-palette', 'phosphor');
@@ -171,6 +180,32 @@ test.describe('as an administrator', () => {
       'phosphor',
     );
     expect(writes).toBe(0);
+  });
+
+  test('on Look, the previews stay in view while the looks scroll (desktop), or a bar of looks stays pinned (phone)', async ({
+    page,
+  }) => {
+    await page.goto('/settings/look');
+    await expect(page.getByRole('status').filter({ hasText: /The site is/ })).toBeVisible();
+    const inView = async (selector: string) => {
+      const box = await page.locator(selector).boundingBox();
+      const height = page.viewportSize()?.height ?? 0;
+      return box !== null && box.y >= 0 && box.y + box.height <= height + 1;
+    };
+    // Far enough down that the first screen's content has gone.
+    await page.mouse.wheel(0, 900);
+    await page.waitForTimeout(300);
+    if ((page.viewportSize()?.width ?? 0) >= 1024) {
+      await expect.poll(() => inView('iframe[title="Phone preview"]')).toBe(true);
+      // The status line, and so Apply, stays with the preview.
+      await lookRadio(page, 'Green screen').click();
+      await expect(page.getByRole('button', { name: 'Apply to the site' })).toBeInViewport();
+    } else {
+      const bar = page.getByRole('region', { name: 'Pick a look' });
+      await expect(bar).toBeInViewport();
+      await bar.getByRole('radio', { name: 'Green screen' }).click();
+      await expect(page.getByRole('status').filter({ hasText: /previewing/ })).toHaveCount(1);
+    }
   });
 
   test('the overview and Look pass the accessibility check in every look', async ({ page }) => {
@@ -219,7 +254,7 @@ test('applying a look asks for no step-up, even with the step-up expired', async
   try {
     await page.goto('/settings/look');
     const target = start.look.palette === 'phosphor' ? 'Campfire' : 'Green screen';
-    await page.getByRole('radio', { name: target }).click();
+    await lookRadio(page, target).click();
     await page.getByRole('button', { name: 'Apply to the site' }).click();
     await expect(page.getByText('The new look is live.')).toBeVisible();
     await expect(page.getByRole('dialog', { name: 'Confirm it is you' })).toHaveCount(0);
@@ -227,9 +262,7 @@ test('applying a look asks for no step-up, even with the step-up expired', async
       'data-palette',
       target === 'Campfire' ? 'campfire' : 'phosphor',
     );
-    await expect(
-      page.getByRole('radio', { name: new RegExp(`^${target}\\s*On the site$`) }),
-    ).toBeChecked();
+    await expect(lookRadio(page, new RegExp(`^${target}\\s*On the site$`))).toBeChecked();
   } finally {
     const back = await page.request.put('/api/admin/site/look', { data: start.look });
     expect(back.ok(), await back.text()).toBe(true);

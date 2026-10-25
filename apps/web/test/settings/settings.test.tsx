@@ -220,6 +220,48 @@ describe('the look screen', () => {
     );
   });
 
+  it('is one radio group of looks on a desktop, with no bar pinned to the screen', () => {
+    stubFetch();
+    wrap(<LookScreen state={editorState()} />);
+    expect(screen.getAllByRole('radiogroup', { name: /^Looks/ })).toHaveLength(1);
+    expect(screen.queryByRole('region', { name: 'Pick a look' })).toBeNull();
+  });
+
+  it('pins a bar of the named looks to a narrow screen, as a real radio group that previews', async () => {
+    const narrow = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+    vi.stubGlobal('matchMedia', narrow);
+    try {
+      const user = userEvent.setup();
+      const sent = stubFetch();
+      wrap(<LookScreen state={editorState()} />);
+      const bar = screen.getByRole('region', { name: 'Pick a look' });
+      const group = within(bar).getByRole('radiogroup', { name: 'Looks, quick pick' });
+      expect(within(group).getAllByRole('radio')).toHaveLength(LOOKS.length);
+      // The full chooser is still on the page, under the previews.
+      expect(screen.getByRole('radiogroup', { name: 'Looks' })).toBeInTheDocument();
+      expect(screen.getByLabelText('Palette, the colours')).toBeInTheDocument();
+
+      await user.click(within(group).getByRole('radio', { name: 'Green screen' }));
+      expect(screen.getAllByRole('status')[0]).toHaveTextContent(
+        'You are previewing Green screen.',
+      );
+      // Both groups say the same thing, and nothing is sent by choosing.
+      expect(
+        within(screen.getByRole('radiogroup', { name: 'Looks' })).getByRole('radio', {
+          name: 'Green screen',
+        }),
+      ).toBeChecked();
+      expect(writes(sent)).toEqual([]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('names a pair nobody named by its two parts', () => {
     expect(lookName({ palette: 'platinum', theme: 'desk' })).toBe('Desk');
     expect(lookName({ palette: 'midnight', theme: 'docket' })).toBe('Midnight with Docket');
