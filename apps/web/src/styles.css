@@ -370,6 +370,18 @@ html[data-scale='large'] .button-face {
   min-height: 3rem;
   font-size: 0.9375rem;
 }
+/* A date or time field draws its own mark (components/ui/input.tsx), so the
+   browser's is hidden, still under the finger in Chrome. On an iPhone the
+   value is centred and an empty field has no height of its own: keep it on
+   the left, a line high, like every other field. */
+.picker-face::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+.picker-face::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
+}
+
 html[data-scale='large'] .control-face {
   min-height: 3rem;
   font-size: 1.0625rem;
