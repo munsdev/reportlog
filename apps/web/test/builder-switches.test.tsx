@@ -44,6 +44,7 @@ const LB: LogbookDetail = {
   asks_email: true,
   publish_by_terms: false,
   show_on_front: true,
+  short_slug: null,
   fields: [],
 };
 

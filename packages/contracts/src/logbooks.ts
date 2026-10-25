@@ -121,6 +121,8 @@ export const LogbookSummary = z.object({
   publish_by_terms: z.boolean(),
   /** Whether the front page advertises it while it is open. Never sealed. */
   show_on_front: z.boolean(),
+  /** A second web address that opens this logbook's form (/volunteer). Never sealed; changeable. */
+  short_slug: z.string().nullable(),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -247,6 +249,8 @@ export const updateLogbook = defineRoute({
     publish_by_terms: z.boolean().optional(),
     /** Show it on the front page while it is open. Changeable after launch. */
     show_on_front: z.boolean().optional(),
+    /** The short web address; null or blank clears it. */
+    short_slug: z.string().nullable().optional(),
   }),
   response: LogbookDetail,
 });
