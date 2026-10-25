@@ -25,20 +25,16 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { createFromFile } from './logbookFile.ts';
 import { refuse } from './refusals.ts';
-import electionsChoices from './templates/elections-choices.json' with { type: 'json' };
 import elections from './templates/elections.json' with { type: 'json' };
+import general from './templates/general.json' with { type: 'json' };
 import howVotingWent from './templates/how-voting-went.json' with { type: 'json' };
-import professionalComplaint from './templates/professional-complaint.json' with { type: 'json' };
-import safetyLog from './templates/safety-log.json' with { type: 'json' };
 import workplace from './templates/workplace.json' with { type: 'json' };
 
 const FILES = {
   elections,
   'how-voting-went': howVotingWent,
-  'elections-choices': electionsChoices,
   workplace,
-  'safety-log': safetyLog,
-  'professional-complaint': professionalComplaint,
+  general,
 } as const;
 
 export type StartingPointId = keyof typeof FILES;

@@ -131,13 +131,30 @@ describe('starting points', () => {
   });
 
   it('include one with no files and nothing to type, and it is exactly that', () => {
-    const f = templateLogbook('elections-choices');
+    const f = templateLogbook('how-voting-went');
     expect(f.accepts_files).toBe(false);
     for (const q of f.questions) {
       expect(['short_text', 'long_text', 'email', 'url'], q.key).not.toContain(q.kind);
       if (q.kind === 'place') expect(q.allow_other, q.key).toBe(false);
     }
-    expect(startingPoints().find((p) => p.id === 'elections-choices')?.typed).toBe(false);
+    expect(startingPoints().find((p) => p.id === 'how-voting-went')?.typed).toBe(false);
+  });
+
+  it('include a general one: no subject, takes up to three files, and the evidence pattern', () => {
+    const f = templateLogbook('general');
+    expect(f.slug).toBe('reports');
+    expect(f.accepts_files).toBe(true);
+    expect(f.max_files).toBe(3);
+    expect(f.questions.map((q) => [q.key, q.kind, Boolean(q.required)])).toEqual([
+      ['account', 'long_text', true],
+      ['date', 'date', true],
+      ['time', 'time', false],
+      ['place', 'short_text', false],
+      ['saw', 'choice_one', true],
+      ['has_evidence', 'evidence_declaration', false],
+      ['evidence_of', 'short_text', false],
+    ]);
+    expect(f.questions.at(-1)?.shown_when).toEqual({ field: 'has_evidence', in: ['yes'] });
   });
 
   it('ship the evidence pattern as two cards, the follow-up after what it depends on', () => {
@@ -152,11 +169,7 @@ describe('starting points', () => {
     expect(follow && d && qs.indexOf(follow) > qs.indexOf(d)).toBe(true);
   });
 
-  it('require a name where anonymity is not on offer, as a question and not a setting', () => {
-    const name = templateLogbook('professional-complaint').questions.find(
-      (q) => q.key === 'your_name',
-    );
-    expect(name?.required).toBe(true);
+  it('never make identity a setting: a logbook that wants a name asks it as a question', () => {
     expect(source('templates.ts')).not.toMatch(/anonymous\s*:|requireIdentity|identityRequired/);
   });
 });

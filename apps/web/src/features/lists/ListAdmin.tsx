@@ -9,7 +9,7 @@
  * logbooks. Nobody should reach a list by default.
  */
 import { roleSatisfies } from '@reportlog/access';
-import { createList } from '@reportlog/contracts';
+import { createList, createListFromFile } from '@reportlog/contracts';
 import type { ListDetail } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
+import { FileDrop } from '../../components/ui/file-drop.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
@@ -146,6 +147,10 @@ function NewList({ onCancel }: { onCancel: () => void }) {
   const [template, setTemplate] = useState('');
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
+  const opened = async (made: ListDetail) => {
+    await qc.invalidateQueries({ queryKey: listsQuery().queryKey });
+    await navigate({ to: '/lists/$id', params: { id: made.id } });
+  };
   const make = useMutation({
     mutationFn: () =>
       call(createList, {
@@ -155,12 +160,29 @@ function NewList({ onCancel }: { onCancel: () => void }) {
           ...(slug.trim() ? { slug: slug.trim() } : {}),
         },
       }),
-    onSuccess: async (made: ListDetail) => {
-      await qc.invalidateQueries({ queryKey: listsQuery().queryKey });
-      await navigate({ to: '/lists/$id', params: { id: made.id } });
-    },
+    onSuccess: opened,
   });
   const chosen = lists.data?.templates.find((t) => t.slug === template);
+  // A file makes a new hidden list, like a starting point. The title and web
+  // address typed above, when there are any, win over the file's own.
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        throw new Error('That file is not a list file: it is not JSON at all.');
+      }
+      return call(createListFromFile, {
+        body: {
+          file: parsed,
+          ...(title.trim() ? { title: title.trim() } : {}),
+          ...(slug.trim() ? { slug: slug.trim() } : {}),
+        },
+      });
+    },
+    onSuccess: opened,
+  });
 
   return (
     <Card heading="Make a list">
@@ -263,6 +285,21 @@ function NewList({ onCancel }: { onCancel: () => void }) {
             </Button>
           </div>
         </form>
+        <div className="mt-5 flex flex-col gap-1">
+          <p id="upload-list-label" className="font-semibold">
+            Or upload a list file
+          </p>
+          <FileDrop
+            labelledBy="upload-list-label"
+            accept="application/json,.json"
+            limits="A file downloaded from a list here or elsewhere. It makes a new hidden list."
+            onFiles={(files) => {
+              const file = files[0];
+              if (file) upload.mutate(file);
+            }}
+          />
+          <FieldError>{upload.error?.message}</FieldError>
+        </div>
       </div>
     </Card>
   );

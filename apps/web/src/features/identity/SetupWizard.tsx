@@ -590,8 +590,16 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
       <p aria-live="polite" className="font-semibold">
         Previewing {lookName(look)}.
       </p>
-      <LookFrames look={look} name={parseBrand(name)} />
-      <LookChooser value={look} onChange={setLookState} />
+      {/* Side by side from lg up, as on the Look screen: the previews stay in
+          view while the chooser scrolls. Frames first below lg. */}
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start xl:grid-cols-[minmax(0,1fr)_minmax(0,34rem)]">
+        <div className="min-w-0 lg:sticky lg:top-4 lg:order-2">
+          <LookFrames look={look} name={parseBrand(name)} fit />
+        </div>
+        <div className="min-w-0 lg:order-1">
+          <LookChooser value={look} onChange={setLookState} />
+        </div>
+      </div>
       <ErrorText error={save.error} />
       <Actions back={back} pending={save.isPending} />
     </form>

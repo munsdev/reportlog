@@ -96,7 +96,8 @@ The list also says "files frozen" on a frozen logbook's tile.
 - `false` is read as off and writes no row.
 - Anything other than true or false is refused with a sentence.
 - **Starting points that say `editorial_notes: true` now turn notes on**, as they did in legacy:
-  safety log, elections and professional complaint. Workplace says `false`.
+  safety log, elections and professional complaint. Workplace says `false`. (The safety log and
+  professional complaint files were removed later: decision 74.)
 - **Bug found and fixed here:** `logbook_editorial_notes` has no `ON DELETE CASCADE`. So once a
   draft could get a notes row from a file, deleting that draft was refused by the foreign key.
   `deleteDraft` now deletes the draft's switch first. That row is a setting, and a draft has no

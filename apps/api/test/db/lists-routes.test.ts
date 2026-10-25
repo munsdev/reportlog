@@ -122,6 +122,155 @@ describe('who may build a list', () => {
   });
 });
 
+describe('a list as a file', () => {
+  const FILE_SLUG = uniqueSlug('filed');
+  const GOOD = {
+    reportlog_list: 1,
+    slug: FILE_SLUG,
+    title: 'From a file',
+    blurb: 'Made from an upload.',
+    email: 'none',
+    fields: [
+      {
+        key: 'topic',
+        kind: 'choice_one',
+        label: 'What about',
+        required: true,
+        aggregatable: true,
+        retention: 'durable',
+        settings: { options: ['Lines', 'Equipment'] },
+      },
+    ],
+  };
+  let made: ListDetail;
+
+  it('an uploaded file makes a hidden list with its questions', async () => {
+    const r = await admin({
+      method: 'POST',
+      url: '/api/admin/lists/from-file',
+      payload: { file: GOOD },
+    });
+    expect(r.statusCode, say(r)).toBe(200);
+    made = json<ListDetail>(r);
+    expect(made.slug).toBe(FILE_SLUG);
+    expect(made.title).toBe('From a file');
+    expect(made.visibility).toBe('hidden');
+    expect(made.fields.map((f) => f.key)).toEqual(['topic']);
+  });
+
+  it('a title and address typed by the operator win over the file’s', async () => {
+    const own = uniqueSlug('own');
+    const r = await admin({
+      method: 'POST',
+      url: '/api/admin/lists/from-file',
+      payload: { file: GOOD, slug: own, title: 'Mine' },
+    });
+    expect(r.statusCode, say(r)).toBe(200);
+    expect(json<ListDetail>(r)).toMatchObject({ slug: own, title: 'Mine' });
+  });
+
+  it('an address that is taken is refused in a sentence, and nothing is overwritten', async () => {
+    const r = await admin({
+      method: 'POST',
+      url: '/api/admin/lists/from-file',
+      payload: { file: { ...GOOD, title: 'Another' } },
+    });
+    expect(r.statusCode).toBe(409);
+    expect(code(r)).toBe('slug-taken');
+    expect(message(r)).toMatch(/already uses that web address/);
+    const still = await admin({ method: 'GET', url: `/api/admin/lists/${String(made.id)}` });
+    expect(json<ListAdminDetail>(still).title).toBe('From a file');
+  });
+
+  it('a file that is not a list file is refused, saying why', async () => {
+    for (const bad of [
+      'not an object',
+      { title: 'No version', slug: 'x', fields: [] },
+      { ...GOOD, slug: uniqueSlug('nof'), fields: [] },
+      // Collects free text while declaring it asks nobody for an address.
+      {
+        ...GOOD,
+        slug: uniqueSlug('lie'),
+        fields: [{ key: 'note', kind: 'long_text', label: 'Note', retention: 'transient' }],
+      },
+      // A list cannot take files.
+      {
+        ...GOOD,
+        slug: uniqueSlug('files'),
+        fields: [{ key: 'pics', kind: 'file', label: 'Pictures' }],
+      },
+    ]) {
+      const r = await admin({
+        method: 'POST',
+        url: '/api/admin/lists/from-file',
+        payload: { file: bad },
+      });
+      expect(r.statusCode, say(r)).toBe(400);
+      expect(code(r)).toBe('bad-file');
+      expect(message(r).length).toBeGreaterThan(20);
+    }
+  });
+
+  it('only an administrator may upload or download', async () => {
+    const up = {
+      method: 'POST' as const,
+      url: '/api/admin/lists/from-file',
+      payload: { file: GOOD },
+    };
+    expect((await anybody(up)).statusCode).toBe(401);
+    expect((await mod(up)).statusCode).toBe(403);
+    const down = { method: 'GET' as const, url: `/api/admin/lists/${String(made.id)}/file` };
+    expect((await anybody(down)).statusCode).toBe(401);
+    expect((await mod(down)).statusCode).toBe(403);
+  });
+
+  it('a download is a file the reader accepts, and uploading it again makes the same list', async () => {
+    // Every shipped template, so the settings that matter (strict, ask_email,
+    // link types, a place question's scope) are all carried by the round trip.
+    const templates = json<{ templates: { slug: string }[] }>(
+      await admin({ method: 'GET', url: '/api/admin/lists' }),
+    ).templates;
+    for (const t of templates) {
+      const first = json<ListDetail>(
+        await admin({
+          method: 'POST',
+          url: '/api/admin/lists',
+          payload: { template: t.slug, slug: uniqueSlug(`rt-${t.slug}`.slice(0, 20)) },
+        }),
+      );
+      const down = await admin({ method: 'GET', url: `/api/admin/lists/${String(first.id)}/file` });
+      expect(down.statusCode, say(down)).toBe(200);
+      expect(down.headers['content-disposition']).toContain(`list-${first.slug}.json`);
+      const file = json<{ slug: string }>(down);
+
+      const copySlug = uniqueSlug(`cp-${t.slug}`.slice(0, 20));
+      const up = await admin({
+        method: 'POST',
+        url: '/api/admin/lists/from-file',
+        payload: { file, slug: copySlug },
+      });
+      expect(up.statusCode, say(up)).toBe(200);
+      const second = json<ListDetail>(up);
+
+      const strip = (l: ListDetail) => l.fields.map((f) => ({ ...f, id: 0 }));
+      expect(strip(second)).toEqual(strip(first));
+      expect(second).toMatchObject({
+        title: first.title,
+        blurb: first.blurb,
+        email_mode: first.email_mode,
+        requires_email: first.requires_email,
+        aggregates_published: false,
+        visibility: 'hidden',
+      });
+      // And the second list downloads as the same file, bar its own address.
+      const again = json<{ slug: string }>(
+        await admin({ method: 'GET', url: `/api/admin/lists/${String(second.id)}/file` }),
+      );
+      expect({ ...again, slug: file.slug }).toEqual(file);
+    }
+  });
+});
+
 describe('visibility is enforced', () => {
   it('a hidden list is 404 to a visitor and to somebody signed in, never 403', async () => {
     expect((await anybody({ method: 'GET', url: `/api/lists/${SLUG}` })).statusCode).toBe(404);

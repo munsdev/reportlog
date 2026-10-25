@@ -55,9 +55,9 @@ beforeAll(async () => {
 
 describe('a starting point', () => {
   it('makes the logbook its file describes, AS A DRAFT, with every question in order', async () => {
-    const file = templateLogbook('elections-choices');
+    const file = templateLogbook('how-voting-went');
     const lb = await createFromStartingPoint(db, {
-      starting_point: 'elections-choices',
+      starting_point: 'how-voting-went',
       title: '',
     });
     // Launching is never done on anybody's behalf.
@@ -78,10 +78,10 @@ describe('a starting point', () => {
   });
 
   it("makes a SECOND draft when used again, rather than joining the first one's chain", async () => {
-    const first = await createFromStartingPoint(db, { starting_point: 'safety-log', title: '' });
-    const second = await createFromStartingPoint(db, { starting_point: 'safety-log', title: '' });
+    const first = await createFromStartingPoint(db, { starting_point: 'general', title: '' });
+    const second = await createFromStartingPoint(db, { starting_point: 'general', title: '' });
     expect(second.slug).not.toBe(first.slug);
-    expect(second.slug.startsWith(templateLogbook('safety-log').slug ?? '')).toBe(true);
+    expect(second.slug.startsWith(templateLogbook('general').slug ?? '')).toBe(true);
   });
 
   it("turns an old file's accepts_files into an upload question", async () => {
@@ -92,7 +92,7 @@ describe('a starting point', () => {
 
   it('is an ordinary logbook afterwards: it gains questions like any other', async () => {
     const lb = await createFromStartingPoint(db, {
-      starting_point: 'elections-choices',
+      starting_point: 'how-voting-went',
       title: '',
     });
     await L.addField(db, lb.id, { kind: 'long_text', label: 'Anything else, in your own words?' });

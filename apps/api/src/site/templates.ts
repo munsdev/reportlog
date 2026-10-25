@@ -125,25 +125,6 @@ export const TEMPLATES: readonly Template[] = [
     },
   },
   {
-    // The same subject with nothing to type and nothing to upload. Not a
-    // mode: a logbook file built that way, changeable like any other.
-    id: 'elections-choices',
-    label: 'Election incidents, no files or free text',
-    description:
-      "How it went, asked as a short set of choices: the reporter's role, the state, the day, the time, and what went wrong if anything did. Nothing to type and nothing to upload. Public archive on.",
-    settings: {
-      publicArchive: true,
-      attachments: false,
-      intake: true,
-      logbook: 'elections-choices',
-      copy: {
-        home_headline: HOME_HEADLINE,
-        home_intro:
-          'Voted, worked a polling place or watched one? Say how it went, fine or not, in a minute, with nothing to type. A moderator reads every report before any of it is published.',
-      },
-    },
-  },
-  {
     // THE OWNER'S QUESTIONNAIRES OF 21 OCTOBER 2026 (docs/voting-
     // questionnaires.md), as ordinary settings: the one logbook, the tip list
     // at /list/tips (where "Send it as a tip" points), and the choosing card's
@@ -194,52 +175,23 @@ export const TEMPLATES: readonly Template[] = [
     },
   },
   {
-    // Archive off and editorial notes on (the logbook file turns them on):
-    // the editorial layer working with nothing publishing. It collects
-    // observations, things that have not happened yet, which is why it is
-    // not 'workplace': a near-miss log that asks "what happened" fills with
-    // nothing.
-    id: 'safety-log',
-    label: 'An internal safety log',
+    // No subject, for an operator whose record is not one of the above.
+    // The public archive is off, so nothing shows outside until the
+    // operator turns it on; nothing is public before a moderator approves it
+    // either way.
+    id: 'general',
+    label: 'A general record',
     description:
-      'Hazards and near misses inside one organisation: things noticed before they go wrong. Nothing published outside it, and reviewers can attach their own notes. Takes files.',
+      'Reports about anything: what happened, when, where, and whether the reporter saw it. Takes files. Public archive off.',
     settings: {
       publicArchive: false,
       attachments: true,
       intake: true,
-      logbook: 'safety-log',
+      logbook: 'general',
       copy: {
-        home_headline: 'Say what you noticed, before it hurts somebody.',
-        home_lede:
-          'It does not have to have gone wrong yet. File it, somebody reads it, and once it is filed nobody, including whoever runs this archive, can quietly alter or remove it.',
+        home_headline: 'A record of what happened, that cannot be quietly changed.',
         home_intro:
-          'This log is for hazards and near misses here. Nothing filed in it is published outside this organisation.',
-        standards:
-          'Who reads a safety observation, how quickly, and what happens next.\n\nWrite this before opening the form. A hazard log that nobody has promised to read is a suggestion box.',
-      },
-    },
-  },
-  {
-    // IDENTITY REQUIRED, and not as a setting: as a logbook asking required
-    // questions, sealed with every other answer. "Anonymous filing off" as a
-    // site switch would be a deployment type by another name.
-    id: 'professional-complaint',
-    label: 'A complaint about a practitioner',
-    description:
-      'Conduct or competence of somebody practising: clinical, legal, or any licensed trade. Asks who the complainant is and will not take an anonymous one. Nothing published until a moderator publishes it.',
-    settings: {
-      publicArchive: false,
-      attachments: true,
-      intake: true,
-      logbook: 'professional-complaint',
-      copy: {
-        home_headline: 'A complaint that is on the record, and stays on it.',
-        home_lede:
-          'File it, a reviewer reads it, and once it is filed nobody, including whoever runs this archive, can alter or remove it without that being visible.',
-        home_intro:
-          'This archive takes complaints about the conduct and competence of people practising. It cannot take an anonymous one: a complaint about a named person that nobody will stand behind cannot be acted on.',
-        standards:
-          'Who reviews a complaint, what happens to the person complained about, and what the complainant is told.\n\nWrite this before opening the form. This is the archive where not having written it does the most harm, to both of them.',
+          'File a report. A moderator reads every report before any of it is published, and once it is filed nobody can alter or remove it without that being visible.',
       },
     },
   },

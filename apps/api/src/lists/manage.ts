@@ -156,20 +156,25 @@ async function insertQuestions(
   }
 }
 
+export interface ListOverrides {
+  slug?: string | undefined;
+  title?: string | undefined;
+}
+
 /**
- * Make a list from a template, optionally under another address and title (a
- * deployment running two check-in lists needs two addresses).
+ * Make a list from an already-parsed template, optionally under another
+ * address and title (a deployment running two check-in lists needs two
+ * addresses). A shipped template and an uploaded file both arrive here, so
+ * the two cannot drift apart in what they refuse.
  *
  * A NEW LIST STARTS HIDDEN, and nobody outside reaches it until an
  * administrator says so. Making a list is not publishing one.
  */
-export async function createFromTemplate(
+export async function createFromParsed(
   db: Db,
-  templateSlug: string,
-  { slug, title }: { slug?: string | undefined; title?: string | undefined } = {},
+  t: ListTemplate,
+  { slug, title }: ListOverrides = {},
 ): Promise<LoadedList> {
-  const t: ListTemplate | null = shippedTemplate(templateSlug);
-  if (!t) return refuse('no-template');
   const useSlug = slug?.trim() ? slug.trim().toLowerCase() : t.slug;
   if (!SLUG.test(useSlug)) refuse('slug');
   const useTitle = title?.trim() ? title.trim() : t.title;
@@ -203,6 +208,17 @@ export async function createFromTemplate(
     return row.id;
   });
   return requireList(db, id);
+}
+
+/** Make a list from a template this software ships. */
+export async function createFromTemplate(
+  db: Db,
+  templateSlug: string,
+  overrides: ListOverrides = {},
+): Promise<LoadedList> {
+  const t: ListTemplate | null = shippedTemplate(templateSlug);
+  if (!t) return refuse('no-template');
+  return createFromParsed(db, t, overrides);
 }
 
 export interface SettingsPatch {

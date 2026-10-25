@@ -16,6 +16,7 @@ import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Select } from '@/components/ui/select.tsx';
+import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
 
@@ -42,6 +43,13 @@ export interface LookChooserProps {
   current?: Look | undefined;
   /** What may be chosen: the built-in pack unless the caller adds installed ones. */
   catalogue?: LookCatalogue | undefined;
+  /**
+   * Only the named looks, as one row that scrolls sideways, for a bar pinned
+   * to the bottom of a small screen. The same radio group and the same
+   * cards, not a second copy of the chooser's logic; the two parts picked
+   * separately stay in the full chooser.
+   */
+  compact?: boolean | undefined;
 }
 
 export function LookChooser({
@@ -49,12 +57,53 @@ export function LookChooser({
   onChange,
   current,
   catalogue = BUILT_IN_CATALOGUE,
+  compact = false,
 }: LookChooserProps) {
   const headingId = useId();
   const chosen = namedLookFor(value, catalogue);
   const { looks: LOOKS, palettes: PALETTES, themes: THEMES } = catalogue;
   const palettes = PALETTES.length;
   const themes = THEMES.length;
+  const choose = (id: string) => {
+    const look = LOOKS.find((l) => l.id === id);
+    if (look) onChange({ palette: look.palette, theme: look.theme });
+  };
+  const cards = LOOKS.map((l) => {
+    const onSite = current ? sameLook(current, l) : false;
+    return (
+      <RadioOption
+        key={l.id}
+        value={l.id}
+        className={cn('items-start px-3', compact && 'w-40 shrink-0 snap-start')}
+        label={
+          <span className="flex flex-col gap-2">
+            <Strip palette={l.palette} theme={l.theme} />
+            <span className="flex flex-wrap items-center gap-2">
+              <span>{l.label}</span>
+              {onSite ? <Chip tone="tag">On the site</Chip> : null}
+            </span>
+            {l.pack ? <span className="text-sm text-ink-alt">From {l.pack}</span> : null}
+          </span>
+        }
+      />
+    );
+  });
+
+  if (compact) {
+    // Named on its own, because the full chooser's group is on the page too.
+    return (
+      <RadioGroup
+        aria-label="Looks, quick pick"
+        orientation="horizontal"
+        value={chosen?.id ?? ''}
+        onValueChange={choose}
+        className="flex snap-x flex-row gap-2 overflow-x-auto pb-1"
+      >
+        {cards}
+      </RadioGroup>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-8">
       <section aria-labelledby={headingId} className="flex flex-col gap-3">
@@ -64,38 +113,16 @@ export function LookChooser({
         <RadioGroup
           aria-labelledby={headingId}
           value={chosen?.id ?? ''}
-          onValueChange={(id) => {
-            const look = LOOKS.find((l) => l.id === id);
-            if (look) onChange({ palette: look.palette, theme: look.theme });
-          }}
-          className="grid grid-cols-2 gap-3 lg:grid-cols-4"
+          onValueChange={choose}
+          className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4"
         >
-          {LOOKS.map((l) => {
-            const onSite = current ? sameLook(current, l) : false;
-            return (
-              <RadioOption
-                key={l.id}
-                value={l.id}
-                className="items-start px-3"
-                label={
-                  <span className="flex flex-col gap-2">
-                    <Strip palette={l.palette} theme={l.theme} />
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span>{l.label}</span>
-                      {onSite ? <Chip tone="tag">On the site</Chip> : null}
-                    </span>
-                    {l.pack ? <span className="text-sm text-ink-alt">From {l.pack}</span> : null}
-                  </span>
-                }
-              />
-            );
-          })}
+          {cards}
         </RadioGroup>
       </section>
 
       <section className="flex flex-col gap-3 border-t border-ink-alt pt-4">
         <h2 className="font-display text-xl font-bold">Or choose the two parts yourself</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
           <Field>
             <Label>Palette, the colours</Label>
             <Select

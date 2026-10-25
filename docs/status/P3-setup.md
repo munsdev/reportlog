@@ -52,6 +52,7 @@ gate-mode context into `gateMode.ts`.
    `packages/contracts/src/templates.ts`, migration `20261019220952_template_applied.sql`).
    - Legacy's six (`elections`, `elections-choices`, `workplace`, `safety-log`,
      `professional-complaint`, `blank`), word for word where the words still hold.
+     Trimmed later to `elections`, `voting-log`, `workplace`, `general` and `blank` (decision 74).
    - `GET /api/admin/templates` (each with the plain lines saying what it changes, and which was
      applied last) and `POST /api/admin/templates`, administrators only, guarded per scope.
    - **Settings only, never legal text.** `planTemplate` refuses imprint/privacy keys in so many

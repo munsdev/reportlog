@@ -216,10 +216,9 @@ export function FirstLogbookGuide() {
         </ul>
         <p>
           Start from one of the shipped question sets rather than an empty form: Election incidents,
-          Election day: how did it go?, Log how voting went, Incident reports, Safety observations,
-          or Complaints about a practitioner. Each arrives as a draft you can change freely. You can
-          also start from nothing, or from a logbook file downloaded from another deployment; it
-          always arrives as a draft.
+          Log how voting went, Incident reports, or the general Reports. Each arrives as a draft you
+          can change freely. You can also start from nothing, or from a logbook file downloaded from
+          another deployment; it always arrives as a draft.
         </p>
       </Section>
 

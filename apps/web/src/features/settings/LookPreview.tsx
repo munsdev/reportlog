@@ -72,15 +72,35 @@ const SIZES = {
   phone: { box: 'h-[320px] w-[195px] rounded-[18px]', page: 'h-[640px] w-[390px] scale-50' },
 } as const;
 
+/**
+ * The same two frames drawn smaller, from lg up, for a column that stays in
+ * view beside the chooser (`fit`). Three steps, because the column grows with
+ * the window: 0.25 of the page's size where it is narrowest (the frames then
+ * stack), 0.3 at xl (side by side, short enough to leave room for the status
+ * card in a 720px window), and 0.4 desktop / 0.35 phone at 2xl. Below lg the
+ * frames keep SIZES, so a phone is not shown a thumbnail.
+ */
+const FIT_SIZES = {
+  desktop: {
+    box: 'lg:h-[200px] lg:w-[320px] xl:h-[240px] xl:w-[384px] 2xl:h-[320px] 2xl:w-[512px]',
+    page: 'lg:scale-[0.25] xl:scale-[0.3] 2xl:scale-[0.4]',
+  },
+  phone: {
+    box: 'lg:h-[160px] lg:w-[98px] xl:h-[192px] xl:w-[117px] 2xl:h-[224px] 2xl:w-[137px]',
+    page: 'lg:scale-[0.25] xl:scale-[0.3] 2xl:scale-[0.35]',
+  },
+} as const;
+
 interface FrameProps {
   look: Look;
   catalogue: LookCatalogue;
   size: keyof typeof SIZES;
   label: string;
+  fit: boolean;
   children: ReactNode;
 }
 
-function PreviewFrame({ look, catalogue, size, label, children }: FrameProps) {
+function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [mount, setMount] = useState<HTMLElement | null>(null);
 
@@ -118,6 +138,7 @@ function PreviewFrame({ look, catalogue, size, label, children }: FrameProps) {
         className={cn(
           'overflow-hidden rounded-control border-2 border-ink bg-paper',
           SIZES[size].box,
+          fit && FIT_SIZES[size].box,
         )}
       >
         <iframe
@@ -128,7 +149,11 @@ function PreviewFrame({ look, catalogue, size, label, children }: FrameProps) {
           onLoad={prepare}
           data-palette={look.palette}
           data-theme={look.theme}
-          className={cn('pointer-events-none block origin-top-left border-0', SIZES[size].page)}
+          className={cn(
+            'pointer-events-none block origin-top-left border-0',
+            SIZES[size].page,
+            fit && FIT_SIZES[size].page,
+          )}
         />
       </div>
       {mount ? createPortal(children, mount) : null}
@@ -192,9 +217,12 @@ export function LookFrames({
   look,
   name,
   catalogue = BUILT_IN_CATALOGUE,
+  fit = false,
 }: {
   look: Look;
   name?: readonly BrandPart[];
+  /** Drawn smaller from lg up, for a column kept in view beside the chooser. */
+  fit?: boolean;
   /** Where a pack's theme finds its panel heading and texture. */
   catalogue?: LookCatalogue;
 }) {
@@ -203,13 +231,13 @@ export function LookFrames({
   const [showDesktop, setShowDesktop] = useState(false);
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-start gap-7">
+      <div className={cn('flex flex-wrap items-start', fit ? 'gap-7 lg:gap-4' : 'gap-7')}>
         <div className={cn(showDesktop ? 'block' : 'hidden', 'lg:block')}>
-          <PreviewFrame look={look} catalogue={catalogue} size="desktop" label="Desktop">
+          <PreviewFrame look={look} catalogue={catalogue} size="desktop" label="Desktop" fit={fit}>
             <PreviewPage parts={parts} />
           </PreviewFrame>
         </div>
-        <PreviewFrame look={look} catalogue={catalogue} size="phone" label="Phone">
+        <PreviewFrame look={look} catalogue={catalogue} size="phone" label="Phone" fit={fit}>
           <PreviewPage parts={parts} />
         </PreviewFrame>
       </div>
