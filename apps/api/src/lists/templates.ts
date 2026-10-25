@@ -48,6 +48,8 @@ export interface ListTemplate {
   email_mode: 'auto' | 'required';
   /** Refuse a key the form does not ask, rather than drop it (ruling 49). */
   strict: boolean;
+  /** "write_back": true. Reviewers may open an address, and the form says the team will reply. */
+  write_back: boolean;
   requiresEmail: boolean;
   fields: (ListField & { retention: Retention })[];
 }
@@ -99,6 +101,9 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
   if (def.strict !== undefined && typeof def.strict !== 'boolean') {
     throw new FieldRuleError(`${name} says "strict" with something other than true or false.`);
   }
+  if (def.write_back !== undefined && typeof def.write_back !== 'boolean') {
+    throw new FieldRuleError(`${name} says "write_back" with something other than true or false.`);
+  }
   const email = def.email;
   if (email !== undefined && !EMAIL_DECLARATIONS.includes(email as 'none')) {
     throw new FieldRuleError(`${name} declares an unknown email mode: ${JSON.stringify(email)}.`);
@@ -125,6 +130,7 @@ export function parseListTemplate(def: unknown, name = 'a template'): ListTempla
     blurb: str(def.blurb) ?? null,
     email_mode: def.ask_email === 'always' ? 'required' : 'auto',
     strict: def.strict === true,
+    write_back: def.write_back === true,
     requiresEmail: derived.requiresEmail,
     fields: checked.fields,
   };

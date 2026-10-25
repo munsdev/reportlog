@@ -35,6 +35,7 @@ import {
   listOpenLists,
   listReviewQueues,
   replaceListQuestions,
+  revealListAddress,
   reviewListEntries,
   searchListEntries,
   sendListEntry,
@@ -55,6 +56,7 @@ import {
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Mailer } from '../email/mailer.ts';
 import { notFound } from '../http/errors.ts';
+import { refuse } from './refusals.ts';
 import { route } from '../http/route.ts';
 import { roleGuard } from '../identity/guards.ts';
 import { moderatorGuard } from '../moderation/agreement.ts';
@@ -100,7 +102,7 @@ import {
 import type { ReviewState } from './policy.ts';
 import { NEVER } from './retention.ts';
 import type { ListSettings } from './retention.ts';
-import { reviewBatch, reviewEntries, setTriageState } from './review.ts';
+import { reviewBatch, reviewEntries, revealAddress, setTriageState } from './review.ts';
 import { searchEntries } from './search.ts';
 import { iso, isAccepting, listBySlug } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
@@ -175,7 +177,10 @@ export function forForm(list: LoadedList, settings: ListSettings, now = new Date
         : req.requiresEmail
           ? 'if-written'
           : 'never',
-    email_reason: list.email_mode === 'required' ? 'reply' : 'erase',
+    // A list that writes back is asking for the address to reply to, whatever
+    // else it is for, and the form must say so.
+    email_reason: list.email_mode === 'required' || list.write_back ? 'reply' : 'erase',
+    write_back: list.write_back,
     personal_keys: req.personalKeys,
     personal_days: days(settings),
     fields: asked.map((f) => {
@@ -457,7 +462,7 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
         keys: keys ? await keys() : null,
       });
       return {
-        list: { id: list.id, slug: list.slug, title: list.title },
+        list: { id: list.id, slug: list.slug, title: list.title, write_back: list.write_back },
         fields: list.fields.map((f) => ({
           key: f.key,
           label: f.label,
@@ -473,6 +478,21 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
       const list = await requireList(db, Number(params.id));
       const b = request.body as BodyOf<typeof reviewListEntries>;
       return reviewEntries(db, list.id, b.ids, { state: b.state, by: request.user?.id ?? null });
+    });
+
+    // ONE ADDRESS AT A TIME, on a list that writes back, and recorded first
+    // (review.ts). The scope's guard already admits only moderators and
+    // administrators who have accepted the agreement.
+    route(mods, revealListAddress, async ({ params, request }) => {
+      const list = await requireList(db, Number(params.id));
+      if (!keys) refuse('no-contact-key');
+      return revealAddress(
+        db,
+        await keys(),
+        list,
+        Number(params.entryId),
+        request.user?.email ?? '',
+      );
     });
 
     route(mods, triageListEntries, async ({ params, request }) => {

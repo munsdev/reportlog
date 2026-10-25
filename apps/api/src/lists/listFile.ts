@@ -32,6 +32,9 @@ export function toListFile(list: LoadedList) {
     email: requiresEmail ? ('required' as const) : ('none' as const),
     ...(list.email_mode === 'required' ? { ask_email: 'always' as const } : {}),
     ...(list.strict ? { strict: true } : {}),
+    // Absent unless on, like every other key here: a file from before the
+    // switch existed reads the same as one with it off.
+    ...(list.write_back ? { write_back: true } : {}),
     fields: list.fields.map((f) => ({
       key: f.key,
       kind: f.kind,

@@ -198,6 +198,54 @@ test('a moderator approves the entries ticked on screen, and a published count m
   await v.context().close();
 });
 
+test('a contact list that writes back says so on the form, and a reviewer can show the address', async ({
+  page,
+  browser,
+}, info) => {
+  const slug = unique('reach', info.project.name);
+  const title = `Reach ${slug}`;
+  await page.goto('/lists');
+  await page.getByRole('button', { name: 'Make a list' }).click();
+  await page.getByRole('radio', { name: 'No: links, check-ins or messages' }).click();
+  await page.getByRole('radio', { name: 'Get in touch' }).click();
+  await page.getByLabel('Title (optional)').fill(title);
+  await page.getByLabel('Web address (optional)').fill(slug);
+  await page.getByRole('button', { name: 'Make the list' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+  // The contact starting point comes with the switch on.
+  await expect(page.getByRole('checkbox', { name: 'We’ll write back' })).toBeChecked();
+  await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
+  await page.getByRole('button', { name: 'Save the settings' }).click();
+  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+
+  const email = `${unique('writer', info.project.name)}@example.org`;
+  const v = await visitor(browser);
+  await v.goto(`/list/${slug}`);
+  await expect(
+    v.getByText(/The team will use your email address to write back to you/),
+  ).toBeVisible();
+  await v.getByRole('button', { name: 'Start' }).click();
+  await v.getByRole('textbox', { name: 'What is this about' }).fill('A question');
+  await v.getByRole('button', { name: 'Next' }).click();
+  await v.getByRole('textbox', { name: 'Your message' }).fill('Please reply to me');
+  await v.getByRole('button', { name: 'Next' }).click();
+  await expect(v.getByText(/The team will use this address to write back to you/)).toBeVisible();
+  await v.getByLabel(/Your email address/).fill(email);
+  // Faster than a person could read it is taken for a script (MIN_FILL_MS).
+  await v.waitForTimeout(2600);
+  await v.getByRole('button', { name: 'Send' }).click();
+  await expect(v.getByRole('heading', { name: 'Sent. Thank you.' })).toBeVisible();
+  await v.context().close();
+
+  await page.goto('/lists/review');
+  await page.getByRole('link', { name: new RegExp(slug.replace(/-/g, '.')) }).click();
+  const entry = page.getByRole('list', { name: 'Entries' }).getByRole('listitem').first();
+  // Nothing about the address is on the page until it is asked for.
+  await expect(entry).not.toContainText(email);
+  await entry.getByRole('button', { name: /^Show address for entry/ }).click();
+  await expect(entry.getByText(email)).toBeVisible();
+});
+
 test('making a list asks first whether it should be a logbook', async ({ page }) => {
   await page.goto('/lists');
   await page.getByRole('button', { name: 'Make a list' }).click();

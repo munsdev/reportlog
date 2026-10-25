@@ -395,6 +395,9 @@ function Intro({ form }: { form: Form }) {
           answers is ever made public.
         </p>
         <p>{address[form.email_when]}</p>
+        {form.write_back ? (
+          <p>The team will use your email address to write back to you about what you send.</p>
+        ) : null}
       </section>
     </div>
   );
@@ -771,6 +774,9 @@ function EmailCard({
     : wrote
       ? 'Needed, because you wrote something: we email you a link that deletes it, and your address with it.'
       : 'Not needed: you have not written anything. Leave it empty unless you want a reply.';
+  // Said in as many words as the list's own switch, because this is the card
+  // where somebody decides whether to give an address.
+  const writeBack = 'The team will use this address to write back to you.';
   return (
     <CardFrame
       eyebrow={eyebrow}
@@ -780,6 +786,7 @@ function EmailCard({
       optional={!always && !wrote}
       help={
         <p id="list-email-help" className="max-w-prose text-ink-alt">
+          {form.write_back ? `${writeBack} ` : ''}
           {why}
         </p>
       }

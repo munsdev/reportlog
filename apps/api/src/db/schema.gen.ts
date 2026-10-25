@@ -493,6 +493,14 @@ export interface LinkSecrets {
   secret_wrapped: Buffer;
 }
 
+export interface ListAddressReveals {
+  accessed_at: Generated<Timestamp>;
+  entry_id: number;
+  id: Generated<number>;
+  list_id: number;
+  staff_email: string;
+}
+
 export interface ListEntries {
   answers: Generated<Json>;
   created_at: Generated<Timestamp>;
@@ -563,6 +571,7 @@ export interface Lists {
   title: string;
   updated_at: Generated<Timestamp>;
   visibility: Generated<string>;
+  write_back: Generated<boolean>;
 }
 
 export interface LogbookEditorialNotes {
@@ -1101,6 +1110,7 @@ export interface DB {
   link_groups: LinkGroups;
   link_secrets: LinkSecrets;
   links: Links;
+  list_address_reveals: ListAddressReveals;
   list_entries: ListEntries;
   list_erasures: ListErasures;
   list_fields: ListFields;

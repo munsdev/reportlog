@@ -274,6 +274,21 @@ async function plantOneRowEach(): Promise<void> {
     .insertInto('contact_access_log')
     .values({ staff_email: 'm@example.org', kind: 'audit_log' })
     .execute();
+  // A list that writes back: one reviewer opening one entry's address.
+  const writes = await db
+    .insertInto('lists')
+    .values({ slug: `invariants-${hex('9').slice(0, 8)}`, title: 'Invariants', write_back: true })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  const written = await db
+    .insertInto('list_entries')
+    .values({ list_id: writes.id, answers: JSON.stringify({}) })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('list_address_reveals')
+    .values({ staff_email: 'm@example.org', list_id: writes.id, entry_id: written.id })
+    .execute();
 
   // Plan D, moderation: the agreement, the decision notice, a notice of
   // illegal content and the threat flag, each append-only.
