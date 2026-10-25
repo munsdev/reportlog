@@ -1,7 +1,7 @@
 # G3 · Social media links: status
 
 - **Branch:** `claude/vibrant-cray-ji1tfs`, from `main` at `e22cbd7`.
-- **State:** built; all three suites run (results in the commit message). Not merged.
+- **State:** built and pushed; not merged. Test results under "Verified" below.
 - **Asked for (25 October 2026):** a way to put the site's social media links on it, added in the
   admin panel, at least Facebook, Instagram, Threads, Bluesky, TikTok and YouTube, each switched
   on or off on its own, with icons, in logical places; and a look at whether the staff panel's
@@ -53,3 +53,20 @@ collects, so not **Content**. Two moves were weighed and not made, for the owner
 - No per-platform ordering: `resolveSocialLinks` always returns `SOCIAL_PLATFORMS`' order. The
   column is already a list, so letting an administrator reorder would change that function and
   the screen, not the database.
+
+## Verified
+
+- `pnpm check`: green.
+- `pnpm test:db`: 1447 of 1448 on the full run; the one failure was this migration's first
+  name (`*_social_links.sql` is read as a link-list table by `archive.test.ts`). Renamed;
+  `archive.test.ts` and `site.test.ts` then pass.
+- Browser suite, full run (25 October): 1160 passed, 9 skipped, 21 failed. **None is this
+  work's**: the same specs on `main` (`e22cbd7`) fail the same way — `navigation.spec.ts:243`
+  for every role (the public Main menu shows "My reports"), `two-factor.spec.ts:131`, and
+  `voting-log.spec.ts:98` and `:203`. The 21st, `site-ops.spec.ts:145` (44px), measured the
+  development notice's badge (38px), which `site-pages.spec.ts` turns on for a while in another
+  worker; it passes on its own. The new test in `site-pages.spec.ts` passes.
+- **Trap met on the way:** a browser run killed part-way leaves its API on :3000 and its preview
+  server behind, and the next run reuses them, against a database that no longer exists. Every
+  signed-in test then fails ("Not for this account"). Make sure nothing is listening on :3000
+  before a run.
