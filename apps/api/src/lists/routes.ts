@@ -24,7 +24,9 @@
 import { roleSatisfies } from '@reportlog/access';
 import {
   createList,
+  createListFromFile,
   deleteList,
+  downloadListFile,
   getList,
   getListCounts,
   getListForm,
@@ -63,6 +65,7 @@ import { summaryFor } from './aggregates.ts';
 import { fileEntry } from './entries.ts';
 import { redeemErasureToken, TOKEN_PATTERN } from './erasure.ts';
 import { collectionRequirements, optionsOf } from './fields.ts';
+import { createFromFile, toListFile } from './listFile.ts';
 import { linkTypesOf } from './policy.ts';
 import {
   allLists,
@@ -374,6 +377,19 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
     route(staff, createList, async ({ request }) => {
       const b = request.body as BodyOf<typeof createList>;
       return describe(await createFromTemplate(db, b.template, { slug: b.slug, title: b.title }));
+    });
+
+    // Always a NEW HIDDEN list, like a starting point, and never over one that
+    // exists: a taken address is refused in words.
+    route(staff, createListFromFile, async ({ request }) => {
+      const b = request.body as BodyOf<typeof createListFromFile>;
+      return describe(await createFromFile(db, b.file, { slug: b.slug, title: b.title }));
+    });
+
+    route(staff, downloadListFile, async ({ params, reply }) => {
+      const list = await requireList(db, Number(params.id));
+      void reply.header('content-disposition', `attachment; filename="list-${list.slug}.json"`);
+      return toListFile(list);
     });
 
     route(staff, getList, async ({ params }) =>

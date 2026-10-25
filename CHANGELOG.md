@@ -94,6 +94,10 @@ and `package.json` disagree. How a release is cut is in the README.
   deploy. The setup wizard refuses to run without one, so a stranger who finds a fresh install
   cannot make themselves its owner.
 - New starting points: Log how voting went, and an Election tips list.
+- A list can be downloaded as a file ("Download as file", on the list) and made again from a file
+  ("Or upload a list file", when making a list). The new list is hidden, and an address that is
+  already used is refused in a sentence rather than written over. Whether the form asks for an
+  email address is worked out from its questions, as it is for any list.
 - `sudo reportlog contact-key rotate` works. The runbook's steps for rotating the contact key
   named it, but the command answered "unknown command" and changed nothing.
 

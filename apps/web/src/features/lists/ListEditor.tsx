@@ -21,7 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
+import { Button, buttonVariants } from '../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
@@ -119,9 +119,19 @@ function Editor({ list }: { list: ListAdminDetail }) {
         </>
       }
       actions={
-        <Button asChild variant="secondary">
-          <Link to="/lists">All lists</Link>
-        </Button>
+        <>
+          {/* A plain link, as the logbook's is: the server sends it as a download. */}
+          <a
+            href={`/api/admin/lists/${String(list.id)}/file`}
+            download={`list-${list.slug}.json`}
+            className={buttonVariants({ variant: 'secondary' })}
+          >
+            Download as file
+          </a>
+          <Button asChild variant="secondary">
+            <Link to="/lists">All lists</Link>
+          </Button>
+        </>
       }
     >
       <Settings list={list} onSaved={refresh} />

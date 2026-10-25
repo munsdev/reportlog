@@ -55,6 +55,7 @@ const SENTENCES = {
   // ── an administrator ──
   'no-list': 'There is no such list.',
   'no-template': 'That is not a starting point this software ships.',
+  'bad-file': 'That file is not a list file this software can read.',
   slug: 'A web address may use lowercase letters, numbers and hyphens, and must start with a letter or number.',
   'slug-taken': 'Another list already uses that web address. Choose a different one.',
   title: 'Give it a title of 1 to 120 characters.',

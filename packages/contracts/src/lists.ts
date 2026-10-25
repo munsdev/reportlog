@@ -282,6 +282,38 @@ export const createList = defineRoute({
   response: ListDetail,
 });
 
+/**
+ * A list as a file: the document a starting point ships as, so one reader
+ * serves both. Loose, because the reader, not this schema, says what is wrong
+ * with a file in words an administrator can act on.
+ */
+export const ListFile = z.looseObject({
+  reportlog_list: z.number(),
+  slug: z.string(),
+  title: z.string(),
+  blurb: z.string().optional(),
+  /** Derived from the questions when a file is written, and checked when one is read. */
+  email: z.enum(['none', 'optional', 'required']).optional(),
+  /** `always`: ask for an address even where the questions do not need one. Present only then. */
+  ask_email: z.literal('always').optional(),
+  /** Present only when true. */
+  strict: z.boolean().optional(),
+  fields: z.array(z.looseObject({ key: z.string(), kind: z.string(), label: z.string() })),
+});
+export type ListFile = z.infer<typeof ListFile>;
+
+export const createListFromFile = defineRoute({
+  method: 'POST',
+  path: '/api/admin/lists/from-file',
+  summary: 'Make a hidden list from a list file, optionally under another address and title.',
+  body: z.object({
+    file: z.unknown(),
+    slug: z.string().optional(),
+    title: z.string().optional(),
+  }),
+  response: ListDetail,
+});
+
 export const getList = defineRoute({
   method: 'GET',
   path: '/api/admin/lists/:id',
@@ -326,6 +358,14 @@ export const ListQuestionInput = z.object({
   retention: z.string().optional(),
 });
 export type ListQuestionInput = z.infer<typeof ListQuestionInput>;
+
+export const downloadListFile = defineRoute({
+  method: 'GET',
+  path: '/api/admin/lists/:id/file',
+  summary: 'A list as a file: its title and questions, not what anybody sent through it.',
+  params: ListIdParams,
+  response: ListFile,
+});
 
 export const replaceListQuestions = defineRoute({
   method: 'PUT',
