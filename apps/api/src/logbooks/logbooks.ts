@@ -108,6 +108,7 @@ function summaries(db: Db) {
     'logbooks.outside_access',
     'logbooks.email_required',
     'logbooks.publish_by_terms',
+    'logbooks.show_on_front',
     // What E1's email rule reads: each question's kind and settings.
     sql<{ kind: string; settings: FieldSettings | null }[] | null>`(
       SELECT json_agg(json_build_object('kind', f.kind, 'settings', f.settings))
@@ -154,6 +155,7 @@ function present(row: SummaryRow): LogbookSummary {
     // ask for an address; the operator's switch can only add one (E1).
     asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
     publish_by_terms: row.publish_by_terms,
+    show_on_front: row.show_on_front,
   };
 }
 
@@ -389,6 +391,7 @@ export async function updateDetails(
     blurb?: string | null | undefined;
     email_required?: boolean | undefined;
     publish_by_terms?: boolean | undefined;
+    show_on_front?: boolean | undefined;
   },
 ): Promise<LogbookSummary> {
   const set: {
@@ -396,6 +399,7 @@ export async function updateDetails(
     blurb?: string | null;
     email_required?: boolean;
     publish_by_terms?: boolean;
+    show_on_front?: boolean;
     updated_at: Date;
   } = {
     updated_at: new Date(),
@@ -408,6 +412,9 @@ export async function updateDetails(
   // The same, for publication: it changes what the next reporter is shown,
   // and every report already filed sealed the wording its reporter saw.
   if (spec.publish_by_terms !== undefined) set.publish_by_terms = spec.publish_by_terms;
+  // Whether the front page advertises it. Presentation only, so it too stays
+  // changeable after launch.
+  if (spec.show_on_front !== undefined) set.show_on_front = spec.show_on_front;
   const done = await db.updateTable('logbooks').set(set).where('id', '=', id).executeTakeFirst();
   if (!done.numUpdatedRows) refuse('no-logbook');
   return (await logbookById(db, id)) ?? refuse('no-logbook');

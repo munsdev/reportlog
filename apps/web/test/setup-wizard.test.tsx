@@ -45,6 +45,8 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
     copy: [],
     legal: [],
     home_sections: [],
+    social_links: [],
+    social_float: { on: false, pages: [] },
   });
   const files = () => ({
     configured,

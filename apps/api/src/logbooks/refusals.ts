@@ -122,7 +122,8 @@ const SENTENCES = {
   duplicate: 'That button is in the list twice.',
   'bad-label': 'A button label is text.',
   'label-too-long': 'That label is longer than a button can carry. Eighty characters at most.',
-  'builtin-label': 'The site’s own buttons keep their own wording.',
+  'bad-sub': 'A button’s second line is text.',
+  'sub-too-long': 'That second line is longer than a button can carry. 160 characters at most.',
 } as const;
 
 export type RefusalCode = keyof typeof SENTENCES;

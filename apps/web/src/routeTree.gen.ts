@@ -91,6 +91,7 @@ import { Route as staffSettingsFormsRouteImport } from './routes/(staff)/setting
 import { Route as staffSettingsLegalRouteImport } from './routes/(staff)/settings/legal'
 import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings/look'
 import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
+import { Route as staffSettingsSocialRouteImport } from './routes/(staff)/settings/social'
 import { Route as staffSettingsStartingPointsRouteImport } from './routes/(staff)/settings/starting-points'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
@@ -526,6 +527,11 @@ const staffSettingsNameRoute = staffSettingsNameRouteImport.update({
   path: '/name',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
+const staffSettingsSocialRoute = staffSettingsSocialRouteImport.update({
+  id: '/social',
+  path: '/social',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
 const staffSettingsStartingPointsRoute =
   staffSettingsStartingPointsRouteImport.update({
     id: '/starting-points',
@@ -718,6 +724,7 @@ export interface FileRoutesByFullPath {
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
+  '/settings/social': typeof staffSettingsSocialRoute
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
@@ -818,6 +825,7 @@ export interface FileRoutesByTo {
   '/settings/legal': typeof staffSettingsLegalRoute
   '/settings/look': typeof staffSettingsLookRoute
   '/settings/name': typeof staffSettingsNameRoute
+  '/settings/social': typeof staffSettingsSocialRoute
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
@@ -925,6 +933,7 @@ export interface FileRoutesById {
   '/(staff)/settings/legal': typeof staffSettingsLegalRoute
   '/(staff)/settings/look': typeof staffSettingsLookRoute
   '/(staff)/settings/name': typeof staffSettingsNameRoute
+  '/(staff)/settings/social': typeof staffSettingsSocialRoute
   '/(staff)/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
@@ -1033,6 +1042,7 @@ export interface FileRouteTypes {
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
+    | '/settings/social'
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
@@ -1133,6 +1143,7 @@ export interface FileRouteTypes {
     | '/settings/legal'
     | '/settings/look'
     | '/settings/name'
+    | '/settings/social'
     | '/settings/starting-points'
     | '/settings/words'
     | '/file/confirm/$token'
@@ -1239,6 +1250,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings/legal'
     | '/(staff)/settings/look'
     | '/(staff)/settings/name'
+    | '/(staff)/settings/social'
     | '/(staff)/settings/starting-points'
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
@@ -1920,6 +1932,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsNameRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
+    '/(staff)/settings/social': {
+      id: '/(staff)/settings/social'
+      path: '/social'
+      fullPath: '/settings/social'
+      preLoaderRoute: typeof staffSettingsSocialRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
     '/(staff)/settings/starting-points': {
       id: '/(staff)/settings/starting-points'
       path: '/starting-points'
@@ -2181,6 +2200,7 @@ interface staffSettingsRouteRouteChildren {
   staffSettingsLegalRoute: typeof staffSettingsLegalRoute
   staffSettingsLookRoute: typeof staffSettingsLookRoute
   staffSettingsNameRoute: typeof staffSettingsNameRoute
+  staffSettingsSocialRoute: typeof staffSettingsSocialRoute
   staffSettingsStartingPointsRoute: typeof staffSettingsStartingPointsRoute
   staffSettingsWordsRoute: typeof staffSettingsWordsRoute
   staffSettingsIndexRoute: typeof staffSettingsIndexRoute
@@ -2193,6 +2213,7 @@ const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
   staffSettingsLegalRoute: staffSettingsLegalRoute,
   staffSettingsLookRoute: staffSettingsLookRoute,
   staffSettingsNameRoute: staffSettingsNameRoute,
+  staffSettingsSocialRoute: staffSettingsSocialRoute,
   staffSettingsStartingPointsRoute: staffSettingsStartingPointsRoute,
   staffSettingsWordsRoute: staffSettingsWordsRoute,
   staffSettingsIndexRoute: staffSettingsIndexRoute,

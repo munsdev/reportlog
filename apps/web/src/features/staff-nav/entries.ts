@@ -126,6 +126,9 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       { to: '/settings/name', label: 'Name', for: ADMIN },
       { to: '/settings/look', label: 'Look', for: ADMIN },
       { to: '/settings/words', label: 'Wording', for: ADMIN },
+      // Where the site is elsewhere: what the public pages say about it, so
+      // beside its name and wording rather than with the content it collects.
+      { to: '/settings/social', label: 'Social media', for: ADMIN },
       { to: '/settings/legal', label: 'Legal notices', for: ADMIN },
       { to: '/settings/development', label: 'Development notice', for: ADMIN },
     ],

@@ -104,6 +104,7 @@ const logbook = (id: number, state: 'draft' | 'open' | 'closed') => ({
   outside_access: 'closed',
   email_required: false,
   publish_by_terms: false,
+  show_on_front: true,
   asks_email: true,
 });
 

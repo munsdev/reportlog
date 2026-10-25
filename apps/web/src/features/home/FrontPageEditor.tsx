@@ -13,7 +13,7 @@
  * NOTHING IS PUBLIC UNTIL SAVE. Every change is held here, and Save sends
  * them through the same calls the settings screens use (`setCopy`,
  * `setHomeButtons`, `setHomeSections`), so the server's checks are the ones
- * that already apply: a built-in button cannot be relabelled, and the
+ * that already apply: a button's target is never typed in, and the
  * emergency notice saved empty goes back to its shipped wording rather than
  * disappearing (decision 62).
  *
@@ -21,7 +21,13 @@
  * page's, so a {{ figure }} is edited as written rather than as the number
  * it shows today.
  */
-import { setCopy, setHomeButtons, setHomeSections, HOME_SECTION_NAMES } from '@reportlog/contracts';
+import {
+  setCopy,
+  setHomeButtons,
+  setHomeSections,
+  shownSocialLinks,
+  HOME_SECTION_NAMES,
+} from '@reportlog/contracts';
 import type {
   AvailableButton,
   CopyKey,
@@ -59,6 +65,7 @@ import {
   LEDE_CLASS,
   LinksSection,
   MapSection,
+  SocialSection,
 } from './FrontPage.tsx';
 
 /** The wording slots that are on the front page. */
@@ -71,6 +78,8 @@ interface Row {
   kind: AvailableButton['kind'];
   ref: string;
   label: string;
+  /** The second line, or ''. */
+  sub: string;
 }
 
 const rowsFrom = (data: HomeButtonsAdmin): Row[] =>
@@ -78,6 +87,12 @@ const rowsFrom = (data: HomeButtonsAdmin): Row[] =>
     kind: b.kind,
     ref: b.ref,
     label: b.label === b.title ? '' : b.label,
+    // The server resolves a blank second line to the target's own, so only
+    // what differs from the target's is the operator's.
+    sub:
+      b.blurb === (data.targets.find((t) => keyOf(t) === keyOf(b))?.blurb ?? null)
+        ? ''
+        : (b.blurb ?? ''),
   }));
 
 const keyOf = (r: { kind: string; ref: string }) => `${r.kind}:${r.ref}`;
@@ -190,15 +205,16 @@ function Editing({
         await call(setHomeButtons, {
           body: {
             order: [
-              ...rows.map((r) =>
-                r.label.trim()
-                  ? { kind: r.kind, ref: r.ref, label: r.label.trim() }
-                  : { kind: r.kind, ref: r.ref },
-              ),
+              ...rows.map((r) => ({
+                kind: r.kind,
+                ref: r.ref,
+                ...(r.label.trim() ? { label: r.label.trim() } : {}),
+                ...(r.sub.trim() ? { sub: r.sub.trim() } : {}),
+              })),
               // HIDDEN, SAID SO. Left out, a logbook or list is "new" to the
               // server and is added back to the end of the page.
               ...hiddenButtons
-                .filter((b) => b.kind !== 'builtin')
+                .filter((b) => b.kind === 'logbook' || b.kind === 'list')
                 .map((b) => ({ kind: b.kind, ref: b.ref, hidden: true as const })),
             ],
           },
@@ -232,7 +248,9 @@ function Editing({
   const all: AvailableButton[] = [
     ...buttons.available.logbooks,
     ...buttons.available.lists,
+    ...buttons.available.maps,
     ...buttons.available.builtins,
+    ...buttons.available.social,
   ];
   const find = (r: Row) => all.find((b) => keyOf(b) === keyOf(r));
   const moveRow = (i: number, by: -1 | 1) => {
@@ -284,6 +302,16 @@ function Editing({
         );
       case 'links':
         return <LinksSection />;
+      case 'social': {
+        const links = shownSocialLinks(editor.social_links);
+        return links.length ? (
+          <SocialSection links={links} name={name} />
+        ) : (
+          <Note>
+            No social media account is switched on. Accounts are added under Site, Social media.
+          </Note>
+        );
+      }
     }
   };
 
@@ -355,28 +383,34 @@ function Editing({
                       >
                         {shown}
                       </span>
-                      {r.kind === 'builtin' ? (
-                        <p className="text-sm text-ink-alt">
-                          “{title}” is part of the site, so its wording stays: it always says what
-                          it does.
-                        </p>
-                      ) : (
-                        <Field>
-                          <Label>Wording on “{title}”</Label>
-                          <Input
-                            value={r.label}
-                            maxLength={80}
-                            placeholder={title}
-                            onChange={(e) => {
-                              const label = e.target.value;
-                              setRows((now) => now.map((x, j) => (j === i ? { ...x, label } : x)));
-                            }}
-                          />
-                          <FieldDescription>
-                            {`Left empty, the button says the ${r.kind === 'list' ? 'list' : 'logbook'}’s own title.`}
-                          </FieldDescription>
-                        </Field>
-                      )}
+                      <Field>
+                        <Label>Wording on “{title}”</Label>
+                        <Input
+                          value={r.label}
+                          maxLength={80}
+                          placeholder={title}
+                          onChange={(e) => {
+                            const label = e.target.value;
+                            setRows((now) => now.map((x, j) => (j === i ? { ...x, label } : x)));
+                          }}
+                        />
+                        <FieldDescription>
+                          Left empty, the button says its own title. Where it leads is set under
+                          Logbooks, The front page’s buttons.
+                        </FieldDescription>
+                      </Field>
+                      <Field>
+                        <Label>Second line on “{title}”</Label>
+                        <Input
+                          value={r.sub}
+                          maxLength={160}
+                          placeholder={b?.blurb ?? 'None'}
+                          onChange={(e) => {
+                            const sub = e.target.value;
+                            setRows((now) => now.map((x, j) => (j === i ? { ...x, sub } : x)));
+                          }}
+                        />
+                      </Field>
                       <div className="flex flex-wrap gap-2">
                         <Button
                           variant="secondary"
@@ -439,7 +473,10 @@ function Editing({
                         variant="secondary"
                         aria-label={`Show: “${b.label}”`}
                         onClick={() => {
-                          setRows((now) => [...now, { kind: b.kind, ref: b.ref, label: '' }]);
+                          setRows((now) => [
+                            ...now,
+                            { kind: b.kind, ref: b.ref, label: '', sub: '' },
+                          ]);
                         }}
                       >
                         Show it

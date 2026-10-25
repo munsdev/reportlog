@@ -397,6 +397,19 @@ describe('what a visitor can send', () => {
     );
   });
 
+  it('"Show on the front page" off takes it off the front page, and the form stays open', async () => {
+    const onFront = async () =>
+      json<{ buttons: { kind: string; ref: string }[] }>(
+        await anybody({ method: 'GET', url: '/api/home-buttons' }),
+      ).buttons.some((b) => b.kind === 'list' && b.ref === SLUG);
+    expect(json<ListAdminDetail>(await patch({ show_on_front: false })).show_on_front).toBe(false);
+    expect(await onFront()).toBe(false);
+    // Only advertising: the form is still there, and still listed.
+    expect((await anybody({ method: 'GET', url: `/api/lists/${SLUG}` })).statusCode).toBe(200);
+    expect(json<ListAdminDetail>(await patch({ show_on_front: true })).show_on_front).toBe(true);
+    expect(await onFront()).toBe(true);
+  });
+
   it('a link and two choices go through with no address', async () => {
     const r = await send({
       answers: {

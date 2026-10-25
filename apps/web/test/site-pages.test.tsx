@@ -18,7 +18,7 @@ import {
   createRoute,
   createRouter,
 } from '@tanstack/react-router';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -148,6 +148,34 @@ describe('the footer', () => {
     expect(versionLine({ release: null, build: null })).toBeNull();
     await inRouter(() => <SiteFooter />, site({ version: { release: 'v3.0.1', build: null } }));
     expect(await screen.findByText('Version v3.0.1')).toBeInTheDocument();
+  });
+
+  it('marks each social media account switched on, named for a screen reader, sent with no referrer', async () => {
+    await inRouter(
+      () => <SiteFooter />,
+      site({
+        social_links: [
+          { id: 'instagram', url: 'https://www.instagram.com/munich' },
+          { id: 'bluesky', url: 'https://bsky.app/profile/munich.org' },
+        ],
+      }),
+    );
+    const nav = await screen.findByRole('navigation', { name: 'Follow us elsewhere' });
+    const links = within(nav).getAllByRole('link');
+    expect(links.map((a) => a.getAttribute('aria-label'))).toEqual([
+      'Munich Archive on Instagram',
+      'Munich Archive on Bluesky',
+    ]);
+    for (const a of links) {
+      expect(a.getAttribute('rel')).toContain('noreferrer');
+      expect(a.querySelector('svg')).not.toBeNull();
+    }
+  });
+
+  it('has no social media row when no account is switched on', async () => {
+    await inRouter(() => <SiteFooter />, site({ social_links: [] }));
+    await screen.findByText(/Powered by/);
+    expect(screen.queryByRole('navigation', { name: 'Follow us elsewhere' })).toBeNull();
   });
 });
 

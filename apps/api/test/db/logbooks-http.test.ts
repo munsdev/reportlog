@@ -292,10 +292,16 @@ describe('the front page', () => {
       order: [{ kind: 'builtin', ref: 'board' }],
     });
     expect(set.body.stored).toEqual([{ kind: 'builtin', ref: 'board' }]);
-    const refused = await api<ErrorBody>('PUT', '/api/admin/home-buttons', {
-      order: [{ kind: 'builtin', ref: 'board', label: 'Ours' }],
+    const relabelled = await api<{ stored: unknown }>('PUT', '/api/admin/home-buttons', {
+      order: [{ kind: 'builtin', ref: 'board', label: 'Ours', sub: 'The record' }],
     });
-    expect(refused.body.error.code).toBe('builtin-label');
+    expect(relabelled.body.stored).toEqual([
+      { kind: 'builtin', ref: 'board', label: 'Ours', sub: 'The record' },
+    ]);
+    const refused = await api<ErrorBody>('PUT', '/api/admin/home-buttons', {
+      order: [{ kind: 'builtin', ref: 'board', label: 'x'.repeat(81) }],
+    });
+    expect(refused.body.error.code).toBe('label-too-long');
     const cleared = await api<{ stored: unknown }>('DELETE', '/api/admin/home-buttons');
     expect(cleared.body.stored).toBeNull();
   });

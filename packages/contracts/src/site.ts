@@ -17,6 +17,15 @@ import { Figure } from './board.ts';
 import { ENUMS } from './look/pack.ts';
 import type { ThemeLayout } from './look/pack.ts';
 import { defineRoute } from './route.ts';
+import {
+  MAX_SOCIAL_ADDRESS,
+  PublicSocialLink,
+  SOCIAL_FLOAT_PAGES,
+  SocialFloat,
+  SocialLink,
+} from './social.ts';
+
+export * from './social.ts';
 
 // ── the look ────────────────────────────────────────────────────────────
 
@@ -249,7 +258,7 @@ export const CopyKeySchema = z.enum(COPY_KEYS);
  * the buttons and the emergency notice are not here: they are the page, and
  * the notice may not be removed (decision 62).
  */
-export const HOME_SECTIONS = ['intro', 'check', 'map', 'figures', 'links'] as const;
+export const HOME_SECTIONS = ['intro', 'check', 'map', 'figures', 'links', 'social'] as const;
 export type HomeSectionId = (typeof HOME_SECTIONS)[number];
 export const HomeSectionIdSchema = z.enum(HOME_SECTIONS);
 
@@ -263,6 +272,7 @@ export const HOME_SECTION_NAMES: Record<HomeSectionId, string> = {
   map: 'The map',
   figures: 'The figures',
   links: 'More you can do',
+  social: 'Follow us elsewhere',
 };
 
 /**
@@ -327,6 +337,16 @@ export const Site = z.object({
    * and the page reads it through `resolveHomeSections`.
    */
   home_sections: z.array(HomeSection).optional(),
+  /**
+   * The accounts elsewhere that are switched on, in order. Optional for the
+   * same reason as `home_sections`; the server always sends it.
+   */
+  social_links: z.array(PublicSocialLink).optional(),
+  /**
+   * The pages that carry the floating button. Present only while it is on
+   * and an account is shown; absent otherwise, so most pages never see it.
+   */
+  social_float_pages: z.array(z.enum(SOCIAL_FLOAT_PAGES)).optional(),
 });
 export type Site = z.infer<typeof Site>;
 
@@ -423,6 +443,10 @@ export const SiteEditor = z.object({
   legal: z.array(LegalEditor),
   /** The front page's quieter sections, whole and in order. */
   home_sections: z.array(HomeSection),
+  /** Every platform, in order, with its address and whether it shows. */
+  social_links: z.array(SocialLink),
+  /** The floating "Follow us" button's switch and pages. */
+  social_float: SocialFloat,
 });
 export type SiteEditor = z.infer<typeof SiteEditor>;
 
@@ -473,6 +497,32 @@ export const setHomeSections = defineRoute({
   summary: "Choose which of the front page's quieter sections show, and their order.",
   body: z.object({
     sections: z.array(z.object({ id: z.string(), shown: z.boolean() })).max(20),
+  }),
+  response: SiteEditor,
+});
+
+/**
+ * Every account at once, as the screen holds them. Ids and addresses as
+ * strings, so an unknown platform or an address on the wrong site is
+ * refused in a sentence, not a schema error. A platform left out is kept as
+ * it was.
+ */
+export const setSocialLinks = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/site/social',
+  summary: 'Set the addresses of the site’s social media accounts, and which show.',
+  body: z.object({
+    links: z
+      .array(
+        z.object({
+          id: z.string(),
+          address: z.string().max(MAX_SOCIAL_ADDRESS * 2),
+          shown: z.boolean(),
+        }),
+      )
+      .max(40),
+    /** The floating button. Left out, it is kept as it was. */
+    float: z.object({ on: z.boolean(), pages: z.array(z.string()).max(20) }).optional(),
   }),
   response: SiteEditor,
 });

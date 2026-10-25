@@ -230,14 +230,39 @@ describe("the front page's buttons", () => {
     expect(bs.map((b) => b.ref)).toEqual(['board', 'b']);
   });
 
-  it('never reads a label on a built-in, even from a hand-edited row', () => {
-    const [b] = resolveButtons(available, [{ kind: 'builtin', ref: 'board', label: 'Renamed' }]);
-    expect(b?.label).toBe('board');
+  it('reads a label and a second line on a built-in like any other (decision 76)', () => {
+    const [b] = resolveButtons(available, [
+      { kind: 'builtin', ref: 'board', label: 'Renamed', sub: 'The published record' },
+    ]);
+    expect(b).toMatchObject({ label: 'Renamed', title: 'board', blurb: 'The published record' });
+  });
+
+  it('gives the accent to the first real button, never to a row of icons', () => {
+    const social = {
+      kind: 'social' as const,
+      ref: 'links',
+      label: 'Follow us',
+      href: null,
+      action: null,
+      blurb: null,
+      help: null,
+      social: [{ id: 'bluesky' as const, url: 'https://bsky.app/profile/x' }],
+    };
+    const bs = resolveButtons({ ...available, social: [social] }, [
+      { kind: 'social', ref: 'links' },
+      { kind: 'builtin', ref: 'board' },
+    ]);
+    // (the logbooks the fixture has are appended after what was arranged)
+    expect(bs.slice(0, 2).map((b) => [b.ref, b.accent])).toEqual([
+      ['links', false],
+      ['board', true],
+    ]);
+    expect(bs.filter((b) => b.accent)).toHaveLength(1);
   });
 
   it('stores an order and nothing else: no colour, no href', () => {
     const src = source('homeButtons.ts');
-    expect(src).toMatch(/accent: i === 0/);
+    expect(src).toMatch(/accent: i === first/);
     expect(src).not.toMatch(/colou?r/i);
     const stored = /clean\.push\([\s\S]*?\);/.exec(src);
     expect(stored).not.toBeNull();

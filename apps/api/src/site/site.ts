@@ -5,6 +5,9 @@ import {
   parseBrand,
   plainName,
   resolveHomeSections,
+  resolveSocialFloat,
+  resolveSocialLinks,
+  shownSocialLinks,
 } from '@reportlog/contracts';
 import type { CopyKey, Legal, Site, SiteEditor, SiteVersion } from '@reportlog/contracts';
 import { figureValues, renderText } from '../board/figures.ts';
@@ -54,6 +57,8 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     lookCatalogue(db),
   ]);
   const name = resolveSiteName(settings.site_name);
+  const shown = shownSocialLinks(resolveSocialLinks(settings.social_links));
+  const float = resolveSocialFloat(settings.social_float);
   return {
     software_name: SOFTWARE_NAME,
     name,
@@ -64,6 +69,10 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     dev_mode_until: dev.until,
     version,
     home_sections: resolveHomeSections(settings.home_sections),
+    social_links: shown,
+    // Only while it is on AND there is something to follow, so a site that
+    // never turned it on sends nothing about it.
+    ...(float.on && shown.length ? { social_float_pages: float.pages } : {}),
   };
 }
 
@@ -90,5 +99,7 @@ export async function editorState(db: Database): Promise<SiteEditor> {
       ...editorStartingText(settings[LEGAL_COLUMN[kind]], kind),
     })),
     home_sections: resolveHomeSections(settings.home_sections),
+    social_links: resolveSocialLinks(settings.social_links),
+    social_float: resolveSocialFloat(settings.social_float),
   };
 }

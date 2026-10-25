@@ -212,6 +212,8 @@ export const ListDetail = z.object({
   email_mode: ListEmailMode,
   /** "We'll write back": reviewers may open an entry's address, and the form says so. */
   write_back: z.boolean(),
+  /** Whether the front page advertises it while it is open. */
+  show_on_front: z.boolean(),
   notify: z.boolean(),
   notify_email: z.string().nullable(),
   notify_pending_email: z.string().nullable(),
@@ -340,6 +342,7 @@ export const updateList = defineRoute({
     outside_access: z.string().optional(),
     email_mode: z.string().optional(),
     write_back: z.boolean().optional(),
+    show_on_front: z.boolean().optional(),
     notify: z.boolean().optional(),
     /** Naming an address other than the admin one sends it a link first. */
     notify_email: z.string().nullable().optional(),
