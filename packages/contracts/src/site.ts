@@ -502,6 +502,57 @@ export function resolveSocialLinks(stored: unknown): SocialLink[] {
   });
 }
 
+/**
+ * The floating "Follow us" button. `on` is the switch; `pages` are the public
+ * pages that may carry it. THE LIST CAN NEVER NAME A FORM OR A DOOR: there is
+ * no id for one, so no stored value can put it there. One card asks one
+ * question, and nothing changes under a person filling a form.
+ */
+export const SOCIAL_FLOAT_PAGES = ['front', 'board', 'maps', 'about', 'journalists'] as const;
+export type SocialFloatPage = (typeof SOCIAL_FLOAT_PAGES)[number];
+export const SOCIAL_FLOAT_PAGE_NAMES: Record<SocialFloatPage, string> = {
+  front: 'The front page',
+  board: 'The board',
+  maps: 'The maps',
+  about: 'About',
+  journalists: 'Journalists',
+};
+export const SocialFloat = z.object({
+  on: z.boolean(),
+  pages: z.array(z.enum(SOCIAL_FLOAT_PAGES)),
+});
+export type SocialFloat = z.infer<typeof SocialFloat>;
+
+/**
+ * The stored setting, made whole: off unless it says on, every page named at
+ * most once in the shipped order, and every page when none was ever chosen
+ * (so switching it on starts where most sites want it).
+ */
+export function resolveSocialFloat(stored: unknown): SocialFloat {
+  const raw =
+    typeof stored === 'object' && stored !== null ? (stored as Record<string, unknown>) : {};
+  const named = Array.isArray(raw.pages) ? (raw.pages as unknown[]) : null;
+  return {
+    on: raw.on === true,
+    pages: named ? SOCIAL_FLOAT_PAGES.filter((p) => named.includes(p)) : [...SOCIAL_FLOAT_PAGES],
+  };
+}
+
+/**
+ * Which of those pages a path is, or null: a path that is none of them (a
+ * filing form, a list form, a door, a staff screen) never carries the button.
+ */
+export function socialFloatPageOf(pathname: string): SocialFloatPage | null {
+  const at = (root: string) => pathname === root || pathname.startsWith(`${root}/`);
+  if (pathname === '/') return 'front';
+  if (at('/board')) return 'board';
+  if (at('/map')) return 'maps';
+  if (at('/about')) return 'about';
+  // The journalists' own page only: its sign-up and alert screens are forms.
+  if (pathname === '/journalists') return 'journalists';
+  return null;
+}
+
 /** The accounts a visitor sees: switched on and with an address. */
 export function shownSocialLinks(links: readonly SocialLink[]): PublicSocialLink[] {
   return links.flatMap((l) => (l.shown && l.url ? [{ id: l.id, url: l.url }] : []));
@@ -553,6 +604,11 @@ export const Site = z.object({
    * same reason as `home_sections`; the server always sends it.
    */
   social_links: z.array(PublicSocialLink).optional(),
+  /**
+   * The pages that carry the floating button. Present only while it is on
+   * and an account is shown; absent otherwise, so most pages never see it.
+   */
+  social_float_pages: z.array(z.enum(SOCIAL_FLOAT_PAGES)).optional(),
 });
 export type Site = z.infer<typeof Site>;
 
@@ -651,6 +707,8 @@ export const SiteEditor = z.object({
   home_sections: z.array(HomeSection),
   /** Every platform, in order, with its address and whether it shows. */
   social_links: z.array(SocialLink),
+  /** The floating "Follow us" button's switch and pages. */
+  social_float: SocialFloat,
 });
 export type SiteEditor = z.infer<typeof SiteEditor>;
 
@@ -725,6 +783,8 @@ export const setSocialLinks = defineRoute({
         }),
       )
       .max(40),
+    /** The floating button. Left out, it is kept as it was. */
+    float: z.object({ on: z.boolean(), pages: z.array(z.string()).max(20) }).optional(),
   }),
   response: SiteEditor,
 });

@@ -1,5 +1,5 @@
 /** An editor state as the server would send it, for screens tested without one. */
-import { resolveHomeSections, resolveSocialLinks } from '@reportlog/contracts';
+import { resolveHomeSections, resolveSocialFloat, resolveSocialLinks } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 
 export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
@@ -26,6 +26,7 @@ export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
     ],
     home_sections: resolveHomeSections(null),
     social_links: resolveSocialLinks(null),
+    social_float: resolveSocialFloat(null),
     ...overrides,
   };
 }

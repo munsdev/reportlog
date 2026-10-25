@@ -9,12 +9,14 @@
  * kept as it was.
  */
 import {
+  SOCIAL_FLOAT_PAGES,
   SOCIAL_PLATFORMS,
   SOCIAL_RULES,
+  resolveSocialFloat,
   resolveSocialLinks,
   socialAddress,
 } from '@reportlog/contracts';
-import type { SocialLink, SocialPlatform } from '@reportlog/contracts';
+import type { SocialFloat, SocialLink, SocialPlatform } from '@reportlog/contracts';
 import type { Checked } from './result.ts';
 
 const KNOWN = new Set<string>(SOCIAL_PLATFORMS);
@@ -46,4 +48,21 @@ export function validateSocialLinks(
     next.set(id, { id, url: address.url, shown: l.shown });
   }
   return { ok: true, value: resolveSocialLinks([...next.values()]) };
+}
+
+/**
+ * The floating button's switch and pages. A page it cannot place is refused in
+ * words rather than dropped: the screen offers only the five, so an unknown
+ * one is a screen sending something wrong.
+ */
+export function validateSocialFloat(raw: {
+  on: boolean;
+  pages: readonly string[];
+}): Checked<SocialFloat> {
+  const known = new Set<string>(SOCIAL_FLOAT_PAGES);
+  const bad = raw.pages.find((p) => !known.has(p));
+  if (bad !== undefined) {
+    return { ok: false, error: `“${bad}” is not a page the Follow us button can be on.` };
+  }
+  return { ok: true, value: resolveSocialFloat({ on: raw.on, pages: raw.pages }) };
 }

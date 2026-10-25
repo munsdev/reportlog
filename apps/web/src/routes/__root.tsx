@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { Outlet, createRootRouteWithContext, useLocation } from '@tanstack/react-router';
 import { DevBadge } from '../components/ui/dev-badge.tsx';
+import { FollowButton } from '../components/ui/follow-button.tsx';
 import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { SiteLook } from '../components/ui/site.tsx';
 import { StepUpHost } from '../features/identity/StepUp.tsx';
@@ -28,6 +29,7 @@ function RootLayout() {
       <SiteLook />
       <Frame />
       <DevBadge />
+      <FollowButton />
       <StepUpHost />
     </HeaderProgressProvider>
   );

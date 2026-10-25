@@ -38,7 +38,7 @@ import { validateCopy } from './copy.ts';
 import { validateHomeSections } from './homeSections.ts';
 import * as dev from './devMode.ts';
 import { validateSiteName } from './identity.ts';
-import { validateSocialLinks } from './social.ts';
+import { validateSocialFloat, validateSocialLinks } from './social.ts';
 import { validateLegalText } from './legal.ts';
 import { lookCatalogue } from '../looks/packs.ts';
 import { validateLook } from './look.ts';
@@ -145,8 +145,13 @@ export async function siteAdminRoutes(
 
     route(scoped, setSocialLinks, async ({ request }) => {
       const current = resolveSocialLinks((await readSettings(db)).social_links);
-      const links = accept(validateSocialLinks(current, bodyOf(setSocialLinks, request).links));
-      await writeSettings(db, { social_links: JSON.stringify(links) });
+      const body = bodyOf(setSocialLinks, request);
+      const links = accept(validateSocialLinks(current, body.links));
+      const float = body.float ? accept(validateSocialFloat(body.float)) : null;
+      await writeSettings(db, {
+        social_links: JSON.stringify(links),
+        ...(float ? { social_float: JSON.stringify(float) } : {}),
+      });
       return editorState(db);
     });
 

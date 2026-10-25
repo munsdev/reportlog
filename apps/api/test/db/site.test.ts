@@ -300,6 +300,44 @@ describe('the migration that brought in the look library', () => {
     await db.updateTable('site_settings').set({ home_sections: null }).execute();
   });
 
+  it('keeps the floating Follow us button off until asked, sends its pages only while it is on and something is shown, and refuses an unknown page', async () => {
+    type Float = { on: boolean; pages: string[] };
+    const site = () => get<{ social_float_pages?: string[] }>('/api/site');
+    const links = [{ id: 'instagram', address: '@our.archive', shown: true }];
+    const first = await admin('PUT', '/api/admin/site/social', { links });
+    expect(first.json<{ social_float: Float }>().social_float).toMatchObject({ on: false });
+    expect('social_float_pages' in (await site())).toBe(false);
+
+    const on = await admin('PUT', '/api/admin/site/social', {
+      links,
+      float: { on: true, pages: ['about', 'front'] },
+    });
+    expect(on.json<{ social_float: Float }>().social_float).toEqual({
+      on: true,
+      pages: ['front', 'about'],
+    });
+    expect((await site()).social_float_pages).toEqual(['front', 'about']);
+
+    // Left out of a save, it is kept.
+    await admin('PUT', '/api/admin/site/social', { links });
+    expect((await site()).social_float_pages).toEqual(['front', 'about']);
+
+    // A form is not a page it can be on, and nothing changed by asking.
+    const refused = await admin('PUT', '/api/admin/site/social', {
+      links,
+      float: { on: true, pages: ['front', 'file'] },
+    });
+    expect(refused.statusCode).toBe(400);
+    expect((await site()).social_float_pages).toEqual(['front', 'about']);
+
+    // Nothing to follow, nothing sent.
+    await admin('PUT', '/api/admin/site/social', {
+      links: [{ id: 'instagram', address: '', shown: false }],
+    });
+    expect('social_float_pages' in (await site())).toBe(false);
+    await db.updateTable('site_settings').set({ social_links: null, social_float: null }).execute();
+  });
+
   it('set the social media accounts one platform at a time, and every page reads only those on', async () => {
     type Links = { id: string; url: string | null; shown: boolean }[];
     expect((await get<{ social_links: Links }>('/api/site')).social_links).toEqual([]);

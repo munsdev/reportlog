@@ -21,6 +21,8 @@ export interface SettingsRow {
   home_sections: unknown;
   /** As stored: read it through `resolveSocialLinks`. */
   social_links: unknown;
+  /** As stored: read it through `resolveSocialFloat`. */
+  social_float: unknown;
 }
 
 const EMPTY: SettingsRow = {
@@ -31,6 +33,7 @@ const EMPTY: SettingsRow = {
   privacy_text: null,
   home_sections: null,
   social_links: null,
+  social_float: null,
 };
 
 /**
@@ -49,6 +52,7 @@ export async function readSettings(db: Database): Promise<SettingsRow> {
       'privacy_text',
       'home_sections',
       'social_links',
+      'social_float',
     ])
     .where('id', '=', true)
     .executeTakeFirst();
@@ -69,6 +73,8 @@ type Writable = Partial<{
   home_sections: string;
   /** Written whole, already resolved (`resolveSocialLinks`), as JSON text. */
   social_links: string;
+  /** Written whole, already resolved (`resolveSocialFloat`), as JSON text. */
+  social_float: string;
 }>;
 
 /** Upserts, so a deleted row comes back rather than every write silently doing nothing. */

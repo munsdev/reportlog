@@ -98,4 +98,32 @@ describe('the social media screen', () => {
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(rec.sent.filter((s) => s.method === 'PUT')).toEqual([]);
   });
+
+  it('offers the five pages for the floating button once it is on, never a form, and sends the choice', async () => {
+    const user = userEvent.setup();
+    const rec = recordingFetch(editorState());
+    vi.stubGlobal('fetch', rec.fetchImpl);
+    wrap(<SocialForm state={editorState()} />);
+    const box = group('Floating “Follow us” button');
+    // The pages are asked only once it is on.
+    expect(screen.queryByRole('group', { name: 'On these pages' })).not.toBeInTheDocument();
+    await user.click(within(box).getByRole('checkbox', { name: 'Show the button' }));
+    const pages = screen.getByRole('group', { name: 'On these pages' });
+    expect(
+      within(pages)
+        .getAllByRole('checkbox')
+        .map((c) => c.getAttribute('aria-label') ?? ''),
+    ).toHaveLength(5);
+    for (const name of ['The front page', 'The board', 'The maps', 'About', 'Journalists']) {
+      expect(within(pages).getByRole('checkbox', { name })).toBeChecked();
+    }
+    expect(within(pages).queryByText(/form/i)).not.toBeInTheDocument();
+    await user.click(within(pages).getByRole('checkbox', { name: 'The board' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    const put = rec.sent.find((s) => s.method === 'PUT');
+    expect((put?.body as { float: unknown }).float).toEqual({
+      on: true,
+      pages: ['front', 'maps', 'about', 'journalists'],
+    });
+  });
 });

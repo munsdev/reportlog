@@ -7,8 +7,10 @@ import { describe, expect, it } from 'vitest';
 import {
   SOCIAL_PLATFORMS,
   SOCIAL_RULES,
+  resolveSocialFloat,
   resolveSocialLinks,
   shownSocialLinks,
+  socialFloatPageOf,
   socialAddress,
 } from '../src/index.ts';
 import type { SocialPlatform } from '../src/index.ts';
@@ -107,5 +109,48 @@ describe('resolveSocialLinks', () => {
       shown: true,
     });
     expect(shownSocialLinks(links)).toEqual([{ id: 'youtube', url: 'https://www.youtube.com/@a' }]);
+  });
+});
+
+describe('the floating Follow us button', () => {
+  it('is off, on every page, when nothing is stored', () => {
+    for (const stored of [null, undefined, 'x', []]) {
+      expect(resolveSocialFloat(stored)).toEqual({
+        on: false,
+        pages: ['front', 'board', 'maps', 'about', 'journalists'],
+      });
+    }
+  });
+
+  it('keeps only pages it can place, once, in the shipped order', () => {
+    expect(resolveSocialFloat({ on: true, pages: ['about', 'file', 'front', 'about'] })).toEqual({
+      on: true,
+      pages: ['front', 'about'],
+    });
+    expect(resolveSocialFloat({ on: 'yes', pages: [] })).toEqual({ on: false, pages: [] });
+  });
+
+  it('names the five pages, and no form, list, door or staff screen', () => {
+    expect(socialFloatPageOf('/')).toBe('front');
+    expect(socialFloatPageOf('/board')).toBe('board');
+    expect(socialFloatPageOf('/board/some-report')).toBe('board');
+    expect(socialFloatPageOf('/map')).toBe('maps');
+    expect(socialFloatPageOf('/map/heat')).toBe('maps');
+    expect(socialFloatPageOf('/about')).toBe('about');
+    expect(socialFloatPageOf('/journalists')).toBe('journalists');
+    for (const path of [
+      '/file/elections',
+      '/submit',
+      '/list/contact',
+      '/journalists/access',
+      '/journalists/alerts',
+      '/evidence/abc',
+      '/home',
+      '/settings/social',
+      '/boardroom',
+      '/mapping',
+    ]) {
+      expect(socialFloatPageOf(path), path).toBeNull();
+    }
   });
 });

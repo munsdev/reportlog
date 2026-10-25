@@ -53,6 +53,10 @@ and `package.json` disagree. How a release is cut is in the README.
   the foot of every page and as "Follow us elsewhere" on the front page, which the front page's
   editor can hide or move. The icons come with the site, so no page asks those platforms for
   anything, and a visitor who follows one does not tell the platform which page they came from.
+- A floating "Follow us" button can be switched on in Site › Social media, and set to appear on the
+  front page, the board, the maps, About and Journalists, in any combination. It opens the
+  accounts that are on. It is never shown on a filing form, a list form or a page in front of the
+  password, and no setting changes that.
 - Settings › Look offers a new library: 18 palettes and 11 themes, from typewritten to
   broadsheet, among them a High contrast pair for the clearest reading. Themes now differ in
   width, columns, type size and surface, not only type. A site keeps the look it has: one that

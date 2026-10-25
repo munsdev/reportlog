@@ -176,8 +176,31 @@ test.describe('an administrator', () => {
     await page.waitForLoadState('networkidle');
     expect(outside).toEqual([]);
 
+    // The floating button: off until asked, then on the chosen pages only.
+    await expect(page.getByRole('button', { name: 'Follow us' })).toHaveCount(0);
+    await page.goto('/settings/social');
+    const floating = page.getByRole('group', { name: 'Floating “Follow us” button' });
+    await floating.getByRole('checkbox', { name: 'Show the button' }).click();
+    await floating.getByRole('checkbox', { name: 'The maps' }).click();
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Saved. 1 account is shown.')).toBeVisible();
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Follow us' }).click();
+    await expect(
+      page.getByRole('group', { name: 'Follow us' }).getByRole('link', { name: 'Bluesky' }),
+    ).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
+    await page.goto('/about');
+    await expect(page.getByRole('button', { name: 'Follow us' })).toBeVisible();
+    // Never on a filing form, whatever is chosen.
+    await page.goto('/submit');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Follow us' })).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
+    expect(outside).toEqual([]);
+
     // Put it back, so other tests see a site with no accounts.
     await page.goto('/settings/social');
+    await floating.getByRole('checkbox', { name: 'Show the button' }).click();
     await row.getByLabel('Address on Bluesky').fill('');
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Saved. No account is shown.')).toBeVisible();

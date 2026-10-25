@@ -9,8 +9,20 @@
  * server checks with, and the row says the link a handle stands for, so
  * nobody has to guess what "@name" will open. One Save bar for the page.
  */
-import { SOCIAL_RULES, setSocialLinks, socialAddress } from '@reportlog/contracts';
-import type { SiteEditor, SocialLink, SocialPlatform } from '@reportlog/contracts';
+import {
+  SOCIAL_FLOAT_PAGES,
+  SOCIAL_FLOAT_PAGE_NAMES,
+  SOCIAL_RULES,
+  setSocialLinks,
+  socialAddress,
+} from '@reportlog/contracts';
+import type {
+  SiteEditor,
+  SocialFloat,
+  SocialFloatPage,
+  SocialLink,
+  SocialPlatform,
+} from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
@@ -60,10 +72,18 @@ function changed(row: Row, stored: SocialLink | undefined): boolean {
 
 export function SocialForm({ state }: { state: SiteEditor }) {
   const [rows, setRows] = useState(() => rowsFrom(state.social_links));
+  const [float, setFloat] = useState<SocialFloat>(state.social_float);
   const toast = useToast();
-  const save = useSave((links: Row[]) => call(setSocialLinks, { body: { links } }));
+  const save = useSave((body: { links: Row[]; float: SocialFloat }) =>
+    call(setSocialLinks, { body }),
+  );
   const stored = new Map(state.social_links.map((l) => [l.id, l]));
-  const dirty = rows.some((r) => changed(r, stored.get(r.id)));
+  const floatChanged =
+    float.on !== state.social_float.on ||
+    SOCIAL_FLOAT_PAGES.some(
+      (p) => float.pages.includes(p) !== state.social_float.pages.includes(p),
+    );
+  const dirty = floatChanged || rows.some((r) => changed(r, stored.get(r.id)));
   const problems = rows.filter((r) => !socialAddress(r.id, r.address).ok);
   useUnsavedChanges('the social media accounts', dirty);
 
@@ -74,17 +94,21 @@ export function SocialForm({ state }: { state: SiteEditor }) {
 
   const submit = () => {
     if (problems.length) return;
-    save.mutate(rows, {
-      onSuccess: (next) => {
-        setRows(rowsFrom(next.social_links));
-        const on = next.social_links.filter((l) => l.shown).length;
-        toast.show(
-          on === 0
-            ? 'Saved. No account is shown.'
-            : `Saved. ${String(on)} ${on === 1 ? 'account is' : 'accounts are'} shown.`,
-        );
+    save.mutate(
+      { links: rows, float },
+      {
+        onSuccess: (next) => {
+          setRows(rowsFrom(next.social_links));
+          setFloat(next.social_float);
+          const on = next.social_links.filter((l) => l.shown).length;
+          toast.show(
+            on === 0
+              ? 'Saved. No account is shown.'
+              : `Saved. ${String(on)} ${on === 1 ? 'account is' : 'accounts are'} shown.`,
+          );
+        },
       },
-    });
+    );
   };
 
   return (
@@ -100,6 +124,13 @@ export function SocialForm({ state }: { state: SiteEditor }) {
         them. Visitors leave this site when they follow one, and the platform is not told which page
         they came from.
       </p>
+      <FloatingButton
+        float={float}
+        onChange={(next) => {
+          save.reset();
+          setFloat(next);
+        }}
+      />
       {rows.map((row) => (
         <PlatformRow
           key={row.id}
@@ -121,6 +152,7 @@ export function SocialForm({ state }: { state: SiteEditor }) {
           onSave={submit}
           onCancel={() => {
             setRows(rowsFrom(state.social_links));
+            setFloat(state.social_float);
             save.reset();
           }}
         />
@@ -167,6 +199,62 @@ function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<R
           />
           <Label>Show on the site</Label>
         </Field>
+      </fieldset>
+    </Card>
+  );
+}
+
+/**
+ * The floating "Follow us" button. Which pages may carry it is a choice among
+ * five; a form or a door is not among them and no setting can add one.
+ */
+function FloatingButton({
+  float,
+  onChange,
+}: {
+  float: SocialFloat;
+  onChange: (next: SocialFloat) => void;
+}) {
+  const toggle = (page: SocialFloatPage, on: boolean) => {
+    onChange({
+      ...float,
+      pages: SOCIAL_FLOAT_PAGES.filter((p) => (p === page ? on : float.pages.includes(p))),
+    });
+  };
+  return (
+    <Card variant="quiet">
+      <fieldset className="flex flex-col gap-3" data-float>
+        <legend className="font-semibold">Floating “Follow us” button</legend>
+        <p className="text-ink-alt">
+          A small button in the corner that opens the accounts switched on below. It is never shown
+          on a form or on a page in front of the password, so nobody filling one in has anything
+          change under them.
+        </p>
+        <Field className="flex-row items-center gap-3">
+          <Checkbox
+            checked={float.on}
+            onCheckedChange={(on) => {
+              onChange({ ...float, on: on === true });
+            }}
+          />
+          <Label>Show the button</Label>
+        </Field>
+        {float.on ? (
+          <fieldset className="flex flex-col gap-2">
+            <legend className="text-sm font-semibold">On these pages</legend>
+            {SOCIAL_FLOAT_PAGES.map((page) => (
+              <Field key={page} className="flex-row items-center gap-3">
+                <Checkbox
+                  checked={float.pages.includes(page)}
+                  onCheckedChange={(on) => {
+                    toggle(page, on === true);
+                  }}
+                />
+                <Label>{SOCIAL_FLOAT_PAGE_NAMES[page]}</Label>
+              </Field>
+            ))}
+          </fieldset>
+        ) : null}
       </fieldset>
     </Card>
   );
