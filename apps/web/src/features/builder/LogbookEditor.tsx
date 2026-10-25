@@ -111,6 +111,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
       <Details lb={lb} refresh={refresh} />
       <EmailRule lb={lb} refresh={refresh} />
       <PublicationRule lb={lb} refresh={refresh} />
+      <FrontPageSwitch lb={lb} refresh={refresh} />
 
       <Panel title="Questions">
         {launched && (
@@ -296,6 +297,34 @@ function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
         checked={lb.publish_by_terms}
         disabled={save.isPending}
         help="For a logbook that exists to be public and asks for nothing personal. Each report records which of the two it was filed under."
+        onCheckedChange={(on) => {
+          save.mutate(on);
+        }}
+      />
+      <Problem error={save.error} />
+    </Panel>
+  );
+}
+
+/**
+ * Whether the front page advertises this logbook while it is open. Only
+ * advertising: it opens nothing and closes nothing, and it is never sealed, so
+ * it can change after launch. Off, the logbook is left off the front page even
+ * if the page's buttons name it (Logbooks, The front page's buttons).
+ */
+function FrontPageSwitch({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const save = useMutation({
+    mutationFn: (on: boolean) =>
+      call(updateLogbook, { params: { id: lb.id }, body: { show_on_front: on } }),
+    onSuccess: refresh,
+  });
+  return (
+    <Panel title="On the front page">
+      <Check
+        label="Show on the front page"
+        checked={lb.show_on_front}
+        disabled={save.isPending}
+        help="While it is open, it is a button on the front page, added at the end if the page’s buttons do not place it. Off, it is not shown there, whatever the buttons say."
         onCheckedChange={(on) => {
           save.mutate(on);
         }}

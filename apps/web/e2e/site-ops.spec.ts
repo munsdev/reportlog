@@ -337,7 +337,7 @@ test.describe('the front page editor', () => {
     // Take a button off the page, but do not save.
     await rows
       .first()
-      .getByRole('button', { name: /^Take off the page/ })
+      .getByRole('button', { name: /^Remove/ })
       .click();
 
     let asked = '';

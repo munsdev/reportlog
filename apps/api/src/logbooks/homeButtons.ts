@@ -15,19 +15,34 @@
  * place" is a call to action and "Election incidents 2026" is what the
  * archive calls it, and one string cannot be both. Blank falls back to the
  * logbook's or list's own title, so renaming a logbook renames its button,
- * and nothing drifts unless an operator deliberately makes it. A built-in
- * cannot be relabelled: an operator who could rewrite "Submit a Report" could
- * make the front page lie about what the button does.
+ * and nothing drifts unless an operator deliberately makes it. EVERY
+ * BUTTON MAY BE RELABELLED, the site's own included (decision 76, amending the
+ * rule that a built-in kept its wording). The button's target is a dropdown of
+ * things this site owns, never an address typed in, so wording cannot send
+ * anybody somewhere the operator did not choose; it can only say what the
+ * operator chose to say.
+ *
+ * A SECOND LINE (the subtext) is an override in the same way: blank falls back
+ * to the target's own description, and no key is stored unless it is set.
  *
  * NOTHING HERE DECIDES WHETHER SOMETHING IS OPEN. It asks the module that owns
  * the question (`openLogbooks`, and the lists workstream's own source), so a
  * closed logbook cannot appear because of a stale row in an ordering. The
  * ordering is an ORDER, not a permission. Nothing here is sealed.
  */
-import type { ArrangementEntry, AvailableButton, HomeButton } from '@reportlog/contracts';
+import { resolveSocialLinks, shownSocialLinks } from '@reportlog/contracts';
+import type {
+  ArrangementEntry,
+  AvailableButton,
+  ButtonTarget,
+  HomeButton,
+} from '@reportlog/contracts';
 import type { Kysely } from 'kysely';
+import { publicArchiveAvailable } from '../board/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
-import { openLogbooks } from './logbooks.ts';
+import { allMaps } from '../maps/rows.ts';
+import { readSettings } from '../site/settings.ts';
+import { launchedLogbooks, openLogbooks } from './logbooks.ts';
 import { refuse } from './refusals.ts';
 
 type Db = Kysely<DB>;
@@ -61,10 +76,33 @@ export const BUILTINS: readonly Omit<AvailableButton, 'kind' | 'blurb'>[] = [
       'A single button leading to a page that asks which logbook. Worth adding instead of the ' +
       'individual logbooks once there are more of them than belong on a front page.',
   },
+  // The pages below are never added on their own: an operator who wants one
+  // picks it, so a site that never did is unchanged.
+  {
+    ref: 'journalists',
+    label: 'For journalists',
+    href: '/journalists',
+    action: null,
+    help: 'The page for journalists: the desk, and how to ask for access.',
+  },
+  {
+    ref: 'illegal-content',
+    label: 'Report illegal content',
+    href: '/illegal-content',
+    action: null,
+    help: 'Where anybody can report content that should not be on the site.',
+  },
+  {
+    ref: 'about',
+    label: 'About this site',
+    href: '/about',
+    action: null,
+    help: 'Who runs the site and how it works.',
+  },
 ];
 
 export const BUILTIN_REFS: readonly string[] = BUILTINS.map((b) => b.ref);
-export const BUTTON_KINDS = ['logbook', 'list', 'builtin'] as const;
+export const BUTTON_KINDS = ['logbook', 'list', 'map', 'builtin', 'social'] as const;
 type ButtonKind = (typeof BUTTON_KINDS)[number];
 const isKind = (k: unknown): k is ButtonKind => BUTTON_KINDS.includes(k as ButtonKind);
 
@@ -73,6 +111,10 @@ export interface ListButton {
   label: string;
   href: string;
   blurb: string | null;
+  /** Whether it would be drawn now. Absent means it would be. */
+  showing?: boolean;
+  /** Why not, in words, when it would not. */
+  why_not?: string | null;
 }
 
 /**
@@ -85,37 +127,130 @@ export interface ButtonSources {
   lists?: (db: Db) => Promise<ListButton[]>;
 }
 
+/** What would be drawn right now, by kind. */
 export interface Available {
   logbooks: AvailableButton[];
   lists: AvailableButton[];
   builtins: AvailableButton[];
+  maps?: AvailableButton[];
+  social?: AvailableButton[];
+}
+
+const stripState = ({ showing: _s, why_not: _w, ...rest }: ButtonTarget): AvailableButton => rest;
+
+/**
+ * Everything a button could lead to, drawn or not, with the reason in words
+ * for each that would not be. The editor lists them all; the page draws only
+ * the ones that are showing.
+ *
+ * NOTHING HERE DECIDES WHETHER SOMETHING IS OPEN. Logbooks ask `openLogbooks`,
+ * lists ask the lists module, maps ask whether the public archive is on and
+ * the map is: a closed target cannot appear because of a stale row.
+ */
+export async function buttonTargets(db: Db, sources: ButtonSources = {}): Promise<ButtonTarget[]> {
+  const open = await openLogbooks(db);
+  const openSlugs = new Set(open.map((l) => l.slug));
+  const launched = await launchedLogbooks(db);
+  const bySlug = new Map(launched.map((l) => [l.slug, l]));
+  // The open ones in their own order first; the closed after, so the dropdown
+  // leads with what could be drawn.
+  const ordered = [
+    ...open.map((l) => bySlug.get(l.slug) ?? l),
+    ...launched.filter((l) => !openSlugs.has(l.slug)),
+  ];
+  const logbooks = ordered.map((l): ButtonTarget => {
+    const why = !openSlugs.has(l.slug)
+      ? l.state === 'scheduled'
+        ? 'It has not opened yet.'
+        : 'It is closed.'
+      : !l.show_on_front
+        ? 'Its own settings say not to show it on the front page.'
+        : null;
+    return {
+      kind: 'logbook',
+      ref: l.slug,
+      label: l.title,
+      href: `/file/${l.slug}`,
+      action: null,
+      blurb: l.blurb,
+      help: null,
+      showing: why === null,
+      why_not: why,
+    };
+  });
+  const lists = (sources.lists ? await sources.lists(db) : []).map(
+    ({ showing, why_not, ...l }): ButtonTarget => ({
+      kind: 'list',
+      ...l,
+      action: null,
+      help: null,
+      showing: showing !== false,
+      why_not: showing === false ? (why_not ?? 'It would not show.') : null,
+    }),
+  );
+  const archive = await publicArchiveAvailable(db);
+  const maps = (await allMaps(db)).map((m): ButtonTarget => {
+    const why = !archive
+      ? 'The public archive is off, so no map is shown.'
+      : !m.enabled
+        ? 'The map is switched off.'
+        : null;
+    return {
+      kind: 'map',
+      ref: m.slug,
+      label: m.title,
+      href: `/map/${m.slug}`,
+      action: null,
+      blurb: m.blurb,
+      help: null,
+      showing: why === null,
+      why_not: why,
+    };
+  });
+  const builtins = BUILTINS.map((b): ButtonTarget => ({
+    kind: 'builtin',
+    ...b,
+    blurb: null,
+    showing: true,
+    why_not: null,
+  }));
+  const accounts = shownSocialLinks(resolveSocialLinks((await readSettings(db)).social_links));
+  const social: ButtonTarget = {
+    kind: 'social',
+    ref: 'links',
+    label: 'Follow us',
+    href: null,
+    action: null,
+    blurb: null,
+    help: 'The social media accounts switched on under Site, Social media, as a row of icons.',
+    social: accounts,
+    showing: accounts.length > 0,
+    why_not: accounts.length > 0 ? null : 'No social media account is switched on.',
+  };
+  return [...logbooks, ...lists, ...maps, ...builtins, social];
 }
 
 /** What can be on the front page right now, whatever the order says. */
-export async function availableButtons(db: Db, sources: ButtonSources = {}): Promise<Available> {
-  const logbooks = (await openLogbooks(db)).map((l): AvailableButton => ({
-    kind: 'logbook',
-    ref: l.slug,
-    label: l.title,
-    href: `/file/${l.slug}`,
-    action: null,
-    blurb: l.blurb,
-    help: null,
-  }));
-  const lists = (sources.lists ? await sources.lists(db) : []).map((l): AvailableButton => ({
-    kind: 'list',
-    ...l,
-    action: null,
-    help: null,
-  }));
-  const builtins = BUILTINS.map((b): AvailableButton => ({ kind: 'builtin', ...b, blurb: null }));
-  return { logbooks, lists, builtins };
+export async function availableButtons(
+  db: Db,
+  sources: ButtonSources = {},
+): Promise<Required<Available>> {
+  const shown = (await buttonTargets(db, sources)).filter((t) => t.showing).map(stripState);
+  const of = (kind: AvailableButton['kind']) => shown.filter((t) => t.kind === kind);
+  return {
+    logbooks: of('logbook'),
+    lists: of('list'),
+    builtins: of('builtin'),
+    maps: of('map'),
+    social: of('social'),
+  };
 }
 
 interface Entry {
   kind: ButtonKind;
   ref: string;
   label?: string;
+  sub?: string;
   hidden?: true;
 }
 
@@ -132,7 +267,9 @@ export async function storedOrder(db: Db): Promise<ArrangementEntry[] | null> {
   if (!Array.isArray(raw)) return null;
   return raw
     .filter(
-      (e): e is { kind: ButtonKind; ref: string; label?: unknown; hidden?: unknown } =>
+      (
+        e,
+      ): e is { kind: ButtonKind; ref: string; label?: unknown; sub?: unknown; hidden?: unknown } =>
         typeof e === 'object' &&
         e !== null &&
         isKind((e as Entry).kind) &&
@@ -141,7 +278,9 @@ export async function storedOrder(db: Db): Promise<ArrangementEntry[] | null> {
     .map((e) => {
       if (e.hidden === true) return { kind: e.kind, ref: e.ref, hidden: true as const };
       const label = labelOf(e.label);
-      return label ? { kind: e.kind, ref: e.ref, label } : { kind: e.kind, ref: e.ref };
+      const sub = labelOf(e.sub);
+      // Each key only when set: one shape for "no override".
+      return { kind: e.kind, ref: e.ref, ...(label ? { label } : {}), ...(sub ? { sub } : {}) };
     });
 }
 
@@ -189,10 +328,15 @@ export function resolveButtons(
   available: Available,
   order: readonly ArrangementEntry[] | null,
 ): HomeButton[] {
+  const everything = [
+    ...available.logbooks,
+    ...available.lists,
+    ...(available.maps ?? []),
+    ...available.builtins,
+    ...(available.social ?? []),
+  ];
   const byKey = new Map<string, AvailableButton>();
-  for (const b of [...available.logbooks, ...available.lists, ...available.builtins]) {
-    byKey.set(`${b.kind}:${b.ref}`, b);
-  }
+  for (const b of everything) byKey.set(`${b.kind}:${b.ref}`, b);
   const chosen = order ?? defaultOrder(available);
 
   const out: Omit<HomeButton, 'accent'>[] = [];
@@ -205,16 +349,18 @@ export function resolveButtons(
     if (entry.hidden === true) continue;
     // THE FALLBACK IS HERE AND ONLY HERE. `title` carries the record's own
     // name either way, so the arranging screen can show what a blank box falls
-    // back to. A built-in's label is never read, even from a hand-edited row.
-    const own = labelOf(entry.label);
+    // back to. The same for the second line: blank is the target's own blurb.
     out.push({
       ...button,
-      label: own && button.kind !== 'builtin' ? own : button.label,
+      label: labelOf(entry.label) ?? button.label,
+      blurb: labelOf(entry.sub) ?? button.blurb,
       title: button.label,
     });
   }
 
-  // The append rule. Logbooks and lists only; see above.
+  // The append rule. Logbooks and lists only; see above. `available` holds
+  // only what is showing, which includes each one's own "show on the front
+  // page" switch: a logbook switched off there is not in it.
   if (order !== null) {
     for (const b of [...available.logbooks, ...available.lists]) {
       const key = `${b.kind}:${b.ref}`;
@@ -225,8 +371,55 @@ export function resolveButtons(
   }
 
   // THE ACCENT IS A POSITION, NOT A STORED VALUE, decided in exactly one place,
-  // so an arrangement can never be saved with two accents or none.
-  return out.map((b, i) => ({ ...b, accent: i === 0 }));
+  // so an arrangement can never be saved with two accents or none. A row of
+  // icons is not a button, so it never takes it: the first real button does.
+  const first = out.findIndex((b) => b.kind !== 'social');
+  return out.map((b, i) => ({ ...b, accent: i === first }));
+}
+
+/**
+ * The rows the editor starts from: what the page would resolve to, but KEEPING
+ * the ones whose target would not draw (a closed logbook, a switched-off map),
+ * so the editor can mark them "not showing" instead of silently losing them.
+ * Hidden entries are not rows: the operator took them off the page.
+ */
+export function editorRows(
+  targets: readonly ButtonTarget[],
+  order: readonly ArrangementEntry[] | null,
+): ArrangementEntry[] {
+  const known = new Set(targets.map((t) => `${t.kind}:${t.ref}`));
+  const showing = (kind: string) => targets.filter((t) => t.kind === kind && t.showing);
+  const chosen: readonly ArrangementEntry[] =
+    order ??
+    defaultOrder({
+      logbooks: showing('logbook'),
+      lists: showing('list'),
+    });
+  const out: ArrangementEntry[] = [];
+  const seen = new Set<string>();
+  for (const entry of chosen) {
+    const key = `${entry.kind}:${entry.ref}`;
+    if (seen.has(key) || !known.has(key)) continue;
+    seen.add(key);
+    if (entry.hidden === true) continue;
+    const label = labelOf(entry.label);
+    const sub = labelOf(entry.sub);
+    out.push({
+      kind: entry.kind,
+      ref: entry.ref,
+      ...(label ? { label } : {}),
+      ...(sub ? { sub } : {}),
+    });
+  }
+  if (order !== null) {
+    for (const t of [...showing('logbook'), ...showing('list')]) {
+      const key = `${t.kind}:${t.ref}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ kind: t.kind, ref: t.ref });
+    }
+  }
+  return out;
 }
 
 export async function homeButtons(db: Db, sources: ButtonSources = {}): Promise<HomeButton[]> {
@@ -241,6 +434,10 @@ export async function homeButtons(db: Db, sources: ButtonSources = {}): Promise<
  * after the page was arranged; the write path has the whole list in front of
  * it, so an entry it cannot find is a screen sending something wrong, and
  * storing it would mean an operator arranging a button that never appears.
+ *
+ * A TARGET THAT EXISTS BUT WOULD NOT DRAW NOW (a closed logbook) IS ACCEPTED:
+ * the editor shows it as "not showing" and an operator may keep its place for
+ * when it reopens. An order, not a permission.
  */
 export async function setHomeButtons(
   db: Db,
@@ -250,17 +447,14 @@ export async function setHomeButtons(
   if (!Array.isArray(order)) return refuse('not-a-list');
   if (order.length > 50) refuse('too-many');
 
-  const available = await availableButtons(db, sources);
-  const known = new Set(
-    [...available.logbooks, ...available.lists, ...available.builtins].map(
-      (b) => `${b.kind}:${b.ref}`,
-    ),
-  );
+  const known = new Set((await buttonTargets(db, sources)).map((b) => `${b.kind}:${b.ref}`));
 
   const clean: Entry[] = [];
   const seen = new Set<string>();
   for (const raw of order as unknown[]) {
-    const entry = raw as Partial<Record<'kind' | 'ref' | 'label' | 'hidden', unknown>> | null;
+    const entry = raw as Partial<
+      Record<'kind' | 'ref' | 'label' | 'sub' | 'hidden', unknown>
+    > | null;
     if (
       !entry ||
       typeof entry !== 'object' ||
@@ -280,19 +474,24 @@ export async function setHomeButtons(
       clean.push({ kind: entry.kind, ref: entry.ref, hidden: true });
       continue;
     }
-    if (entry.label !== undefined && entry.label !== null && typeof entry.label !== 'string') {
-      refuse('bad-label');
+    for (const [text, bad, long] of [
+      [entry.label, 'bad-label', 'label-too-long'],
+      [entry.sub, 'bad-sub', 'sub-too-long'],
+    ] as const) {
+      if (text !== undefined && text !== null && typeof text !== 'string') refuse(bad);
+      const value = labelOf(text);
+      if (value && value.length > (text === entry.label ? 80 : 160)) refuse(long);
     }
-    const label = labelOf(entry.label);
-    if (label && label.length > 80) refuse('label-too-long');
-    // A BUILT-IN IS REFUSED rather than quietly dropped, so an operator who
-    // typed one is told it is not theirs to set instead of watching it vanish.
-    if (label && entry.kind === 'builtin') refuse('builtin-label');
     // Blank means no override, stored as NO KEY rather than `label: null`, so
-    // the read path has one shape to agree about.
-    clean.push(
-      label ? { kind: entry.kind, ref: entry.ref, label } : { kind: entry.kind, ref: entry.ref },
-    );
+    // the read path has one shape.
+    const label = labelOf(entry.label);
+    const sub = labelOf(entry.sub);
+    clean.push({
+      kind: entry.kind,
+      ref: entry.ref,
+      ...(label ? { label } : {}),
+      ...(sub ? { sub } : {}),
+    });
   }
 
   await db

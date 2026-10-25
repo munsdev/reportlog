@@ -196,7 +196,48 @@ const HOME: HomeButtonsAdmin = {
     { ...MAIL, title: 'Mail ballots', accent: false },
   ],
   stored: null,
-  available: { logbooks: [POLLING, MAIL], lists: [], builtins: [] },
+  available: { logbooks: [POLLING, MAIL], lists: [], builtins: [], maps: [], social: [] },
+  targets: [
+    { ...POLLING, showing: true, why_not: null },
+    { ...MAIL, showing: true, why_not: null },
+    {
+      kind: 'logbook',
+      ref: 'shut',
+      label: 'Shut logbook',
+      href: '/file/shut',
+      action: null,
+      blurb: null,
+      help: null,
+      showing: false,
+      why_not: 'It is closed.',
+    },
+    {
+      kind: 'map',
+      ref: 'where',
+      label: 'Where it happened',
+      href: '/map/where',
+      action: null,
+      blurb: 'A map of the board',
+      help: null,
+      showing: true,
+      why_not: null,
+    },
+    {
+      kind: 'social',
+      ref: 'links',
+      label: 'Follow us',
+      href: null,
+      action: null,
+      blurb: null,
+      help: null,
+      showing: true,
+      why_not: null,
+    },
+  ],
+  rows: [
+    { kind: 'logbook', ref: 'polling' },
+    { kind: 'logbook', ref: 'mail' },
+  ],
 };
 
 describe('the front page editor', () => {
@@ -210,7 +251,7 @@ describe('the front page editor', () => {
     expect(stack()).toEqual(['Polling day', 'Mail ballots']);
     await user.click(screen.getByRole('button', { name: 'Move up: “Mail ballots”' }));
     expect(stack()).toEqual(['Mail ballots', 'Polling day']);
-    const [first] = screen.getAllByLabelText('Button wording (optional)');
+    const [first] = screen.getAllByLabelText('Main text');
     if (!first) throw new Error('no wording box');
     await user.type(first, 'Mail');
     expect(stack()[0]).toBe('Mail');

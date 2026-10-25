@@ -53,6 +53,7 @@ export function describe(list: LoadedList, now: Date = new Date()) {
     outside_access: list.outside_access as (typeof OUTSIDE)[number],
     email_mode: list.email_mode as (typeof EMAIL_MODES)[number],
     write_back: list.write_back,
+    show_on_front: list.show_on_front,
     notify: list.notify,
     notify_email: list.notify_email,
     notify_pending_email: list.notify_pending_email,
@@ -230,6 +231,7 @@ export interface SettingsPatch {
   outside_access?: string | undefined;
   email_mode?: string | undefined;
   write_back?: boolean | undefined;
+  show_on_front?: boolean | undefined;
   notify?: boolean | undefined;
   aggregates_published?: boolean | undefined;
   closed?: boolean | undefined;
@@ -287,6 +289,7 @@ export async function updateSettings(
     set.email_mode = patch.email_mode;
   }
   if (patch.write_back !== undefined) set.write_back = patch.write_back;
+  if (patch.show_on_front !== undefined) set.show_on_front = patch.show_on_front;
   if (patch.notify !== undefined) set.notify = patch.notify;
   if (patch.aggregates_published !== undefined) {
     set.aggregates_published = patch.aggregates_published;
@@ -498,14 +501,49 @@ export async function openListedLists(db: Db, now: Date = new Date()) {
   return rows.filter((l) => isAccepting(l, now));
 }
 
-/** Buttons for the front page (`ButtonSources.lists` in the logbooks module). */
-export async function listButtons(db: Db) {
-  return (await openListedLists(db)).map((l) => ({
-    ref: l.slug,
-    label: l.title,
-    href: `/list/${l.slug}`,
-    blurb: l.blurb,
-  }));
+/**
+ * Every list, as the front page's buttons see it: whether it would be drawn
+ * and, if not, why in words. Asked of this module so the front page and the
+ * lists agree about "open" (the same `isAccepting` as the form).
+ *
+ * Showing means listed, taking entries, AND its owner left "Show on the front
+ * page" on. The switch is only ever about advertising: it opens nothing and
+ * closes nothing.
+ */
+export async function listButtons(db: Db, now: Date = new Date()) {
+  const rows = await db
+    .selectFrom('lists')
+    .select([
+      'slug',
+      'title',
+      'blurb',
+      'visibility',
+      'show_on_front',
+      'opens_at',
+      'closes_at',
+      'closed_at',
+    ])
+    .orderBy('created_at')
+    .orderBy('id')
+    .execute();
+  return rows.map((l) => {
+    const why =
+      l.visibility !== 'listed'
+        ? 'Only administrators can see this list yet. Set it to Listed.'
+        : !isAccepting(l, now)
+          ? 'It is not taking entries now.'
+          : !l.show_on_front
+            ? 'Its own settings say not to show it on the front page.'
+            : null;
+    return {
+      ref: l.slug,
+      label: l.title,
+      href: `/list/${l.slug}`,
+      blurb: l.blurb,
+      showing: why === null,
+      why_not: why,
+    };
+  });
 }
 
 /**

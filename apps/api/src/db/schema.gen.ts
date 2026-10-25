@@ -566,6 +566,7 @@ export interface Lists {
   notify_pending_email: string | null;
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
+  show_on_front: Generated<boolean>;
   slug: string;
   strict: Generated<boolean>;
   title: string;
@@ -641,6 +642,7 @@ export interface Logbooks {
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
   publish_by_terms: Generated<boolean>;
+  show_on_front: Generated<boolean>;
   slug: string;
   title: string;
   updated_at: Generated<Timestamp>;

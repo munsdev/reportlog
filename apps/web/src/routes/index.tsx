@@ -133,7 +133,7 @@ function Home() {
         query.isPending ? (
           <p role="status">Finding the ways in…</p>
         ) : (
-          <HomeButtons buttons={buttons} published={published} />
+          <HomeButtons buttons={buttons} published={published} siteName={name} />
         )
       }
       helpNow={site ? <HelpNow text={site.copy.help_now} /> : null}

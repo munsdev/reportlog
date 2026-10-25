@@ -13,8 +13,9 @@
  * the development badge, so it can never close a door by asking something the
  * door may not.
  *
- * It opens on a press and never by itself, and it sits in the opposite corner
- * to the development badge, above the Save bar and the bottom bar like it.
+ * It opens on a press and never by itself. It sits in the bottom-right corner
+ * above the development badge's place (and above the Save bar and the bottom
+ * bar like it), because the bottom-left is the front page's "Edit this page".
  */
 import { socialFloatPageOf } from '@reportlog/contracts';
 import type { PublicSocialLink } from '@reportlog/contracts';
@@ -66,7 +67,7 @@ function Menu({ links, siteName }: { links: readonly PublicSocialLink[]; siteNam
     <div
       ref={root}
       data-follow-us
-      className="fixed left-4 bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] z-30 flex flex-col items-start gap-2 print:hidden"
+      className="fixed right-4 bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+4.5rem)] z-30 flex flex-col items-end gap-2 print:hidden"
     >
       {open ? (
         <div

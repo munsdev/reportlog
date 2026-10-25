@@ -149,6 +149,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
   const [outside, setOutside] = useState<ListOutsideAccess>(list.outside_access);
   const [emailMode, setEmailMode] = useState<ListEmailMode>(list.email_mode);
   const [writeBack, setWriteBack] = useState(list.write_back);
+  const [onFront, setOnFront] = useState(list.show_on_front);
   const [published, setPublished] = useState(list.aggregates_published);
   const [taking, setTaking] = useState(list.closed_at === null);
   // Only a box that differs from what is saved is sent, so saving the other
@@ -173,6 +174,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
           outside_access: outside,
           email_mode: emailMode,
           write_back: writeBack,
+          show_on_front: onFront,
           aggregates_published: published,
           closed: !taking,
           ...(opens !== savedOpens ? { opens_at: fromBox(opens) } : {}),
@@ -235,6 +237,13 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
             value={emailMode}
             options={EMAIL_MODE}
             onChange={setEmailMode}
+          />
+          <Tick
+            id="list-on-front"
+            label="Show on the front page"
+            help="While the list is listed and taking entries, it is a button on the front page, added at the end if the page’s buttons do not place it. Off, it is not shown there, whatever the buttons say."
+            checked={onFront}
+            onChange={setOnFront}
           />
           <Tick
             id="list-write-back"

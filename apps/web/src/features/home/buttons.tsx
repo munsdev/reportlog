@@ -12,6 +12,7 @@ import type { HomeButton } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button.tsx';
 import { Count } from '@/components/ui/count.tsx';
+import { SocialLinks } from '@/components/ui/social-links.tsx';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -42,12 +43,17 @@ export const BIG_BUTTON = 'min-h-16 text-base sm:min-h-18 sm:text-lg';
 export function HomeButtons({
   buttons,
   published,
+  siteName = '',
 }: {
   buttons: readonly HomeButton[];
+  /** For the social icons' names ("<site> on Bluesky"). */
+  siteName?: string;
   /** Published reports on the board, or undefined while unknown. */
   published?: number | undefined;
 }) {
-  const drawn = buttons.flatMap((b) => {
+  const drawn = buttons.flatMap((b): { b: HomeButton; href: string | null }[] => {
+    // The row of social icons has no address of its own: it is its accounts.
+    if (b.kind === 'social') return b.social?.length ? [{ b, href: null }] : [];
     const href = hrefOf(b);
     return href ? [{ b, href }] : [];
   });
@@ -56,34 +62,42 @@ export function HomeButtons({
     // ONE COLUMN, the accent first: on a desktop it is the page's right-hand
     // column (FrontPage.tsx), so a button is as wide as that column, not the page.
     <ul className="flex flex-col gap-3" aria-label="What you can do here">
-      {drawn.map(({ b, href }) => (
-        <li key={`${b.kind}:${b.ref}`}>
-          <Button
-            asChild
-            size="lg"
-            block
-            variant={b.accent ? 'primary' : 'secondary'}
-            className={cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
-          >
-            <a href={href}>
-              <span className="inline-flex items-center gap-2">
-                {b.label}
-                {b.kind === 'builtin' && b.ref === 'board' && published !== undefined ? (
-                  <Count
-                    value={published}
-                    label={`${String(published)} published report${published === 1 ? '' : 's'}`}
-                  />
-                ) : null}
-              </span>
-              {b.blurb ? (
-                <span className="font-sans text-sm font-normal tracking-normal normal-case">
-                  {b.blurb}
+      {drawn.map(({ b, href }) =>
+        href === null ? (
+          <li key={`${b.kind}:${b.ref}`} className="flex flex-col items-center gap-1 py-1">
+            <p className="label-face text-sm">{b.label}</p>
+            <SocialLinks links={b.social} siteName={siteName} variant="icons" />
+            {b.blurb ? <p className="text-sm text-ink-alt">{b.blurb}</p> : null}
+          </li>
+        ) : (
+          <li key={`${b.kind}:${b.ref}`}>
+            <Button
+              asChild
+              size="lg"
+              block
+              variant={b.accent ? 'primary' : 'secondary'}
+              className={cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
+            >
+              <a href={href}>
+                <span className="inline-flex items-center gap-2">
+                  {b.label}
+                  {b.kind === 'builtin' && b.ref === 'board' && published !== undefined ? (
+                    <Count
+                      value={published}
+                      label={`${String(published)} published report${published === 1 ? '' : 's'}`}
+                    />
+                  ) : null}
                 </span>
-              ) : null}
-            </a>
-          </Button>
-        </li>
-      ))}
+                {b.blurb ? (
+                  <span className="font-sans text-sm font-normal tracking-normal normal-case">
+                    {b.blurb}
+                  </span>
+                ) : null}
+              </a>
+            </Button>
+          </li>
+        ),
+      )}
     </ul>
   );
 }

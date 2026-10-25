@@ -47,7 +47,9 @@ import { resolveCopy } from '../site/copy.ts';
 import { readCopy } from '../site/settings.ts';
 import {
   availableButtons,
+  buttonTargets,
   clearHomeButtons,
+  editorRows,
   homeButtons,
   setHomeButtons,
   storedOrder,
@@ -202,6 +204,7 @@ export function logbookRoutes(
           blurb?: string | null;
           email_required?: boolean;
           publish_by_terms?: boolean;
+          show_on_front?: boolean;
         },
       );
       return logbookDetail(db, id);
@@ -266,11 +269,19 @@ export function logbookRoutes(
     });
 
     // ── staff: the front page's order ───────────────────────────────────
-    const adminView = async () => ({
-      buttons: await homeButtons(db, deps.buttons),
-      stored: await storedOrder(db),
-      available: await availableButtons(db, deps.buttons),
-    });
+    const adminView = async () => {
+      const [stored, targets] = await Promise.all([
+        storedOrder(db),
+        buttonTargets(db, deps.buttons),
+      ]);
+      return {
+        buttons: await homeButtons(db, deps.buttons),
+        stored,
+        available: await availableButtons(db, deps.buttons),
+        targets,
+        rows: editorRows(targets, stored),
+      };
+    };
     route(staff, getHomeButtonsAdmin, adminView);
     route(staff, setHomeButtonsContract, async ({ request }) => {
       await setHomeButtons(db, (request.body as { order: unknown }).order, deps.buttons);

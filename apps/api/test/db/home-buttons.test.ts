@@ -25,6 +25,8 @@ import {
 } from '../../src/logbooks/homeButtons.ts';
 import type { ButtonSources } from '../../src/logbooks/homeButtons.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
+import { buttonTargets, editorRows } from '../../src/logbooks/homeButtons.ts';
+import { writeSettings } from '../../src/site/settings.ts';
 import { testDatabase, uniqueSlug } from './helpers.ts';
 
 const db = testDatabase();
@@ -136,12 +138,19 @@ describe('a label', () => {
     expect(btn?.label).toBe('The first logbook, renamed');
   });
 
-  it("is refused on the site's own buttons, and when it is too long for a button", async () => {
-    await refusedWith([{ kind: 'builtin', ref: 'board', label: 'Our board' }], 'builtin-label');
+  it('may be set on the site’s own buttons too, and is refused when too long for a button', async () => {
+    await setHomeButtons(db, [{ kind: 'builtin', ref: 'board', label: 'Our board' }]);
+    expect(await storedOrder(db)).toEqual([{ kind: 'builtin', ref: 'board', label: 'Our board' }]);
+    expect((await homeButtons(db))[0]).toMatchObject({
+      label: 'Our board',
+      title: 'View Live Report Board',
+    });
     await refusedWith(
       [{ kind: 'logbook', ref: first.slug, label: 'x'.repeat(81) }],
       'label-too-long',
     );
+    await refusedWith([{ kind: 'logbook', ref: first.slug, sub: 'x'.repeat(161) }], 'sub-too-long');
+    await refusedWith([{ kind: 'logbook', ref: first.slug, sub: 5 }], 'bad-sub');
   });
 });
 
@@ -212,6 +221,156 @@ describe('what the panel is offered', () => {
     });
     // A list nobody supplies is not a button anybody can arrange.
     await refusedWith([{ kind: 'list', ref: 'tips' }], 'unknown-button');
+    await clearHomeButtons(db);
+  });
+});
+
+describe('"Show on the front page"', () => {
+  it('keeps a logbook off the page, arranged or not, and the editor says why', async () => {
+    const quiet = await logbook('Not advertised');
+    await L.updateDetails(db, quiet.id, { show_on_front: false });
+    // Unarranged: not in the shipped order.
+    await clearHomeButtons(db);
+    expect(refs(await homeButtons(db))).not.toContain(quiet.slug);
+    // Arranged without it: not appended.
+    await setHomeButtons(db, [{ kind: 'builtin', ref: 'board' }]);
+    expect(refs(await homeButtons(db))).not.toContain(quiet.slug);
+    // Arranged WITH it: still not drawn, but the arrangement keeps its place.
+    await setHomeButtons(db, [{ kind: 'logbook', ref: quiet.slug }]);
+    expect(refs(await homeButtons(db))).not.toContain(quiet.slug);
+    expect(refs((await storedOrder(db)) ?? [])).toContain(quiet.slug);
+    const target = (await buttonTargets(db)).find((t) => t.ref === quiet.slug);
+    expect(target).toMatchObject({ showing: false });
+    expect(target?.why_not).toMatch(/settings say not to show it/);
+    expect(refs(editorRows(await buttonTargets(db), await storedOrder(db)))).toContain(quiet.slug);
+
+    // On again (the default for every logbook): back, appended when unmentioned.
+    await L.updateDetails(db, quiet.id, { show_on_front: true });
+    await setHomeButtons(db, [{ kind: 'builtin', ref: 'board' }]);
+    expect(refs(await homeButtons(db))).toContain(quiet.slug);
+    await clearHomeButtons(db);
+  });
+
+  it('a list switched off is not drawn, and a list nobody supplied is still unknown', async () => {
+    const sources: ButtonSources = {
+      lists: () =>
+        Promise.resolve([
+          { ref: 'on', label: 'On', href: '/list/on', blurb: null },
+          {
+            ref: 'off',
+            label: 'Off',
+            href: '/list/off',
+            blurb: null,
+            showing: false,
+            why_not: 'Its own settings say not to show it on the front page.',
+          },
+        ]),
+    };
+    await setHomeButtons(db, [{ kind: 'builtin', ref: 'board' }], sources);
+    expect(refs(await homeButtons(db, sources))).toContain('on');
+    expect(refs(await homeButtons(db, sources))).not.toContain('off');
+    await setHomeButtons(db, [{ kind: 'list', ref: 'off' }], sources);
+    expect(refs(await homeButtons(db, sources)).includes('off')).toBe(false);
+    await clearHomeButtons(db);
+  });
+});
+
+describe('the second line, and the new kinds of target', () => {
+  it('stores a second line only when set, and falls back to the target’s own', async () => {
+    await L.updateDetails(db, first.id, { blurb: 'The logbook’s own line' });
+    await setHomeButtons(db, [
+      { kind: 'logbook', ref: first.slug, sub: '   ' },
+      { kind: 'builtin', ref: 'board', sub: 'Everything published' },
+    ]);
+    expect(await storedOrder(db)).toEqual([
+      { kind: 'logbook', ref: first.slug },
+      { kind: 'builtin', ref: 'board', sub: 'Everything published' },
+    ]);
+    const [a, b] = await homeButtons(db);
+    expect(a?.blurb).toBe('The logbook’s own line');
+    expect(b?.blurb).toBe('Everything published');
+    await clearHomeButtons(db);
+  });
+
+  it('offers the site’s pages, none of them added on their own', async () => {
+    const targets = await buttonTargets(db);
+    for (const ref of ['board', 'alerts', 'submit', 'journalists', 'illegal-content', 'about']) {
+      expect(targets.find((t) => t.kind === 'builtin' && t.ref === ref)).toMatchObject({
+        showing: true,
+      });
+    }
+    await clearHomeButtons(db);
+    const shipped = refs(await homeButtons(db));
+    for (const ref of ['journalists', 'illegal-content', 'about']) {
+      expect(shipped).not.toContain(ref);
+    }
+    await setHomeButtons(db, [{ kind: 'builtin', ref: 'illegal-content' }]);
+    expect((await homeButtons(db))[0]).toMatchObject({
+      ref: 'illegal-content',
+      href: '/illegal-content',
+      accent: true,
+    });
+    await clearHomeButtons(db);
+  });
+
+  it('a public map is a button; one switched off is not drawn but keeps its place', async () => {
+    const slug = uniqueSlug('hbmap');
+    await db
+      .insertInto('heat_maps')
+      .values({ slug, title: 'Where it happened', enabled: true })
+      .execute();
+    await setHomeButtons(db, [{ kind: 'map', ref: slug }]);
+    expect((await homeButtons(db))[0]).toMatchObject({
+      kind: 'map',
+      ref: slug,
+      href: `/map/${slug}`,
+      accent: true,
+    });
+    await db.updateTable('heat_maps').set({ enabled: false }).where('slug', '=', slug).execute();
+    expect(refs(await homeButtons(db))).not.toContain(slug);
+    expect(refs((await storedOrder(db)) ?? [])).toContain(slug);
+    expect(refs(editorRows(await buttonTargets(db), await storedOrder(db)))).toContain(slug);
+    expect((await buttonTargets(db)).find((t) => t.ref === slug)?.why_not).toBe(
+      'The map is switched off.',
+    );
+    await clearHomeButtons(db);
+    await db.deleteFrom('heat_maps').where('slug', '=', slug).execute();
+  });
+
+  it('the social links are a row of icons, drawn only while an account is on, and never the accent', async () => {
+    await setHomeButtons(db, [
+      { kind: 'social', ref: 'links' },
+      { kind: 'builtin', ref: 'board' },
+    ]);
+    // No account is on: not drawn, but arranged.
+    const ours = <T extends { ref: string }>(bs: T[]) =>
+      bs.filter((b) => ['links', 'board'].includes(b.ref));
+    expect(refs(ours(await homeButtons(db)))).toEqual(['board']);
+    await writeSettings(db, {
+      social_links: JSON.stringify([
+        { id: 'bluesky', url: 'https://bsky.app/profile/x.bsky.social', shown: true },
+      ]),
+    });
+    const buttons = await homeButtons(db);
+    expect(ours(buttons).map((b) => [b.ref, b.accent])).toEqual([
+      ['links', false],
+      ['board', true],
+    ]);
+    expect(buttons[0]?.social).toEqual([
+      { id: 'bluesky', url: 'https://bsky.app/profile/x.bsky.social' },
+    ]);
+    await writeSettings(db, { social_links: JSON.stringify([]) });
+    await clearHomeButtons(db);
+  });
+
+  it('accepts a closed logbook in an arrangement, and still refuses one that does not exist', async () => {
+    const shut = await logbook('Shut for the editor');
+    await L.setClosed(db, shut.id, true);
+    await setHomeButtons(db, [{ kind: 'logbook', ref: shut.slug }]);
+    expect(refs(await homeButtons(db))).not.toContain(shut.slug);
+    const rows = editorRows(await buttonTargets(db), await storedOrder(db));
+    expect(rows[0]).toEqual({ kind: 'logbook', ref: shut.slug });
+    await refusedWith([{ kind: 'map', ref: 'no-such-map' }], 'unknown-button');
     await clearHomeButtons(db);
   });
 });

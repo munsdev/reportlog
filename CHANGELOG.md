@@ -43,6 +43,14 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- The front page's buttons are edited as rows. Each has a Target chosen from a drop-down (your
+  logbooks, lists, public maps, the board, alerts, Submit, journalists, report illegal content,
+  About, or the social links as a row of icons), Main text and Subtext. Leave the wording blank to
+  use the target's own. Every button, the site's own included, can be reworded; none can lead
+  off the site. A button whose target is closed or switched off stays in the list, marked
+  "Not showing", and is not drawn.
+- Each logbook and list has a "Show on the front page" switch, on by default: on, it appears on
+  the front page while open, added at the end if the buttons do not place it; off, it does not.
 - A list has a "We'll write back" switch. On, the form says in plain words that the team will use
   the address to reply, and a reviewer can press "Show address" on an entry to read it; each
   opening is recorded (who, which entry, when, never the address). Off, nobody on staff can read

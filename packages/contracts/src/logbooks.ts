@@ -12,6 +12,7 @@
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
+import { PublicSocialLink } from './site.ts';
 
 export const LogbookState = z.enum(['draft', 'scheduled', 'open', 'closed']);
 export type LogbookState = z.infer<typeof LogbookState>;
@@ -118,6 +119,8 @@ export const LogbookSummary = z.object({
    * Changeable after launch; never sealed itself.
    */
   publish_by_terms: z.boolean(),
+  /** Whether the front page advertises it while it is open. Never sealed. */
+  show_on_front: z.boolean(),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -242,6 +245,8 @@ export const updateLogbook = defineRoute({
     email_required: z.boolean().optional(),
     /** Publication as a condition of filing rather than a question. Changeable after launch. */
     publish_by_terms: z.boolean().optional(),
+    /** Show it on the front page while it is open. Changeable after launch. */
+    show_on_front: z.boolean().optional(),
   }),
   response: LogbookDetail,
 });
@@ -429,7 +434,12 @@ export const getPublicLogbook = defineRoute({
 
 // ── the front page's buttons ────────────────────────────────────────────
 
-export const ButtonKind = z.enum(['logbook', 'list', 'builtin']);
+/**
+ * What a button can lead to: a logbook, a list, a public map, one of the
+ * site's own pages (`builtin`), or the row of social media icons (`social`).
+ * Never an address typed in: there is no external link.
+ */
+export const ButtonKind = z.enum(['logbook', 'list', 'map', 'builtin', 'social']);
 
 /** One stored entry. The order is the emphasis: the first is the accent. */
 export const ArrangementEntry = z.object({
@@ -441,6 +451,11 @@ export const ArrangementEntry = z.object({
    * or list the arrangement does not mention (apps/api homeButtons.ts).
    */
   hidden: z.literal(true).optional(),
+  /**
+   * The second line, in the operator's words. Absent unless set: blank means
+   * the target's own description, or none.
+   */
+  sub: z.string().nullable().optional(),
 });
 export type ArrangementEntry = z.infer<typeof ArrangementEntry>;
 
@@ -452,6 +467,10 @@ export const AvailableButton = z.object({
   action: z.string().nullable(),
   blurb: z.string().nullable(),
   help: z.string().nullable(),
+  /** On the `social` button only: the accounts that are switched on, drawn as icons. */
+  // Lazy: site.ts and this file import each other through board.ts, and the
+  // schema must not be read before site.ts has finished loading.
+  social: z.array(z.lazy(() => PublicSocialLink)).optional(),
 });
 export type AvailableButton = z.infer<typeof AvailableButton>;
 
@@ -469,6 +488,17 @@ export const getHomeButtons = defineRoute({
   response: z.object({ buttons: z.array(HomeButton) }),
 });
 
+/**
+ * Anything a button could lead to, whether or not it would be drawn now. The
+ * editor lists them all, and marks the ones that would not show, with the
+ * reason in words.
+ */
+export const ButtonTarget = AvailableButton.extend({
+  showing: z.boolean(),
+  why_not: z.string().nullable(),
+});
+export type ButtonTarget = z.infer<typeof ButtonTarget>;
+
 export const HomeButtonsAdmin = z.object({
   buttons: z.array(HomeButton),
   /** Null when nobody has arranged the page; [] when every button was removed. */
@@ -477,7 +507,17 @@ export const HomeButtonsAdmin = z.object({
     logbooks: z.array(AvailableButton),
     lists: z.array(AvailableButton),
     builtins: z.array(AvailableButton),
+    maps: z.array(AvailableButton),
+    social: z.array(AvailableButton),
   }),
+  /** Every possible target, showing or not. */
+  targets: z.array(ButtonTarget),
+  /**
+   * The rows the editor starts from: the stored arrangement (or the shipped
+   * one), with what the page would add at the end, minus the ones hidden.
+   * Rows whose target would not draw are still here.
+   */
+  rows: z.array(ArrangementEntry),
 });
 export type HomeButtonsAdmin = z.infer<typeof HomeButtonsAdmin>;
 

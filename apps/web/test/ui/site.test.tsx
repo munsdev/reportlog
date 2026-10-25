@@ -136,6 +136,31 @@ describe('the front page’s buttons', () => {
     expect(link).toHaveAttribute('href', '/board');
   });
 
+  it('draws the social links as a row of icons, not a button, and the accent goes to the first real button', () => {
+    const social = {
+      ...button('links', false, null),
+      kind: 'social' as const,
+      href: null,
+      label: 'Follow us',
+      social: [{ id: 'bluesky' as const, url: 'https://bsky.app/profile/x.bsky.social' }],
+    };
+    render(<HomeButtons buttons={[social, button('board', true)]} siteName="Munich Archive" />);
+    const icon = screen.getByRole('link', { name: 'Munich Archive on Bluesky' });
+    expect(icon).toHaveAttribute('href', 'https://bsky.app/profile/x.bsky.social');
+    expect(screen.getByText('Follow us')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to board' }).className).toMatch(/bg-action/);
+  });
+
+  it('draws no row of icons when no account is on', () => {
+    render(
+      <HomeButtons
+        buttons={[{ ...button('links', false, null), kind: 'social', href: null, social: [] }]}
+      />,
+    );
+    expect(screen.queryByText('Go to links')).not.toBeInTheDocument();
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
+
   it('gives a button its blurb as a second line', () => {
     render(<HomeButtons buttons={[{ ...button('submit', true), blurb: 'Good or bad' }]} />);
     expect(screen.getByRole('link', { name: /Go to submit\s*Good or bad/ })).toBeInTheDocument();

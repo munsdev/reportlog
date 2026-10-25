@@ -169,6 +169,47 @@ test('the front page is arranged by order, and the first button is the main one'
   await expect(page.getByRole('status')).toHaveText('Back to the standard order.');
 });
 
+test('a front page button can lead to a page, say what the operator chose, and be removed again', async ({
+  page,
+  browser,
+}, info) => {
+  // One project only: both would arrange the one front page at the same time.
+  test.skip(info.project.name !== 'chromium', 'arranges the one shared front page');
+  await page.goto('/logbooks/front-page');
+  const rows = page.getByRole('list', { name: 'Buttons, in order' }).getByRole('listitem');
+  await expect(rows.first()).toBeVisible();
+  await page.getByRole('button', { name: 'Add a button' }).click();
+  const added = rows.last();
+  // The target is a drop-down of what the site owns, grouped, and nothing typed in.
+  await added.getByLabel('Target').selectOption({ label: 'About this site' });
+  await added.getByLabel('Main text').fill('Who runs this');
+  await added.getByLabel('Subtext').fill('And how it works');
+  // The site's own board button may be relabelled too.
+  const board = rows.filter({ has: page.locator('option[value="builtin:board"]:checked') });
+  if (await board.count()) await board.first().getByLabel('Main text').fill('The public record');
+  await page.getByRole('button', { name: 'Save this order' }).click();
+  await expect(page.getByRole('status')).toHaveText('Saved.');
+
+  // A visitor sees exactly that, and the link goes where the target said.
+  const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const visitor = await context.newPage();
+  await visitor.goto('/');
+  const ways = visitor.getByRole('list', { name: 'What you can do here' });
+  const about = ways.getByRole('link', { name: /Who runs this\s*And how it works/ });
+  await expect(about).toHaveAttribute('href', '/about');
+  if (await board.count()) {
+    await expect(ways.getByRole('link', { name: /The public record/ })).toHaveAttribute(
+      'href',
+      '/board',
+    );
+  }
+  await context.close();
+
+  // Put it back for the other tests.
+  await page.getByRole('button', { name: 'Go back to the standard order' }).click();
+  await expect(page.getByRole('status')).toHaveText('Back to the standard order.');
+});
+
 test('the builder asks no third party for anything', async ({ page }) => {
   const outside: string[] = [];
   page.on('request', (r) => {
