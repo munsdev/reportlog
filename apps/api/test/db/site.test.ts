@@ -104,6 +104,11 @@ describe('the settings routes', () => {
       ['PUT', '/api/admin/site/copy/home_headline', { body: 'Taken' }],
       ['PUT', '/api/admin/site/legal/impressum', { text: 'Taken' }],
       ['PUT', '/api/admin/site/home-sections', { sections: [{ id: 'map', shown: false }] }],
+      [
+        'PUT',
+        '/api/admin/site/social',
+        { links: [{ id: 'instagram', address: '@taken', shown: true }] },
+      ],
     ] as const) {
       const body = payload ? { payload } : {};
       expect((await app.inject({ method, url, ...body })).statusCode, url).toBe(401);
@@ -293,5 +298,59 @@ describe('the migration that brought in the look library', () => {
       expect(refused.statusCode).toBe(400);
     }
     await db.updateTable('site_settings').set({ home_sections: null }).execute();
+  });
+
+  it('set the social media accounts one platform at a time, and every page reads only those on', async () => {
+    type Links = { id: string; url: string | null; shown: boolean }[];
+    expect((await get<{ social_links: Links }>('/api/site')).social_links).toEqual([]);
+    const res = await admin('PUT', '/api/admin/site/social', {
+      links: [
+        { id: 'instagram', address: '@our.archive', shown: true },
+        { id: 'bluesky', address: 'our.bsky.social', shown: false },
+      ],
+    });
+    expect(res.statusCode).toBe(200);
+    const editor = res.json<{ social_links: Links }>().social_links;
+    // Every platform, in order; a handle is stored as the link it stands for.
+    expect(editor.map((l) => l.id).slice(0, 6)).toEqual([
+      'facebook',
+      'instagram',
+      'threads',
+      'bluesky',
+      'tiktok',
+      'youtube',
+    ]);
+    expect(editor.find((l) => l.id === 'bluesky')).toEqual({
+      id: 'bluesky',
+      url: 'https://bsky.app/profile/our.bsky.social',
+      shown: false,
+    });
+    // A platform the screen leaves out keeps what it had.
+    await admin('PUT', '/api/admin/site/social', {
+      links: [{ id: 'youtube', address: 'https://www.youtube.com/@ours', shown: true }],
+    });
+    expect((await get<{ social_links: Links }>('/api/site')).social_links).toEqual([
+      { id: 'instagram', url: 'https://www.instagram.com/our.archive' },
+      { id: 'youtube', url: 'https://www.youtube.com/@ours' },
+    ]);
+    for (const [links, says] of [
+      [[{ id: 'myspace', address: 'x', shown: true }], 'no platform called'],
+      [
+        [
+          { id: 'x', address: '@a', shown: true },
+          { id: 'x', address: '@b', shown: true },
+        ],
+        'listed twice',
+      ],
+      [[{ id: 'tiktok', address: '', shown: true }], 'TikTok is switched on with no address'],
+      [[{ id: 'facebook', address: 'https://evil.example/fb', shown: true }], 'Facebook: That'],
+    ] as const) {
+      const refused = await admin('PUT', '/api/admin/site/social', { links });
+      expect(refused.statusCode).toBe(400);
+      expect(refused.body).toContain(says);
+    }
+    // Refusals changed nothing.
+    expect((await get<{ social_links: Links }>('/api/site')).social_links).toHaveLength(2);
+    await db.updateTable('site_settings').set({ social_links: null }).execute();
   });
 });

@@ -88,6 +88,7 @@ Eyebrow "ReportLog · Staff" (the site name), H1 "Site settings", lede, `AreaTab
 | How this site looks  | Look name, palette, theme, number of installed looks                               | Link to Look                                                                                     |
 | Wording              | "12 of 31 changed from the shipped wording", the last change and by whom           | Link to Wording                                                                                  |
 | Legal notices        | Imprint and privacy policy: each "Written" or "Outline only"                       | Link to Legal notices                                                                            |
+| Social media         | The platforms shown, by name, and how many are kept but switched off               | Link to Social media                                                                             |
 | Report and tip forms | The minimum time a form must be open                                               | Link to Report and tip forms                                                                     |
 | Development notice   | On, off or automatic, and until when                                               | Applied at once, with a toast                                                                    |
 
@@ -154,6 +155,12 @@ Changed: the list is a page of closed `SettingPanel`s, one per slot, each showin
 **LEGAL NOTICES** (`/settings/legal`)
 
 Kept as built: the two legal kinds (`LEGAL_KINDS`), imprint and privacy policy, as free text, published unchanged, and the plain warning while the editor still holds the outline. Each is a `SettingPanel` whose closed state says "Written" or "Outline only, not published" and shows the first lines. The terms are not a legal notice: they are wording slots, edited on the Wording page.
+
+**SOCIAL MEDIA** (`/settings/social`, added 25 October 2026)
+
+The site's accounts elsewhere: Facebook, Instagram, Threads, Bluesky, TikTok, YouTube, Mastodon, X, Telegram and WhatsApp (`SOCIAL_PLATFORMS`), one `quiet` card each with the platform's mark, an address field and its own "Show on the site" checkbox. The address takes a link (with or without `https://`) or, where the platform has them, a handle; the card says the link a handle stands for as it is typed. An address on another site, a platform's own front page, or anything not https is refused in words beside the field, by the same `socialAddress` the server checks with. The checkbox is disabled until there is a valid address, and emptying the address switches it off; an address may be kept switched off. One Save bar for the page.
+
+What is switched on is drawn as marks in the footer of every page (`aria-label` "Site on Platform") and, named, as the front page's "Follow us elsewhere" section, which the front page's editor may hide or move like the others. Each is a plain link sent with `rel="me noopener noreferrer"`: the marks are bundled paths (Simple Icons, CC0) in the text colour, never fetched and never in brand colours, and nothing is embedded. On a door the footer asks nothing, so it shows none.
 
 ---
 

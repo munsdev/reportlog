@@ -1,0 +1,173 @@
+/**
+ * The site's accounts on social media: one row per platform, each with its
+ * address and its own switch, so an account can be kept here while it is
+ * not shown. What is switched on appears as marks in the footer of every
+ * page and, named, in the front page's "Follow us elsewhere" section (which
+ * the front page's own editor can hide or move).
+ *
+ * The address is checked as it is typed, by the same `socialAddress` the
+ * server checks with, and the row says the link a handle stands for, so
+ * nobody has to guess what "@name" will open. One Save bar for the page.
+ */
+import { SOCIAL_RULES, setSocialLinks, socialAddress } from '@reportlog/contracts';
+import type { SiteEditor, SocialLink, SocialPlatform } from '@reportlog/contracts';
+import { createFileRoute } from '@tanstack/react-router';
+import { useState } from 'react';
+import { Alert } from '@/components/ui/alert.tsx';
+import { Card } from '@/components/ui/card.tsx';
+import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { SocialIcon } from '@/components/ui/social-icon.tsx';
+import { useToast } from '@/components/ui/toast.tsx';
+import { Meta } from '@/components/ui/type.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
+import { call } from '@/lib/api.ts';
+import { SettingsFrame } from '../../../features/settings/panels.tsx';
+import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
+
+export const Route = createFileRoute('/(staff)/settings/social')({
+  component: () => (
+    <SettingsFrame>
+      <StaffPage
+        title="Social media"
+        width="prose"
+        lede="This site’s accounts elsewhere. Each one you switch on is shown as a link, with its platform’s mark, at the foot of every page and on the front page."
+      >
+        <WithEditor>{(state) => <SocialForm state={state} />}</WithEditor>
+      </StaffPage>
+    </SettingsFrame>
+  ),
+});
+
+interface Row {
+  id: SocialPlatform;
+  address: string;
+  shown: boolean;
+}
+
+const rowsFrom = (links: readonly SocialLink[]): Row[] =>
+  links.map((l) => ({ id: l.id, address: l.url ?? '', shown: l.shown }));
+
+/** Whether a row, as typed, says something different from what is stored. */
+function changed(row: Row, stored: SocialLink | undefined): boolean {
+  const checked = socialAddress(row.id, row.address);
+  const url = checked.ok ? checked.url : row.address;
+  return url !== (stored?.url ?? null) || row.shown !== (stored?.shown ?? false);
+}
+
+export function SocialForm({ state }: { state: SiteEditor }) {
+  const [rows, setRows] = useState(() => rowsFrom(state.social_links));
+  const toast = useToast();
+  const save = useSave((links: Row[]) => call(setSocialLinks, { body: { links } }));
+  const stored = new Map(state.social_links.map((l) => [l.id, l]));
+  const dirty = rows.some((r) => changed(r, stored.get(r.id)));
+  const problems = rows.filter((r) => !socialAddress(r.id, r.address).ok);
+  useUnsavedChanges('the social media accounts', dirty);
+
+  const update = (id: SocialPlatform, change: Partial<Row>) => {
+    save.reset();
+    setRows((now) => now.map((r) => (r.id === id ? { ...r, ...change } : r)));
+  };
+
+  const submit = () => {
+    if (problems.length) return;
+    save.mutate(rows, {
+      onSuccess: (next) => {
+        setRows(rowsFrom(next.social_links));
+        const on = next.social_links.filter((l) => l.shown).length;
+        toast.show(
+          on === 0
+            ? 'Saved. No account is shown.'
+            : `Saved. ${String(on)} ${on === 1 ? 'account is' : 'accounts are'} shown.`,
+        );
+      },
+    });
+  };
+
+  return (
+    <form
+      className="flex flex-col gap-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+    >
+      <p className="text-ink-alt">
+        Paste the link to the account, or type its handle (such as @yourname) where the platform has
+        them. Visitors leave this site when they follow one, and the platform is not told which page
+        they came from.
+      </p>
+      {rows.map((row) => (
+        <PlatformRow
+          key={row.id}
+          row={row}
+          onChange={(change) => {
+            update(row.id, change);
+          }}
+        />
+      ))}
+      {save.isError ? (
+        <Alert tone="serious" title="That was not saved.">
+          {save.error.message}
+        </Alert>
+      ) : null}
+      {dirty ? (
+        <SaveBar
+          name="Social media accounts"
+          busy={save.isPending}
+          onSave={submit}
+          onCancel={() => {
+            setRows(rowsFrom(state.social_links));
+            save.reset();
+          }}
+        />
+      ) : null}
+    </form>
+  );
+}
+
+function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<Row>) => void }) {
+  const rule = SOCIAL_RULES[row.id];
+  const checked = socialAddress(row.id, row.address);
+  const url = checked.ok ? checked.url : null;
+  return (
+    <Card variant="quiet">
+      <fieldset className="flex flex-col gap-3" data-platform={row.id}>
+        <legend className="flex items-center gap-3 font-semibold">
+          <SocialIcon platform={row.id} />
+          {rule.name}
+        </legend>
+        <Field>
+          <Label>Address on {rule.name}</Label>
+          <FieldDescription>For example {rule.example}</FieldDescription>
+          <Input
+            value={row.address}
+            inputMode="url"
+            autoComplete="off"
+            spellCheck={false}
+            onChange={(e) => {
+              const address = e.target.value;
+              // Emptying the address switches it off: there is nothing to show.
+              onChange(address.trim() ? { address } : { address, shown: false });
+            }}
+          />
+          <FieldError>{checked.ok ? null : checked.error}</FieldError>
+          {url && url !== row.address.trim() ? <Meta>Links to {url}</Meta> : null}
+        </Field>
+        <Field className="flex-row items-center gap-3">
+          <Checkbox
+            checked={row.shown}
+            disabled={!url}
+            onCheckedChange={(on) => {
+              onChange({ shown: on === true });
+            }}
+          />
+          <Label>Show on the site</Label>
+        </Field>
+      </fieldset>
+    </Card>
+  );
+}

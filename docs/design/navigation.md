@@ -153,7 +153,7 @@ The sidebar, top to bottom: **You** (Overview, My reports, Email updates, Accoun
 
 - **Review** (moderators): Reports queue, Tip links, List entries, Files, Illegal content notices, Flood screen.
 - **Content** (administrators): Logbooks, Lists, Maps, Find entries, Report and tip forms, Starting points, Front page.
-- **Site** (administrators): Name, Look, Wording, Legal notices, Development notice.
+- **Site** (administrators): Name, Look, Wording, Social media, Legal notices, Development notice.
 - **Rules** (administrators): Moderation settings, File limits, Moderator agreement, Journalist agreement (owner), Site password.
 - **People** (those who grant access): People and roles, Organizations, Journalist requests (owner), Testers, Who is doing what.
 - **Logs and system**: Transparency log, Who granted what, Who opened protected data, Backups and exports (owner), Updates.

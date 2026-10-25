@@ -21,7 +21,13 @@
  * page's, so a {{ figure }} is edited as written rather than as the number
  * it shows today.
  */
-import { setCopy, setHomeButtons, setHomeSections, HOME_SECTION_NAMES } from '@reportlog/contracts';
+import {
+  setCopy,
+  setHomeButtons,
+  setHomeSections,
+  shownSocialLinks,
+  HOME_SECTION_NAMES,
+} from '@reportlog/contracts';
 import type {
   AvailableButton,
   CopyKey,
@@ -59,6 +65,7 @@ import {
   LEDE_CLASS,
   LinksSection,
   MapSection,
+  SocialSection,
 } from './FrontPage.tsx';
 
 /** The wording slots that are on the front page. */
@@ -284,6 +291,16 @@ function Editing({
         );
       case 'links':
         return <LinksSection />;
+      case 'social': {
+        const links = shownSocialLinks(editor.social_links);
+        return links.length ? (
+          <SocialSection links={links} name={name} />
+        ) : (
+          <Note>
+            No social media account is switched on. Accounts are added under Site, Social media.
+          </Note>
+        );
+      }
     }
   };
 

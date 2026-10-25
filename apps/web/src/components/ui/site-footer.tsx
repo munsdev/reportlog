@@ -12,6 +12,10 @@
  * The version line is left out where there is no number to show (a
  * development checkout) rather than inventing one.
  *
+ * The site's accounts elsewhere sit under the links, as marks, when any is
+ * switched on (social-links.tsx). On a door `useSite` asks nothing, so the
+ * row is simply absent there.
+ *
  * "Easier reading" ends it (docs/design/navigation.md, section 06), drawn
  * by the slot the look system's switch fills (features/nav/EasierReadingSlot).
  */
@@ -24,7 +28,8 @@ import {
 import type { SiteVersion } from '@reportlog/contracts';
 import { Link } from '@tanstack/react-router';
 import { EasierReadingSlot } from '@/features/nav/EasierReadingSlot.tsx';
-import { useSite } from './site.tsx';
+import { plainSiteName, useSite } from './site.tsx';
+import { SocialLinks } from './social-links.tsx';
 
 export function versionLine(version: SiteVersion | undefined): string | null {
   if (!version) return null;
@@ -50,7 +55,8 @@ const LINKS = [
 ] as const;
 
 export function SiteFooter() {
-  const version = versionLine(useSite().data?.version);
+  const site = useSite().data;
+  const version = versionLine(site?.version);
   return (
     <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted print:hidden">
       <p>Every report is fingerprinted and chained, so any later change shows.</p>
@@ -65,6 +71,11 @@ export function SiteFooter() {
           ))}
         </ul>
       </nav>
+      {site?.social_links?.length ? (
+        <nav aria-label="Follow us elsewhere" className="mt-2">
+          <SocialLinks links={site.social_links} siteName={plainSiteName(site)} variant="icons" />
+        </nav>
+      ) : null}
       <p className="mt-2" data-attribution>
         Powered by{' '}
         <a href={SOFTWARE_SOURCE} rel="noopener" className="underline">

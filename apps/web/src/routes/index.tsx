@@ -32,6 +32,7 @@ import {
   LEDE_CLASS,
   LinksSection,
   MapSection,
+  SocialSection,
 } from '../features/home/FrontPage.tsx';
 import { FrontPageEditor } from '../features/home/FrontPageEditor.tsx';
 import { useGateMode } from '../features/identity/gateMode.ts';
@@ -99,6 +100,7 @@ function Home() {
     map: <MapSection />,
     figures: <FiguresSection published={published} />,
     links: <LinksSection />,
+    social: <SocialSection links={site?.social_links} name={name} />,
   };
   const sections = resolveHomeSections(site?.home_sections)
     .filter((s) => s.shown)

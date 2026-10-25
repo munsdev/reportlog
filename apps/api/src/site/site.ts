@@ -5,6 +5,8 @@ import {
   parseBrand,
   plainName,
   resolveHomeSections,
+  resolveSocialLinks,
+  shownSocialLinks,
 } from '@reportlog/contracts';
 import type { CopyKey, Legal, Site, SiteEditor, SiteVersion } from '@reportlog/contracts';
 import { figureValues, renderText } from '../board/figures.ts';
@@ -64,6 +66,7 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     dev_mode_until: dev.until,
     version,
     home_sections: resolveHomeSections(settings.home_sections),
+    social_links: shownSocialLinks(resolveSocialLinks(settings.social_links)),
   };
 }
 
@@ -90,5 +93,6 @@ export async function editorState(db: Database): Promise<SiteEditor> {
       ...editorStartingText(settings[LEGAL_COLUMN[kind]], kind),
     })),
     home_sections: resolveHomeSections(settings.home_sections),
+    social_links: resolveSocialLinks(settings.social_links),
   };
 }
