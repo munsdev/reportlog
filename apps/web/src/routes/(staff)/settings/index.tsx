@@ -9,7 +9,13 @@
  *     reports, the development notice);
  *   - a setting with a page of its own, linked with Change.
  */
-import { LEGAL_KINDS, getDoorSettings, setArchiveSwitch } from '@reportlog/contracts';
+import {
+  LEGAL_KINDS,
+  SOCIAL_RULES,
+  getDoorSettings,
+  setArchiveSwitch,
+  shownSocialLinks,
+} from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -78,6 +84,7 @@ function SettingsHome() {
           <NamePanel />
           <LookPanel />
           <EditorPanels />
+          <SocialPanel />
           <FormsPanel />
           <DevNotice />
         </div>
@@ -262,6 +269,29 @@ function EditorPanels() {
         ]}
       />
     </>
+  );
+}
+
+function SocialPanel() {
+  const links = useQuery(editorQuery).data?.social_links;
+  const shown = links ? shownSocialLinks(links) : null;
+  const kept = links ? links.filter((l) => l.url && !l.shown).length : 0;
+  return (
+    <LinkPanel
+      title="Social media"
+      to="/settings/social"
+      summary={[
+        {
+          key: 'Shown',
+          value: shown
+            ? shown.length
+              ? shown.map((l) => SOCIAL_RULES[l.id].name).join(', ')
+              : 'None'
+            : '…',
+        },
+        ...(kept ? [{ key: 'Kept, switched off', value: String(kept), mono: true }] : []),
+      ]}
+    />
   );
 }
 

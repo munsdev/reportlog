@@ -24,6 +24,8 @@ import {
   setLegalText,
   setLook,
   setSiteName,
+  setSocialLinks,
+  resolveSocialLinks,
 } from '@reportlog/contracts';
 import type { RouteContract } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
@@ -36,6 +38,7 @@ import { validateCopy } from './copy.ts';
 import { validateHomeSections } from './homeSections.ts';
 import * as dev from './devMode.ts';
 import { validateSiteName } from './identity.ts';
+import { validateSocialLinks } from './social.ts';
 import { validateLegalText } from './legal.ts';
 import { lookCatalogue } from '../looks/packs.ts';
 import { validateLook } from './look.ts';
@@ -137,6 +140,13 @@ export async function siteAdminRoutes(
     route(scoped, setHomeSections, async ({ request }) => {
       const sections = accept(validateHomeSections(bodyOf(setHomeSections, request).sections));
       await writeSettings(db, { home_sections: JSON.stringify(sections) });
+      return editorState(db);
+    });
+
+    route(scoped, setSocialLinks, async ({ request }) => {
+      const current = resolveSocialLinks((await readSettings(db)).social_links);
+      const links = accept(validateSocialLinks(current, bodyOf(setSocialLinks, request).links));
+      await writeSettings(db, { social_links: JSON.stringify(links) });
       return editorState(db);
     });
 

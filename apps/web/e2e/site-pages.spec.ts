@@ -2,8 +2,8 @@
  * P2's pages and settings in a real browser against the real server: About,
  * How to use this, the moderation standard and the public API page (each
  * asking no third party for anything), the footer's attribution, the
- * development notice, a figure in the page wording, and the warning before
- * unsaved settings are lost.
+ * development notice, a figure in the page wording, the site's social media
+ * accounts, and the warning before unsaved settings are lost.
  */
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
@@ -146,6 +146,44 @@ test.describe('an administrator', () => {
     await box.fill('');
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText(`${slot} is back to the shipped wording.`)).toBeVisible();
+  });
+
+  test('switches a social media account on, and the footer and the front page link it, fetching nothing elsewhere', async ({
+    page,
+  }) => {
+    await page.goto('/settings/social');
+    const row = page.getByRole('group', { name: 'Bluesky' });
+    const show = row.getByRole('checkbox', { name: 'Show on the site' });
+    await expect(show).toBeDisabled();
+    await row.getByLabel('Address on Bluesky').fill('@munich.bsky.social');
+    await expect(
+      row.getByText('Links to https://bsky.app/profile/munich.bsky.social'),
+    ).toBeVisible();
+    await show.click();
+    const bar = page.getByRole('region', { name: 'Save changes' });
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Saved. 1 account is shown.')).toBeVisible();
+
+    const outside = outsideRequests(page);
+    await page.goto('/');
+    const footer = page.getByRole('navigation', { name: 'Follow us elsewhere' });
+    const mark = footer.getByRole('link', { name: /on Bluesky$/ });
+    await expect(mark).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
+    await expect(mark).toHaveAttribute('rel', /noreferrer/);
+    await expect(
+      page.getByRole('main').getByRole('link', { name: 'Bluesky', exact: true }),
+    ).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(outside).toEqual([]);
+
+    // Put it back, so other tests see a site with no accounts.
+    await page.goto('/settings/social');
+    await row.getByLabel('Address on Bluesky').fill('');
+    await bar.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByText('Saved. No account is shown.')).toBeVisible();
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Follow us elsewhere' })).toHaveCount(0);
   });
 
   test('is warned before leaving a settings screen with unsaved changes, by the panel’s name', async ({

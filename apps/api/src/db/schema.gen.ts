@@ -936,6 +936,7 @@ export interface SiteSettings {
   palette: Generated<string>;
   privacy_text: string | null;
   site_name: string | null;
+  social_links: Json | null;
   template_applied: string | null;
   template_applied_at: Timestamp | null;
   theme: Generated<string>;

@@ -43,6 +43,7 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Site', label: 'Name', href: '/settings/name' },
   { area: 'Site', label: 'Look', href: '/settings/look' },
   { area: 'Site', label: 'Wording', href: '/settings/words' },
+  { area: 'Site', label: 'Social media', href: '/settings/social' },
   { area: 'Site', label: 'Legal notices', href: '/settings/legal' },
   { area: 'Site', label: 'Development notice', href: '/settings/development' },
   { area: 'Rules', label: 'Moderation settings', href: '/moderate/settings' },

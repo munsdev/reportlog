@@ -14,10 +14,11 @@
  * words, so the page an administrator edits is the page a visitor sees, and
  * nothing moves when edit mode is switched on.
  */
-import type { HomeSectionId } from '@reportlog/contracts';
+import type { HomeSectionId, PublicSocialLink } from '@reportlog/contracts';
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card.tsx';
+import { SocialLinks } from '@/components/ui/social-links.tsx';
 import { Eyebrow, Meta } from '@/components/ui/type.tsx';
 import { CheckAReport } from '@/features/board/CheckAReport.tsx';
 import { MapSlot } from '@/features/maps/MapSlot.tsx';
@@ -163,6 +164,25 @@ export function LinksSection() {
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/**
+ * The site's accounts elsewhere, named, for somebody who would rather follow
+ * it where they already are. Gone when none is switched on.
+ */
+export function SocialSection({
+  links,
+  name,
+}: {
+  links: readonly PublicSocialLink[] | undefined;
+  name: string;
+}) {
+  if (!links?.length) return null;
+  return (
+    <Card variant="quiet" heading="Follow us elsewhere">
+      <SocialLinks links={links} siteName={name} variant="list" />
     </Card>
   );
 }

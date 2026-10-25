@@ -43,6 +43,12 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- Site › Social media links the site's accounts on Facebook, Instagram, Threads, Bluesky,
+  TikTok, YouTube, Mastodon, X, Telegram and WhatsApp, each switched on or off on its own. Paste
+  a link or type a handle; the page shows the link it stands for. What is on appears as icons at
+  the foot of every page and as "Follow us elsewhere" on the front page, which the front page's
+  editor can hide or move. The icons come with the site, so no page asks those platforms for
+  anything, and a visitor who follows one does not tell the platform which page they came from.
 - Settings › Look offers a new library: 18 palettes and 11 themes, from typewritten to
   broadsheet, among them a High contrast pair for the clearest reading. Themes now differ in
   width, columns, type size and surface, not only type. A site keeps the look it has: one that
