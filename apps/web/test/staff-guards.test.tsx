@@ -116,6 +116,7 @@ const OPEN = [
   '/illegal-content/status/$token',
   '/terms',
   '/list/$slug',
+  '/$slug',
   '/map/$slug',
   '/mine/$threadId',
   '/mine/',

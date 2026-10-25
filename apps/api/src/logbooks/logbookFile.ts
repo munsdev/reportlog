@@ -59,6 +59,7 @@ import {
 import { LogbookRefusal, refuse } from './refusals.ts';
 import { setLogbookLimits, validateLimits } from '../files/limits.ts';
 import { notesEnabled, setNotesEnabled } from '../moderation/notes.ts';
+import { slugBlock } from '../site/slugs.ts';
 
 export const LOGBOOK_FILE_VERSION = 1;
 
@@ -175,7 +176,7 @@ async function freeSlug(db: Kysely<DB>, base: string): Promise<string> {
       .select('id')
       .where('slug', '=', s)
       .executeTakeFirst();
-    if (!taken) return s;
+    if (!taken && !(await slugBlock(db, s, 'logbook'))) return s;
   }
   throw new Error('freeSlug: no free web address');
 }

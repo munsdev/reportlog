@@ -19,7 +19,7 @@
  * After the password, a deployment that has not been set up shows the setup
  * wizard instead of the site.
  */
-import { getSetupStatus } from '@reportlog/contracts';
+import { RESERVED_SLUGS, getSetupStatus } from '@reportlog/contracts';
 import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
@@ -35,6 +35,8 @@ import { SetupWizard } from './SetupWizard.tsx';
  * The addresses that work without the password, by shape. The filing and
  * lists workstreams build the pages; these are the paths agreed for them.
  */
+const ROOT_FORM = /^\/[a-z0-9][a-z0-9-]{0,62}$/;
+
 export const DOOR_PATHS: readonly RegExp[] = [
   /^\/file\/[a-z0-9][a-z0-9-]{0,62}$/,
   /^\/file\/confirm\/[^/]+$/,
@@ -42,6 +44,9 @@ export const DOOR_PATHS: readonly RegExp[] = [
   // confirmation link, its token guarding it (decisions.md §4).
   /^\/evidence\/[^/]+$/,
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
+  // The same forms at the root (routes/$slug.tsx). Pages the site has never match a
+  // door's slug: the server refuses a slug that names one (RESERVED_SLUGS).
+  ROOT_FORM,
   // Stopping email somebody asked for never waits on a password (identity/digestStop.ts).
   /^\/notifications\/stop\/[^/]+$/,
   // The erase link in the confirmation email, and the status link in a notice of
@@ -56,6 +61,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
 
 export function isDoorPath(pathname: string): boolean {
   const p = pathname.replace(/\/+$/, '') || '/';
+  // A page the site has is never a form, whatever its shape.
+  if (ROOT_FORM.test(p) && RESERVED_SLUGS.has(p.slice(1))) return false;
   return DOOR_PATHS.some((r) => r.test(p));
 }
 

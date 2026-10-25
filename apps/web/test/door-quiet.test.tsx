@@ -67,6 +67,7 @@ const routeTree = RootRoute.addChildren([
     component: Page,
   }),
   createRoute({ getParentRoute: () => RootRoute, path: '/list/$slug', component: Page }),
+  createRoute({ getParentRoute: () => RootRoute, path: '/$slug', component: Page }),
   createRoute({ getParentRoute: () => RootRoute, path: '/evidence/$token', component: Page }),
   createRoute({
     getParentRoute: () => RootRoute,
@@ -126,6 +127,7 @@ describe('the frame around every page, on a door', () => {
     '/file/some-logbook',
     '/file/confirm/a-token',
     '/list/some-list',
+    '/some-form',
     '/evidence/a-token',
     '/notifications/stop/a-token',
     '/file/erase/a-token',

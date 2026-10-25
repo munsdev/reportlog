@@ -32,6 +32,7 @@ import type { Retention } from './retention.ts';
 import { pendingCount } from './review.ts';
 import { iso, isAccepting, listById } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
+import { slugBlock } from '../site/slugs.ts';
 import { shippedTemplate, shippedTemplates } from './templates.ts';
 import type { ListTemplate } from './templates.ts';
 
@@ -195,6 +196,8 @@ export async function createFromParsed(
     // Never over a live list: its form is editable, so re-applying a template
     // would silently discard an operator's edits.
     if (taken) refuse('slug-taken');
+    const block = await slugBlock(trx, useSlug, 'list');
+    if (block) refuse(block === 'reserved' ? 'slug-reserved' : 'slug-taken');
     const row = await trx
       .insertInto('lists')
       .values({

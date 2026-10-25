@@ -37,6 +37,7 @@ import type { Kysely, Selectable, Transaction } from 'kysely';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import type { DB, LogbookFields } from '../db/schema.gen.ts';
+import { slugBlock } from '../site/slugs.ts';
 import { LogbookRefusal, refuse } from './refusals.ts';
 import type { RefusalCode } from './refusals.ts';
 
@@ -364,6 +365,8 @@ export async function createLogbook(
   const title = checkTitle(spec.title);
   const slug = spec.slug?.trim() ? spec.slug.trim() : slugify(title);
   if (!SLUG_RE.test(slug)) refuse('slug');
+  const block = await slugBlock(db, slug, 'logbook');
+  if (block) refuse(block === 'reserved' ? 'slug-reserved' : 'slug-taken');
   try {
     const row = await db
       .insertInto('logbooks')

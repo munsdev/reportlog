@@ -24,3 +24,4 @@ export * from './twoFactor.ts';
 export * from './menu.ts';
 export * from './looks.ts';
 export * from './updates.ts';
+export * from './slugs.ts';
