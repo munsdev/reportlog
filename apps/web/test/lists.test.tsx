@@ -21,6 +21,7 @@ const TIPS: ListForm = {
   asks_email: true,
   email_when: 'if-written',
   email_reason: 'erase',
+  write_back: false,
   personal_keys: ['description'],
   personal_days: 90,
   fields: [
@@ -175,6 +176,29 @@ describe('a list’s form', () => {
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText(/We emailed you a link that deletes/)).toBeInTheDocument();
     expect(sent[0]?.body).toMatchObject({ email: 'me@example.org' });
+  });
+
+  it('says plainly that the team will write back, only on a list that does', async () => {
+    stubFetch();
+    const user = userEvent.setup();
+    const { unmount } = show(TIPS);
+    expect(screen.queryByText(/write back to you/)).not.toBeInTheDocument();
+    unmount();
+    show({ ...TIPS, write_back: true, email_reason: 'reply' });
+    expect(
+      screen.getByText(
+        'The team will use your email address to write back to you about what you send.',
+      ),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Start' }));
+    await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('radio', { name: 'Ohio' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(
+      screen.getByText(/The team will use this address to write back to you\./),
+    ).toBeInTheDocument();
   });
 
   it('a closed form says so instead of asking anything', () => {

@@ -89,6 +89,8 @@ export const ListForm = z.object({
   email_when: z.enum(['always', 'if-written', 'never']),
   /** WHY: so the site can reply, or so the person can have it deleted. */
   email_reason: z.enum(['reply', 'erase']),
+  /** The list's "We'll write back" switch: the form says the team will use the address to reply. */
+  write_back: z.boolean(),
   personal_keys: z.array(z.string()),
   /** How long the personal half is kept, in days; null when only the link erases it. */
   personal_days: z.number().int().nullable(),
@@ -208,6 +210,8 @@ export const ListDetail = z.object({
   visibility: ListVisibility,
   outside_access: ListOutsideAccess,
   email_mode: ListEmailMode,
+  /** "We'll write back": reviewers may open an entry's address, and the form says so. */
+  write_back: z.boolean(),
   notify: z.boolean(),
   notify_email: z.string().nullable(),
   notify_pending_email: z.string().nullable(),
@@ -298,6 +302,8 @@ export const ListFile = z.looseObject({
   ask_email: z.literal('always').optional(),
   /** Present only when true. */
   strict: z.boolean().optional(),
+  /** "We'll write back". Present only when true. */
+  write_back: z.boolean().optional(),
   fields: z.array(z.looseObject({ key: z.string(), kind: z.string(), label: z.string() })),
 });
 export type ListFile = z.infer<typeof ListFile>;
@@ -333,6 +339,7 @@ export const updateList = defineRoute({
     visibility: z.string().optional(),
     outside_access: z.string().optional(),
     email_mode: z.string().optional(),
+    write_back: z.boolean().optional(),
     notify: z.boolean().optional(),
     /** Naming an address other than the admin one sends it a link first. */
     notify_email: z.string().nullable().optional(),
@@ -483,7 +490,13 @@ export const ReviewClusters = z.object({
 });
 
 export const ReviewBatch = z.object({
-  list: z.object({ id: z.number().int(), slug: z.string(), title: z.string() }),
+  list: z.object({
+    id: z.number().int(),
+    slug: z.string(),
+    title: z.string(),
+    /** Whether the page offers "Show address" on each entry. */
+    write_back: z.boolean(),
+  }),
   fields: z.array(
     z.object({ key: z.string(), label: z.string(), kind: z.string(), retention: Retention }),
   ),
@@ -521,4 +534,14 @@ export const triageListEntries = defineRoute({
   params: ListIdParams,
   body: z.object({ state: z.string(), ids: z.array(z.number().int()) }),
   response: z.object({ changed: z.number().int() }),
+});
+
+export const revealListAddress = defineRoute({
+  method: 'POST',
+  path: '/api/list-review/:id/entries/:entryId/address',
+  summary:
+    "Open one entry's email address, on a list that writes back. Each opening is recorded " +
+    'before the address is read; the record never holds the address.',
+  params: z.object({ id: Id, entryId: Id }),
+  response: z.object({ address: z.string() }),
 });

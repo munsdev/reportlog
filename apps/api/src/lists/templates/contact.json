@@ -5,6 +5,7 @@
   "blurb": "A message to whoever runs this archive. Not a report, and not published anywhere.",
   "email": "required",
   "ask_email": "always",
+  "write_back": true,
   "fields": [
     {
       "key": "subject",

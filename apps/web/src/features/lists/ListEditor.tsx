@@ -148,6 +148,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
   const [visibility, setVisibility] = useState<ListVisibility>(list.visibility);
   const [outside, setOutside] = useState<ListOutsideAccess>(list.outside_access);
   const [emailMode, setEmailMode] = useState<ListEmailMode>(list.email_mode);
+  const [writeBack, setWriteBack] = useState(list.write_back);
   const [published, setPublished] = useState(list.aggregates_published);
   const [taking, setTaking] = useState(list.closed_at === null);
   // Only a box that differs from what is saved is sent, so saving the other
@@ -171,6 +172,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
           visibility,
           outside_access: outside,
           email_mode: emailMode,
+          write_back: writeBack,
           aggregates_published: published,
           closed: !taking,
           ...(opens !== savedOpens ? { opens_at: fromBox(opens) } : {}),
@@ -233,6 +235,13 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
             value={emailMode}
             options={EMAIL_MODE}
             onChange={setEmailMode}
+          />
+          <Tick
+            id="list-write-back"
+            label="We’ll write back"
+            help="The form tells people the team will use their address to reply, and reviewers can open an entry’s address with “Show address”. Each opening is recorded. Off, nobody on staff can read an address."
+            checked={writeBack}
+            onChange={setWriteBack}
           />
           <Tick
             id="list-taking"

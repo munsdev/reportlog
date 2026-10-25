@@ -21,7 +21,8 @@ import { REVIEW_STATES, TRIAGE_STATES } from './policy.ts';
 import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
 import { fieldsOf } from './rows.ts';
-import type { Db } from './rows.ts';
+import type { Db, LoadedList } from './rows.ts';
+import { openValue } from '../links/keys.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { linksForEntries } from '../links/reads.ts';
 import type { Outcome } from '../links/rows.ts';
@@ -219,4 +220,37 @@ export async function pendingCount(
     .where('review_state', '=', 'received')
     .executeTakeFirstOrThrow();
   return { waiting: Number(r.waiting), oldest: r.oldest ? new Date(r.oldest).toISOString() : null };
+}
+
+/**
+ * Open ONE entry's address for a reviewer, on a list that writes back.
+ *
+ * THE RECORD IS WRITTEN FIRST and the address is decrypted second, so a look
+ * that failed to log cannot have happened. Only who, which entry and when are
+ * kept: never the address, which would make the log a second copy of it.
+ * A list that does not write back refuses before anything is read, so turning
+ * the switch off closes this at once, whatever the page still shows.
+ */
+export async function revealAddress(
+  db: Db,
+  keys: LinkKeys,
+  list: Pick<LoadedList, 'id' | 'write_back'>,
+  entryId: number,
+  staffEmail: string,
+): Promise<{ address: string }> {
+  if (!list.write_back) return refuse('no-write-back');
+  const row = await db
+    .selectFrom('list_entries')
+    .select(['id', 'email_enc', 'email_key'])
+    .where('list_id', '=', list.id)
+    .where('id', '=', entryId)
+    .executeTakeFirst();
+  if (!row) return refuse('no-entry');
+  // Erased, or never given: nothing to open and nothing to record.
+  if (!row.email_enc || !row.email_key) return refuse('no-address');
+  await db
+    .insertInto('list_address_reveals')
+    .values({ staff_email: staffEmail, list_id: list.id, entry_id: row.id })
+    .execute();
+  return { address: openValue(keys, row.email_enc, row.email_key) };
 }

@@ -162,6 +162,7 @@ const TIPS_FORM = {
   asks_email: false,
   email_when: 'never',
   email_reason: 'erase',
+  write_back: false,
   personal_keys: [],
   personal_days: null,
   fields: [

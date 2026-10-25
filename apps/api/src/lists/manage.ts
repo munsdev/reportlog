@@ -52,6 +52,7 @@ export function describe(list: LoadedList, now: Date = new Date()) {
     visibility: list.visibility as (typeof VISIBILITIES)[number],
     outside_access: list.outside_access as (typeof OUTSIDE)[number],
     email_mode: list.email_mode as (typeof EMAIL_MODES)[number],
+    write_back: list.write_back,
     notify: list.notify,
     notify_email: list.notify_email,
     notify_pending_email: list.notify_pending_email,
@@ -201,6 +202,7 @@ export async function createFromParsed(
         blurb: t.blurb,
         email_mode: t.email_mode,
         strict: t.strict,
+        write_back: t.write_back,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -227,6 +229,7 @@ export interface SettingsPatch {
   visibility?: string | undefined;
   outside_access?: string | undefined;
   email_mode?: string | undefined;
+  write_back?: boolean | undefined;
   notify?: boolean | undefined;
   aggregates_published?: boolean | undefined;
   closed?: boolean | undefined;
@@ -283,6 +286,7 @@ export async function updateSettings(
     if (!EMAIL_MODES.includes(patch.email_mode as 'auto')) refuse('email-mode');
     set.email_mode = patch.email_mode;
   }
+  if (patch.write_back !== undefined) set.write_back = patch.write_back;
   if (patch.notify !== undefined) set.notify = patch.notify;
   if (patch.aggregates_published !== undefined) {
     set.aggregates_published = patch.aggregates_published;

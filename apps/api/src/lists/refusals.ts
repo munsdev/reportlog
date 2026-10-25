@@ -84,6 +84,11 @@ const SENTENCES = {
   'un-review': 'An entry that has been reviewed cannot be put back to waiting.',
   'review-ids': 'Send the entries you looked at, up to 500.',
   'triage-state': 'That is not a triage state.',
+  'no-write-back':
+    'This list does not write back, so its addresses are not shown. An administrator can turn on "We\'ll write back" in its settings.',
+  'no-address':
+    'There is no address to show for that entry: none was given, or it has been deleted.',
+  'no-entry': 'There is no such entry on this list.',
   'search-empty': 'Type a name, an email address or some words to look for.',
   'search-too-long': 'That is too long to look for. Use up to 200 characters.',
 } as const;
@@ -92,6 +97,9 @@ export type ListRefusalCode = keyof typeof SENTENCES;
 
 const STATUS: Partial<Record<ListRefusalCode, number>> = {
   'no-list': 404,
+  'no-entry': 404,
+  'no-address': 404,
+  'no-write-back': 403,
   'no-such-list': 404,
   'slug-taken': 409,
   'has-entries': 409,

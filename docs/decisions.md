@@ -91,3 +91,4 @@ this repository. They live in `/etc/reportlog/reportlog.env` on the server
 `.env.example`, with every secret blank, and the development `.env` that a
 cloud session writes is ignored by git. CI refuses a commit that contains a
 secret.
+| 75 | Writing back to a list entry (decided 2026-10-25) | A list may carry a "We'll write back" switch (`lists.write_back`, off unless set; the contact starting point sets it). On, the public form says the team will use the address to reply, and a moderator or administrator may open one entry's address with "Show address". Every opening is written to `list_address_reveals` (append-only) before the address is decrypted, and the record never holds the address. Off, no route opens an address. Built in `apps/api/src/lists/review.ts`. Amends the rule that staff can never read a list entry's address. |

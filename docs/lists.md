@@ -132,6 +132,11 @@ digest (`email_hmac`) so an administrator's subject access search can find an
 address without anybody being able to read every address. The keys hang from
 the link secret (`apps/api/src/links/keys.ts`). Erasure blanks all three.
 
+**Writing back (decision 75).** A list with `write_back` on lets a moderator or
+administrator open one entry's address from the review page ("Show address").
+The row in `list_address_reveals` is written first and holds who, which entry
+and when, never the address. Off, no route decrypts an address for staff.
+
 ## Links
 
 Accept broadly, sort afterwards. Refused: non-http(s), a bare address as host

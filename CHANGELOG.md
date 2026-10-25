@@ -43,6 +43,10 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- A list has a "We'll write back" switch. On, the form says in plain words that the team will use
+  the address to reply, and a reviewer can press "Show address" on an entry to read it; each
+  opening is recorded (who, which entry, when, never the address). Off, nobody on staff can read
+  an address, as before. The contact starting point has it on.
 - Settings › Look offers a new library: 18 palettes and 11 themes, from typewritten to
   broadsheet, among them a High contrast pair for the clearest reading. Themes now differ in
   width, columns, type size and surface, not only type. A site keeps the look it has: one that

@@ -15,7 +15,7 @@
  * waiting": an entry that arrives between reading the page and pressing the
  * button is not approved unseen. Rejecting deletes nothing.
  */
-import { reviewListEntries, triageListEntries } from '@reportlog/contracts';
+import { revealListAddress, reviewListEntries, triageListEntries } from '@reportlog/contracts';
 import type { ReviewBatch, ReviewState, TriageState } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -120,6 +120,57 @@ export function ReviewPage({ id }: { id: number }) {
       {query.isPending ? <p role="status">Reading the entries…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
       {query.data ? <Batch key={`${String(id)}-${state}`} batch={query.data} /> : null}
+    </div>
+  );
+}
+
+/**
+ * "Show address", on a list that writes back. One entry at a time, and only
+ * when asked: the address is not in the page until then, and each opening is
+ * recorded on the server before it is read. It is plain text, never a link
+ * that opens a mail program by itself.
+ */
+export function ShowAddress({ listId, entryId }: { listId: number; entryId: number }) {
+  const [address, setAddress] = useState<string | null>(null);
+  const open = useMutation({
+    mutationFn: () => call(revealListAddress, { params: { id: listId, entryId } }),
+    onSuccess: (out) => {
+      setAddress(out.address);
+    },
+  });
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      {address === null ? (
+        <Button
+          type="button"
+          variant="secondary"
+          className="self-start"
+          disabled={open.isPending}
+          aria-label={`Show address for entry ${String(entryId)}`}
+          onClick={() => {
+            open.mutate();
+          }}
+        >
+          Show address
+        </Button>
+      ) : (
+        <p>
+          <span className="font-semibold">Address: </span>
+          <span className="break-all font-mono">{address}</span>{' '}
+          <Button
+            type="button"
+            variant="secondary"
+            aria-label={`Hide address for entry ${String(entryId)}`}
+            onClick={() => {
+              setAddress(null);
+            }}
+          >
+            Hide
+          </Button>
+        </p>
+      )}
+      {address === null ? <span className="text-ink-alt">Opening it is recorded.</span> : null}
+      {open.isError ? <Alert tone="serious">{open.error.message}</Alert> : null}
     </div>
   );
 }
@@ -269,6 +320,9 @@ function Batch({ batch }: { batch: ReviewBatch }) {
                         </div>
                       ))}
                   </dl>
+                  {batch.list.write_back && e.has_email && !e.erased ? (
+                    <ShowAddress listId={batch.list.id} entryId={e.id} />
+                  ) : null}
                   {e.erased ? (
                     <p className="text-sm text-ink-alt">
                       Its personal half and its links have been deleted. The choices stay.
