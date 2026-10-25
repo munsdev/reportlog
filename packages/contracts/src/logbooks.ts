@@ -12,7 +12,7 @@
  */
 import { z } from 'zod';
 import { defineRoute } from './route.ts';
-import { PublicSocialLink } from './site.ts';
+import { PublicSocialLink } from './social.ts';
 
 export const LogbookState = z.enum(['draft', 'scheduled', 'open', 'closed']);
 export type LogbookState = z.infer<typeof LogbookState>;
@@ -468,9 +468,7 @@ export const AvailableButton = z.object({
   blurb: z.string().nullable(),
   help: z.string().nullable(),
   /** On the `social` button only: the accounts that are switched on, drawn as icons. */
-  // Lazy: site.ts and this file import each other through board.ts, and the
-  // schema must not be read before site.ts has finished loading.
-  social: z.array(z.lazy(() => PublicSocialLink)).optional(),
+  social: z.array(PublicSocialLink).optional(),
 });
 export type AvailableButton = z.infer<typeof AvailableButton>;
 

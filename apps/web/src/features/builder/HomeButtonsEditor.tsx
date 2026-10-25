@@ -157,8 +157,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
     const t = targets.get(r.target);
     return {
       t,
-      main: r.label.trim() || t?.label || '',
-      second: r.sub.trim() || t?.blurb || '',
+      main: r.label.trim() === '' ? (t?.label ?? '') : r.label.trim(),
+      second: r.sub.trim() === '' ? (t?.blurb ?? '') : r.sub.trim(),
     };
   };
   const drawn = rows.filter((r) => targets.get(r.target)?.showing);

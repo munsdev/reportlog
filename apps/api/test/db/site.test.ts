@@ -301,7 +301,10 @@ describe('the migration that brought in the look library', () => {
   });
 
   it('keeps the floating Follow us button off until asked, sends its pages only while it is on and something is shown, and refuses an unknown page', async () => {
-    type Float = { on: boolean; pages: string[] };
+    interface Float {
+      on: boolean;
+      pages: string[];
+    }
     const site = () => get<{ social_float_pages?: string[] }>('/api/site');
     const links = [{ id: 'instagram', address: '@our.archive', shown: true }];
     const first = await admin('PUT', '/api/admin/site/social', { links });

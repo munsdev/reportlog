@@ -36,7 +36,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-async function at(pathname: string, { site = SITE, mode = 'open' as GateMode } = {}) {
+async function at(
+  pathname: string,
+  { site = SITE, mode = 'open' }: { site?: Site; mode?: GateMode } = {},
+) {
   const fetchMock = vi.fn(() => Promise.reject(new Error('no request expected')));
   vi.stubGlobal('fetch', fetchMock);
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -82,7 +85,8 @@ describe('the Follow us button', () => {
     expect(b).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('link', { name: 'Bluesky' })).not.toBeInTheDocument();
 
-    await user.click(b!);
+    if (!b) throw new Error('no button');
+    await user.click(b);
     const link = screen.getByRole('link', { name: 'Bluesky' });
     expect(link).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));

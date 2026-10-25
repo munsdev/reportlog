@@ -136,7 +136,17 @@ export interface Available {
   social?: AvailableButton[];
 }
 
-const stripState = ({ showing: _s, why_not: _w, ...rest }: ButtonTarget): AvailableButton => rest;
+/** The target as the page draws it: without what only the editor needs. */
+const stripState = (t: ButtonTarget): AvailableButton => ({
+  kind: t.kind,
+  ref: t.ref,
+  label: t.label,
+  href: t.href,
+  action: t.action,
+  blurb: t.blurb,
+  help: t.help,
+  ...(t.social ? { social: t.social } : {}),
+});
 
 /**
  * Everything a button could lead to, drawn or not, with the reason in words

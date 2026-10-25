@@ -120,6 +120,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+const row = (i: number) => {
+  const found = rows()[i];
+  if (!found) throw new Error(`no row ${String(i)}`);
+  return found;
+};
 const rows = () =>
   within(screen.getByRole('list', { name: 'Buttons, in order' })).getAllByRole('listitem');
 
@@ -142,8 +147,8 @@ describe('the front page buttons editor', () => {
   it('marks a row whose target would not draw, and says why', async () => {
     open();
     await screen.findByRole('list', { name: 'Buttons, in order' });
-    expect(within(rows()[2]!).getByText('Not showing: It is closed.')).toBeInTheDocument();
-    expect(within(rows()[0]!).queryByText(/Not showing/)).toBeNull();
+    expect(within(row(2)).getByText('Not showing: It is closed.')).toBeInTheDocument();
+    expect(within(row(0)).queryByText(/Not showing/)).toBeNull();
   });
 
   it('sends no key for blank wording, a second line only where set, and hides what was removed', async () => {
@@ -151,7 +156,7 @@ describe('the front page buttons editor', () => {
     const puts = open();
     await screen.findByRole('list', { name: 'Buttons, in order' });
     // Relabel the site's own button, and give it a second line.
-    const boardRow = rows()[1]!;
+    const boardRow = row(1);
     await user.type(within(boardRow).getByLabelText('Main text'), 'The record');
     await user.type(within(boardRow).getByLabelText('Subtext'), 'Everything published');
     // Remove the closed logbook.
@@ -175,7 +180,7 @@ describe('the front page buttons editor', () => {
     await user.click(screen.getByRole('button', { name: 'Add a button' }));
     expect(rows()).toHaveLength(4);
     expect(screen.getByRole('button', { name: 'Save this order' })).toBeDisabled();
-    await user.selectOptions(within(rows()[3]!).getByLabelText('Target'), 'Follow us');
+    await user.selectOptions(within(row(3)).getByLabelText('Target'), 'Follow us');
     expect(screen.getByRole('button', { name: 'Save this order' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Save this order' }));
     const order = (puts[0] as { order: { kind: string; ref: string }[] }).order;
