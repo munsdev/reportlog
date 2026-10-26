@@ -118,6 +118,7 @@ const OPEN = [
   '/list/$slug',
   '/$slug',
   '/map/$slug',
+  '/maps/$slug',
   '/mine/$threadId',
   '/mine/',
   '/mine/declaration/$threadId',

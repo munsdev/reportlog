@@ -189,8 +189,7 @@ async function validate(
 
   if (has('also_slots')) {
     const raw = Array.isArray(patch.also_slots) ? patch.also_slots : null;
-    if (!raw || !raw.every(isMapSlot))
-      throw refused('also_slots', 'There is no such place on the site.');
+    if (!raw?.every(isMapSlot)) throw refused('also_slots', 'There is no such place on the site.');
     const primary = out.slot ?? current?.slot ?? DEFAULT_MAP_SLOT;
     out.also_slots = [...new Set(raw)].filter((s) => s !== primary);
   } else if (out.slot !== undefined && current) {
