@@ -46,7 +46,7 @@ import {
   getPublicationCard,
   submitReport,
 } from '@reportlog/contracts';
-import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
+import type { Cover as CoverWords, FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
@@ -57,13 +57,11 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
-import { Count } from '@/components/ui/count.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
+import { Eyebrow } from '@/components/ui/type.tsx';
 import {
   DoorPuzzle,
   Honeypot,
@@ -80,7 +78,8 @@ import { CardBar, CardFrame, FilingProgress, useCardTitle, useFocusOnMount } fro
 import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { FormColumn, FormNotice } from './FormNotice.tsx';
-import { HelpNow } from './HelpNow.tsx';
+import { Cover } from './Cover.tsx';
+import type { CtaProps } from './HelpNow.tsx';
 import { QuestionControl, kindHelp } from './QuestionControl.tsx';
 import { TipOffer, rememberForTip } from './tipOffer.tsx';
 import {
@@ -189,7 +188,13 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       slug={lb.slug}
       title={lb.title}
       blurb={lb.blurb}
-      helpNow={lb.help_now}
+      cover={lb.cover}
+      siteCta={{
+        text: lb.site_cta?.body ?? lb.help_now,
+        heading: lb.site_cta?.heading,
+        buttonLabel: lb.site_cta?.button_label,
+        buttonUrl: lb.site_cta?.button_url,
+      }}
       questions={lb.fields}
       form={lb.form}
       asksEmail={lb.asks_email}
@@ -208,7 +213,8 @@ function Cards({
   slug,
   title,
   blurb,
-  helpNow,
+  cover,
+  siteCta,
   questions,
   form,
   asksEmail,
@@ -221,8 +227,10 @@ function Cards({
   slug: string;
   title: string;
   blurb: string | null;
-  /** The emergency notice (decision 62), sent with the form so a door has it. */
-  helpNow: string;
+  /** The cover page's words (decision 78). Never sealed. */
+  cover: CoverWords | undefined;
+  /** The site's call to action, sent with the form so a door has it. */
+  siteCta: CtaProps;
   questions: FormQuestion[];
   /** Whether this logbook asks for an address at all (E1). */
   asksEmail: boolean;
@@ -473,11 +481,12 @@ function Cards({
       <FilingProgress value={progress} />
 
       {step === 'intro' ? (
-        <OpeningCard
+        <Cover
+          kind="logbook"
           title={title}
           blurb={blurb}
-          helpNow={helpNow}
-          asksEmail={asksEmail}
+          cover={cover}
+          site={siteCta}
           onStart={next}
         />
       ) : null}
@@ -642,23 +651,13 @@ function Cards({
           />
           {/* The operator's own line about sending, when they wrote one. */}
           <CopyText slot="send_note" className="font-semibold" />
-          <Card variant="deep" className="gap-1">
-            {asksEmail ? (
+          {asksEmail ? null : (
+            <Card variant="deep" className="gap-1">
               <p className="font-semibold">
-                Nothing is filed until you confirm it from your email.
+                This report can’t be changed or withdrawn after you send it.
               </p>
-            ) : (
-              <>
-                <p className="font-semibold">
-                  This report can’t be changed or withdrawn after you send it.
-                </p>
-                <p className="text-on-deep-muted">
-                  It is sealed the moment it arrives. A moderator reads it before anything is
-                  public.
-                </p>
-              </>
-            )}
-          </Card>
+            </Card>
+          )}
         </CardFrame>
       ) : null}
 
@@ -720,73 +719,6 @@ function FocusedAlert({ title, body }: { title: string; body?: string }) {
     <Alert ref={ref} tone="serious" title={title} tabIndex={-1} className="outline-none">
       {body}
     </Alert>
-  );
-}
-
-/**
- * The logbook's opening card (filing.md §03): what it is, the emergency
- * notice, what happens next, and Start. No progress rule here.
- */
-function OpeningCard({
-  title,
-  blurb,
-  helpNow,
-  asksEmail,
-  onStart,
-}: {
-  title: string;
-  blurb: string | null;
-  helpNow: string;
-  asksEmail: boolean;
-  onStart: () => void;
-}) {
-  const onDoor = useGateMode() === 'door';
-  const site = plainSiteName(useSite().data);
-  const heading = useFocusOnMount<HTMLHeadingElement>();
-  const lines = [
-    'One question at a time. How many depends on your answers.',
-    asksEmail
-      ? 'You check your answers before you send. Nothing is filed until you confirm it from your email.'
-      : 'You check your answers before you send. Once you send it, it is filed as it is.',
-    'A moderator reads it before anything is public.',
-  ];
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>File a report</Eyebrow>
-        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
-          {title}
-        </h1>
-        {blurb ? <Lede className="whitespace-pre-wrap">{blurb}</Lede> : null}
-      </div>
-      <HelpNow text={helpNow} />
-      <section aria-labelledby="what-happens" className="flex flex-col gap-3">
-        <h2 id="what-happens" className="label-face text-xs text-muted">
-          What happens next
-        </h2>
-        <ol className="flex flex-col gap-2.5">
-          {lines.map((line, i) => (
-            <li key={line} className="flex items-start gap-3">
-              {/* The list already numbers it for a screen reader. */}
-              <Count value={i + 1} label="" aria-hidden="true" className="mt-0.5" />
-              <span className="max-w-prose">{line}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
-      <div className="flex flex-col items-stretch gap-3 sm:items-start">
-        <Button size="lg" block className="sm:w-auto" onClick={onStart}>
-          Start
-        </Button>
-        {/* Behind the password on a door, so not offered there. */}
-        {onDoor ? null : (
-          <Button asChild variant="quiet" className="self-center sm:self-start">
-            <a href="/how">How to use {site}</a>
-          </Button>
-        )}
-      </div>
-      <Meta className="text-center sm:text-left">Sealed and timestamped on arrival.</Meta>
-    </div>
   );
 }
 

@@ -19,6 +19,7 @@
  * they cannot.
  */
 import { z } from 'zod';
+import { Cover } from './cover.ts';
 import { defineRoute } from './route.ts';
 import { DoorFields } from './door.ts';
 
@@ -76,6 +77,8 @@ export const ListForm = z.object({
   slug: z.string(),
   title: z.string(),
   blurb: z.string().nullable(),
+  /** The cover page (decision 78); absent where there is none. */
+  cover: Cover.optional(),
   accepting: z.boolean(),
   opens_at: Timestamp.nullable(),
   closes_at: Timestamp.nullable(),
@@ -207,6 +210,7 @@ export const ListDetail = z.object({
   slug: z.string(),
   title: z.string(),
   blurb: z.string().nullable(),
+  cover: Cover.nullable().optional(),
   visibility: ListVisibility,
   outside_access: ListOutsideAccess,
   email_mode: ListEmailMode,
@@ -340,6 +344,8 @@ export const updateList = defineRoute({
     /** The web address. Old addresses stop working when it changes. */
     slug: z.string().optional(),
     blurb: z.string().nullable().optional(),
+    /** The cover page; null clears it. */
+    cover: Cover.nullable().optional(),
     visibility: z.string().optional(),
     outside_access: z.string().optional(),
     email_mode: z.string().optional(),

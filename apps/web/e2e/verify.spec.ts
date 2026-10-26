@@ -16,6 +16,7 @@ test('a reader checks a report from the front page', async ({ page }) => {
   await page.getByRole('button', { name: 'Check it' }).click();
 
   await expect(page).toHaveURL(new RegExp(`/verify/${ref}$`));
+  await page.getByText('Technical details').click();
   const checks = page.getByRole('list', { name: 'Checks' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
@@ -33,6 +34,7 @@ test('the site asks no third party for anything', async ({ page }) => {
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await page.goto(`/verify/${ref}`);
+  await page.getByText('Technical details').click();
   await expect(page.getByRole('list', { name: 'Checks' })).toBeVisible();
   expect(outside).toEqual([]);
 });
@@ -72,10 +74,10 @@ test('an unpublished report shows its fingerprints and not its words, until it i
   await anon.dispose();
 
   await page.goto(`/verify/${filed}`);
+  await page.getByText('Technical details').click();
   const checks = page.getByRole('list', { name: 'Checks' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
-  await expect(page.getByText('What this report says is not shown')).toBeVisible();
   await expect(page.getByText(word)).toHaveCount(0);
   await expect(page.getByText('Check it yourself')).toHaveCount(0);
 
@@ -91,8 +93,7 @@ test('an unpublished report shows its fingerprints and not its words, until it i
   await admin.dispose();
 
   await page.reload();
+  await page.getByText('Technical details').click();
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
-  await page.getByText('Check it yourself').click();
   await expect(page.getByText(new RegExp(word))).toBeVisible();
-  await expect(page.getByText('What this report says is not shown')).toHaveCount(0);
 });

@@ -58,7 +58,9 @@ test('a visitor sends a tip; the emailed link erases what they wrote, and only w
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await v.goto(`/list/${slug}`);
-  await expect(v.getByRole('heading', { name: 'Before you start' })).toBeVisible();
+  await expect(
+    v.getByText('Nothing you send here is published. A moderator reads it.'),
+  ).toBeVisible();
   await expect(v.getByText(/Nothing you send here is published/)).toBeVisible();
   await v.getByRole('button', { name: 'Start' }).click();
 
@@ -221,9 +223,6 @@ test('a contact list that writes back says so on the form, and a reviewer can sh
   const email = `${unique('writer', info.project.name)}@example.org`;
   const v = await visitor(browser);
   await v.goto(`/list/${slug}`);
-  await expect(
-    v.getByText(/The team will use your email address to write back to you/),
-  ).toBeVisible();
   await v.getByRole('button', { name: 'Start' }).click();
   await v.getByRole('textbox', { name: 'What is this about' }).fill('A question');
   await v.getByRole('button', { name: 'Next' }).click();

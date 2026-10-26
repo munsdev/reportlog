@@ -142,45 +142,21 @@ export function VerifyResult({ v }: { v: Verification }) {
   return (
     <div className="flex flex-col gap-6">
       <Verdict failed={checks.filter((c) => !c.ok).map((c) => c.title.toLowerCase())} />
-      <p className="text-ink-alt">
-        In the logbook <strong className="text-ink">{v.chain.logbook_title}</strong>, received{' '}
-        <time dateTime={v.received_at} className="font-mono text-sm">
-          {new Date(v.received_at).toUTCString()}
-        </time>
-        .
-      </p>
-
-      <ul className="flex flex-col gap-3" aria-label="Checks">
-        {checks.map((c) => (
-          <CheckRow key={c.title} ok={c.ok} title={c.title} detail={c.detail} />
-        ))}
-      </ul>
-
-      <p className="max-w-prose">
-        {v.anchor.anchored
-          ? `An outside timestamp from ${v.anchor.date} covers this report.`
-          : 'No outside timestamp covers this report yet. The chain is timestamped once a day, so a report filed today is not covered until tomorrow.'}
-      </p>
-
-      {v.canonical_json === undefined ? (
-        <Card heading="What this report says is not shown">
-          <p className="max-w-prose">
-            It has not been published, so only its fingerprints are shown here. They are enough to
-            show the record has not changed since it was filed. Its text appears on this page once a
-            moderator publishes it.
-          </p>
+      {/* The verdict above is the answer. The rest is for somebody who wants
+          to see how it was reached, so it is folded away, not removed. */}
+      <details className="rounded-card border border-ink-alt bg-surface p-4">
+        <summary className="flex min-h-11 cursor-pointer items-center font-semibold">
+          Technical details
+        </summary>
+        <div className="mt-3 flex flex-col gap-4">
+          <ul className="flex flex-col gap-3" aria-label="Checks">
+            {checks.map((c) => (
+              <CheckRow key={c.title} ok={c.ok} title={c.title} detail={c.detail} />
+            ))}
+          </ul>
           <KeyValueList items={fingerprints} />
-        </Card>
-      ) : (
-        <>
-          <Card heading="Its fingerprints">
-            <KeyValueList items={fingerprints} />
-          </Card>
-          <details className="rounded-card border border-ink-alt bg-surface p-4">
-            <summary className="flex min-h-11 cursor-pointer items-center font-semibold">
-              Check it yourself
-            </summary>
-            <div className="mt-3 flex flex-col gap-3 text-sm">
+          {v.canonical_json === undefined ? null : (
+            <div className="flex flex-col gap-3 text-sm">
               <p className="max-w-prose">
                 These are the exact bytes that were fingerprinted (RFC 8785 canonical JSON). Their
                 SHA-256 should be <span className="font-mono break-all">{v.content.recorded}</span>.
@@ -206,9 +182,9 @@ export function VerifyResult({ v }: { v: Verification }) {
                 ].join('\n')}
               </pre>
             </div>
-          </details>
-        </>
-      )}
+          )}
+        </div>
+      </details>
     </div>
   );
 }

@@ -134,9 +134,7 @@ function Shown({
     return (
       <Column eyebrow={c.logbook_title} title="Confirm your report">
         <p className="max-w-prose">
-          Press the button to file your report. Once it is filed it is sealed: it can be corrected
-          with a new version, but never quietly changed. A moderator reads it before anything is
-          public.
+          Press the button to file your report. A moderator reads it before anything is public.
         </p>
         <p className="text-sm text-ink-alt">
           This link works until <Meta>{new Date(c.expires_at).toLocaleString()}</Meta>.
@@ -242,10 +240,7 @@ function Shown({
               : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
       </Alert>
       {c.files ? <FilesFiled files={c.files} /> : null}
-      <p className="max-w-prose">
-        Keep the reference: anybody can use it to check that the report has not been changed since
-        it was filed.
-      </p>
+      <p className="max-w-prose">Keep the reference.</p>
       {/* Behind the password, the rest of the site is not this page's to offer. */}
       {onDoor ? null : (
         <div className="flex flex-col items-start gap-2">
@@ -257,11 +252,6 @@ function Shown({
             </Button>
           ) : null}
           <p className="flex flex-wrap gap-x-2">
-            <Button asChild variant="quiet">
-              <Link to="/verify/$ref" params={{ ref: c.public_ref }}>
-                Check it has not been changed
-              </Link>
-            </Button>
             <Button asChild variant="quiet">
               <Link to="/mine">See your reports</Link>
             </Button>

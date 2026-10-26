@@ -78,10 +78,6 @@ export function DevBadge() {
           them. If something is not working, wait a few minutes and reload the page before assuming
           it is broken for good.
         </p>
-        <p>
-          Reports you file are not affected by any of this. Everything submitted is kept permanently
-          the moment it is confirmed.
-        </p>
       </DialogContent>
     </Dialog>
   );

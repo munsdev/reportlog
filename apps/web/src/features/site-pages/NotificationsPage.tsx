@@ -116,7 +116,7 @@ export function NotificationsForm({ current }: { current: Notifications }) {
             onCheckedChange={(on) => {
               setAll(on === true);
             }}
-            label="Every logbook, including ones launched later"
+            label="Every logbook, including new ones"
           />
           {!all ? (
             <div className="flex flex-col gap-3 pl-9" data-testid="logbook-choices">

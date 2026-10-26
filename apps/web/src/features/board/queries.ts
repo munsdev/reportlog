@@ -2,7 +2,13 @@
  * The board's server state. Every call goes through a contract, so a shape
  * change on the server breaks this file's build rather than a screen.
  */
-import { getBoard, getBoardReport, getBoardStats, listBoardReports } from '@reportlog/contracts';
+import {
+  getBoard,
+  getBoardReport,
+  getBoardStats,
+  getPressPack,
+  listBoardReports,
+} from '@reportlog/contracts';
 import { queryOptions } from '@tanstack/react-query';
 import { call } from '../../lib/api.ts';
 
@@ -42,4 +48,10 @@ export const boardReportQuery = (ref: string) =>
 export const boardStatsQuery = queryOptions({
   queryKey: ['board', 'stats'],
   queryFn: ({ signal }) => call(getBoardStats, { signal }),
+});
+
+/** The press pack, also read by the board's tabs to hide the tab when it is empty. */
+export const pressQuery = queryOptions({
+  queryKey: ['board', 'press'],
+  queryFn: ({ signal }) => call(getPressPack, { signal }),
 });

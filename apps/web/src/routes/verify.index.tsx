@@ -24,10 +24,7 @@ function VerifyForm() {
       <div className="flex flex-col gap-3">
         <Eyebrow>{site}</Eyebrow>
         <h1 className="font-display text-title">Check a report</h1>
-        <Lede>
-          Every report is fingerprinted when it arrives. Enter its reference to check, in your own
-          browser, that it has not been changed since.
-        </Lede>
+        <Lede>Enter a report reference.</Lede>
       </div>
       <Card variant="quiet">
         <CheckAReport help={null} />

@@ -14,7 +14,7 @@
  * launch as well (logbook_fields_guard); this module refuses first, and says
  * why.
  */
-import type { LogbookSummary, Question, QuestionSettingsInput } from '@reportlog/contracts';
+import type { Cover, LogbookSummary, Question, QuestionSettingsInput } from '@reportlog/contracts';
 import {
   CANNOT_CARRY_CONDITION,
   FILE_TYPE,
@@ -37,6 +37,7 @@ import type { Kysely, Selectable, Transaction } from 'kysely';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { questionsFor } from '../chain/questions.ts';
 import type { DB, LogbookFields } from '../db/schema.gen.ts';
+import { coverOf } from '../site/cover.ts';
 import { slugBlock } from '../site/slugs.ts';
 import { LogbookRefusal, refuse } from './refusals.ts';
 import type { RefusalCode } from './refusals.ts';
@@ -111,6 +112,7 @@ function summaries(db: Db) {
     'logbooks.publish_by_terms',
     'logbooks.show_on_front',
     'logbooks.short_slug',
+    'logbooks.cover',
     // What E1's email rule reads: each question's kind and settings.
     sql<{ kind: string; settings: FieldSettings | null }[] | null>`(
       SELECT json_agg(json_build_object('kind', f.kind, 'settings', f.settings))
@@ -159,6 +161,7 @@ function present(row: SummaryRow): LogbookSummary {
     publish_by_terms: row.publish_by_terms,
     show_on_front: row.show_on_front,
     short_slug: row.short_slug,
+    cover: coverOf(row.cover),
   };
 }
 
@@ -408,6 +411,7 @@ export async function updateDetails(
     publish_by_terms?: boolean | undefined;
     show_on_front?: boolean | undefined;
     short_slug?: string | null | undefined;
+    cover?: Cover | null | undefined;
   },
 ): Promise<LogbookSummary> {
   const set: {
@@ -417,6 +421,7 @@ export async function updateDetails(
     publish_by_terms?: boolean;
     show_on_front?: boolean;
     short_slug?: string | null;
+    cover?: string | null;
     updated_at: Date;
   } = {
     updated_at: new Date(),
@@ -432,6 +437,8 @@ export async function updateDetails(
   // Whether the front page advertises it. Presentation only, so it too stays
   // changeable after launch.
   if (spec.show_on_front !== undefined) set.show_on_front = spec.show_on_front;
+  // The cover page is presentation, never sealed, so it stays changeable.
+  if (spec.cover !== undefined) set.cover = spec.cover === null ? null : JSON.stringify(spec.cover);
   // The short address is a second name, never sealed, so it stays changeable.
   if (spec.short_slug !== undefined) {
     const s = (spec.short_slug ?? '').trim().toLowerCase();

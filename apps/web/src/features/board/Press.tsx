@@ -6,20 +6,18 @@
  * A file the pack lists but which is missing is shown as missing, not
  * hidden: it means the pack was not rebuilt, and that is worth seeing.
  */
-import { PRESS_FILE_PATH, getPressPack } from '@reportlog/contracts';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { PRESS_FILE_PATH } from '@reportlog/contracts';
+import { useQuery } from '@tanstack/react-query';
 import { Alert } from '../../components/ui/alert.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { Meta } from '../../components/ui/type.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
-import { call } from '../../lib/api.ts';
 
-export const pressQuery = queryOptions({
-  queryKey: ['board', 'press'],
-  queryFn: ({ signal }) => call(getPressPack, { signal }),
-});
+import { pressQuery } from './queries.ts';
+
+export { pressQuery };
 
 function size(bytes: number): string {
   if (bytes < 1024) return `${String(bytes)} bytes`;
@@ -50,13 +48,6 @@ export function PressPage() {
       ) : null}
       {d?.state === 'ready' ? (
         <>
-          {d.version || d.built_at ? (
-            <p className="text-sm text-ink-alt">
-              {d.version ? `Version ${d.version}` : ''}
-              {d.version && d.built_at ? ', ' : ''}
-              {d.built_at ? `built ${new Date(d.built_at).toLocaleDateString()}` : ''}.
-            </p>
-          ) : null}
           {d.files.length === 0 ? <NothingYet /> : null}
           <NotASample line={d.not_a_sample} />
           {/* One row per document: its title, its kind and size in mono, and
@@ -76,7 +67,7 @@ export function PressPage() {
                   {f.blurb ? <span className="text-ink-alt">{f.blurb}</span> : null}
                   <Meta>
                     {f.bytes === null
-                      ? 'Listed in the pack, but the file is missing.'
+                      ? 'This file is missing.'
                       : `${kindOf(f.key)} · ${size(f.bytes)}`}
                     {f.version ? ` · its own version, ${f.version}` : ''}
                     {f.note ? ` · ${f.note}` : ''}

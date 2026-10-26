@@ -46,6 +46,7 @@ import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
 import { feedbackRoutes } from './feedback/routes.ts';
 import { sitePeopleRoutes } from './site/peopleRoutes.ts';
+import { pageAdminRoutes, pageRoutes } from './pages/routes.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 import { templateRoutes } from './site/templates.ts';
 import { telemetryRoutes } from './telemetry/routes.ts';
@@ -185,6 +186,8 @@ export async function buildApp({
   verifyRoutes(app, db);
   siteRoutes(app, db);
   await lookRoutes(app, db);
+  pageRoutes(app, db);
+  await pageAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   await siteAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   await templateRoutes(app, db, { requireAdmin: roleGuard(['admin']) });
   sitePeopleRoutes(app, db);

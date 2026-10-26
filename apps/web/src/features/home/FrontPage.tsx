@@ -19,7 +19,7 @@ import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card.tsx';
 import { SocialLinks } from '@/components/ui/social-links.tsx';
-import { Eyebrow, Meta } from '@/components/ui/type.tsx';
+import { Eyebrow } from '@/components/ui/type.tsx';
 import { CheckAReport } from '@/features/board/CheckAReport.tsx';
 import { MapSlot } from '@/features/maps/MapSlot.tsx';
 import { cn } from '@/lib/utils.ts';
@@ -72,7 +72,6 @@ export function FrontPageLayout({
               <Link to="/about" className="text-base font-semibold underline underline-offset-4">
                 What is this? About this site
               </Link>
-              <Meta>Anyone can file. Sealed and timestamped on arrival.</Meta>
             </p>
           </div>
           {ways}
@@ -117,7 +116,7 @@ export function IntroSection({ text }: { text: string }) {
 export function CheckSection() {
   return (
     <Card variant="quiet" heading="Check a report">
-      <CheckAReport help="Every report has a reference. Enter one to check it has not been changed." />
+      <CheckAReport help={null} />
     </Card>
   );
 }
@@ -149,7 +148,7 @@ const MORE: readonly { to: string; label: string }[] = [
   { to: '/board', label: 'Read the published reports' },
   { to: '/journalists', label: 'For journalists: alerts and desk access' },
   { to: '/how', label: 'How to use this site' },
-  { to: '/standards', label: 'How reports are moderated' },
+  { to: '/how?tab=next', label: 'How reports are moderated' },
 ];
 
 export function LinksSection() {

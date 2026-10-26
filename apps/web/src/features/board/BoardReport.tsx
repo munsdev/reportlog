@@ -15,7 +15,6 @@ import { Card } from '../../components/ui/card.tsx';
 import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { Eyebrow, Meta } from '../../components/ui/type.tsx';
 import { ApiRequestError } from '../../lib/api.ts';
-import { CheckAReport } from './CheckAReport.tsx';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
 import { ReportAnswers, useReportHeadline } from './ReportAnswers.tsx';
@@ -51,9 +50,6 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
             {query.error.message}
           </Alert>
         )}
-        <Card variant="quiet" heading="Check a report">
-          <CheckAReport help="A report that is not published can still be checked by its reference." />
-        </Card>
       </ReportColumn>
     );
   }
@@ -78,7 +74,6 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
         <Eyebrow>{r.logbook_title}</Eyebrow>
         <ReportHeading r={r} />
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <Meta>Filed {new Date(r.received_at).toLocaleString()}</Meta>
           <ReportTags r={r} />
         </div>
       </div>
@@ -86,30 +81,21 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
         <ReportAnswers slug={r.logbook_slug} answers={r.answers} />
         {r.corrected ? (
           <p className="max-w-prose text-sm text-ink-alt">
-            This is a corrected version. Its reporter corrected an earlier one, which is kept and
-            still verifies.
+            This is a corrected version. Its reporter corrected an earlier one, which is kept.
           </p>
         ) : null}
       </Card>
       <PublishedFiles publicRef={r.public_ref} />
       {r.editorial_note ? <Note note={r.editorial_note} /> : null}
-      <Card heading="Check it has not been changed">
-        <p className="max-w-prose">
-          Anybody can check, in their own browser, that this report is exactly what was filed and
-          that nothing has been inserted or removed around it.
-        </p>
-        <p className="flex flex-col gap-1">
-          <span className="text-sm text-ink-alt">Its link in the chain</span>
-          <Meta className="break-all text-ink">{r.chain_hash}</Meta>
-        </p>
-        <div>
-          <Button asChild>
-            <Link to="/verify/$ref" params={{ ref: r.public_ref }}>
-              Check this report
-            </Link>
-          </Button>
-        </div>
-      </Card>
+      <p>
+        <Link
+          to="/verify/$ref"
+          params={{ ref: r.public_ref }}
+          className="underline underline-offset-4"
+        >
+          Check this report
+        </Link>
+      </p>
       {r.third_party ? (
         // Which organization, never who typed it.
         <p className="max-w-prose text-sm text-ink-alt">

@@ -251,7 +251,15 @@ for (const role of ROLES) {
     const menu = await openMenu(page);
     const door = menu.getByRole('link', { name: /^Your dashboard/ });
     await expect(door).toHaveCount(mine.length ? 1 : 0);
-    for (const p of ALL_PAGES)
+    // Everybody signed in has their own pages in the menu (decision 71).
+    const ownPages = new Set([
+      'My reports',
+      'Email updates',
+      'Account',
+      'Account and security',
+      'Overview',
+    ]);
+    for (const p of ALL_PAGES.filter((p) => !ownPages.has(p.label)))
       await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
     if (role === 'visitor') {
       await expect(menu.getByRole('link', { name: 'Sign in' })).toBeVisible();

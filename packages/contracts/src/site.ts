@@ -246,6 +246,10 @@ export const COPY_KEYS = [
   'intake_paused_notice',
   // Decision 62: the emergency notice on the front page and the filing landing.
   'help_now',
+  // Decision 78: heading and optional button of that box.
+  'cta_heading',
+  'cta_button_text',
+  'cta_button_url',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

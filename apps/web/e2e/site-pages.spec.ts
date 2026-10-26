@@ -28,7 +28,8 @@ test.describe('signed out', () => {
       ['/about', /^About /],
       ['/how', 'How to use this'],
       ['/standards', 'Moderation standard'],
-      ['/public-api', 'Public API'],
+      // The public API moved into How to use this, under For developers.
+      ['/public-api', 'How to use this'],
     ] as const;
     for (const [path, heading] of pages) {
       await page.goto(path);
@@ -38,18 +39,12 @@ test.describe('signed out', () => {
     expect(outside).toEqual([]);
   });
 
-  test('About puts the operator’s words first and the software’s after', async ({ page }) => {
+  test('About puts the operator’s words first; the software’s part is on How to use this', async ({
+    page,
+  }) => {
     await page.goto('/about');
-    const what = page.locator('#what');
-    await expect(what.locator('[data-copy="about_archive"]')).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'About the software' })).toBeVisible();
-    // The part an operator writes comes before the part they cannot.
-    const order = await page.evaluate(() => {
-      const a = document.querySelector('[data-copy="about_archive"]');
-      const b = document.querySelector('#chain');
-      return a && b ? a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING : 0;
-    });
-    expect(order).toBeTruthy();
+    await expect(page.locator('#what').locator('[data-copy="about_archive"]')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'About the software' })).toHaveCount(0);
   });
 
   test('the footer credits the software, and reaches every new page', async ({ page }) => {
@@ -60,7 +55,6 @@ test.describe('signed out', () => {
       ['About', /^About /],
       ['How to use', 'How to use this'],
       ['Moderation standard', 'Moderation standard'],
-      ['Public API', 'Public API'],
     ] as const) {
       await footer.getByRole('link', { name: link, exact: true }).click();
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);

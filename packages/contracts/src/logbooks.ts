@@ -11,6 +11,7 @@
  * can read, and a schema error would refuse first with one they cannot.
  */
 import { z } from 'zod';
+import { Cover } from './cover.ts';
 import { defineRoute } from './route.ts';
 import { PublicSocialLink } from './social.ts';
 
@@ -123,6 +124,8 @@ export const LogbookSummary = z.object({
   show_on_front: z.boolean(),
   /** A second web address that opens this logbook's form (/volunteer). Never sealed; changeable. */
   short_slug: z.string().nullable(),
+  /** The first card's words and call to action (decision 78). Never sealed. */
+  cover: Cover.nullable().optional(),
 });
 export type LogbookSummary = z.infer<typeof LogbookSummary>;
 
@@ -251,6 +254,8 @@ export const updateLogbook = defineRoute({
     show_on_front: z.boolean().optional(),
     /** The short web address; null or blank clears it. */
     short_slug: z.string().nullable().optional(),
+    /** The cover page; null clears it. Changeable after launch; never sealed. */
+    cover: Cover.nullable().optional(),
   }),
   response: LogbookDetail,
 });
@@ -433,6 +438,17 @@ export const getPublicLogbook = defineRoute({
      * for the site's wording, and the notice must be drawn on a door too.
      */
     help_now: z.string(),
+    /** The site's call to action, with its heading and button (decision 78). */
+    site_cta: z
+      .object({
+        heading: z.string(),
+        body: z.string(),
+        button_label: z.string(),
+        button_url: z.string(),
+      })
+      .optional(),
+    /** This logbook's cover page; absent where there is none. Never sealed. */
+    cover: Cover.optional(),
   }),
 });
 

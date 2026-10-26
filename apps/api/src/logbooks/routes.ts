@@ -34,7 +34,7 @@ import {
   updateLogbook,
   updateQuestion,
 } from '@reportlog/contracts';
-import type { FormQuestion, Question } from '@reportlog/contracts';
+import type { Cover, FormQuestion, Question } from '@reportlog/contracts';
 import { FILE_TYPE, LOCATION_TYPE, canFilter, placeOptions } from '@reportlog/fields';
 import { formText, termsFor } from '@reportlog/seal';
 import { questionsFor } from '../chain/questions.ts';
@@ -76,6 +76,19 @@ import {
   updateField,
 } from './logbooks.ts';
 import { createFromStartingPoint, startingPoints } from './templates.ts';
+
+/** The site's call to action as one object (decision 78); a door gets it too. */
+function siteCta(copy: ReturnType<typeof resolveCopy>) {
+  return {
+    help_now: copy.help_now,
+    site_cta: {
+      heading: copy.cta_heading,
+      body: copy.help_now,
+      button_label: copy.cta_button_text,
+      button_url: copy.cta_button_url,
+    },
+  };
+}
 
 export interface LogbookRouteDeps {
   /** Where list buttons come from. The lists workstream supplies this. */
@@ -151,7 +164,8 @@ export function logbookRoutes(
       // the wording its reporter read even if a label is reworded meanwhile.
       form: formText(lb.slug, await questionsFor(db, lb.id)).hash,
       // Shown as written, never through the figures (site/copy.ts, help_now).
-      help_now: resolveCopy(await readCopy(db)).help_now,
+      ...siteCta(resolveCopy(await readCopy(db))),
+      ...(lb.cover ? { cover: lb.cover } : {}),
     };
   });
 
@@ -207,6 +221,7 @@ export function logbookRoutes(
           publish_by_terms?: boolean;
           show_on_front?: boolean;
           short_slug?: string | null;
+          cover?: Cover | null;
         },
       );
       return logbookDetail(db, id);

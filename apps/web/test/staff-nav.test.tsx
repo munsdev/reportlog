@@ -503,7 +503,7 @@ describe('the menu on a desktop', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Menu' }));
     const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    for (const name of ['Board', 'Check a report', 'How to use', 'About', 'Home'])
+    for (const name of ['Board', 'How to use', 'About', 'Home'])
       expect(within(nav).getByRole('link', { name })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',

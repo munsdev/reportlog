@@ -558,6 +558,7 @@ export interface Lists {
   blurb: string | null;
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
+  cover: Json | null;
   created_at: Generated<Timestamp>;
   email_mode: Generated<string>;
   id: Generated<number>;
@@ -631,6 +632,7 @@ export interface Logbooks {
   blurb: string | null;
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;
+  cover: Json | null;
   created_at: Generated<Timestamp>;
   email_required: Generated<boolean>;
   /**
@@ -938,6 +940,22 @@ export interface SiteCopy {
   updated_at: Generated<Timestamp>;
 }
 
+export interface SitePageEdits {
+  blocks: Json | null;
+  id: Generated<number>;
+  page: string;
+  parent: number | null;
+  saved_at: Generated<Timestamp>;
+  saved_by: number | null;
+}
+
+export interface SitePages {
+  blocks: Json | null;
+  edit_id: number | null;
+  page: string;
+  updated_at: Generated<Timestamp>;
+}
+
 export interface SiteSettings {
   dev_mode_until: Timestamp | null;
   home_buttons: Json | null;
@@ -1157,6 +1175,8 @@ export interface DB {
   site_access: SiteAccess;
   site_access_tokens: SiteAccessTokens;
   site_copy: SiteCopy;
+  site_page_edits: SitePageEdits;
+  site_pages: SitePages;
   site_settings: SiteSettings;
   site_switch_log: SiteSwitchLog;
   storage_deletions: StorageDeletions;
