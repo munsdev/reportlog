@@ -22,7 +22,6 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'journalists',
   'legal',
   'list',
-  'map',
   'mine',
   'notifications',
   'organizations',

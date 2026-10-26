@@ -464,7 +464,7 @@ function MapCard({
               key: 'Where it appears',
               value: slots.find((sl) => sl.id === map.slot)?.label ?? map.slot,
             },
-            { key: 'Public address', value: `/map/${map.slug}`, mono: true },
+            { key: 'Public address', value: `/maps/${map.slug}`, mono: true },
           ]}
         />
         <div className="flex flex-wrap gap-2">
@@ -506,7 +506,7 @@ function MapCard({
           </Button>
           {map.enabled ? (
             <Button asChild variant="quiet">
-              <Link to="/map/$slug" params={{ slug: map.slug }}>
+              <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
             </Button>
@@ -557,6 +557,7 @@ function fieldsOf(map: HeatMapAdmin) {
     listIds: map.list_ids,
     outcome: map.outcome,
     slot: map.slot,
+    alsoSlots: map.also_slots,
   };
 }
 
@@ -573,6 +574,7 @@ function comparable(f: ReturnType<typeof fieldsOf>): string {
     views: sorted(f.views),
     logbookIds: sorted(f.logbookIds),
     listIds: sorted(f.listIds),
+    alsoSlots: sorted(f.alsoSlots),
     outcome: f.outcome && {
       ...f.outcome,
       stances: Object.entries(f.outcome.stances).sort(([a], [b]) => a.localeCompare(b)),
@@ -615,6 +617,7 @@ function MapEditor({
   const [listIds, setListIds] = useState<number[]>(map.list_ids);
   const [outcome, setOutcome] = useState(map.outcome);
   const [slot, setSlot] = useState(map.slot);
+  const [alsoSlots, setAlsoSlots] = useState<string[]>(map.also_slots);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const outcomeChoices = logbooks.flatMap((l) =>
@@ -642,6 +645,7 @@ function MapEditor({
     listIds,
     outcome,
     slot,
+    alsoSlots,
   };
   useUnsavedMap(map.id, map.title, comparable(draft) !== comparable(fieldsOf(base)));
 
@@ -662,6 +666,7 @@ function MapEditor({
           list_ids: listIds,
           outcome,
           slot,
+          also_slots: alsoSlots,
         },
       }),
     onSuccess: async (saved) => {
@@ -681,6 +686,7 @@ function MapEditor({
       setListIds(f.listIds);
       setOutcome(f.outcome);
       setSlot(f.slot);
+      setAlsoSlots(f.alsoSlots);
       await onSaved();
     },
   });
@@ -920,6 +926,23 @@ function MapEditor({
         </Select>
         <FieldDescription>{slots.find((s) => s.id === slot)?.description}</FieldDescription>
       </Field>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="font-semibold">Also show it in:</legend>
+        {slots
+          .filter((s) => s.id !== 'own_page' && s.id !== slot)
+          .map((s) => (
+            <Tick
+              key={s.id}
+              checked={alsoSlots.includes(s.id)}
+              onChange={(on) => {
+                setAlsoSlots((x) => toggle(x, s.id, on));
+              }}
+            >
+              {s.label}
+            </Tick>
+          ))}
+      </fieldset>
 
       {save.isError ? (
         <FieldError>{save.error.message}</FieldError>

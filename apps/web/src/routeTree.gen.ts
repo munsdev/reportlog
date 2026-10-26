@@ -53,6 +53,7 @@ import { Route as JournalistsAccessRouteImport } from './routes/journalists_.acc
 import { Route as JournalistsAlertsRouteImport } from './routes/journalists_.alerts'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MapSlugRouteImport } from './routes/map/$slug'
+import { Route as MapsSlugRouteImport } from './routes/maps/$slug'
 import { Route as MineIndexRouteImport } from './routes/mine/index'
 import { Route as MineThreadIdRouteImport } from './routes/mine/$threadId'
 import { Route as OrganizationsIndexRouteImport } from './routes/organizations/index'
@@ -334,6 +335,11 @@ const ListSlugRoute = ListSlugRouteImport.update({
 const MapSlugRoute = MapSlugRouteImport.update({
   id: '/map/$slug',
   path: '/map/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MapsSlugRoute = MapsSlugRouteImport.update({
+  id: '/maps/$slug',
+  path: '/maps/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MineIndexRoute = MineIndexRouteImport.update({
@@ -695,6 +701,7 @@ export interface FileRoutesByFullPath {
   '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
+  '/maps/$slug': typeof MapsSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board/': typeof BoardIndexRoute
@@ -797,6 +804,7 @@ export interface FileRoutesByTo {
   '/journalists/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
+  '/maps/$slug': typeof MapsSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board': typeof BoardIndexRoute
@@ -906,6 +914,7 @@ export interface FileRoutesById {
   '/journalists_/alerts': typeof JournalistsAlertsRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
+  '/maps/$slug': typeof MapsSlugRoute
   '/mine/$threadId': typeof MineThreadIdRoute
   '/verify/$ref': typeof VerifyRefRoute
   '/board/': typeof BoardIndexRoute
@@ -1016,6 +1025,7 @@ export interface FileRouteTypes {
     | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
+    | '/maps/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board/'
@@ -1118,6 +1128,7 @@ export interface FileRouteTypes {
     | '/journalists/alerts'
     | '/list/$slug'
     | '/map/$slug'
+    | '/maps/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board'
@@ -1226,6 +1237,7 @@ export interface FileRouteTypes {
     | '/journalists_/alerts'
     | '/list/$slug'
     | '/map/$slug'
+    | '/maps/$slug'
     | '/mine/$threadId'
     | '/verify/$ref'
     | '/board/'
@@ -1335,6 +1347,7 @@ export interface RootRouteChildren {
   JournalistsAlertsRoute: typeof JournalistsAlertsRoute
   ListSlugRoute: typeof ListSlugRoute
   MapSlugRoute: typeof MapSlugRoute
+  MapsSlugRoute: typeof MapsSlugRoute
   MineThreadIdRoute: typeof MineThreadIdRoute
   VerifyRefRoute: typeof VerifyRefRoute
   BoardIndexRoute: typeof BoardIndexRoute
@@ -1677,6 +1690,13 @@ declare module '@tanstack/react-router' {
       path: '/map/$slug'
       fullPath: '/map/$slug'
       preLoaderRoute: typeof MapSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/maps/$slug': {
+      id: '/maps/$slug'
+      path: '/maps/$slug'
+      fullPath: '/maps/$slug'
+      preLoaderRoute: typeof MapsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mine/': {
@@ -2282,6 +2302,7 @@ const rootRouteChildren: RootRouteChildren = {
   JournalistsAlertsRoute: JournalistsAlertsRoute,
   ListSlugRoute: ListSlugRoute,
   MapSlugRoute: MapSlugRoute,
+  MapsSlugRoute: MapsSlugRoute,
   MineThreadIdRoute: MineThreadIdRoute,
   VerifyRefRoute: VerifyRefRoute,
   BoardIndexRoute: BoardIndexRoute,

@@ -209,7 +209,7 @@ export async function buttonTargets(db: Db, sources: ButtonSources = {}): Promis
       kind: 'map',
       ref: m.slug,
       label: m.title,
-      href: `/map/${m.slug}`,
+      href: `/maps/${m.slug}`,
       action: null,
       blurb: m.blurb,
       help: null,

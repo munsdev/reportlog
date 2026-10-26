@@ -11,11 +11,12 @@
  * form, which says "not found" itself. A logbook's short address (short_slug)
  * resolves to its real slug first, and the form files under the real one.
  */
-import { getListForm, getPublicLogbook } from '@reportlog/contracts';
+import { getListForm, getMap, getPublicLogbook } from '@reportlog/contracts';
 import { createFileRoute, useRouter } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { FilingForm } from '../features/form/FilingForm.tsx';
 import { FormColumn } from '../features/form/FormNotice.tsx';
+import { MapPage } from '../features/maps/MapPage.tsx';
 import { ListFormPage } from '../features/lists/ListForm.tsx';
 import { call } from '../lib/api.ts';
 
@@ -28,7 +29,7 @@ function RootSlugPage() {
   const { history } = useRouter();
   const [found, setFound] = useState<{
     slug: string;
-    kind: 'list' | 'logbook';
+    kind: 'list' | 'logbook' | 'map';
     real: string;
   } | null>(null);
 
@@ -48,7 +49,17 @@ function RootSlugPage() {
             setFound({ slug, kind: 'logbook', real: lb.slug });
           },
           () => {
-            if (!ac.signal.aborted) setFound({ slug, kind: 'logbook', real: slug });
+            if (ac.signal.aborted) return;
+            // Last, a public map at this address. Nothing found anywhere
+            // goes to the logbook form, which says "not found" itself.
+            call(getMap, { params: { slug }, signal: ac.signal }).then(
+              () => {
+                setFound({ slug, kind: 'map', real: slug });
+              },
+              () => {
+                if (!ac.signal.aborted) setFound({ slug, kind: 'logbook', real: slug });
+              },
+            );
           },
         );
       },
@@ -65,6 +76,7 @@ function RootSlugPage() {
       </FormColumn>
     );
   }
+  if (found.kind === 'map') return <MapPage slug={slug} start={{}} />;
   return found.kind === 'list' ? (
     <ListFormPage slug={slug} />
   ) : (

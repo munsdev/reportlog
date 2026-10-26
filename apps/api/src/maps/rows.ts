@@ -25,6 +25,7 @@ export interface HeatMapRow {
   outcome_key: string | null;
   outcome_stances: Record<string, Stance>;
   slot: string;
+  also_slots: string[];
   position: number;
   updated_at: Date;
 }
@@ -62,6 +63,7 @@ export function shape(r: Selectable<HeatMaps>): HeatMapRow {
     outcome_key: r.outcome_key,
     outcome_stances: stancesOf(r.outcome_stances),
     slot: r.slot,
+    also_slots: r.also_slots,
     position: r.position,
     updated_at: r.updated_at,
   };
@@ -85,6 +87,7 @@ export function toAdmin(r: HeatMapRow): HeatMapAdmin {
         ? { logbook_id: r.outcome_logbook_id, key: r.outcome_key, stances: r.outcome_stances }
         : null,
     slot: r.slot,
+    also_slots: r.also_slots,
     position: r.position,
     updated_at: r.updated_at.toISOString(),
   };

@@ -2,7 +2,7 @@
  * The board's own maps page (the `board_tab` slot): every map an operator
  * placed there, in their order.
  *
- * A map here is the same map as at /map/<slug>: the server sends an area
+ * A map here is the same map as at /maps/<slug>: the server sends an area
  * under its threshold without its count, and nothing on this page can ask for
  * one. No tile layer, no other host.
  */

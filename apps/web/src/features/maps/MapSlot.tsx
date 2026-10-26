@@ -15,7 +15,7 @@ import { placedMapsQuery } from './queries.ts';
 export function MapSlot({ slot }: { slot: MapSlotId }) {
   const placed = useQuery(placedMapsQuery());
   const maps = (placed.data?.maps ?? [])
-    .filter((m) => m.slot === slot)
+    .filter((m) => m.slot === slot || m.also_slots.includes(slot))
     .sort((a, b) => a.position - b.position);
   if (!maps.length) return null;
   return (

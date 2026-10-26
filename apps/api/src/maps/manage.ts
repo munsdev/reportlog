@@ -32,6 +32,7 @@ import {
 import { LOCATION_TYPE, allOptionCodes } from '@reportlog/fields';
 import type { FieldSettings } from '@reportlog/fields';
 import type { Database } from '../db/database.ts';
+import { slugBlock } from '../site/slugs.ts';
 import { HttpError } from '../http/errors.ts';
 import { allMaps, mapById, stancesOf, toAdmin } from './rows.ts';
 import type { HeatMapRow } from './rows.ts';
@@ -96,6 +97,7 @@ interface Columns {
   outcome_key?: string | null;
   outcome_stances?: string;
   slot?: string;
+  also_slots?: string[];
   position?: number;
 }
 
@@ -114,6 +116,16 @@ async function validate(
       throw refused(
         'slug',
         'Give the map a short name in lowercase letters, numbers and hyphens. It goes in its address.',
+      );
+    }
+    const block = await slugBlock(db, slug, 'map', undefined, current?.id);
+    if (block === 'reserved') {
+      throw refused('slug', 'That short name is used by a page of the site. Choose another.');
+    }
+    if (block) {
+      throw refused(
+        'slug_taken',
+        'That short name is already used by a logbook, a list or a map. Choose another.',
       );
     }
     out.slug = slug;
@@ -173,6 +185,15 @@ async function validate(
   if (has('slot')) {
     if (!isMapSlot(patch.slot)) throw refused('slot', 'There is no such place on the site.');
     out.slot = patch.slot;
+  }
+
+  if (has('also_slots')) {
+    const raw = Array.isArray(patch.also_slots) ? patch.also_slots : null;
+    if (!raw?.every(isMapSlot)) throw refused('also_slots', 'There is no such place on the site.');
+    const primary = out.slot ?? current?.slot ?? DEFAULT_MAP_SLOT;
+    out.also_slots = [...new Set(raw)].filter((s) => s !== primary);
+  } else if (out.slot !== undefined && current) {
+    out.also_slots = current.also_slots.filter((s) => s !== out.slot);
   }
 
   if (has('position')) {

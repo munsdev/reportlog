@@ -79,7 +79,7 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await expect(page.getByRole('button', { name: 'Make the map' })).toHaveCount(0);
   expect(failed).toEqual([]);
 
-  const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+  const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
   await expect(card).toContainText('Off');
   await card.getByRole('button', { name: 'Change' }).click();
   const form = card.getByRole('form', { name: `Change ${title}` });
@@ -102,7 +102,7 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await expect(form.getByRole('status').last()).toContainText('Nevada');
 
   await card.getByRole('link', { name: 'Open it' }).click();
-  await expect(page).toHaveURL(new RegExp(`/map/${slug}$`));
+  await expect(page).toHaveURL(new RegExp(`/maps/${slug}$`));
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
   const map = page.getByRole('img', { name: `${title}: United States` });
   await expect(map).toBeVisible();
@@ -136,11 +136,11 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
 
   // Tidy: a map holds no reports, so deleting it takes nothing else.
   await page.goto('/maps');
-  const again = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+  const again = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
   await again.getByRole('button', { name: 'Change' }).click();
   await again.getByRole('button', { name: 'Delete the map' }).click();
   await again.getByRole('button', { name: 'Yes, delete this map' }).click();
-  await expect(page.getByText(`/map/${slug}`)).toHaveCount(0);
+  await expect(page.getByText(`/maps/${slug}`)).toHaveCount(0);
   expect((await page.request.get(`/api/maps/${slug}`)).status()).toBe(404);
 });
 
@@ -230,7 +230,7 @@ test('the staff screen says "No maps yet." when there are none, and draws no map
   const { id } = (await made.json()) as { id: number };
   try {
     await page.reload();
-    const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+    const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
     await expect(card).toContainText('an area shows its number at 4 reports or more');
     await expect(card).not.toContainText(/threshold 4/);
     // The editor's preview is words too: nothing on this screen draws a map.
@@ -257,7 +257,7 @@ test('the map editor warns before unsaved changes are lost, and not after they a
   });
   try {
     await page.goto('/maps');
-    const card = page.getByRole('listitem').filter({ hasText: `/map/${slug}` });
+    const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
     await card.getByRole('button', { name: 'Change' }).click();
     const form = card.getByRole('form', { name: `Change ${title}` });
 
