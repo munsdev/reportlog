@@ -51,7 +51,7 @@ export const DEFAULT_MIN_AREA = 3;
  * WHERE A MAP CAN GO, and that is the whole list: places the website has,
  * not a page builder. Adding one is a line here and a `<MapSlot>` on the page
  * it names, never a migration (`heat_maps.slot` has no CHECK for that
- * reason). Every map also has its own address, /map/<slug>, whatever its
+ * reason). Every map also has its own address, /maps/<slug>, whatever its
  * slot.
  *
  * The board's three are legacy's: a tab of its own, above the reports, and
@@ -62,7 +62,7 @@ export const MAP_SLOTS = [
     id: 'own_page',
     label: 'Only at its own address',
     description:
-      'At /map/<short name> and nowhere else. Somebody reaches it from a link you share.',
+      'At /maps/<short name> and nowhere else. Somebody reaches it from a link you share.',
   },
   {
     id: 'board_tab',
@@ -105,6 +105,7 @@ export const PlacedMap = z.object({
   title: z.string(),
   blurb: z.string().nullable(),
   slot: z.string(),
+  also_slots: z.array(z.string()),
   position: z.number().int(),
 });
 export type PlacedMap = z.infer<typeof PlacedMap>;
@@ -211,6 +212,7 @@ export const HeatMapAdmin = z.object({
     })
     .nullable(),
   slot: z.string(),
+  also_slots: z.array(z.string()),
   position: z.number().int(),
   updated_at: z.string(),
 });
@@ -276,6 +278,7 @@ const HeatMapInput = z.object({
   list_ids: z.unknown().optional(),
   outcome: z.unknown().optional(),
   slot: z.unknown().optional(),
+  also_slots: z.unknown().optional(),
   position: z.unknown().optional(),
 });
 

@@ -327,6 +327,7 @@ export interface FloodSettings {
 }
 
 export interface HeatMaps {
+  also_slots: Generated<string[]>;
   blurb: string | null;
   county_min: number | null;
   created_at: Generated<Timestamp>;

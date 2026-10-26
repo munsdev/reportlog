@@ -1,5 +1,5 @@
 /**
- * A map at its own address, /map/<slug>. Every map that is turned on has one,
+ * A map at its own address, /maps/<slug>. Every map that is turned on has one,
  * whatever its slot.
  *
  * A link can carry the reader's two switches and the area they were looking

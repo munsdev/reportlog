@@ -67,6 +67,7 @@ export function mapRoutes(app: FastifyInstance, { db, cacheMs = 60_000 }: MapRou
             title: m.title,
             blurb: m.blurb,
             slot: m.slot,
+            also_slots: m.also_slots,
             position: m.position,
           })),
   }));

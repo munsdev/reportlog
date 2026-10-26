@@ -14,16 +14,20 @@ export type SlugBlock = 'reserved' | 'taken-elsewhere';
 /**
  * Why `slug` cannot be used for a `kind` of thing, or null. A list's own
  * duplicate is the caller's check (a unique column); for a logbook, pass its
- * own id when it is the one being changed, so it does not block itself.
+ * own id (ownLogbookId, or ownMapId for a map) when it is the one being changed, so it does not block itself.
  */
 export async function slugBlock(
   db: Kysely<DB>,
   slug: string,
-  kind: 'logbook' | 'list',
+  kind: 'logbook' | 'list' | 'map',
   ownLogbookId?: number,
+  ownMapId?: number,
 ): Promise<SlugBlock | null> {
   if (RESERVED_SLUGS.has(slug)) return 'reserved';
-  if (kind === 'logbook') {
+  let hm = db.selectFrom('heat_maps').select('id').where('slug', '=', slug);
+  if (ownMapId !== undefined) hm = hm.where('id', '<>', ownMapId);
+  if (await hm.executeTakeFirst()) return 'taken-elsewhere';
+  if (kind !== 'list') {
     const list = await db
       .selectFrom('lists')
       .select('id')
