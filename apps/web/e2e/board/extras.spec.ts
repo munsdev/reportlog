@@ -8,7 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
-import { goViaMenu, tabLink } from '../menu.ts';
+import { goViaMenu } from '../menu.ts';
 import { stepUp } from '../second-factor.ts';
 
 function watchOutside(page: Page): string[] {
