@@ -83,8 +83,7 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
   await expect(heading(page, title)).toBeVisible();
   await expect(page.getByText('If someone needs help right now')).toBeVisible();
   await expect(page.locator('[data-copy="help_now"]')).not.toBeEmpty();
-  await expect(page.getByText('You check your answers before you send.')).toBeVisible();
-  await expect(page.getByText('Sealed and timestamped on arrival.')).toBeVisible();
+  await expect(page.getByText('A moderator reads it before anything is public.')).toBeVisible();
   // No progress yet, on the page or for the header.
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('html')).not.toHaveAttribute('data-filing-progress', /.*/);

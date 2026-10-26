@@ -35,7 +35,8 @@ test.describe('signed out', () => {
       page.getByRole('heading', { name: 'Launch it: this is the one-way door' }),
     ).toBeVisible();
     await page.goto('/docs/checking');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Checking it actually works');
+    // The old address lands on the record tab of How to use this.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('How to use this');
     await page.goto('/organizations');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Participating organizations' }),

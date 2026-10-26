@@ -10,7 +10,7 @@
  * made only once edit mode is on, and edit mode is offered only to somebody
  * who holds the role, never on a door.
  */
-import { resolveHomeSections } from '@reportlog/contracts';
+import { blockText, resolveHomeSections } from '@reportlog/contracts';
 import type { HomeSectionId } from '@reportlog/contracts';
 import { roleSatisfies } from '@reportlog/access';
 import { useQuery } from '@tanstack/react-query';
@@ -37,6 +37,9 @@ import {
 import { FrontPageEditor } from '../features/home/FrontPageEditor.tsx';
 import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
+import { Markdown } from '../features/pages/Markdown.tsx';
+import { HeroEditor } from '../features/pages/HeroEditor.tsx';
+import { pageBlocksQuery } from '../features/pages/queries.ts';
 import { placedMapsQuery } from '../features/maps/queries.ts';
 
 export const Route = createFileRoute('/')({
@@ -69,7 +72,15 @@ function Home() {
   const published = board.data?.published && 'total' in board.data ? board.data.total : undefined;
   const buttons = query.isError ? FALLBACK_BUTTONS : (query.data?.buttons ?? []);
   const name = plainSiteName(site);
-  const headline = site?.copy.home_headline ?? 'ReportLog';
+  // The headline block (decision 79), once somebody has saved one; until
+  // then the page wording that ships.
+  const blocks = useQuery(pageBlocksQuery('home'));
+  const hero = blocks.data?.blocks.find((b) => b.type === 'hero');
+  const info = hero?.variant === 'info';
+  const heroText = (k: string): string => (hero ? blockText(hero, k) : '');
+  const headline = heroText('headline') || (site?.copy.home_headline ?? 'ReportLog');
+  const lede = hero ? heroText(info ? 'body' : 'line') : (site?.copy.home_lede ?? '');
+  const [heroEditing, setHeroEditing] = useState(false);
   const canEdit = useCanEdit();
   const [editing, setEditing] = useState(false);
   const { account } = Route.useSearch();
@@ -111,29 +122,56 @@ function Home() {
       name={name}
       above={
         canEdit ? (
-          // A BUBBLE IN THE CORNER, like the development notice opposite it:
-          // a tool for the administrator, not part of the page visitors see,
-          // so it takes no room in the page's own flow. Above any bar fixed
-          // to the bottom of the screen (components/ui/bottom-bar.tsx).
-          <button
-            type="button"
-            onClick={() => {
-              setEditing(true);
-            }}
-            className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
-          >
-            <span aria-hidden="true">✎</span>
-            Edit this page
-          </button>
+          <>
+            {heroEditing ? (
+              <HeroEditor
+                onDone={() => {
+                  setHeroEditing(false);
+                }}
+              />
+            ) : null}
+            {/* Bubbles in the corner, tools for the administrator that take no room
+              in the page's own flow. Above any bar fixed to the bottom of the screen. */}
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(true);
+              }}
+              className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
+            >
+              <span aria-hidden="true">✎</span>
+              Edit this page
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHeroEditing((v) => !v);
+              }}
+              className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+4.5rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
+            >
+              <span aria-hidden="true">✎</span>
+              Edit headline
+            </button>
+          </>
         ) : null
       }
       headline={<h1 className={HEADLINE_CLASS}>{headline}</h1>}
-      lede={site?.copy.home_lede ? <Lede className={LEDE_CLASS}>{site.copy.home_lede}</Lede> : null}
+      lede={
+        lede ? (
+          info ? (
+            <div className={LEDE_CLASS}>
+              <Markdown text={lede} />
+            </div>
+          ) : (
+            <Lede className={LEDE_CLASS}>{lede}</Lede>
+          )
+        ) : null
+      }
       ways={
         query.isPending ? (
           <p role="status">Finding the ways in…</p>
         ) : (
-          <HomeButtons buttons={buttons} published={published} siteName={name} />
+          <HomeButtons buttons={buttons} published={published} siteName={name} quiet={info} />
         )
       }
       helpNow={

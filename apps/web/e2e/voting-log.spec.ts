@@ -87,7 +87,7 @@ async function send(page: Page) {
   await page.getByRole('button', { name: 'Send report' }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
   await expect(page.getByRole('heading', { level: 1, name: /was received/ })).toBeVisible();
-  await expect(page.getByText(/It is sealed/)).toBeVisible();
+  await expect(page.getByText(/A moderator reads it before anything is public/)).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link\?/)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Send a link' })).toHaveAttribute(
     'href',

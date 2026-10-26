@@ -44,10 +44,13 @@ export function HomeButtons({
   buttons,
   published,
   siteName = '',
+  quiet = false,
 }: {
   buttons: readonly HomeButton[];
   /** For the social icons' names ("<site> on Bluesky"). */
   siteName?: string;
+  /** The info layout: every button secondary and ordinary-sized. */
+  quiet?: boolean;
   /** Published reports on the board, or undefined while unknown. */
   published?: number | undefined;
 }) {
@@ -73,10 +76,10 @@ export function HomeButtons({
           <li key={`${b.kind}:${b.ref}`}>
             <Button
               asChild
-              size="lg"
+              size={quiet ? 'md' : 'lg'}
               block
-              variant={b.accent ? 'primary' : 'secondary'}
-              className={cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
+              variant={b.accent && !quiet ? 'primary' : 'secondary'}
+              className={quiet ? undefined : cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
             >
               <a href={href}>
                 <span className="inline-flex items-center gap-2">

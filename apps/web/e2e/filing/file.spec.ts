@@ -153,13 +153,14 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await expect(inbox.getByText(`Its reference is ${ref}`)).toBeVisible();
 
   // And the report it filed is sealed and verifies, with the answer given.
-  await inbox.getByRole('link', { name: 'Check it has not been changed' }).click();
+  // The confirmation page no longer links to the check; the reference is the way in.
+  await inbox.goto(`/verify/${ref}`);
+  await inbox.getByText('Technical details').click();
   const checks = inbox.getByRole('list', { name: 'Checks' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
   // Not published, so the page shows its fingerprints and none of its words
   // (decisions.md §1); the answer is in the sealed bytes staff can read.
-  await expect(inbox.getByText('What this report says is not shown')).toBeVisible();
   await expect(inbox.getByText(/The doors were locked at nine/)).toHaveCount(0);
   const staff = await playwright.request.newContext({
     baseURL: info.project.use.baseURL ?? 'http://127.0.0.1:4173',

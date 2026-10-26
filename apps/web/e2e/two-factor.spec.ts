@@ -142,7 +142,7 @@ test('an administrator is asked for the factor again before granting a role', as
   identityState('stale-step-up', email);
   await page.goto('/access');
   await page.getByLabel('Their email address').fill(subject);
-  await page.getByRole('radio', { name: 'Moderator' }).click();
+  await page.getByRole('checkbox', { name: 'Moderator' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Confirm it is you' });
@@ -158,7 +158,7 @@ test('an administrator is asked for the factor again before granting a role', as
   await dialog.getByLabel('Code from your authenticator app').fill(totp(secret, 30_000));
   await dialog.getByRole('button', { name: 'Confirm' }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('status')).toHaveText(`${subject} is now: Moderator.`);
+  await expect(page.getByRole('status')).toHaveText(`${subject} now holds: Moderator.`);
   expect(outside).toEqual([]);
 });
 
