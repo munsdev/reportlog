@@ -124,7 +124,7 @@ async function validate(
     }
     if (block) {
       throw refused(
-        'slug',
+        'slug_taken',
         'That short name is already used by a logbook, a list or a map. Choose another.',
       );
     }

@@ -323,7 +323,7 @@ describe('the second line, and the new kinds of target', () => {
     expect((await homeButtons(db))[0]).toMatchObject({
       kind: 'map',
       ref: slug,
-      href: `/map/${slug}`,
+      href: `/maps/${slug}`,
       accent: true,
     });
     await db.updateTable('heat_maps').set({ enabled: false }).where('slug', '=', slug).execute();
