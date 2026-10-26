@@ -14,6 +14,12 @@ import { useGateMode } from '@/features/identity/gateMode.ts';
 import { useFocusOnMount } from './CardFrame.tsx';
 import { HelpNow, type CtaProps } from './HelpNow.tsx';
 
+/** The trimmed text, or the fallback when there is none. */
+function orElse(text: string | undefined, fallback: string): string {
+  const t = text?.trim();
+  return t === undefined || t === '' ? fallback : t;
+}
+
 export type CoverKind = 'logbook' | 'list';
 
 const SMALL_LINE: Record<CoverKind, string> = {
@@ -58,7 +64,7 @@ export function Cover({
   const onDoor = useGateMode() === 'door';
   const siteName = plainSiteName(useSite().data);
   const heading = useFocusOnMount<HTMLHeadingElement>();
-  const eyebrow = cover?.eyebrow?.trim() || (kind === 'logbook' ? 'File a report' : '');
+  const eyebrow = orElse(cover?.eyebrow, kind === 'logbook' ? 'File a report' : '');
   const intro = cover?.intro?.trim();
   const cta = resolveCta(kind, cover, site);
   return (
@@ -76,7 +82,7 @@ export function Cover({
       {onStart ? (
         <div className="flex flex-col items-stretch gap-3 sm:items-start">
           <Button size="lg" block className="sm:w-auto" onClick={onStart}>
-            {cover?.button_label?.trim() || 'Start'}
+            {orElse(cover?.button_label, 'Start')}
           </Button>
           {/* Behind the password on a door, so not offered there. */}
           {onDoor ? null : (

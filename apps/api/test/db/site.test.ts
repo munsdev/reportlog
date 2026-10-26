@@ -258,7 +258,7 @@ describe('the migration that brought in the look library', () => {
     );
     await admin('PUT', '/api/admin/site/copy/home_headline', { body: '' });
     const after = (await get<{ copy: Record<string, string> }>('/api/site')).copy.home_headline;
-    expect(after).toBe('A record of what happened, that cannot be quietly changed.');
+    expect(after).toBe('What happened, in the words of people who were there.');
     const rows = await db
       .selectFrom('site_copy')
       .selectAll()

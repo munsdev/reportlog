@@ -62,7 +62,11 @@ async function logbooksOpenOutside(db: Kysely<DB>) {
 export async function doors(db: Kysely<DB>): Promise<Door[]> {
   const logbooks = (await logbooksOpenOutside(db))
     .filter((l) => l.outside_access === 'door')
-    .map((l): Door => ({ kind: 'logbook', slug: l.slug, title: l.title, href: l.short_slug ? `/${l.short_slug}` : `/file/${l.slug}`,
+    .map((l): Door => ({
+      kind: 'logbook',
+      slug: l.slug,
+      title: l.title,
+      href: l.short_slug ? `/${l.short_slug}` : `/file/${l.slug}`,
     }));
   return [...logbooks, ...(await listDoors(db))];
 }

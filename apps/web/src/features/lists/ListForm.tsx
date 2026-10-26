@@ -318,7 +318,15 @@ function Cards({ form }: { form: Form }) {
                 }
               : undefined
           }
-          primary={last ? 'Send' : at === 0 ? form.cover?.button_label?.trim() || 'Start' : 'Next'}
+          primary={
+            last
+              ? 'Send'
+              : at === 0
+                ? form.cover?.button_label?.trim()
+                  ? form.cover.button_label.trim()
+                  : 'Start'
+                : 'Next'
+          }
           busy={send.isPending || sending.waiting}
           busyLabel="Sending…"
           above={
@@ -382,7 +390,7 @@ function Intro({ form }: { form: Form }) {
           ? {
               text: site.help_now,
               heading: site.cta_heading,
-              buttonLabel: site.cta_button_label,
+              buttonLabel: site.cta_button_text,
               buttonUrl: site.cta_button_url,
             }
           : null

@@ -48,7 +48,6 @@ const LINKS = [
   { to: '/terms', label: 'Terms' },
   { to: '/illegal-content', label: 'Report illegal content' },
   { to: '/organizations', label: DIRECTORY_NAME },
-  { to: '/public-api', label: 'Public API' },
   // A plain link: the sign-up page asks the server for nothing until its
   // form is sent, so this is safe on a door, where the footer also shows.
   { to: '/journalists', label: 'For journalists' },
@@ -56,7 +55,6 @@ const LINKS = [
 
 export function SiteFooter() {
   const site = useSite().data;
-  const version = versionLine(site?.version);
   return (
     <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted print:hidden">
       <nav aria-label="About this site">
@@ -82,7 +80,6 @@ export function SiteFooter() {
         </a>
         , free software under the {SOFTWARE_LICENCE} licence.
       </p>
-      {version ? <p className="mt-1 font-mono text-xs">{version}</p> : null}
       <EasierReadingSlot where="footer" />
     </footer>
   );

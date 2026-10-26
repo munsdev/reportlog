@@ -141,7 +141,7 @@ function Home() {
           <HelpNow
             text={site.copy.help_now}
             heading={site.copy.cta_heading}
-            buttonLabel={site.copy.cta_button_label}
+            buttonLabel={site.copy.cta_button_text}
             buttonUrl={site.copy.cta_button_url}
           />
         ) : null

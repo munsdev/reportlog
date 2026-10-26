@@ -289,7 +289,8 @@ export async function updateSettings(
     if (b.length > 1000) refuse('blurb');
     set.blurb = b || null;
   }
-  if (patch.cover !== undefined) set.cover = patch.cover === null ? null : JSON.stringify(patch.cover);
+  if (patch.cover !== undefined)
+    set.cover = patch.cover === null ? null : JSON.stringify(patch.cover);
   const visibility = patch.visibility ?? list.visibility;
   if (patch.visibility !== undefined) {
     if (!VISIBILITIES.includes(patch.visibility as 'hidden')) refuse('visibility');

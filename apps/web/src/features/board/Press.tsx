@@ -6,20 +6,18 @@
  * A file the pack lists but which is missing is shown as missing, not
  * hidden: it means the pack was not rebuilt, and that is worth seeing.
  */
-import { PRESS_FILE_PATH, getPressPack } from '@reportlog/contracts';
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { PRESS_FILE_PATH } from '@reportlog/contracts';
+import { useQuery } from '@tanstack/react-query';
 import { Alert } from '../../components/ui/alert.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { Meta } from '../../components/ui/type.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
-import { call } from '../../lib/api.ts';
 
-export const pressQuery = queryOptions({
-  queryKey: ['board', 'press'],
-  queryFn: ({ signal }) => call(getPressPack, { signal }),
-});
+import { pressQuery } from './queries.ts';
+
+export { pressQuery };
 
 function size(bytes: number): string {
   if (bytes < 1024) return `${String(bytes)} bytes`;

@@ -192,9 +192,9 @@ function Record() {
           and needs nothing from this server to be honest.
         </p>
         <p>
-          Each report’s fingerprint (SHA-256, of the report written out in one canonical form,
-          RFC 8785) is combined with the one before it in the same logbook, so changing anything in
-          an old report breaks every link after it. Once a day, the newest link of every logbook is
+          Each report’s fingerprint (SHA-256, of the report written out in one canonical form, RFC
+          8785) is combined with the one before it in the same logbook, so changing anything in an
+          old report breaks every link after it. Once a day, the newest link of every logbook is
           sent to an independent timestamp authority (RFC 3161) and published to a transparency log
           that is never rewritten. A logbook on that list stays on it, and its count only grows, so
           a whole logbook cannot quietly disappear.

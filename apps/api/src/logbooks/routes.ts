@@ -84,7 +84,7 @@ function siteCta(copy: ReturnType<typeof resolveCopy>) {
     site_cta: {
       heading: copy.cta_heading,
       body: copy.help_now,
-      button_label: copy.cta_button_label,
+      button_label: copy.cta_button_text,
       button_url: copy.cta_button_url,
     },
   };

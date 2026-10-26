@@ -257,7 +257,7 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     fallback: 'If someone needs help right now',
   },
   {
-    key: 'cta_button_label',
+    key: 'cta_button_text',
     kind: 'line',
     figures: false,
     label: 'Call to action button text',

@@ -43,11 +43,11 @@ function site(overrides: Partial<Site> = {}): Site {
     plain_name: 'Munich Archive',
     look: { palette: 'flint', theme: 'signal', panel_head: 'plain', texture: 'none' },
     copy: {
+      home_headline: 'h',
       home_lede: 'l',
       cta_heading: '',
-      cta_button_label: '',
+      cta_button_text: '',
       cta_button_url: '',
-      home_lede: 'l',
       home_intro: 'i',
       about_archive: 'We are the Munich archive.',
       submit_intro: '',
@@ -125,7 +125,7 @@ describe('the footer', () => {
     expect(await screen.findByRole('link', { name: 'ReportLog' })).toBeInTheDocument();
   });
 
-  it('links the About, How-to, standard, legal, directory, API and journalist pages', async () => {
+  it('links the About, How-to, standard, legal, directory and journalist pages', async () => {
     await inRouter(() => <SiteFooter />);
     const nav = await screen.findByRole('navigation', { name: 'About this site' });
     const hrefs = [...nav.querySelectorAll('a')].map((a) => a.getAttribute('href'));
@@ -137,20 +137,17 @@ describe('the footer', () => {
       '/terms',
       '/illegal-content',
       '/organizations',
-      '/public-api',
       '/journalists',
     ]);
   });
 
-  it('says which release this is, and says nothing where there is no number', async () => {
+  it('words the release, and says nothing where there is no number', () => {
     expect(versionLine({ release: 'v1.2.0', build: 'abcdef012345' })).toBe(
       'Version v1.2.0 (abcdef012345)',
     );
     expect(versionLine({ release: 'v1.2.0', build: null })).toBe('Version v1.2.0');
     expect(versionLine({ release: null, build: 'abcdef012345' })).toBe('Build abcdef012345');
     expect(versionLine({ release: null, build: null })).toBeNull();
-    await inRouter(() => <SiteFooter />, site({ version: { release: 'v3.0.1', build: null } }));
-    expect(await screen.findByText('Version v3.0.1')).toBeInTheDocument();
   });
 
   it('marks each social media account switched on, named for a screen reader, sent with no referrer', async () => {

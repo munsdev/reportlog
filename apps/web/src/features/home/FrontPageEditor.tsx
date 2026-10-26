@@ -75,7 +75,7 @@ const KEYS = [
   'home_intro',
   'help_now',
   'cta_heading',
-  'cta_button_label',
+  'cta_button_text',
   'cta_button_url',
 ] as const;
 type FrontKey = (typeof KEYS)[number] & CopyKey;
@@ -525,11 +525,11 @@ function Editing({
               </FieldDescription>
             </Field>
             <Field>
-              <Label className="text-on-deep">{labelOf(editor, 'cta_button_label')}</Label>
+              <Label className="text-on-deep">{labelOf(editor, 'cta_button_text')}</Label>
               <Input
-                value={copy.cta_button_label}
+                value={copy.cta_button_text}
                 onChange={(e) => {
-                  word('cta_button_label')(e.target.value);
+                  word('cta_button_text')(e.target.value);
                 }}
               />
             </Field>

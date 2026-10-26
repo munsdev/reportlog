@@ -248,7 +248,7 @@ export const COPY_KEYS = [
   'help_now',
   // Decision 78: heading and optional button of that box.
   'cta_heading',
-  'cta_button_label',
+  'cta_button_text',
   'cta_button_url',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];

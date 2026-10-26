@@ -18,7 +18,7 @@ import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
-import { pressQuery } from './Press.tsx';
+import { pressQuery } from './queries.ts';
 import { TabRow } from '../nav/AreaTabs.tsx';
 
 type BoardPath = '/board' | '/board/numbers' | '/board/maps' | '/board/activity' | '/board/press';

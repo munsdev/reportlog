@@ -24,7 +24,9 @@ export function CoverPanel({
   const [eyebrow, setEyebrow] = useState(cover?.eyebrow ?? '');
   const [intro, setIntro] = useState(cover?.intro ?? '');
   const [button, setButton] = useState(cover?.button_label ?? '');
-  const [mode, setMode] = useState<Mode>(cover?.cta?.mode ?? (kind === 'logbook' ? 'site' : 'hide'));
+  const [mode, setMode] = useState<Mode>(
+    cover?.cta?.mode ?? (kind === 'logbook' ? 'site' : 'hide'),
+  );
   const [heading, setHeading] = useState(cover?.cta?.heading ?? '');
   const [body, setBody] = useState(cover?.cta?.body ?? '');
   const [ctaLabel, setCtaLabel] = useState(cover?.cta?.button_label ?? '');
@@ -52,8 +54,8 @@ export function CoverPanel({
   return (
     <Panel title="Cover page">
       <p className="text-sm text-muted">
-        The first card people see, before the first question. None of this is part of the
-        questions, so it can change at any time. Leave a box empty to use the usual wording.
+        The first card people see, before the first question. None of this is part of the questions,
+        so it can change at any time. Leave a box empty to use the usual wording.
       </p>
       <form
         className="space-y-3"
@@ -108,7 +110,9 @@ export function CoverPanel({
         {mode === 'custom' ? (
           <>
             <Field label="Box heading" help="Left empty, the site’s heading is used.">
-              {(p) => <TextInput {...p} value={heading} maxLength={80} onChange={set(setHeading)} />}
+              {(p) => (
+                <TextInput {...p} value={heading} maxLength={80} onChange={set(setHeading)} />
+              )}
             </Field>
             <Field label="Box text" help="Left empty, the box does not show.">
               {(p) => <TextArea {...p} value={body} maxLength={1000} onChange={set(setBody)} />}

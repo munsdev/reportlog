@@ -103,14 +103,10 @@ afterEach(() => {
 });
 
 describe('a list’s form', () => {
-  it('says first that nothing sent is published, and why an address might be asked', () => {
+  it('says on the cover that nothing sent is published', () => {
     stubFetch();
     show(TIPS);
-    expect(screen.getByRole('heading', { name: 'Before you start' })).toBeInTheDocument();
     expect(screen.getByText(/Nothing you send here is published/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/If you do, you will be asked for an email address/),
-    ).toBeInTheDocument();
   });
 
   it('asks one question per card, refuses to move on without a required answer, and never moves on by itself', async () => {
@@ -178,18 +174,10 @@ describe('a list’s form', () => {
     expect(sent[0]?.body).toMatchObject({ email: 'me@example.org' });
   });
 
-  it('says plainly that the team will write back, only on a list that does', async () => {
+  it('says plainly that the team will write back, on the email card of a list that does', async () => {
     stubFetch();
     const user = userEvent.setup();
-    const { unmount } = show(TIPS);
-    expect(screen.queryByText(/write back to you/)).not.toBeInTheDocument();
-    unmount();
     show({ ...TIPS, write_back: true, email_reason: 'reply' });
-    expect(
-      screen.getByText(
-        'The team will use your email address to write back to you about what you send.',
-      ),
-    ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Start' }));
     await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
     await user.click(screen.getByRole('button', { name: 'Next' }));

@@ -28,7 +28,7 @@ export function HelpNow({ text, heading, buttonLabel, buttonUrl }: CtaProps) {
   return (
     <Card variant="deep" className="gap-2">
       <h2 className="label-face text-sm text-brand-on-deep">
-        {heading?.trim() || DEFAULT_CTA_HEADING}
+        {heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}
       </h2>
       <p data-copy="help_now" className="max-w-prose whitespace-pre-wrap">
         {text}

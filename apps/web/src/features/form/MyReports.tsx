@@ -449,7 +449,8 @@ function Withdraw({ r }: { r: MyReportDetail }) {
   return (
     <Section title="Withdraw it">
       <p className="text-ink-alt">
-        It comes off the public board. It stays in the archive, because nothing in it can be deleted.
+        It comes off the public board. It stays in the archive, because nothing in it can be
+        deleted.
       </p>
       <Field>
         <Label>Why are you withdrawing it?</Label>
