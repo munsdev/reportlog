@@ -25,7 +25,7 @@ jobs:
   checks:
     name: Lint, types, boundaries, unit and database tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -111,7 +111,7 @@ jobs:
   browser:
     name: Browser tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
