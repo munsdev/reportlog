@@ -143,7 +143,7 @@ export function DoorPuzzle({ door }: { door: Door }) {
   useEffect(() => {
     host(el);
   }, [host, el]);
-  return <div ref={setEl} aria-hidden="true" className="hidden" />;
+  return <div ref={setEl} aria-hidden="true" style={{ display: 'none' }} />;
 }
 
 /**
@@ -153,7 +153,7 @@ export function DoorPuzzle({ door }: { door: Door }) {
  */
 export function Honeypot({ door }: { door: Pick<Door, 'website' | 'setWebsite'> }) {
   return (
-    <div aria-hidden="true" className="absolute -left-[10000px] h-px w-px overflow-hidden">
+    <div aria-hidden="true" className="vh">
       <label>
         Leave this empty
         <input
