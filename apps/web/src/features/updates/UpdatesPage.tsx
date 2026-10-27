@@ -175,8 +175,8 @@ export function UpdatesPage() {
                   <DialogTitle>Go back to the previous version?</DialogTitle>
                   <DialogDescription>
                     The site goes back to the version it ran before the last update. The database
-                    keeps what the newer version added, which the older one ignores. Going back
-                    again returns to where you are now.
+                    keeps what the newer version added, which the older one ignores. This can be
+                    done once: to move forward again, install an update.
                   </DialogDescription>
                 </DialogHeader>
               ) : (

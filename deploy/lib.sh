@@ -512,6 +512,20 @@ run_update_request() {
   # no network, so it comes before the fetch. The database keeps what the
   # newer release added; older code runs on it.
   if [ "$action" = rollback ]; then
+    # ONCE, THEN IT STAYS. Release ids start with their UTC time, so a
+    # rollback is allowed only while `previous` is OLDER than what is running.
+    # After one rollback `previous` is the newer release it left, so a second
+    # request would only go forward again: refused. A new deploy makes `previous`
+    # older again. (The terminal command `reportlog rollback` still toggles.)
+    local now_id back_id
+    now_id=$(basename "$(release_of "$CURRENT")")
+    back_id=$(basename "$(release_of "$PREVIOUS")")
+    if [ -z "$back_id" ] || [ "$back_id" = "$now_id" ] \
+      || [ "$(printf '%s\n%s\n' "$back_id" "$now_id" | LC_ALL=C sort | head -n 1)" != "$back_id" ]; then
+      echo "There is nothing older to go back to. The site has already been rolled back, or this is its first release. To move forward, install an update." >>"$log"
+      update_status refused "$action" ""
+      return 0
+    fi
     exec 8>&-
     "$LIB/rollback.sh" >>"$log" 2>&1 || rc=$?
     if [ "$rc" -eq 0 ]; then
