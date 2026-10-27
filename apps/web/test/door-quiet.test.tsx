@@ -159,10 +159,10 @@ describe('the frame around every page, on a door', () => {
       // The frame really rendered: the page, the header's name and the footer.
       expect(await screen.findByText('the page behind the door')).toBeInTheDocument();
       expect(
-        within(screen.getByRole('banner')).getByRole('link', { name: 'ReportLog' }),
+        within(screen.getByRole('banner')).getByRole('link', { name: 'ReportLog, home' }),
       ).toBeInTheDocument();
       expect(
-        within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Imprint and privacy' }),
+        within(screen.getByRole('contentinfo')).getByRole('link', { name: 'Imprint & privacy' }),
       ).toBeInTheDocument();
       await settle();
       expect(asked()).toEqual(['/api/site-access/status']);

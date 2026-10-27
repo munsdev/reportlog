@@ -149,7 +149,7 @@ describe('who sees which staff area and page', () => {
     for (const path of [
       '/access',
       '/logbooks',
-      '/logbooks/front-page',
+      '/logbooks/pages',
       '/home',
       '/lists',
       '/lists/review',
@@ -206,9 +206,11 @@ describe('which page an address is', () => {
     expect(inFrame(path)).toBe(true);
   });
 
-  it('the old settings overview keeps its route in the frame without a menu entry', () => {
-    expect(entryAt('/settings')).toBeNull();
+  it('the settings overview is a page of the Site area, and the front page’s tab is the page for pages', () => {
+    expect(entryAt('/settings')?.label).toBe('Site settings');
+    expect(areaAt('/settings')?.id).toBe('site');
     expect(inFrame('/settings')).toBe(true);
+    expect(entryAt('/logbooks/front-page')?.label).toBe('Front page and pages');
     expect(inFrame('/access/sign-in')).toBe(false);
   });
 
@@ -366,22 +368,30 @@ afterEach(() => {
   document.documentElement.style.overflow = '';
 });
 
+/** The site menu: a dialog that is always drawn, and shown by its `open` attribute (site.css). */
+const siteMenu = () => screen.getByRole('dialog', { name: 'Site menu' });
+const menuIsOpen = () => siteMenu().hasAttribute('open');
+
 describe('the header', () => {
-  it('is the wordmark and the Menu button, closed, with nothing else in the bar', async () => {
+  it('is the wordmark and the MENU button, closed, with nothing else in the bar', async () => {
     open({ signedIn: false });
     page('/');
     const banner = await screen.findByRole('banner');
-    expect(within(banner).getByRole('link', { name: 'ReportLog' })).toHaveAttribute('href', '/');
-    const menu = within(banner).getByRole('button', { name: 'Menu' });
+    expect(within(banner).getByRole('link', { name: 'ReportLog, home' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    const menu = within(banner).getByRole('button', { name: 'MENU' });
     expect(menu).toHaveAttribute('aria-expanded', 'false');
-    expect(menu).toHaveAttribute('aria-controls', 'site-menu');
-    expect(screen.queryByRole('navigation', { name: 'Main menu' })).toBeNull();
+    expect(menu).toHaveAttribute('aria-controls', 'menu');
+    expect(siteMenu()).toHaveAttribute('id', 'menu');
+    expect(menuIsOpen()).toBe(false);
     // The old bars are gone: no session links, no staff bar.
     expect(screen.queryByRole('navigation', { name: 'Staff' })).toBeNull();
     expect(within(banner).queryByRole('button', { name: 'Sign out' })).toBeNull();
   });
 
-  it('on a door shows no Menu button and asks nothing beyond the gate', async () => {
+  it('on a door shows no MENU button and asks nothing beyond the gate', async () => {
     const asked = server({
       '/api/site-access/status': { locked: true, dev_mode_until: null, look: DESK },
       '/api/auth/me': ME('admin'),
@@ -389,7 +399,7 @@ describe('the header', () => {
     page('/file/some-logbook');
     const banner = await screen.findByRole('banner');
     await settle();
-    expect(within(banner).getByRole('link', { name: 'ReportLog' })).toBeInTheDocument();
+    expect(within(banner).getByRole('link', { name: 'ReportLog, home' })).toBeInTheDocument();
     expect(within(banner).queryByRole('button')).toBeNull();
     expect(asked()).toEqual(['/api/site-access/status']);
   });
@@ -397,9 +407,9 @@ describe('the header', () => {
   it('counts the reports waiting for a moderator on the button, in words', async () => {
     open(ME('moderator'), { '/api/menu/waiting': { reports: 7, list_entries: 3, tip_links: 2 } });
     page('/');
-    // The figure is hidden; the words are said, then the button's own name.
+    // The figure is hidden; the words are said after the button's own name.
     const menu = await screen.findByRole('button', {
-      name: /^7 reports waiting for a moderator\.\s*Menu$/,
+      name: /^MENU\.\s*7 reports waiting for a moderator$/,
     });
     expect(within(menu).getByText('7')).toHaveAttribute('aria-hidden', 'true');
   });
@@ -407,7 +417,7 @@ describe('the header', () => {
   it('asks nobody without a role or a flag for waiting totals, and shows no count', async () => {
     const asked = open(ME('user'));
     page('/');
-    await screen.findByRole('button', { name: 'Menu' });
+    await screen.findByRole('button', { name: 'MENU' });
     await settle();
     expect(asked()).not.toContain('/api/menu/waiting');
   });
@@ -422,26 +432,32 @@ describe('the header', () => {
 });
 
 describe('the menu on a desktop', () => {
-  it('opens with focus on its first link, keeps focus inside, and Escape closes it back onto the button', async () => {
+  it('opens with focus on CLOSE, keeps focus inside, and Escape closes it back onto the button', async () => {
     phoneWidth(false);
     open(ME('admin'), { '/api/menu/waiting': { reports: 2 } });
     page('/');
     const user = userEvent.setup();
-    const button = await screen.findByRole('button', { name: /Menu$/ });
+    const button = await screen.findByRole('button', { name: /^MENU/ });
     await user.click(button);
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    expect(screen.getByRole('button', { name: 'Close' })).toHaveAttribute('aria-expanded', 'true');
-    expect(within(nav).getByRole('link', { name: 'Submit a report' })).toHaveFocus();
-    // Shift+Tab from the first link goes to Close, and on round to the last.
+    const menu = siteMenu();
+    expect(menuIsOpen()).toBe(true);
+    expect(button).toHaveAttribute('aria-expanded', 'true');
+    const close = within(menu).getByRole('button', { name: 'CLOSE' });
+    expect(close).toHaveFocus();
+    const nav = within(menu).getByRole('navigation', { name: 'Menu' });
+    expect(within(nav).getByRole('link', { name: 'File a report' })).toBeInTheDocument();
+    // Shift+Tab from CLOSE reaches the wordmark, the first thing in the sheet,
+    // and on round to the last; Tab from the last goes back to the first.
     await user.tab({ shift: true });
-    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    expect(within(menu).getByRole('link', { name: 'ReportLog, home' })).toHaveFocus();
     await user.tab({ shift: true });
-    expect(nav.contains(document.activeElement)).toBe(true);
+    expect(menu.contains(document.activeElement)).toBe(true);
+    expect(within(menu).getByRole('button', { name: 'Sign out' })).toHaveFocus();
     await user.tab();
-    expect(screen.getByRole('button', { name: 'Close' })).toHaveFocus();
+    expect(within(menu).getByRole('link', { name: 'ReportLog, home' })).toHaveFocus();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('navigation', { name: 'Main menu' })).toBeNull();
-    expect(screen.getByRole('button', { name: /Menu$/ })).toHaveFocus();
+    expect(menuIsOpen()).toBe(false);
+    expect(screen.getByRole('button', { name: /^MENU/ })).toHaveFocus();
   });
 
   it('offers an administrator one way into the dashboard, with the waiting count, and no staff page', async () => {
@@ -449,10 +465,10 @@ describe('the menu on a desktop', () => {
     open(ME('admin'), { '/api/menu/waiting': { reports: 2, list_entries: 1, feedback: 4 } });
     page('/');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: /Menu$/ }));
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
+    await user.click(await screen.findByRole('button', { name: /^MENU/ }));
+    const menu = siteMenu();
     expect(
-      await within(nav).findByRole('link', {
+      await within(menu).findByRole('link', {
         name: 'Your dashboard, 2 reports waiting for a moderator',
       }),
     ).toHaveAttribute('href', '/home');
@@ -464,9 +480,9 @@ describe('the menu on a desktop', () => {
       'Roles',
       'Transparency log',
     ])
-      expect(within(nav).queryByRole('link', { name })).toBeNull();
-    expect(within(nav).getByText('admin@example.org')).toBeInTheDocument();
-    expect(within(nav).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+      expect(within(menu).queryByRole('link', { name })).toBeNull();
+    expect(within(menu).getByText(/admin@example\.org/)).toBeInTheDocument();
+    expect(within(menu).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
   });
 
   it('closes when a link is chosen, and the page changes', async () => {
@@ -474,12 +490,13 @@ describe('the menu on a desktop', () => {
     open(ME('admin'), { '/api/menu/waiting': {} });
     const router = page('/');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Menu' }));
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    await user.click(within(nav).getByRole('link', { name: 'Your dashboard' }));
+    await user.click(await screen.findByRole('button', { name: 'MENU' }));
+    expect(menuIsOpen()).toBe(true);
+    await user.click(within(siteMenu()).getByRole('link', { name: 'Your dashboard' }));
     await settle();
     expect(router.state.location.pathname).toBe('/home');
-    expect(screen.queryByRole('navigation', { name: 'Main menu' })).toBeNull();
+    // The dashboard is in the staff frame, which has no public menu to leave open.
+    expect(screen.queryByRole('dialog', { name: 'Site menu' })).toBeNull();
   });
 
   it('takes a journalist to the dashboard, like everybody signed in', async () => {
@@ -487,13 +504,13 @@ describe('the menu on a desktop', () => {
     open(ME('journalist'));
     page('/');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Menu' }));
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    expect(within(nav).getByRole('link', { name: 'Your dashboard' })).toHaveAttribute(
+    await user.click(await screen.findByRole('button', { name: 'MENU' }));
+    const menu = siteMenu();
+    expect(within(menu).getByRole('link', { name: 'Your dashboard' })).toHaveAttribute(
       'href',
       '/home',
     );
-    expect(within(nav).getByRole('link', { name: 'Your account' })).toBeInTheDocument();
+    expect(within(menu).getByRole('link', { name: 'Your account' })).toBeInTheDocument();
   });
 
   it('offers a visitor the public links and Sign in, and nothing staff', async () => {
@@ -501,17 +518,26 @@ describe('the menu on a desktop', () => {
     open({ signedIn: false });
     page('/');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Menu' }));
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    for (const name of ['Board', 'How to use', 'About', 'Home'])
-      expect(within(nav).getByRole('link', { name })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
+    await user.click(await screen.findByRole('button', { name: 'MENU' }));
+    const menu = siteMenu();
+    for (const name of [
+      'File a report',
+      'Reports',
+      'About',
+      'Get involved',
+      'For journalists',
+      'How it works',
+      'Check a report',
+    ])
+      expect(within(menu).getByRole('link', { name })).toBeInTheDocument();
+    expect(within(menu).getByRole('link', { name: 'Sign in' })).toHaveAttribute(
       'href',
       '/access/sign-in',
     );
-    expect(within(nav).queryByRole('heading', { name: 'Staff' })).toBeNull();
-    expect(within(nav).queryByRole('link', { name: 'Your dashboard' })).toBeNull();
-    expect(within(nav).queryByRole('button', { name: 'Sign out' })).toBeNull();
+    expect(within(menu).queryByRole('heading', { name: 'Staff' })).toBeNull();
+    expect(within(menu).queryByRole('link', { name: /^Your dashboard/ })).toBeNull();
+    expect(within(menu).queryByRole('link', { name: 'Your account' })).toBeNull();
+    expect(within(menu).queryByRole('button', { name: 'Sign out' })).toBeNull();
   });
 
   it('offers a role holder who has not proved a second factor the way to it, and the dashboard', async () => {
@@ -519,19 +545,30 @@ describe('the menu on a desktop', () => {
     open(ME('user', { heldRoles: ['moderator'], secondFactor: 'set-up' }));
     page('/');
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('button', { name: 'Menu' }));
-    const nav = await screen.findByRole('navigation', { name: 'Main menu' });
-    expect(within(nav).getByRole('link', { name: 'Account and security' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Your dashboard' })).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'MENU' }));
+    const menu = siteMenu();
+    // One account page; a role holder's lands on its security part.
+    expect(within(menu).getByRole('link', { name: 'Your account' })).toHaveAttribute(
+      'href',
+      '/access/security',
+    );
+    expect(within(menu).getByRole('link', { name: 'Your dashboard' })).toBeInTheDocument();
   });
 });
+
+/** A sidebar section: the <details> under a heading. */
+function sectionOf(side: HTMLElement, name: string): HTMLDetailsElement {
+  const details = within(side).getByRole('heading', { level: 3, name }).closest('details');
+  if (!details) throw new Error(`no section called ${name}`);
+  return details;
+}
 
 describe('the staff area', () => {
   it('draws a staff page in the app frame: top bar, sidebar of the person’s pages, current one marked once', async () => {
     phoneWidth(false);
     open(ME('admin'), { '/api/menu/waiting': { reports: 3 } });
     page('/moderate/flood');
-    const side = await screen.findByRole('navigation', { name: 'Your pages' });
+    const side = await screen.findByRole('navigation', { name: 'Staff areas' });
     await settle();
     for (const area of [
       'You',
@@ -543,7 +580,13 @@ describe('the staff area', () => {
       'Logs and system',
       'Help',
     ])
-      expect(within(side).getByRole('list', { name: area })).toBeInTheDocument();
+      expect(sectionOf(side, area)).toBeInTheDocument();
+    // Each section folds. Only the one being read, and any with work waiting,
+    // start open; the rest open when their heading is pressed.
+    expect(sectionOf(side, 'Review').open).toBe(true);
+    expect(sectionOf(side, 'Content').open).toBe(false);
+    await userEvent.setup().click(within(sectionOf(side, 'Content')).getByText('Content'));
+    expect(sectionOf(side, 'Content').open).toBe(true);
     expect(within(side).getByRole('link', { name: 'Maps' })).toHaveAttribute('href', '/maps');
     expect(
       await within(side).findByRole('link', {
@@ -552,16 +595,17 @@ describe('the staff area', () => {
     ).toBeInTheDocument();
     const here = within(side).getAllByRole('link', { current: 'page' });
     expect(here.map((l) => l.textContent)).toEqual(['Flood screen']);
-    // The top bar: the wordmark, the public site, the account; no public Menu.
+    // The top bar: the wordmark, the public site, the account (one link).
     const banner = screen.getByRole('banner');
     expect(within(banner).getByRole('link', { name: 'View the public site' })).toHaveAttribute(
       'href',
       '/',
     );
-    expect(within(banner).queryByRole('button', { name: /Menu$/ })).toBeNull();
     expect(
-      within(banner).getByRole('button', { name: /^Account:.*admin@example\.org/ }),
-    ).toBeInTheDocument();
+      within(banner).getByRole('link', { name: 'Your account, admin@example.org' }),
+    ).toHaveAttribute('href', '/access');
+    // The public site menu is not drawn in the staff frame.
+    expect(screen.queryByRole('dialog', { name: 'Site menu' })).toBeNull();
     // No row of area tabs: the sidebar is the list.
     expect(screen.queryByRole('navigation', { name: 'Moderation' })).toBeNull();
   });
@@ -570,14 +614,13 @@ describe('the staff area', () => {
     phoneWidth(false);
     open(ME('moderator'), { '/api/menu/waiting': {} });
     page('/moderate');
-    const side = await screen.findByRole('navigation', { name: 'Your pages' });
+    const side = await screen.findByRole('navigation', { name: 'Staff areas' });
     await settle();
     expect(
       within(side)
-        .getAllByRole('list')
-        .map((l) => l.getAttribute('aria-labelledby'))
-        .filter(Boolean),
-    ).toEqual(['staff-area-you', 'staff-area-review', 'staff-area-help']);
+        .getAllByRole('heading', { level: 3 })
+        .map((h) => h.textContent),
+    ).toEqual(['You', 'Review', 'Help']);
     expect(within(side).queryByRole('link', { name: 'Look' })).toBeNull();
     expect(within(side).getByRole('link', { name: 'Reports queue' })).toHaveAttribute(
       'aria-current',
@@ -604,33 +647,38 @@ describe('the staff area', () => {
     open(ME('admin'), { '/api/menu/waiting': {} });
     page('/moderate/flood');
     const user = userEvent.setup();
-    const button = await screen.findByRole('button', { name: 'Menu' });
+    const button = await screen.findByRole('button', { name: 'MENU' });
     await settle();
-    expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();
     await user.click(button);
-    // A full-screen dialog with its own Close, which takes focus first.
+    // A full-screen dialog with its own CLOSE; focus lands on its first control.
     const dialog = screen.getByRole('dialog', { name: 'Staff menu' });
-    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
-    const side = within(dialog).getByRole('navigation', { name: 'Your pages' });
+    expect(dialog).toHaveAttribute('open');
+    expect(within(dialog).getByRole('link', { name: 'ReportLog, your dashboard' })).toHaveFocus();
+    // The way back to the public site and Sign out come before the sections.
+    const controls = within(dialog)
+      .getAllByRole('link')
+      .map((l) => l.textContent);
+    expect(controls.indexOf('View the public site')).toBe(1);
+    expect(within(dialog).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
+    const side = within(dialog).getByRole('navigation', { name: 'Staff areas' });
     await user.tab({ shift: true });
     expect(dialog.contains(document.activeElement)).toBe(true);
     expect(button).not.toHaveFocus();
     await user.tab();
-    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+    expect(within(dialog).getByRole('link', { name: 'ReportLog, your dashboard' })).toHaveFocus();
     expect(side).toBeInTheDocument();
     await user.keyboard('{Escape}');
-    expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();
     expect(button).toHaveFocus();
     // Choosing a page closes it.
     await user.click(button);
-    await user.click(
-      within(screen.getByRole('navigation', { name: 'Your pages' })).getByRole('link', {
-        name: 'Look',
-      }),
-    );
+    const again = within(screen.getByRole('dialog', { name: 'Staff menu' }));
+    await user.click(again.getByText('Site'));
+    await user.click(again.getByRole('link', { name: 'Look' }));
     await settle();
     expect(screen.getByRole('heading', { level: 1, name: 'Look' })).toBeInTheDocument();
-    expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
+    expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();
   });
 
   it('is not drawn for somebody signed out: the public header, and the page’s own guard', async () => {
@@ -639,16 +687,17 @@ describe('the staff area', () => {
     page('/settings/name');
     await screen.findByText('the page');
     await settle();
-    expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
-    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Staff areas' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'MENU' })).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Site menu' })).toBeInTheDocument();
   });
 
   it('is not drawn on a public page, even for staff', async () => {
     phoneWidth(false);
     open(ME('admin'), { '/api/menu/waiting': {} });
     page('/');
-    await screen.findByRole('button', { name: /Menu$/ });
+    await screen.findByRole('button', { name: /^MENU/ });
     await settle();
-    expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
+    expect(screen.queryByRole('navigation', { name: 'Staff areas' })).toBeNull();
   });
 });

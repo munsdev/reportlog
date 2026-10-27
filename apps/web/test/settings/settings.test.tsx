@@ -120,6 +120,26 @@ function frames() {
   });
 }
 
+/** The panel around a heading (a panel is a plain section, named by its heading). */
+function panelOf(title: string): HTMLElement {
+  const panel = screen.getByRole('heading', { name: title }).closest('section');
+  if (!panel) throw new Error(`no panel called ${title}`);
+  return panel;
+}
+
+/** A narrow screen: no min-width query matches (the setup file's default is a wide one). */
+function narrowScreen() {
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })),
+  );
+}
+
 describe('the look screen', () => {
   it('previews a chosen look in both frames, and changes nothing else until Apply', async () => {
     const user = userEvent.setup();
@@ -130,7 +150,7 @@ describe('the look screen', () => {
 
     await user.click(screen.getByRole('radio', { name: 'Morning edition' }));
     expect(screen.getAllByRole('status')[0]).toHaveTextContent(
-      'Preview only The site is still showing Civic. You are previewing Morning edition.',
+      'Preview only. The site is still showing Civic. You are previewing Morning edition.',
     );
     for (const f of frames()) {
       expect(f).toHaveAttribute('data-palette', 'newsprint');
@@ -168,10 +188,10 @@ describe('the look screen', () => {
     stubFetch();
     wrap(<LookScreen state={editorState()} />);
     expect(screen.getByRole('radio', { name: /^Civic\s*On the site$/ })).toBeChecked();
-    await user.selectOptions(screen.getByLabelText('Palette, the colours'), 'midnight');
+    await user.selectOptions(screen.getByLabelText('Palette'), 'midnight');
     // Midnight with Signal is "Civic at night".
     expect(screen.getByRole('radio', { name: 'Civic at night' })).toBeChecked();
-    await user.selectOptions(screen.getByLabelText('Theme, the type and shapes'), 'docket');
+    await user.selectOptions(screen.getByLabelText('Theme'), 'docket');
     expect(screen.queryByRole('radio', { checked: true })).toBeNull();
     expect(screen.getAllByRole('status')[0]).toHaveTextContent(
       'You are previewing Midnight with Docket.',
@@ -182,14 +202,14 @@ describe('the look screen', () => {
     stubFetch();
     wrap(<LookScreen state={editorState()} />);
     expect(
-      within(screen.getByRole('radiogroup', { name: 'Looks' })).getAllByRole('radio'),
+      within(screen.getByRole('radiogroup', { name: 'Named looks' })).getAllByRole('radio'),
     ).toHaveLength(LOOKS.length);
-    expect(
-      within(screen.getByLabelText('Palette, the colours')).getAllByRole('option'),
-    ).toHaveLength(PALETTES.length);
-    expect(
-      within(screen.getByLabelText('Theme, the type and shapes')).getAllByRole('option'),
-    ).toHaveLength(THEMES.length);
+    expect(within(screen.getByLabelText('Palette')).getAllByRole('option')).toHaveLength(
+      PALETTES.length,
+    );
+    expect(within(screen.getByLabelText('Theme')).getAllByRole('option')).toHaveLength(
+      THEMES.length,
+    );
     expect(screen.getByRole('option', { name: 'Midnight · dark' })).toBeInTheDocument();
   });
 
@@ -199,7 +219,7 @@ describe('the look screen', () => {
     await waitFor(() => {
       for (const f of frames()) {
         const doc = f.contentDocument;
-        expect(doc?.querySelector('h1')).toHaveTextContent('A record of what happened');
+        expect(doc?.querySelector('h2')).toHaveTextContent('A record of what happened');
         expect(doc?.documentElement).toHaveAttribute('data-palette', 'flint');
         expect(doc?.documentElement).toHaveAttribute('data-panel-head', 'plain');
         expect(doc?.body).toHaveAttribute('inert');
@@ -212,54 +232,54 @@ describe('the look screen', () => {
   });
 
   it('keeps the frames out of the way on a phone until asked', async () => {
-    const user = userEvent.setup();
-    stubFetch();
-    wrap(<LookScreen state={editorState()} />);
-    const show = screen.getByRole('button', { name: 'Show the desktop preview' });
-    expect(show).toHaveAttribute('aria-expanded', 'false');
-    await user.click(show);
-    expect(screen.getByRole('button', { name: 'Hide the desktop preview' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
+    narrowScreen();
+    try {
+      const user = userEvent.setup();
+      stubFetch();
+      wrap(<LookScreen state={editorState()} />);
+      const show = screen.getByRole('button', { name: 'Show the desktop preview' });
+      expect(show).toHaveAttribute('aria-expanded', 'false');
+      await user.click(show);
+      expect(screen.getByRole('button', { name: 'Hide the desktop preview' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('is one radio group of looks on a desktop, with no bar pinned to the screen', () => {
     stubFetch();
     wrap(<LookScreen state={editorState()} />);
-    expect(screen.getAllByRole('radiogroup', { name: /^Looks/ })).toHaveLength(1);
+    expect(screen.getAllByRole('radiogroup', { name: /^Named looks/ })).toHaveLength(1);
     expect(screen.queryByRole('region', { name: 'Pick a look' })).toBeNull();
   });
 
-  it('pins a bar of the named looks to a narrow screen, as a real radio group that previews', async () => {
-    const narrow = vi.fn().mockImplementation((query: string) => ({
-      matches: false,
-      media: query,
-      addEventListener: () => undefined,
-      removeEventListener: () => undefined,
-    }));
-    vi.stubGlobal('matchMedia', narrow);
+  it('on a narrow screen keeps the one radio group of looks that previews, and moves the decision to the foot', async () => {
+    narrowScreen();
     try {
       const user = userEvent.setup();
       const sent = stubFetch();
       wrap(<LookScreen state={editorState()} />);
-      const bar = screen.getByRole('region', { name: 'Pick a look' });
-      const group = within(bar).getByRole('radiogroup', { name: 'Looks, quick pick' });
-      expect(within(group).getAllByRole('radio')).toHaveLength(LOOKS.length);
-      // The full chooser is still on the page, under the previews.
-      expect(screen.getByRole('radiogroup', { name: 'Looks' })).toBeInTheDocument();
-      expect(screen.getByLabelText('Palette, the colours')).toBeInTheDocument();
+      // The mock-up has no second "quick pick" bar: the one chooser serves both.
+      expect(screen.queryByRole('region', { name: 'Pick a look' })).toBeNull();
+      expect(screen.getAllByRole('radiogroup', { name: /^Named looks/ })).toHaveLength(1);
+      expect(screen.getByLabelText('Palette')).toBeInTheDocument();
+      // Nothing to decide until a look is chosen; then the decision is pinned at the foot.
+      expect(screen.queryByRole('button', { name: 'Apply' })).toBeNull();
 
-      await user.click(within(group).getByRole('radio', { name: 'Green screen' }));
+      await user.click(
+        within(screen.getByRole('radiogroup', { name: 'Named looks' })).getByRole('radio', {
+          name: 'Green screen',
+        }),
+      );
       expect(screen.getAllByRole('status')[0]).toHaveTextContent(
         'You are previewing Green screen.',
       );
-      // Both groups say the same thing, and nothing is sent by choosing.
-      expect(
-        within(screen.getByRole('radiogroup', { name: 'Looks' })).getByRole('radio', {
-          name: 'Green screen',
-        }),
-      ).toBeChecked();
+      expect(screen.getByRole('button', { name: 'Apply' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Back' })).toBeInTheDocument();
+      // Choosing sends nothing.
       expect(writes(sent)).toEqual([]);
     } finally {
       vi.unstubAllGlobals();
@@ -279,10 +299,12 @@ describe('the name screen', () => {
     wrap(<NameForm state={editorState()} />);
     await user.type(screen.getByLabelText('The site’s name'), 'Munich"Log"');
     const [onBar, onPage] = screen.getAllByText('Log');
-    expect(onBar?.className).toMatch(/text-brand-on-deep/);
+    // On the bar the first accent run is the wordmark's <b>.
+    expect(onBar?.tagName).toBe('B');
+    expect(onBar?.closest('.wm')).toHaveTextContent(/^MunichLog$/);
     expect(onPage?.className).toMatch(/text-brand(?!-)/);
     // The marks are never shown: the preview reads as the plain name.
-    expect(onBar?.closest('p')).toHaveTextContent(/^MunichLog$/);
+    expect(onPage?.closest('p')).toHaveTextContent(/MunichLog$/);
   });
 
   it('says what is wrong with an unclosed quote before anything is sent', async () => {
@@ -300,10 +322,10 @@ describe('the name screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch(editorState());
     wrap(<NameForm state={editorState({ name: 'Munich', effective_name: 'Munich' })} />);
-    expect(screen.queryByRole('region', { name: 'Save changes' })).toBeNull();
+    expect(screen.queryByRole('region', { name: 'Unsaved changes' })).toBeNull();
     await user.clear(screen.getByLabelText('The site’s name'));
-    const bar = screen.getByRole('region', { name: 'Save changes' });
-    expect(bar).toHaveTextContent('Saving: This site’s name');
+    const bar = screen.getByRole('region', { name: 'Unsaved changes' });
+    expect(bar).toHaveTextContent('Changes to This site’s name are not saved.');
     await user.click(within(bar).getByRole('button', { name: 'Save' }));
     expect(sent[0]?.body).toEqual({ name: null });
     expect(await screen.findByText('The new name is live.')).toBeInTheDocument();
@@ -320,7 +342,7 @@ describe('the wording screen', () => {
   it('shows each piece closed, with what it says and that it is the shipped wording', () => {
     stubFetch();
     wrap(<SlotEditor slot={slot()} />);
-    const panel = screen.getByRole('region', { name: 'Front page headline' });
+    const panel = panelOf('Front page headline');
     expect(panel).toHaveTextContent('A record of what happened.');
     expect(panel).toHaveTextContent('Shipped wording');
     expect(screen.queryByRole('textbox', { name: 'Front page headline' })).toBeNull();
@@ -335,10 +357,10 @@ describe('the wording screen', () => {
     expect(box).toHaveAccessibleDescription(/still the wording the site ships with/);
     await user.clear(box);
     await user.type(box, 'Our archive.');
-    const picture = screen.getByText('On the page: Front page').closest('figure');
+    const picture = screen.getByText(/Preview · on the page: Front page/).closest('.panel');
     expect(picture).toHaveTextContent('Our archive.');
     await user.click(
-      within(screen.getByRole('region', { name: 'Save changes' })).getByRole('button', {
+      within(screen.getByRole('region', { name: 'Unsaved changes' })).getByRole('button', {
         name: 'Save',
       }),
     );
@@ -364,9 +386,7 @@ describe('the legal notices screen', () => {
     const entry = editorState().legal[0];
     if (!entry) throw new Error('fixture');
     wrap(<LegalEditor entry={entry} />);
-    expect(screen.getByRole('region', { name: 'Imprint' })).toHaveTextContent(
-      'Outline only, not published',
-    );
+    expect(panelOf('Imprint')).toHaveTextContent('Outline only, not published');
     await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
     expect(
       screen.getByText(/Saving it as it stands would publish the outline/),
@@ -437,13 +457,16 @@ describe('the settings overview', () => {
     });
     const user = userEvent.setup();
     wrap(<AcceptingReportsPanel />);
-    const panel = await screen.findByRole('region', { name: 'Accepting reports' });
+    const panel = panelOf('Accepting reports');
+    await screen.findByRole('switch', { name: 'Taking new reports' });
     await waitFor(() => {
       expect(panel).toHaveTextContent('Logbooks open1 of 2');
     });
     expect(panel).toHaveTextContent('Paused by the flood screenNo');
     expect(screen.getByText(/Nobody has set this/)).toBeInTheDocument();
-    await user.click(screen.getByRole('radio', { name: 'Not taking new reports' }));
+    // Switching it off asks first; nothing is sent until that is confirmed.
+    await user.click(screen.getByRole('switch', { name: 'Taking new reports' }));
+    expect(await screen.findByRole('dialog', { name: 'Stop taking new reports?' })).toBeVisible();
     expect(writes(sent)).toEqual([]);
     await user.click(screen.getByRole('button', { name: 'Turn it off' }));
     expect(writes(sent)).toEqual([
@@ -461,10 +484,11 @@ describe('the settings overview', () => {
     });
     const user = userEvent.setup();
     wrap(<AcceptingReportsPanel />);
-    expect(await screen.findByRole('radio', { name: 'Not taking new reports' })).toBeChecked();
-    expect(screen.queryByRole('button', { name: 'Turn it on' })).toBeNull();
-    await user.click(screen.getByRole('radio', { name: 'Taking new reports' }));
-    await user.click(screen.getByRole('button', { name: 'Turn it on' }));
+    const toggle = await screen.findByRole('switch', { name: 'Taking new reports' });
+    expect(toggle).toHaveAttribute('aria-checked', 'false');
+    // Switching it on is not a risk, so it applies at once, with no question.
+    await user.click(toggle);
+    expect(screen.queryByRole('dialog')).toBeNull();
     expect(writes(sent)).toEqual([
       { method: 'PUT', url: '/api/admin/intake-switch', body: { open: true } },
     ]);
@@ -486,10 +510,9 @@ describe('the settings overview', () => {
         state={{ active: true, until: '2026-10-22T18:00:00.000Z', default_hours: 6, max_hours: 72 }}
       />,
     );
-    await user.click(screen.getByRole('radio', { name: 'Off now' }));
-    expect(writes(sent)).toEqual([]);
+    // The switch applies the moment it is pressed.
     await act(async () => {
-      await user.click(screen.getByRole('button', { name: 'Turn it off' }));
+      await user.click(screen.getByRole('switch', { name: /^On until/ }));
     });
     expect(writes(sent)).toEqual([
       { method: 'PUT', url: '/api/admin/site/dev-mode', body: { hours: null } },

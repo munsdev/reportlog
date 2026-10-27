@@ -251,7 +251,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                         {(p) => (
                           <Select
                             {...p}
-                            id={`target-${String(r.id)}`}
                             value={r.target}
                             onChange={(e) => {
                               change(i, { target: e.target.value });
@@ -284,7 +283,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                           {(p) => (
                             <TextInput
                               {...p}
-                              id={`main-${String(r.id)}`}
                               value={r.label}
                               maxLength={80}
                               placeholder={t?.label ?? ''}
@@ -298,7 +296,6 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                           {(p) => (
                             <TextInput
                               {...p}
-                              id={`sub-${String(r.id)}`}
                               value={r.sub}
                               maxLength={160}
                               placeholder={t?.blurb ?? 'None'}

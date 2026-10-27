@@ -247,7 +247,7 @@ describe('walking the screens after the owner', () => {
       'flint',
     );
     expect(screen.getByText('Setting up · step 6 of 7')).toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText('Palette, the colours'), 'darkroom');
+    await userEvent.selectOptions(screen.getByLabelText('Palette'), 'darkroom');
     expect(screen.getByText('Previewing Darkroom with Signal.')).toBeInTheDocument();
     // Choosing repaints the previews only, until it is saved.
     expect(document.documentElement).not.toHaveAttribute('data-palette', 'darkroom');

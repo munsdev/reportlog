@@ -55,7 +55,7 @@ describe('the progress rule', () => {
     expect(root).toHaveAttribute('data-filing-progress', '');
     expect(root.style.getPropertyValue('--rl-filing-progress')).toBe('0.4');
     // For a screen reader, the page keeps the bar, hidden from sight.
-    expect(screen.getByRole('progressbar', { name: 'How far through the form' })).toHaveAttribute(
+    expect(screen.getByRole('progressbar', { name: 'Progress' })).toHaveAttribute(
       'aria-valuenow',
       '40',
     );
@@ -82,8 +82,8 @@ describe('the card frame', () => {
     );
     const h1 = screen.getByRole('heading', { level: 1, name: 'How did it go?' });
     expect(h1).toHaveFocus();
-    expect(screen.getByText('Election incidents')).toBeInTheDocument();
-    expect(screen.getByText('Optional.')).toBeInTheDocument();
+    // The step label above the question names the logbook and says it is optional.
+    expect(screen.getByText('Election incidents · optional')).toBeInTheDocument();
     vi.unstubAllGlobals();
   });
 
@@ -253,7 +253,7 @@ describe('the page for a wrong address', () => {
     });
     render(withQueries(<RouterProvider router={router} />));
     expect(
-      await screen.findByRole('heading', { level: 1, name: "That page isn't here" }),
+      await screen.findByRole('heading', { level: 1, name: 'That page isn’t here' }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Check the reference, or start from the front page/),

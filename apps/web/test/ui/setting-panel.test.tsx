@@ -67,8 +67,8 @@ describe('a setting panel', () => {
     page();
     await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
     const box = screen.getByRole('textbox', { name: 'Accepting reports answer' });
-    expect(screen.getByRole('region', { name: 'Save changes' })).toHaveTextContent(
-      'Saving: Accepting reports',
+    expect(screen.getByRole('region', { name: 'Unsaved changes' })).toHaveTextContent(
+      'Changes to Accepting reports are not saved.',
     );
     await user.clear(box);
     await user.type(box, 'No');

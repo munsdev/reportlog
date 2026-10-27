@@ -139,18 +139,21 @@ describe('the queue', () => {
   it('shows a count on each status button, with Waiting pressed', async () => {
     serve({ 'GET /api/moderation/reports': QUEUE });
     wrap(<QueuePage search={{}} />);
-    const group = await screen.findByRole('group', { name: 'Show reports that are' });
+    const group = await screen.findByRole('group', { name: 'Show' });
     const waiting = within(group).getByRole('button', { name: /^Waiting/ });
     expect(waiting).toHaveAttribute('aria-pressed', 'true');
-    expect(await within(group).findByText('7 waiting')).toBeInTheDocument();
-    expect(within(group).getByText('19 approved')).toBeInTheDocument();
+    expect(await within(group).findByText(/7 waiting/)).toBeInTheDocument();
+    expect(within(group).getByText(/19 approved/)).toBeInTheDocument();
     expect(within(group).getByRole('button', { name: /^Approved/ })).toHaveAttribute(
       'aria-pressed',
       'false',
     );
-    // Second read is not a status: it stands outside the group.
-    expect(within(group).queryByRole('button', { name: /second read/i })).toBeNull();
-    expect(screen.getByRole('button', { name: /^Only second reads/ })).toBeInTheDocument();
+    // Second read is not a status: it narrows whichever one is showing, so it
+    // is not pressed with Waiting and has its own pressed state.
+    expect(within(group).getByRole('button', { name: /^Only second reads/ })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
   });
 
   it('searches on Enter, never on each keystroke (decision 59)', async () => {
@@ -281,7 +284,7 @@ describe('a bulk decline', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Decline 1' }));
     expect(within(dialog).getByText(/Choose the reason/)).toBeInTheDocument();
     expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
-    await user.selectOptions(within(dialog).getByLabelText('The reason'), 'abusive_or_spam');
+    await user.selectOptions(within(dialog).getByLabelText('Reason'), 'abusive_or_spam');
     await user.click(within(dialog).getByRole('button', { name: 'Decline 1' }));
     await waitFor(() => {
       expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
@@ -303,14 +306,18 @@ describe('who filed it', () => {
     });
     wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
     const user = userEvent.setup();
-    const row = await screen.findByRole('region', { name: 'Who filed it' });
-    expect(row).toHaveTextContent('Restricted. Every look is logged with your reason.');
-    await user.click(within(row).getByRole('button', { name: 'Look… Who filed it' }));
-    const bar = screen.getByRole('region', { name: 'Save changes' });
-    await user.click(within(bar).getByRole('button', { name: 'Open the details' }));
-    expect(within(row).getByText(/Say why you need them/)).toBeInTheDocument();
-    await user.click(within(bar).getByRole('button', { name: 'Cancel' }));
-    expect(row).toHaveTextContent('Restricted. Every look is logged with your reason.');
+    const row = (await screen.findByRole('heading', { name: 'Who filed it' })).closest('section');
+    if (!row) throw new Error('no Who filed it panel');
+    const restricted =
+      'Restricted. Every look is logged with your reason, and the reporter is told.';
+    expect(row).toHaveTextContent(restricted);
+    await user.click(within(row).getByRole('button', { name: 'Open the details…' }));
+    const dialog = screen.getByRole('dialog', { name: 'Why do you need to see who filed it?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Open the details' }));
+    expect(within(dialog).getByText(/Say why you need them/)).toBeInTheDocument();
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(row).toHaveTextContent(restricted);
     expect(row).not.toHaveTextContent('reporter@example.org');
     expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
   });

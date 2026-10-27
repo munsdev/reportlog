@@ -17,6 +17,31 @@ class NoResizeObserver {
 }
 if (!('ResizeObserver' in globalThis)) globalThis.ResizeObserver = NoResizeObserver;
 
+// jsdom has no matchMedia. The default is a 1280px-wide screen with no
+// preferences set (no reduced motion, no dark scheme); a test that needs a
+// narrow one stubs its own.
+const SCREEN_WIDTH = 1280;
+function queryMatches(query: string): boolean {
+  const min = /\(min-width:\s*(\d+)px\)/.exec(query);
+  if (min) return SCREEN_WIDTH >= Number(min[1]);
+  const max = /\(max-width:\s*(\d+)px\)/.exec(query);
+  if (max) return SCREEN_WIDTH <= Number(max[1]);
+  return false;
+}
+if (typeof window.matchMedia !== 'function') {
+  window.matchMedia = (query: string): MediaQueryList =>
+    ({
+      matches: queryMatches(query),
+      media: query,
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+}
+
 afterEach(() => {
   cleanup();
 });

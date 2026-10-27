@@ -106,7 +106,7 @@ describe('a list’s form', () => {
   it('says on the cover that nothing sent is published', () => {
     stubFetch();
     show(TIPS);
-    expect(screen.getByText(/Nothing you send here is published/)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing sent here is published/)).toBeInTheDocument();
   });
 
   it('asks one question per card, refuses to move on without a required answer, and never moves on by itself', async () => {
@@ -118,7 +118,7 @@ describe('a list’s form', () => {
     expect(screen.queryByRole('heading', { name: 'Where' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     expect(screen.getByText('An answer is needed here.')).toBeInTheDocument();
-    await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
+    await user.type(screen.getByRole('textbox', { name: 'First link' }), 'https://example.org/a');
     await user.click(screen.getByRole('button', { name: 'Next' }));
 
     await user.click(screen.getByRole('radio', { name: 'Ohio' }));
@@ -131,7 +131,7 @@ describe('a list’s form', () => {
     const user = userEvent.setup();
     show(TIPS);
     await user.click(screen.getByRole('button', { name: 'Start' }));
-    await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
+    await user.type(screen.getByRole('textbox', { name: 'First link' }), 'https://example.org/a');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('radio', { name: 'Iowa' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -153,12 +153,12 @@ describe('a list’s form', () => {
     const user = userEvent.setup();
     show(TIPS);
     await user.click(screen.getByRole('button', { name: 'Start' }));
-    await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
+    await user.type(screen.getByRole('textbox', { name: 'First link' }), 'https://example.org/a');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('radio', { name: 'Ohio' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.type(
-      screen.getByRole('textbox', { name: 'Anything we should know' }),
+      screen.getByRole('textbox', { name: 'Anything we should know (optional)' }),
       'Seen on the news',
     );
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -168,7 +168,7 @@ describe('a list’s form', () => {
       screen.getByText(/You wrote something, so an email address is needed/),
     ).toBeInTheDocument();
     expect(sent).toEqual([]);
-    await user.type(screen.getByLabelText(/Your email address/), 'me@example.org');
+    await user.type(screen.getByRole('textbox', { name: 'Email' }), 'me@example.org');
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByText(/We emailed you a link that deletes/)).toBeInTheDocument();
     expect(sent[0]?.body).toMatchObject({ email: 'me@example.org' });
@@ -179,7 +179,7 @@ describe('a list’s form', () => {
     const user = userEvent.setup();
     show({ ...TIPS, write_back: true, email_reason: 'reply' });
     await user.click(screen.getByRole('button', { name: 'Start' }));
-    await user.type(screen.getByRole('textbox', { name: 'Link' }), 'https://example.org/a');
+    await user.type(screen.getByRole('textbox', { name: 'First link' }), 'https://example.org/a');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('radio', { name: 'Ohio' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
