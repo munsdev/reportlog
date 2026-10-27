@@ -16,8 +16,8 @@ import { LOOK_PACK_MAX_ZIP_BYTES, checkLookPack, installLookPack } from '@report
 import type { InstalledLookPack, LookPackSummary } from '@reportlog/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
-import { Note } from '@/mockup/Note.tsx';
-import { Btn } from '@/mockup/Btn.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';

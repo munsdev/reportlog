@@ -11,10 +11,10 @@ import { getDevMode, getIntakePause, setDevMode, setIntakeSwitch } from '@report
 import type { DevMode } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Note } from '@/mockup/Note.tsx';
-import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
-import { Dl } from '@/mockup/Dl.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
 import {
   Dialog,
   DialogContent,

@@ -1,96 +1,67 @@
-/**
- * The mock-up's form pieces: `field` (label, control, `help`, `error`) and
- * the controls `input`, `textarea`, `sel`. They share the id wiring of
- * components/ui/field.tsx (useField / useFieldControl), so a Label inside a
- * Field is tied to its control and help is read out with it.
- */
-import { Label as LabelPrimitive } from 'radix-ui';
-import { useLayoutEffect } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
-import { Field as WiredField, useField, useFieldControl } from '@/components/ui/field.tsx';
 import { cn } from '@/lib/utils.ts';
 
-export function Field({ className, ...props }: ComponentProps<typeof WiredField>) {
-  return <WiredField className={cn('field', className)} {...props} />;
-}
-
-export function Label({
-  className,
+/** The mock-up's labelled field (site.css `.field`): label, control, then help. */
+export function Field({
+  label,
+  labelId,
   htmlFor,
-  id,
-  optional = false,
+  help,
+  helpId,
+  helpMono = false,
   children,
-  ...props
-}: ComponentProps<typeof LabelPrimitive.Root> & { optional?: boolean }) {
-  const field = useField();
-  const own = htmlFor === undefined && field !== null;
+}: {
+  label?: ReactNode;
+  /** Names a group of answer tiles (no single box to point a label at). */
+  labelId?: string | undefined;
+  htmlFor?: string | undefined;
+  help?: ReactNode;
+  helpId?: string | undefined;
+  helpMono?: boolean;
+  children: ReactNode;
+}) {
   return (
-    <LabelPrimitive.Root
-      htmlFor={own ? field.controlId : htmlFor}
-      id={id ?? (own ? field.labelId : undefined)}
-      className={className}
-      {...props}
-    >
+    <div className="field">
+      {label ? (
+        htmlFor ? (
+          <label htmlFor={htmlFor}>{label}</label>
+        ) : (
+          <span className="lbl" id={labelId}>
+            {label}
+          </span>
+        )
+      ) : null}
       {children}
-      {optional ? ' (optional)' : null}
-    </LabelPrimitive.Root>
+      {help ? (
+        <span id={helpId} className={cn('help', helpMono && 'mono')}>
+          {help}
+        </span>
+      ) : null}
+    </div>
   );
 }
 
-export function FieldDescription({ className, id, ...props }: ComponentProps<'span'>) {
-  const field = useField();
-  const setHas = field?.setHasDescription;
-  useLayoutEffect(() => {
-    if (!setHas) return;
-    setHas(true);
-    return () => {
-      setHas(false);
-    };
-  }, [setHas]);
-  return <span id={id ?? field?.descriptionId} className={cn('help', className)} {...props} />;
+/** The mock-up's text box, select and text area (site.css `.input`, `.sel`, `.textarea`). */
+export function TextInput({ className, ...props }: ComponentProps<'input'>) {
+  return <input {...props} className={cn('input', className)} />;
 }
 
-export function FieldError({
-  className,
-  id,
+export function SelectBox({ className, ...props }: ComponentProps<'select'>) {
+  return <select {...props} className={cn('sel', className)} />;
+}
+
+export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {
+  return <textarea {...props} className={cn('textarea', className)} />;
+}
+
+/** The mock-up's single tick box (site.css `.check`). */
+export function CheckBox({
   children,
-  ...props
-}: Omit<ComponentProps<'p'>, 'children'> & { children?: ReactNode }) {
-  const field = useField();
-  const showing =
-    children !== undefined && children !== null && children !== false && children !== '';
-  const setHas = field?.setHasError;
-  useLayoutEffect(() => {
-    if (!setHas || !showing) return;
-    setHas(true);
-    return () => {
-      setHas(false);
-    };
-  }, [setHas, showing]);
-  if (!showing) return null;
+  ...input
+}: Omit<ComponentProps<'input'>, 'type' | 'children'> & { children: ReactNode }) {
   return (
-    <p id={id ?? field?.errorId} className={cn('error', className)} {...props}>
-      <span className="vh">Error: </span>
-      {children}
-    </p>
-  );
-}
-
-export function Input({ className, type = 'text', ...props }: ComponentProps<'input'>) {
-  const wired = useFieldControl(props);
-  return <input type={type} className={cn('input', className)} {...props} {...wired} />;
-}
-
-export function Textarea({ className, rows = 5, ...props }: ComponentProps<'textarea'>) {
-  const wired = useFieldControl(props);
-  return <textarea rows={rows} className={cn('textarea', className)} {...props} {...wired} />;
-}
-
-export function Select({ className, children, ...props }: ComponentProps<'select'>) {
-  const wired = useFieldControl(props);
-  return (
-    <select className={cn('sel', className)} {...props} {...wired}>
-      {children}
-    </select>
+    <label className="check">
+      <input {...input} type="checkbox" /> {children}
+    </label>
   );
 }

@@ -9,10 +9,10 @@
 import { describeDigestStop, stopDigest } from '@reportlog/contracts';
 import type { DigestStop } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button.tsx';
-import { Page } from '@/components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
-import { ErrorText } from './ui.tsx';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { ErrorNote, Waiting } from '../../mockup/Panel.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 
 const stopQuery = (token: string) =>
   queryOptions({
@@ -23,7 +23,9 @@ const stopQuery = (token: string) =>
 
 const HOW_OFTEN = { hourly: 'hourly', weekly: 'weekly' } as const;
 
+/** Mock-up t-stop.html. */
 export function DigestStopPage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const client = useQueryClient();
   const state = useQuery(stopQuery(token));
   const stop = useMutation({
@@ -33,44 +35,49 @@ export function DigestStopPage({ token }: { token: string }) {
     },
   });
 
-  if (state.isPending) return <p role="status">Checking this link…</p>;
+  if (state.isPending) {
+    return (
+      <Narrow>
+        <Waiting>Checking this link…</Waiting>
+      </Narrow>
+    );
+  }
   if (state.isError) {
     return (
-      <Page title="This link could not be checked" width="prose">
-        <ErrorText error={state.error} />
-      </Page>
+      <TokenPage title="This link could not be checked">
+        <ErrorNote error={state.error} />
+      </TokenPage>
     );
   }
   const s = state.data;
   if (s.state === 'gone') {
     return (
-      <Page title="This link does not work any more" width="prose">
+      <TokenPage title="This link does not work any more">
         <p>
           It may have expired, or not been copied whole. To stop the emails, sign in and choose “No
           emails” under Email updates. Every new email also carries a fresh link.
         </p>
-      </Page>
+      </TokenPage>
     );
   }
   if (s.state === 'stopped') {
     return (
-      <Page title="These emails are stopped" width="prose">
-        <p role="status">
-          No more report updates will be emailed to <strong>{s.address}</strong>.
-        </p>
+      <TokenPage title="These emails are stopped">
+        <p role="status">No more report updates will be emailed to {s.address}.</p>
         <p>To start them again, sign in and choose under Email updates.</p>
-      </Page>
+      </TokenPage>
     );
   }
   return (
-    <Page title="Stop these emails?" width="prose">
+    <TokenPage title="Stop these emails?">
       <p>
-        <strong>{s.address}</strong> gets an email {HOW_OFTEN[s.frequency]} about reports newly
-        published here. Stopping them stops all of them, from every logbook.
+        {s.address} gets an email {HOW_OFTEN[s.frequency]} about reports newly published here.
+        Stopping them stops all of them, from every logbook.
       </p>
       <p>Nothing has changed yet. The emails stop only when you press the button.</p>
       <div>
-        <Button
+        <button
+          className="btn sm flat ink"
           type="button"
           disabled={stop.isPending}
           onClick={() => {
@@ -78,9 +85,9 @@ export function DigestStopPage({ token }: { token: string }) {
           }}
         >
           Stop these emails
-        </Button>
+        </button>
       </div>
-      <ErrorText error={stop.error} />
-    </Page>
+      <ErrorNote error={stop.error} />
+    </TokenPage>
   );
 }

@@ -1,52 +1,82 @@
-import type { ComponentProps, ReactNode } from 'react';
-import { cn } from '@/lib/utils.ts';
-
-export type PanelVariant = 'raised' | 'danger' | 'quiet' | 'deep' | 'plain';
+import type { ReactNode } from 'react';
+import { messageOf } from '../features/identity/ui.tsx';
 
 /**
- * The mock-up's `panel`: an h2 as its first child, then the content in the
- * panel's own grid. `closed` is the summary form with its heading in
- * `closed-head`, above a `dl` and an `acts` row.
+ * The mock-up's `.panel` (staff.py `panel`): a titled box. `kind` (or its older
+ * name `variant`) is deep, quiet, danger or closed.
  */
 export function Panel({
-  heading,
-  variant = 'raised',
-  closed = false,
+  title,
   sub,
-  headingLevel = 2,
-  className,
+  kind,
+  variant,
+  id,
+  as: Tag = 'section',
+  head,
   children,
-  ...props
-}: Omit<ComponentProps<'section'>, 'title'> & {
-  heading?: ReactNode;
-  variant?: PanelVariant | null | undefined;
-  closed?: boolean;
+}: {
+  title?: ReactNode;
   sub?: ReactNode;
-  headingLevel?: 2 | 3;
+  kind?: 'deep' | 'quiet' | 'danger' | 'closed';
+  variant?: 'deep' | 'quiet' | 'danger';
+  id?: string;
+  as?: 'section' | 'article';
+  /** Something at the right of the title (a status chip): the mock-up's `.closed-head`. */
+  head?: ReactNode;
+  children?: ReactNode;
 }) {
-  const H = headingLevel === 3 ? 'h3' : 'h2';
-  const v = variant ?? 'raised';
+  const k = kind ?? variant;
   return (
-    <section
-      className={cn(
-        'panel',
-        v === 'danger' && 'danger',
-        v === 'quiet' && 'quiet',
-        v === 'deep' && 'deep',
-        closed && 'closed',
-        className,
-      )}
-      {...props}
-    >
-      {heading === undefined ? null : closed ? (
+    <Tag className={k ? `panel ${k}` : 'panel'} {...(id ? { id } : {})}>
+      {head ? (
         <div className="closed-head">
-          <H>{heading}</H>
+          {title ? <h2>{title}</h2> : null}
+          {head}
         </div>
-      ) : (
-        <H>{heading}</H>
-      )}
+      ) : title ? (
+        <h2>{title}</h2>
+      ) : null}
       {sub ? <p className="sub">{sub}</p> : null}
       {children}
-    </section>
+    </Tag>
+  );
+}
+
+/** The mock-up's `.note`: a short boxed statement. `warn` is a problem, said in words. */
+export function Note({
+  title,
+  warn = false,
+  children,
+}: {
+  title?: ReactNode;
+  warn?: boolean;
+  children?: ReactNode;
+}) {
+  return (
+    <div className={warn ? 'note warn' : 'note'} role={warn ? 'alert' : 'status'}>
+      <span>
+        {title ? <b>{title} </b> : null}
+        {children}
+      </span>
+    </div>
+  );
+}
+
+/** A failure from a call, as a boxed sentence a person can read. */
+export function ErrorNote({ error, title }: { error: unknown; title?: ReactNode }) {
+  if (!error) return null;
+  return (
+    <Note warn title={title}>
+      {messageOf(error)}
+    </Note>
+  );
+}
+
+/** A one-line wait, in the narrow column. */
+export function Waiting({ children }: { children: ReactNode }) {
+  return (
+    <p role="status" className="muted">
+      {children}
+    </p>
   );
 }

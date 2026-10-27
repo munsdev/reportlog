@@ -17,7 +17,7 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Btn } from '@/mockup/Btn.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, Select } from './controls.tsx';
 import { outsideWords, when } from './words.ts';

@@ -1,60 +1,71 @@
-import { Slot } from 'radix-ui';
-import type { ComponentProps, MouseEvent, ReactNode } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '@/lib/utils.ts';
 
 /**
- * The mock-up's button. A staff screen's buttons are `btn sm flat`: the
- * "primary" one is `ink`, a quiet one `ghost`, a destructive one `bad`.
- * `btnClass` is for a link dressed as a button.
+ * The mock-up's button (site.css `.btn`): `go` is the action colour, `ink` the
+ * dark fill, `ghost` no fill and no shadow; `sm`, `lg` and `flat` are its
+ * sizes and shadow. A link dressed as a button is `BtnLink`.
  */
-export type BtnVariant = 'primary' | 'secondary' | 'quiet' | 'danger';
-
-const CLASS: Record<BtnVariant, string> = {
-  primary: 'btn sm flat ink',
-  secondary: 'btn sm flat',
-  quiet: 'btn sm flat ghost',
-  danger: 'btn sm flat bad',
-};
-
-export function btnClass(variant: BtnVariant = 'primary'): string {
-  return CLASS[variant];
+export interface BtnLook {
+  look?: 'go' | 'ink' | 'ghost' | undefined;
+  sm?: boolean | undefined;
+  lg?: boolean | undefined;
+  flat?: boolean | undefined;
 }
 
-export interface BtnProps extends Omit<ComponentProps<'button'>, 'children'> {
-  variant?: BtnVariant | null | undefined;
-  asChild?: boolean;
-  children?: ReactNode;
-  busy?: boolean;
-  busyLabel?: ReactNode;
-}
+export const btnClass = ({ look, sm, lg, flat }: BtnLook, extra?: string) =>
+  cn('btn', look, sm && 'sm', lg && 'lg', flat && 'flat', extra);
 
 export function Btn({
+  look,
+  sm,
+  lg,
+  flat,
   className,
-  variant,
-  asChild = false,
   busy = false,
   busyLabel,
   children,
   onClick,
-  type,
+  type = 'button',
   ...props
-}: BtnProps) {
-  const Component = asChild ? Slot.Root : 'button';
-  // preventDefault also stops a busy submit button sending its form again.
-  const guarded = busy
-    ? (e: MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-      }
-    : onClick;
+}: BtnLook &
+  Omit<ComponentProps<'button'>, 'children'> & {
+    /** Working on it: the label says what it is doing and a second press does nothing. */
+    busy?: boolean;
+    busyLabel?: ReactNode;
+    children?: ReactNode;
+  }) {
   return (
-    <Component
-      className={cn(btnClass(variant ?? 'primary'), className)}
-      aria-busy={busy || undefined}
-      onClick={guarded}
-      {...(asChild ? {} : { type: type ?? 'button' })}
+    <button
       {...props}
+      type={type}
+      className={btnClass({ look, sm, lg, flat }, className)}
+      aria-busy={busy || undefined}
+      onClick={
+        busy
+          ? (e) => {
+              e.preventDefault();
+            }
+          : onClick
+      }
     >
-      {busy && busyLabel !== undefined ? busyLabel : children}
-    </Component>
+      {busy && busyLabel ? busyLabel : children}
+    </button>
+  );
+}
+
+export function BtnLink({
+  look,
+  sm,
+  lg,
+  flat,
+  className,
+  children,
+  ...props
+}: BtnLook & ComponentProps<'a'>) {
+  return (
+    <a {...props} className={btnClass({ look, sm, lg, flat }, className)}>
+      {children}
+    </a>
   );
 }

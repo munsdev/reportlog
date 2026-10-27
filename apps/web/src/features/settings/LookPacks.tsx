@@ -5,8 +5,8 @@
  * replacing and removing also ask for the step-up, on the server.
  * Installing ends in a toast; the new looks join the chooser's grid.
  */
-import { Panel } from '@/mockup/Panel.tsx';
-import { Dl } from '@/mockup/Dl.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { AddLookPack } from '@/features/looks/AddLookPack.tsx';
 import { InstalledLookPacks } from '@/features/looks/InstalledLookPacks.tsx';

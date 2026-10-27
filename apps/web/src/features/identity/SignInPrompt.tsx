@@ -1,17 +1,19 @@
 import { Link } from '@tanstack/react-router';
+import { TokenPage } from '../../mockup/Narrow.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 
-/** What a page for signed-in people shows to somebody who is not. */
+/** Shown where a page needs an account: the mock-up's narrow light page. */
 export function SignInPrompt({ next }: { next: string }) {
+  useBodyClass('light', 'form');
   return (
-    <section className="space-y-3">
-      <h1 className="font-display text-2xl font-bold">Sign in first</h1>
+    <TokenPage eyebrow="Sign in" title="Sign in first">
       <p>
         This page is for people with an account.{' '}
-        <Link to="/access/sign-in" search={{ next }} className="underline">
+        <Link to="/access/sign-in" search={{ next }}>
           Sign in
         </Link>{' '}
         and you will come straight back here.
       </p>
-    </section>
+    </TokenPage>
   );
 }

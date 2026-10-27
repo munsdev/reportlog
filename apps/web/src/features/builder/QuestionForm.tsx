@@ -19,7 +19,7 @@ import {
   optionArray,
 } from '@reportlog/fields';
 import { useState } from 'react';
-import { Btn } from '@/mockup/Btn.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { Check, Field, Problem, Select, TextArea, TextInput } from './controls.tsx';
 
 const LIST_KINDS: ReadonlySet<string> = new Set(['choice_one', 'choice_many', 'place']);

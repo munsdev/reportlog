@@ -1,24 +1,13 @@
-import type { ComponentProps, ReactNode } from 'react';
-import { cn } from '@/lib/utils.ts';
+import type { ReactNode } from 'react';
 
-export interface DlItem {
-  key: ReactNode;
-  value: ReactNode;
-  mono?: boolean | undefined;
-}
-
-/** The mock-up's `dl`: a term and its value per line. */
-export function Dl({
-  items,
-  className,
-  ...props
-}: Omit<ComponentProps<'dl'>, 'children'> & { items: readonly DlItem[] }) {
+/** The mock-up's `.dl` term list. */
+export function Dl({ items }: { items: [ReactNode, ReactNode][] }) {
   return (
-    <dl className={cn('dl', className)} {...props}>
-      {items.map((item, i) => (
+    <dl className="dl">
+      {items.map(([k, v], i) => (
         <div key={i}>
-          <dt>{item.key}</dt>
-          <dd className={item.mono ? 'mono' : undefined}>{item.value}</dd>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
         </div>
       ))}
     </dl>

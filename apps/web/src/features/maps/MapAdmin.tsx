@@ -48,18 +48,18 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/Note.tsx';
-import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/Choices.tsx';
-import { Empty } from '@/mockup/Empty.tsx';
-import { Dl } from '@/mockup/Dl.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
-import { Input } from '@/mockup/Field.tsx';
-import { Label } from '@/mockup/Field.tsx';
+import { Empty } from '@/mockup/EmptyBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/mockup/Field.tsx';
-import { Textarea } from '@/mockup/Field.tsx';
+import { Select } from '@/mockup/FieldWired.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
 

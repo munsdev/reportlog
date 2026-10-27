@@ -11,9 +11,10 @@ import { getLegal } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { Alert } from '../components/ui/alert.tsx';
-import { AsideCard, Prose } from '../components/ui/band.tsx';
-import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { call } from '../lib/api.ts';
+import { Band, MockPage } from '../mockup/Band.tsx';
+import { Card, TwoCol } from '../mockup/TwoCol.tsx';
+import { useBodyClass } from '../mockup/useBodyClass.ts';
 
 export const legalQuery = queryOptions({
   queryKey: ['legal'],
@@ -38,103 +39,82 @@ function Notice({
   // Unwritten, a sentence that says so, never a placeholder that reads
   // like the real thing.
   return (
-    <section id={id} aria-labelledby={`${id}-h`} className="grid gap-3.5">
-      <h2 id={`${id}-h`}>{title}</h2>
+    <>
+      <h2 id={id}>{title}</h2>
       {text ? (
-        <p className="whitespace-pre-wrap">{text}</p>
+        <p style={{ whiteSpace: 'pre-wrap' }}>{text}</p>
       ) : (
         <>
-          <p className="font-semibold text-ink">Not written yet.</p>
+          <p>
+            <b>Not written yet.</b>
+          </p>
           <p>{missing}</p>
         </>
       )}
-    </section>
+    </>
   );
 }
 
-const ON_THIS_PAGE = [
-  { id: 'imprint', label: 'Imprint' },
-  { id: 'privacy', label: 'Privacy policy' },
-] as const;
-
 function LegalPage() {
   const legal = useQuery(legalQuery);
+  useBodyClass('light');
   return (
-    <PublicPage
-      variant="band"
-      title="Imprint and privacy"
-      eyebrow="Legal"
-      aside={
-        <AsideCard title="On this page" plain>
-          <ol className="grid list-none gap-1 p-0">
-            {ON_THIS_PAGE.map((i) => (
-              <li key={i.id}>
-                <a
-                  href={`#${i.id}`}
-                  className="inline-flex min-h-11 items-center underline underline-offset-4"
-                >
-                  {i.label}
-                </a>
+    <MockPage>
+      <Band eyebrow="Legal" title={'Imprint and\nprivacy'} tabTitle="Imprint and privacy" />
+      <TwoCol
+        pad={30}
+        asideLabel="On this page"
+        aside={
+          <Card title="On this page" plain>
+            <ol className="steps" style={{ gap: 6 }}>
+              <li>
+                <a href="#imprint">Imprint</a>
               </li>
-            ))}
-            <li>
-              <Link
-                to="/terms"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Terms of use
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/standards"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Moderation standard
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/illegal-content"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Report illegal content
-              </Link>
-            </li>
-          </ol>
-        </AsideCard>
-      }
-      asideLabel="On this page"
-    >
-      {legal.isError ? (
-        <Alert tone="serious" title="The legal notices could not be loaded.">
-          {legal.error.message}
-        </Alert>
-      ) : null}
-      {legal.isPending ? <p role="status">Loading…</p> : null}
-      {legal.isSuccess ? (
-        <Prose>
-          <Notice
-            id="imprint"
-            title="Imprint"
-            text={legal.data.impressum}
-            missing="The operator of this site has not published an imprint yet."
-          />
-          <Notice
-            id="privacy"
-            title="Privacy policy"
-            text={legal.data.privacy}
-            missing="The operator of this site has not published a privacy policy yet."
-          />
-        </Prose>
-      ) : null}
-      <p>
-        What gets published here, and who decides, is in the{' '}
-        <Link to="/standards" className="underline underline-offset-2">
-          moderation standard
-        </Link>
-        .
-      </p>
-    </PublicPage>
+              <li>
+                <a href="#privacy">Privacy policy</a>
+              </li>
+              <li>
+                <Link to="/terms">Terms of use</Link>
+              </li>
+              <li>
+                <Link to="/standards">Moderation standard</Link>
+              </li>
+              <li>
+                <Link to="/illegal-content">Report illegal content</Link>
+              </li>
+            </ol>
+          </Card>
+        }
+      >
+        <div className="prose">
+          {legal.isError ? (
+            <Alert tone="serious" title="The legal notices could not be loaded.">
+              {legal.error.message}
+            </Alert>
+          ) : null}
+          {legal.isPending ? <p role="status">Loading…</p> : null}
+          {legal.isSuccess ? (
+            <>
+              <Notice
+                id="imprint"
+                title="Imprint"
+                text={legal.data.impressum}
+                missing="The operator of this site has not published an imprint yet."
+              />
+              <Notice
+                id="privacy"
+                title="Privacy policy"
+                text={legal.data.privacy}
+                missing="The operator of this site has not published a privacy policy yet."
+              />
+            </>
+          ) : null}
+          <p>
+            What gets published here, and who decides, is in the{' '}
+            <Link to="/standards">moderation standard</Link>.
+          </p>
+        </div>
+      </TwoCol>
+    </MockPage>
   );
 }

@@ -12,10 +12,10 @@
 import type { FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
-import { Dl } from '@/mockup/Dl.tsx';
-import type { DlItem } from '@/mockup/Dl.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
+import type { DlItem } from '@/mockup/DlList.tsx';
 import { useToast } from '../../../components/ui/toast.tsx';
 import { LimitsForm } from './LimitsForm.tsx';
 import type { Layer, LimitsBody } from './LimitsForm.tsx';

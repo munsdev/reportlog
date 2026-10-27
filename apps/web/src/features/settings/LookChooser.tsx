@@ -12,10 +12,10 @@
 import type { Look } from '@reportlog/contracts';
 import { useId } from 'react';
 import { St } from '@/mockup/St.tsx';
-import { Field, FieldDescription } from '@/mockup/Field.tsx';
-import { Label } from '@/mockup/Field.tsx';
+import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
-import { Select } from '@/mockup/Field.tsx';
+import { Select } from '@/mockup/FieldWired.tsx';
 import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';

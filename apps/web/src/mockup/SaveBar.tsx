@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './Btn.tsx';
+import { Btn } from './StaffBtn.tsx';
 
 /**
  * The mock-up's `savebar`: a sticky strip saying what is unsaved, with Save

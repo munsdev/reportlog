@@ -19,8 +19,8 @@ import {
 import type { SiteEditor } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Note } from '@/mockup/Note.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Switch } from '@/mockup/Switch.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';

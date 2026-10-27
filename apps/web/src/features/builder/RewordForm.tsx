@@ -15,7 +15,7 @@ import type { OptionInput, Question, QuestionSettingsInput } from '@reportlog/co
 import { describeCondition, optionArray, optionSetsOf } from '@reportlog/fields';
 import type { FieldDefinition } from '@reportlog/fields';
 import { useState } from 'react';
-import { Btn } from '@/mockup/Btn.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { Field, Problem, TextInput } from './controls.tsx';
 
 interface Props {

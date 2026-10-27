@@ -12,59 +12,79 @@
  * Both replace the form, and focus moves to the heading. The Follow along
  * band (placement `after_filing`) sits under a filed report only.
  */
-import type { ReactNode } from 'react';
-import { Steps, Wrap } from '@/components/ui/band.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
 import { FollowBand } from '@/features/follow/FollowBand.tsx';
 import { useGateMode } from '@/features/identity/gateMode.ts';
-import { CopyButton } from '@/features/site-pages/CopyButton.tsx';
+import { Btn, BtnLink } from '@/mockup/Btn.tsx';
+import { CopyBtn } from '@/mockup/CopyBtn.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 import { useFocusOnMount } from './CardFrame.tsx';
+import { NoticeColumn } from './FormNotice.tsx';
 import { TipOffer } from './tipOffer.tsx';
 
-export function FiledReceipt({ title, reference }: { title: string; reference: string }) {
+export function FiledReceipt({ reference }: { title: string; reference: string }) {
+  useBodyClass('light', 'form');
+  const onDoor = useGateMode() === 'door';
+  const focused = useFocusOnMount<HTMLHeadingElement>();
   return (
-    <Receipt
-      eyebrow="Sent"
-      heading={`Your report to “${title}” is on the record`}
-      follow
-      after={
-        <>
-          <Steps
-            items={[
-              { title: 'A moderator reads it next.', body: 'Nothing is public before that.' },
-              {
-                title: 'If it meets the standard and you allowed it, it is published.',
-                body: 'Look it up with your reference on the board.',
-              },
-              {
-                title: 'It stays on the record.',
-                body: 'Nobody can quietly change it or take it down.',
-              },
-            ]}
-          />
-          <TipOffer />
-        </>
-      }
-    >
-      <div className="grid content-start gap-2.5 rounded-card border-(length:--rl-border-main) border-ink bg-surface p-[18px] shadow-raised">
-        <span className="font-mono text-xs tracking-[0.1em] text-muted uppercase">
-          Your reference
-        </span>
-        <p
-          className="font-display text-[clamp(2rem,8vw,3.5rem)] leading-none tracking-[0.02em] break-all"
-          aria-label={`Reference ${reference.split('').join(' ')}`}
-        >
-          {reference}
-        </p>
-        <p className="text-[0.95rem] text-ink-alt">
-          Save this. It is how you find your report on the board once it is published. Nothing ties
-          this report to you, so it cannot be changed now. If something was wrong, file a new one.
-        </p>
-        <CopyButton text={reference} what="the reference" />
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 30 }}>
+        <div style={{ display: 'grid', gap: 22, maxWidth: 640 }}>
+          <span className="eyebrow">Sent</span>
+          <h1 ref={focused} tabIndex={-1} className="h-page outline-none" id="h1">
+            It’s on the record
+          </h1>
+          <div className="card">
+            <span className="tag">Your reference</span>
+            <p className="ref" aria-label={`Reference ${reference.split('').join(' ')}`}>
+              {reference}
+            </p>
+            <p>
+              Save this. It is how you find your report on the board once it is published. Nothing
+              ties this report to you, so it cannot be changed now. If something was wrong, file a
+              new one.
+            </p>
+            <CopyBtn text={reference} label="Copy the reference">
+              Copy reference
+            </CopyBtn>
+          </div>
+          <ol className="steps">
+            <li>
+              <span>
+                <b>A moderator reads it next.</b>Nothing is public before that.
+              </span>
+            </li>
+            <li>
+              <span>
+                <b>If it meets the standard and you allowed it, it is published.</b>Look it up with
+                your reference on the board.
+              </span>
+            </li>
+            <li>
+              <span>
+                <b>It stays on the record.</b>Nobody can quietly change it or take it down.
+              </span>
+            </li>
+          </ol>
+          <div className="sec-head" style={{ marginTop: 10 }}>
+            <span className="num" aria-hidden="true">
+              +
+            </span>
+            <h2>While you’re here</h2>
+          </div>
+          <div className="cards two">
+            <TipOffer />
+          </div>
+          {/* Behind the password on a door, so not offered there. */}
+          {onDoor ? null : (
+            <BtnLink look="ghost" href="/" style={{ justifySelf: 'start' }}>
+              Back to the front page
+            </BtnLink>
+          )}
+        </div>
       </div>
-    </Receipt>
+      <FollowBand placement="after_filing" bleed />
+    </div>
   );
 }
 
@@ -78,89 +98,58 @@ export function SentReceipt({
   /** Go back to the address card (the receipt cannot be edited, the card can). */
   onChangeAddress?: () => void;
 }) {
+  const focused = useFocusOnMount<HTMLHeadingElement>();
   return (
-    <Receipt eyebrow="One more step" heading="Check your email to finish" after={<TipOffer />}>
-      <p className="max-w-[62ch] text-lede text-ink-alt">
-        We have sent a link to <strong className="break-all text-ink">{email}</strong>.{' '}
-        <b className="text-ink">Your report is filed when you press it.</b> Nothing is filed in “
-        {title}” until then, and the waiting copy is deleted if the link is never used.
+    <NoticeColumn>
+      <span className="eyebrow">One more step</span>
+      <h1 ref={focused} tabIndex={-1} className="h-page outline-none" id="h1">
+        Check your email to finish
+      </h1>
+      <p className="lead">
+        We have sent a link to <b className="break-all">{email}</b>.{' '}
+        <b>Your report is filed when you press it.</b> Nothing is filed in “{title}” until then, and
+        the waiting copy is deleted if the link is never used.
       </p>
-      <Alert tone="note">
-        <span>
-          If nothing arrives in a few minutes, look in your spam folder
-          {onChangeAddress ? (
-            <>
-              {' '}
-              or{' '}
-              <button type="button" className="min-h-11 underline" onClick={onChangeAddress}>
-                change the address
-              </button>
-            </>
-          ) : null}
-          . One address can file up to five reports a day.
-        </span>
-      </Alert>
-    </Receipt>
+      <Note>
+        If nothing arrives in a few minutes, look in your spam folder
+        {onChangeAddress ? (
+          <>
+            {' '}
+            or{' '}
+            <a
+              href="#change-address"
+              onClick={(e) => {
+                e.preventDefault();
+                onChangeAddress();
+              }}
+            >
+              change the address
+            </a>
+          </>
+        ) : null}
+        . One address can file up to five reports a day.
+      </Note>
+      <TipOffer />
+    </NoticeColumn>
   );
 }
 
 /** "This address can't file more today" (file-limit): nothing was filed, the answers are kept. */
 export function LimitPage({ onBack }: { onBack: () => void }) {
+  const focused = useFocusOnMount<HTMLHeadingElement>();
   return (
-    <Receipt eyebrow="Not sent" heading="This address can’t file more today">
-      <p className="max-w-[62ch] text-lede text-ink-alt">
+    <NoticeColumn>
+      <span className="eyebrow">Not sent</span>
+      <h1 ref={focused} tabIndex={-1} className="h-page outline-none" id="h1">
+        This address can’t file more today
+      </h1>
+      <p className="lead">
         Nothing was filed. Try again tomorrow. Your answers are kept on this page until you leave
         it.
       </p>
-      <Button type="button" className="self-start" onClick={onBack}>
+      <Btn style={{ justifySelf: 'start' }} onClick={onBack}>
         Back to your answers
-      </Button>
-    </Receipt>
-  );
-}
-
-/** The receipt replaces the form; focus moves to its heading. */
-function Receipt({
-  eyebrow,
-  heading,
-  children,
-  after,
-  follow = false,
-}: {
-  eyebrow: string;
-  heading: string;
-  children: ReactNode;
-  after?: ReactNode;
-  follow?: boolean;
-}) {
-  const onDoor = useGateMode() === 'door';
-  const focused = useFocusOnMount<HTMLHeadingElement>();
-  return (
-    <div data-bleed className="flex flex-col">
-      <Wrap className="pt-8 pb-12">
-        <div className="flex max-w-[40rem] flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <Eyebrow>{eyebrow}</Eyebrow>
-            <h1 ref={focused} tabIndex={-1} className="font-display text-title outline-none">
-              {heading}
-            </h1>
-          </div>
-          {children}
-          {after}
-          {/* Behind the password on a door, so not offered there. */}
-          {onDoor ? null : (
-            <p className="flex flex-wrap gap-x-2">
-              <Button asChild variant="quiet">
-                <a href="/">Back to the front page</a>
-              </Button>
-              <Button asChild variant="quiet">
-                <a href="/board">See the board</a>
-              </Button>
-            </p>
-          )}
-        </div>
-      </Wrap>
-      {follow ? <FollowBand placement="after_filing" bleed /> : null}
-    </div>
+      </Btn>
+    </NoticeColumn>
   );
 }

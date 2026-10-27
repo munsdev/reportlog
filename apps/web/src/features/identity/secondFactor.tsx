@@ -38,10 +38,12 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow, Lede } from '@/components/ui/type.tsx';
+import { Lede } from '@/components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
 import { meQuery, useMe, useSignOut } from './session.ts';
-import { ErrorText, TextField, codeInputClass } from './ui.tsx';
+import { Field } from '../../mockup/Qcard.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { ErrorText, TextField, codeInputClass, messageOf } from './ui.tsx';
 
 export const secondFactorQuery = queryOptions({
   queryKey: ['identity', 'second-factor'],
@@ -248,60 +250,70 @@ export function ProveIt({
   const hasPasskey = (status.data?.passkeys.length ?? 0) > 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div style={{ display: 'grid', gap: 14 }}>
       {intro}
       {hasPasskey && (
-        <Button
-          type="button"
-          size="lg"
-          block
-          busy={byPasskey.isPending}
-          busyLabel="Waiting for the passkey…"
-          onClick={() => {
-            byCode.reset();
-            byPasskey.mutate();
-          }}
-        >
-          Use a passkey
-        </Button>
+        <div className="btn-row">
+          <button
+            className="btn sm flat ink"
+            type="button"
+            disabled={byPasskey.isPending}
+            onClick={() => {
+              byCode.reset();
+              byPasskey.mutate();
+            }}
+          >
+            {byPasskey.isPending ? 'Waiting for the passkey…' : 'Use a passkey'}
+          </button>
+        </div>
       )}
       <form
-        className="flex flex-col gap-4"
+        style={{ display: 'grid', gap: 14 }}
         onSubmit={(e) => {
           e.preventDefault();
           byPasskey.reset();
           byCode.mutate();
         }}
       >
-        <TextField
+        <Field
           label={
             hasPasskey
               ? 'Or a code from your authenticator app'
               : 'Code from your authenticator app'
           }
-          hint="Six digits. If you have lost the app, type one of your recovery codes instead."
-          autoComplete="one-time-code"
-          autoCapitalize="characters"
-          spellCheck={false}
-          maxLength={24}
-          required
-          inputClassName={codeInputClass}
-          value={code}
-          onChange={(e) => {
-            setCode(e.target.value);
-          }}
-          {...(error ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {})}
-        />
-        <ErrorText error={error} id={errorId} />
-        <Button
-          type="submit"
-          block
-          variant={hasPasskey ? 'secondary' : 'primary'}
-          busy={byCode.isPending}
-          busyLabel="Checking…"
+          htmlFor={`${errorId}-code`}
+          help="Six digits. If you have lost the app, type one of your recovery codes instead."
         >
-          {submitLabel}
-        </Button>
+          <input
+            className="input mono"
+            id={`${errorId}-code`}
+            autoComplete="one-time-code"
+            autoCapitalize="characters"
+            spellCheck={false}
+            maxLength={24}
+            required
+            style={{ letterSpacing: '.2em' }}
+            value={code}
+            onChange={(e) => {
+              setCode(e.target.value);
+            }}
+            {...(error ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {})}
+          />
+        </Field>
+        {error ? (
+          <p id={errorId} role="alert" className="error">
+            {messageOf(error)}
+          </p>
+        ) : null}
+        <div>
+          <button
+            className={hasPasskey ? 'btn sm flat ghost' : 'btn sm flat go'}
+            type="submit"
+            disabled={byCode.isPending}
+          >
+            {byCode.isPending ? 'Checking…' : submitLabel}
+          </button>
+        </div>
       </form>
     </div>
   );
@@ -527,43 +539,50 @@ function SetUpFirst() {
   );
 }
 
+/** Mock-up sign-in.html, the second step: its heading, then a panel with the proof. */
 function VerifyAfterEmail() {
+  useBodyClass('light', 'form');
   const client = useQueryClient();
   const me = useMe();
   const signOut = useSignOut();
   const email = me.data?.signedIn ? me.data.email : null;
   return (
-    <section className="flex max-w-xl flex-col gap-4" aria-labelledby="verify-heading">
-      <Eyebrow>Sign in · step 2 of 2</Eyebrow>
-      <h1 id="verify-heading" className="font-display text-title font-bold">
-        One more step
-      </h1>
-      <Lede>Your account has a role on this site. Prove it is you with your second factor.</Lede>
-      <Card>
-        <ProveIt
-          intro={null}
-          submitLabel="Continue"
-          onProved={async () => {
-            await client.invalidateQueries({ queryKey: ['identity'] });
-          }}
-        />
-      </Card>
-      {email ? (
-        <p className="text-sm text-ink-alt">
-          Signed in as <strong className="font-mono text-ink">{email}</strong>. Not you?{' '}
-          <Button
-            type="button"
-            variant="quiet"
-            className="min-h-0 px-0 align-baseline"
-            onClick={() => {
-              signOut.mutate();
-            }}
-          >
-            Start again
-          </Button>
-        </p>
-      ) : null}
-    </section>
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 30 }}>
+        <section className="form-stack" style={{ maxWidth: 460 }} aria-labelledby="verify-heading">
+          <span className="eyebrow">Sign in · step 2 of 2</span>
+          <h1 id="verify-heading" className="h-page">
+            One more step
+          </h1>
+          <p className="muted">
+            Your account has a role on this site. Prove it is you with your second factor.
+          </p>
+          <div className="panel">
+            <ProveIt
+              intro={null}
+              submitLabel="Continue"
+              onProved={async () => {
+                await client.invalidateQueries({ queryKey: ['identity'] });
+              }}
+            />
+            {email ? (
+              <p className="muted">
+                Signed in as <span className="mono">{email}</span>.{' '}
+                <a
+                  href="/access/sign-in"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    signOut.mutate();
+                  }}
+                >
+                  Not you? Start again
+                </a>
+              </p>
+            ) : null}
+          </div>
+        </section>
+      </div>
+    </div>
   );
 }
 

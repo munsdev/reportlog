@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './Btn.tsx';
+import { Btn } from './StaffBtn.tsx';
 
 /** The mock-up's `file-drop`: a dashed area with a button, which also takes a dropped file. */
 export function FileDrop({

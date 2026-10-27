@@ -14,8 +14,8 @@ import type { TemplateSummary } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Note } from '@/mockup/Note.tsx';
-import { Btn } from '@/mockup/Btn.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import {
   Dialog,
   DialogClose,
@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/mockup/Dialog.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { call } from '@/lib/api.ts';

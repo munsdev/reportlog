@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './Btn.tsx';
+import { Btn } from './StaffBtn.tsx';
 import {
   Dialog,
   DialogContent,
@@ -23,9 +23,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from './Dialog.tsx';
-import { Dl } from './Dl.tsx';
-import type { DlItem } from './Dl.tsx';
-import { Panel } from './Panel.tsx';
+import { Dl } from './DlList.tsx';
+import type { DlItem } from './DlList.tsx';
+import { Panel } from './PanelBox.tsx';
 import { SaveBar } from './SaveBar.tsx';
 
 interface OpenPanel {

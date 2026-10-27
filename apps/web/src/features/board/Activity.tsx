@@ -10,9 +10,11 @@
 import { getDeclinedCounts, getPublicCounts, getSwitchLog } from '@reportlog/contracts';
 import type { LogbookCounts } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { Alert } from '../../components/ui/alert.tsx';
-import { BoardFrame } from './BoardFrame.tsx';
 import { call } from '../../lib/api.ts';
+import { Note } from '../../mockup/Note.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
+import { BoardFrame } from './BoardFrame.tsx';
 
 export const publicCountsQuery = queryOptions({
   queryKey: ['board', 'counts'],
@@ -41,46 +43,17 @@ function OriginTable({
   rows: { key: string; name: string; organization: number; open_form: number }[];
   labels: { organization: string; open_form: string };
 }) {
-  // Scrolls sideways inside its own box on a phone, never the page; the box
-  // takes focus so the keyboard can scroll it too.
   return (
-    <div
-      className="overflow-x-auto rounded-card border border-line bg-surface p-3"
-      role="region"
-      aria-label={caption}
-      // A box that scrolls must be reachable by the keyboard to be scrolled
-      // (axe: scrollable-region-focusable); it is a named region, not a control.
-      // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-      tabIndex={0}
-    >
-      <table className="w-full min-w-[22rem] border-collapse text-sm">
-        <caption className="pb-2 text-left font-semibold">{caption}</caption>
-        <thead>
-          <tr className="border-b border-line text-left">
-            <th scope="col" className="py-1 pr-4">
-              {first}
-            </th>
-            <th scope="col" className="py-1 pr-4 text-right">
-              {labels.organization}
-            </th>
-            <th scope="col" className="py-1 text-right">
-              {labels.open_form}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.key} className="border-b border-line">
-              <th scope="row" className="py-1 pr-4 text-left font-normal">
-                {r.name}
-              </th>
-              <td className="py-1 pr-4 text-right font-mono">{r.organization}</td>
-              <td className="py-1 text-right font-mono">{r.open_form}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Panel title={caption}>
+      <Tbl
+        cols={[first, labels.organization, labels.open_form]}
+        widths="1fr auto auto"
+        rows={rows.map((r) => ({
+          key: r.key,
+          cells: [r.name, r.organization, r.open_form],
+        }))}
+      />
+    </Panel>
   );
 }
 
@@ -88,16 +61,37 @@ function OriginTable({
 export function CountsOnlyPanel({ slug, title }: { slug: string; title: string }) {
   const query = useQuery(publicCountsQuery);
   if (query.isPending) return <p role="status">Counting…</p>;
-  if (query.isError) return <Alert tone="serious">{query.error.message}</Alert>;
-  if (!query.data.published) return <Alert>{query.data.reason}</Alert>;
+  if (query.isError)
+    return (
+      <Note warn>
+        <span role="alert">{query.error.message}</span>
+      </Note>
+    );
+  if (!query.data.published)
+    return (
+      <Note>
+        <span>{query.data.reason}</span>
+      </Note>
+    );
   const lb = query.data.logbooks.find((l) => l.slug === slug);
-  if (!lb) return <Alert>There is nothing counted in this logbook yet.</Alert>;
+  if (!lb)
+    return (
+      <Note>
+        <span>There is nothing counted in this logbook yet.</span>
+      </Note>
+    );
   return (
-    <section aria-label={`${title}, as counts`} className="flex flex-col gap-4">
-      <Alert title="Published as counts only">
-        This logbook’s accepted reports are published as counts by place and time, not one by one.
-        {` ${query.data.note}`}
-      </Alert>
+    <section
+      aria-label={`${title}, as counts`}
+      style={{ display: 'grid', gap: 22, paddingBlock: 18 }}
+    >
+      <Note>
+        <span>
+          <b>Published as counts only.</b> This logbook’s accepted reports are published as counts
+          by place and time, not one by one.
+          {` ${query.data.note}`}
+        </span>
+      </Note>
       <LogbookTables lb={lb} labels={query.data.labels} />
     </section>
   );
@@ -111,7 +105,7 @@ function LogbookTables({
   labels: { organization: string; open_form: string };
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <OriginTable
         caption="Accepted reports"
         first="All"
@@ -127,7 +121,7 @@ function LogbookTables({
         />
       ) : null}
       {lb.withheld_places ? (
-        <p className="text-sm text-ink-alt">
+        <p className="muted">
           {`Fewer than ${String(lb.withheld_places.threshold)} accepted reports each, so these places are named without a number: ${lb.withheld_places.areas.join(', ')}`}
           {lb.withheld_places.reports !== null
             ? ` (${String(lb.withheld_places.reports)} together).`
@@ -150,7 +144,7 @@ function LogbookTables({
           labels={labels}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -166,14 +160,16 @@ export function ActivityPage() {
   return (
     <BoardFrame
       title="Arrivals, declines and switches"
-      heading="Arrivals, declines and switches"
       lede="When accepted reports arrived, by the hour, so a burst looks like a burst; how many reports were declined and why; and every time a moderator used a flood switch."
-      width="prose"
     >
-      {counts && !counts.published ? <Alert>{counts.reason}</Alert> : null}
+      {counts && !counts.published ? (
+        <Note>
+          <span>{counts.reason}</span>
+        </Note>
+      ) : null}
       {counts?.published ? (
         <>
-          <p className="text-sm">{counts.note}</p>
+          <p className="muted">{counts.note}</p>
           {counts.logbooks.map((lb) =>
             lb.by_hour.length ? (
               <OriginTable
@@ -189,23 +185,19 @@ export function ActivityPage() {
       ) : null}
       {declined?.published ? (
         <>
-          <p className="text-sm">{declined.note}</p>
+          <p className="muted">{declined.note}</p>
           {declined.logbooks.map((lb) => (
-            <div key={lb.slug}>
-              <h3 className="font-semibold">{`${lb.title}: declined, by reason`}</h3>
+            <Panel key={lb.slug} title={`${lb.title}: declined, by reason`}>
               {lb.by_reason.length ? (
-                <dl className="grid grid-cols-[1fr_auto] gap-x-6 text-sm">
-                  {lb.by_reason.map((r) => (
-                    <div key={r.code} className="contents">
-                      <dt>{r.label}</dt>
-                      <dd className="text-right font-mono">{r.reports}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <Tbl
+                  cols={['Reason', 'Count']}
+                  widths="1fr auto"
+                  rows={lb.by_reason.map((r) => ({ key: r.code, cells: [r.label, r.reports] }))}
+                />
               ) : (
-                <p className="text-sm">None declined.</p>
+                <p className="muted">None declined.</p>
               )}
-            </div>
+            </Panel>
           ))}
         </>
       ) : null}
@@ -234,19 +226,19 @@ export function SwitchLog() {
   const log = useQuery(switchLogQuery).data;
   if (!log) return null;
   return (
-    <div>
-      <h3 className="font-semibold">The flood switches, every time they were used</h3>
+    <Panel title="The flood switches, every time they were used">
       {log.uses.length ? (
-        <ul className="text-sm">
-          {log.uses.map((u, i) => (
-            <li key={`${u.at}-${String(i)}`}>
-              <time dateTime={u.at}>{hourWords(u.at)}</time> · {switchWords(u)}
-            </li>
-          ))}
-        </ul>
+        <Tbl
+          cols={['When', 'What']}
+          widths="auto 1fr"
+          rows={log.uses.map((u, i) => ({
+            key: `${u.at}-${String(i)}`,
+            cells: [<time dateTime={u.at}>{hourWords(u.at)}</time>, switchWords(u)],
+          }))}
+        />
       ) : (
-        <p className="text-sm">None has been used.</p>
+        <p className="muted">None has been used.</p>
       )}
-    </div>
+    </Panel>
   );
 }

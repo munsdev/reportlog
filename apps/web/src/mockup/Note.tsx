@@ -1,32 +1,31 @@
-import type { ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils.ts';
 
-export type NoteTone = 'note' | 'warning' | 'serious' | 'done';
-
-/** The mock-up's `note` strip, standing in for the old Alert. */
+/**
+ * The mock-up's note (site.css `.note`): `lock` is dashed, `warn` has the serious
+ * edge. A plain note is a status for a screen reader unless the caller says otherwise.
+ */
 export function Note({
-  tone = 'note',
-  title,
-  className,
-  children,
+  lock = false,
+  warn = false,
   role,
-  ...props
-}: Omit<ComponentProps<'div'>, 'title'> & {
-  tone?: NoteTone | null | undefined;
-  title?: ReactNode;
+  id,
+  children,
+}: {
+  lock?: boolean;
+  warn?: boolean;
+  role?: 'alert' | 'status';
+  id?: string | undefined;
+  children?: ReactNode;
 }) {
-  const t = tone ?? 'note';
+  const said = role ?? (warn ? undefined : 'status');
   return (
     <div
-      role={role ?? (t === 'serious' ? 'alert' : 'status')}
-      className={cn('note', (t === 'serious' || t === 'warning') && 'warn', className)}
-      {...props}
+      className={cn('note', lock && 'lock', warn && 'warn')}
+      {...(said ? { role: said } : {})}
+      {...(id ? { id } : {})}
     >
-      <div>
-        {title ? <b>{title}</b> : null}
-        {title && children ? <br /> : null}
-        {children}
-      </div>
+      <span>{children}</span>
     </div>
   );
 }
