@@ -18,10 +18,9 @@
  */
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { BandPage, TwoCol, Wrap } from '@/components/ui/band.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
-import { cn } from '@/lib/utils.ts';
+import { Band, MockPage } from '@/mockup/Band.tsx';
+import { Narrow } from '@/mockup/Narrow.tsx';
 
 export interface PublicPageProps {
   title: string;
@@ -32,7 +31,7 @@ export interface PublicPageProps {
   actions?: ReactNode;
   /** More inside the band, under the lede: tabs, figures. */
   band?: ReactNode;
-  /** Side cards beside the page (`AsideCard`s). */
+  /** Side cards beside the page (`Panel`s). */
   aside?: ReactNode;
   asideLabel?: string;
   /** `band` for the text pages; `plain` for a page an email link opens. */
@@ -53,99 +52,47 @@ export function PublicPage({
   asideLabel,
   variant = 'plain',
   width = 'wide',
-  className,
   children,
 }: PublicPageProps) {
-  if (variant === 'plain')
-    return (
-      <PlainPage
-        title={title}
-        eyebrow={eyebrow}
-        lede={lede}
-        actions={actions}
-        aside={aside}
-        width={width}
-        className={className}
-      >
-        {children}
-      </PlainPage>
-    );
-  const body = (
-    <div className={cn('flex flex-col gap-6', width === 'prose' && !aside && 'max-w-prose')}>
-      {children}
-    </div>
-  );
-  return (
-    <BandPage
-      title={title}
-      {...(eyebrow !== undefined ? { eyebrow } : {})}
-      {...(lede !== undefined ? { lede } : {})}
-      band={
-        <>
-          {actions ? <div className="flex flex-wrap items-center gap-3.5">{actions}</div> : null}
-          {band}
-        </>
-      }
-      {...(className ? { className } : {})}
-    >
-      {aside ? (
-        <TwoCol aside={aside} {...(asideLabel ? { asideLabel } : {})}>
-          {children}
-        </TwoCol>
-      ) : (
-        body
-      )}
-    </BandPage>
-  );
-}
-
-/**
- * The mock-up's page for an email link and its kind: the site's name over
- * the title, a line, the content. Narrow, because it is one task.
- */
-function PlainPage({
-  title,
-  eyebrow,
-  lede,
-  actions,
-  aside,
-  width,
-  className,
-  children,
-}: Omit<
-  PublicPageProps,
-  'variant' | 'band' | 'asideLabel' | 'eyebrow' | 'lede' | 'actions' | 'aside' | 'className'
-> & {
-  eyebrow: ReactNode | undefined;
-  lede: ReactNode | undefined;
-  actions: ReactNode | undefined;
-  aside: ReactNode | undefined;
-  className: string | undefined;
-}) {
   const site = plainSiteName(useSite().data);
   useEffect(() => {
     document.title = `${title} · ${site}`;
   }, [title, site]);
-  return (
-    <div data-bleed>
-      <Wrap className="pt-8 pb-16">
-        <div
-          className={cn(
-            'flex flex-col gap-5',
-            width === 'wide' ? 'max-w-[56rem]' : 'max-w-[40rem]',
-            className,
-          )}
-        >
-          <header className="flex flex-col gap-2.5">
-            <Eyebrow>{eyebrow ?? site}</Eyebrow>
-            <h1 className="font-display text-title">{title}</h1>
-            {lede ? <p className="max-w-[62ch] text-ink-alt">{lede}</p> : null}
-            {actions ? <div className="flex flex-wrap items-center gap-3.5">{actions}</div> : null}
-          </header>
-          {aside ? <div className="grid gap-3.5 sm:grid-cols-2">{aside}</div> : null}
-          {children}
+  if (variant === 'plain')
+    return (
+      <Narrow max={width === 'wide' ? 896 : 640} gap={20}>
+        <div style={{ display: 'grid', gap: 10 }}>
+          <span className="eyebrow">{eyebrow ?? site}</span>
+          <h1 className="h-page" id="h1">
+            {title}
+          </h1>
+          {lede ? <p className="muted">{lede}</p> : null}
+          {actions ? <div className="btn-row">{actions}</div> : null}
         </div>
-      </Wrap>
-    </div>
+        {aside ? <div className="grid2">{aside}</div> : null}
+        {children}
+      </Narrow>
+    );
+  return (
+    <MockPage>
+      <Band eyebrow={eyebrow ?? site} title={title} lead={lede}>
+        {actions ? <div className="btn-row">{actions}</div> : null}
+        {band}
+      </Band>
+      {aside ? (
+        <div className="wrap two-col" style={{ paddingTop: 30 }}>
+          <div className="prose">{children}</div>
+          <aside aria-label={asideLabel ?? 'Related'} className="col">
+            {aside}
+          </aside>
+        </div>
+      ) : (
+        <div className="wrap" style={{ paddingTop: 30 }}>
+          <div className="prose" style={width === 'prose' ? { maxWidth: '65ch' } : undefined}>
+            {children}
+          </div>
+        </div>
+      )}
+    </MockPage>
   );
 }
