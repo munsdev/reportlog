@@ -18,7 +18,10 @@ import { BASELINE_MIGRATIONS } from '../support/baseline-migrations.ts';
 import { isConstantDefault, judgeMigration, splitStatements } from '../support/migration-rules.ts';
 
 /** file name -> why it may do more than add. Empty, and meant to stay so. */
-const EXCEPTIONS: Readonly<Record<string, string>> = {};
+const EXCEPTIONS: Readonly<Record<string, string>> = {
+  '20261027014500_filing_limits.sql':
+    'Widens the CHECK on report_permissions_log.permission by one allowed value (journalist_sharing). No row changes, the log stays append-only, and an older release never writes the new value, so it runs unchanged. Reviewed by the integrator, 27 October 2026.',
+};
 
 const DIR = fileURLToPath(new URL('../../migrations/', import.meta.url));
 const files = readdirSync(DIR)
