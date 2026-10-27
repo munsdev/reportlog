@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { Empty } from '@/mockup/Empty.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';

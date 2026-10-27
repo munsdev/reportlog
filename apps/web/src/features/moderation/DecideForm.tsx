@@ -22,8 +22,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
 

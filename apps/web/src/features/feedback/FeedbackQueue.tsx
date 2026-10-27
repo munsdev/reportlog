@@ -11,7 +11,7 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { AreaField } from '../../mockup/Fields.tsx';
+import { AreaField } from '@/mockup/Field.tsx';
 import { Filters } from '../../mockup/Filters.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';

@@ -13,9 +13,8 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { CheckBox, TextField } from '@/mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import type { SignedInMe } from './session.ts';
 
@@ -72,14 +71,14 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
           setTyped(e.target.value);
         }}
       />
-      <Check
+      <CheckBox
         checked={sure}
         onChange={(e) => {
           setSure(e.target.checked);
         }}
       >
         I understand this cannot be undone.
-      </Check>
+      </CheckBox>
       <ErrorLine error={go.error} />
       <Btn sm flat
         look="bad"

@@ -15,11 +15,8 @@ import type { FileKind, FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { CheckOption, RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { KIND_LABEL, LIMITS, boxProblem, fromBox, toBox } from './words.ts';
 import type { NumberKey } from './words.ts';
 

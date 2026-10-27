@@ -19,7 +19,7 @@ import { INTAKE_METHODS, INTAKE_METHOD_LABELS } from '@reportlog/seal';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Field, FieldDescription, Input, Label, Select } from '../../mockup/Form.tsx';
+import { Field, FieldDescription, Input, Label, Select } from '@/mockup/Field.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { rawFromAnswers, toSubmission, withChange } from '@/features/form/walk.ts';

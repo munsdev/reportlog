@@ -11,7 +11,7 @@ import { maxLinksOf } from '@reportlog/fields';
 import { useId } from 'react';
 
 import { Btn } from '@/mockup/Btn.tsx';
-import { Field, TextArea, TextInput } from '@/mockup/Field.tsx';
+import { Field, Textarea, Input } from '@/mockup/Field.tsx';
 import { Note } from '@/mockup/Note.tsx';
 import type { RawValue } from './walk.ts';
 
@@ -69,7 +69,7 @@ export function PrivateTextControl({
         }
         helpMono
       >
-        <TextArea
+        <Textarea
           id={boxId}
           value={text}
           rows={7}
@@ -119,7 +119,7 @@ export function PrivateLinksControl({
           }
           htmlFor={`${boxId}-${String(i)}`}
         >
-          <TextInput
+          <Input
             id={`${boxId}-${String(i)}`}
             type="url"
             inputMode="url"

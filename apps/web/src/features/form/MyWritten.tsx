@@ -17,7 +17,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { useState } from 'react';
 import { call } from '@/lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
@@ -141,14 +141,14 @@ export function WrittenPanel({
             The words and links are deleted. The record keeps a marker that something was erased,
             and when.
           </p>
-          <Check
+          <CheckBox
             checked={sure}
             onChange={(e) => {
               setSure(e.target.checked);
             }}
           >
             I understand this cannot be undone.
-          </Check>
+          </CheckBox>
           <ErrorLine error={erase.error} />
           <Btn sm flat
             look="bad"

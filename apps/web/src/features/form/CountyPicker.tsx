@@ -16,7 +16,7 @@
  */
 import { countyOptions, stateOfPlace } from '@reportlog/fields';
 import { useId } from 'react';
-import { Field, SelectBox } from '@/mockup/Field.tsx';
+import { Field, Select } from '@/mockup/Field.tsx';
 
 interface Props {
   states: readonly { code: string; name: string }[];
@@ -41,7 +41,7 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
       style={{ display: 'grid', gap: 16 }}
     >
       <Field label="State" htmlFor={`${id}-state`}>
-        <SelectBox
+        <Select
           id={`${id}-state`}
           value={state}
           aria-invalid={invalid ? true : undefined}
@@ -55,7 +55,7 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
               {p.name}
             </option>
           ))}
-        </SelectBox>
+        </Select>
       </Field>
       <Field
         label="County, if you know it"
@@ -63,7 +63,7 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
         help="The list follows the state you choose."
         helpId={`${id}-county-help`}
       >
-        <SelectBox
+        <Select
           id={`${id}-county`}
           aria-describedby={`${id}-county-help`}
           value={state ? value : ''}
@@ -82,7 +82,7 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
               {p.name}
             </option>
           ))}
-        </SelectBox>
+        </Select>
       </Field>
     </div>
   );

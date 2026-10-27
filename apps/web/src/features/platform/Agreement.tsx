@@ -20,10 +20,8 @@ import type { ReactNode } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Field, FieldDescription, Label, Textarea } from '@/mockup/Field.tsx';
 import { Page } from '../../components/ui/page.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
 

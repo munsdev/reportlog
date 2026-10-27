@@ -32,7 +32,7 @@ import { Panel as MPanel } from '@/mockup/Panel.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { St } from '@/mockup/St.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';

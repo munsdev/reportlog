@@ -30,9 +30,9 @@ import { useId, useRef, useState } from 'react';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
-import { Check, Choice, Choices } from '../../mockup/Choices.tsx';
+import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
@@ -317,7 +317,7 @@ function CheckForm({
               ))}
             </Select>
           </Field>
-          <Check
+          <CheckBox
             id={`${id}-sure`}
             checked={sure}
             onChange={(e) => {
@@ -325,7 +325,7 @@ function CheckForm({
             }}
           >
             The words will be erased now and cannot be brought back. A marker stays.
-          </Check>
+          </CheckBox>
         </>
       ) : null}
       {outcome !== '' && outcome !== 'redacted' ? (

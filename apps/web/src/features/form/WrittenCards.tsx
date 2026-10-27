@@ -8,7 +8,7 @@
  * anybody types.
  */
 import { Choice, Choices } from '@/mockup/Choice.tsx';
-import { Field, TextInput } from '@/mockup/Field.tsx';
+import { Field, Input } from '@/mockup/Field.tsx';
 import { useId } from 'react';
 import { CardFrame } from './CardFrame.tsx';
 
@@ -114,7 +114,7 @@ export function ContactCard({
 }) {
   const id = useId();
   const input = (
-    <TextInput
+    <Input
       id={id}
       type="email"
       inputMode="email"
@@ -213,7 +213,7 @@ export function ManageCard({
         }
         htmlFor={id}
       >
-        <TextInput
+        <Input
           id={id}
           type="email"
           inputMode="email"

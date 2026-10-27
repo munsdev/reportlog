@@ -53,13 +53,9 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { Empty } from '@/mockup/Empty.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/mockup/FieldWired.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
 

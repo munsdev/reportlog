@@ -12,14 +12,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Btn } from '../../../mockup/Btn.tsx';
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  Input,
-  Label,
-  Textarea,
-} from '../../../mockup/Form.tsx';
+import { Field, FieldDescription, FieldError, Input, Label, Textarea } from '@/mockup/Field.tsx';
 import { Modal } from '../../../mockup/Modal.tsx';
 import { Problem } from '../../../mockup/Notice.tsx';
 

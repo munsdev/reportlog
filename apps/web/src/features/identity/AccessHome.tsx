@@ -33,7 +33,7 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
+import { TextField } from '@/mockup/Field.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { DeleteAccount } from './DeleteAccount.tsx';
 import { desksFor } from './desks.ts';

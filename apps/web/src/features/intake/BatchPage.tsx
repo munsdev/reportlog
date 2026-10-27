@@ -16,7 +16,7 @@ import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
@@ -349,7 +349,7 @@ function FileDialog(props: {
         the record. The organization is shown publicly; you are not. Your account is recorded as the
         person who entered them.
       </p>
-      <Check
+      <CheckBox
         id="attest-batch"
         checked={attested}
         onChange={(e) => {
@@ -357,7 +357,7 @@ function FileDialog(props: {
         }}
       >
         {BATCH_STATEMENT}
-      </Check>
+      </CheckBox>
       {submit.isError ? <Problem title="Nothing was filed.">{submit.error.message}</Problem> : null}
     </Modal>
   );

@@ -26,7 +26,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Bars } from '../../mockup/Bars.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Field, Input, Label } from '../../mockup/Form.tsx';
+import { Field, Input, Label } from '@/mockup/Field.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';

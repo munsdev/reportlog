@@ -28,7 +28,7 @@ import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
+import { TextField } from '@/mockup/Field.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 

@@ -37,9 +37,9 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Check, Choice, Choices } from '../../mockup/Choices.tsx';
+import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
@@ -319,7 +319,7 @@ function CheckForm({ group }: { group: LinkGroup }) {
               <option value="domain">Block its whole site, and every subdomain</option>
             </Select>
           </Field>
-          <Check
+          <CheckBox
             id={`${id}-followed`}
             checked={followed}
             onChange={(e) => {
@@ -328,7 +328,7 @@ function CheckForm({ group }: { group: LinkGroup }) {
           >
             I have followed the procedure above. Every copy will be erased and cannot be brought
             back.
-          </Check>
+          </CheckBox>
         </>
       ) : null}
       {save.isError ? <Problem>{save.error.message}</Problem> : null}

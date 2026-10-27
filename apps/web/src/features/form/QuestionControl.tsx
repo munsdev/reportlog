@@ -19,7 +19,7 @@ import {
 import type { Answers, FieldSettings } from '@reportlog/fields';
 import { useId } from 'react';
 import { Choice as Tile, Choices } from '@/mockup/Choice.tsx';
-import { CheckBox, SelectBox, TextArea, TextInput } from '@/mockup/Field.tsx';
+import { CheckBox, Select, Textarea, Input } from '@/mockup/Field.tsx';
 import { CountyPicker } from './CountyPicker.tsx';
 import { PrivateLinksControl, PrivateTextControl } from './HeldControls.tsx';
 import type { RawValue } from './walk.ts';
@@ -182,7 +182,7 @@ export function QuestionControl(props: ControlProps) {
   }
   if (q.kind === 'number' && q.settings.picker === 'hour') {
     return (
-      <SelectBox
+      <Select
         id={id}
         value={text}
         onChange={(e) => {
@@ -196,13 +196,13 @@ export function QuestionControl(props: ControlProps) {
             {hourLabel(h)}
           </option>
         ))}
-      </SelectBox>
+      </Select>
     );
   }
   if (q.kind === 'location' && q.settings.code === 'postal') {
     // A US state by its two letters: the same list, the code without `US-`.
     return (
-      <SelectBox
+      <Select
         id={id}
         value={text}
         onChange={(e) => {
@@ -216,7 +216,7 @@ export function QuestionControl(props: ControlProps) {
             {p.name}
           </option>
         ))}
-      </SelectBox>
+      </Select>
     );
   }
   if (q.kind === 'location' && q.settings.code === 'fips') {
@@ -227,7 +227,7 @@ export function QuestionControl(props: ControlProps) {
     const state = typeof given === 'string' ? given : '';
     const counties = state ? countyOptions(`US-${state}`) : [];
     return (
-      <SelectBox
+      <Select
         id={id}
         value={state ? text : ''}
         disabled={!state}
@@ -242,7 +242,7 @@ export function QuestionControl(props: ControlProps) {
             {p.name}
           </option>
         ))}
-      </SelectBox>
+      </Select>
     );
   }
   if (q.kind === 'location') {
@@ -278,7 +278,7 @@ export function QuestionControl(props: ControlProps) {
         ))
       );
     return (
-      <SelectBox
+      <Select
         id={id}
         value={text}
         onChange={(e) => {
@@ -289,7 +289,7 @@ export function QuestionControl(props: ControlProps) {
         <option value="">Choose a place</option>
         {group('United States', places.subdivisions)}
         {group('Countries', places.countries)}
-      </SelectBox>
+      </Select>
     );
   }
   if (q.kind === 'long_text') {
@@ -298,7 +298,7 @@ export function QuestionControl(props: ControlProps) {
       <div className="field">
         {/* At least six lines, growing with what is written where the
             browser can (field-sizing), so nobody types into a slot. */}
-        <TextArea
+        <Textarea
           id={id}
           value={text}
           rows={6}
@@ -317,7 +317,7 @@ export function QuestionControl(props: ControlProps) {
     q.kind === 'short_text' || q.kind === 'place' ? (numberSetting(q, 'maxLength') ?? 200) : null;
   return (
     <div className="field">
-      <TextInput
+      <Input
         id={id}
         type={INPUT_TYPES[q.kind] ?? 'text'}
         value={text}

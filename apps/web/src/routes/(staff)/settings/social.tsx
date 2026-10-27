@@ -29,11 +29,9 @@ import type {
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { Switch } from '@/mockup/SwitchRow.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
 import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
 import { SocialIcon } from '@/components/ui/social-icon.tsx';
 import { useToast } from '@/components/ui/toast.tsx';

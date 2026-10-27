@@ -12,8 +12,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
+import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
@@ -159,7 +158,7 @@ function CorrectForm({
             }}
           />
         </Field>
-        <Check
+        <CheckBox
           id="attest-correction"
           checked={attested}
           onChange={(e) => {
@@ -167,7 +166,7 @@ function CorrectForm({
           }}
         >
           {CORRECTION_STATEMENT}
-        </Check>
+        </CheckBox>
         {f.may_publish && publish === 'no' ? (
           <Note>
             <b>Keeping it out cannot be undone.</b> A correction can take permission to publish

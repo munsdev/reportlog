@@ -25,7 +25,7 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
@@ -173,7 +173,7 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
         <Btn sm flat type="submit">Search</Btn>
       </div>
       {hasStates ? (
-        <Check
+        <CheckBox
           checked={draft.mine}
           title={`Only what is in the states you chose for alerts: ${settings.data?.state === 'open' ? settings.data.states.join(', ') : ''}.`}
           onChange={(e) => {
@@ -181,7 +181,7 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
           }}
         >
           My states
-        </Check>
+        </CheckBox>
       ) : null}
     </form>
   );

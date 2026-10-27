@@ -21,7 +21,7 @@ import { useState } from 'react';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
+import { TextField } from '@/mockup/Field.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';

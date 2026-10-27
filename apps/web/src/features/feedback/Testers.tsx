@@ -15,7 +15,7 @@ import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
+import { TextField } from '@/mockup/Field.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { ROLE_LABELS } from '../identity/session.ts';

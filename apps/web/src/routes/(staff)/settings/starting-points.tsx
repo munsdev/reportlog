@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from '@/mockup/Dialog.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { call } from '@/lib/api.ts';
 
 const templatesQuery = queryOptions({

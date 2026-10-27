@@ -29,7 +29,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
@@ -530,14 +530,14 @@ function FilterPanel({
           </div>
         </div>
       ) : null}
-      <Check
+      <CheckBox
         checked={flagged}
         onChange={(e) => {
           setFlagged(e.target.checked);
         }}
       >
         Only reports waiting for a second read
-      </Check>
+      </CheckBox>
     </>
   );
 

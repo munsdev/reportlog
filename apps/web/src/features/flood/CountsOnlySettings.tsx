@@ -20,10 +20,8 @@ import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { call } from '../../lib/api.ts';
 
 const countsOnlyQuery = queryOptions({

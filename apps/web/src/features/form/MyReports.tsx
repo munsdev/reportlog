@@ -32,11 +32,10 @@ import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn, btnClass } from '@/mockup/Btn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { CheckBox, AreaField } from '@/mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { AreaField } from '../../mockup/Fields.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
@@ -417,7 +416,7 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
         }}
       />
       {r.may_publish ? (
-        <Check
+        <CheckBox
           checked={keepOut}
           onChange={(e) => {
             setKeepOut(e.target.checked);
@@ -425,7 +424,7 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
         >
           Keep it out of the public archive from now on. (This cannot be undone: a correction can
           take permission to publish back, never give it.)
-        </Check>
+        </CheckBox>
       ) : null}
       {problem ? <p className="error">{problem}</p> : null}
       {send.isError ? <ErrorLine error={send.error} /> : null}
@@ -510,14 +509,14 @@ function Erase({ r }: { r: MyReportDetail }) {
         held your address), and is published or not exactly as before. Afterwards it no longer
         appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
-      <Check
+      <CheckBox
         checked={sure}
         onChange={(e) => {
           setSure(e.target.checked);
         }}
       >
         I understand this cannot be undone.
-      </Check>
+      </CheckBox>
       <ErrorLine error={go.error} />
       <Btn sm flat
         look="bad"
