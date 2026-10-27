@@ -16,18 +16,18 @@ import {
 import type { BodyOf, FileSettings, ResponseOf } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Alert } from '../../../components/ui/alert.tsx';
 import { Button } from '../../../components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card.tsx';
+import { Card } from '../../../components/ui/card.tsx';
 import { Chip } from '../../../components/ui/chip.tsx';
 import { Empty } from '../../../components/ui/empty.tsx';
 import { KeyValueList } from '../../../components/ui/key-value-list.tsx';
 import { ToastProvider, useToast } from '../../../components/ui/toast.tsx';
-import { TabRow } from '../../nav/AreaTabs.tsx';
-import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
-import { Input } from '../../../components/ui/input.tsx';
-import { Label } from '../../../components/ui/label.tsx';
+import { Ptabs } from '../../../mockup/Ptabs.tsx';
+import { Btn } from '../../../mockup/Btn.tsx';
+import { Err, Problem } from '../../../mockup/Notice.tsx';
+import { Panel } from '../../../mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '../../../components/ui/radio-group.tsx';
 import { call } from '../../../lib/api.ts';
@@ -44,7 +44,7 @@ export function FileAdminSections() {
   const { pathname } = useLocation();
   const here = pathname.replace(/\/+$/, '');
   return (
-    <TabRow
+    <Ptabs
       label="File settings"
       tabs={[
         { to: '/files/settings', label: 'The site', current: here === '/files/settings' },
@@ -264,6 +264,7 @@ export function LogbookLimitsPage({ id }: { id: number }) {
 type ErasingData = ResponseOf<typeof getReportFilesForErasing>;
 
 export function EraseFilePage() {
+  const id = useId();
   const [ref, setRef] = useState('');
   const [tried, setTried] = useState(false);
   const [looked, setLooked] = useState<string | null>(null);
@@ -277,43 +278,45 @@ export function EraseFilePage() {
   return (
     <StaffPage title="Erasing a file" width="prose">
       <FileAdminSections />
-      <Card variant="deep" heading="What erasing does">
+      <Panel kind="deep" title="What erasing does">
         <p>
           Erasing destroys the key the file was locked with, so nobody can ever open it again, this
           site included. Its fingerprint stays in the report, which still checks out. It cannot be
           undone.
         </p>
         <p>Every erasure is recorded on the file’s record, with your name and your reason.</p>
-      </Card>
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setTried(true);
-          if (!problem) setLooked(ref.trim().toUpperCase());
-        }}
-      >
-        <Field>
-          <Label>Which report is the file on?</Label>
-          <FieldDescription>Its reference, as on the report.</FieldDescription>
-          <Input
+      </Panel>
+      <Panel title="Which report is the file on?">
+        <p className="muted" id={`${id}-help`}>
+          Its reference, as on the report.
+        </p>
+        <form
+          className="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setTried(true);
+            if (!problem) setLooked(ref.trim().toUpperCase());
+          }}
+        >
+          <input
+            type="text"
+            aria-label="Reference"
+            aria-describedby={`${id}-help`}
             value={ref}
-            placeholder="RL-…"
+            placeholder="RL-XXXX-XX"
             autoComplete="off"
             onChange={(e) => {
               setRef(e.target.value);
             }}
           />
-          <FieldError>{tried ? problem : null}</FieldError>
-        </Field>
-        <div>
-          <Button type="submit" variant="secondary">
+          <Btn sm flat type="submit">
             Show its files
-          </Button>
-        </div>
-      </form>
+          </Btn>
+        </form>
+        <Err>{tried ? problem : null}</Err>
+      </Panel>
       {query.isFetching ? <p role="status">Finding the report…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data ? <ErasingList data={query.data} /> : null}
     </StaffPage>
   );
@@ -323,56 +326,54 @@ function ErasingList({ data }: { data: ErasingData }) {
   const qc = useQueryClient();
   if (!data.files.length) return <p>{data.public_ref} has no files.</p>;
   return (
-    <ul className="flex flex-col gap-3" aria-label={`Files on ${data.public_ref}`}>
+    <>
       {data.files.map((f) => {
         const name = f.original_name ?? `File ${String(f.ordinal)}`;
         return (
-          <li key={f.id}>
-            <Card>
-              <CardHeader>
-                <CardTitle>{name}</CardTitle>
-                <p className="text-sm text-ink-alt">
-                  {describeFile(f)} · {f.erased ? 'Erased' : PUBLICATION[f.publication]}
-                </p>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <p className="text-sm break-all text-ink-alt">
-                  Fingerprint (SHA-256): <span className="font-mono">{f.sha256}</span>
-                </p>
-                {f.erased ? (
-                  <p>This file has been erased.</p>
-                ) : (
-                  <div>
-                    <AskDialog
-                      trigger={<Button variant="secondary">Erase this file…</Button>}
-                      title={`Erase ${name} for good`}
-                      description={`Nobody will ever be able to open it again. If it is published, it is taken down first. The report ${data.public_ref} keeps its fingerprint.`}
-                      questions={[
-                        {
-                          label: 'Why is it being erased?',
-                          hint: 'Kept on the file’s record.',
-                          multiline: true,
-                          min: 10,
-                          max: 2000,
-                          tooShort: 'Say why in a sentence: it is kept on the file’s record.',
-                        },
-                      ]}
-                      finish="Erase it for good"
-                      onFinish={async ([reason]) => {
-                        await call(eraseFile, {
-                          params: { id: f.id },
-                          body: { reason: reason ?? '' },
-                        });
-                        await qc.invalidateQueries({ queryKey: ['files-staff'] });
-                      }}
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </li>
+          <article className="panel" key={f.id}>
+            <h2>{name}</h2>
+            <p className="m">
+              {describeFile(f)} · {f.erased ? 'Erased' : PUBLICATION[f.publication]}
+            </p>
+            <p className="m" style={{ wordBreak: 'break-all' }}>
+              Fingerprint (SHA-256): {f.sha256}
+            </p>
+            {f.erased ? (
+              <p>This file has been erased.</p>
+            ) : (
+              <div className="acts">
+                <AskDialog
+                  trigger={(open) => (
+                    <Btn sm flat onClick={open}>
+                      Erase this file…
+                    </Btn>
+                  )}
+                  title={`Erase ${name} for good`}
+                  description={`Nobody will ever be able to open it again. If it is published, it is taken down first. The report ${data.public_ref} keeps its fingerprint.`}
+                  questions={[
+                    {
+                      label: 'Why is it being erased?',
+                      hint: 'Kept on the file’s record.',
+                      multiline: true,
+                      min: 10,
+                      max: 2000,
+                      tooShort: 'Say why in a sentence: it is kept on the file’s record.',
+                    },
+                  ]}
+                  finish="Erase it for good"
+                  onFinish={async ([reason]) => {
+                    await call(eraseFile, {
+                      params: { id: f.id },
+                      body: { reason: reason ?? '' },
+                    });
+                    await qc.invalidateQueries({ queryKey: ['files-staff'] });
+                  }}
+                />
+              </div>
+            )}
+          </article>
         );
       })}
-    </ul>
+    </>
   );
 }

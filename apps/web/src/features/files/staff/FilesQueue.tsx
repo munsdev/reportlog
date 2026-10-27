@@ -9,17 +9,13 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
-import { Alert } from '../../../components/ui/alert.tsx';
-import { Button } from '../../../components/ui/button.tsx';
-import { Card } from '../../../components/ui/card.tsx';
-import { Count } from '../../../components/ui/count.tsx';
-import { Empty } from '../../../components/ui/empty.tsx';
-import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
-import { Input } from '../../../components/ui/input.tsx';
-import { Label } from '../../../components/ui/label.tsx';
+import { useId, useState } from 'react';
+import { Btn } from '../../../mockup/Btn.tsx';
+import { Empty } from '../../../mockup/Empty.tsx';
+import { Note } from '../../../mockup/Note.tsx';
+import { Err, Problem } from '../../../mockup/Notice.tsx';
+import { Panel } from '../../../mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Meta } from '../../../components/ui/type.tsx';
 import { EvidenceRequests } from './EvidenceRequests.tsx';
 import { ReportFiles } from './ReportFiles.tsx';
 import { fileQueueQuery } from './queries.ts';
@@ -33,95 +29,92 @@ export function FilesQueue() {
       title="Files"
       lede="Files sent with reports are never public until a moderator publishes them, and only if the reporter allows it. These reports have files nobody has decided on yet."
     >
-      <FindReport />
       {query.isPending ? <p role="status">Reading the files…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data ? (
         query.data.reports.length === 0 ? (
           <Empty title="Nothing waiting">
             Every file has been decided on. Files sent with new reports appear here.
           </Empty>
         ) : (
-          <ul className="flex flex-col gap-3" aria-label="Reports with files waiting">
-            {[...query.data.reports]
-              .sort((a, b) => b.received_at.localeCompare(a.received_at))
-              .map((r) => (
-                <li key={r.thread_id}>
-                  <Card className="flex-row flex-wrap items-center gap-3 p-4">
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <p className="flex flex-wrap items-center gap-2">
-                        <span className="font-mono font-semibold">{r.public_ref}</span>
-                        <Count
-                          value={r.undecided}
-                          label={plural(r.undecided, 'file waits', 'files wait')}
-                        />
-                      </p>
-                      <p className="text-sm">
-                        {r.may_publish && r.files_permitted
-                          ? 'The reporter allows their files to be published.'
-                          : 'The reporter does not allow their files to be published.'}
-                      </p>
-                      <Meta>
-                        {r.logbook_title} · {plural(r.undecided, 'file waits', 'files wait')} of{' '}
-                        {String(r.files)} · sent {new Date(r.received_at).toLocaleString()}
-                      </Meta>
-                    </div>
-                    <Button asChild variant="secondary">
-                      <Link
-                        to="/files/$ref"
-                        params={{ ref: r.public_ref }}
-                        aria-label={`Open ${r.public_ref}`}
-                      >
-                        Open
-                      </Link>
-                    </Button>
-                  </Card>
-                </li>
-              ))}
-          </ul>
+          [...query.data.reports]
+            .sort((a, b) => b.received_at.localeCompare(a.received_at))
+            .map((r) => (
+              <article className="panel" key={r.thread_id}>
+                <h2>
+                  <span className="mono">{r.public_ref}</span>{' '}
+                  <span className="n">
+                    <span aria-hidden="true">{r.undecided}</span>
+                    <span className="sr-only">
+                      {plural(r.undecided, 'file waits', 'files wait')}
+                    </span>
+                  </span>
+                </h2>
+                <p>
+                  {r.may_publish && r.files_permitted
+                    ? 'The reporter allows their files to be published.'
+                    : 'The reporter does not allow their files to be published.'}
+                </p>
+                <p className="m">
+                  {r.logbook_title} · {plural(r.undecided, 'file waits', 'files wait')} of{' '}
+                  {String(r.files)} · sent {new Date(r.received_at).toLocaleString()}
+                </p>
+                <div className="acts">
+                  <Link
+                    className="btn sm flat"
+                    to="/files/$ref"
+                    params={{ ref: r.public_ref }}
+                    aria-label={`Open ${r.public_ref}`}
+                  >
+                    Open
+                  </Link>
+                </div>
+              </article>
+            ))
         )
       ) : null}
+      <FindReport />
     </StaffPage>
   );
 }
 
 function FindReport() {
   const navigate = useNavigate();
+  const id = useId();
   const [ref, setRef] = useState('');
   const [tried, setTried] = useState(false);
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <form
-      className="flex max-w-prose flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setTried(true);
-        if (!problem)
-          void navigate({ to: '/files/$ref', params: { ref: ref.trim().toUpperCase() } });
-      }}
-    >
-      <Field>
-        <Label>Find a report by its reference</Label>
-        <FieldDescription>
-          Any report, whether or not it has files: this is also where you ask a reporter for
-          evidence.
-        </FieldDescription>
-        <Input
+    <Panel title="Find a report by its reference">
+      <p className="muted" id={`${id}-help`}>
+        Any report, whether or not it has files: this is also where you ask a reporter for evidence.
+      </p>
+      <form
+        className="search"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setTried(true);
+          if (!problem)
+            void navigate({ to: '/files/$ref', params: { ref: ref.trim().toUpperCase() } });
+        }}
+      >
+        <input
+          type="text"
+          aria-label="Reference"
+          aria-describedby={`${id}-help`}
           value={ref}
-          placeholder="RL-…"
+          placeholder="RL-XXXX-XX"
           autoComplete="off"
           onChange={(e) => {
             setRef(e.target.value);
           }}
         />
-        <FieldError>{tried ? problem : null}</FieldError>
-      </Field>
-      <div>
-        <Button type="submit" variant="secondary">
+        <Btn sm flat type="submit">
           Open that report
-        </Button>
-      </div>
-    </form>
+        </Btn>
+      </form>
+      <Err>{tried ? problem : null}</Err>
+    </Panel>
   );
 }
 
@@ -132,29 +125,30 @@ export function ReportFilesPage({ reference }: { reference: string }) {
   return (
     <StaffPage
       title={report ? `Files of ${report.public_ref}` : 'A report’s files'}
+      mono
       lede={
         report
           ? `${report.logbook_title} · sent ${new Date(report.received_at).toLocaleString()}`
           : undefined
       }
       actions={
-        <Button asChild variant="secondary">
-          <Link to="/files">All files waiting</Link>
-        </Button>
+        <Link className="btn sm flat" to="/files">
+          All files waiting
+        </Link>
       }
     >
       {query.isPending ? <p role="status">Finding the report…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data && !report ? (
-        <Alert tone="serious">There is no report with the reference {reference}.</Alert>
+        <Problem>There is no report with the reference {reference}.</Problem>
       ) : null}
       {report ? (
         <>
           {report.public_ref !== reference.toUpperCase() ? (
-            <Alert>
+            <Note>
               {reference} is an earlier version of this report. These are the files of its newest
               version, {report.public_ref}.
-            </Alert>
+            </Note>
           ) : null}
           <ReportFiles threadId={report.thread_id} />
           <EvidenceRequests threadId={report.thread_id} />
