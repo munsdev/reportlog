@@ -70,7 +70,7 @@ describe('the question form', () => {
     await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(onSubmit).toHaveBeenLastCalledWith(
       expect.objectContaining({ shown_when: { field: 'role', in: ['Observer'] } }),
-      'short_text',
+      'private_text',
     );
   });
 

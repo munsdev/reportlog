@@ -92,6 +92,7 @@ describe('who opened protected data', () => {
             public_ref: 'RL-7K2M',
             attachment_id: null,
             logbook: null,
+            read_ref: null,
           },
           {
             id: 'a-1',
@@ -103,6 +104,7 @@ describe('who opened protected data', () => {
             public_ref: null,
             attachment_id: null,
             logbook: null,
+            read_ref: null,
           },
           {
             id: 'f-1',
@@ -114,6 +116,7 @@ describe('who opened protected data', () => {
             public_ref: 'RL-4QQ1',
             attachment_id: 12,
             logbook: null,
+            read_ref: null,
           },
         ],
       },
