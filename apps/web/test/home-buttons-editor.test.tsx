@@ -134,6 +134,8 @@ describe('the front page buttons editor', () => {
     await screen.findByRole('list', { name: 'Buttons, in order' });
     const first = rows()[0];
     if (!first) throw new Error('no row');
+    // A row is closed to its summary until Change is pressed.
+    await userEvent.setup().click(within(first).getByRole('button', { name: /^Change/ }));
     const target = within(first).getByLabelText('Target');
     expect(target.tagName).toBe('SELECT');
     const groups = [...target.querySelectorAll('optgroup')].map((g) => g.label);
@@ -157,6 +159,7 @@ describe('the front page buttons editor', () => {
     await screen.findByRole('list', { name: 'Buttons, in order' });
     // Relabel the site's own button, and give it a second line.
     const boardRow = row(1);
+    await user.click(within(boardRow).getByRole('button', { name: /^Change/ }));
     await user.type(within(boardRow).getByLabelText('Main text'), 'The record');
     await user.type(within(boardRow).getByLabelText('Subtext'), 'Everything published');
     // Remove the closed logbook.

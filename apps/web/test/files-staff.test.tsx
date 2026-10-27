@@ -122,7 +122,7 @@ describe('consent is the ceiling', () => {
     wrap(<ReportFiles threadId={THREAD} />);
     await screen.findByRole('heading', { name: /queue\.jpg/ });
     expect(screen.queryByRole('button', { name: /Publish/ })).toBeNull();
-    expect(screen.getByText('The reporter withdrew this report')).toBeInTheDocument();
+    expect(screen.getByText('The reporter withdrew this report.')).toBeInTheDocument();
   });
 
   it('a file sent and not accepted is listed for the moderator, with its reason (decision 32)', async () => {

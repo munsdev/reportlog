@@ -209,7 +209,7 @@ describe('the cards', () => {
     expect(screen.getByText(/removed from any copy that could ever be shown/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
-    await user.click(screen.getByRole('button', { name: 'Send report' }));
+    await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByRole('heading', { name: /Check your email/ })).toBeInTheDocument();
 
     expect([...new Set(calls)].sort()).toEqual([
@@ -256,7 +256,7 @@ describe('the cards', () => {
     await user.type(screen.getByLabelText('Your email address'), 'me@example.org');
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
-    await user.click(screen.getByRole('button', { name: 'Send report' }));
+    await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByRole('heading', { name: /Check your email/ })).toBeInTheDocument();
     expect(screen.getByText(/Thank you\. Have a link\?/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Send a link' })).toHaveAttribute('href', '/list/tips');

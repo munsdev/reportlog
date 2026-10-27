@@ -132,17 +132,22 @@ describe('the footer', () => {
 
   it('links the About, How-to, standard, legal, directory and journalist pages', async () => {
     await inRouter(() => <SiteFooter />);
-    const nav = await screen.findByRole('navigation', { name: 'About this site' });
-    const hrefs = [...nav.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    // The mock-up's footer is three columns of links under headings (Project,
+    // Using the site, Legal), not one named navigation.
+    const columns = (await screen.findByRole('contentinfo')).querySelector('.foot-cols');
+    if (!columns) throw new Error('no link columns');
+    const hrefs = [...columns.querySelectorAll('a')].map((a) => a.getAttribute('href'));
     expect(hrefs).toEqual([
       '/about',
+      '/get-involved',
+      '/journalists#press',
       '/how',
+      '/verify',
       '/standards',
+      '/organizations',
       '/legal',
       '/terms',
       '/illegal-content',
-      '/organizations',
-      '/journalists',
     ]);
   });
 
@@ -165,7 +170,9 @@ describe('the footer', () => {
         ],
       }),
     );
-    const nav = await screen.findByRole('navigation', { name: 'Follow us elsewhere' });
+    await screen.findByRole('heading', { name: 'Follow' });
+    const nav = document.querySelector<HTMLElement>('.foot-cols .social');
+    if (!nav) throw new Error('no social row');
     const links = within(nav).getAllByRole('link');
     expect(links.map((a) => a.getAttribute('aria-label'))).toEqual([
       'Munich Archive on Instagram',
@@ -180,7 +187,8 @@ describe('the footer', () => {
   it('has no social media row when no account is switched on', async () => {
     await inRouter(() => <SiteFooter />, site({ social_links: [] }));
     await screen.findByText(/Powered by/);
-    expect(screen.queryByRole('navigation', { name: 'Follow us elsewhere' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Follow' })).toBeNull();
+    expect(document.querySelector('.social')).toBeNull();
   });
 });
 
@@ -222,9 +230,9 @@ describe('the development badge', () => {
 describe('a slot of page wording', () => {
   it('shows what the operator wrote, as plain text', async () => {
     await inRouter(() => <CopyText slot="about_archive" />);
-    expect(await screen.findByText('We are the Munich archive.')).toHaveClass(
-      'whitespace-pre-wrap',
-    );
+    expect(await screen.findByText('We are the Munich archive.')).toHaveStyle({
+      whiteSpace: 'pre-wrap',
+    });
   });
 
   it('an optional slot nobody wrote draws nothing at all', async () => {

@@ -24,8 +24,7 @@ export function NotFoundPage() {
       <div className="wrap oops">
         <span className="eyebrow">404</span>
         <h1 className="display" style={{ fontSize: 'clamp(2.6rem,9vw,6rem)' }}>
-          That page
-          <br />
+          That page <br />
           <span className="two">isn&rsquo;t here</span>
         </h1>
         <p className="lead">

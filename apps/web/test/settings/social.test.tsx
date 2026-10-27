@@ -33,7 +33,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const group = (name: string) => screen.getByRole('group', { name });
+/** A platform's panel: a section named by its heading (the mark beside the name is decoration). */
+const group = (name: string) => {
+  const panel = screen.getByRole('heading', { name }).closest('section');
+  if (!panel) throw new Error(`no panel called ${name}`);
+  return panel;
+};
 
 describe('the social media screen', () => {
   it('shows the link a handle stands for, and switches a platform on only once it has one', async () => {
@@ -48,10 +53,10 @@ describe('the social media screen', () => {
     wrap(<SocialForm state={editorState()} />);
 
     const row = group('Instagram');
-    const show = within(row).getByRole('checkbox', { name: 'Show on the site' });
+    const show = within(row).getByRole('switch', { name: 'Show on the site' });
     expect(show).toBeDisabled();
     await user.type(within(row).getByLabelText('Address on Instagram'), '@munich');
-    expect(within(row).getByText('Links to https://www.instagram.com/munich')).toBeInTheDocument();
+    expect(within(row).getByText('Links to www.instagram.com/munich')).toBeInTheDocument();
     expect(show).toBeEnabled();
     await user.click(show);
     await user.click(screen.getByRole('button', { name: 'Save' }));
@@ -81,9 +86,9 @@ describe('the social media screen', () => {
       />,
     );
     const row = group('YouTube');
-    expect(within(row).getByRole('checkbox', { name: 'Show on the site' })).toBeChecked();
+    expect(within(row).getByRole('switch', { name: 'Show on the site' })).toBeChecked();
     await user.clear(within(row).getByLabelText('Address on YouTube'));
-    expect(within(row).getByRole('checkbox', { name: 'Show on the site' })).not.toBeChecked();
+    expect(within(row).getByRole('switch', { name: 'Show on the site' })).not.toBeChecked();
   });
 
   it('refuses an address on another site before anything is sent', async () => {
@@ -104,10 +109,9 @@ describe('the social media screen', () => {
     const rec = recordingFetch(editorState());
     vi.stubGlobal('fetch', rec.fetchImpl);
     wrap(<SocialForm state={editorState()} />);
-    const box = group('Floating “Follow us” button');
     // The pages are asked only once it is on.
     expect(screen.queryByRole('group', { name: 'On these pages' })).not.toBeInTheDocument();
-    await user.click(within(box).getByRole('checkbox', { name: 'Show the button' }));
+    await user.click(screen.getByRole('switch', { name: 'Floating “Follow us” button' }));
     const pages = screen.getByRole('group', { name: 'On these pages' });
     expect(
       within(pages)

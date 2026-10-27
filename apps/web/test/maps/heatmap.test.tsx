@@ -99,7 +99,7 @@ describe('a heat map', () => {
     // What axe's label-content-name-mismatch asks, said directly: axe itself
     // cannot see text in jsdom, which has no layout, so it passes anything.
     for (const b of buttons) {
-      const shown = [...b.querySelectorAll('span')]
+      const shown = [...b.querySelectorAll('b, span')]
         .map((x) => x.textContent)
         .filter((x) => x !== '—')
         .join(' ');

@@ -227,7 +227,12 @@ describe('adding looks from a file', () => {
       },
     });
     wrap(<AddLookPack />);
-    expect(screen.getByRole('button', { name: 'Choose a .zip' })).toBeVisible();
+    // The mock-up's file drop: a label over a native file input named by
+    // the section's heading, not a button.
+    expect(screen.getByText('Choose a .zip')).toBeVisible();
+    expect(document.querySelector('input[type=file]')).toHaveAccessibleName(
+      'Add looks from a file',
+    );
     expect(
       screen.getByText(/A look pack is a \.zip with a look\.json and its fonts\./),
     ).toBeVisible();
@@ -376,16 +381,16 @@ describe('the Look screen offers what the packs add', () => {
         <LookScreen state={editorState()} />
       </SettingsFrame>,
     );
-    const looks = screen.getByRole('radiogroup', { name: 'Looks' });
+    const looks = screen.getByRole('radiogroup', { name: 'Named looks' });
     const card = await within(looks).findByRole('radio', { name: /^Tideline\s*From Tideline$/ });
     expect(within(looks).getAllByRole('radio')).toHaveLength(LOOKS.length + 2);
     expect(
-      within(screen.getByLabelText('Palette, the colours')).getByRole('option', {
+      within(screen.getByLabelText('Palette')).getByRole('option', {
         name: 'Tideline night · dark',
       }),
     ).toBeInTheDocument();
     expect(
-      within(screen.getByLabelText('Theme, the type and shapes')).getByRole('option', {
+      within(screen.getByLabelText('Theme')).getByRole('option', {
         name: 'Tideline',
       }),
     ).toBeInTheDocument();
@@ -413,7 +418,7 @@ describe('the Look screen offers what the packs add', () => {
       </SettingsFrame>,
     );
     expect(
-      within(screen.getByRole('radiogroup', { name: 'Looks' })).getAllByRole('radio'),
+      within(screen.getByRole('radiogroup', { name: 'Named looks' })).getAllByRole('radio'),
     ).toHaveLength(LOOKS.length);
   });
 });
