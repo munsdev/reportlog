@@ -37,22 +37,28 @@ import type { QueueItem, ResponseOf, getQueueItem, getReportNote } from '@report
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { BottomBar } from '@/components/ui/bottom-bar.tsx';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Select } from '../../components/ui/select.tsx';
 import { SettingPanels, useSettingPanels } from '../../components/ui/setting-panel.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
+import { Back } from '../../mockup/Back.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Dl } from '../../mockup/Dl.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '../../mockup/Form.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Problem as ProblemNote } from '../../mockup/Notice.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { EvidenceRequests, evidenceSummary } from '../files/staff/EvidenceRequests.tsx';
 import { ReportFiles } from '../files/staff/ReportFiles.tsx';
@@ -61,9 +67,8 @@ import { useMe } from '../identity/session.ts';
 import { ClosedRow } from './ClosedRow.tsx';
 import { ReportWritten } from './Texts.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
-import { Meta } from '../../components/ui/type.tsx';
 import type { Decided, Decision } from './DecideForm.tsx';
-import { AnswerList, StaffHead, StatusChip, useWide, waited, when } from './parts.tsx';
+import { AnswerList, StatusChip, waited, when } from './parts.tsx';
 import { noteQuery, queueItemQuery, queueQuery } from './queries.ts';
 import type { QueueSearch } from './queries.ts';
 import { ACTION_WORDS, SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
@@ -85,7 +90,7 @@ function useAct<T>(fn: (input: T) => Promise<unknown>) {
 }
 
 function Problem({ error }: { error: Error | null }) {
-  return error ? <Alert tone="serious">{error.message}</Alert> : null;
+  return error ? <ProblemNote>{error.message}</ProblemNote> : null;
 }
 
 /** The last time staff did this to the report: "by mod@example.org, 3 Nov 14:40". */
@@ -106,7 +111,6 @@ export function ItemPage({ threadId, search = {} }: { threadId: string; search?:
 
 function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearch }) {
   const query = useQuery(queueItemQuery(threadId));
-  const wide = useWide(1024);
   const panels = useSettingPanels();
   const toast = useToast();
   const [decided, setDecided] = useState<Decided | null>(null);
@@ -121,22 +125,15 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
     [toast],
   );
 
-  const back = (
-    <Button asChild variant="quiet" className="-ml-2 self-start">
-      <Link to="/moderate" search={search}>
-        Back to the queue
-      </Link>
-    </Button>
-  );
+  const back = <Back to="/moderate">Back to the queue</Back>;
 
   if (query.isPending) return <p role="status">Reading the report…</p>;
   if (query.isError) {
     return (
-      <div className="flex flex-col gap-4">
+      <StaffPage title="Not found">
         {back}
-        <StaffHead title="Not found" />
-        <Alert tone="serious">{query.error.message}</Alert>
-      </div>
+        <ProblemNote>{query.error.message}</ProblemNote>
+      </StaffPage>
     );
   }
   const { report: r, history, assessment } = query.data;
@@ -146,135 +143,88 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
       ? `${r.logbook_title} · waiting ${waited(r.received_at)}`
       : `${r.logbook_title} · ${state ?? ''}`;
 
-  // The mock-up's order: eyebrow, the reference, the way back, where it
-  // stands in one line, then its chips.
-  const head = (
-    <StaffHead title={r.public_ref} mono>
-      {back}
-      <Meta>{eyebrow}</Meta>
-      <div className="flex flex-wrap gap-1.5">
-        <StatusChip r={r} />
-        <Chip tone="tag">{r.public ? 'Public' : 'Not public'}</Chip>
-        {r.needs_review ? <Chip tone="tag">Second read</Chip> : null}
-        {r.reporter_withdrew ? <Chip tone="tag">Withdrawn by its reporter</Chip> : null}
-        {r.threat_open ? <Chip tone="serious">Threat to safety</Chip> : null}
-      </div>
-    </StaffHead>
-  );
-
-  const said = (
-    <>
-      <Said r={r} />
-      <ReportWritten threadId={r.thread_id} />
-    </>
-  );
-  const files =
-    r.file_count > 0 ? (
-      <ReportFiles
-        threadId={r.thread_id}
-        reportPublic={r.public}
-        reportApproved={r.moderation_status === 'valid'}
-      />
-    ) : null;
-  const rows = <Rows r={r} a={assessment} history={history} />;
-  const record = <TheRecord r={r} history={history} />;
-  const decide = (
-    <DecidePanel
-      r={r}
-      history={history}
-      search={search}
-      decided={decided}
-      onDecided={(d) => {
-        onDecided(d, r.public_ref);
-      }}
-    />
-  );
-
-  if (wide) {
-    return (
-      <div className="flex flex-col gap-6">
-        {head}
-        <div className="grid grid-cols-[minmax(0,7fr)_minmax(0,4fr)] items-start gap-6">
-          <div className="flex min-w-0 flex-col gap-6">
-            {said}
-            {files}
-            {record}
-          </div>
-          {/* Not sticky, though moderation.md asked for a sticky Decide panel:
-              sticky alone, the rows under it slid beneath it and could not be
-              pressed; a sticky, self-scrolling column hid its own controls
-              from the pointer. The panel heads the column instead. */}
-          <div className="flex min-w-0 flex-col gap-6">
-            {decide}
-            {rows}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const canDecide = !r.withdrawn;
   return (
-    <div className="flex flex-col gap-6">
-      {head}
-      {r.withdrawn || decided ? decide : null}
-      {said}
-      {files}
-      {rows}
-      {record}
-      {canDecide && panels.openId === null ? (
-        <>
-          {/* Room for the bar, so the last row can be scrolled clear of it. */}
-          <div aria-hidden="true" className="h-20" />
-          <BottomBar
-            role="region"
-            aria-label="Decide"
-            className="fixed inset-x-0 bottom-0 z-30 border-t-[6px] border-brand-on-deep bg-deep text-on-deep print:hidden"
-          >
-            <div className="mx-auto flex max-w-page items-center gap-2 px-[max(1rem,env(safe-area-inset-left))] py-3">
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  setSheet('valid');
-                }}
-              >
-                Approve…
-              </Button>
-              <Button
-                variant="secondary"
-                className="flex-1"
-                onClick={() => {
-                  setSheet('invalid');
-                }}
-              >
-                Decline…
-              </Button>
-            </div>
-          </BottomBar>
-        </>
-      ) : null}
-      <Dialog
-        open={sheet !== null}
-        onOpenChange={(on) => {
-          if (!on) setSheet(null);
-        }}
-      >
-        {/* A sheet from the foot of the screen, where the thumb already is. */}
-        <DialogContent className="top-auto bottom-0 left-0 max-h-[90dvh] w-full max-w-none translate-x-0 translate-y-0 rounded-b-none">
-          <DialogHeader>
-            <DialogTitle>Decide {r.public_ref}</DialogTitle>
-          </DialogHeader>
-          <DecideForm
-            key={sheet ?? ''}
-            report={r}
-            initial={sheet ?? undefined}
+    <StaffPage title={r.public_ref} mono>
+      {back}
+      <p className="eyebrow">{eyebrow}</p>
+      <div className="chips">
+        <StatusChip r={r} />
+        <Chip kind="off">{r.public ? 'Public' : 'Not public'}</Chip>
+        {r.needs_review ? <Chip kind="flag">Second read</Chip> : null}
+        {r.reporter_withdrew ? <Chip kind="off">Withdrawn by its reporter</Chip> : null}
+        {r.threat_open ? <span className="st bad">Threat to safety</span> : null}
+      </div>
+      <div className="grid2">
+        <div className="col">
+          <Said r={r} />
+          <ReportWritten threadId={r.thread_id} />
+          {r.file_count > 0 ? (
+            <ReportFiles
+              threadId={r.thread_id}
+              reportPublic={r.public}
+              reportApproved={r.moderation_status === 'valid'}
+            />
+          ) : null}
+          <TheRecord r={r} history={history} />
+        </div>
+        {/* The mock-up's `.decide`: sticky beside the report on a desktop, and
+            after it on a phone, where the bar at the foot opens the same form. */}
+        <div className="col decide">
+          <DecidePanel
+            r={r}
+            history={history}
+            search={search}
+            decided={decided}
             onDecided={(d) => {
               onDecided(d, r.public_ref);
             }}
           />
-        </DialogContent>
-      </Dialog>
-    </div>
+          <Rows r={r} a={assessment} history={history} />
+        </div>
+      </div>
+      {!r.withdrawn && panels.openId === null ? (
+        <div className="phone-decide">
+          <div className="in">
+            <Btn
+              onClick={() => {
+                setSheet('invalid');
+              }}
+            >
+              Decline…
+            </Btn>
+            <Btn
+              kind="ink"
+              onClick={() => {
+                setSheet('valid');
+              }}
+            >
+              Approve…
+            </Btn>
+          </div>
+        </div>
+      ) : null}
+      <Modal
+        title={`Decide ${r.public_ref}`}
+        open={sheet !== null}
+        onClose={() => {
+          setSheet(null);
+        }}
+        buttons={null}
+      >
+        <DecideForm
+          key={sheet ?? ''}
+          bare
+          report={r}
+          initial={sheet ?? undefined}
+          onDecided={(d) => {
+            onDecided(d, r.public_ref);
+          }}
+          onCancel={() => {
+            setSheet(null);
+          }}
+        />
+      </Modal>
+    </StaffPage>
   );
 }
 
@@ -282,17 +232,17 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
 
 function Said({ r }: { r: QueueItem }) {
   return (
-    <Card heading="What the reporter said">
+    <Panel title="What the reporter said">
       <AnswerList slug={r.logbook_slug} answers={r.answers} />
-      <p className="text-sm text-ink-alt">
+      <p className="m">
         Filed {when(r.received_at)}
         {r.versions > 1 ? `, version ${String(r.versions)} (corrected by its reporter)` : ''}
         {r.filed_via ? `, through ${r.filed_via}` : ''}.{' '}
         {r.may_publish
-          ? 'Its reporter permitted publication.'
+          ? 'Publication: the reporter allows publishing.'
           : 'Its reporter did not permit publication: approving it records the judgement, and it stays off the board.'}
       </p>
-    </Card>
+    </Panel>
   );
 }
 
@@ -316,48 +266,52 @@ function DecidePanel({
   if (r.reporter_withdrew) {
     const at = [...history].reverse().find((h) => h.by === 'reporter' && h.action === 'withdraw');
     return (
-      <Card variant="deep" heading="Withdrawn by its reporter">
+      <Panel kind="deep" title="Withdrawn by its reporter">
         <p>
           {`Withdrawn by its reporter${at ? ` on ${when(at.created_at)}` : ''}. It is off the board and cannot be put back by a moderator.`}
         </p>
-      </Card>
+      </Panel>
     );
   }
   if (r.withdrawn) {
     return (
-      <Card variant="deep" heading="Taken off the board">
+      <Panel kind="deep" title="Taken off the board">
         <p>
           A moderator took it off the board. Put it back (below) as waiting or with a decision
           before deciding it again.
         </p>
-      </Card>
+      </Panel>
     );
   }
   return (
-    <Card heading="Decide">
+    <>
       {decided ? (
         <>
-          <Alert tone="done">
-            Recorded. {decided.notice === 'none' ? '' : (NOTICE_WORDS[decided.notice] ?? '')}
-          </Alert>
+          <Note>
+            <span>
+              <b>Recorded.</b>{' '}
+              {decided.notice === 'none' ? '' : (NOTICE_WORDS[decided.notice] ?? '')}
+            </span>
+          </Note>
           <NextWaiting current={r.thread_id} search={search} />
         </>
       ) : null}
       {r.moderation_status === 'pending' ? null : (
-        <p className="text-sm text-ink-alt">
+        <p className="m">
           Now: {STATUS_WORDS[r.moderation_status]}. A new decision is recorded on top; the earlier
           one stays on the record.
         </p>
       )}
       <DecideForm
         key={round}
+        title="Decide"
         report={r}
         onDecided={(d) => {
           setRound((n) => n + 1);
           onDecided(d);
         }}
       />
-    </Card>
+    </>
   );
 }
 
@@ -368,11 +322,10 @@ function NextWaiting({ current, search }: { current: string; search: QueueSearch
   const query = useQuery(queueQuery(waiting));
   const next = query.data?.reports.find((x) => x.thread_id !== current);
   if (query.isPending) return null;
-  if (!next) return <p className="text-sm text-ink-alt">Nothing else is waiting in this queue.</p>;
+  if (!next) return <p className="m">Nothing else is waiting in this queue.</p>;
   return (
-    <Button
-      variant="secondary"
-      block
+    <Btn
+      kind="ink"
       onClick={() => {
         void navigate({
           to: '/moderate/$threadId',
@@ -382,7 +335,7 @@ function NextWaiting({ current, search }: { current: string; search: QueueSearch
       }}
     >
       Next waiting report
-    </Button>
+    </Btn>
   );
 }
 
@@ -390,7 +343,7 @@ function NextWaiting({ current, search }: { current: string; search: QueueSearch
 
 function Rows({ r, a, history }: { r: QueueItem; a: Assessment; history: History }) {
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <SeverityRow r={r} a={a} history={history} />
       <ThreatRow r={r} />
       <IncidentRow r={r} a={a} />
@@ -399,7 +352,7 @@ function Rows({ r, a, history }: { r: QueueItem; a: Assessment; history: History
       {r.notes_enabled ? <NoteRow r={r} /> : null}
       {r.reporter_withdrew ? null : <BoardRow r={r} />}
       {r.has_contact ? <WhoFiledRow r={r} /> : null}
-    </div>
+    </>
   );
 }
 
@@ -426,12 +379,18 @@ function SeverityRow({ r, a, history }: { r: QueueItem; a: Assessment; history: 
     <ClosedRow
       id="severity"
       title="Severity"
-      action="Edit"
+      action="Record the rating"
       summary={
-        <p>
-          {current ? `${current.label}: ${current.hint}.` : 'Not set.'}
-          {current ? lastBy(history, 'severity') : ''}
-        </p>
+        <Dl
+          items={[
+            [
+              'Now',
+              current
+                ? `${current.label}: ${current.hint}.${lastBy(history, 'severity')}`
+                : 'Not rated yet',
+            ],
+          ]}
+        />
       }
       dirty={severity !== '' || comment !== ''}
       onCancel={reset}
@@ -445,7 +404,7 @@ function SeverityRow({ r, a, history }: { r: QueueItem; a: Assessment; history: 
         reset();
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         A moderator’s judgement, kept beside the report and never part of what was sealed.
       </p>
       <Field>
@@ -508,15 +467,24 @@ function ThreatRow({ r }: { r: QueueItem }) {
     <ClosedRow
       id="threat"
       title="Threat to life or safety"
-      action="Edit"
+      action={r.threat_open ? 'Clear the flag' : 'Flag it'}
       summary={
         <>
-          <p>{r.threat_open ? 'Yes. The owner was emailed when it was flagged.' : 'No.'}</p>
+          <Dl
+            items={[
+              [
+                'Now',
+                r.threat_open
+                  ? 'Flagged. The owner was emailed when it was flagged.'
+                  : 'Not flagged',
+              ],
+            ]}
+          />
           {unsent ? (
-            <Alert tone="serious" className="mt-2">
+            <ProblemNote>
               The flag is raised, but the email to the owner could not be sent. Tell them another
               way.
-            </Alert>
+            </ProblemNote>
           ) : null}
         </>
       }
@@ -528,7 +496,7 @@ function ThreatRow({ r }: { r: QueueItem }) {
         setNote('');
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         {r.threat_open
           ? 'This report is flagged. The owner was emailed when it was.'
           : 'Flag it if what it describes puts somebody’s life or safety at risk now. The owner is emailed at once. This is not the severity rating.'}
@@ -576,20 +544,20 @@ function IncidentRow({ r, a }: { r: QueueItem; a: Assessment }) {
   }, [link]);
   const total = a.linked.length + 1;
   const summary = a.incident_id ? (
-    <div className="flex flex-col gap-1">
-      <p>
-        Linked with {a.linked.map((l) => l.public_ref).join(', ')}.{' '}
-        {`${String(a.published_accounts)} of the ${String(total)} accounts are published.`}
-      </p>
-    </div>
+    <Dl
+      items={[
+        ['Linked with', a.linked.map((l) => l.public_ref).join(', ')],
+        ['Published', `${String(a.published_accounts)} of the ${String(total)} accounts`],
+      ]}
+    />
   ) : (
-    <p>Not linked.</p>
+    <Dl items={[['Linked with', 'Not linked']]} />
   );
   return (
     <ClosedRow
       id="incident"
       title="Same incident"
-      action="Link"
+      action="Link them"
       summary={summary}
       dirty={ref !== '' || comment !== '' || mode !== 'link'}
       onCancel={reset}
@@ -608,14 +576,10 @@ function IncidentRow({ r, a }: { r: QueueItem; a: Assessment }) {
           <p>
             {`Only the ${String(a.published_accounts)} published of these ${String(total)} accounts count as corroboration a reader can check.`}
           </p>
-          <ul className="flex flex-col gap-1 text-sm" aria-label="Linked reports">
+          <ul className="m" aria-label="Linked reports">
             {a.linked.map((l) => (
               <li key={l.thread_id}>
-                <Link
-                  to="/moderate/$threadId"
-                  params={{ threadId: l.thread_id }}
-                  className="font-mono underline"
-                >
+                <Link to="/moderate/$threadId" params={{ threadId: l.thread_id }} className="mono">
                   {l.public_ref}
                 </Link>{' '}
                 · {l.withdrawn ? STATUS_WORDS.withdrawn : STATUS_WORDS[l.moderation_status]}
@@ -623,19 +587,29 @@ function IncidentRow({ r, a }: { r: QueueItem; a: Assessment }) {
               </li>
             ))}
           </ul>
-          <Field>
-            <Label>What to do</Label>
-            <RadioGroup
-              value={mode}
-              onValueChange={(v) => {
-                setMode(v as 'link' | 'unlink');
+          <span className="lbl">What to do</span>
+          <Choices>
+            <Choice
+              name="incident-mode"
+              checked={mode === 'link'}
+              onChange={() => {
+                setMode('link');
                 setProblem('');
               }}
             >
-              <RadioOption value="link" label="Move it to another report’s incident" />
-              <RadioOption value="unlink" label="Unlink this report" />
-            </RadioGroup>
-          </Field>
+              Move it to another report’s incident
+            </Choice>
+            <Choice
+              name="incident-mode"
+              checked={mode === 'unlink'}
+              onChange={() => {
+                setMode('unlink');
+                setProblem('');
+              }}
+            >
+              Unlink this report
+            </Choice>
+          </Choices>
         </>
       ) : null}
       {mode === 'link' ? (
@@ -681,16 +655,16 @@ function SecondReadRow({ r }: { r: QueueItem }) {
     <ClosedRow
       id="second-read"
       title="Second read"
-      action="Clear"
-      summary={<p>{`Asked for by the word list: ${r.review_terms.join(', ')}.`}</p>}
+      action="Give the second read"
+      summary={<Dl items={[['Asked for', r.review_terms.join(', ')]]} />}
       onCancel={reset}
       saveLabel="I have read it"
       onSave={() => read.mutateAsync(undefined)}
     >
       <p>
-        Its words matched: <span className="font-semibold">{r.review_terms.join(', ')}</span>. This
-        is a reading list, not a finding about the report or anybody in it. Clearing it says you
-        have read the report; no reason is asked.
+        Its words matched: <b>{r.review_terms.join(', ')}</b>. This is a reading list, not a finding
+        about the report or anybody in it. Clearing it says you have read the report; no reason is
+        asked.
       </p>
       <Problem error={read.error} />
     </ClosedRow>
@@ -703,8 +677,10 @@ function EvidenceRow({ r }: { r: QueueItem }) {
     <ClosedRow
       id="evidence"
       title="Ask for evidence"
-      action="Ask"
-      summary={<p>{query.isError ? query.error.message : evidenceSummary(query.data)}</p>}
+      action="Ask for evidence"
+      summary={
+        <Dl items={[['Asks', query.isError ? query.error.message : evidenceSummary(query.data)]]} />
+      }
     >
       <EvidenceRequests threadId={r.thread_id} bare />
     </ClosedRow>
@@ -744,13 +720,19 @@ function NoteRow({ r }: { r: QueueItem }) {
       title="The archive’s note"
       action={note ? 'Revise' : 'Write'}
       summary={
-        <p>
-          {query.isError
-            ? query.error.message
-            : note
-              ? `Version ${String(note.versions)}, ${stateWords}. Last written ${when(note.written_at)}.`
-              : 'None.'}
-        </p>
+        <Dl
+          items={[
+            [
+              'Note',
+              query.isError
+                ? query.error.message
+                : note
+                  ? `Version ${String(note.versions)}, ${stateWords}. Last written ${when(note.written_at)}.`
+                  : 'None written',
+            ],
+            ['Sources cited', links.length ? links.map((l) => l.title).join(', ') : 'None'],
+          ]}
+        />
       }
       dirty={body !== null || why !== ''}
       onCancel={reset}
@@ -768,7 +750,7 @@ function NoteRow({ r }: { r: QueueItem }) {
         reset();
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         Published under the archive’s name, never yours. Every version stays on the record, so a
         revision shows as one.
       </p>
@@ -796,7 +778,7 @@ function NoteRow({ r }: { r: QueueItem }) {
           />
         </Field>
       ) : null}
-      {problem ? <Alert tone="serious">{problem}</Alert> : null}
+      {problem ? <ProblemNote>{problem}</ProblemNote> : null}
       <Problem error={write.error} />
       {note ? <Citations threadId={r.thread_id} links={links} /> : null}
       {note && isAdmin ? <NoteState threadId={r.thread_id} current={note.state} /> : null}
@@ -816,32 +798,32 @@ function Citations({
   const add = useAct(() => call(addNoteLink, { params: { threadId }, body: { title, url } }));
   const remove = useAct((id: number) => call(removeNoteLink, { params: { threadId, id } }));
   return (
-    <div className="flex flex-col gap-3 border-t border-line pt-4">
-      <h3 className="font-semibold">Sources cited</h3>
+    <div className="col">
+      <span className="lbl">Sources cited</span>
       {links.length ? (
-        <ul className="flex flex-col gap-1">
+        <ul className="qlist">
           {links.map((l) => (
-            <li key={l.id} className="flex flex-wrap items-center gap-2">
-              <a href={l.url} rel="noopener noreferrer nofollow" className="underline">
+            <li key={l.id} className="acts">
+              <a href={l.url} rel="noopener noreferrer nofollow">
                 {l.title}
               </a>
-              <Button
-                variant="quiet"
+              <Btn
+                kind="ghost"
                 aria-label={`Withdraw ${l.title}`}
                 onClick={() => {
                   remove.mutate(l.id);
                 }}
               >
                 Withdraw
-              </Button>
+              </Btn>
             </li>
           ))}
         </ul>
       ) : (
-        <p className="text-sm">None yet.</p>
+        <p className="muted">None yet.</p>
       )}
       <form
-        className="flex flex-col gap-2 sm:flex-row sm:items-end"
+        className="col"
         onSubmit={(e) => {
           e.preventDefault();
           add.mutate(undefined, {
@@ -852,7 +834,7 @@ function Citations({
           });
         }}
       >
-        <Field className="flex-1">
+        <Field>
           <Label>Title</Label>
           <Input
             value={title}
@@ -861,7 +843,7 @@ function Citations({
             }}
           />
         </Field>
-        <Field className="flex-1">
+        <Field>
           <Label>Address (http or https)</Label>
           <Input
             type="url"
@@ -871,9 +853,11 @@ function Citations({
             }}
           />
         </Field>
-        <Button type="submit" variant="secondary" busy={add.isPending} busyLabel="Citing…">
-          Cite it
-        </Button>
+        <div className="acts">
+          <Btn type="submit" disabled={add.isPending}>
+            {add.isPending ? 'Citing…' : 'Cite it'}
+          </Btn>
+        </div>
       </form>
       <Problem error={add.error ?? remove.error} />
     </div>
@@ -888,14 +872,14 @@ function NoteState({ threadId, current }: { threadId: string; current: string })
   );
   return (
     <form
-      className="flex flex-col gap-2 border-t border-line pt-4"
+      className="col"
       onSubmit={(e) => {
         e.preventDefault();
         change.mutate(undefined);
       }}
     >
-      <h3 className="font-semibold">The note’s state (administrators)</h3>
-      <p className="text-sm text-ink-alt">
+      <span className="lbl">The note’s state (administrators)</span>
+      <p className="muted">
         A note is not taken down when its report is withdrawn. Taking it down is a decision recorded
         here.
       </p>
@@ -922,15 +906,11 @@ function NoteState({ threadId, current }: { threadId: string; current: string })
         />
       </Field>
       <Problem error={change.error} />
-      <Button
-        type="submit"
-        variant="secondary"
-        className="self-start"
-        busy={change.isPending}
-        busyLabel="Changing…"
-      >
-        Change the state
-      </Button>
+      <div className="acts">
+        <Btn type="submit" disabled={change.isPending}>
+          {change.isPending ? 'Changing…' : 'Change the state'}
+        </Btn>
+      </div>
     </form>
   );
 }
@@ -957,13 +937,13 @@ function BoardRow({ r }: { r: QueueItem }) {
     ? 'Taken off the board by a moderator.'
     : r.public
       ? 'On the board.'
-      : 'Not on the board.';
+      : 'Not on the board yet';
   return (
     <ClosedRow
       id="board"
       title={r.withdrawn ? 'Put it back' : 'Take it off the board'}
-      action={r.withdrawn ? 'Put back' : 'Take off'}
-      summary={<p>{now}</p>}
+      action={r.withdrawn ? 'Put it back' : 'Take it off'}
+      summary={<Dl items={[['Now', now]]} />}
       dirty={comment !== '' || status !== 'pending'}
       onCancel={reset}
       saveLabel={r.withdrawn ? 'Put it back' : 'Withdraw it'}
@@ -992,7 +972,7 @@ function BoardRow({ r }: { r: QueueItem }) {
           </Select>
         </Field>
       ) : (
-        <p className="text-sm text-ink-alt">
+        <p className="muted">
           Nothing is deleted: the report stays in the archive and still verifies.
         </p>
       )}
@@ -1022,6 +1002,7 @@ type Contact = ResponseOf<typeof openReportContact>['contact'];
  * again first; the reporter is later shown the reason and when, never who.
  */
 function WhoFiledRow({ r }: { r: QueueItem }) {
+  const [asking, setAsking] = useState(false);
   const [reason, setReason] = useState('');
   const [problem, setProblem] = useState('');
   const [opened, setOpened] = useState<Contact | null>(null);
@@ -1033,76 +1014,104 @@ function WhoFiledRow({ r }: { r: QueueItem }) {
       }),
     onSuccess: (d) => {
       setOpened(d.contact);
+      setAsking(false);
+      setReason('');
     },
   });
-  const reset = useCallback(() => {
+  const reset = () => {
+    setAsking(false);
     setReason('');
     setProblem('');
     open.reset();
-  }, [open]);
+  };
   const summary: ReactNode = opened ? (
-    <div className="flex flex-col gap-2">
+    <>
       {opened.erased ? (
         <p>The reporter had their contact details erased. There is nothing to read.</p>
       ) : (
-        <KeyValueList
+        <Dl
           items={[
-            {
-              key:
-                opened.filed_by === 'coordinator' ? 'The coordinator who filed it' : 'The reporter',
-              value: opened.email,
-              mono: true,
-            },
-            ...(opened.organization ? [{ key: 'For', value: opened.organization }] : []),
+            [
+              opened.filed_by === 'coordinator' ? 'The coordinator who filed it' : 'The reporter',
+              <span key="e" className="mono">
+                {opened.email}
+              </span>,
+            ],
+            ...(opened.organization
+              ? [['For', opened.organization] as [ReactNode, ReactNode]]
+              : []),
           ]}
         />
       )}
-      <p className="text-sm text-ink-alt">This look was recorded.</p>
-    </div>
+      <p className="muted">This look was recorded.</p>
+    </>
   ) : (
-    <p>Restricted. Every look is logged with your reason.</p>
+    <Dl
+      items={[
+        ['Access', 'Restricted. Every look is logged with your reason, and the reporter is told.'],
+      ]}
+    />
   );
   return (
-    <ClosedRow
-      id="who-filed"
-      title="Who filed it"
-      action="Look…"
-      summary={summary}
-      dirty={reason !== ''}
-      onCancel={reset}
-      saveLabel="Open the details"
-      onSave={async () => {
-        if (reason.trim().length < 10) {
-          setProblem('Say why you need them, in a sentence. The reporter is shown it.');
-          return false;
-        }
-        await open.mutateAsync();
-        setReason('');
-      }}
-    >
-      <p className="text-sm text-ink-alt">
-        You may be asked for your second factor again first. Nothing is opened until you give a
-        reason.
-      </p>
-      <Field>
-        <Label>Why you need them</Label>
-        <FieldDescription>
-          The reporter is shown this reason, word for word, and when you opened them. Your name is
-          not shown to them; it is kept for administrators.
-        </FieldDescription>
-        <Textarea
-          rows={2}
-          value={reason}
-          maxLength={500}
-          onChange={(e) => {
-            setReason(e.target.value);
-            setProblem('');
+    <section className="panel closed" id="who-filed">
+      <div className="closed-head">
+        <h2>Who filed it</h2>
+      </div>
+      {summary}
+      <div className="acts">
+        <Btn
+          onClick={() => {
+            setAsking(true);
           }}
-        />
-        <FieldError>{problem}</FieldError>
-      </Field>
-      <Problem error={open.error} />
-    </ClosedRow>
+        >
+          Open the details…
+        </Btn>
+      </div>
+      {/* Nothing is sent until there is a reason: closing this with none
+          writes nothing and shows nothing. You may be asked for your second
+          factor again first (the API client asks). */}
+      <Modal
+        title="Why do you need to see who filed it?"
+        open={asking}
+        onClose={reset}
+        onSubmit={() => {
+          if (reason.trim().length < 10) {
+            setProblem('Say why you need them, in a sentence. The reporter is shown it.');
+            return;
+          }
+          open.mutate();
+        }}
+        buttons={
+          <>
+            <Btn kind="ink" type="submit" disabled={open.isPending}>
+              {open.isPending ? 'Opening…' : 'Open the details'}
+            </Btn>
+            <Btn kind="ghost" onClick={reset}>
+              Cancel
+            </Btn>
+          </>
+        }
+      >
+        <Field>
+          <Label>Your reason</Label>
+          <FieldDescription>
+            The reporter is shown this reason, word for word, and when you opened them. Your name is
+            not shown to them; it is kept for administrators.
+          </FieldDescription>
+          <Textarea
+            rows={3}
+            value={reason}
+            maxLength={500}
+            onChange={(e) => {
+              setReason(e.target.value);
+              setProblem('');
+            }}
+          />
+          <FieldError>{problem}</FieldError>
+        </Field>
+        <Problem error={open.error} />
+      </Modal>
+    </section>
   );
 }
 
@@ -1110,26 +1119,26 @@ function WhoFiledRow({ r }: { r: QueueItem }) {
 
 /** One line per event, oldest first: sealed, via whom, each decision with who and why. */
 function TheRecord({ r, history }: { r: QueueItem; history: History }) {
+  const lines = [
+    `${when(r.received_at)} · Sealed${r.versions > 1 ? ` (version ${String(r.versions)})` : ''} · ${
+      r.filed_via
+        ? `through ${r.filed_via}`
+        : r.origin === 'organization'
+          ? 'through an organization'
+          : 'through the open form'
+    }`,
+    ...history.map(
+      (h) =>
+        `${when(h.created_at)} · ${ACTION_WORDS[h.action] ?? h.action}${
+          h.new_status ? `: ${STATUS_WORDS[h.new_status] ?? h.new_status}` : ''
+        } · ${h.by === 'reporter' ? 'the reporter' : (h.actor_email ?? 'staff')}${
+          h.comment ? ` · “${h.comment}”` : ''
+        }`,
+    ),
+  ];
   return (
-    <Card variant="quiet" heading="The record">
-      <ol className="flex flex-col gap-2 font-mono text-[0.8125rem] break-words">
-        <li>
-          {when(r.received_at)} · Sealed{r.versions > 1 ? ` (version ${String(r.versions)})` : ''} ·{' '}
-          {r.filed_via
-            ? `through ${r.filed_via}`
-            : r.origin === 'organization'
-              ? 'through an organization'
-              : 'through the open form'}
-        </li>
-        {history.map((h, i) => (
-          <li key={i}>
-            {when(h.created_at)} · {ACTION_WORDS[h.action] ?? h.action}
-            {h.new_status ? `: ${STATUS_WORDS[h.new_status] ?? h.new_status}` : ''} ·{' '}
-            {h.by === 'reporter' ? 'the reporter' : (h.actor_email ?? 'staff')}
-            {h.comment ? ` · “${h.comment}”` : ''}
-          </li>
-        ))}
-      </ol>
-    </Card>
+    <Panel title="The record">
+      <div className="code">{lines.join('\n')}</div>
+    </Panel>
   );
 }

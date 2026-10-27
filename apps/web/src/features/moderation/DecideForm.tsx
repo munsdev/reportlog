@@ -77,6 +77,7 @@ export function DecideForm({
   onCancel,
   focusOnOpen = false,
   title,
+  bare = false,
 }: {
   report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written'>;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
@@ -90,6 +91,8 @@ export function DecideForm({
   focusOnOpen?: boolean;
   /** A heading for the panel, on the report page; a queue row has none. */
   title?: string;
+  /** Without the panel's box, for a form that sits inside a dialog already. */
+  bare?: boolean;
 }) {
   const qc = useQueryClient();
   const id = useId();
@@ -218,7 +221,7 @@ export function DecideForm({
   return (
     <form
       aria-label={`Decide ${report.public_ref}`}
-      className="panel"
+      className={bare ? 'col' : 'panel'}
       noValidate
       onSubmit={(e) => {
         e.preventDefault();

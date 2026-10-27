@@ -772,3 +772,5 @@ body.light .follow,.scope-light .follow{background:var(--p-chrome);color:#fff}
 .seg-filter button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1.5px solid var(--rl-border);border-radius:999px;font-family:inherit;font-weight:600;font-size:.88rem;background:var(--rl-surface);color:inherit;cursor:pointer}
 .seg-filter button[aria-pressed="true"]{background:var(--rl-text);color:var(--rl-background);border-color:var(--rl-text)}
 .seg-filter button[aria-pressed="true"] .n{background:var(--rl-background);color:var(--rl-text)}
+/* the sticky Decide column scrolls inside itself when it is taller than the screen, so its last rows stay reachable */
+@media (min-width:900px){.staff .decide{max-height:calc(100vh - 92px);overflow-y:auto;overscroll-behavior:contain}}
