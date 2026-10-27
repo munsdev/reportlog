@@ -5,7 +5,7 @@
  * nothing changes: the text is on screen to select by hand.
  */
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { cn } from '@/lib/utils.ts';
 
 export function CopyButton({
@@ -21,9 +21,9 @@ export function CopyButton({
   const [copied, setCopied] = useState(false);
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
-      <Button
+      <Btn
         type="button"
-        variant="quiet"
+        look="ghost"
         className="-ml-2 font-sans"
         aria-label={`Copy ${what}`}
         onClick={() => {
@@ -38,7 +38,7 @@ export function CopyButton({
         }}
       >
         Copy
-      </Button>
+      </Btn>
       <span role="status" className="text-sm text-ink-alt">
         {copied ? 'Copied' : ''}
       </span>

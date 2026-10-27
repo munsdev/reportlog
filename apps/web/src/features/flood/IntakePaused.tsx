@@ -13,7 +13,7 @@
  */
 import { getIntakePause } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { Alert } from '../../components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { FormNotice } from '../form/FormNotice.tsx';
 import { call } from '../../lib/api.ts';
@@ -37,10 +37,10 @@ export function PauseBanner() {
   if (!pause?.paused) return null;
   return (
     <div className="mx-auto w-full max-w-page px-4 pt-4">
-      <Alert title="Intake is paused">
+      <Note title="Intake is paused">
         {/* The operator's words (site copy), sent with the pause. */}
         <span data-copy="intake_paused_notice">{pause.notice}</span>
-      </Alert>
+      </Note>
     </div>
   );
 }

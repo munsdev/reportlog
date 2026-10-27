@@ -21,8 +21,8 @@ import type { AreaCount, MapPlane, MapView, PublishedMap } from '@reportlog/cont
 import { placeLabel } from '@reportlog/fields';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { OutlinePlane, Outlines } from './outlines.ts';
@@ -60,8 +60,8 @@ export function HeatMap({
   const data = useQuery(mapQuery(slug));
   const outlines = useQuery(outlinesQuery());
   if (data.isPending) return <p role="status">Loading the map…</p>;
-  if (data.isError) return <Alert tone="serious">{data.error.message}</Alert>;
-  if (!data.data.published) return <Alert>{data.data.reason}</Alert>;
+  if (data.isError) return <Note tone="serious">{data.error.message}</Note>;
+  if (!data.data.published) return <Note>{data.data.reason}</Note>;
   return (
     <HeatMapView
       map={data.data}
@@ -215,9 +215,9 @@ export function HeatMapView({
           }
         />
       ) : outlinesFailed ? (
-        <Alert tone="serious">
+        <Note tone="serious">
           The map’s outlines could not be loaded. The counts are listed below.
-        </Alert>
+        </Note>
       ) : (
         <p role="status">Drawing the map…</p>
       )}
@@ -317,11 +317,10 @@ function Switch<T extends string>({
       <span className="text-sm text-muted">{label}</span>
       <span className="flex gap-1">
         {options.map(([v, name]) => (
-          <Button
+          <Btn
             key={v}
             type="button"
 
-            variant="secondary"
             aria-pressed={v === value}
             // Pressed in ink, unmistakably: a near-miss shade read as the wrong one.
             className={cn(v === value && 'border-ink bg-ink text-surface hover:bg-ink')}
@@ -330,7 +329,7 @@ function Switch<T extends string>({
             }}
           >
             {name}
-          </Button>
+          </Btn>
         ))}
       </span>
     </div>
@@ -510,39 +509,37 @@ function Stage({
           ))}
       </svg>
       <div className="flex flex-wrap gap-2">
-        <Button
+        <Btn
           type="button"
 
-          variant="secondary"
           disabled={zoom.k >= MAX_ZOOM}
           onClick={() => {
             zoomTo(Math.min(MAX_ZOOM, zoom.k * 2));
           }}
         >
           Zoom in
-        </Button>
-        <Button
+        </Btn>
+        <Btn
           type="button"
 
-          variant="secondary"
           disabled={zoom.k <= 1}
           onClick={() => {
             zoomTo(Math.max(1, zoom.k / 2));
           }}
         >
           Zoom out
-        </Button>
-        <Button
+        </Btn>
+        <Btn
           type="button"
 
-          variant="quiet"
+          look="ghost"
           disabled={zoom.k === 1}
           onClick={() => {
             setZoom({ k: 1, cx: x0 + W / 2, cy: y0 + H / 2 });
           }}
         >
           Whole map
-        </Button>
+        </Btn>
       </div>
     </div>
   );

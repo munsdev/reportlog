@@ -14,7 +14,7 @@
 import { getDirectory, getListing, setListing } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { CopyText } from '../../components/ui/copy-text.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
@@ -23,7 +23,6 @@ import { Meta } from '../../components/ui/type.tsx';
 import { PublicPage } from './PublicPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useMe } from '../identity/session.ts';
@@ -41,9 +40,9 @@ export function DirectoryPage() {
   if (dir.isError) {
     return (
       <PublicPage title="Organizations" width="prose">
-        <Alert tone="serious" title="The directory could not be loaded.">
+        <Note tone="serious" title="The directory could not be loaded.">
           {dir.error.message}
-        </Alert>
+        </Note>
       </PublicPage>
     );
   }

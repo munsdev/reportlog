@@ -16,13 +16,11 @@ import { signUpForAlerts } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { CheckOption, Choices } from '@/mockup/Choice.tsx';
+import { Field, Input, Label } from '@/mockup/Field.tsx';
 import { FollowBand } from '../follow/FollowBand.tsx';
 import { CardError } from '../form/CardFrame.tsx';
 import { PublicPage } from '../site-pages/PublicPage.tsx';
@@ -78,7 +76,7 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
       lede="An email when new approved reports appear in the states you cover. It says how many, and nothing more. Journalists can ask for access to the journalist desk here too."
     >
       <form
-        className="flex flex-col gap-6"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           if (!alerts && !asking) {
@@ -118,8 +116,7 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
             }}
           />
         </Field>
-        <fieldset className="flex flex-col gap-3">
-          <legend className="sr-only">What you are signing up for</legend>
+        <Choices role="group" aria-label="What you are signing up for">
           <CheckOption
             label="Send me alerts"
             hint="An email when new approved reports appear in the states you choose."
@@ -139,10 +136,10 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
               setAsking(on === true);
             }}
           />
-          {nothing ? <CardError>Choose alerts, desk access, or both.</CardError> : null}
-        </fieldset>
+        </Choices>
+        {nothing ? <CardError>Choose alerts, desk access, or both.</CardError> : null}
         {alerts ? (
-          <div className="flex flex-col gap-2">
+          <div style={{ display: 'grid', gap: 8 }}>
             <StatesPicker
               value={states}
               invalid={noStates}
@@ -155,41 +152,33 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
           </div>
         ) : null}
         {asking ? (
-          <section aria-labelledby="signup-desk" className="flex flex-col gap-6">
-            <h2 id="signup-desk" className="font-display text-xl font-bold">
+          <section aria-labelledby="signup-desk" className="form-stack">
+            <h2 id="signup-desk" className="h-page" style={{ fontSize: '1.4rem' }}>
               Your request for desk access
             </h2>
             <AccessFields value={draft} onChange={setDraft} />
           </section>
         ) : null}
-        <Card variant="quiet">
-          <p className="font-semibold">Joining gives you no access to anything.</p>
-          <p className="text-ink-alt">
+        <Panel kind="quiet">
+          <p>
+            <b>Joining gives you no access to anything.</b>
+          </p>
+          <p className="muted">
             Desk access starts only if the owner approves your request. We keep only these answers,
             encrypted. We email a link to confirm; you are on the list only after you press its
             button. Every alert carries a link to leave. Read the{' '}
-            <Link to="/legal" className="underline underline-offset-2">
-              imprint and privacy policy
-            </Link>
-            .
+            <Link to="/legal">imprint and privacy policy</Link>.
           </p>
-        </Card>
+        </Panel>
         {signUp.isError ? (
-          <Alert tone="serious" title="You were not added">
+          <Note tone="serious" title="You were not added">
             {signUp.error.message}
-          </Alert>
+          </Note>
         ) : null}
-        <div className="flex flex-col sm:items-start">
-          <Button
-            type="submit"
-            size="lg"
-            block
-            className="sm:w-auto"
-            busy={signUp.isPending}
-            busyLabel="Sending…"
-          >
+        <div className="btn-row">
+          <Btn type="submit" lg busy={signUp.isPending} busyLabel="Sending…">
             Join the list
-          </Button>
+          </Btn>
         </div>
       </form>
     </PublicPage>

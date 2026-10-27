@@ -58,7 +58,7 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
 import {
@@ -74,7 +74,6 @@ import { ApiRequestError, call } from '@/lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { CheckBox, Field } from '@/mockup/Field.tsx';
-import { Note } from '@/mockup/Note.tsx';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import { CardBar, CardError, CardFrame, FilingProgress, useCardTitle } from './CardFrame.tsx';
 import { useCardHistory } from './cardHistory.ts';
@@ -152,9 +151,9 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
             Check the address you were given. It may have a typing mistake in it.
           </p>
         ) : (
-          <Alert tone="serious" title="The form did not load">
+          <Note tone="serious" title="The form did not load">
             {logbook.error.message}
-          </Alert>
+          </Note>
         )}
       </FormNotice>
     );
