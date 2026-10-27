@@ -15,6 +15,8 @@ export function Filters<T extends string>({
   return (
     <div className="seg-filter" role="group" aria-label={label}>
       {options.map((o) => (
+        // The mock-up's filter row is anchors (site.css `.seg-filter a`); they act as buttons here.
+        // eslint-disable-next-line jsx-a11y/anchor-is-valid
         <a
           key={o.value}
           href="#"

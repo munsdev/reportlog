@@ -18,14 +18,12 @@ import {
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Field } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { TextField } from '../../mockup/Fields.tsx';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
 import { Note, Panel } from '../../mockup/Panel.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
@@ -52,7 +50,7 @@ export function IntakeLinksPage() {
       lede="A link for your organization’s volunteers. Whoever opens it, signed in, joins as a coordinator and files for the organization. Each link works a set number of times, and you can switch it off."
     >
       {orgs.isPending ? <p role="status">Loading…</p> : null}
-      {orgs.isError ? <Alert tone="serious">{orgs.error.message}</Alert> : null}
+      <ErrorLine error={orgs.error} />
       {orgs.data && managed.length === 0 ? (
         <p>You do not manage an organization, so there are no links for you to make.</p>
       ) : null}
@@ -85,18 +83,17 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['intake-links', id] }),
   });
   return (
-    <Card heading={name}>
-      <form
-        aria-label={`Make an intake link for ${name}`}
-        className="flex flex-col gap-3 sm:flex-row sm:items-end"
-        onSubmit={(e) => {
-          e.preventDefault();
-          make.mutate();
-        }}
-      >
-        <Field className="flex-1">
-          <Label>What it is for</Label>
-          <Input
+    <>
+      <Panel title="Make a link" sub={name}>
+        <form
+          aria-label={`Make an intake link for ${name}`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            make.mutate();
+          }}
+        >
+          <TextField
+            label="What it is for"
             value={label}
             required
             maxLength={120}
@@ -104,10 +101,8 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
               setLabel(e.target.value);
             }}
           />
-        </Field>
-        <Field>
-          <Label>How many people may use it</Label>
-          <Input
+          <TextField
+            label="How many people may use it"
             type="number"
             min={1}
             max={10000}
@@ -116,39 +111,42 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
               setUses(e.target.value);
             }}
           />
-        </Field>
-        <Button type="submit" disabled={make.isPending || !label.trim()}>
-          Make the link
-        </Button>
-      </form>
-      {make.isError ? <Alert tone="serious">{make.error.message}</Alert> : null}
+          <ErrorLine error={make.error} />
+          <Btn kind="ink" type="submit" disabled={make.isPending || !label.trim()}>
+            Make the link
+          </Btn>
+        </form>
+      </Panel>
       {make.data ? <NewLink url={make.data.url} /> : null}
       {links.data?.links.length ? (
-        <ul className="flex flex-col gap-2 text-sm">
-          {links.data.links.map((l) => (
-            <li key={l.id} className="flex flex-wrap items-center gap-3">
-              <span>
-                {`${l.label} · used ${String(l.uses)} of ${String(l.max_uses)}`}
-                {l.disabled_at ? ` · switched off ${new Date(l.disabled_at).toLocaleString()}` : ''}
-              </span>
-              {!l.disabled_at ? (
-                <Button
-                  type="button"
-                  variant="secondary"
+        <Tbl
+          cols={['Link', 'Used', '']}
+          widths="1.4fr 1fr auto"
+          rows={links.data.links.map((l) => ({
+            key: l.id,
+            cells: [
+              l.label,
+              `${String(l.uses)} of ${String(l.max_uses)}${
+                l.disabled_at ? ` · switched off ${new Date(l.disabled_at).toLocaleString()}` : ''
+              }`,
+              !l.disabled_at ? (
+                <Btn
+                  kind="ghost"
                   disabled={off.isPending}
+                  aria-label={`Switch off: ${l.label}`}
                   onClick={() => {
                     off.mutate(l.id);
                   }}
                 >
-                  {`Switch off: ${l.label}`}
-                </Button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
+                  Switch it off
+                </Btn>
+              ) : null,
+            ],
+          }))}
+        />
       ) : null}
-      {off.isError ? <Alert tone="serious">{off.error.message}</Alert> : null}
-    </Card>
+      <ErrorLine error={off.error} />
+    </>
   );
 }
 
@@ -160,34 +158,34 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
 function NewLink({ url }: { url: string }) {
   const [said, setSaid] = useState<string | null>(null);
   return (
-    <Card variant="deep" heading="Copy the link now" headingLevel={3}>
-      <code className="font-mono text-sm break-all">{url}</code>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            navigator.clipboard.writeText(url).then(
-              () => {
-                setSaid('Copied.');
-              },
-              () => {
-                setSaid('This browser would not copy it. Select the link instead.');
-              },
-            );
-          }}
-        >
-          Copy
-        </Button>
-        <span role="status" className="text-sm text-on-deep-muted">
-          {said}
-        </span>
-      </div>
-      <p className="text-on-deep-muted">
-        Only this screen shows it. We keep a fingerprint of it, not the link. Anybody holding it can
+    <Panel kind="deep" title="Copy the link now">
+      <p>
+        It is shown once only. We keep a fingerprint of it, not the link. Anybody holding it can
         join until it is used up or switched off.
       </p>
-    </Card>
+      <div className="copybox">
+        <div className="row">
+          <code>{url}</code>
+          <Btn
+            onClick={() => {
+              navigator.clipboard.writeText(url).then(
+                () => {
+                  setSaid('Copied.');
+                },
+                () => {
+                  setSaid('This browser would not copy it. Select the link instead.');
+                },
+              );
+            }}
+          >
+            Copy
+          </Btn>
+        </div>
+      </div>
+      <span role="status" className="m">
+        {said}
+      </span>
+    </Panel>
   );
 }
 

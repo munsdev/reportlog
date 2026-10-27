@@ -43,7 +43,7 @@ import { call } from '../../lib/api.ts';
 import { meQuery, useMe, useSignOut } from './session.ts';
 import { Field } from '../../mockup/Qcard.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
-import { ErrorText, TextField, codeInputClass, messageOf } from './ui.tsx';
+import { ErrorText, messageOf } from './ui.tsx';
 
 export const secondFactorQuery = queryOptions({
   queryKey: ['identity', 'second-factor'],
