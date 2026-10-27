@@ -84,7 +84,8 @@ export async function eraseEntryLinks(trx: Db, entryIds: readonly number[]): Pro
   return gone.length;
 }
 
-async function dropEmptyGroups(trx: Db, groups: readonly number[]): Promise<void> {
+/** A group left with no copy anywhere (tips or reports), no check and no comment goes. */
+export async function dropEmptyGroups(trx: Db, groups: readonly number[]): Promise<void> {
   await trx
     .deleteFrom('link_groups')
     .where('id', 'in', [...groups])
@@ -97,6 +98,16 @@ async function dropEmptyGroups(trx: Db, groups: readonly number[]): Promise<void
             .selectFrom('links')
             .select(sql<number>`1`.as('one'))
             .whereRef('links.group_id', '=', 'link_groups.id'),
+        ),
+      ),
+    )
+    .where((eb) =>
+      eb.not(
+        eb.exists(
+          eb
+            .selectFrom('report_values')
+            .select(sql<number>`1`.as('one'))
+            .whereRef('report_values.group_id', '=', 'link_groups.id'),
         ),
       ),
     )

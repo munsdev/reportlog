@@ -67,8 +67,14 @@ export const LinkGroup = z.object({
   id: z.number().int(),
   url: z.string().nullable(),
   host: z.string().nullable(),
+  /** Live copies: `from_tips + from_reports`. */
   copies: z.number().int(),
+  from_tips: z.number().int(),
+  /** Reports whose newest version carries it (W3). */
+  from_reports: z.number().int(),
   lists: z.array(z.object({ id: z.number().int(), title: z.string() })),
+  /** The logbooks of the reports that carry it. */
+  logbooks: z.array(z.object({ id: z.number().int(), title: z.string() })),
   outcome: LinkOutcome.nullable(),
   checked_at: Timestamp.nullable(),
   checked_by: z.string().nullable(),

@@ -23,6 +23,7 @@
  */
 import type { HeldValues } from '@reportlog/fields';
 import { openReportValue, sealReportValue } from '../links/keys.ts';
+import { groupReportLink } from '../links/reportLinks.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import type { Db } from '../links/rows.ts';
 
@@ -71,7 +72,14 @@ export function openRow(keys: LinkKeys, enc: Buffer, key: Buffer): Opened {
   return { nonce: p.nonce, value: p.value };
 }
 
-/** Store a version's held values. Inside the transaction that sealed them. */
+/**
+ * Store a version's held values. Inside the transaction that sealed them.
+ *
+ * A LINK JOINS THE LINK STORE'S GROUP for its address (W3), so a check made
+ * once covers every copy. One the blocklist matches is not kept at all: its
+ * fingerprint is already in the seal, so the report verifies, and a tombstone
+ * (reason `blocklisted`) says the value is not there. Nobody is told.
+ */
 export async function storeHeldRows(
   trx: Db,
   keys: LinkKeys,
@@ -79,23 +87,56 @@ export async function storeHeldRows(
   rows: readonly HeldRow[],
 ): Promise<void> {
   if (!rows.length) return;
-  await trx
-    .insertInto('report_values')
-    .values(
-      rows.map((r) => {
-        const sealed = sealReportValue(keys, JSON.stringify({ nonce: r.nonce, value: r.value }));
-        return {
+  const kept: {
+    report_id: number;
+    field_key: string;
+    kind: HeldKind;
+    position: number;
+    group_id: number | null;
+    fingerprint: string;
+    value_enc: Buffer;
+    value_key: Buffer;
+  }[] = [];
+  const dropped: HeldRow[] = [];
+  for (const r of rows) {
+    let groupId: number | null = null;
+    if (r.kind === 'private_link') {
+      const g = await groupReportLink(trx, keys, r.value);
+      if (g.blocked) {
+        dropped.push(r);
+        continue;
+      }
+      groupId = g.groupId;
+    }
+    const sealed = sealReportValue(keys, JSON.stringify({ nonce: r.nonce, value: r.value }));
+    kept.push({
+      report_id: reportId,
+      field_key: r.fieldKey,
+      kind: r.kind,
+      position: r.position,
+      group_id: groupId,
+      fingerprint: r.fingerprint,
+      value_enc: sealed.enc,
+      value_key: sealed.key,
+    });
+  }
+  if (kept.length) await trx.insertInto('report_values').values(kept).execute();
+  if (dropped.length) {
+    await trx
+      .insertInto('report_value_erasures')
+      .values(
+        dropped.map((r) => ({
           report_id: reportId,
           field_key: r.fieldKey,
           kind: r.kind,
           position: r.position,
           fingerprint: r.fingerprint,
-          value_enc: sealed.enc,
-          value_key: sealed.key,
-        };
-      }),
-    )
-    .execute();
+          reason_category: 'blocklisted',
+          actor: 'system',
+        })),
+      )
+      .execute();
+  }
 }
 
 /** The values a version still holds: not erased. In question, then position, order. */
