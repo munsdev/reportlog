@@ -12,14 +12,12 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Pagination } from '../../components/ui/pagination.tsx';
-import { CountLine } from '../../components/ui/type.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Pager } from '../../mockup/Pager.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { accessLogQuery } from './queries.ts';
-import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 /** The longest span the access-log call answers for. */
 const EVERYTHING = 120;
@@ -45,8 +43,6 @@ const readName = (ref: string) =>
       : 'a written account';
 
 const when = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('T', ' ');
-const day = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 export function AccessLogPage() {
   const query = useQuery(accessLogQuery(EVERYTHING));
@@ -55,14 +51,13 @@ export function AccessLogPage() {
   const entries = (query.data?.entries ?? []).filter((e) => e.kind !== 'audit_log');
   const pages = Math.max(1, Math.ceil(entries.length / PER_PAGE));
   const shown = entries.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const oldest = entries.at(-1);
   return (
     <StaffPage
       title="Who opened protected data"
       lede="Every look at protected data. Contact details and files carry the reason given; opening a written account or link is recorded without one."
     >
       {query.isPending ? <p role="status">Reading the log…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      <ErrorLine error={query.error} />
       {query.data && entries.length === 0 ? (
         <Empty title="Nobody has opened anything protected">
           Each time somebody opens a reporter’s contact details or a file’s original, it is listed
@@ -70,60 +65,36 @@ export function AccessLogPage() {
         </Empty>
       ) : null}
       {entries.length > 0 ? (
-        <Card>
-          <CountLine
-            parts={[
-              `${String(entries.length)} ${entries.length === 1 ? 'opening' : 'openings'}`,
-              oldest ? `since ${day(oldest.accessed_at)}` : null,
-              'newest first',
-              'times in UTC',
-            ]}
+        <>
+          <Tbl
+            cols={['When', 'Who', 'What', 'Report', 'Their reason']}
+            widths="1fr 1.2fr 1.4fr 1fr 1.6fr"
+            rows={shown.map((e) => ({
+              key: e.id,
+              cells: [
+                <time dateTime={e.accessed_at}>{when(e.accessed_at)} UTC</time>,
+                e.staff_email,
+                <>
+                  {LOOKED[e.kind] ?? 'Opened'}
+                  {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`}
+                  {e.read_ref === null ? '' : ` (${readName(e.read_ref)})`}
+                </>,
+                e.public_ref ? (
+                  <span className="mono">{e.public_ref}</span>
+                ) : (
+                  (e.logbook ??
+                  (e.kind === 'desk_link'
+                    ? ''
+                    : e.read_ref?.startsWith('tip-')
+                      ? 'A tip'
+                      : 'A report'))
+                ),
+                e.reason ?? 'None was asked for',
+              ],
+            }))}
           />
-          <ScrollX label="Every opening of protected data, newest first">
-            <table className="data-table">
-              <caption className="sr-only">Every opening of protected data, newest first</caption>
-              <thead>
-                <tr>
-                  <th scope="col">When</th>
-                  <th scope="col">Who</th>
-                  <th scope="col">What</th>
-                  <th scope="col">Report</th>
-                  <th scope="col">Their reason</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((e) => (
-                  <tr key={e.id} className="align-top">
-                    <td className="font-mono whitespace-nowrap">
-                      <time dateTime={e.accessed_at}>{when(e.accessed_at)}</time>
-                    </td>
-                    <td className="font-mono break-all">{e.staff_email}</td>
-                    <td>
-                      {LOOKED[e.kind] ?? 'Opened'}
-                      {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`}
-                      {e.read_ref === null ? '' : ` (${readName(e.read_ref)})`}
-                    </td>
-                    <td className="font-mono whitespace-nowrap">
-                      {e.public_ref ?? e.logbook ?? (
-                        <span className="font-sans text-ink-alt">
-                          {e.kind === 'desk_link'
-                            ? 'None'
-                            : e.read_ref?.startsWith('tip-')
-                              ? 'A tip'
-                              : 'A report'}
-                        </span>
-                      )}
-                    </td>
-                    <td className="whitespace-pre-wrap">
-                      {e.reason ?? <span className="text-ink-alt">None was asked for</span>}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollX>
-          <Pagination page={page} pages={pages} onPage={setPage} label="Pages of the log" />
-        </Card>
+          <Pager page={page} pages={pages} onPage={setPage} label="Pages of the log" />
+        </>
       ) : null}
     </StaffPage>
   );
