@@ -69,14 +69,14 @@ repository.
 
 ## Wording that differs from the mock-up
 
-| Mock-up | Here | Why |
-|---|---|---|
-| Header button "File a report" | The first front page button's own label (the operator's; "Demo logbook" on the seeded site, "Submit a report" when none is set) | The label belongs to the operator; the target is the same one the home page's first button has. |
-| Follow band: the mock-up's instance sentence (it also promises live counts) | "Follow {site name}" and "Follow along" | The mock-up's sentence is the instance's copy and promises live counts the code does not deliver. A neutral line ships. |
-| Ticker: the mock-up's instance lines (date, slogan, how reports are read) | Empty until the operator writes the Ticker slot; the follow link needs an account | Brand and event text is instance content. |
-| Slogan: the mock-up's instance slogan | Empty until the operator writes the Front page slogan | Same. |
-| Menu: "Send a tip or offer to help" (to `submit.html`) | "What do you want to send?" | The brief's name for the chooser. |
-| 404: "Front page", "File a report" | Same | |
+| Mock-up                                                                     | Here                                                                                                                            | Why                                                                                                                     |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Header button "File a report"                                               | The first front page button's own label (the operator's; "Demo logbook" on the seeded site, "Submit a report" when none is set) | The label belongs to the operator; the target is the same one the home page's first button has.                         |
+| Follow band: the mock-up's instance sentence (it also promises live counts) | "Follow {site name}" and "Follow along"                                                                                         | The mock-up's sentence is the instance's copy and promises live counts the code does not deliver. A neutral line ships. |
+| Ticker: the mock-up's instance lines (date, slogan, how reports are read)   | Empty until the operator writes the Ticker slot; the follow link needs an account                                               | Brand and event text is instance content.                                                                               |
+| Slogan: the mock-up's instance slogan                                       | Empty until the operator writes the Front page slogan                                                                           | Same.                                                                                                                   |
+| Menu: "Send a tip or offer to help" (to `submit.html`)                      | "What do you want to send?"                                                                                                     | The brief's name for the chooser.                                                                                       |
+| 404: "Front page", "File a report"                                          | Same                                                                                                                            |                                                                                                                         |
 
 ## Not done
 

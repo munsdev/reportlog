@@ -3,6 +3,7 @@
 Branch `claude/ft-d2-settings` (from `claude/blissful-gates-7q65uc`, on top of FT-D).
 
 ## Built
+
 - Logbook page: Title and description, Cover page, Asking for an email address, Publishing, On the
   front page are `GuardedPanel`s (components/ui/setting-panel.tsx): summary + Edit, one open at a
   time, Save/Cancel in the Save bar, "Leave your changes?" guard (and the settings area's
@@ -20,6 +21,7 @@ Branch `claude/ft-d2-settings` (from `claude/blissful-gates-7q65uc`, on top of F
   Save in the Save bar, no "Saved." text).
 
 ## Decisions / differences from the mock-up
+
 - Accepting reports and Development notice keep the two-step choice (documented in
   features/settings/Switches.tsx): closing intake refuses people mid-filing.
 - "Email on reports" is a closed Change panel; the mock-up draws open fields. Added a "days a link
@@ -29,10 +31,12 @@ Branch `claude/ft-d2-settings` (from `claude/blissful-gates-7q65uc`, on top of F
   mock-up shows it as a button too.
 
 ## Not done (API lacks it)
+
 - "Ask for a written account", "Longest written account", "Most links on one report": no site
   setting exists (S1 sets these per question in the builder).
 - "Ask for an email on tips": no setting.
 - Not checked in a browser; no e2e run.
 
 ## Tests
+
 tsc (web, api, contracts) clean; eslint and prettier on changed files.

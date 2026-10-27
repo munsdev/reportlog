@@ -5,6 +5,7 @@ status files it took E's side). Lean checks only: tsc web and api, eslint and pr
 files, `test/filing.test.tsx`, `builder-switches`, `files` unit tests. No db, e2e or `pnpm check`.
 
 ## Built
+
 1. **Filing cards** (`features/form/`): `HeldControls.tsx` (text box with "n / 5000", link boxes with
    "Add another link", the "Not published on the board" note, "Skip this"), `WrittenCards.tsx` (sharing
    card, address card "Needed because you wrote something", optional "manage" card), walk helpers
@@ -30,6 +31,7 @@ files, `test/filing.test.tsx`, `builder-switches`, `files` unit tests. No db, e2
    optional email address" setting.
 
 ## Server changes (small, outside my folders)
+
 - `filing/filing.ts`, `logbooks/logbooks.ts`: erasable text/links no longer make `asks_email` true on
   their own (they did via TYPED_KINDS, which made the email mandatory even when nothing was written,
   against D8). Held values now require an address (sentence) and always hold the report; a logbook that
@@ -38,6 +40,7 @@ files, `test/filing.test.tsx`, `builder-switches`, `files` unit tests. No db, e2
 - Public logbook gains `contacts_delete_on` (YYYY-MM-DD) so the card can say the deletion day.
 
 ## Wording that differs from the mock-up
+
 - Sharing card: nothing pre-selected (mock has "Yes" ticked); Next says "Choose yes or no."
 - Review "What is published" note is added under the logbook's own publication terms rather than replacing them.
 - Report page erased marker: no "by the reporter" (the contract carries no actor).
@@ -46,6 +49,7 @@ files, `test/filing.test.tsx`, `builder-switches`, `files` unit tests. No db, e2
 - Step-label "Optional" is on the two new cards only.
 
 ## Not done
+
 - No browser tests (lean order). Routes `moderate/texts*` and `desk/texts` untested in a browser.
 - Desk restyle beyond the texts tab (J1), "Next waiting" for written accounts, filing-page no-third-party test.
 - Coordinator/intake filing of held values (refused by S1).

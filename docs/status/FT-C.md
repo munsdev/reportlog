@@ -6,6 +6,7 @@ Lean testing: tsc, eslint and prettier on changed files, and the unit tests of t
 follow-band, notifications, files, maps, ui). The browser suite, `pnpm check` and `test:db` were NOT run.
 
 ## Built
+
 - `components/ui/band.tsx`: BandPage (full-width band, wrap), BandTabs, TwoCol, AsideCard, Prose, SecHead, Steps.
   The root frame (`routes/__root.tsx`) now wraps the page in `.rl-pad`; a page whose root has `data-bleed` removes
   that padding (`styles.css`), so every other page is unchanged.
@@ -23,6 +24,7 @@ follow-band, notifications, files, maps, ui). The browser suite, `pnpm check` an
   list "Sent. Thank you." with steps and Follow band.
 
 ## Wording that differs from the mock-up (code honest)
+
 - Verify lead: "This page fetches the report's sealed record and recomputes its fingerprint in your browser, then
   compares it with the chain" (mock: "Nothing is sent to us"; the reference is sent to fetch the record).
 - Board: h1 is "Reports" on every tab; tab labels List / Numbers / Maps / Activity / Press pack (mock: "By state",
@@ -33,6 +35,7 @@ follow-band, notifications, files, maps, ui). The browser suite, `pnpm check` an
 - Get involved has no invented steps or share posts: only the lists the operator opened and the site address.
 
 ## Seams for F1 and others
+
 - New filing cards (text, link, sharing, email, review with writing): use `CardFrame` (`stepLabel="Optional"` etc.)
   and `CardBar`; the step count comes from `FilingProgress question={n}` set by the form. `Receipts.tsx` is separate.
 - `UnpublishedNote({ text, links })` in `features/board/BoardReport.tsx` is written and not wired: the public report
@@ -41,6 +44,7 @@ follow-band, notifications, files, maps, ui). The browser suite, `pnpm check` an
   swap `BandTitle` for FitHeadline (one place each) when worker B's components land (not in this branch yet).
 
 ## Not done
+
 - Activity, Press and Maps tab contents keep their existing cards (only the frame and heading changed).
 - Setup wizard and sign-in keep their layouts (already one question, progress rule, two-step panel).
 - No new browser tests; e2e edited where text moved (board, submit, voting-log, verify, card-frame, door).
