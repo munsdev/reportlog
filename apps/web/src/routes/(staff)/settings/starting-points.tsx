@@ -14,22 +14,14 @@ import type { TemplateSummary } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Dialog.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Field } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { call } from '@/lib/api.ts';
 
 const templatesQuery = queryOptions({
@@ -81,7 +73,7 @@ export function StartingPointsPage() {
         Everything one sets stays yours to change afterwards.
       </p>
       {apply.data ? (
-        <Alert tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
+        <Note tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
           {apply.data.logbook ? (
             <p>
               It made a draft logbook,{' '}
@@ -97,14 +89,14 @@ export function StartingPointsPage() {
           ) : (
             <p>It made no logbook.</p>
           )}
-        </Alert>
+        </Note>
       ) : null}
 
       {catalogue.isPending ? <p role="status">Loading the starting points…</p> : null}
       {catalogue.isError ? (
-        <Alert tone="serious" title="The starting points could not be loaded.">
+        <Note tone="serious" title="The starting points could not be loaded.">
           {catalogue.error.message}
-        </Alert>
+        </Note>
       ) : null}
 
       {templates.length > 0 ? (
@@ -126,7 +118,7 @@ export function StartingPointsPage() {
 
       {/* Choosing shows what it would change; only the dialog's "Apply it" sends. */}
       {chosen ? (
-        <Card heading={chosen.label}>
+        <Panel heading={chosen.label}>
           <p>What it changes:</p>
           <ul className="list-disc pl-5 text-ink-alt">
             {chosen.sets.map((line) => (
@@ -134,7 +126,7 @@ export function StartingPointsPage() {
             ))}
           </ul>
           <div>
-            <Button
+            <Btn
               type="button"
               variant="secondary"
               onClick={() => {
@@ -143,9 +135,9 @@ export function StartingPointsPage() {
               }}
             >
               Apply it…
-            </Button>
+            </Btn>
           </div>
-        </Card>
+        </Panel>
       ) : null}
 
       <Dialog
@@ -168,17 +160,17 @@ export function StartingPointsPage() {
               ))}
             </ul>
             {apply.isError ? (
-              <Alert tone="serious" title="It was not applied.">
+              <Note tone="serious" title="It was not applied.">
                 {apply.error.message} Nothing was changed.
-              </Alert>
+              </Note>
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary" disabled={apply.isPending}>
+                <Btn type="button" variant="secondary" disabled={apply.isPending}>
                   Cancel
-                </Button>
+                </Btn>
               </DialogClose>
-              <Button
+              <Btn
                 type="button"
                 variant="primary"
                 disabled={apply.isPending}
@@ -187,7 +179,7 @@ export function StartingPointsPage() {
                 }}
               >
                 Apply it
-              </Button>
+              </Btn>
             </DialogFooter>
           </DialogContent>
         ) : null}

@@ -13,13 +13,13 @@
 import { FILE_KINDS } from '@reportlog/contracts';
 import type { FileKind, FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
-import { Alert } from '../../../components/ui/alert.tsx';
-import { Button } from '../../../components/ui/button.tsx';
-import { CheckOption } from '../../../components/ui/choice.tsx';
-import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
-import { Input } from '../../../components/ui/input.tsx';
-import { Label } from '../../../components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '../../../components/ui/radio-group.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption } from '@/mockup/Choices.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { KIND_LABEL, LIMITS, boxProblem, fromBox, toBox } from './words.ts';
 import type { NumberKey } from './words.ts';
 
@@ -98,7 +98,8 @@ export function LimitsForm({
 
   return (
     <form
-      className="flex flex-col gap-6"
+      className="form-stack"
+      style={{ maxWidth: 'none' }}
       onSubmit={(e) => {
         e.preventDefault();
         setTried(true);
@@ -109,7 +110,7 @@ export function LimitsForm({
         void save(body);
       }}
     >
-      <p className="text-ink-alt">
+      <p className="muted">
         {setHere === 0
           ? mine === 'logbook'
             ? 'This logbook sets no limits of its own: it takes the site’s.'
@@ -117,8 +118,8 @@ export function LimitsForm({
           : `${String(setHere)} of ${String(LIMITS.length)} set here. An empty box uses the number shown in it.`}
       </p>
 
-      <fieldset className="flex flex-col gap-3">
-        <legend className="mb-2 label-face text-xs text-ink">Which kinds of file</legend>
+      <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 10 }}>
+        <legend className="lbl">Which kinds of file</legend>
         <RadioGroup
           value={choosing ? 'choose' : 'under'}
           onValueChange={(v) => {
@@ -138,7 +139,11 @@ export function LimitsForm({
           />
         </RadioGroup>
         {choosing ? (
-          <ul className="ml-9 flex flex-col gap-2" aria-label="Kinds taken">
+          <ul
+            className="choices"
+            style={{ listStyle: 'none', padding: 0 }}
+            aria-label="Kinds taken"
+          >
             {FILE_KINDS.map((k) => {
               const id = `kind-${mine}-${k}`;
               const offAbove =
@@ -162,10 +167,10 @@ export function LimitsForm({
             })}
           </ul>
         ) : null}
-        <p className="text-sm text-ink-alt">In force now: {kindsList(layers.kinds.effective)}.</p>
+        <p className="muted">In force now: {kindsList(layers.kinds.effective)}.</p>
       </fieldset>
 
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid2 even">
         {LIMITS.map((l) => (
           <Field key={l.key}>
             <Label>
@@ -186,12 +191,12 @@ export function LimitsForm({
         ))}
       </div>
 
-      {outcome ? <Alert tone={outcome.ok ? 'done' : 'serious'}>{outcome.text}</Alert> : null}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={busy}>
+      {outcome ? <Note tone={outcome.ok ? 'done' : 'serious'}>{outcome.text}</Note> : null}
+      <div className="acts">
+        <Btn type="submit" disabled={busy}>
           Save the limits
-        </Button>
-        <Button
+        </Btn>
+        <Btn
           type="button"
           variant="secondary"
           disabled={busy || (setHere === 0 && ownKinds === null)}
@@ -210,11 +215,11 @@ export function LimitsForm({
           {mine === 'logbook'
             ? 'Use the site’s limits for everything'
             : 'Clear every limit set here'}
-        </Button>
+        </Btn>
         {onCancel ? (
-          <Button type="button" variant="quiet" disabled={busy} onClick={onCancel}>
+          <Btn type="button" variant="quiet" disabled={busy} onClick={onCancel}>
             Cancel
-          </Button>
+          </Btn>
         ) : null}
       </div>
     </form>

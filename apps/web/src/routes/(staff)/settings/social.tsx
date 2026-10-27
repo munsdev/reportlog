@@ -28,13 +28,13 @@ import type {
 } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
+import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { SocialIcon } from '@/components/ui/social-icon.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { Meta } from '@/components/ui/type.tsx';
@@ -156,9 +156,9 @@ export function SocialForm({ state }: { state: SiteEditor }) {
         />
       ))}
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {dirty ? (
         <SaveBar
@@ -182,7 +182,7 @@ function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<R
   const checked = socialAddress(row.id, row.address);
   const url = checked.ok ? checked.url : null;
   return (
-    <Card variant="quiet">
+    <Panel variant="quiet">
       <fieldset className="flex flex-col gap-3" data-platform={row.id}>
         <legend className="flex items-center gap-3 font-semibold">
           <SocialIcon platform={row.id} />
@@ -216,7 +216,7 @@ function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<R
           <Label>Show on the site</Label>
         </Field>
       </fieldset>
-    </Card>
+    </Panel>
   );
 }
 
@@ -233,7 +233,7 @@ function Placements({
   onChange: (next: SocialPlacement[]) => void;
 }) {
   return (
-    <Card variant="quiet">
+    <Panel variant="quiet">
       <fieldset className="flex flex-col gap-3" data-placements>
         <legend className="font-semibold">Where the accounts show</legend>
         {SOCIAL_PLACEMENTS.map((p) => (
@@ -253,7 +253,7 @@ function Placements({
           </Field>
         ))}
       </fieldset>
-    </Card>
+    </Panel>
   );
 }
 
@@ -275,7 +275,7 @@ function FloatingButton({
     });
   };
   return (
-    <Card variant="quiet">
+    <Panel variant="quiet">
       <fieldset className="flex flex-col gap-3" data-float>
         <legend className="font-semibold">Floating “Follow us” button</legend>
         <p className="text-ink-alt">
@@ -309,6 +309,6 @@ function FloatingButton({
           </fieldset>
         ) : null}
       </fieldset>
-    </Card>
+    </Panel>
   );
 }

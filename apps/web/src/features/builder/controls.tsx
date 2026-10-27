@@ -1,19 +1,16 @@
 /**
- * The few form controls the builder needs, in the shared components' look
- * (components/ui/): the same field edge, the same panel with the theme's
- * heading, the same serious alert. Kept as the builder's own small API so
- * its screens did not have to change to get the look.
- * Every control has a visible label tied to it, and help is read out with it.
+ * The few form controls the builder needs, in the mock-up's look
+ * (src/mockup/): `field`, `input`, `textarea`, `sel`, `panel`, `note`. Kept
+ * as the builder's own small API so its screens did not have to change to
+ * get the look. Every control has a visible label tied to it, and help is
+ * read out with it.
  */
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { controlClass } from '@/components/ui/input.tsx';
+import { CheckOption } from '@/mockup/Choices.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel as MockPanel } from '@/mockup/Panel.tsx';
 import { cn } from '@/lib/utils.ts';
-
-const box = controlClass;
 
 interface FieldProps {
   label: string;
@@ -26,30 +23,28 @@ export function Field({ label, help, children }: FieldProps) {
   const id = useId();
   const helpId = `${id}-help`;
   return (
-    <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="label-face text-xs">
-        {label}
-      </label>
+    <div className="field">
+      <label htmlFor={id}>{label}</label>
       {children(help ? { id, 'aria-describedby': helpId } : { id })}
       {help && (
-        <p id={helpId} className="text-sm text-muted">
+        <span id={helpId} className="help">
           {help}
-        </p>
+        </span>
       )}
     </div>
   );
 }
 
 export function TextInput({ className, ...props }: ComponentProps<'input'>) {
-  return <input type="text" className={cn(box, className)} {...props} />;
+  return <input type="text" className={cn('input', className)} {...props} />;
 }
 
 export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {
-  return <textarea className={cn(box, 'min-h-24', className)} {...props} />;
+  return <textarea className={cn('textarea', className)} {...props} />;
 }
 
 export function Select({ className, ...props }: ComponentProps<'select'>) {
-  return <select className={cn(box, 'pr-8', className)} {...props} />;
+  return <select className={cn('sel', className)} {...props} />;
 }
 
 /** A yes/no as a choice card, with an optional line of why. */
@@ -82,7 +77,7 @@ export function Check({
 /** A refusal from the server, said where the control is. */
 export function Problem({ error }: { error: Error | null }) {
   if (!error) return null;
-  return <Alert tone="serious" title={error.message} />;
+  return <Note tone="serious" title={error.message} />;
 }
 
 export function Panel({
@@ -95,8 +90,8 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <Card heading={title} className={className}>
+    <MockPanel heading={title} {...(className ? { className } : {})}>
       {children}
-    </Card>
+    </MockPanel>
   );
 }

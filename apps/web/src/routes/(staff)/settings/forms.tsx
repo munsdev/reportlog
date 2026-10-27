@@ -22,13 +22,13 @@ import type { FilingLimits } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -105,9 +105,9 @@ export function MinFormTime({ seconds }: { seconds: number }) {
         <FieldError>{text.trim() ? problem : null}</FieldError>
       </Field>
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {dirty ? (
         <SaveBar
@@ -247,9 +247,9 @@ export function EmailOnReports({ limits }: { limits: FilingLimits }) {
         <FieldError>{problems[2]}</FieldError>
       </Field>
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
     </GuardedPanel>
   );
@@ -271,17 +271,17 @@ function FormsPage() {
       </p>
       {state.isPending ? <p role="status">Loading…</p> : null}
       {state.isError ? (
-        <Alert tone="serious" title="The settings could not be read.">
+        <Note tone="serious" title="The settings could not be read.">
           {state.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {limits.data ? <EmailOnReports limits={limits.data} /> : null}
       {state.data ? (
-        <Card heading="The minimum time on a form">
+        <Panel heading="The minimum time on a form">
           <MinFormTime seconds={state.data.min_form_seconds} />
-        </Card>
+        </Panel>
       ) : null}
-      <Card variant="quiet">
+      <Panel variant="quiet">
         <h2 className="font-display text-xl font-bold">Set elsewhere</h2>
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -303,7 +303,7 @@ function FormsPage() {
             server’s settings, DOOR_SUBMITS_PER_MINUTE and DOOR_SUBMITS_PER_HOUR.
           </li>
         </ul>
-      </Card>
+      </Panel>
     </StaffPage>
   );
 }

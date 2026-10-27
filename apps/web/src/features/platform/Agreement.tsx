@@ -17,14 +17,14 @@ import type { AgreementAudience } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Field, FieldDescription } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Field, FieldDescription } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { Page } from '../../components/ui/page.tsx';
 import { ScrollX } from '../../components/ui/scroll-x.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Textarea } from '@/mockup/Field.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
 
@@ -54,7 +54,7 @@ export function AgreementGate({
     },
   });
   if (state.isPending) return <p role="status">Loading…</p>;
-  if (state.isError) return <Alert tone="serious">{state.error.message}</Alert>;
+  if (state.isError) return <Note tone="serious">{state.error.message}</Note>;
   const { current, accepted } = state.data;
   if (!current || accepted) return children;
   return (
@@ -69,12 +69,12 @@ export function AgreementGate({
         </p>
       </div>
       {accept.isError ? (
-        <Alert tone="serious" title="It was not recorded">
+        <Note tone="serious" title="It was not recorded">
           {accept.error.message}
-        </Alert>
+        </Note>
       ) : null}
       <div>
-        <Button
+        <Btn
           type="button"
           disabled={accept.isPending}
           onClick={() => {
@@ -82,7 +82,7 @@ export function AgreementGate({
           }}
         >
           I have read this and I accept it
-        </Button>
+        </Btn>
       </div>
     </Page>
   );
@@ -119,22 +119,22 @@ export function AgreementAdminPage({
     >
       {tabs}
       {state.data?.current ? (
-        <Card heading="The published version">
+        <Panel heading="The published version">
           <p className="font-mono text-sm text-muted">
             Version {String(state.data.current.version)}
           </p>
           <div className="rounded-control border border-line bg-paper p-5 text-ink">
             <p className="whitespace-pre-wrap">{state.data.current.body}</p>
           </div>
-        </Card>
+        </Panel>
       ) : (
-        <Alert title="No agreement is published">
+        <Note title="No agreement is published">
           {audience === 'journalist'
             ? 'Until one is, the journalist desk stays closed.'
             : 'Until one is, nobody is asked to accept anything before moderating.'}
-        </Alert>
+        </Note>
       )}
-      <Card heading="The new version">
+      <Panel heading="The new version">
         <form
           className="flex flex-col gap-3"
           onSubmit={(e) => {
@@ -156,14 +156,14 @@ export function AgreementAdminPage({
               again.
             </FieldDescription>
           </Field>
-          {publish.isError ? <Alert tone="serious">{publish.error.message}</Alert> : null}
-          {publish.isSuccess ? <Alert tone="done">Published.</Alert> : null}
-          <Button type="submit" className="self-start" disabled={publish.isPending}>
+          {publish.isError ? <Note tone="serious">{publish.error.message}</Note> : null}
+          {publish.isSuccess ? <Note tone="done">Published.</Note> : null}
+          <Btn type="submit" className="self-start" disabled={publish.isPending}>
             Publish this version
-          </Button>
+          </Btn>
         </form>
-      </Card>
-      <Card heading="Who accepted">
+      </Panel>
+      <Panel heading="Who accepted">
         {accepted.data?.acceptances.length ? (
           <ScrollX label="Who accepted">
             <table className="data-table">
@@ -189,7 +189,7 @@ export function AgreementAdminPage({
         ) : (
           <p className="text-ink-alt">Nobody yet.</p>
         )}
-      </Card>
+      </Panel>
     </StaffPage>
   );
 }

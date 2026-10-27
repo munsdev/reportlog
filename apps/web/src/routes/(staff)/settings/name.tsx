@@ -13,12 +13,12 @@ import { MAX_SITE_NAME, accentMarksClose, plainName, setSiteName } from '@report
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';
@@ -97,9 +97,9 @@ export function NameForm({ state }: { state: SiteEditor }) {
       <NamePreview name={preview} />
 
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {dirty ? (
         <SaveBar

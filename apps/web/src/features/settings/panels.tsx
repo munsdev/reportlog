@@ -15,12 +15,12 @@
  */
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { KeyValueList } from '@/components/ui/key-value-list.tsx';
-import type { KeyValue } from '@/components/ui/key-value-list.tsx';
-import { SettingPanel, SettingPanels, useSettingPanels } from '@/components/ui/setting-panel.tsx';
-import type { SettingPanelProps } from '@/components/ui/setting-panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import type { DlItem } from '@/mockup/Dl.tsx';
+import { SettingPanel, SettingPanels, useSettingPanels } from '@/mockup/SettingPanel.tsx';
+import type { SettingPanelProps } from '@/mockup/SettingPanel.tsx';
 import { ToastProvider } from '@/components/ui/toast.tsx';
 import { useUnsavedChanges } from '../../routes/(staff)/settings/-editor.tsx';
 
@@ -41,7 +41,7 @@ export function GuardedPanel(props: SettingPanelProps) {
 
 export interface LinkPanelProps {
   title: string;
-  summary: readonly KeyValue[];
+  summary: readonly DlItem[];
   /** A route in this app. */
   to: string;
   linkLabel?: string;
@@ -58,16 +58,16 @@ export function LinkPanel({
   className,
 }: LinkPanelProps) {
   return (
-    <Card heading={title} className={className}>
+    <Panel heading={title} className={className}>
       {children}
-      <KeyValueList items={summary} />
+      <Dl items={summary} />
       <div>
-        <Button asChild variant="secondary">
+        <Btn asChild variant="secondary">
           <Link to={to} aria-label={`${linkLabel} ${title}`}>
             {linkLabel}
           </Link>
-        </Button>
+        </Btn>
       </div>
-    </Card>
+    </Panel>
   );
 }

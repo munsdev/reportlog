@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Field, Problem, TextInput } from './controls.tsx';
 
 interface Props {
@@ -54,9 +54,9 @@ export function TypeToConfirm({ title, children, action, primary = false, onConf
         )}
       </Field>
       <Problem error={error} />
-      <Button type="submit" variant={primary ? 'primary' : 'secondary'} disabled={!matches || busy}>
+      <Btn type="submit" variant={primary ? 'primary' : 'secondary'} disabled={!matches || busy}>
         {action}
-      </Button>
+      </Btn>
     </form>
   );
 }

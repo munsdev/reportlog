@@ -15,13 +15,13 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { FileDrop } from '../../components/ui/file-drop.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
+import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { St } from '@/mockup/St.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RowItem, Rows, rowLink } from '../../components/ui/rows.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
 import { logbooksQuery, startingPointsQuery } from './queries.ts';
@@ -31,14 +31,14 @@ export function LogbookList() {
   const query = useQuery(logbooksQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Button
+    <Btn
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
       }}
     >
       Make a logbook
-    </Button>
+    </Btn>
   );
   return (
     <StaffPage
@@ -47,16 +47,9 @@ export function LogbookList() {
       // One "Make" button at a time: an empty page carries it in its empty state.
       actions={making || query.data?.logbooks.length === 0 ? null : make}
     >
-      <p className="text-ink-alt">
-        Whether reports are taken at all is on{' '}
-        <Link to="/settings" className="underline underline-offset-4">
-          Site settings
-        </Link>
-        . The front page’s buttons are on{' '}
-        <Link to="/logbooks/front-page" className="underline underline-offset-4">
-          Front page
-        </Link>
-        .
+      <p className="muted">
+        Whether reports are taken at all is on <Link to="/settings">Site settings</Link>. The front
+        page’s buttons are on <Link to="/logbooks/front-page">Front page</Link>.
       </p>
 
       {making ? (
@@ -74,39 +67,41 @@ export function LogbookList() {
           making ? null : (
             <Empty title="No logbooks yet">
               Make one to start taking reports.
-              <span className="mt-3 flex justify-center">{make}</span>
+              <span className="acts">{make}</span>
             </Empty>
           )
         ) : (
           <Rows label="Logbooks">
             {query.data.logbooks.map((l) => (
-              <RowItem key={l.id}>
-                <Link
-                  to="/logbooks/$id"
-                  params={{ id: l.id }}
-                  aria-label={`Open ${l.title}`}
-                  className={rowLink('end')}
-                >
-                  <span className="flex min-w-0 flex-col gap-0.5">
-                    <span className="font-display font-bold">{l.title}</span>
-                    <span className="font-mono text-[0.78rem] break-all text-muted">
-                      /file/{l.slug} · {l.question_count} question
-                      {l.question_count === 1 ? '' : 's'} ·{' '}
-                      {l.asks_for_files
-                        ? l.files_frozen_at
-                          ? 'files frozen'
-                          : 'asks for files'
-                        : 'no files'}
-                    </span>
-                    <span className="text-sm text-ink-alt">{stateWords(l)}</span>
+              <Link
+                key={l.id}
+                to="/logbooks/$id"
+                params={{ id: l.id }}
+                aria-label={`Open ${l.title}`}
+                className="row"
+                style={rowCols('1fr auto')}
+              >
+                <span>
+                  <span className="t">{l.title}</span>
+                  <br />
+                  <span className="m">
+                    /file/{l.slug} · {l.question_count} question
+                    {l.question_count === 1 ? '' : 's'} ·{' '}
+                    {l.asks_for_files
+                      ? l.files_frozen_at
+                        ? 'files frozen'
+                        : 'asks for files'
+                      : 'no files'}
                   </span>
-                  <Chip
-                    tone={l.state === 'open' ? 'confirmed' : l.state === 'draft' ? 'off' : 'tag'}
-                  >
+                  <br />
+                  <span className="m">{stateWords(l)}</span>
+                </span>
+                <span>
+                  <St tone={l.state === 'open' ? 'confirmed' : l.state === 'draft' ? 'off' : 'tag'}>
                     {stateLabel[l.state]}
-                  </Chip>
-                </Link>
-              </RowItem>
+                  </St>
+                </span>
+              </Link>
             ))}
           </Rows>
         ))}
@@ -155,14 +150,15 @@ function NewLogbook({ onCancel }: { onCancel: () => void }) {
   return (
     <Panel title="Make a logbook">
       <form
-        className="space-y-4"
+        className="panel"
+        style={{ border: 0, padding: 0 }}
         onSubmit={(e) => {
           e.preventDefault();
           make.mutate();
         }}
       >
-        <fieldset className="space-y-2">
-          <legend className="font-semibold">Start from</legend>
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+          <legend className="lbl">Start from</legend>
           <RadioGroup
             aria-label="Start from"
             name="starting-point"
@@ -222,22 +218,20 @@ function NewLogbook({ onCancel }: { onCancel: () => void }) {
             />
           )}
         </Field>
-        <p className="text-sm text-muted">
-          It is made as a draft. Nobody sees it until you launch it.
-        </p>
+        <p className="muted">It is made as a draft. Nobody sees it until you launch it.</p>
         <Problem error={make.error} />
-        <div className="flex flex-wrap gap-3">
-          <Button type="submit" variant="primary" busy={make.isPending} busyLabel="Making it…">
+        <div className="acts">
+          <Btn type="submit" variant="primary" busy={make.isPending} busyLabel="Making it…">
             Make the draft
-          </Button>
-          <Button type="button" variant="quiet" onClick={onCancel}>
+          </Btn>
+          <Btn type="button" variant="quiet" onClick={onCancel}>
             Cancel
-          </Button>
+          </Btn>
         </div>
       </form>
 
-      <div className="flex flex-col gap-1">
-        <p id="upload-logbook-label" className="font-semibold">
+      <div className="field">
+        <p id="upload-logbook-label" className="lbl">
           Or upload a logbook file
         </p>
         <FileDrop

@@ -24,9 +24,9 @@ import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -131,7 +131,7 @@ function LookChoice({ state }: { state: SiteEditor }) {
         )}
       >
         {/* The sentence is the status, not the panel: its buttons are not news. */}
-        <Card
+        <Panel
           variant="deep"
           className={cn(!wide && 'sm:flex-row sm:items-center sm:justify-between')}
         >
@@ -148,7 +148,7 @@ function LookChoice({ state }: { state: SiteEditor }) {
           </p>
           {previewing ? (
             <div className="flex flex-wrap items-center gap-3">
-              <Button
+              <Btn
                 variant="quiet"
                 className="text-on-deep"
                 onClick={() => {
@@ -157,8 +157,8 @@ function LookChoice({ state }: { state: SiteEditor }) {
                 }}
               >
                 Back to what the site shows
-              </Button>
-              <Button
+              </Btn>
+              <Btn
                 busy={apply.isPending}
                 busyLabel="Applying…"
                 onClick={() => {
@@ -171,14 +171,14 @@ function LookChoice({ state }: { state: SiteEditor }) {
                 }}
               >
                 Apply to the site
-              </Button>
+              </Btn>
             </div>
           ) : null}
-        </Card>
+        </Panel>
         {apply.isError ? (
-          <Alert tone="serious" title="The look was not applied.">
+          <Note tone="serious" title="The look was not applied.">
             {apply.error.message}
-          </Alert>
+          </Note>
         ) : null}
 
         <LookFrames look={chosen} catalogue={catalogue} fit={wide ? 'always' : false} />

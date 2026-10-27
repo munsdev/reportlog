@@ -15,14 +15,14 @@ import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field, FieldDescription } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { SettingPanel, SettingPanels } from '../../components/ui/setting-panel.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { CheckOption } from '@/mockup/Choices.tsx';
+import { Field, FieldDescription } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
+import { SettingPanel, SettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/Field.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
@@ -122,7 +122,7 @@ function Archive() {
           setDownloads(v === true);
         }}
       />
-      {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
+      {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
   );
 }
@@ -181,9 +181,9 @@ function Keywords() {
           }}
         />
       </Field>
-      {save.error ? <Alert tone="serious">{save.error.message}</Alert> : null}
+      {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
       <div>
-        <Button
+        <Btn
           type="button"
           variant="secondary"
           busy={save.isPending}
@@ -200,7 +200,7 @@ function Keywords() {
           }}
         >
           Go back to the shipped list
-        </Button>
+        </Btn>
       </div>
     </SettingPanel>
   );
@@ -267,7 +267,7 @@ function NotesSwitches() {
           </li>
         ))}
       </ul>
-      {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
+      {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
   );
 }
@@ -279,7 +279,7 @@ function NotesSwitches() {
  */
 function AccessLog() {
   return (
-    <Card variant="quiet" heading="Who opened what" id="who-opened-what">
+    <Panel variant="quiet" heading="Who opened what" id="who-opened-what">
       <p>
         Every opening of a reporter’s contact details or of a file’s original, with who and why, is
         now its own page under Records:{' '}
@@ -288,6 +288,6 @@ function AccessLog() {
         </Link>
         . Opening it is recorded.
       </p>
-    </Card>
+    </Panel>
   );
 }

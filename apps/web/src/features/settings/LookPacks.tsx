@@ -5,8 +5,8 @@
  * replacing and removing also ask for the step-up, on the server.
  * Installing ends in a toast; the new looks join the chooser's grid.
  */
-import { Card } from '@/components/ui/card.tsx';
-import { KeyValueList } from '@/components/ui/key-value-list.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { AddLookPack } from '@/features/looks/AddLookPack.tsx';
 import { InstalledLookPacks } from '@/features/looks/InstalledLookPacks.tsx';
@@ -15,8 +15,8 @@ import { BUILT_IN, plural } from './looks.ts';
 export function LookPacks() {
   const toast = useToast();
   return (
-    <Card heading="Look packs" data-slot="look-packs">
-      <KeyValueList
+    <Panel heading="Look packs" data-slot="look-packs">
+      <Dl
         items={[
           {
             key: 'Built in',
@@ -41,6 +41,6 @@ export function LookPacks() {
           );
         }}
       />
-    </Card>
+    </Panel>
   );
 }

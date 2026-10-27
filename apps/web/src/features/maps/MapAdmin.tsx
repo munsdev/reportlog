@@ -48,18 +48,18 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { CheckOption } from '@/mockup/Choices.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Select } from '@/mockup/Field.tsx';
+import { Textarea } from '@/mockup/Field.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
 
@@ -84,14 +84,14 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
   const [making, setMaking] = useState(false);
   const none = maps.data?.maps.length === 0;
   const make = (
-    <Button
+    <Btn
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
       }}
     >
       Make a map
-    </Button>
+    </Btn>
   );
   return (
     <UnsavedMaps ask={ask}>
@@ -101,8 +101,8 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
         // One "Make" button at a time: an empty page carries it in its empty state.
         actions={making || none ? null : make}
       >
-        {maps.isError ? <Alert tone="serious">{maps.error.message}</Alert> : null}
-        {cands.isError ? <Alert tone="serious">{cands.error.message}</Alert> : null}
+        {maps.isError ? <Note tone="serious">{maps.error.message}</Note> : null}
+        {cands.isError ? <Note tone="serious">{cands.error.message}</Note> : null}
         {cands.isSuccess ? (
           <PlaceQuestions logbooks={cands.data.logbooks} lists={cands.data.lists} />
         ) : null}
@@ -243,14 +243,14 @@ function PlaceQuestions({
     },
   });
   return (
-    <Card heading="Which question places a report">
+    <Panel heading="Which question places a report">
       <div className="flex flex-col gap-4">
         <p className="max-w-prose text-sm text-ink-alt">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
           pick the one that says where it happened. This can be set after a logbook has launched: it
           changes nothing that was sealed.
         </p>
-        {error ? <Alert tone="serious">{error}</Alert> : null}
+        {error ? <Note tone="serious">{error}</Note> : null}
         <ul className="flex flex-col gap-3">
           {logbooks.map((l) => (
             <li key={`logbook-${String(l.id)}`}>
@@ -282,7 +282,7 @@ function PlaceQuestions({
           ))}
         </ul>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -343,7 +343,7 @@ function NewMap({ onDone }: { onDone: () => void }) {
     },
   });
   return (
-    <Card heading="Make a map">
+    <Panel heading="Make a map">
       <div>
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -375,23 +375,23 @@ function NewMap({ onDone }: { onDone: () => void }) {
               spellCheck={false}
             />
           </Field>
-          <Button type="submit" disabled={make.isPending}>
+          <Btn type="submit" disabled={make.isPending}>
             Make the map
-          </Button>
-          <Button type="button" variant="quiet" onClick={onDone}>
+          </Btn>
+          <Btn type="button" variant="quiet" onClick={onDone}>
             Cancel
-          </Button>
+          </Btn>
         </form>
         {make.isError ? (
-          <Alert tone="serious" className="mt-3">
+          <Note tone="serious" className="mt-3">
             {make.error.message}
-          </Alert>
+          </Note>
         ) : null}
         <p className="mt-3 text-sm text-muted">
           A new map is off. Nothing is published until you turn it on.
         </p>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -433,9 +433,9 @@ function MapCard({
   const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
     ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Card heading={map.title}>
+    <Panel heading={map.title}>
       <div className="flex flex-col gap-3">
-        <KeyValueList
+        <Dl
           items={[
             { key: 'Shown', value: map.enabled ? 'On: readers can see it' : 'Off' },
             { key: 'Short name', value: map.slug, mono: true },
@@ -468,7 +468,7 @@ function MapCard({
           ]}
         />
         <div className="flex flex-wrap gap-2">
-          <Button
+          <Btn
             type="button"
 
             variant="secondary"
@@ -481,8 +481,8 @@ function MapCard({
             }}
           >
             {open ? 'Close' : 'Change'}
-          </Button>
-          <Button
+          </Btn>
+          <Btn
             type="button"
 
             variant="secondary"
@@ -492,8 +492,8 @@ function MapCard({
             }}
           >
             Move up
-          </Button>
-          <Button
+          </Btn>
+          <Btn
             type="button"
 
             variant="secondary"
@@ -503,20 +503,20 @@ function MapCard({
             }}
           >
             Move down
-          </Button>
+          </Btn>
           {map.enabled ? (
-            <Button asChild variant="quiet">
+            <Btn asChild variant="quiet">
               <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
-            </Button>
+            </Btn>
           ) : null}
         </div>
         {open ? (
           <MapEditor map={map} slots={slots} logbooks={logbooks} lists={lists} onSaved={refresh} />
         ) : null}
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -953,10 +953,10 @@ function MapEditor({
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={save.isPending}>
+        <Btn type="submit" disabled={save.isPending}>
           Save the map
-        </Button>
-        <Button
+        </Btn>
+        <Btn
           type="button"
           variant="secondary"
           onClick={() => {
@@ -964,9 +964,9 @@ function MapEditor({
           }}
         >
           What would it publish?
-        </Button>
+        </Btn>
         {confirmDelete ? (
-          <Button
+          <Btn
             type="button"
             variant="secondary"
             onClick={() => {
@@ -974,9 +974,9 @@ function MapEditor({
             }}
           >
             Yes, delete this map
-          </Button>
+          </Btn>
         ) : (
-          <Button
+          <Btn
             type="button"
             variant="quiet"
             onClick={() => {
@@ -984,7 +984,7 @@ function MapEditor({
             }}
           >
             Delete the map
-          </Button>
+          </Btn>
         )}
       </div>
       {confirmDelete ? (
@@ -992,8 +992,8 @@ function MapEditor({
           Deleting a map takes no report with it. Its address stops working.
         </p>
       ) : null}
-      {remove.isError ? <Alert tone="serious">{remove.error.message}</Alert> : null}
-      {preview.isError ? <Alert tone="serious">{preview.error.message}</Alert> : null}
+      {remove.isError ? <Note tone="serious">{remove.error.message}</Note> : null}
+      {preview.isError ? <Note tone="serious">{preview.error.message}</Note> : null}
       {preview.data ? <Preview result={preview.data} /> : null}
     </form>
   );
@@ -1001,7 +1001,7 @@ function MapEditor({
 
 function Preview({ result }: { result: ResponseOf<typeof previewHeatMap> }) {
   const map = result.map;
-  if (!map.published) return <Alert>{map.reason}</Alert>;
+  if (!map.published) return <Note>{map.reason}</Note>;
   const shaded = Object.entries(map.areas).sort(([, a], [, b]) => b.n - a.n);
   return (
     <div

@@ -19,7 +19,7 @@ import {
   optionArray,
 } from '@reportlog/fields';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Check, Field, Problem, Select, TextArea, TextInput } from './controls.tsx';
 
 const LIST_KINDS: ReadonlySet<string> = new Set(['choice_one', 'choice_many', 'place']);
@@ -486,13 +486,13 @@ export function QuestionForm({
 
       <Problem error={error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" disabled={busy}>
+        <Btn type="submit" variant="secondary" disabled={busy}>
           {submitLabel}
-        </Button>
+        </Btn>
         {onCancel && (
-          <Button type="button" variant="quiet" onClick={onCancel}>
+          <Btn type="button" variant="quiet" onClick={onCancel}>
             Cancel
-          </Button>
+          </Btn>
         )}
       </div>
     </form>

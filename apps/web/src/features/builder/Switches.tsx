@@ -17,7 +17,7 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, Select } from './controls.tsx';
 import { outsideWords, when } from './words.ts';
@@ -96,7 +96,7 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
       )}
       <Problem error={freeze.error} />
       {frozen ? (
-        <Button
+        <Btn
           variant="secondary"
           disabled={freeze.isPending}
           onClick={() => {
@@ -104,7 +104,7 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
           }}
         >
           Take the freeze off
-        </Button>
+        </Btn>
       ) : asking ? (
         <div className="space-y-3 rounded-card border border-line p-3">
           <p className="font-semibold">Freeze uploads on this logbook?</p>
@@ -114,33 +114,33 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
             filed or published is hidden, and you can take the freeze off at any time.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button
+            <Btn
               disabled={freeze.isPending}
               onClick={() => {
                 freeze.mutate(true);
               }}
             >
               Freeze uploads
-            </Button>
-            <Button
+            </Btn>
+            <Btn
               variant="secondary"
               onClick={() => {
                 setAsking(false);
               }}
             >
               Keep taking files
-            </Button>
+            </Btn>
           </div>
         </div>
       ) : (
-        <Button
+        <Btn
           variant="secondary"
           onClick={() => {
             setAsking(true);
           }}
         >
           Freeze uploads…
-        </Button>
+        </Btn>
       )}
       <p>
         <Link to="/files/logbooks/$id" params={{ id: String(lb.id) }} className="underline">

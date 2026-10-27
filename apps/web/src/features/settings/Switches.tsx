@@ -20,11 +20,11 @@ import { getDevMode, getIntakePause, setDevMode, setIntakeSwitch } from '@report
 import type { DevMode } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { KeyValueList } from '@/components/ui/key-value-list.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { intakeSwitchQuery, logbooksQuery } from '../builder/queries.ts';
@@ -73,25 +73,25 @@ export function AcceptingReportsPanel() {
   const title = 'Accepting reports';
   if (query.isPending) {
     return (
-      <Card heading={title}>
+      <Panel heading={title}>
         <p role="status">Reading the intake switch…</p>
-      </Card>
+      </Panel>
     );
   }
   if (query.isError) {
     return (
-      <Card heading={title}>
-        <Alert tone="serious" title="The intake switch could not be read.">
+      <Panel heading={title}>
+        <Note tone="serious" title="The intake switch could not be read.">
           {query.error.message}
-        </Alert>
-      </Card>
+        </Note>
+      </Panel>
     );
   }
   const now = query.data.open ? 'on' : 'off';
   const chosen = choice ?? now;
   return (
-    <Card heading={title}>
-      <KeyValueList
+    <Panel heading={title}>
+      <Dl
         items={[
           { key: 'Accepting', value: yesNo(query.data.open) },
           {
@@ -128,13 +128,13 @@ export function AcceptingReportsPanel() {
         />
       </RadioGroup>
       {save.isError ? (
-        <Alert tone="serious" title="That did not change.">
+        <Note tone="serious" title="That did not change.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {chosen !== now ? (
         <div>
-          <Button
+          <Btn
             busy={save.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -142,10 +142,10 @@ export function AcceptingReportsPanel() {
             }}
           >
             {chosen === 'on' ? 'Turn it on' : 'Turn it off'}
-          </Button>
+          </Btn>
         </div>
       ) : null}
-    </Card>
+    </Panel>
   );
 }
 
@@ -187,8 +187,8 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
   // "On" chosen while it is already on renews the window from now.
   const pressable = chosen !== now || chosen === 'on';
   return (
-    <Card heading="Development notice">
-      <KeyValueList
+    <Panel heading="Development notice">
+      <Dl
         items={[
           {
             key: 'Showing',
@@ -220,13 +220,13 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
         />
       </RadioGroup>
       {change.isError ? (
-        <Alert tone="serious" title="That did not change.">
+        <Note tone="serious" title="That did not change.">
           {change.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {pressable ? (
         <div>
-          <Button
+          <Btn
             busy={change.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -238,10 +238,10 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
                 ? `Show it for ${hours} hours from now`
                 : 'Turn it on'
               : 'Turn it off'}
-          </Button>
+          </Btn>
         </div>
       ) : null}
-    </Card>
+    </Panel>
   );
 }
 
@@ -250,17 +250,17 @@ export function DevNotice() {
   const state = useQuery(devModeQuery);
   if (state.isPending)
     return (
-      <Card heading="Development notice">
+      <Panel heading="Development notice">
         <p role="status">Loading…</p>
-      </Card>
+      </Panel>
     );
   if (state.isError)
     return (
-      <Card heading="Development notice">
-        <Alert tone="serious" title="The notice’s state could not be read.">
+      <Panel heading="Development notice">
+        <Note tone="serious" title="The notice’s state could not be read.">
           {state.error.message}
-        </Alert>
-      </Card>
+        </Note>
+      </Panel>
     );
   return <DevNoticePanel state={state.data} />;
 }

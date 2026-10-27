@@ -14,13 +14,13 @@ import { setLegalText } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/Field.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -88,10 +88,10 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
       onSave={() => write(text)}
     >
       {entry.published ? null : (
-        <Alert title={`No ${title.toLowerCase()} is published.`}>
+        <Note title={`No ${title.toLowerCase()} is published.`}>
           The box holds an outline to start from, not a notice. Saving it as it stands would publish
           the outline. Replace every bracketed line first.
-        </Alert>
+        </Note>
       )}
       <Field>
         <Label>{title}</Label>
@@ -108,7 +108,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
       </Field>
       {entry.published ? (
         <div>
-          <Button
+          <Btn
             type="button"
             variant="quiet"
             onClick={() => {
@@ -123,7 +123,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
             }}
           >
             Take it down
-          </Button>
+          </Btn>
         </div>
       ) : null}
     </GuardedPanel>

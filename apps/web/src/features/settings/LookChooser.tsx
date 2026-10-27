@@ -11,11 +11,11 @@
  */
 import type { Look } from '@reportlog/contracts';
 import { useId } from 'react';
-import { Chip } from '@/components/ui/chip.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { Select } from '@/components/ui/select.tsx';
+import { St } from '@/mockup/St.tsx';
+import { Field, FieldDescription } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import { Select } from '@/mockup/Field.tsx';
 import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
@@ -80,7 +80,7 @@ export function LookChooser({
             <Strip palette={l.palette} theme={l.theme} />
             <span className="flex flex-wrap items-center gap-2">
               <span>{l.label}</span>
-              {onSite ? <Chip tone="tag">On the site</Chip> : null}
+              {onSite ? <St tone="tag">On the site</St> : null}
             </span>
             {l.pack ? <span className="text-sm text-ink-alt">From {l.pack}</span> : null}
           </span>

@@ -20,10 +20,10 @@ import type { SiteEditor } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -114,17 +114,17 @@ function PublishingPanel() {
 
   if (query.isPending)
     return (
-      <Card heading="Publishing">
+      <Panel heading="Publishing">
         <p role="status">Loading…</p>
-      </Card>
+      </Panel>
     );
   if (query.isError)
     return (
-      <Card heading="Publishing">
-        <Alert tone="serious" title="Publishing could not be read.">
+      <Panel heading="Publishing">
+        <Note tone="serious" title="Publishing could not be read.">
           {query.error.message}
-        </Alert>
-      </Card>
+        </Note>
+      </Panel>
     );
   const now = query.data.published ? 'on' : 'off';
   const value = draft ?? now;
@@ -174,9 +174,9 @@ function PublishingPanel() {
         />
       </RadioGroup>
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
     </GuardedPanel>
   );
@@ -227,9 +227,9 @@ function EditorPanels() {
   const editor = useQuery(editorQuery);
   if (editor.isError)
     return (
-      <Alert tone="serious" title="The settings could not be read.">
+      <Note tone="serious" title="The settings could not be read.">
         {editor.error.message}
-      </Alert>
+      </Note>
     );
   const state = editor.data;
   const terms = state?.copy.find((s) => s.key === 'terms_of_use');

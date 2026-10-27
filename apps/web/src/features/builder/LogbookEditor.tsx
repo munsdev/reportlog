@@ -27,13 +27,13 @@ import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button, buttonVariants } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { SettingPanels } from '../../components/ui/setting-panel.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
+import { Panel as MPanel } from '@/mockup/Panel.tsx';
+import { St } from '@/mockup/St.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -56,9 +56,9 @@ export function LogbookEditor({ id }: { id: number }) {
   if (query.isPending) return <p role="status">Opening the logbook…</p>;
   if (query.isError) {
     return (
-      <div role="alert" className="space-y-2">
-        <p className="font-semibold">{query.error.message}</p>
-        <Link to="/logbooks" className="underline">
+      <div role="alert" className="panel">
+        <p>{query.error.message}</p>
+        <Link to="/logbooks" className="back">
           Back to the logbooks
         </Link>
       </div>
@@ -79,27 +79,23 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
   return (
     <StaffPage eyebrow={`Logbook · ${stateLabel[lb.state]}`} title={lb.title} lede={stateWords(lb)}>
-      <div className="flex flex-col gap-3">
-        <p>
-          <Link to="/logbooks" className="text-sm font-semibold underline">
-            ← All logbooks
-          </Link>
-        </p>
-        <p className="flex flex-wrap items-center gap-2">
-          <Chip tone={lb.state === 'open' ? 'confirmed' : lb.state === 'draft' ? 'off' : 'tag'}>
-            {stateLabel[lb.state]}
-          </Chip>
-          <Chip tone="off">{lb.asks_for_files ? 'Takes files' : 'No files'}</Chip>
-        </p>
-        <p data-filing-address className="font-mono text-sm break-all text-muted">
-          /file/{lb.slug}
-          {lb.short_slug ? ` · /${lb.short_slug}` : ''}
-        </p>
-        <Downloads lb={lb} launched={launched} />
+      <Link to="/logbooks" className="back">
+        ← All logbooks
+      </Link>
+      <div className="chips">
+        <St tone={lb.state === 'open' ? 'confirmed' : lb.state === 'draft' ? 'off' : 'tag'}>
+          {stateLabel[lb.state]}
+        </St>
+        <St tone="off">{lb.asks_for_files ? 'Takes files' : 'No files'}</St>
       </div>
+      <p data-filing-address className="mono">
+        /file/{lb.slug}
+        {lb.short_slug ? ` · /${lb.short_slug}` : ''}
+      </p>
+      <Downloads lb={lb} launched={launched} />
 
       <SettingPanels>
-        <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+        <div className="grid2 even">
           <Details lb={lb} refresh={refresh} />
           <CoverPanel
             kind="logbook"
@@ -121,17 +117,17 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
       <Panel title="Questions">
         {launched && (
-          <Card variant="quiet">
+          <MPanel variant="quiet">
             <p>
               {lb.launched_at ? `Launched on ${day(lb.launched_at)}. ` : ''}The questions’ keys,
               kinds, order, conditions and codes are frozen, so every sealed report still checks.
               You can reword a label or help, add an optional question at the end, and choose which
               questions the board offers as filters.
             </p>
-          </Card>
+          </MPanel>
         )}
         <QuestionList lb={lb} refresh={refresh} />
-        <Card variant="quiet" heading="Add a question" headingLevel={3}>
+        <MPanel variant="quiet" heading="Add a question" headingLevel={3}>
           <QuestionForm
             earlier={lb.fields}
             launched={launched}
@@ -141,7 +137,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
               await refresh();
             }}
           />
-        </Card>
+        </MPanel>
       </Panel>
 
       {!launched && <Launch lb={lb} refresh={refresh} />}
@@ -160,7 +156,7 @@ const day = (iso: string) =>
  */
 function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="acts">
       {launched ? (
         // Only a launched logbook has a form a reporter can open; a draft's
         // is not served to anybody, so the button is left out until then.
@@ -168,7 +164,7 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
           href={`/file/${lb.slug}`}
           target="_blank"
           rel="noopener"
-          className={buttonVariants({ variant: 'secondary' })}
+          className={btnClass('secondary')}
         >
           Open the reporter’s form
         </a>
@@ -176,14 +172,14 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
       <a
         href={`/api/admin/logbooks/${String(lb.id)}/file`}
         download={`logbook-${lb.slug}.json`}
-        className={buttonVariants({ variant: 'secondary' })}
+        className={btnClass('secondary')}
       >
         The logbook file
       </a>
       {launched ? (
         <StepUpDownload
           href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
-          className={buttonVariants({ variant: 'secondary' })}
+          className={btnClass('secondary')}
         >
           Its chain
         </StepUpDownload>
@@ -237,11 +233,11 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
       onSave={() => save.mutateAsync()}
       onCancel={reset}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         Neither is part of the questions, so both can change at any time. The web address /file/
         {lb.slug} cannot, but the short address below can.
       </p>
-      <div className="space-y-3">
+      <div className="form-stack">
         <Field label="Title">
           {(p) => (
             <TextInput
@@ -316,7 +312,7 @@ function NotesRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
       onSave={() => save.mutateAsync()}
       onCancel={reset}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         {lb.accepts_notes
           ? 'Reporters are asked this logbook’s attached note and link questions. What they write is never published. A reporter who writes something is asked for an email address, so they can correct or erase it.'
           : 'Reporters are not asked for a note or a link, and nothing they type reaches this logbook. Its attached note and link questions, if it has any, are skipped.'}
@@ -382,13 +378,13 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
       onSave={() => save.mutateAsync()}
       onCancel={reset}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         {lb.asks_email
           ? 'This form asks every reporter for an email address. Nothing is filed until they confirm it from the link we send, and they can sign in later to correct or withdraw their report.'
           : 'This form does not ask for an email address. Each report is filed the moment it is sent, with no link to confirm, and the reporter cannot come back to correct or withdraw it.'}
       </p>
       {fromQuestions ? (
-        <p className="text-sm text-muted">
+        <p className="muted">
           It asks because a question lets people type, or takes files. That cannot be switched off.
         </p>
       ) : (
@@ -455,7 +451,7 @@ function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
       onSave={() => save.mutateAsync()}
       onCancel={reset}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         {lb.publish_by_terms
           ? 'Reporters are not asked whether their report may be published. The last card tells them that filing here means it may be, once a moderator approves it.'
           : 'Reporters are asked whether their report may be published. A report whose reporter says no, or does not answer, is never published.'}
@@ -492,7 +488,7 @@ function FrontPageSwitch({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
     <GuardedPanel
       id="front"
       title="On the front page"
-      summary={[{ key: 'Button', value: lb.show_on_front ? 'Shown while open' : 'Not shown' }]}
+      summary={[{ key: 'Btn', value: lb.show_on_front ? 'Shown while open' : 'Not shown' }]}
       dirty={on !== lb.show_on_front}
       onSave={() => save.mutateAsync()}
       onCancel={reset}
@@ -536,7 +532,7 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
 
   if (!lb.fields.length) {
     return (
-      <p className="text-ink-alt">
+      <p className="muted">
         No questions yet. A report is a logbook’s answers, so add at least one before launching.
       </p>
     );
@@ -545,154 +541,150 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
   return (
     <>
       <Problem error={error} />
-      <ol className="m-0 grid list-none gap-2 p-0" aria-label="The questions, in order">
-        {lb.fields.map((q, i) => (
-          <li
-            key={q.id}
-            className="flex flex-col gap-2 rounded-control border-[1.5px] border-line bg-surface px-3 py-2.5"
-          >
-            {editing === q.id && launched ? (
-              <RewordForm
-                question={q}
-                earlier={defs(lb.fields.slice(0, i))}
-                onCancel={() => {
-                  setEditing(null);
-                }}
-                onSubmit={async (body) => {
-                  await call(updateQuestion, { params: { id: lb.id, fieldId: q.id }, body });
-                  setEditing(null);
-                  await refresh();
-                }}
-              />
-            ) : editing === q.id ? (
-              <QuestionForm
-                earlier={lb.fields.slice(0, i)}
-                launched={launched}
-                initial={q}
-                submitLabel="Save the question"
-                onCancel={() => {
-                  setEditing(null);
-                }}
-                onSubmit={async (body) => {
-                  await call(updateQuestion, { params: { id: lb.id, fieldId: q.id }, body });
-                  setEditing(null);
-                  await refresh();
-                }}
-              />
-            ) : (
-              <>
-                <p className="font-display font-bold">
-                  <span className="mr-2 font-mono font-normal text-muted" aria-hidden="true">
-                    {i + 1}
-                  </span>
-                  <span className="sr-only">{i + 1}. </span>
-                  {q.label}
-                </p>
-                <p className="flex flex-wrap items-center gap-2">
-                  <Chip tone="tag" className="font-mono">
-                    {fieldType(q.kind)?.label ?? q.kind}
-                  </Chip>
-                  {q.required ? <Chip tone="tag">Needed</Chip> : null}
-                  {q.filterable ? <Chip tone="tag">Filter</Chip> : null}
-                  {q.shown_when ? <Chip tone="tag">Sometimes</Chip> : null}
-                </p>
+      <div className="qlist" role="list" aria-label="The questions, in order">
+        {lb.fields.map((q, i) =>
+          editing === q.id && launched ? (
+            <RewordForm
+              key={q.id}
+              question={q}
+              earlier={defs(lb.fields.slice(0, i))}
+              onCancel={() => {
+                setEditing(null);
+              }}
+              onSubmit={async (body) => {
+                await call(updateQuestion, { params: { id: lb.id, fieldId: q.id }, body });
+                setEditing(null);
+                await refresh();
+              }}
+            />
+          ) : editing === q.id ? (
+            <QuestionForm
+              key={q.id}
+              earlier={lb.fields.slice(0, i)}
+              launched={launched}
+              initial={q}
+              submitLabel="Save the question"
+              onCancel={() => {
+                setEditing(null);
+              }}
+              onSubmit={async (body) => {
+                await call(updateQuestion, { params: { id: lb.id, fieldId: q.id }, body });
+                setEditing(null);
+                await refresh();
+              }}
+            />
+          ) : (
+            <div key={q.id} className="qitem" role="listitem">
+              <span className="h" aria-hidden="true">
+                {i + 1}
+              </span>
+              <div>
+                <b>{q.label}</b>
+                <small>
+                  {[
+                    fieldType(q.kind)?.label ?? q.kind,
+                    q.required ? 'Needed' : null,
+                    q.filterable ? 'Filter' : null,
+                    q.shown_when ? 'Sometimes' : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </small>
                 {isPublishedFreeText(q) && (
-                  <Alert tone="warning">
+                  <Note tone="warning">
                     This question is published as typed and cannot be changed.
-                  </Alert>
+                  </Note>
                 )}
-                {q.help && <p className="text-sm text-ink-alt">{q.help}</p>}
-                {q.shown_when && (
-                  <p className="text-sm">{describeCondition(q.shown_when, defs(lb.fields))}</p>
-                )}
+                {q.help && <small>{q.help}</small>}
+                {q.shown_when && <small>{describeCondition(q.shown_when, defs(lb.fields))}</small>}
                 {typeof q.settings.card_question === 'string' && (
-                  <p className="text-sm">Its card asks “{q.settings.card_question}”.</p>
+                  <small>Its card asks “{q.settings.card_question}”.</small>
                 )}
                 {q.settings.same_card === true && (
-                  <p className="text-sm">Asked on the same card as the question above it.</p>
+                  <small>Asked on the same card as the question above it.</small>
                 )}
                 {Array.isArray(q.settings.option_sets) && (
-                  <p className="text-sm">
+                  <small>
                     Which choices it offers depends on an earlier answer (
                     {String(q.settings.option_sets.length)} lists).
-                  </p>
+                  </small>
                 )}
-                <p className="text-sm text-ink-alt">
+                <small>
                   {q.required ? 'Needs an answer' : 'Optional'} · answered under{' '}
-                  <span className="font-mono text-ink">{q.key}</span>
-                </p>
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  {!launched && (
-                    <>
-                      <Button
-                        variant="secondary"
-                        disabled={i === 0}
-                        aria-label={`Move up: “${q.label}”`}
-                        onClick={() => void move(i, -1)}
-                      >
-                        Move up
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        disabled={i === lb.fields.length - 1}
-                        aria-label={`Move down: “${q.label}”`}
-                        onClick={() => void move(i, 1)}
-                      >
-                        Move down
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        aria-label={`Change “${q.label}”`}
-                        onClick={() => {
-                          setEditing(q.id);
-                        }}
-                      >
-                        Change
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        aria-label={`Remove “${q.label}”`}
-                        onClick={() =>
-                          void run(() =>
-                            call(removeQuestion, { params: { id: lb.id, fieldId: q.id } }),
-                          )
-                        }
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  )}
-                  {launched && (
-                    <Button
+                  <span className="mono">{q.key}</span>
+                </small>
+              </div>
+              <div className="acts">
+                {!launched && (
+                  <>
+                    <Btn
+                      variant="quiet"
+                      disabled={i === 0}
+                      aria-label={`Move up: “${q.label}”`}
+                      onClick={() => void move(i, -1)}
+                    >
+                      ↑
+                    </Btn>
+                    <Btn
+                      variant="quiet"
+                      disabled={i === lb.fields.length - 1}
+                      aria-label={`Move down: “${q.label}”`}
+                      onClick={() => void move(i, 1)}
+                    >
+                      ↓
+                    </Btn>
+                    <Btn
                       variant="secondary"
-                      aria-label={`Reword “${q.label}”`}
+                      aria-label={`Change “${q.label}”`}
                       onClick={() => {
                         setEditing(q.id);
                       }}
                     >
-                      Reword
-                    </Button>
-                  )}
-                  {launched && canFilter(q.kind) && (
-                    <Check
-                      label="A filter on the board"
-                      checked={q.filterable}
-                      onCheckedChange={(on) =>
+                      Change
+                    </Btn>
+                    <Btn
+                      variant="quiet"
+                      aria-label={`Remove “${q.label}”`}
+                      onClick={() =>
                         void run(() =>
-                          call(updateQuestion, {
-                            params: { id: lb.id, fieldId: q.id },
-                            body: { filterable: on },
-                          }),
+                          call(removeQuestion, { params: { id: lb.id, fieldId: q.id } }),
                         )
                       }
-                    />
-                  )}
-                </div>
-              </>
-            )}
-          </li>
-        ))}
-      </ol>
+                    >
+                      Remove
+                    </Btn>
+                  </>
+                )}
+                {launched && (
+                  <Btn
+                    variant="secondary"
+                    aria-label={`Reword “${q.label}”`}
+                    onClick={() => {
+                      setEditing(q.id);
+                    }}
+                  >
+                    Reword
+                  </Btn>
+                )}
+                {launched && canFilter(q.kind) && (
+                  <Check
+                    label="A filter on the board"
+                    checked={q.filterable}
+                    onCheckedChange={(on) =>
+                      void run(() =>
+                        call(updateQuestion, {
+                          params: { id: lb.id, fieldId: q.id },
+                          body: { filterable: on },
+                        }),
+                      )
+                    }
+                  />
+                )}
+              </div>
+            </div>
+          ),
+        )}
+      </div>
     </>
   );
 }
@@ -701,7 +693,7 @@ function Launch({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<voi
   return (
     <Panel title="Launch">
       {lb.fields.length === 0 ? (
-        <p className="text-ink-alt">Add at least one question before launching.</p>
+        <p className="muted">Add at least one question before launching.</p>
       ) : (
         <TypeToConfirm
           title={lb.title}
@@ -744,18 +736,18 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
 
   return (
     <Panel title="Taking reports">
-      <KeyValueList
+      <Dl
         items={[
           { key: 'Now', value: isClosed ? 'Closed' : stateLabel[lb.state] },
           { key: 'Opens', value: lb.opens_at ? day(lb.opens_at) : 'When it launched' },
           { key: 'Closes', value: lb.closes_at ? day(lb.closes_at) : 'No end set' },
         ]}
       />
-      <p className="text-ink-alt">
+      <p className="muted">
         Closing stops new reports and keeps every report already filed. It can be undone.
       </p>
       <Problem error={closed.error} />
-      <Button
+      <Btn
         variant="secondary"
         disabled={closed.isPending}
         onClick={() => {
@@ -763,16 +755,16 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
         }}
       >
         {isClosed ? 'Reopen this logbook' : 'Close this logbook'}
-      </Button>
+      </Btn>
 
       <form
-        className="space-y-3"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           schedule.mutate();
         }}
       >
-        <h3 className="font-display text-lg font-bold">Opening and closing times</h3>
+        <h3>Opening and closing times</h3>
         <Field label="Opens (leave empty to open now)">
           {(p) => (
             <TextInput
@@ -798,9 +790,9 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           )}
         </Field>
         <Problem error={schedule.error} />
-        <Button type="submit" variant="secondary" disabled={schedule.isPending}>
+        <Btn type="submit" variant="secondary" disabled={schedule.isPending}>
           Save the opening times
-        </Button>
+        </Btn>
       </form>
     </Panel>
   );

@@ -10,8 +10,8 @@ import { CORE_PACK, removeLookPack } from '@reportlog/contracts';
 import type { InstalledLookPack } from '@reportlog/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { lookPacksQuery } from './queries.ts';
@@ -49,9 +49,9 @@ export function InstalledLookPacks() {
         ))}
       </ul>
       {packs.isError ? (
-        <Alert tone="serious" title="The installed packs could not be listed.">
+        <Note tone="serious" title="The installed packs could not be listed.">
           {packs.error instanceof ApiRequestError ? packs.error.message : null}
-        </Alert>
+        </Note>
       ) : null}
     </section>
   );
@@ -87,12 +87,12 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
         </span>
         {pack.in_use ? <span className="text-sm">{pack.in_use}</span> : null}
         {error ? (
-          <Alert tone="serious" title="Not removed">
+          <Note tone="serious" title="Not removed">
             {error}
-          </Alert>
+          </Note>
         ) : null}
       </div>
-      <Button
+      <Btn
         variant="quiet"
         busy={busy}
         busyLabel="Removing…"
@@ -100,7 +100,7 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
         onClick={() => void remove()}
       >
         Remove
-      </Button>
+      </Btn>
     </li>
   );
 }

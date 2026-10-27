@@ -10,7 +10,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useBlocker } from '@tanstack/react-router';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 
 export const editorQuery = queryOptions({
@@ -51,9 +51,9 @@ export function WithEditor({ children }: { children: (state: SiteEditor) => Reac
   if (query.isPending) return <p role="status">Loading the settings…</p>;
   if (query.isError) {
     return (
-      <Alert tone="serious" title="The settings could not be opened.">
+      <Note tone="serious" title="The settings could not be opened.">
         {whyNot(query.error)}
-      </Alert>
+      </Note>
     );
   }
   return <>{children(query.data)}</>;
@@ -69,12 +69,12 @@ export function SaveOutcome({
 }) {
   if (mutation.isError && mutation.error) {
     return (
-      <Alert tone="serious" title="That was not saved.">
+      <Note tone="serious" title="That was not saved.">
         {mutation.error.message}
-      </Alert>
+      </Note>
     );
   }
-  if (mutation.isSuccess) return <Alert tone="done" title={done} />;
+  if (mutation.isSuccess) return <Note tone="done" title={done} />;
   return null;
 }
 

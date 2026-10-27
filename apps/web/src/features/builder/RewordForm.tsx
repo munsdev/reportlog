@@ -15,7 +15,7 @@ import type { OptionInput, Question, QuestionSettingsInput } from '@reportlog/co
 import { describeCondition, optionArray, optionSetsOf } from '@reportlog/fields';
 import type { FieldDefinition } from '@reportlog/fields';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Field, Problem, TextInput } from './controls.tsx';
 
 interface Props {
@@ -186,12 +186,12 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
       ))}
       <Problem error={error} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" disabled={busy}>
+        <Btn type="submit" variant="secondary" disabled={busy}>
           Save the wording
-        </Button>
-        <Button type="button" variant="quiet" onClick={onCancel}>
+        </Btn>
+        <Btn type="button" variant="quiet" onClick={onCancel}>
           Cancel
-        </Button>
+        </Btn>
       </div>
     </form>
   );

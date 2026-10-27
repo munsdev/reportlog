@@ -22,14 +22,14 @@ import type { CopySlot } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
+import { Input } from '@/mockup/Field.tsx';
+import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/components/ui/select.tsx';
-import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { Select } from '@/mockup/Field.tsx';
+import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/Field.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -94,7 +94,7 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
         ) : null}
       </Field>
       <div>
-        <Button
+        <Btn
           type="button"
           variant="secondary"
           disabled={!current}
@@ -103,7 +103,7 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
           }}
         >
           Insert it
-        </Button>
+        </Btn>
       </div>
       <p className="text-sm text-ink-alt">
         It goes in as <code className="font-mono">{'{{ [name] }}'}</code>. Inside the braces you can
@@ -255,7 +255,7 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           {slot.kind === 'block' && slot.key !== 'lock_intro' && slot.key !== 'help_now' ? (
             <div className="flex flex-col gap-2">
               <div>
-                <Button
+                <Btn
                   type="button"
                   variant="quiet"
                   aria-expanded={picking}
@@ -264,14 +264,14 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
                   }}
                 >
                   {picking ? 'Hide the numbers' : 'Insert a number'}
-                </Button>
+                </Btn>
               </div>
               {picking ? <FigurePicker onInsert={insert} /> : null}
             </div>
           ) : null}
           {slot.written ? (
             <div>
-              <Button
+              <Btn
                 type="button"
                 variant="quiet"
                 onClick={() => {
@@ -285,7 +285,7 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
                 }}
               >
                 Go back to the shipped wording
-              </Button>
+              </Btn>
             </div>
           ) : null}
         </div>

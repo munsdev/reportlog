@@ -27,9 +27,9 @@ import type { LookOptions, SiteEditor } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { useSite } from '@/components/ui/site.tsx';
 import { ApiRequestError, call, pathFor } from '@/lib/api.ts';
 import { useMe } from '../identity/session.ts';
@@ -177,19 +177,19 @@ export function LookOptionsPanel() {
   const isOwner = me?.signedIn === true && me.roles.includes('owner');
   if (!isOwner) {
     return (
-      <Card heading="Header background, motion and grounds" headingLevel={2}>
+      <Panel heading="Header background, motion and grounds" headingLevel={2}>
         <p>
           Only the owner can change these. Right now sections{' '}
           {d.stored.zones === 'alternate' ? 'alternate' : 'keep one ground'}, and decoration{' '}
           {d.stored.motion === 'on' ? 'drifts as the page scrolls' : 'stays still'}.
         </p>
-      </Card>
+      </Panel>
     );
   }
   const { draft, setDraft, dirty, kit, message, save, upload, remove } = d;
   return (
     <div className="flex flex-col gap-8">
-      <Card heading="Header background" headingLevel={2}>
+      <Panel heading="Header background" headingLevel={2}>
         <p className="text-muted">
           Drawn behind headlines and section bands. Never behind form questions or report text.
         </p>
@@ -210,9 +210,9 @@ export function LookOptionsPanel() {
           imageMessage={message}
           busy={upload.isPending || remove.isPending}
         />
-      </Card>
+      </Panel>
 
-      <Card heading="Motion" headingLevel={2}>
+      <Panel heading="Motion" headingLevel={2}>
         <p className="text-muted">
           Decoration layers drift at different speeds as the page scrolls. Visitors whose device
           asks for reduced motion never see it, whatever this is set to.
@@ -235,9 +235,9 @@ export function LookOptionsPanel() {
             </ToggleChip>
           ))}
         </div>
-      </Card>
+      </Panel>
 
-      <Card heading="Section grounds" headingLevel={2}>
+      <Panel heading="Section grounds" headingLevel={2}>
         <p className="text-muted">
           Alternate dark and light bands on the front page and Get involved, or keep one ground
           throughout.
@@ -260,10 +260,10 @@ export function LookOptionsPanel() {
             </ToggleChip>
           ))}
         </div>
-      </Card>
+      </Panel>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button
+        <Btn
           busy={save.isPending}
           busyLabel="Saving…"
           disabled={!dirty}
@@ -272,20 +272,20 @@ export function LookOptionsPanel() {
           }}
         >
           Save these choices
-        </Button>
+        </Btn>
         {dirty ? (
-          <Button variant="quiet" onClick={d.reset}>
+          <Btn variant="quiet" onClick={d.reset}>
             Discard changes
-          </Button>
+          </Btn>
         ) : null}
       </div>
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {save.isSuccess && !dirty ? (
-        <Alert tone="done" title="Saved. The site now shows it." />
+        <Note tone="done" title="Saved. The site now shows it." />
       ) : null}
     </div>
   );
