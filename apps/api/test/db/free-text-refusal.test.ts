@@ -23,7 +23,7 @@ const REFUSED = [
   { kind: 'email' },
   { kind: 'place', settings: { options: ['Hall'], allowOther: true } },
   { kind: 'place', settings: { options: [] } },
-] as const;
+] satisfies { kind: string; settings?: { options: string[]; allowOther?: boolean } }[];
 
 let h: Harness;
 let session: string;
