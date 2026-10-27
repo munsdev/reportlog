@@ -9,7 +9,8 @@
  * Root treats the file as untrusted: it can ask for a check, or for the
  * commit the configured DEPLOY_REF points at after a fresh fetch, or for the
  * newest commit of the one branch called `test` (apply_test: the hidden
- * "Update to test build" button), and nothing else. So the worst a forged request can do is deploy what the
+ * "Update to test build" button), or to go back to the release that ran
+ * before (rollback, the button beside it), and nothing else. So the worst a forged request can do is deploy what the
  * operator already configured, which the daily check would have offered.
  *
  * Administrators (the owner included), like every other Operations panel.
@@ -89,7 +90,11 @@ export async function updatesView(stateDir: string): Promise<UpdatesView> {
  */
 export async function writeRequest(
   stateDir: string,
-  body: { action: 'check' } | { action: 'apply'; sha: string } | { action: 'apply_test' },
+  body:
+    | { action: 'check' }
+    | { action: 'apply'; sha: string }
+    | { action: 'apply_test' }
+    | { action: 'rollback' },
 ): Promise<void> {
   const view = await updatesView(stateDir);
   if (view.waiting || view.last?.state === 'running')
@@ -104,8 +109,8 @@ export async function writeRequest(
   const text =
     body.action === 'apply'
       ? `action=apply\nsha=${body.sha}\n`
-      : body.action === 'apply_test'
-        ? 'action=apply_test\n'
+      : body.action === 'apply_test' || body.action === 'rollback'
+        ? `action=${body.action}\n`
         : 'action=check\n';
   const tmp = join(dir, `.request.${String(process.pid)}`);
   try {
@@ -132,7 +137,10 @@ export function updateRoutes(app: FastifyInstance, deps: { stateDir: string }): 
       await writeRequest(
         deps.stateDir,
         request.body as
-          { action: 'check' } | { action: 'apply'; sha: string } | { action: 'apply_test' },
+          | { action: 'check' }
+          | { action: 'apply'; sha: string }
+          | { action: 'apply_test' }
+          | { action: 'rollback' },
       );
       return updatesView(deps.stateDir);
     });

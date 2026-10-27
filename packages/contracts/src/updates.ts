@@ -64,6 +64,8 @@ export const requestUpdate = defineRoute({
      * a fresh fetch, and no other branch can be asked for.
      */
     z.object({ action: z.literal('apply_test') }),
+    /** Back to the release that ran before this one (what `sudo reportlog rollback` does). */
+    z.object({ action: z.literal('rollback') }),
   ]),
   response: UpdatesView,
 });

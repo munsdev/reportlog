@@ -42,6 +42,14 @@ describe('the Update button', () => {
     await expect(writeRequest(dir, { action: 'check' })).rejects.toMatchObject({ code: 'busy' });
   });
 
+  it('can ask to go back one release, naming no release', async () => {
+    const dir = await stateDir();
+    await writeRequest(dir, { action: 'rollback' });
+    expect(await readFile(join(dir, 'update-request', 'request'), 'utf8')).toBe(
+      'action=rollback\n',
+    );
+  });
+
   it('refuses a commit that is not the one on offer', async () => {
     const dir = await stateDir();
     await expect(writeRequest(dir, { action: 'apply', sha: 'c'.repeat(40) })).rejects.toMatchObject(

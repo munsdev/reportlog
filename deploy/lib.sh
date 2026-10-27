@@ -492,7 +492,7 @@ run_update_request() {
   rm -f "$req"
   install -d -m 0755 "$STATUS_DIR"
   case "$action" in
-    check | apply | apply_test) ;;
+    check | apply | apply_test | rollback) ;;
     *)
       update_status refused unknown ""
       return 0
@@ -507,6 +507,20 @@ run_update_request() {
     return 0
   fi
   update_status running "$action" "$sha"
+  # ROLLBACK: the release that ran before this one, exactly `reportlog
+  # rollback` with no argument (no release is named by the request). It needs
+  # no network, so it comes before the fetch. The database keeps what the
+  # newer release added; older code runs on it.
+  if [ "$action" = rollback ]; then
+    exec 8>&-
+    "$LIB/rollback.sh" >>"$log" 2>&1 || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      update_status "done" "$action" ""
+    else
+      update_status failed "$action" ""
+    fi
+    return 0
+  fi
   update_check >>"$log" 2>&1 || rc=$?
   # THE TEST BUILD. The one branch name this accepts is fixed here, never
   # read from the request: the file can say "apply_test" and nothing more.

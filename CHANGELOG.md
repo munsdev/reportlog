@@ -48,7 +48,8 @@ and `package.json` disagree. How a release is cut is in the README.
   first, in capital letters, that this is a TEST BUILD that may break things, then installs the
   newest commit of the branch called `test`. The server reads only the word apply_test from the
   request; it never takes a branch or commit from it. The server needs one normal deploy of this
-  version before the button works.
+  version before the button works. A "Roll back" button appears beside it and returns the site to
+  the release it ran before (the same as `sudo reportlog rollback`; no release is named by the request).
 - The front page's buttons are edited as rows. Each has a Target chosen from a drop-down (your
   logbooks, lists, public maps, the board, alerts, Submit, journalists, report illegal content,
   About, or the social links as a row of icons), Main text and Subtext. Leave the wording blank to
