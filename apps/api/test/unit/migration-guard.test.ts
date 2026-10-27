@@ -21,6 +21,8 @@ import { isConstantDefault, judgeMigration, splitStatements } from '../support/m
 const EXCEPTIONS: Readonly<Record<string, string>> = {
   '20261027014500_filing_limits.sql':
     'Widens the CHECK on report_permissions_log.permission by one allowed value (journalist_sharing). No row changes, the log stays append-only, and an older release never writes the new value, so it runs unchanged. Reviewed by the integrator, 27 October 2026.',
+  '20261027071500_text_moderation.sql':
+    'Adds the kinds desk_text and desk_tip_text to the CHECKs on contact_access_log, re-stating its thread and report checks to admit them, and one new check tying text_item_id to those kinds. Every old kind keeps passing every old check, so no existing row is touched or rejected and an older release writes only old kinds; the same shape as 20261019200151 and 20261020112918, which the baseline already holds. Reviewed by the integrator, 27 October 2026.',
 };
 
 const DIR = fileURLToPath(new URL('../../migrations/', import.meta.url));
