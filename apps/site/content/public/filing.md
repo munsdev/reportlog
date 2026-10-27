@@ -24,7 +24,7 @@ While you fill it in, a small check runs in the background; Send works once it i
 
 ## When you are asked for an email address
 
-- **When the form lets you type** (a written account, a name, a link, a place that is not a list), **takes files**, or asks whether you have evidence. The report is filed only when you open the link emailed to you, within 24 hours. That link also lets you erase your address later. Afterwards you can sign in with the same address to see the report, correct it or withdraw it. See [My reports](/docs/public/my-reports/).
+- **When the form lets you type** (a written account, a name, a link, a place that is not a list), **takes files**, or asks whether you have evidence. The report is filed only when you open the link emailed to you, within 90 days. That link also lets you erase your address later. Afterwards you can sign in with the same address to see the report, correct it or withdraw it. See [My reports](/docs/public/my-reports/).
 - **When the form is choices only**, it does not ask. The report is filed the moment you send it, with no confirmation and no receipt, and nothing ties it to you: you cannot come back to correct or withdraw it.
 
 A site can ask for an address on a choices-only form anyway, if it wants to be able to reach reporters.

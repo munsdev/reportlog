@@ -125,7 +125,7 @@ function Filing() {
         <p>
           A form that lets you type, takes files, or asks whether you have evidence asks for your
           email address, and we send a link to it. Nothing is filed until you open that link and
-          confirm. The link works for 24 hours. This stops anybody filing in somebody else’s name.
+          confirm. The link works for 90 days. This stops anybody filing in somebody else’s name.
           Your address is kept apart from your report and encrypted. It is never published.
         </p>
         <p>

@@ -319,6 +319,21 @@ export interface FileSettings {
   updated_by: string | null;
 }
 
+export interface FilingAddressDays {
+  day: string;
+  digest: string;
+  n: number;
+}
+
+export interface FilingSettings {
+  address_daily_cap: number | null;
+  contacts_delete_on: string | null;
+  id: Generated<boolean>;
+  link_days: number | null;
+  updated_at: Generated<Timestamp>;
+  updated_by: string | null;
+}
+
 export interface FloodSettings {
   id: Generated<boolean>;
   intake_paused_at: Timestamp | null;
@@ -635,6 +650,7 @@ export interface Logbooks {
   closes_at: Timestamp | null;
   cover: Json | null;
   created_at: Generated<Timestamp>;
+  email_optional: boolean | null;
   email_required: Generated<boolean>;
   /**
    * When somebody froze this logbook's uploads, or NULL. A protective measure, not the everyday control: whether a logbook asks for files is whether it has a question of kind 'file'. Freezing stops NEW upload slots and hides nothing already filed or published. Never sealed.
@@ -897,6 +913,7 @@ export interface ReportSubmissions {
   expires_at: Timestamp;
   form_id: number;
   id: Generated<number>;
+  journalist_sharing: boolean | null;
   logbook_id: number;
   payload: Json;
   thread_id: string | null;
@@ -1150,6 +1167,8 @@ export interface DB {
   feedback_comments: FeedbackComments;
   feedback_events: FeedbackEvents;
   file_settings: FileSettings;
+  filing_address_days: FilingAddressDays;
+  filing_settings: FilingSettings;
   flood_settings: FloodSettings;
   heat_maps: HeatMaps;
   home_buttons: HomeButtons;

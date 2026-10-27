@@ -69,14 +69,24 @@ import { logbookBySlug } from '../logbooks/logbooks.ts';
 import { flagReport } from '../moderation/flags.ts';
 import { sealContact } from './contactKeys.ts';
 import type { ContactKeyring } from './contactKeys.ts';
+import { setPermission } from '../permissions/log.ts';
 import { intakeIsOpen } from './intakeSwitch.ts';
+import {
+  DEFAULT_LINK_DAYS,
+  TRY_LATER,
+  countAddressToday,
+  filingLimits,
+  linkLife,
+} from './limits.ts';
 
 /**
- * How long a confirmation link lasts. A day: somebody who files on a Friday
- * night and reads their mail on Sunday finds it dead, and that is a real
- * cost. Longer would keep an unconfirmed address in the clear for longer.
+ * How long a confirmation link lasts when nobody has set otherwise: 90 days
+ * (D15), read at each Send from the filing settings (limits.ts). A held
+ * report keeps the `expires_at` it was given; changing the setting moves
+ * only the reports sent after. A report whose link runs out unused is
+ * deleted whole, address included, by the nightly sweep.
  */
-export const LINK_TTL_MS = 24 * 60 * 60 * 1000;
+export const LINK_TTL_MS = DEFAULT_LINK_DAYS * 24 * 60 * 60 * 1000;
 
 export const refused = (status: number, code: string, message: string) =>
   new HttpError(status, code, message);
@@ -109,6 +119,8 @@ export interface Submission {
   draft_token?: string | undefined;
   /** The hash of the form version the page showed. */
   form?: string | undefined;
+  /** G5: may journalists be shown the checked text and links. Not answering is no. */
+  journalist_sharing?: boolean | undefined;
 }
 
 export interface FilingDeps {
@@ -126,12 +138,17 @@ export interface FilingDeps {
   linkKeys?: (() => Promise<LinkKeys>) | null;
 }
 
-export const confirmEmail = (logbookTitle: string, link: string, eraseLink?: string) => ({
+export const confirmEmail = (
+  logbookTitle: string,
+  link: string,
+  eraseLink?: string,
+  days: number = DEFAULT_LINK_DAYS,
+) => ({
   subject: 'Confirm your report',
   text:
     `You sent a report to “${logbookTitle}”. To file it, open this link and press “Confirm and file my report”:\n\n` +
     `${link}\n\n` +
-    'Nothing is filed until you do. The link works for 24 hours to confirm, and after that it shows you where your report stands.\n\n' +
+    `Nothing is filed until you do. The link works for ${linkLife(days)} to confirm. If you do not use it by then, your report and your address are deleted.\n\n` +
     'If you did not send this, ignore this email. Nothing happens without the link.' +
     (eraseLink
       ? '\n\n' +
@@ -337,12 +354,20 @@ export async function stageSubmission(
   // Only a form that keeps an address needs the key that protects it.
   if (asksEmail && !deps.ring) throw notConfigured();
   const email = normalizeEmail(b.email);
+  // D8, D20: where the operator turned the optional card on, an address may
+  // be given or skipped. Given, it holds the report until its link is
+  // followed, exactly as for a form that requires one; skipped, the report
+  // is filed at once. A blank is a skip. Off (NULL) for every logbook until
+  // the owner turns it on (D21).
+  const optionalCard = !asksEmail && lb.email_optional;
+  const holds = asksEmail || (optionalCard && email !== '');
+  if (holds && !deps.ring) throw notConfigured();
   const problems: string[] = [];
-  if (asksEmail && !looksLikeEmail(email))
+  if ((asksEmail || (optionalCard && email !== '')) && !looksLikeEmail(email))
     problems.push('Enter an email address we can reach you at.');
   // An address sent to a form that does not ask for one is not kept, and not
   // quietly dropped either: the page that sent it is not this form.
-  if (!asksEmail && email)
+  if (!asksEmail && !optionalCard && email)
     problems.push(
       'This form does not ask for an email address. Reload the page and send it again.',
     );
@@ -399,7 +424,7 @@ export async function stageSubmission(
   // sealed is refused while the reporter is still here to hear it.
   normalizeReportFields({ logbook: lb.slug, ...payload });
 
-  if (!asksEmail) {
+  if (!holds) {
     // Files always ask for an address (E1), so a form without one has no
     // upload question and nothing can have been staged for it.
     if (b.draft_token) {
@@ -425,6 +450,7 @@ export async function stageSubmission(
         publicRefPrefix: deps.publicRefPrefix,
       });
       await startThread(trx, threadId, report);
+      await recordSharing(trx, threadId, b.journalist_sharing === true);
       return report.public_ref;
     });
     return { filed: true, publicRef };
@@ -446,8 +472,15 @@ export async function stageSubmission(
   }
 
   const token = randomToken();
-  const expiresAt = new Date(Date.now() + LINK_TTL_MS);
+  const ring = deps.ring;
+  if (!ring) throw notConfigured();
+  const limits = await filingLimits(db);
+  const expiresAt = new Date(Date.now() + limits.link_days * 24 * 60 * 60 * 1000);
   const files = await db.transaction().execute(async (trx) => {
+    // D5: counted before anything is kept, in this transaction, so a refusal
+    // leaves nothing behind. Only a digest under a key of the day is stored.
+    const { over } = await countAddressToday(trx, ring, email, limits.address_daily_cap);
+    if (over) throw refused(429, 'try_later', TRY_LATER);
     const sub = await trx
       .insertInto('report_submissions')
       .values({
@@ -457,6 +490,7 @@ export async function stageSubmission(
         payload: JSON.stringify(payload),
         email,
         expires_at: expiresAt,
+        journalist_sharing: b.journalist_sharing === true,
       })
       .returning('id')
       .executeTakeFirstOrThrow();
@@ -478,6 +512,7 @@ export async function stageSubmission(
       lb.title,
       `${deps.siteOrigin}/file/confirm/${token}`,
       `${deps.siteOrigin}/file/erase/${token}`,
+      limits.link_days,
     ),
   });
   return { filed: false, filesDropped: files.dropped };
@@ -597,6 +632,7 @@ export async function confirmSubmission(
         's.form_id',
         's.payload',
         's.email',
+        's.journalist_sharing',
         's.expires_at',
         's.confirmed_at',
         'l.slug',
@@ -628,6 +664,7 @@ async function fileFromSubmission(
     payload: unknown;
     email: string;
     slug: string;
+    journalist_sharing: boolean | null;
   },
 ): Promise<string> {
   const payload = row.payload as StagedPayload;
@@ -654,6 +691,7 @@ async function fileFromSubmission(
   // Under a key of its own, so the reporter can have it erased later
   // without anything append-only being touched. See contactKeys.ts.
   await sealContact(trx, ring, { threadId, email: row.email, filedBy: 'reporter' });
+  await recordSharing(trx, threadId, row.journalist_sharing === true);
   // The address leaves this table now: it lives on only under the key.
   await trx
     .updateTable('report_submissions')
@@ -683,4 +721,19 @@ export async function startThread(
     logbookId: report.logbook_id,
     answers: report.answers,
   });
+}
+
+/**
+ * G5: the sharing answer given at filing goes into the permissions log, the
+ * reporter's own, and not into the sealed object. Only a yes is written: no
+ * row already means no, and a log that says "no" for everyone who never
+ * answered would claim a refusal nobody made.
+ */
+async function recordSharing(
+  trx: Transaction<DB>,
+  threadId: string,
+  granted: boolean,
+): Promise<void> {
+  if (!granted) return;
+  await setPermission(trx, { threadId, permission: 'journalist_sharing', granted: true });
 }
