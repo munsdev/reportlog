@@ -811,3 +811,8 @@ body.form .fab-dock{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 /* Port (27 Oct): the password box fits a phone (it was 92vw plus its padding), and its wordmark with it. */
 .door-box{box-sizing:border-box;max-width:calc(100vw - 32px)}
 @media (max-width:440px){.door-box{padding:22px}.door-box .wm{font-size:1.25rem}}
+/* Owner's call (27 Oct): no numbers on section headings. Nothing on a page is in an
+   order that needs them, and beside the step cards' own 01 02 03 there were too many. */
+.sec-head{grid-template-columns:1fr}
+.sec-head .num{display:none}
+.sec-head p{grid-column:1}
