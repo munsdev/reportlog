@@ -177,7 +177,7 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   // Decision 47: their own alerts, changed from the desk with no email. Off keeps the desk.
   await reader
     .getByRole('navigation')
-    .getByRole('link', { name: 'Alerts', exact: true })
+    .getByRole('link', { name: 'Your alerts', exact: true })
     .first()
     .click();
   await expect(reader.getByRole('heading', { level: 1, name: 'Your alerts' })).toBeVisible();

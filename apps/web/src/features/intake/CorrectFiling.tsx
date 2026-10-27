@@ -39,7 +39,7 @@ export function CorrectFiling({ threadId }: { threadId: string }) {
   if (filing.isPending) return <p role="status">Loading…</p>;
   if (filing.isError) {
     return (
-      <StaffPage title="Not an account you filed" width="prose">
+      <StaffPage area="Your organization" title="Not an account you filed" width="prose">
         <p>{filing.error.message}</p>
         <Link to="/intake" className="underline">
           All your batches
@@ -92,6 +92,7 @@ function CorrectForm({
 
   return (
     <StaffPage
+      area="Your organization"
       title={`Correct ${f.public_ref}`}
       lede={`${f.logbook_title} · filed through ${f.filed_via} · ${f.moderation_status === 'pending' ? 'waiting for a moderator' : 'read by a moderator'}`}
       width="prose"

@@ -17,18 +17,17 @@ export interface MenuPage {
 }
 
 export const ALL_PAGES: readonly MenuPage[] = [
-  { label: 'Overview', href: '/home' },
+  { label: 'Your dashboard', href: '/home' },
   { label: 'My reports', href: '/mine' },
   { label: 'Email updates', href: '/notifications' },
-  { label: 'Account', href: '/access' },
-  { label: 'Account and security', href: '/access/security' },
+  { label: 'Signing in', href: '/access/security' },
   { label: 'Checked links', href: '/desk' },
   { label: 'Sources', href: '/desk/sources' },
-  { label: 'Alerts', href: '/desk/alerts' },
-  { label: 'Intake', href: '/intake' },
+  { label: 'Your alerts', href: '/desk/alerts' },
+  { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
-  { area: 'Review', label: 'Tip links', href: '/lists/links' },
+  { area: 'Review', label: 'Links', href: '/lists/links' },
   { area: 'Review', label: 'List entries', href: '/lists/review' },
   { area: 'Review', label: 'Files', href: '/files' },
   { area: 'Review', label: 'Illegal content notices', href: '/moderate/illegal-content' },
@@ -36,7 +35,7 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Content', label: 'Logbooks', href: '/logbooks' },
   { area: 'Content', label: 'Lists', href: '/lists' },
   { area: 'Content', label: 'Maps', href: '/maps' },
-  { area: 'Content', label: 'Find entries', href: '/lists/search' },
+  { area: 'Content', label: 'Find somebody’s entries', href: '/lists/search' },
   { area: 'Content', label: 'Report and tip forms', href: '/settings/forms' },
   { area: 'Content', label: 'Starting points', href: '/settings/starting-points' },
   { area: 'Content', label: 'Front page', href: '/logbooks/front-page' },
@@ -78,13 +77,13 @@ export type MenuRole =
   | 'tester';
 
 const pick = (...labels: string[]) => labels;
-const YOU = ['Overview', 'My reports', 'Email updates', 'Account'];
+const YOU = ['Your dashboard', 'My reports', 'Email updates'];
 /** Anyone holding a role also has the page to prove a second factor. */
-const YOU_STAFF = [...YOU, 'Account and security'];
+const YOU_STAFF = [...YOU, 'Signing in'];
 const ALL = ALL_PAGES.map((p) => p.label);
 const WITHOUT = (...gone: string[]) => ALL.filter((l) => !gone.includes(l));
-const ORG = ['Intake', 'Volunteer links'];
-const DESK = ['Checked links', 'Sources', 'Alerts'];
+const ORG = ['Filing for an organization', 'Volunteer links'];
+const DESK = ['Checked links', 'Sources', 'Your alerts'];
 
 /** The pages each role's sidebar shows, by label, in the sidebar's order. */
 export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
@@ -94,7 +93,7 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
     ...YOU_STAFF,
     ...pick(
       'Reports queue',
-      'Tip links',
+      'Links',
       'List entries',
       'Files',
       'Illegal content notices',

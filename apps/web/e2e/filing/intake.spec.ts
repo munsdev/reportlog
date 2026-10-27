@@ -52,7 +52,7 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
 
   // Reached from the menu, which shows it by organization membership.
   await page.goto('/');
-  await goViaMenu(page, 'Intake');
+  await goViaMenu(page, 'Filing for an organization');
   await expect(
     page.getByRole('heading', { level: 1, name: 'Filing for an organization' }),
   ).toBeVisible();

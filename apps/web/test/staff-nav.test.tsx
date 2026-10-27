@@ -41,7 +41,7 @@ const as = (role: Viewer['roles'][number] | 'user', tester = false): Viewer => (
 const shape = (v: Viewer) =>
   Object.fromEntries(areasFor(v).map((a) => [a.label, a.pages.map((p) => p.label)]));
 const others = (v: Viewer) => groupsFor(v).flatMap((g) => g.pages.map((p) => p.label));
-const YOU = ['Overview', 'My reports', 'Email updates', 'Account'];
+const YOU = ['Your dashboard', 'My reports', 'Email updates'];
 
 describe('who sees which staff area and page', () => {
   it('somebody with no role and no flag sees no area, only their own pages', () => {
@@ -53,7 +53,7 @@ describe('who sees which staff area and page', () => {
     expect(shape(as('moderator'))).toEqual({
       Review: [
         'Reports queue',
-        'Tip links',
+        'Links',
         'List entries',
         'Files',
         'Illegal content notices',
@@ -61,7 +61,7 @@ describe('who sees which staff area and page', () => {
       ],
       Help: ['Guides'],
     });
-    expect(others(as('moderator'))).toEqual([...YOU, 'Account and security']);
+    expect(others(as('moderator'))).toEqual([...YOU, 'Signing in']);
   });
 
   it('an administrator sees every area, without the owner’s pages', () => {
@@ -113,10 +113,10 @@ describe('who sees which staff area and page', () => {
     expect(areasFor(as('journalist'))).toEqual([]);
     expect(others(as('journalist'))).toEqual([
       ...YOU,
-      'Account and security',
+      'Signing in',
       'Checked links',
       'Sources',
-      'Alerts',
+      'Your alerts',
     ]);
   });
 
@@ -132,14 +132,14 @@ describe('who sees which staff area and page', () => {
     };
     expect(groupsFor(coordinator).map((g) => [g.label, g.pages.map((p) => p.label)])).toEqual([
       ['You', YOU],
-      ['Your organization', ['Intake', 'Volunteer links']],
+      ['Your organization', ['Filing for an organization', 'Volunteer links']],
     ]);
   });
 
   it('lists every staff screen once, and /maps for the first time', () => {
-    // Account is a second way to /access, for those who may not open People
-    // and roles, so it shares that entry's address on purpose.
-    const keys = STAFF_ENTRIES.filter((e) => e.label !== 'Account').map(
+    // The site password entry is an alias of /access and shares its address
+    // on purpose.
+    const keys = STAFF_ENTRIES.filter((e) => !e.alias).map(
       (e) => `${e.to}#${e.hash ?? ''}`,
     );
     expect(new Set(keys).size).toBe(keys.length);
@@ -177,13 +177,13 @@ describe('which page an address is', () => {
     ['/moderate/settings', 'Moderation settings'],
     ['/lists/review/12', 'List entries'],
     ['/lists/12', 'Lists'],
-    ['/lists/links', 'Tip links'],
+    ['/lists/links', 'Links'],
     ['/files/RL-ABCD', 'Files'],
     ['/files/settings', 'File limits'],
     ['/access/orgs/4', 'Organizations'],
     ['/access/journalists/agreement', 'Journalist agreement'],
     ['/settings/look', 'Look'],
-    ['/intake/7', 'Intake'],
+    ['/intake/7', 'Filing for an organization'],
   ])('%s is %s', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
   });
@@ -197,9 +197,9 @@ describe('which page an address is', () => {
   );
 
   it.each([
-    ['/home', 'Overview'],
+    ['/home', 'Your dashboard'],
     ['/mine/abc', 'My reports'],
-    ['/access/security', 'Account and security'],
+    ['/access/security', 'Signing in'],
   ])('%s is %s, in the frame for everybody', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
     expect(areaAt(path)).toBeNull();

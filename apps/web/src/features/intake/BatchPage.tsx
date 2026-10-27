@@ -62,7 +62,7 @@ export function BatchPage({ id }: { id: number }) {
   if (batch.isPending) return <p role="status">Loading…</p>;
   if (batch.isError) {
     return (
-      <StaffPage title="Not one of your batches" width="prose">
+      <StaffPage area="Your organization" title="Not one of your batches" width="prose">
         <p>{batch.error.message}</p>
         <Link to="/intake" className="underline">
           All your batches
@@ -77,6 +77,7 @@ export function BatchPage({ id }: { id: number }) {
 
   return (
     <StaffPage
+      area="Your organization"
       title={`Batch for ${b.organization}`}
       lede={
         open

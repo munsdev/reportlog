@@ -14,7 +14,7 @@ import type { LinkProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card.tsx';
 import { Count } from '@/components/ui/count.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { useMe } from '../identity/session.ts';
 import { mayOpen } from '../staff-nav/entries.ts';
@@ -64,7 +64,29 @@ export function HomePage() {
   const total = (waiting?.reports ?? 0) + (waiting?.list_entries ?? 0) + (waiting?.tip_links ?? 0);
 
   return (
-    <Page title="Your dashboard" lede="Everything you have here, in one place.">
+    <StaffPage
+      area="Account"
+      title="Your dashboard"
+      lede="Everything you can do here, in one place."
+    >
+      {/* The mock-up's figures row: only what the waiting totals already say. */}
+      {moderator && waiting ? (
+        <ul aria-label="Waiting now" className="flex flex-wrap gap-3">
+          {[
+            [waiting.reports, 'reports waiting'],
+            [waiting.tip_links, 'links waiting'],
+            [waiting.list_entries, 'list entries waiting'],
+          ].map(([n, what]) => (
+            <li
+              key={what}
+              className="min-w-[8.5rem] flex-1 rounded-card border border-line bg-surface px-3.5 py-3 sm:max-w-[11.25rem]"
+            >
+              <span className="block font-display text-[1.75rem] leading-none font-bold">{n}</span>
+              <span className="mt-1 block text-sm text-muted">{what}</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <Tile
           title="Your reports"
@@ -80,7 +102,7 @@ export function HomePage() {
           links={[
             { to: '/access', label: 'Your account' },
             ...(me.heldRoles.length > 0
-              ? [{ to: '/access/security' as const, label: 'Account and security' }]
+              ? [{ to: '/access/security' as const, label: 'Signing in' }]
               : []),
           ]}
         >
@@ -112,7 +134,7 @@ export function HomePage() {
               },
               {
                 to: '/lists/links',
-                label: 'Tip links',
+                label: 'Links',
                 count: waiting?.tip_links ? (
                   <Count
                     value={waiting.tip_links}
@@ -149,7 +171,7 @@ export function HomePage() {
                 <ul className="flex flex-wrap gap-x-5">
                   <li>
                     <Link to="/intake" className={LINK}>
-                      Intake
+                      Filing for an organization
                     </Link>
                   </li>
                   <li>
@@ -195,6 +217,6 @@ export function HomePage() {
           </Tile>
         ) : null}
       </div>
-    </Page>
+    </StaffPage>
   );
 }

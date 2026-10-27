@@ -70,7 +70,7 @@ test('a moderator checks a link as text, comments for journalists, and erases an
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await page.goto('/lists/links');
-  await expect(page.getByRole('heading', { level: 1, name: 'Check links' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Links' })).toBeVisible();
   // X5: the procedure is linked from the screen.
   await expect(page.getByRole('link', { name: 'jugendschutz.net' })).toBeVisible();
 

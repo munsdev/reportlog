@@ -113,8 +113,8 @@ function QueueScreen({ search }: { search: QueueSearch }) {
   return (
     <div className="flex flex-col gap-6">
       <StaffHead
-        title="Moderation"
-        lede="Nothing is public until it is approved here. A decline tells the reporter one reason from the fixed list."
+        title="Reports queue"
+        lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished."
       >
         {query.data && !query.data.archive_published ? (
           <Alert tone="warning" title="The public archive is switched off" className="mt-2">
@@ -158,6 +158,14 @@ function clean(s: QueueSearch): QueueSearch {
 
 // ── the status buttons ──────────────────────────────────────────────────
 
+/**
+ * The mock-up's status pills: round, flat, and the one in force filled dark.
+ * Pressed is the state, as before (aria-pressed); only the dress changed.
+ */
+const PILL =
+  'group shrink-0 rounded-pill border-[1.5px] px-4 shadow-none active:shadow-none aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper';
+const PILL_COUNT = 'group-aria-pressed:bg-paper group-aria-pressed:text-ink';
+
 function StatusButtons({
   search,
   data,
@@ -183,13 +191,15 @@ function StatusButtons({
               type="button"
               variant="secondary"
               aria-pressed={status === b.value}
-              className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
+              className={PILL}
               onClick={() => {
                 go({ status: b.value });
               }}
             >
               {b.label}
-              {n === undefined ? null : <Count value={n} label={b.counted(n)} />}
+              {n === undefined ? null : (
+                <Count value={n} label={b.counted(n)} className={PILL_COUNT} />
+              )}
             </Button>
           );
         })}
@@ -200,7 +210,7 @@ function StatusButtons({
         type="button"
         variant="secondary"
         aria-pressed={Boolean(search.flagged)}
-        className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
+        className={PILL}
         onClick={() => {
           go({ flagged: search.flagged ? undefined : true });
         }}
@@ -210,6 +220,7 @@ function StatusButtons({
           <Count
             value={data.open_flags}
             label={`${String(data.open_flags)} waiting for a second read`}
+            className={PILL_COUNT}
           />
         ) : null}
       </Button>
@@ -250,10 +261,11 @@ function Tools({
           }}
         >
           <Field className="min-w-0 flex-1">
-            <Label>Search words or a reference</Label>
-            <FieldDescription>Press Enter to search.</FieldDescription>
+            <Label className="sr-only">Search words or a reference</Label>
+            <FieldDescription className="sr-only">Press Enter to search.</FieldDescription>
             <Input
               type="search"
+              placeholder="Search words or a reference"
               value={q}
               maxLength={200}
               onChange={(e) => {
@@ -281,7 +293,7 @@ function Tools({
             ) : null}
           </Button>
           <Field>
-            <Label>Order</Label>
+            <Label className="sr-only">Order</Label>
             <Select
               value={sort}
               onChange={(e) => {
@@ -841,6 +853,7 @@ function QueueRow({
               <Button
                 type="button"
                 variant="secondary"
+                className="bg-ink text-paper hover:bg-ink"
                 data-decide={r.thread_id}
                 aria-expanded={open}
                 aria-controls={open ? formId : undefined}
@@ -849,7 +862,7 @@ function QueueRow({
                 Decide here
               </Button>
             )}
-            <Button asChild variant="quiet">
+            <Button asChild variant="secondary">
               <Link
                 to="/moderate/$threadId"
                 params={{ threadId: r.thread_id }}

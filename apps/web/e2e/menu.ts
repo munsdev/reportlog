@@ -48,7 +48,8 @@ export async function staffNav(page: Page): Promise<Locator> {
     await expect(page.locator('[data-staff-app]')).toBeVisible();
   }
   const sidebar = page.getByRole('navigation', { name: 'Your pages' });
-  if (isPhone(page)) {
+  // The staff sidebar is a drawer below 900px, the mock-up's breakpoint.
+  if ((page.viewportSize()?.width ?? 1280) < 900) {
     const button = page.getByRole('banner').getByRole('button', { name: 'Menu' });
     if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
   }
