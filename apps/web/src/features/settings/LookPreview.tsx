@@ -26,9 +26,9 @@ import type { BrandPart, Look } from '@reportlog/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Chip } from '@/components/ui/chip.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { St } from '@/mockup/St.tsx';
 import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
 import { FitHeadline } from '@/components/ui/fit-headline.tsx';
 import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
@@ -216,20 +216,20 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
           Once a report is filed, nobody can alter or remove it without that being visible.
         </Lede>
         <div className="flex flex-wrap gap-3">
-          <Button tabIndex={-1}>Submit a report</Button>
-          <Button tabIndex={-1} variant="secondary">
+          <Btn tabIndex={-1}>Submit a report</Btn>
+          <Btn tabIndex={-1} variant="secondary">
             Board
-          </Button>
+          </Btn>
         </div>
-        <Card heading="RL-7K2M-4QXD" headingLevel={3} className="max-w-xl">
+        <Panel heading="RL-7K2M-4QXD" headingLevel={3} className="max-w-xl">
           <div className="flex flex-wrap gap-1.5">
-            <Chip tone="confirmed">Confirmed</Chip>
-            <Chip tone="serious">Serious</Chip>
-            <Chip tone="open">Open</Chip>
+            <St tone="confirmed">Confirmed</St>
+            <St tone="serious">Serious</St>
+            <St tone="open">Open</St>
           </div>
           <p>Polling place opened 40 minutes late.</p>
           <Meta>RL-7K2M-4QXD · 3 Nov 14:02</Meta>
-        </Card>
+        </Panel>
         <div className="flex max-w-md flex-col gap-1.5">
           <span className="label-face text-xs">Check a report</span>
           <span className="block rounded-control border-[1.5px] border-ink-alt bg-surface px-3 py-2.5 font-mono text-muted">
@@ -280,7 +280,7 @@ export function LookFrames({
         </PreviewFrame>
       </div>
       <div className={cn(always ? 'hidden' : 'lg:hidden')}>
-        <Button
+        <Btn
           variant="secondary"
           aria-expanded={showDesktop}
           onClick={() => {
@@ -288,7 +288,7 @@ export function LookFrames({
           }}
         >
           {showDesktop ? 'Hide the desktop preview' : 'Show the desktop preview'}
-        </Button>
+        </Btn>
       </div>
     </div>
   );

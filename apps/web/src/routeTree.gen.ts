@@ -81,6 +81,7 @@ import { Route as staffListsSearchRouteImport } from './routes/(staff)/lists/sea
 import { Route as staffLogbooksIndexRouteImport } from './routes/(staff)/logbooks/index'
 import { Route as staffLogbooksIdRouteImport } from './routes/(staff)/logbooks/$id'
 import { Route as staffLogbooksFrontPageRouteImport } from './routes/(staff)/logbooks/front-page'
+import { Route as staffLogbooksPagesRouteImport } from './routes/(staff)/logbooks/pages'
 import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
@@ -481,6 +482,11 @@ const staffLogbooksFrontPageRoute = staffLogbooksFrontPageRouteImport.update({
   path: '/front-page',
   getParentRoute: () => staffLogbooksRouteRoute,
 } as any)
+const staffLogbooksPagesRoute = staffLogbooksPagesRouteImport.update({
+  id: '/pages',
+  path: '/pages',
+  getParentRoute: () => staffLogbooksRouteRoute,
+} as any)
 const staffMapsIndexRoute = staffMapsIndexRouteImport.update({
   id: '/(staff)/maps/',
   path: '/maps/',
@@ -753,6 +759,7 @@ export interface FileRoutesByFullPath {
   '/lists/search': typeof staffListsSearchRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
   '/moderate/flood': typeof staffModerateFloodRoute
@@ -860,6 +867,7 @@ export interface FileRoutesByTo {
   '/lists/search': typeof staffListsSearchRoute
   '/logbooks/$id': typeof staffLogbooksIdRoute
   '/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
   '/moderate/flood': typeof staffModerateFloodRoute
@@ -974,6 +982,7 @@ export interface FileRoutesById {
   '/(staff)/lists/search': typeof staffListsSearchRoute
   '/(staff)/logbooks/$id': typeof staffLogbooksIdRoute
   '/(staff)/logbooks/front-page': typeof staffLogbooksFrontPageRoute
+  '/(staff)/logbooks/pages': typeof staffLogbooksPagesRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
@@ -1089,6 +1098,7 @@ export interface FileRouteTypes {
     | '/lists/search'
     | '/logbooks/$id'
     | '/logbooks/front-page'
+    | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
     | '/moderate/flood'
@@ -1196,6 +1206,7 @@ export interface FileRouteTypes {
     | '/lists/search'
     | '/logbooks/$id'
     | '/logbooks/front-page'
+    | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
     | '/moderate/flood'
@@ -1309,6 +1320,7 @@ export interface FileRouteTypes {
     | '/(staff)/lists/search'
     | '/(staff)/logbooks/$id'
     | '/(staff)/logbooks/front-page'
+    | '/(staff)/logbooks/pages'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/agreement'
     | '/(staff)/moderate/flood'
@@ -1938,6 +1950,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffLogbooksFrontPageRouteImport
       parentRoute: typeof staffLogbooksRouteRoute
     }
+    '/(staff)/logbooks/pages': {
+      id: '/(staff)/logbooks/pages'
+      path: '/pages'
+      fullPath: '/logbooks/pages'
+      preLoaderRoute: typeof staffLogbooksPagesRouteImport
+      parentRoute: typeof staffLogbooksRouteRoute
+    }
     '/(staff)/maps/': {
       id: '/(staff)/maps/'
       path: '/maps'
@@ -2278,12 +2297,14 @@ const staffListsRouteRouteWithChildren = staffListsRouteRoute._addFileChildren(
 interface staffLogbooksRouteRouteChildren {
   staffLogbooksIdRoute: typeof staffLogbooksIdRoute
   staffLogbooksFrontPageRoute: typeof staffLogbooksFrontPageRoute
+  staffLogbooksPagesRoute: typeof staffLogbooksPagesRoute
   staffLogbooksIndexRoute: typeof staffLogbooksIndexRoute
 }
 
 const staffLogbooksRouteRouteChildren: staffLogbooksRouteRouteChildren = {
   staffLogbooksIdRoute: staffLogbooksIdRoute,
   staffLogbooksFrontPageRoute: staffLogbooksFrontPageRoute,
+  staffLogbooksPagesRoute: staffLogbooksPagesRoute,
   staffLogbooksIndexRoute: staffLogbooksIndexRoute,
 }
 

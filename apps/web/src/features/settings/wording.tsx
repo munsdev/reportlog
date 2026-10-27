@@ -12,9 +12,6 @@
  * figures have been read, or as "#" until then.
  */
 import type { CopySlot, LegalKind } from '@reportlog/contracts';
-import { BrandName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
-import { cn } from '@/lib/utils.ts';
 
 /** The two legal notices, by the names the settings use. */
 export const LEGAL_TITLES: Record<LegalKind, string> = {
@@ -97,42 +94,24 @@ export function SlotInContext({
   text: string;
   figures: ReadonlyMap<string, number> | null;
 }) {
-  const site = useSite();
   const place = placeOf(slot.key);
   const shown = withFigures(text, figures).trim();
   const empty = !shown;
-  const words = (
-    <span
-      className={cn(
-        'block whitespace-pre-line',
-        empty && 'min-h-10 rounded-control border-2 border-dashed border-ink-alt',
-      )}
-    >
-      {shown}
-    </span>
-  );
   return (
-    <figure className="m-0 flex flex-col gap-2">
-      <figcaption className="label-face text-xs text-ink-alt">
-        On the page: {place.page}
+    <div className="panel quiet" aria-hidden="true">
+      <span className="eyebrow">
+        Preview · on the page: {place.page}
         {empty ? ' · empty, so nothing shows here yet' : ''}
-      </figcaption>
-      <div
-        aria-hidden="true"
-        className="flex flex-col gap-2 overflow-hidden rounded-card border-2 border-ink bg-paper p-4 text-sm"
+      </span>
+      <p
+        className={place.shape === 'title' ? 'h-page' : undefined}
+        style={{
+          whiteSpace: 'pre-line',
+          ...(place.shape === 'title' ? { fontSize: '1.6rem' } : {}),
+        }}
       >
-        <Eyebrow>{site.data ? <BrandName parts={site.data.name_parts} /> : 'ReportLog'}</Eyebrow>
-        {place.shape === 'title' ? (
-          <span className="font-display text-2xl font-bold">{words}</span>
-        ) : (
-          <span className="font-display text-xl font-bold">{place.page}</span>
-        )}
-        {place.shape === 'lede' ? <span className="text-ink-alt">{words}</span> : null}
-        {place.shape === 'text' ? words : null}
-        {place.shape === 'notice' ? (
-          <span className="block rounded-card bg-paper-alt p-3">{words}</span>
-        ) : null}
-      </div>
-    </figure>
+        {shown}
+      </p>
+    </div>
   );
 }

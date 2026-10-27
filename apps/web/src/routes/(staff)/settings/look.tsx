@@ -24,13 +24,11 @@ import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
-import { cn } from '@/lib/utils.ts';
 import { LookChooser } from '../../../features/settings/LookChooser.tsx';
 import { LookFrames } from '../../../features/settings/LookPreview.tsx';
 import { LookPacks } from '../../../features/settings/LookPacks.tsx';
@@ -105,107 +103,65 @@ function LookChoice({ state }: { state: SiteEditor }) {
   const apply = useSave((value: Look) => call(setLook, { body: value }));
   const previewing = !sameLook(chosen, current);
   useUnsavedChanges('the look', previewing);
-  // An element, not a style: the bar below is not rendered when the page has
-  // two columns, so the looks are never two radio groups on a desktop. 56rem
-  // is the least that holds the chooser (about 30rem) beside the previews
-  // (24rem).
+  // The frames sit under the chooser at the page's own width.
   const [column, wide] = useColumnWide(896);
 
   return (
-    <div
-      ref={column}
-      className={cn(
-        'grid min-w-0 gap-8',
-        wide && 'grid-cols-[minmax(0,1fr)_24rem] items-start',
-        // Room under the last thing on the page for the pinned bar.
-        !wide && 'pb-40',
-      )}
-    >
-      {/* The previews and what applies them: first on a phone, and from lg up
-          in view beside the chooser. It scrolls inside itself when the window
-          is too short for all of it. */}
-      <div
-        className={cn(
-          'flex min-w-0 flex-col gap-4',
-          wide && 'sticky top-[5rem] order-2 max-h-[calc(100dvh-6rem)] overflow-y-auto p-1',
-        )}
-      >
+    <div ref={column} style={{ maxWidth: 960 }}>
+      <section className="settings-row" aria-labelledby="look-palette">
+        <h2 id="look-palette">Palette and theme</h2>
+        <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
         {/* The sentence is the status, not the panel: its buttons are not news. */}
-        <Card
-          variant="deep"
-          className={cn(!wide && 'sm:flex-row sm:items-center sm:justify-between')}
-        >
-          <p role="status">
+        <div className="note" role="status">
+          <span>
             {previewing ? (
               <>
-                <span className="label-face block text-xs text-brand-on-deep">Preview only</span>{' '}
-                The site is still showing {lookName(current, catalogue)}. You are previewing{' '}
-                {lookName(chosen, catalogue)}.
+                <b>Preview only.</b> The site is still showing {lookName(current, catalogue)}. You
+                are previewing {lookName(chosen, catalogue)}.
               </>
             ) : (
               <>The site is showing {lookName(current, catalogue)}.</>
             )}
-          </p>
-          {previewing ? (
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="quiet"
-                className="text-on-deep"
-                onClick={() => {
-                  apply.reset();
-                  setChosen(current);
-                }}
-              >
-                Back to what the site shows
-              </Button>
-              <Button
-                busy={apply.isPending}
-                busyLabel="Applying…"
-                onClick={() => {
-                  apply.mutate(chosen, {
-                    onSuccess: (next) => {
-                      setChosen(next.look);
-                      toast.show('The new look is live.');
-                    },
-                  });
-                }}
-              >
-                Apply to the site
-              </Button>
-            </div>
-          ) : null}
-        </Card>
-        {apply.isError ? (
-          <Alert tone="serious" title="The look was not applied.">
-            {apply.error.message}
-          </Alert>
+          </span>
+        </div>
+        {previewing ? (
+          <div className="acts">
+            <Btn
+              busy={apply.isPending}
+              busyLabel="Applying…"
+              onClick={() => {
+                apply.mutate(chosen, {
+                  onSuccess: (next) => {
+                    setChosen(next.look);
+                    toast.show('The new look is live.');
+                  },
+                });
+              }}
+            >
+              Apply to the site
+            </Btn>
+            <Btn
+              variant="quiet"
+              onClick={() => {
+                apply.reset();
+                setChosen(current);
+              }}
+            >
+              Back to what the site shows
+            </Btn>
+          </div>
         ) : null}
-
+        {apply.isError ? (
+          <Note tone="serious" title="The look was not applied.">
+            {apply.error.message}
+          </Note>
+        ) : null}
         <LookFrames look={chosen} catalogue={catalogue} fit={wide ? 'always' : false} />
-      </div>
+      </section>
 
-      <div className="flex min-w-0 flex-col gap-8">
-        <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
+      <LookOptionsPanel />
 
-        <LookPacks />
-
-        <LookOptionsPanel />
-      </div>
-
-      {wide ? null : (
-        <section
-          aria-label="Pick a look"
-          className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-ink bg-surface p-2 print:hidden"
-        >
-          <LookChooser
-            compact
-            value={chosen}
-            onChange={setChosen}
-            current={current}
-            catalogue={catalogue}
-          />
-        </section>
-      )}
+      <LookPacks />
     </div>
   );
 }

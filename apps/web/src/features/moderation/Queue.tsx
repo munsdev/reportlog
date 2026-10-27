@@ -28,34 +28,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { BottomBar } from '@/components/ui/bottom-bar.tsx';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Count } from '../../components/ui/count.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { Pagination } from '../../components/ui/pagination.tsx';
-import { Select } from '../../components/ui/select.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Check } from '../../mockup/Choices.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Err, Problem } from '../../mockup/Notice.tsx';
+import { Pager } from '../../mockup/Pager.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Seg } from '../../mockup/Seg.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
-import { CountLine, Meta } from '../../components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
 import { floodQuery, laneQuery } from '../flood/queries.ts';
+import { Chip } from '../../mockup/Chip.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
-import { AnswerLine, SeverityChip, StaffHead, StatusChip, useWide, when } from './parts.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
+import { AnswerLine, SeverityChip, StatusChip, useWide, when } from './parts.tsx';
 import { corroborationQuery, queueQuery, sortOf } from './queries.ts';
 import type { QueueSearch, QueueSeverity, QueueStatus } from './queries.ts';
 import { SEVERITIES, SEVERITY_WORDS } from './words.ts';
@@ -111,18 +99,16 @@ function QueueScreen({ search }: { search: QueueSearch }) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
-      <StaffHead
-        title="Reports queue"
-        lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished."
-      >
-        {query.data && !query.data.archive_published ? (
-          <Alert tone="warning" title="The public archive is switched off" className="mt-2">
-            Approving a report records the decision, but nothing is shown publicly until an
-            administrator switches the archive back on.
-          </Alert>
-        ) : null}
-      </StaffHead>
+    <StaffPage
+      title="Reports queue"
+      lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished."
+    >
+      {query.data && !query.data.archive_published ? (
+        <Problem title="The public archive is switched off.">
+          Approving a report records the decision, but nothing is shown publicly until an
+          administrator switches the archive back on.
+        </Problem>
+      ) : null}
 
       <StatusButtons search={search} data={query.data} go={go} />
       {/* Keyed by the search, so a new search starts the tools afresh. The
@@ -131,7 +117,7 @@ function QueueScreen({ search }: { search: QueueSearch }) {
       <Tools key={`tools:${JSON.stringify(search)}`} search={search} data={query.data} go={go} />
 
       {query.isPending ? <p role="status">Reading the queue…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data ? (
         <QueueList
           // A new filter or page is a new list: nothing stays ticked or open across it.
@@ -145,7 +131,7 @@ function QueueScreen({ search }: { search: QueueSearch }) {
         />
       ) : null}
       <Corroboration />
-    </div>
+    </StaffPage>
   );
 }
 
@@ -158,14 +144,6 @@ function clean(s: QueueSearch): QueueSearch {
 
 // ── the status buttons ──────────────────────────────────────────────────
 
-/**
- * The mock-up's status pills: round, flat, and the one in force filled dark.
- * Pressed is the state, as before (aria-pressed); only the dress changed.
- */
-const PILL =
-  'group shrink-0 rounded-pill border-[1.5px] px-4 shadow-none active:shadow-none aria-pressed:border-ink aria-pressed:bg-ink aria-pressed:text-paper';
-const PILL_COUNT = 'group-aria-pressed:bg-paper group-aria-pressed:text-ink';
-
 function StatusButtons({
   search,
   data,
@@ -176,55 +154,38 @@ function StatusButtons({
   go: (patch: Partial<QueueSearch>) => void;
 }) {
   const status = search.status ?? 'pending';
+  // One row, as the mock-up draws it: the statuses, then "Only second reads"
+  // (not a status: it narrows whichever status is showing).
   return (
-    // On a phone the buttons wrap rather than scroll sideways as
-    // moderation.md first asked: a phone's browser counted the scrolled-off
-    // width as the page's, laid the whole page out at over 1000px and zoomed
-    // out to fit, so nothing below could be tapped where it was drawn.
-    <div className="flex flex-wrap items-center gap-3 pt-1 pb-2">
-      <div role="group" aria-label="Show reports that are" className="flex flex-wrap gap-2">
-        {STATUS_BUTTONS.map((b) => {
+    <Seg
+      label="Show"
+      options={[
+        ...STATUS_BUTTONS.map((b) => {
           const n = data?.counts[b.value];
-          return (
-            <Button
-              key={b.value}
-              type="button"
-              variant="secondary"
-              aria-pressed={status === b.value}
-              className={PILL}
-              onClick={() => {
-                go({ status: b.value });
-              }}
-            >
-              {b.label}
-              {n === undefined ? null : (
-                <Count value={n} label={b.counted(n)} className={PILL_COUNT} />
-              )}
-            </Button>
-          );
-        })}
-      </div>
-      {/* Not a status: it narrows whichever status is showing, so it stands apart. */}
-      <span aria-hidden="true" className="h-8 w-px shrink-0 bg-ink-alt" />
-      <Button
-        type="button"
-        variant="secondary"
-        aria-pressed={Boolean(search.flagged)}
-        className={PILL}
-        onClick={() => {
-          go({ flagged: search.flagged ? undefined : true });
-        }}
-      >
-        Only second reads
-        {data ? (
-          <Count
-            value={data.open_flags}
-            label={`${String(data.open_flags)} waiting for a second read`}
-            className={PILL_COUNT}
-          />
-        ) : null}
-      </Button>
-    </div>
+          return {
+            key: b.value,
+            label: b.label,
+            n,
+            words: n === undefined ? undefined : b.counted(n),
+            pressed: status === b.value,
+            onClick: () => {
+              go({ status: b.value });
+            },
+          };
+        }),
+        {
+          key: 'flagged',
+          label: 'Only second reads',
+          n: data?.open_flags,
+          words:
+            data === undefined ? undefined : `${String(data.open_flags)} waiting for a second read`,
+          pressed: Boolean(search.flagged),
+          onClick: () => {
+            go({ flagged: search.flagged ? undefined : true });
+          },
+        },
+      ]}
+    />
   );
 }
 
@@ -248,64 +209,66 @@ function Tools({
   const sort = sortOf(search);
   const words = filterWords(search, data);
   const total = data?.total;
+  const qId = useId();
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end">
-        <form
-          role="search"
-          aria-label="Search the queue"
-          className="flex min-w-0 flex-1 items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            go({ q: q.trim() || undefined });
+    <>
+      <form
+        className="toolbar"
+        role="search"
+        aria-label="Search the queue"
+        onSubmit={(e) => {
+          e.preventDefault();
+          go({ q: q.trim() || undefined });
+        }}
+      >
+        <div className="search grow">
+          <label className="vh" htmlFor={qId}>
+            Search words or a reference
+          </label>
+          <input
+            id={qId}
+            type="search"
+            placeholder="Search words or a reference"
+            value={q}
+            maxLength={200}
+            onChange={(e) => {
+              setQ(e.target.value);
+            }}
+          />
+          <Btn sm flat type="submit">
+            Search
+          </Btn>
+        </div>
+        <Btn
+          sm
+          flat
+          aria-expanded={filtering}
+          aria-controls={wide && filtering ? panelId : undefined}
+          onClick={() => {
+            setFiltering((f) => !f);
           }}
         >
-          <Field className="min-w-0 flex-1">
-            <Label className="sr-only">Search words or a reference</Label>
-            <FieldDescription className="sr-only">Press Enter to search.</FieldDescription>
-            <Input
-              type="search"
-              placeholder="Search words or a reference"
-              value={q}
-              maxLength={200}
-              onChange={(e) => {
-                setQ(e.target.value);
-              }}
-            />
-          </Field>
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
-        </form>
-        <div className="flex flex-wrap items-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            aria-expanded={filtering}
-            aria-controls={wide && filtering ? panelId : undefined}
-            onClick={() => {
-              setFiltering((f) => !f);
+          Filter
+          {on ? (
+            <>
+              <span aria-hidden="true"> · {on}</span>
+              <span className="sr-only">{`, ${String(on)} filter${on === 1 ? '' : 's'} on`}</span>
+            </>
+          ) : null}
+        </Btn>
+        <label className="select">
+          <span className="vh">Order</span>
+          <select
+            value={sort}
+            onChange={(e) => {
+              go({ sort: e.target.value as 'newest' | 'oldest' });
             }}
           >
-            Filter
-            {on ? (
-              <Count value={on} label={`${String(on)} filter${on === 1 ? '' : 's'} on`} />
-            ) : null}
-          </Button>
-          <Field>
-            <Label className="sr-only">Order</Label>
-            <Select
-              value={sort}
-              onChange={(e) => {
-                go({ sort: e.target.value as 'newest' | 'oldest' });
-              }}
-            >
-              <option value="oldest">Oldest first</option>
-              <option value="newest">Newest first</option>
-            </Select>
-          </Field>
-        </div>
-      </div>
+            <option value="oldest">Oldest first</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </label>
+      </form>
       {filtering ? (
         <FilterPanel
           id={panelId}
@@ -317,8 +280,8 @@ function Tools({
           go={go}
         />
       ) : null}
-      <CountLine
-        parts={[
+      <p className="m" aria-live="polite">
+        {[
           total === undefined
             ? null
             : (STATUS_BUTTONS.find((b) => b.value === status)?.counted(total) ?? null),
@@ -326,9 +289,11 @@ function Tools({
             ? `${String(words.length)} filter${words.length === 1 ? '' : 's'}: ${words.join(', ')}`
             : null,
           sort === 'oldest' ? 'oldest first' : 'newest first',
-        ]}
-      />
-    </div>
+        ]
+          .filter(Boolean)
+          .join(' · ')}
+      </p>
+    </>
   );
 }
 
@@ -426,11 +391,14 @@ function FilterPanel({
     setPlaceProblem('');
   };
 
+  const uid = useId();
   const fields = (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <Field>
-        <Label>Logbook</Label>
-        <Select
+    <>
+      <div className="field">
+        <label htmlFor={`${uid}-logbook`}>Logbook</label>
+        <select
+          id={`${uid}-logbook`}
+          className="sel"
           value={logbook}
           onChange={(e) => {
             setLogbook(e.target.value);
@@ -445,11 +413,13 @@ function FilterPanel({
               {l.title}
             </option>
           ))}
-        </Select>
-      </Field>
-      <Field>
-        <Label>Severity</Label>
-        <Select
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-severity`}>Severity</label>
+        <select
+          id={`${uid}-severity`}
+          className="sel"
           value={severity}
           onChange={(e) => {
             setSeverity(e.target.value as QueueSeverity | '');
@@ -461,46 +431,56 @@ function FilterPanel({
               {k === 'none' ? 'Nobody has rated it' : SEVERITY_WORDS[k]?.label}
             </option>
           ))}
-        </Select>
-      </Field>
-      <Field>
-        <Label>Arrived from</Label>
-        <Input
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-from`}>Arrived from</label>
+        <input
+          id={`${uid}-from`}
+          className="input"
           type="datetime-local"
           value={from}
           onChange={(e) => {
             setFrom(e.target.value);
           }}
         />
-      </Field>
-      <Field>
-        <Label>Arrived until</Label>
-        <Input
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-to`}>Arrived until</label>
+        <input
+          id={`${uid}-to`}
+          className="input"
           type="datetime-local"
           value={to}
           onChange={(e) => {
             setTo(e.target.value);
           }}
         />
-      </Field>
-      <Field>
-        <Label>State or county code</Label>
-        <FieldDescription>
-          US-AZ takes its counties too; US-AZ-04013 is one county.
-        </FieldDescription>
-        <Input
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-place`}>State or county code</label>
+        <input
+          id={`${uid}-place`}
+          className="input"
           value={place}
           maxLength={16}
+          aria-describedby={`${uid}-place-help`}
+          aria-invalid={placeProblem ? true : undefined}
           onChange={(e) => {
             setPlace(e.target.value);
             setPlaceProblem('');
           }}
         />
-        <FieldError>{placeProblem}</FieldError>
-      </Field>
-      <Field>
-        <Label>Filed</Label>
-        <Select
+        <span className="help" id={`${uid}-place-help`}>
+          US-AZ takes its counties too; US-AZ-04013 is one county.
+        </span>
+        <Err>{placeProblem}</Err>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-lane`}>Filed</label>
+        <select
+          id={`${uid}-lane`}
+          className="sel"
           value={laneChoice}
           onChange={(e) => {
             setLane(e.target.value as typeof laneChoice);
@@ -509,11 +489,13 @@ function FilterPanel({
           <option value="">Either way</option>
           <option value="organization">By an organization</option>
           <option value="open_form">Through the open form</option>
-        </Select>
-      </Field>
-      <Field>
-        <Label>Organization</Label>
-        <Select
+        </select>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-org`}>Organization</label>
+        <select
+          id={`${uid}-org`}
+          className="sel"
           value={organization}
           onChange={(e) => {
             setOrganization(e.target.value);
@@ -528,85 +510,79 @@ function FilterPanel({
               {o.name}
             </option>
           ))}
-        </Select>
-      </Field>
+        </select>
+      </div>
       {answerSet ? (
-        <div className="flex flex-col gap-1.5">
-          <p className="label-face text-sm">Identical answers</p>
-          <p className="text-sm">One set of identical answers, chosen on the flood screen.</p>
-          <Button
-            type="button"
-            variant="quiet"
-            className="self-start"
-            onClick={() => {
-              setAnswerSet('');
-            }}
-          >
-            Stop narrowing to that set
-          </Button>
+        <div className="field">
+          <span className="lbl">Identical answers</span>
+          <p>One set of identical answers, chosen on the flood screen.</p>
+          <div className="acts">
+            <Btn
+              sm
+              flat
+              look="ghost"
+              onClick={() => {
+                setAnswerSet('');
+              }}
+            >
+              Stop narrowing to that set
+            </Btn>
+          </div>
         </div>
       ) : null}
-      <CheckOption
-        label="Only reports waiting for a second read"
-        className="sm:col-span-2"
+      <Check
         checked={flagged}
-        onCheckedChange={(v) => {
-          setFlagged(v === true);
+        onChange={(e) => {
+          setFlagged(e.target.checked);
         }}
-      />
-    </div>
+      >
+        Only reports waiting for a second read
+      </Check>
+    </>
   );
 
   const actions = (
-    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <Button type="button" variant="quiet" className="self-start" onClick={clearAll}>
+    <>
+      <Btn sm flat look="ink" type="submit">
+        Apply
+      </Btn>
+      <Btn sm flat onClick={onClose}>
+        Cancel
+      </Btn>
+      <Btn sm flat look="ghost" onClick={clearAll}>
         Clear all
-      </Button>
-      <div className="flex flex-col-reverse gap-2 sm:flex-row">
-        <Button type="button" variant="secondary" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button type="submit">Apply</Button>
-      </div>
-    </div>
+      </Btn>
+    </>
   );
 
-  const form = (
+  if (asDialog) {
+    return (
+      <Modal
+        title="Filter the queue"
+        description="Nothing changes until you press Apply."
+        open
+        onClose={onClose}
+        buttons={actions}
+        onSubmit={apply}
+      >
+        {fields}
+      </Modal>
+    );
+  }
+  return (
     <form
       aria-label="Filter the queue"
-      className="flex flex-col gap-5"
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         apply();
       }}
     >
-      {fields}
-      {actions}
+      <Panel title="Filter the queue" id={id}>
+        {fields}
+        <div className="acts">{actions}</div>
+      </Panel>
     </form>
-  );
-
-  if (asDialog) {
-    return (
-      <Dialog
-        open
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Filter the queue</DialogTitle>
-            <DialogDescription>Nothing changes until you press Apply.</DialogDescription>
-          </DialogHeader>
-          {form}
-        </DialogContent>
-      </Dialog>
-    );
-  }
-  return (
-    <Card id={id} heading="Filter the queue">
-      {form}
-    </Card>
   );
 }
 
@@ -636,7 +612,7 @@ function QueueList({
   const [asking, setAsking] = useState<string | null>(null);
   const [focusNext, setFocusNext] = useState<string | null>(null);
   const [result, setResult] = useState<ReactNode>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   // After a decision the list is read again; focus moves to the "Decide here"
   // of the report that followed the decided one, or the first left.
@@ -684,8 +660,45 @@ function QueueList({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {result}
+      <div ref={listRef} className="qlist2" role="list" aria-label="Reports">
+        {data.reports.map((r, i) => (
+          <QueueRow
+            key={r.thread_id}
+            r={r}
+            search={search}
+            picked={picked.has(r.thread_id)}
+            onPick={
+              selectable(r) && !needsOwnLook(r)
+                ? (on) => {
+                    setPicked((was) => {
+                      const next = new Set(was);
+                      if (on) next.add(r.thread_id);
+                      else next.delete(r.thread_id);
+                      return next;
+                    });
+                  }
+                : null
+            }
+            open={open === r.thread_id}
+            onToggle={() => {
+              choose(open === r.thread_id ? null : r.thread_id);
+            }}
+            onDirty={(d) => {
+              if (open === r.thread_id) openDirty.current = d;
+            }}
+            onDecided={(d) => {
+              const after = data.reports[i + 1] ?? data.reports[i - 1];
+              openDirty.current = false;
+              setOpen(null);
+              setFocusNext(after?.thread_id ?? '');
+              const notice = d.notice === 'none' ? '' : ` ${NOTICE_WORDS[d.notice] ?? ''}`;
+              toast.show(`${r.public_ref} ${DECIDED_WORDS[d.status]}.${notice}`);
+            }}
+          />
+        ))}
+      </div>
       {picked.size ? (
         <SelectionBar
           picked={picked}
@@ -704,62 +717,19 @@ function QueueList({
           }}
         />
       ) : null}
-      <ul ref={listRef} className="flex flex-col gap-4" aria-label="Reports">
-        {data.reports.map((r, i) => (
-          <li key={r.thread_id}>
-            <QueueRow
-              r={r}
-              search={search}
-              picked={picked.has(r.thread_id)}
-              onPick={
-                selectable(r) && !needsOwnLook(r)
-                  ? (on) => {
-                      setPicked((was) => {
-                        const next = new Set(was);
-                        if (on) next.add(r.thread_id);
-                        else next.delete(r.thread_id);
-                        return next;
-                      });
-                    }
-                  : null
-              }
-              open={open === r.thread_id}
-              onToggle={() => {
-                choose(open === r.thread_id ? null : r.thread_id);
-              }}
-              onDirty={(d) => {
-                if (open === r.thread_id) openDirty.current = d;
-              }}
-              onDecided={(d) => {
-                const after = data.reports[i + 1] ?? data.reports[i - 1];
-                openDirty.current = false;
-                setOpen(null);
-                setFocusNext(after?.thread_id ?? '');
-                const notice = d.notice === 'none' ? '' : ` ${NOTICE_WORDS[d.notice] ?? ''}`;
-                toast.show(`${r.public_ref} ${DECIDED_WORDS[d.status]}.${notice}`);
-              }}
-            />
-          </li>
-        ))}
-      </ul>
-      <Pagination label="Pages of the queue" page={data.page} pages={data.pages} onPage={onPage} />
-      <Dialog
+      <Pager label="Pages of the queue" page={data.page} pages={data.pages} onPage={onPage} />
+      <Modal
+        title="Leave this decision unfinished?"
+        description="Nothing is recorded until you press Record the decision. If you leave it, what you chose and wrote is lost."
         open={asking !== null}
-        onOpenChange={(on) => {
-          if (!on) setAsking(null);
+        onClose={() => {
+          setAsking(null);
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Leave this decision unfinished?</DialogTitle>
-            <DialogDescription>
-              Nothing is recorded until you press Record the decision. If you leave it, what you
-              chose and wrote is lost.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="secondary"
+        buttons={
+          <>
+            <Btn
+              sm
+              flat
               onClick={() => {
                 openDirty.current = false;
                 setOpen(asking === '' ? null : asking);
@@ -767,19 +737,21 @@ function QueueList({
               }}
             >
               Leave it
-            </Button>
-            <Button
-              variant="secondary"
+            </Btn>
+            <Btn
+              sm
+              flat
+              look="ink"
               onClick={() => {
                 setAsking(null);
               }}
             >
               Keep deciding
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+            </Btn>
+          </>
+        }
+      />
+    </>
   );
 }
 
@@ -806,96 +778,82 @@ function QueueRow({
   const whyId = useId();
   const blocked = needsOwnLook(r);
   return (
-    <Card className="flex-row items-start gap-3 p-4 sm:gap-4 sm:p-5">
+    <article className="qrow" role="listitem">
       {blocked ? (
-        <span className="-m-2.5 flex size-11 shrink-0 items-center justify-center">
-          <Checkbox
+        <label className="qsel">
+          <input
+            type="checkbox"
             aria-label={`Select ${r.public_ref}`}
             aria-describedby={whyId}
             checked={false}
             disabled
           />
-        </span>
+        </label>
       ) : onPick ? (
-        // The box is small; an edge drawn around it, inside the control, makes
-        // the 44px target.
-        <span className="-m-2.5 flex size-11 shrink-0 items-center justify-center">
-          <Checkbox
+        <label className="qsel">
+          <input
+            type="checkbox"
             aria-label={`Select ${r.public_ref}`}
-            className="relative before:absolute before:-inset-2.5 before:content-['']"
             checked={picked}
-            onCheckedChange={(on) => {
-              onPick(on === true);
+            onChange={(e) => {
+              onPick(e.target.checked);
             }}
           />
-        </span>
+        </label>
       ) : (
-        <span aria-hidden="true" className="-m-2.5 size-11 shrink-0" />
+        <span aria-hidden="true" className="qsel" />
       )}
-      <div className="flex min-w-0 flex-1 flex-col gap-3">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
-          <div className="flex min-w-0 flex-col gap-2">
-            <div className="flex flex-wrap gap-1.5">
-              <StatusChip r={r} />
-              <SeverityChip severity={r.severity} />
-              {r.threat_open ? <Chip tone="serious">Threat to safety</Chip> : null}
-              {r.needs_review ? <Chip tone="tag">Second read</Chip> : null}
-              {r.origin === 'organization' ? <Chip tone="tag">Organization</Chip> : null}
-              {r.public ? <Chip tone="tag">Public</Chip> : null}
-            </div>
-            {blocked ? (
-              <p id={whyId} className="text-sm text-ink-alt">
-                {WRITTEN_WHY}
-              </p>
-            ) : null}
-            <AnswerLine slug={r.logbook_slug} answers={r.answers} />
-            <Meta>
-              {r.public_ref} · {r.logbook_title} · arrived {when(r.received_at)}
-              {r.versions > 1 ? ` · version ${String(r.versions)}` : ''} ·{' '}
-              {r.origin === 'organization'
-                ? `via ${r.filed_via ?? 'an organization'}`
-                : 'open form'}
-            </Meta>
-            {r.needs_review ? (
-              <p className="text-sm text-ink-alt">
-                Second read asked for: {r.review_terms.join(', ')}
-              </p>
-            ) : null}
-            {!r.may_publish ? (
-              <p className="text-sm text-ink-alt">Its reporter did not permit publishing.</p>
-            ) : null}
-            {r.incident_size > 1 ? (
-              <p className="text-sm text-ink-alt">{corroborationWords(r)}</p>
-            ) : null}
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            {r.withdrawn ? null : (
-              <Button
-                type="button"
-                variant="secondary"
-                className="bg-ink text-paper hover:bg-ink"
-                data-decide={r.thread_id}
-                aria-expanded={open}
-                aria-controls={open ? formId : undefined}
-                onClick={onToggle}
-              >
-                Decide here
-              </Button>
-            )}
-            <Button asChild variant="secondary">
-              <Link
-                to="/moderate/$threadId"
-                params={{ threadId: r.thread_id }}
-                search={search}
-                aria-label={`Open ${r.public_ref}`}
-              >
-                Open
-              </Link>
-            </Button>
-          </div>
+      <div className="qbody">
+        <div className="chips">
+          <StatusChip r={r} />
+          <SeverityChip severity={r.severity} />
+          {r.threat_open ? <span className="st bad">Threat to safety</span> : null}
+          {r.needs_review ? <Chip kind="flag">Second read</Chip> : null}
+          {r.origin === 'organization' ? <Chip kind="off">Organization</Chip> : null}
+          {r.public ? <Chip kind="ok">Public</Chip> : null}
+        </div>
+        {blocked ? (
+          <p id={whyId} className="m">
+            {WRITTEN_WHY}
+          </p>
+        ) : null}
+        <AnswerLine slug={r.logbook_slug} answers={r.answers} />
+        <p className="m">
+          {r.public_ref} · {r.logbook_title} · arrived {when(r.received_at)}
+          {r.versions > 1 ? ` · version ${String(r.versions)}` : ''} ·{' '}
+          {r.origin === 'organization' ? `via ${r.filed_via ?? 'an organization'}` : 'open form'}
+        </p>
+        {r.needs_review ? (
+          <p className="m">Second read asked for: {r.review_terms.join(', ')}</p>
+        ) : null}
+        {!r.may_publish ? <p className="m">Its reporter did not permit publishing.</p> : null}
+        {r.incident_size > 1 ? <p className="m">{corroborationWords(r)}</p> : null}
+        <div className="acts">
+          {r.withdrawn ? null : (
+            <Btn
+              sm
+              flat
+              look="ink"
+              data-decide={r.thread_id}
+              aria-expanded={open}
+              aria-controls={open ? formId : undefined}
+              onClick={onToggle}
+            >
+              Decide here
+            </Btn>
+          )}
+          <Link
+            className="btn sm flat"
+            to="/moderate/$threadId"
+            params={{ threadId: r.thread_id }}
+            search={search}
+            aria-label={`Open ${r.public_ref}`}
+          >
+            Open
+          </Link>
         </div>
         {open ? (
-          <Card id={formId} variant="quiet" className="p-4">
+          <div id={formId}>
             <DecideForm
               report={r}
               focusOnOpen
@@ -903,10 +861,10 @@ function QueueRow({
               onDecided={onDecided}
               onCancel={onToggle}
             />
-          </Card>
+          </div>
         ) : null}
       </div>
-    </Card>
+    </article>
   );
 }
 
@@ -936,9 +894,12 @@ function SelectionBar({
       onDone(
         `Approved ${String(out.approved.length)}.`,
         out.skipped.length ? (
-          <Alert tone="note" title={`Approved ${String(out.approved.length)}.`}>
-            Left alone: {out.skipped.map((x) => x.why).join(' ')}
-          </Alert>
+          <Note>
+            <span>
+              <b>{`Approved ${String(out.approved.length)}.`}</b> Left alone:{' '}
+              {out.skipped.map((x) => x.why).join(' ')}
+            </span>
+          </Note>
         ) : null,
       );
       await qc.invalidateQueries({ queryKey: ['moderation'] });
@@ -947,44 +908,42 @@ function SelectionBar({
   });
   return (
     <>
-      <BottomBar className="z-30 max-md:fixed max-md:inset-x-0 max-md:bottom-0 md:sticky md:top-2">
-        <Card
-          variant="deep"
-          className="flex-row flex-wrap items-center gap-3 px-4 py-3 max-md:rounded-none"
-        >
-          <p className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 label-face text-sm">
-            <span role="status">{`${String(picked.size)} selected`}</span>
-            {picked.size < pickable ? (
-              <Button variant="quiet" className="text-on-deep" onClick={onSelectAll}>
-                {`Select all ${String(pickable)}`}
-              </Button>
-            ) : null}
-            <Button variant="quiet" className="text-on-deep" onClick={onClear}>
-              Select none
-            </Button>
-          </p>
-          <Button
-            busy={approve.isPending}
-            busyLabel="Approving…"
+      <div className="bulkbar" role="region" aria-label="Selected reports">
+        <span role="status">{`${String(picked.size)} selected`}</span>
+        <div className="acts">
+          {picked.size < pickable ? (
+            <Btn sm flat onClick={onSelectAll}>{`Select all ${String(pickable)}`}</Btn>
+          ) : null}
+          <Btn sm flat look="ghost" onClick={onClear}>
+            Select none
+          </Btn>
+          <Btn
+            sm
+            flat
+            look="ink"
+            disabled={approve.isPending}
             onClick={() => {
               approve.mutate();
             }}
           >
-            {picked.size > MAX_BATCH
-              ? `Approve the first ${String(MAX_BATCH)}`
-              : 'Approve selected'}
-          </Button>
-          <Button
-            variant="secondary"
+            {approve.isPending
+              ? 'Approving…'
+              : picked.size > MAX_BATCH
+                ? `Approve the first ${String(MAX_BATCH)}`
+                : 'Approve selected'}
+          </Btn>
+          <Btn
+            sm
+            flat
             onClick={() => {
               setDeclining(true);
             }}
           >
             Decline selected…
-          </Button>
-        </Card>
-      </BottomBar>
-      {approve.isError ? <Alert tone="serious">{approve.error.message}</Alert> : null}
+          </Btn>
+        </div>
+      </div>
+      {approve.isError ? <Problem>{approve.error.message}</Problem> : null}
       <BulkDecline
         open={declining}
         ids={ids}
@@ -1025,6 +984,7 @@ function BulkDecline({
   const [comment, setComment] = useState('');
   const [problem, setProblem] = useState('');
   const n = String(ids.length);
+  const uid = useId();
   const decline = useMutation({
     mutationFn: () =>
       call(bulkDeclineReports, {
@@ -1042,9 +1002,12 @@ function BulkDecline({
       onDone(
         `Declined ${String(out.declined.length)}. Nobody was emailed.`,
         out.skipped.length ? (
-          <Alert tone="note" title={`Declined ${String(out.declined.length)}.`}>
-            Left alone: {out.skipped.map((x) => x.why).join(' ')}
-          </Alert>
+          <Note>
+            <span>
+              <b>{`Declined ${String(out.declined.length)}.`}</b> Left alone:{' '}
+              {out.skipped.map((x) => x.why).join(' ')}
+            </span>
+          </Note>
         ) : null,
       );
       await qc.invalidateQueries({ queryKey: ['moderation'] });
@@ -1052,79 +1015,68 @@ function BulkDecline({
     },
   });
   return (
-    <Dialog
+    <Modal
+      title={`Decline ${n} selected`}
+      description="Nobody is emailed when you decline in bulk."
       open={open}
-      onOpenChange={(on) => {
-        if (!on) onClose();
+      onClose={onClose}
+      onSubmit={() => {
+        if (!reason) {
+          setProblem('Choose the reason. Each report is counted under it.');
+          return;
+        }
+        decline.mutate();
       }}
+      buttons={
+        <>
+          {/* Not the action colour: declining a page of reports is rarely what somebody came for. */}
+          <Btn sm flat look="ink" type="submit" disabled={decline.isPending}>
+            {decline.isPending ? 'Declining…' : `Decline ${n}`}
+          </Btn>
+          <Btn sm flat look="ghost" onClick={onClose}>
+            Cancel
+          </Btn>
+        </>
+      }
     >
-      <DialogContent>
-        <form
-          className="flex flex-col gap-4"
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!reason) {
-              setProblem('Choose the reason. Each report is counted under it.');
-              return;
-            }
-            decline.mutate();
+      <p className="muted">
+        Each report gets its own decision on the record, with your name and the time, and is counted
+        publicly under this reason.
+      </p>
+      <div className="field">
+        <label htmlFor={`${uid}-reason`}>Reason</label>
+        <select
+          id={`${uid}-reason`}
+          className="sel"
+          value={reason}
+          onChange={(e) => {
+            setReason(e.target.value);
+            setProblem('');
           }}
         >
-          <DialogHeader>
-            <DialogTitle>{`Decline ${n} selected`}</DialogTitle>
-            <DialogDescription>Nobody is emailed when you decline in bulk.</DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-ink-alt">
-            Each report gets its own decision on the record, with your name and the time, and is
-            counted publicly under this reason.
-          </p>
-          <Field>
-            <Label>The reason</Label>
-            <Select
-              value={reason}
-              onChange={(e) => {
-                setReason(e.target.value);
-                setProblem('');
-              }}
-            >
-              <option value="">Choose a reason</option>
-              {REJECTION_REASONS.map((x) => (
-                <option key={x.code} value={x.code}>
-                  {x.label}
-                </option>
-              ))}
-            </Select>
-            <FieldError>{problem}</FieldError>
-          </Field>
-          <Field>
-            <Label>Note for the record (optional, never sent)</Label>
-            <Input
-              value={comment}
-              maxLength={2000}
-              onChange={(e) => {
-                setComment(e.target.value);
-              }}
-            />
-          </Field>
-          {decline.isError ? <Alert tone="serious">{decline.error.message}</Alert> : null}
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            {/* Not the action colour: declining a page of reports is rarely what somebody came for. */}
-            <Button
-              type="submit"
-              variant="secondary"
-              busy={decline.isPending}
-              busyLabel="Declining…"
-            >
-              {`Decline ${n}`}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <option value="">Choose a reason</option>
+          {REJECTION_REASONS.map((x) => (
+            <option key={x.code} value={x.code}>
+              {x.label}
+            </option>
+          ))}
+        </select>
+        <Err>{problem}</Err>
+      </div>
+      <div className="field">
+        <label htmlFor={`${uid}-note`}>Note (optional, never sent)</label>
+        <textarea
+          id={`${uid}-note`}
+          className="textarea"
+          value={comment}
+          maxLength={2000}
+          onChange={(e) => {
+            setComment(e.target.value);
+          }}
+        />
+      </div>
+      {decline.isError ? <Problem>{decline.error.message}</Problem> : null}
+    </Modal>
   );
 }
 
@@ -1146,26 +1098,26 @@ function Corroboration() {
     ['Incidents with more than one account', d.incidents_with_several_accounts],
   ];
   return (
-    <Card variant="quiet" heading="Across the published reports">
-      <p className="text-sm text-ink-alt">
+    <Panel kind="quiet" title="Across the published reports">
+      <p className="m">
         {String(d.published)} published. Reports count as corroborated only when a moderator linked
         them as the same incident, and only published ones are counted.
       </p>
-      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-sm">
+      <div className="stats">
         {rows.map(([k, v]) => (
-          <div key={k} className="contents">
-            <dt>{k}</dt>
-            <dd className="text-right font-mono">{String(v)}</dd>
+          <div className="mini-stat" key={k}>
+            <b>{String(v)}</b>
+            <span>{k}</span>
           </div>
         ))}
         {[...SEVERITIES, 'none' as const].map((k) => (
-          <div key={k} className="contents">
-            <dt>Rated: {SEVERITY_WORDS[k]?.label}</dt>
-            <dd className="text-right font-mono">{String(d.by_severity[k] ?? 0)}</dd>
+          <div className="mini-stat" key={k}>
+            <b>{String(d.by_severity[k] ?? 0)}</b>
+            <span>Rated: {SEVERITY_WORDS[k]?.label}</span>
           </div>
         ))}
-      </dl>
-    </Card>
+      </div>
+    </Panel>
   );
 }
 

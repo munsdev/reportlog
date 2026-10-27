@@ -19,7 +19,7 @@ import {
   optionArray,
 } from '@reportlog/fields';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { Check, Field, Problem, Select, TextArea, TextInput } from './controls.tsx';
 
 const LIST_KINDS: ReadonlySet<string> = new Set(['choice_one', 'choice_many', 'place']);
@@ -231,7 +231,7 @@ export function QuestionForm({
 
   return (
     <form
-      className="space-y-4"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         void submit();
@@ -312,7 +312,7 @@ export function QuestionForm({
       )}
 
       {(kind === 'private_text' || kind === 'private_link') && (
-        <p className="text-sm text-ink-alt">
+        <p className="muted">
           Reporters are asked this only if “Reporters may attach a note or link” is on for the
           logbook. One who writes something or gives a link is asked for an email address and
           whether vetted journalists may read it. After launch this can only be added as an optional
@@ -378,9 +378,9 @@ export function QuestionForm({
       )}
 
       {limitInput && (
-        <fieldset className="space-y-2 rounded-card border border-line p-3">
-          <legend className="px-1 font-semibold">Earliest and latest answer (optional)</legend>
-          <p className="text-sm text-ink-alt">
+        <fieldset className="panel quiet">
+          <legend className="lbl">Earliest and latest answer (optional)</legend>
+          <p className="muted">
             An answer outside these is refused, and the form offers nothing outside them. Leave
             either empty for no limit that way.
             {kind === 'datetime'
@@ -445,8 +445,8 @@ export function QuestionForm({
       {/* An upload question cannot carry a condition, and with nothing to
           depend on yet an empty picker would read as broken. */}
       {!isFile && targets.length > 0 && (
-        <fieldset className="space-y-2 rounded-card border border-line p-3">
-          <legend className="px-1 font-semibold">When it is asked</legend>
+        <fieldset className="panel quiet">
+          <legend className="lbl">When it is asked</legend>
           <Field label="Ask it">
             {(p) => (
               <Select
@@ -467,8 +467,8 @@ export function QuestionForm({
             )}
           </Field>
           {target && (
-            <div role="group" aria-label="The answers that bring it up" className="space-y-1">
-              <p className="text-sm text-muted">Asked when the answer is any of these:</p>
+            <div role="group" aria-label="The answers that bring it up" className="choices">
+              <p className="muted">Asked when the answer is any of these:</p>
               {values.map((v) => (
                 <Check
                   key={v}
@@ -485,14 +485,14 @@ export function QuestionForm({
       )}
 
       <Problem error={error} />
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" disabled={busy}>
+      <div className="acts">
+        <Btn type="submit" variant="secondary" disabled={busy}>
           {submitLabel}
-        </Button>
+        </Btn>
         {onCancel && (
-          <Button type="button" variant="quiet" onClick={onCancel}>
+          <Btn type="button" variant="quiet" onClick={onCancel}>
             Cancel
-          </Button>
+          </Btn>
         )}
       </div>
     </form>

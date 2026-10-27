@@ -15,14 +15,14 @@ import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field, FieldDescription } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { SettingPanel, SettingPanels } from '../../components/ui/setting-panel.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
+import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
+import { SettingPanel, SettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
@@ -33,7 +33,7 @@ export function SettingsPage() {
   return (
     <ToastProvider>
       <SettingPanels>
-        <div className="flex max-w-prose flex-col gap-6">
+        <div className="col" style={{ gap: 18 }}>
           <StaffHead
             title="Moderation settings"
             lede="What the site publishes, what asks for a second read, and who opened what. Each change is recorded with your name."
@@ -122,7 +122,7 @@ function Archive() {
           setDownloads(v === true);
         }}
       />
-      {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
+      {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
   );
 }
@@ -166,7 +166,7 @@ function Keywords() {
         toast.show('The words are saved.');
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         A report whose own words (not its chosen answers) contain one of these is marked for a
         second read. That is all it means. Words match whole, and a phrase matches as a phrase.
       </p>
@@ -181,11 +181,11 @@ function Keywords() {
           }}
         />
       </Field>
-      {save.error ? <Alert tone="serious">{save.error.message}</Alert> : null}
-      <div>
-        <Button
+      {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
+      <div className="acts">
+        <Btn
           type="button"
-          variant="secondary"
+          variant="quiet"
           busy={save.isPending}
           busyLabel="Going back…"
           onClick={() => {
@@ -200,7 +200,7 @@ function Keywords() {
           }}
         >
           Go back to the shipped list
-        </Button>
+        </Btn>
       </div>
     </SettingPanel>
   );
@@ -248,14 +248,14 @@ function NotesSwitches() {
         reset();
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         A note is the archive’s own statement about a report it published, under the archive’s name.
         Off for a logbook unless switched on here.
       </p>
       {logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
-      <ul className="flex flex-col gap-2">
+      <div className="choices">
         {logbooks.map((l) => (
-          <li key={l.slug}>
+          <div key={l.slug}>
             <CheckOption
               id={`notes-${l.slug}`}
               label={`${l.title} uses editorial notes`}
@@ -264,10 +264,10 @@ function NotesSwitches() {
                 setChosen((c) => ({ ...c, [l.slug]: v === true }));
               }}
             />
-          </li>
+          </div>
         ))}
-      </ul>
-      {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
+      </div>
+      {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
   );
 }
@@ -279,15 +279,12 @@ function NotesSwitches() {
  */
 function AccessLog() {
   return (
-    <Card variant="quiet" heading="Who opened what" id="who-opened-what">
+    <Panel variant="quiet" heading="Who opened what" id="who-opened-what">
       <p>
         Every opening of a reporter’s contact details or of a file’s original, with who and why, is
-        now its own page under Records:{' '}
-        <Link to="/who-opened-what" className="underline">
-          Who opened protected data
-        </Link>
+        now its own page under Records: <Link to="/who-opened-what">Who opened protected data</Link>
         . Opening it is recorded.
       </p>
-    </Card>
+    </Panel>
   );
 }

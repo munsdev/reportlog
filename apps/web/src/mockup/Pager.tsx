@@ -1,4 +1,7 @@
-/** The mock-up's `.pager`: numbered pages, the current one marked. Nothing when there is one page. */
+/**
+ * The mock-up's `.pager`: the page you are on, its neighbours and Previous /
+ * Next, for a list that pages in place. Draws nothing for one page.
+ */
 export function Pager({
   page,
   pages,
@@ -12,27 +15,51 @@ export function Pager({
   label?: string;
 }) {
   if (pages <= 1) return null;
+  const near = [page - 1, page, page + 1].filter((p) => p >= 1 && p <= pages);
   return (
-    <nav className="pager" aria-label={label}>
-      {Array.from({ length: pages }, (_, i) => i + 1).map((n) =>
-        n === page ? (
-          <span key={n} aria-current="page">
-            {n}
+    <nav className="pager print:hidden" aria-label={label}>
+      {page > 1 ? (
+        <button
+          type="button"
+          onClick={() => {
+            onPage(page - 1);
+          }}
+        >
+          Previous
+        </button>
+      ) : null}
+      {near[0] !== undefined && near[0] > 1 ? <span aria-hidden="true">…</span> : null}
+      {near.map((p) =>
+        p === page ? (
+          <span key={p} aria-current="page">
+            {p}
           </span>
         ) : (
-          // eslint-disable-next-line jsx-a11y/anchor-is-valid
-          <a
-            key={n}
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              onPage(n);
+          <button
+            key={p}
+            type="button"
+            aria-label={`Page ${String(p)}`}
+            onClick={() => {
+              onPage(p);
             }}
           >
-            {n}
-          </a>
+            {p}
+          </button>
         ),
       )}
+      {near[near.length - 1] !== undefined && (near[near.length - 1] ?? 0) < pages ? (
+        <span aria-hidden="true">…</span>
+      ) : null}
+      {page < pages ? (
+        <button
+          type="button"
+          onClick={() => {
+            onPage(page + 1);
+          }}
+        >
+          Next
+        </button>
+      ) : null}
     </nav>
   );
 }

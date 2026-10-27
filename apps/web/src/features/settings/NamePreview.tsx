@@ -11,31 +11,25 @@ import { BrandName } from '@/components/ui/site.tsx';
 export function NamePreview({ name, page = true }: { name: string; page?: boolean }) {
   const parts = parseBrand(name);
   return (
-    <div className="flex flex-col gap-4">
-      <figure className="m-0 flex flex-col gap-2">
-        <figcaption className="text-sm font-semibold">How the header will show it</figcaption>
-        <div className="flex items-center justify-between gap-4 rounded-card border-b-[6px] border-brand-on-deep bg-deep px-4 py-3 text-on-deep">
-          <p className="font-display text-xl font-bold">
-            <BrandName parts={parts} onDeep />
-          </p>
-          <span
-            aria-hidden="true"
-            className="label-face rounded-control border-2 border-on-deep px-3 py-2 text-xs"
-          >
-            Menu
-          </span>
-        </div>
-      </figure>
+    <>
+      <div className="name-prev" role="img" aria-label={`How the header will show it: ${name}`}>
+        <span className="wm" style={{ fontSize: '1.4rem' }}>
+          {parts.map((p, i) =>
+            p.mark === 'a' ? (
+              <b key={i}>{p.text}</b>
+            ) : p.mark === 'b' ? (
+              <i key={i}>{p.text}</i>
+            ) : (
+              <span key={i}>{p.text}</span>
+            ),
+          )}
+        </span>
+      </div>
       {page ? (
-        <figure className="m-0 flex flex-col gap-2">
-          <figcaption className="text-sm font-semibold">
-            On the page, the password screen and in emails
-          </figcaption>
-          <p className="rounded-card border border-line bg-paper px-4 py-3 font-display text-xl font-bold">
-            <BrandName parts={parts} />
-          </p>
-        </figure>
+        <p className="muted">
+          On the page, the password screen and in emails: <BrandName parts={parts} />
+        </p>
       ) : null}
-    </div>
+    </>
   );
 }

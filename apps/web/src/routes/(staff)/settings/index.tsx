@@ -19,11 +19,10 @@ import {
 import type { SiteEditor } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useCallback, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { Switch } from '@/mockup/SwitchRow.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -36,7 +35,7 @@ import {
   useLookCatalogue,
 } from '../../../features/settings/looks.ts';
 import { lookPacksQuery } from '../../../features/looks/queries.ts';
-import { GuardedPanel, LinkPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
+import { LinkPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
 import { AcceptingReportsPanel, DevNotice } from '../../../features/settings/Switches.tsx';
 import { LEGAL_TITLES } from '../../../features/settings/wording.tsx';
 import { editorQuery } from './-editor.tsx';
@@ -75,7 +74,7 @@ function SettingsHome() {
   return (
     <SettingsFrame>
       <StaffPage title="Site settings" lede="The switches that affect the whole site.">
-        <div className="layout-split grid items-start gap-6 lg:grid-cols-2">
+        <div className="grid2 even">
           <AcceptingReportsPanel />
           <PublishingPanel />
           <NamePanel />
@@ -95,7 +94,6 @@ function PublishingPanel() {
   const qc = useQueryClient();
   const toast = useToast();
   const query = useQuery(archiveQuery);
-  const [draft, setDraft] = useState<'on' | 'off' | null>(null);
   const save = useMutation({
     mutationFn: (published: boolean) => call(setArchiveSwitch, { body: { published } }),
     onSuccess: (d) => {
@@ -105,80 +103,42 @@ function PublishingPanel() {
       toast.show(d.published ? 'Publishing is now on.' : 'Publishing is now off.');
     },
   });
-  // The mutation's reset is bound once, so the panel keeps one callback.
-  const resetSave = save.reset;
-  const cancel = useCallback(() => {
-    setDraft(null);
-    resetSave();
-  }, [resetSave]);
 
   if (query.isPending)
     return (
-      <Card heading="Publishing">
+      <Panel heading="Publishing">
         <p role="status">Loading…</p>
-      </Card>
+      </Panel>
     );
   if (query.isError)
     return (
-      <Card heading="Publishing">
-        <Alert tone="serious" title="Publishing could not be read.">
+      <Panel heading="Publishing">
+        <Note tone="serious" title="Publishing could not be read.">
           {query.error.message}
-        </Alert>
-      </Card>
+        </Note>
+      </Panel>
     );
-  const now = query.data.published ? 'on' : 'off';
-  const value = draft ?? now;
   return (
-    <GuardedPanel
-      id="publishing"
-      title="Publishing"
-      summary={[
-        { key: 'Approved reports on the board', value: query.data.published ? 'On' : 'Off' },
-        ...(query.data.stored === null
-          ? [{ key: 'Chosen by', value: 'Nobody yet, which means on' }]
-          : []),
-      ]}
-      dirty={value !== now}
-      onCancel={cancel}
-      onSave={async () => {
-        if (value === now) {
-          setDraft(null);
-          return true;
-        }
-        await save.mutateAsync(value === 'on');
-        setDraft(null);
-        return true;
-      }}
-    >
-      <p className="text-ink-alt">
-        Whether approved reports appear on the board. Turning it off hides them; nothing is deleted.
-        A reporter permitting publication does not oblige the site to publish, and the site
-        publishing never overrides a reporter who said no.
-      </p>
-      <RadioGroup
-        aria-label="Publishing"
-        value={value}
-        onValueChange={(v) => {
-          setDraft(v as 'on' | 'off');
+    <Panel heading="Publishing">
+      <Switch
+        label="Publish the archive"
+        help="Approved reports appear on the board. Turning it off hides them; nothing is deleted. A reporter permitting publication does not oblige the site to publish, and the site publishing never overrides a reporter who said no."
+        checked={query.data.published}
+        busy={save.isPending}
+        onChange={(next) => {
+          save.reset();
+          save.mutate(next);
         }}
-      >
-        <RadioOption
-          value="on"
-          label="On"
-          hint="Approved reports appear on the board and in the public figures."
-        />
-        <RadioOption
-          value="off"
-          label="Off"
-          hint="The board says publishing is paused. Reports still arrive and are moderated."
-        />
-      </RadioGroup>
-      {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
-          {save.error.message}
-        </Alert>
+      />
+      {query.data.stored === null ? (
+        <p className="muted">Nobody has chosen yet, which means on.</p>
       ) : null}
-    </GuardedPanel>
+      {save.isError ? (
+        <Note tone="serious" title="That was not saved.">
+          {save.error.message}
+        </Note>
+      ) : null}
+    </Panel>
   );
 }
 
@@ -227,9 +187,9 @@ function EditorPanels() {
   const editor = useQuery(editorQuery);
   if (editor.isError)
     return (
-      <Alert tone="serious" title="The settings could not be read.">
+      <Note tone="serious" title="The settings could not be read.">
         {editor.error.message}
-      </Alert>
+      </Note>
     );
   const state = editor.data;
   const terms = state?.copy.find((s) => s.key === 'terms_of_use');

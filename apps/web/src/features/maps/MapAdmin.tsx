@@ -48,18 +48,18 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
+import { Empty } from '@/mockup/EmptyBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Select } from '@/mockup/FieldWired.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
 
@@ -84,14 +84,14 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
   const [making, setMaking] = useState(false);
   const none = maps.data?.maps.length === 0;
   const make = (
-    <Button
+    <Btn
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
       }}
     >
       Make a map
-    </Button>
+    </Btn>
   );
   return (
     <UnsavedMaps ask={ask}>
@@ -101,8 +101,8 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
         // One "Make" button at a time: an empty page carries it in its empty state.
         actions={making || none ? null : make}
       >
-        {maps.isError ? <Alert tone="serious">{maps.error.message}</Alert> : null}
-        {cands.isError ? <Alert tone="serious">{cands.error.message}</Alert> : null}
+        {maps.isError ? <Note tone="serious">{maps.error.message}</Note> : null}
+        {cands.isError ? <Note tone="serious">{cands.error.message}</Note> : null}
         {cands.isSuccess ? (
           <PlaceQuestions logbooks={cands.data.logbooks} lists={cands.data.lists} />
         ) : null}
@@ -119,30 +119,32 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
             {none && !making ? (
               <Empty title="No maps yet">
                 Make one, choose what feeds it, then turn it on.
-                <span className="mt-3 flex justify-center">{make}</span>
+                <span className="acts">{make}</span>
               </Empty>
             ) : null}
             {maps.data.slots.map((slot) => {
               const here = maps.data.maps.filter((m) => m.slot === slot.id);
               if (!here.length) return null;
               return (
-                <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
-                  <h2 className="font-display text-xl font-bold">{slot.label}</h2>
-                  <p className="text-sm text-muted">{slot.description}</p>
-                  <ul className="flex flex-col gap-3">
-                    {here.map((m, i) => (
-                      <li key={m.id}>
-                        <MapCard
-                          map={m}
-                          order={here.map((x) => x.id)}
-                          index={i}
-                          slots={maps.data.slots}
-                          logbooks={cands.data.logbooks}
-                          lists={cands.data.lists}
-                        />
-                      </li>
-                    ))}
-                  </ul>
+                <section
+                  key={slot.id}
+                  aria-label={slot.label}
+                  className="form-stack"
+                  style={{ maxWidth: 'none' }}
+                >
+                  <h2 className="h-sec">{slot.label}</h2>
+                  <p className="muted">{slot.description}</p>
+                  {here.map((m, i) => (
+                    <MapCard
+                      key={m.id}
+                      map={m}
+                      order={here.map((x) => x.id)}
+                      index={i}
+                      slots={maps.data.slots}
+                      logbooks={cands.data.logbooks}
+                      lists={cands.data.lists}
+                    />
+                  ))}
                 </section>
               );
             })}
@@ -243,15 +245,15 @@ function PlaceQuestions({
     },
   });
   return (
-    <Card heading="Which question places a report">
-      <div className="flex flex-col gap-4">
-        <p className="max-w-prose text-sm text-ink-alt">
+    <Panel heading="Which question places a report">
+      <div className="form-stack">
+        <p className="muted">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
           pick the one that says where it happened. This can be set after a logbook has launched: it
           changes nothing that was sealed.
         </p>
-        {error ? <Alert tone="serious">{error}</Alert> : null}
-        <ul className="flex flex-col gap-3">
+        {error ? <Note tone="serious">{error}</Note> : null}
+        <ul className="form-stack">
           {logbooks.map((l) => (
             <li key={`logbook-${String(l.id)}`}>
               <PlacePicker
@@ -282,7 +284,7 @@ function PlaceQuestions({
           ))}
         </ul>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -302,7 +304,7 @@ function PlacePicker({
   onPick: (key: string | null) => void;
 }) {
   return (
-    <Field className="flex flex-col gap-1">
+    <Field>
       <Label>{title}</Label>
       {note ? <FieldDescription>{note}</FieldDescription> : null}
       {options.length ? (
@@ -321,7 +323,7 @@ function PlacePicker({
           ))}
         </Select>
       ) : (
-        <p className="text-sm text-muted">{none}</p>
+        <p className="muted">{none}</p>
       )}
     </Field>
   );
@@ -343,16 +345,16 @@ function NewMap({ onDone }: { onDone: () => void }) {
     },
   });
   return (
-    <Card heading="Make a map">
+    <Panel heading="Make a map">
       <div>
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             make.mutate();
           }}
         >
-          <Field className="flex-1">
+          <Field>
             <Label>Title</Label>
             <Input
               value={title}
@@ -361,7 +363,7 @@ function NewMap({ onDone }: { onDone: () => void }) {
               }}
             />
           </Field>
-          <Field className="flex-1">
+          <Field>
             <Label>Short name</Label>
             <FieldDescription>
               Lowercase letters, numbers and hyphens. It goes in the map’s address.
@@ -375,23 +377,19 @@ function NewMap({ onDone }: { onDone: () => void }) {
               spellCheck={false}
             />
           </Field>
-          <Button type="submit" disabled={make.isPending}>
-            Make the map
-          </Button>
-          <Button type="button" variant="quiet" onClick={onDone}>
-            Cancel
-          </Button>
+          <div className="acts">
+            <Btn type="submit" variant="primary" disabled={make.isPending}>
+              Make the map
+            </Btn>
+            <Btn type="button" variant="quiet" onClick={onDone}>
+              Cancel
+            </Btn>
+          </div>
         </form>
-        {make.isError ? (
-          <Alert tone="serious" className="mt-3">
-            {make.error.message}
-          </Alert>
-        ) : null}
-        <p className="mt-3 text-sm text-muted">
-          A new map is off. Nothing is published until you turn it on.
-        </p>
+        {make.isError ? <Note tone="serious">{make.error.message}</Note> : null}
+        <p className="muted">A new map is off. Nothing is published until you turn it on.</p>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -433,9 +431,9 @@ function MapCard({
   const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
     ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Card heading={map.title}>
-      <div className="flex flex-col gap-3">
-        <KeyValueList
+    <Panel heading={map.title} closed={!open}>
+      <div className="form-stack" style={{ maxWidth: 'none' }}>
+        <Dl
           items={[
             { key: 'Shown', value: map.enabled ? 'On: readers can see it' : 'Off' },
             { key: 'Short name', value: map.slug, mono: true },
@@ -467,8 +465,8 @@ function MapCard({
             { key: 'Public address', value: `/maps/${map.slug}`, mono: true },
           ]}
         />
-        <div className="flex flex-wrap gap-2">
-          <Button
+        <div className="acts">
+          <Btn
             type="button"
 
             variant="secondary"
@@ -481,42 +479,44 @@ function MapCard({
             }}
           >
             {open ? 'Close' : 'Change'}
-          </Button>
-          <Button
+          </Btn>
+          <Btn
             type="button"
 
-            variant="secondary"
+            variant="quiet"
+            aria-label="Move up"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
               move(-1);
             }}
           >
-            Move up
-          </Button>
-          <Button
+            ↑
+          </Btn>
+          <Btn
             type="button"
 
-            variant="secondary"
+            variant="quiet"
+            aria-label="Move down"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
               move(1);
             }}
           >
-            Move down
-          </Button>
+            ↓
+          </Btn>
           {map.enabled ? (
-            <Button asChild variant="quiet">
+            <Btn asChild variant="quiet">
               <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
-            </Button>
+            </Btn>
           ) : null}
         </div>
         {open ? (
           <MapEditor map={map} slots={slots} logbooks={logbooks} lists={lists} onSaved={refresh} />
         ) : null}
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -704,7 +704,8 @@ function MapEditor({
       // The server refuses a wrong threshold in a sentence that says why; the
       // browser's own check would stop the form with a generic one.
       noValidate
-      className="flex flex-col gap-5 border-t border-line pt-4"
+      className="form-stack"
+      style={{ maxWidth: 'none' }}
       onSubmit={(e) => {
         e.preventDefault();
         save.mutate();
@@ -762,7 +763,7 @@ function MapEditor({
           onChange={(e) => {
             setMinArea(e.target.value);
           }}
-          className="max-w-32"
+          style={{ maxWidth: 128 }}
         />
       </Field>
       <Field>
@@ -783,12 +784,12 @@ function MapEditor({
           onChange={(e) => {
             setCountyMin(e.target.value);
           }}
-          className="max-w-32"
+          style={{ maxWidth: 128 }}
         />
       </Field>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Which maps it offers</legend>
+      <fieldset className="form-stack">
+        <legend>Which maps it offers</legend>
         {PLANES.map(([p, name]) => (
           <Tick
             key={p}
@@ -800,15 +801,15 @@ function MapEditor({
             {name}
           </Tick>
         ))}
-        <p className="text-sm text-muted">
+        <p className="muted">
           A state answer is on the United States map; a country answer is on the world map. States
           are not added up into the United States, because the difference would give away the areas
           under the threshold.
         </p>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">What the colour can show</legend>
+      <fieldset className="form-stack">
+        <legend>What the colour can show</legend>
         {VIEWS.map(([v, name]) => (
           <Tick
             key={v}
@@ -822,9 +823,9 @@ function MapEditor({
         ))}
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Which logbooks feed it</legend>
-        <p className="text-sm text-muted">Tick none for every logbook.</p>
+      <fieldset className="form-stack">
+        <legend>Which logbooks feed it</legend>
+        <p className="muted">Tick none for every logbook.</p>
         {logbooks.map((l) => (
           <Tick
             key={l.id}
@@ -840,9 +841,9 @@ function MapEditor({
       </fieldset>
 
       {lists.length ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="font-semibold">Which lists feed it</legend>
-          <p className="text-sm text-muted">
+        <fieldset className="form-stack">
+          <legend>Which lists feed it</legend>
+          <p className="muted">
             Tick none for no lists. Only approved entries are counted, and the map says “entries”,
             not “reports”.
           </p>
@@ -862,8 +863,8 @@ function MapEditor({
       ) : null}
 
       {views.includes('outcome') || outcome ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="font-semibold">The outcome question</legend>
+        <fieldset className="form-stack">
+          <legend>The outcome question</legend>
           <Field>
             <Label>Question</Label>
             <Select
@@ -927,8 +928,8 @@ function MapEditor({
         <FieldDescription>{slots.find((s) => s.id === slot)?.description}</FieldDescription>
       </Field>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Also show it in:</legend>
+      <fieldset className="form-stack">
+        <legend>Also show it in:</legend>
         {slots
           .filter((s) => s.id !== 'own_page' && s.id !== slot)
           .map((s) => (
@@ -952,11 +953,11 @@ function MapEditor({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={save.isPending}>
+      <div className="acts">
+        <Btn type="submit" disabled={save.isPending}>
           Save the map
-        </Button>
-        <Button
+        </Btn>
+        <Btn
           type="button"
           variant="secondary"
           onClick={() => {
@@ -964,9 +965,9 @@ function MapEditor({
           }}
         >
           What would it publish?
-        </Button>
+        </Btn>
         {confirmDelete ? (
-          <Button
+          <Btn
             type="button"
             variant="secondary"
             onClick={() => {
@@ -974,9 +975,9 @@ function MapEditor({
             }}
           >
             Yes, delete this map
-          </Button>
+          </Btn>
         ) : (
-          <Button
+          <Btn
             type="button"
             variant="quiet"
             onClick={() => {
@@ -984,16 +985,14 @@ function MapEditor({
             }}
           >
             Delete the map
-          </Button>
+          </Btn>
         )}
       </div>
       {confirmDelete ? (
-        <p className="text-sm text-muted">
-          Deleting a map takes no report with it. Its address stops working.
-        </p>
+        <p className="muted">Deleting a map takes no report with it. Its address stops working.</p>
       ) : null}
-      {remove.isError ? <Alert tone="serious">{remove.error.message}</Alert> : null}
-      {preview.isError ? <Alert tone="serious">{preview.error.message}</Alert> : null}
+      {remove.isError ? <Note tone="serious">{remove.error.message}</Note> : null}
+      {preview.isError ? <Note tone="serious">{preview.error.message}</Note> : null}
       {preview.data ? <Preview result={preview.data} /> : null}
     </form>
   );
@@ -1001,39 +1000,38 @@ function MapEditor({
 
 function Preview({ result }: { result: ResponseOf<typeof previewHeatMap> }) {
   const map = result.map;
-  if (!map.published) return <Alert>{map.reason}</Alert>;
+  if (!map.published) return <Note>{map.reason}</Note>;
   const shaded = Object.entries(map.areas).sort(([, a], [, b]) => b.n - a.n);
   return (
-    <div
-      role="status"
-      className="flex flex-col gap-1 rounded-control border border-line p-3 text-sm"
-    >
-      <p className="font-semibold">
-        Saved settings, counted now, under a threshold of {map.threshold}:
-      </p>
-      <p>
-        Shaded:{' '}
-        {shaded.length
-          ? shaded.map(([code, a]) => `${placeLabel(code)} ${String(a.n)}`).join(', ')
-          : 'none'}
-        .
-      </p>
-      <p>
-        Under the threshold, sent without a number:{' '}
-        {map.suppressed.areas.length
-          ? map.suppressed.areas.map((c) => placeLabel(c)).join(', ')
-          : 'none'}
-        .
-      </p>
-      {result.unplaced.no_question ? (
+    <div role="status" className="note">
+      <div>
+        <p>Saved settings, counted now, under a threshold of {map.threshold}:</p>
         <p>
-          {result.unplaced.no_question} published report(s) could not be placed: their logbook has
-          no question placing them, or they did not answer it.
+          Shaded:{' '}
+          {shaded.length
+            ? shaded.map(([code, a]) => `${placeLabel(code)} ${String(a.n)}`).join(', ')
+            : 'none'}
+          .
         </p>
-      ) : null}
-      {result.unplaced.country_only ? (
-        <p>{result.unplaced.country_only} gave only a country, and this map draws no countries.</p>
-      ) : null}
+        <p>
+          Under the threshold, sent without a number:{' '}
+          {map.suppressed.areas.length
+            ? map.suppressed.areas.map((c) => placeLabel(c)).join(', ')
+            : 'none'}
+          .
+        </p>
+        {result.unplaced.no_question ? (
+          <p>
+            {result.unplaced.no_question} published report(s) could not be placed: their logbook has
+            no question placing them, or they did not answer it.
+          </p>
+        ) : null}
+        {result.unplaced.country_only ? (
+          <p>
+            {result.unplaced.country_only} gave only a country, and this map draws no countries.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

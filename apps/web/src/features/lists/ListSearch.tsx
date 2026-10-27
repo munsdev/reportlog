@@ -13,12 +13,9 @@ import { searchListEntries } from '@reportlog/contracts';
 import type { FoundListEntry, ListSearchResult } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card, CardContent } from '../../components/ui/card.tsx';
-import { Field, FieldDescription } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { REVIEW, TRIAGE, said } from './words.ts';
@@ -33,35 +30,40 @@ export function ListSearch() {
       title="Find somebody's entries"
       lede="For answering a request to see or delete what somebody sent. It looks through what people wrote on every list and the email addresses they gave. Anything already deleted is not found, because it is not kept."
     >
-      <form
-        className="space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          search.mutate(q);
-        }}
-      >
-        <Field>
-          <Label>Look for</Label>
-          <Input
-            type="search"
-            placeholder="A name, an email address, or words they wrote"
-            value={q}
-            maxLength={200}
-            onChange={(e) => {
-              setQ(e.target.value);
-            }}
-          />
-          <FieldDescription>
+      <Panel heading="Look for">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            search.mutate(q);
+          }}
+        >
+          <div className="search">
+            <label className="vh" htmlFor="find-entries">
+              Look for
+            </label>
+            <input
+              id="find-entries"
+              type="search"
+              placeholder="A name, an email address, or words they wrote"
+              value={q}
+              maxLength={200}
+              aria-describedby="find-entries-help"
+              onChange={(e) => {
+                setQ(e.target.value);
+              }}
+            />
+            <Btn type="submit" variant="secondary" disabled={search.isPending}>
+              Find
+            </Btn>
+          </div>
+          <p id="find-entries-help" className="muted">
             A name, an email address, or words they used. Put a phrase in quotes, use “or” for
             either of two, and a minus sign to leave a word out.
-          </FieldDescription>
-        </Field>
-        <Button type="submit" disabled={search.isPending}>
-          Find
-        </Button>
-      </form>
+          </p>
+        </form>
+      </Panel>
       {search.isPending ? <p role="status">Looking…</p> : null}
-      {search.isError ? <Alert tone="serious">{search.error.message}</Alert> : null}
+      {search.isError ? <Note tone="serious">{search.error.message}</Note> : null}
       {search.data ? <Results result={search.data} /> : null}
     </StaffPage>
   );
@@ -78,19 +80,15 @@ function Results({ result }: { result: ListSearchResult }) {
     );
   }
   return (
-    <section className="space-y-3" aria-label="Entries found">
+    <section aria-label="Entries found" className="form-stack" style={{ maxWidth: 'none' }}>
       <p role="status">
         {result.more
           ? `More than ${String(result.entries.length)} entries have “${result.query}” in them. The newest ${String(result.entries.length)} are shown; add words to narrow it.`
           : `${String(result.entries.length)} ${result.entries.length === 1 ? 'entry has' : 'entries have'} “${result.query}” in ${result.entries.length === 1 ? 'it' : 'them'}.`}
       </p>
-      <ul className="space-y-3" aria-label="Entries">
-        {result.entries.map((e) => (
-          <li key={e.id}>
-            <Found entry={e} list={lists.get(e.list_id)} />
-          </li>
-        ))}
-      </ul>
+      {result.entries.map((e) => (
+        <Found key={e.id} entry={e} list={lists.get(e.list_id)} />
+      ))}
     </section>
   );
 }
@@ -105,39 +103,36 @@ function Found({
   const labels = new Map((list?.fields ?? []).map((f) => [f.key, f.label]));
   const answers = Object.entries({ ...e.answers, ...(e.erasable_answers ?? {}) });
   return (
-    <Card>
-      <CardContent className="space-y-2 pt-4">
-        <p className="font-semibold">
-          {list?.title ?? 'A list'} · entry {String(e.id)},{' '}
-          {new Date(e.created_at).toLocaleString()}
-        </p>
-        <p className="text-sm text-ink-alt">
-          {REVIEW[e.review_state]} · {TRIAGE[e.triage_state]} ·{' '}
-          {e.personal_expires_at
-            ? `the personal half is deleted on ${new Date(e.personal_expires_at).toLocaleDateString()}`
-            : 'kept until its sender deletes it with their link'}
-        </p>
-        <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-          {e.email ? (
-            <div className="contents">
-              <dt className="font-semibold">Email address</dt>
-              <dd className="break-all">{e.email}</dd>
-            </div>
-          ) : e.has_email ? (
-            // Kept encrypted, so it is shown only when it is the one searched for.
-            <div className="contents">
-              <dt className="font-semibold">Email address</dt>
-              <dd>Given, and kept encrypted. Search for the address itself to match it.</dd>
-            </div>
-          ) : null}
-          {answers.map(([k, v]) => (
-            <div key={k} className="contents">
-              <dt className="font-semibold">{labels.get(k) ?? k}</dt>
-              <dd className="whitespace-pre-wrap break-words">{said(v)}</dd>
-            </div>
-          ))}
-        </dl>
-      </CardContent>
-    </Card>
+    <article className="panel">
+      <p className="m">
+        {list?.title ?? 'A list'} · entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
+      </p>
+      <p className="m">
+        {REVIEW[e.review_state]} · {TRIAGE[e.triage_state]} ·{' '}
+        {e.personal_expires_at
+          ? `the personal half is deleted on ${new Date(e.personal_expires_at).toLocaleDateString()}`
+          : 'kept until its sender deletes it with their link'}
+      </p>
+      <dl className="dl">
+        {e.email ? (
+          <div>
+            <dt>Email address</dt>
+            <dd>{e.email}</dd>
+          </div>
+        ) : e.has_email ? (
+          // Kept encrypted, so it is shown only when it is the one searched for.
+          <div>
+            <dt>Email address</dt>
+            <dd>Given, and kept encrypted. Search for the address itself to match it.</dd>
+          </div>
+        ) : null}
+        {answers.map(([k, v]) => (
+          <div key={k}>
+            <dt>{labels.get(k) ?? k}</dt>
+            <dd style={{ whiteSpace: 'pre-wrap' }}>{said(v)}</dd>
+          </div>
+        ))}
+      </dl>
+    </article>
   );
 }
