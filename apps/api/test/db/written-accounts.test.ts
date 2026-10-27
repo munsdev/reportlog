@@ -15,7 +15,15 @@ import { fileEntry } from '../../src/lists/entries.ts';
 import { createFromTemplate } from '../../src/lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
 import { normalizeUrl } from '../../src/lists/urls.ts';
-import { checkText, redactText, reviewRedaction } from '../../src/moderation/texts/items.ts';
+import {
+  checkText,
+  detail,
+  openText,
+  redactText,
+  reviewRedaction,
+} from '../../src/moderation/texts/items.ts';
+import { decideBatch } from '../../src/moderation/queue.ts';
+import { clearedTexts, readCleared } from '../../src/moderation/texts/clearance.ts';
 import { eraseMyWritten, myWritten, reportWritten } from '../../src/moderation/texts/panels.ts';
 import { setPermission } from '../../src/permissions/log.ts';
 import type { FilingHarness } from './filing-helpers.ts';
@@ -163,13 +171,23 @@ describe('W4 · the written accounts queue', () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: false });
     const ref = await textRef(h.db, t.reportId);
     await expect(
-      checkText(h.db, keys, ref, { outcome: 'checked', reason: undefined, actor: MOD }),
+      checkText(h.db, keys, ref, {
+        outcome: 'checked',
+        reason: undefined,
+        why: 'Checked for the record.',
+        actor: MOD,
+      }),
     ).rejects.toMatchObject({ code: 'not_shared', status: 409 });
     await expect(
-      redactText(h.db, keys, ref, { body: COPY, why: 'A name.', actor: MOD }),
+      redactText(h.db, keys, ref, { body: COPY, why: 'Names a private person.', actor: MOD }),
     ).rejects.toMatchObject({ code: 'not_shared' });
     expect(
-      await checkText(h.db, keys, ref, { outcome: 'withheld', reason: undefined, actor: MOD }),
+      await checkText(h.db, keys, ref, {
+        outcome: 'withheld',
+        reason: undefined,
+        why: 'Checked for the record.',
+        actor: MOD,
+      }),
     ).toEqual({ outcome: 'withheld', erased: false });
     await setPermission(h.db, {
       threadId: t.threadId,
@@ -177,7 +195,12 @@ describe('W4 · the written accounts queue', () => {
       granted: true,
     });
     expect(
-      await checkText(h.db, keys, ref, { outcome: 'checked', reason: undefined, actor: MOD }),
+      await checkText(h.db, keys, ref, {
+        outcome: 'checked',
+        reason: undefined,
+        why: 'Checked for the record.',
+        actor: MOD,
+      }),
     ).toEqual({ outcome: 'checked', erased: false });
   });
 
@@ -185,10 +208,20 @@ describe('W4 · the written accounts queue', () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: true });
     const ref = await textRef(h.db, t.reportId);
     await expect(
-      checkText(h.db, keys, ref, { outcome: 'redacted', reason: undefined, actor: MOD }),
+      checkText(h.db, keys, ref, {
+        outcome: 'redacted',
+        reason: undefined,
+        why: 'Checked for the record.',
+        actor: MOD,
+      }),
     ).rejects.toMatchObject({ code: 'not_an_outcome' });
     await expect(
-      checkText(h.db, keys, ref, { outcome: 'illegal', reason: 'because', actor: MOD }),
+      checkText(h.db, keys, ref, {
+        outcome: 'illegal',
+        reason: 'because',
+        why: 'Checked for the record.',
+        actor: MOD,
+      }),
     ).rejects.toMatchObject({ code: 'reason_needed' });
   });
 
@@ -219,7 +252,9 @@ describe('W4 · the written accounts queue', () => {
     expect(item.body_enc.toString('utf8')).not.toContain('scanners');
     // The original is where it was.
     const original = await reportWritten(h.db, keys, t.threadId);
-    expect(original.texts[0]?.text).toBe(TEXT);
+    // The panel never carries the words; they come through openText.
+    expect(original.texts[0]?.text).toBeNull();
+    expect((await openText(h.db, keys, ref, MOD)).text).toBe(TEXT);
     expect(original.texts[0]?.outcome).toBe('redacted');
     await expect(
       reviewRedaction(h.db, keys, ref, { verdict: 'approved', actor: MOD, isOwner: false }),
@@ -228,7 +263,7 @@ describe('W4 · the written accounts queue', () => {
       await reviewRedaction(h.db, keys, ref, { verdict: 'approved', actor: OTHER, isOwner: false }),
     ).toEqual({ verdict: 'approved' });
     // Returned: the copy is deleted and the account waits again.
-    await redactText(h.db, keys, ref, { body: COPY, why: 'Again.', actor: MOD });
+    await redactText(h.db, keys, ref, { body: COPY, why: 'Redone for the record.', actor: MOD });
     await reviewRedaction(h.db, keys, ref, { verdict: 'returned', actor: MOD, isOwner: true });
     const after = await reportWritten(h.db, keys, t.threadId);
     expect(after.texts[0]).toMatchObject({ outcome: null, redaction: null });
@@ -245,10 +280,11 @@ describe('W4 · the written accounts queue', () => {
   it('illegal erases the words and the copy, writes the tombstone, and the report verifies', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: true });
     const ref = await textRef(h.db, t.reportId);
-    await redactText(h.db, keys, ref, { body: COPY, why: 'A name.', actor: MOD });
+    await redactText(h.db, keys, ref, { body: COPY, why: 'Names a private person.', actor: MOD });
     const out = await checkText(h.db, keys, ref, {
       outcome: 'illegal',
       reason: 'personal-data',
+      why: 'Checked for the record.',
       actor: MOD,
     });
     expect(out).toEqual({ outcome: 'illegal', erased: true });
@@ -283,6 +319,7 @@ describe('W4 · the written accounts queue', () => {
     await checkText(h.db, keys, await textRef(h.db, t.reportId), {
       outcome: 'checked',
       reason: undefined,
+      why: 'Checked for the record.',
       actor: MOD,
     });
     const fixed = await fileHeld(
@@ -295,7 +332,7 @@ describe('W4 · the written accounts queue', () => {
     const now = await reportWritten(h.db, keys, t.threadId);
     expect(now.texts).toHaveLength(1);
     expect(now.texts[0]?.outcome).toBeNull();
-    expect(now.texts[0]?.text).toContain('More.');
+    expect((await openText(h.db, keys, now.texts[0]?.ref ?? '', MOD)).text).toContain('More.');
     expect(fixed.reportId).not.toBe(t.reportId);
   });
 
@@ -332,14 +369,14 @@ describe('W4 · over HTTP', () => {
     const r = await mod.call({ method: 'GET', url: '/api/moderation/texts?filter=waiting' });
     expect(r.statusCode, r.body).toBe(200);
     const body = r.json<{
-      items: { ref: string; text: string; shared: boolean; reference: string }[];
+      items: { ref: string; text: string | null; shared: boolean; reference: string }[];
     }>();
     const mine = body.items.find((i) => i.reference === t.publicRef);
-    expect(mine).toMatchObject({ text: TEXT, shared: true });
+    expect(mine).toMatchObject({ text: null, shared: true });
     const checked = await mod.call({
       method: 'POST',
       url: `/api/moderation/texts/${mine?.ref ?? ''}/check`,
-      payload: { outcome: 'checked' },
+      payload: { outcome: 'checked', why: 'Reads as a plain account.' },
     });
     expect(checked.statusCode, checked.body).toBe(200);
     const panel = await mod.call({
@@ -360,5 +397,109 @@ describe('W4 · over HTTP', () => {
         })
       ).statusCode,
     ).toBe(403);
+  });
+});
+
+describe('N2 · reasons, readings and approval', () => {
+  const WHY = 'Reads as a plain account of events.';
+
+  it('every text decision needs a reason of 10 to 500 characters, kept in the history', async () => {
+    const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} a` } }, { share: true });
+    const ref = await textRef(h.db, t.reportId);
+    for (const why of [undefined, '', 'short', 'x'.repeat(501)]) {
+      await expect(
+        checkText(h.db, keys, ref, { outcome: 'checked', reason: undefined, why, actor: MOD }),
+      ).rejects.toMatchObject({ code: 'why_needed' });
+    }
+    await expect(
+      redactText(h.db, keys, ref, { body: COPY, why: 'too short', actor: MOD }),
+    ).rejects.toMatchObject({ code: 'why_needed' });
+    await checkText(h.db, keys, ref, {
+      outcome: 'withheld',
+      reason: undefined,
+      why: WHY,
+      actor: MOD,
+    });
+    const d = await detail(h.db, keys, ref);
+    expect(d.history.at(-1)).toMatchObject({ kind: 'withheld', by: MOD, reason: WHY });
+    expect(d.item.text).toBeNull();
+  });
+
+  it('opening the words writes the access log first, once per press, for each person', async () => {
+    const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} b` } }, { share: true });
+    const ref = await textRef(h.db, t.reportId);
+    await openText(h.db, keys, ref, MOD);
+    await openText(h.db, keys, ref, OTHER);
+    await openText(h.db, keys, ref, OTHER);
+    const rows = await h.db
+      .selectFrom('contact_access_log')
+      .select(['staff_email', 'reason', 'thread_id'])
+      .where('kind', '=', 'text_read')
+      .where('read_ref', '=', ref)
+      .execute();
+    expect(rows.map((r) => r.staff_email).sort()).toEqual([MOD, OTHER, OTHER].sort());
+    expect(rows.every((r) => r.reason === null && r.thread_id === t.threadId)).toBe(true);
+    await expect(openText(h.db, keys, 'report-999999999', MOD)).rejects.toMatchObject({
+      statusCode: 404,
+    });
+  });
+
+  it('the reporter and the desk never get a reason', async () => {
+    const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} c` } }, { share: true });
+    const ref = await textRef(h.db, t.reportId);
+    await checkText(h.db, keys, ref, {
+      outcome: 'checked',
+      reason: undefined,
+      why: WHY,
+      actor: MOD,
+    });
+    expect(JSON.stringify(await myWritten(h.db, keys, t.threadId))).not.toContain(WHY);
+    const desk = await clearedTexts(h.db);
+    const mine = desk.filter((c) => c.reportId === t.reportId);
+    expect(mine).toHaveLength(1);
+    expect(JSON.stringify(mine)).not.toContain(WHY);
+    const read = await readCleared(h.db, keys, mine);
+    expect(JSON.stringify([...read.values()])).not.toContain(WHY);
+  });
+
+  it('a report holding an undecided account is skipped in a batch and needs decisions to approve', async () => {
+    const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} d` } }, { share: true });
+    const plain = await fileHeld(h.db, keys, lb, {}, { share: true });
+    const out = await decideBatch(h.db, [t.threadId, plain.threadId], MOD);
+    expect(out.approved).toEqual([plain.threadId]);
+    expect(out.skipped).toEqual([
+      { thread_id: t.threadId, why: 'It has a written account, which needs its own look.' },
+    ]);
+    const mod = await staff(h, 'texts-approve', 'moderator');
+    const url = `/api/moderation/reports/${t.threadId}/decision`;
+    const refused = await mod.call({ method: 'POST', url, payload: { status: 'valid' } });
+    expect(refused.statusCode).toBe(409);
+    const ref = await textRef(h.db, t.reportId);
+    const noReason = await mod.call({
+      method: 'POST',
+      url,
+      payload: { status: 'valid', written: [{ ref, outcome: 'checked', why: 'no' }] },
+    });
+    expect(noReason.statusCode).toBe(400);
+    const ok = await mod.call({
+      method: 'POST',
+      url,
+      payload: { status: 'valid', written: [{ ref, outcome: 'checked', why: WHY }] },
+    });
+    expect(ok.statusCode, ok.body).toBe(200);
+    const head = await h.db
+      .selectFrom('report_heads')
+      .select('moderation_status')
+      .where('thread_id', '=', t.threadId)
+      .executeTakeFirstOrThrow();
+    expect(head.moderation_status).toBe('valid');
+    // Nothing typed: approves with no extra step.
+    const bare = await fileHeld(h.db, keys, lb, {}, { share: true });
+    const bareOk = await mod.call({
+      method: 'POST',
+      url: `/api/moderation/reports/${bare.threadId}/decision`,
+      payload: { status: 'valid' },
+    });
+    expect(bareOk.statusCode, bareOk.body).toBe(200);
   });
 });

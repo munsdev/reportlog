@@ -18,6 +18,7 @@ import {
   getReportWritten,
   getText,
   listTexts,
+  openText,
   redactText,
   reviewRedaction,
 } from '@reportlog/contracts';
@@ -73,9 +74,60 @@ const TABS: { value: TextFilter; label: string }[] = [
 ];
 
 const textsKey = ['texts'] as const;
+export const WHY_MIN = 10;
+export const WHY_MAX = 500;
 
 /** Characters, said as a count of them. */
 const characters = (n: number) => `${String(n)} ${n === 1 ? 'character' : 'characters'}`;
+
+/**
+ * The words are not on the page until somebody presses the button, and each
+ * press writes an entry in "Who opened protected data" before the words are
+ * sent. Opened once, the words stay in front of that person until they leave.
+ */
+export function Reveal({
+  textRef,
+  label = 'Show the written account',
+  mono = false,
+  onOpened,
+}: {
+  textRef: string;
+  label?: string;
+  mono?: boolean;
+  onOpened?: (text: string) => void;
+}) {
+  const open = useMutation({
+    mutationFn: () => call(openText, { params: { ref: textRef } }),
+    onSuccess: (out) => {
+      onOpened?.(out.text);
+    },
+  });
+  if (open.data) {
+    return (
+      <p className={`max-w-prose whitespace-pre-wrap ${mono ? 'font-mono break-all' : ''}`}>
+        {open.data.text}
+      </p>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        type="button"
+        variant="secondary"
+        className="self-start"
+        busy={open.isPending}
+        busyLabel="Opening…"
+        onClick={() => {
+          open.mutate();
+        }}
+      >
+        {label}
+      </Button>
+      <p className="text-sm text-ink-alt">Opening it is recorded with your name.</p>
+      {open.isError ? <Alert tone="serious">{open.error.message}</Alert> : null}
+    </div>
+  );
+}
 
 // ── the queue ───────────────────────────────────────────────────────────
 
@@ -170,11 +222,7 @@ function TextCard({ item }: { item: TextItem }) {
   return (
     <Card>
       <Chips item={item} />
-      {item.text === null ? (
-        <p className="text-ink-alt">These words could not be opened.</p>
-      ) : (
-        <p className="max-w-prose whitespace-pre-wrap">{item.text}</p>
-      )}
+      <Reveal textRef={item.ref} />
       <Meta>
         {item.thread_id && item.reference ? (
           <Link
@@ -219,6 +267,7 @@ function CheckForm({
   const [outcome, setOutcome] = useState<TextOutcome | ''>('');
   const [reason, setReason] = useState('');
   const [sure, setSure] = useState(false);
+  const [why, setWhy] = useState('');
   const words = long ? LONG : SHORT;
   const choices: TextOutcome[] = item.shared
     ? ['checked', 'redacted', 'withheld', 'illegal']
@@ -227,16 +276,21 @@ function CheckForm({
     mutationFn: () =>
       call(checkText, {
         params: { ref: item.ref },
-        body: { outcome, ...(outcome === 'illegal' ? { reason } : {}) },
+        body: { outcome, why: why.trim(), ...(outcome === 'illegal' ? { reason } : {}) },
       }),
     onSuccess: async () => {
       setOutcome('');
       setSure(false);
+      setWhy('');
       await qc.invalidateQueries({ queryKey: textsKey });
       await qc.invalidateQueries({ queryKey: ['written'] });
     },
   });
-  const ready = outcome !== '' && (outcome !== 'illegal' || (reason !== '' && sure));
+  const whyOk = why.trim().length >= WHY_MIN && why.trim().length <= WHY_MAX;
+  const ready =
+    outcome !== '' &&
+    (outcome === 'redacted' || whyOk) &&
+    (outcome !== 'illegal' || (reason !== '' && sure));
   const redactPath = { to: '/moderate/texts/$ref' as const, params: { ref: item.ref } };
   return (
     <fieldset className="flex flex-col gap-2">
@@ -281,6 +335,23 @@ function CheckForm({
           />
         </div>
       ) : null}
+      {outcome !== '' && outcome !== 'redacted' ? (
+        <Field>
+          <Label>Why (for the record)</Label>
+          <FieldDescription>
+            10 to 500 characters. Kept with your name; only staff can read it. Describe the kind of
+            thing, not the words.
+          </FieldDescription>
+          <Textarea
+            rows={2}
+            value={why}
+            maxLength={WHY_MAX}
+            onChange={(e) => {
+              setWhy(e.target.value);
+            }}
+          />
+        </Field>
+      ) : null}
       {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
       <div className="flex flex-wrap gap-2">
         <Button
@@ -316,6 +387,8 @@ export function RedactPage({ textRef }: { textRef: string }) {
   });
   const [body, setBody] = useState<string | null>(null);
   const [why, setWhy] = useState('');
+  // The original, once this person has pressed Show (and it was logged).
+  const [original, setOriginal] = useState<string | null>(null);
   const done = () => {
     void qc.invalidateQueries({ queryKey: textsKey });
     void qc.invalidateQueries({ queryKey: ['written'] });
@@ -332,7 +405,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
   });
   const item = q.data?.item;
   const title = item ? `Redact ${item.reference ?? 'tip text'}` : 'Redact';
-  const copy = body ?? q.data?.redacted ?? item?.text ?? '';
+  const copy = body ?? q.data?.redacted ?? original ?? '';
   const red = item?.redaction;
   return (
     <div className="flex flex-col gap-6">
@@ -345,7 +418,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
       {item ? (
         <div className="grid items-start gap-6 md:grid-cols-2">
           <Card variant="quiet" heading="The original · kept, never changed">
-            <p className="max-w-prose whitespace-pre-wrap">{item.text ?? 'Could not be opened.'}</p>
+            <Reveal textRef={textRef} onOpened={setOriginal} />
           </Card>
           <div className="flex flex-col gap-6">
             <Card heading="The copy journalists read">
@@ -362,9 +435,13 @@ export function RedactPage({ textRef }: { textRef: string }) {
               </Field>
               <Field>
                 <Label>Why (for the record)</Label>
+                <FieldDescription>
+                  10 to 500 characters. Only staff can read it. Describe the kind of thing removed,
+                  not the words.
+                </FieldDescription>
                 <Input
                   value={why}
-                  maxLength={500}
+                  maxLength={WHY_MAX}
                   onChange={(e) => {
                     setWhy(e.target.value);
                   }}
@@ -377,7 +454,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
               <Button
                 type="button"
                 className="self-start"
-                disabled={save.isPending || why.trim() === '' || copy.trim() === ''}
+                disabled={save.isPending || why.trim().length < WHY_MIN || copy.trim() === ''}
                 onClick={() => {
                   save.mutate(copy);
                 }}
@@ -439,6 +516,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
               <li key={`${h.at}-${h.kind}`}>
                 {when(h.at)} · {h.kind.replace('_', ' ')} · {h.by}
                 {h.reason_category ? ` · ${h.reason_category}` : ''}
+                {h.reason ? ` · ${h.reason}` : ''}
               </li>
             ))}
           </ol>
@@ -467,11 +545,7 @@ export function ReportWritten({ threadId }: { threadId: string }) {
     <>
       {data.texts.map((t) => (
         <Card key={t.ref} heading="Written account · not published">
-          {t.text === null ? (
-            <p className="text-ink-alt">These words could not be opened.</p>
-          ) : (
-            <p className="max-w-prose whitespace-pre-wrap">{t.text}</p>
-          )}
+          <Reveal textRef={t.ref} />
           <p className="text-sm text-ink-alt">
             {characters(t.length)} ·{' '}
             {t.shared
@@ -504,8 +578,8 @@ export function ReportWritten({ threadId }: { threadId: string }) {
         <Card heading="Link · not published">
           <ul className="flex flex-col gap-3">
             {data.links.map((l) => (
-              <li key={l.url} className="flex flex-col gap-1">
-                <p className="font-mono break-all">{l.url}</p>
+              <li key={l.ref} className="flex flex-col gap-1">
+                <Reveal textRef={l.ref} label="Show the link" mono />
                 <p className="text-sm text-ink-alt">
                   {l.also_tips || l.also_reports ? alsoSent(l.also_tips, l.also_reports) : ''}
                   {l.outcome ? `Checked once as ${l.outcome}. ` : 'Not checked yet. '}

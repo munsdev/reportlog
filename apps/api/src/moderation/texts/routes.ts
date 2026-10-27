@@ -20,7 +20,15 @@ import { route } from '../../http/route.ts';
 import { requireUser } from '../../identity/guards.ts';
 import type { LinkKeys } from '../../links/keys.ts';
 import { moderatorGuard } from '../agreement.ts';
-import { checkText, countsOf, detail, listPage, redactText, reviewRedaction } from './items.ts';
+import {
+  checkText,
+  countsOf,
+  detail,
+  listPage,
+  openText,
+  redactText,
+  reviewRedaction,
+} from './items.ts';
 import type { Filter } from './items.ts';
 import { eraseMyWritten, myWritten, reportWritten } from './panels.ts';
 
@@ -66,9 +74,13 @@ export function textRoutes(app: FastifyInstance, deps: TextRouteDeps): void {
       return checkText(db, await need(), params.ref, {
         outcome: b.outcome,
         reason: b.reason,
+        why: b.why,
         actor: me(request),
       });
     });
+    route(mods, C.openText, async ({ params, request }) =>
+      openText(db, await need(), params.ref, me(request)),
+    );
     route(mods, C.redactText, async ({ params, request }) => {
       const b = request.body as BodyOf<typeof C.redactText>;
       return redactText(db, await need(), params.ref, {

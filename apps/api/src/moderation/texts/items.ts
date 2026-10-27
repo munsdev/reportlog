@@ -42,6 +42,7 @@ export const OUTCOMES = ['checked', 'redacted', 'withheld', 'illegal'] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
 export const MAX_REDACTED = 6000;
+export const MIN_WHY = 10;
 export const MAX_WHY = 500;
 
 /** Why words are erased: a category, never a description (it would be a copy). */
@@ -59,6 +60,23 @@ export const isEraseReason = (v: unknown): v is EraseReason =>
 
 const refuse = (status: number, code: string, message: string) =>
   new HttpError(status, code, message);
+
+/**
+ * The reason every decision about a written account carries. INTERNAL: it is
+ * kept with who and when in text_checks, shown to staff in the account's
+ * history, and selected by no reporter or journalist route.
+ */
+export function whyOf(raw: unknown): string {
+  const why = typeof raw === 'string' ? raw.trim() : '';
+  if (why.length < MIN_WHY || why.length > MAX_WHY) {
+    throw refuse(
+      400,
+      'why_needed',
+      `Say why, in ${String(MIN_WHY)} to ${String(MAX_WHY)} characters. It stays on the record for staff. Describe the kind of thing, not the words.`,
+    );
+  }
+  return why;
+}
 
 export const NOT_SHARED = refuse(
   409,
@@ -175,7 +193,7 @@ export async function listPage(
   };
 }
 
-/** Candidates as the screens show them. Opens the words: callers are behind the moderator scope. */
+/** Candidates as the screens show them. The words are NOT included (`text` is null): see openText. */
 export async function present(
   db: Db,
   keys: LinkKeys,
@@ -272,14 +290,16 @@ export async function present(
     if (c.source === 'report') {
       const v = values.find((x) => x.id === c.subject_id);
       if (!v) return [];
-      const text = openRow(keys, v.value_enc, v.value_key).value;
+      // The length is counted here; the words leave only through openText,
+      // which logs the opening first.
+      const length = openRow(keys, v.value_enc, v.value_key).value.length;
       return [
         {
           ...common,
           ref: refOf({ source: 'report', valueId: v.id }),
           source: 'report',
-          text,
-          length: text.length,
+          text: null,
+          length,
           shared: shared.has(v.thread_id),
           reference: v.public_ref,
           thread_id: v.thread_id,
@@ -302,7 +322,7 @@ export async function present(
         ...common,
         ref: refOf({ source: 'tip', entryId: e.id, fieldKey: c.field_key }),
         source: 'tip',
-        text,
+        text: null,
         length: text.length,
         shared: true,
         reference: null,
@@ -415,7 +435,7 @@ export async function checkText(
   db: Db,
   keys: LinkKeys,
   rawRef: string,
-  input: { outcome: unknown; reason: unknown; actor: string },
+  input: { outcome: unknown; reason: unknown; why: unknown; actor: string },
 ): Promise<{ outcome: Outcome; erased: boolean }> {
   const outcome = input.outcome;
   if (outcome !== 'checked' && outcome !== 'withheld' && outcome !== 'illegal') {
@@ -428,6 +448,7 @@ export async function checkText(
   if (outcome === 'illegal' && !isEraseReason(input.reason)) {
     throw refuse(400, 'reason_needed', 'Pick why it is illegal. It is recorded with the erasure.');
   }
+  const why = whyOf(input.why);
   const subject = await resolve(db, keys, rawRef);
   return db.transaction().execute(async (trx) => {
     const item = await ensureItem(trx, subject);
@@ -446,6 +467,7 @@ export async function checkText(
         item_id: item.id,
         outcome,
         reason_category: outcome === 'illegal' ? (input.reason as string) : null,
+        reason: why,
         actor_email: input.actor,
       })
       .execute();
@@ -490,18 +512,11 @@ export async function redactText(
   input: { body: unknown; why: unknown; actor: string },
 ): Promise<{ outcome: 'redacted' }> {
   const body = typeof input.body === 'string' ? input.body.trim() : '';
-  const why = typeof input.why === 'string' ? input.why.trim() : '';
   if (!body) throw refuse(400, 'copy_needed', 'Write the copy journalists will read.');
   if (body.length > MAX_REDACTED) {
     throw refuse(400, 'copy_too_long', `Keep the copy under ${String(MAX_REDACTED)} characters.`);
   }
-  if (!why || why.length > MAX_WHY) {
-    throw refuse(
-      400,
-      'why_needed',
-      `Say why, for the record, in up to ${String(MAX_WHY)} characters. Describe the kind of thing removed, not the words.`,
-    );
-  }
+  const why = whyOf(input.why);
   const subject = await resolve(db, keys, rawRef);
   if (body === subject.text.trim() || !carriesNewMarker(subject.text, body)) {
     throw refuse(
@@ -534,7 +549,7 @@ export async function redactText(
       .execute();
     await trx
       .insertInto('text_checks')
-      .values({ item_id: item.id, outcome: 'redacted', actor_email: input.actor })
+      .values({ item_id: item.id, outcome: 'redacted', reason: why, actor_email: input.actor })
       .execute();
     await trx
       .updateTable('text_items')
@@ -637,7 +652,7 @@ export async function detail(db: Db, keys: LinkKeys, rawRef: string) {
   const history = itemRow
     ? await db
         .selectFrom('text_checks')
-        .select(['outcome', 'reason_category', 'actor_email', 'created_at'])
+        .select(['outcome', 'reason_category', 'reason', 'actor_email', 'created_at'])
         .where('item_id', '=', itemRow.id)
         .orderBy('id')
         .execute()
@@ -650,6 +665,71 @@ export async function detail(db: Db, keys: LinkKeys, rawRef: string) {
       by: h.actor_email,
       kind: h.outcome as Outcome | 'review_approved' | 'review_returned',
       reason_category: h.reason_category,
+      // Internal: this route is for staff only (moderator scope).
+      reason: h.reason,
     })),
   };
+}
+
+// ── opening the words ────────────────────────────────────────────────────
+
+/**
+ * Staff press "Show the written account" (or the link). THE ENTRY IS WRITTEN
+ * FIRST and the words are decrypted second, so a look that was not logged
+ * cannot happen; each press is one entry, and several moderators opening
+ * one item are several entries. No typed reason is asked for.
+ *
+ * `link-<report_values.id>` names a link a report holds (its panel); the other
+ * refs are the ones the queue uses.
+ */
+export async function openText(
+  db: Db,
+  keys: LinkKeys,
+  rawRef: string,
+  actor: string,
+): Promise<{ text: string }> {
+  const link = /^link-(\d{1,15})$/.exec(rawRef);
+  const ref = link ? null : parseRef(rawRef);
+  if (!link && !ref) throw notFound('There is no such written account.');
+
+  let valueId: number | null = null;
+  if (link?.[1]) valueId = Number(link[1]);
+  else if (ref?.source === 'report') valueId = ref.valueId;
+
+  let threadId: string | null = null;
+  let reportId: number | null = null;
+  if (valueId !== null) {
+    // Ids only: nothing is decrypted to find where it belongs.
+    const v = await db
+      .selectFrom('report_values as rv')
+      .innerJoin('reports as r', 'r.id', 'rv.report_id')
+      .select(['rv.report_id', 'r.thread_id'])
+      .where('rv.id', '=', valueId)
+      .where('rv.kind', '=', link ? 'private_link' : 'private_text')
+      .executeTakeFirst();
+    if (!v) throw notFound('There is no such written account. It may have been erased.');
+    threadId = v.thread_id;
+    reportId = v.report_id;
+  }
+  await db
+    .insertInto('contact_access_log')
+    .values({
+      staff_email: actor,
+      kind: 'text_read',
+      read_ref: rawRef,
+      thread_id: threadId,
+      report_id: reportId,
+    })
+    .execute();
+
+  if (link && valueId !== null) {
+    const row = await db
+      .selectFrom('report_values')
+      .select(['value_enc', 'value_key'])
+      .where('id', '=', valueId)
+      .executeTakeFirst();
+    if (!row) throw notFound('There is no such link. It may have been erased.');
+    return { text: openRow(keys, row.value_enc, row.value_key).value };
+  }
+  return { text: (await resolve(db, keys, rawRef)).text };
 }
