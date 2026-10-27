@@ -1,0 +1,1043 @@
+{
+ "world": {
+  "slugs": {
+   "voting": "demo-voting",
+   "general": "demo-general",
+   "listed": "demo-listed",
+   "tips": "demo-tips",
+   "election": "demo-election",
+   "volunteers": "demo-volunteers"
+  },
+  "refs": {
+   "votingPublished": "RL-MVQ4Y32H-TYFZK4",
+   "votingProblem": "RL-MVQ4Y33V-QRN252",
+   "votingWithdrawn": "RL-MVQ4Y34P-ABC2SB",
+   "published": "RL-MVQ4Y361-RTY7T7",
+   "corrected": "RL-MVQ4Y37K-2VJYMG",
+   "correctedFirst": "RL-MVQ4Y36X-CBANMW",
+   "withdrawn": "RL-MVQ4Y381-GBMGP9",
+   "listedPublished": "RL-MVQ4Y39Z-QTCYX1",
+   "unreviewed": "RL-MVQ4Y38J-9V2HKJ",
+   "declined": "RL-MVQ4Y38Z-ANQF7G",
+   "confirmedByRoute": "RL-MVQ4Y3BX-5Q4QXG"
+  },
+  "waiting": {
+   "email": "zqmark-waiting@marker.test",
+   "token": "292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f"
+  },
+  "people": {
+   "journalist": "zqmark-journalist@marker.test",
+   "moderator": "zqmark-moderator@marker.test"
+  }
+ },
+ "urls": [
+  "/api/agreement/1",
+  "/api/board",
+  "/api/board/counts",
+  "/api/board/declined",
+  "/api/board/figures",
+  "/api/board/reports",
+  "/api/board/reports.csv",
+  "/api/board/reports/RL-MVQ4Y32H-TYFZK4",
+  "/api/board/reports/RL-MVQ4Y33V-QRN252",
+  "/api/board/reports/RL-MVQ4Y34P-ABC2SB",
+  "/api/board/reports/RL-MVQ4Y361-RTY7T7",
+  "/api/board/reports/RL-MVQ4Y36X-CBANMW",
+  "/api/board/reports/RL-MVQ4Y37K-2VJYMG",
+  "/api/board/reports/RL-MVQ4Y381-GBMGP9",
+  "/api/board/reports/RL-MVQ4Y38J-9V2HKJ",
+  "/api/board/reports/RL-MVQ4Y38Z-ANQF7G",
+  "/api/board/reports/RL-MVQ4Y39Z-QTCYX1",
+  "/api/board/reports/RL-MVQ4Y3BX-5Q4QXG",
+  "/api/board/stats",
+  "/api/board/switches",
+  "/api/chain/demo-election",
+  "/api/chain/demo-general",
+  "/api/chain/demo-listed",
+  "/api/chain/demo-tips",
+  "/api/chain/demo-volunteers",
+  "/api/chain/demo-voting",
+  "/api/desk/alerts",
+  "/api/desk/links",
+  "/api/desk/sources",
+  "/api/directory",
+  "/api/directory/listing/1",
+  "/api/directory/logos/1",
+  "/api/doors",
+  "/api/erase/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/feedback",
+  "/api/feedback/1",
+  "/api/files/public/1",
+  "/api/files/public/1/page/1",
+  "/api/files/public/1/poster",
+  "/api/files/report/RL-MVQ4Y32H-TYFZK4",
+  "/api/files/report/RL-MVQ4Y33V-QRN252",
+  "/api/files/report/RL-MVQ4Y34P-ABC2SB",
+  "/api/files/report/RL-MVQ4Y361-RTY7T7",
+  "/api/files/report/RL-MVQ4Y36X-CBANMW",
+  "/api/files/report/RL-MVQ4Y37K-2VJYMG",
+  "/api/files/report/RL-MVQ4Y381-GBMGP9",
+  "/api/files/report/RL-MVQ4Y38J-9V2HKJ",
+  "/api/files/report/RL-MVQ4Y38Z-ANQF7G",
+  "/api/files/report/RL-MVQ4Y39Z-QTCYX1",
+  "/api/files/report/RL-MVQ4Y3BX-5Q4QXG",
+  "/api/health",
+  "/api/home-buttons",
+  "/api/illegal-content/status/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/intake-links/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/intake-pause",
+  "/api/intake-switch",
+  "/api/journalists/access/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/journalists/confirm/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/journalists/settings/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/journalists/stop/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/legal",
+  "/api/link-checks",
+  "/api/link-checks/1/history",
+  "/api/link-checks/blocklist",
+  "/api/list-mail/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/lists",
+  "/api/lists/demo-election",
+  "/api/lists/demo-election/counts",
+  "/api/lists/demo-general",
+  "/api/lists/demo-general/counts",
+  "/api/lists/demo-listed",
+  "/api/lists/demo-listed/counts",
+  "/api/lists/demo-tips",
+  "/api/lists/demo-tips/counts",
+  "/api/lists/demo-volunteers",
+  "/api/lists/demo-volunteers/counts",
+  "/api/lists/demo-voting",
+  "/api/lists/demo-voting/counts",
+  "/api/logbooks",
+  "/api/logbooks/demo-election",
+  "/api/logbooks/demo-general",
+  "/api/logbooks/demo-listed",
+  "/api/logbooks/demo-tips",
+  "/api/logbooks/demo-volunteers",
+  "/api/logbooks/demo-voting",
+  "/api/looks/1/1",
+  "/api/maps",
+  "/api/maps/demo-election",
+  "/api/maps/demo-general",
+  "/api/maps/demo-listed",
+  "/api/maps/demo-tips",
+  "/api/maps/demo-volunteers",
+  "/api/maps/demo-voting",
+  "/api/menu/waiting",
+  "/api/notifications",
+  "/api/notifications/stop/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/owner/journalists",
+  "/api/press",
+  "/api/press/1",
+  "/api/publication-card",
+  "/api/reports/RL-MVQ4Y32H-TYFZK4/verify",
+  "/api/reports/RL-MVQ4Y33V-QRN252/verify",
+  "/api/reports/RL-MVQ4Y34P-ABC2SB/verify",
+  "/api/reports/RL-MVQ4Y361-RTY7T7/verify",
+  "/api/reports/RL-MVQ4Y36X-CBANMW/verify",
+  "/api/reports/RL-MVQ4Y37K-2VJYMG/verify",
+  "/api/reports/RL-MVQ4Y381-GBMGP9/verify",
+  "/api/reports/RL-MVQ4Y38J-9V2HKJ/verify",
+  "/api/reports/RL-MVQ4Y38Z-ANQF7G/verify",
+  "/api/reports/RL-MVQ4Y39Z-QTCYX1/verify",
+  "/api/reports/RL-MVQ4Y3BX-5Q4QXG/verify",
+  "/api/reports/confirm/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f",
+  "/api/site",
+  "/api/site-access/status",
+  "/api/site/manifest.webmanifest",
+  "/api/site/pages/1",
+  "/api/site/pages/1/editor",
+  "/api/telemetry",
+  "/api/v1",
+  "/api/v1/consent-texts",
+  "/api/v1/stats"
+ ],
+ "facts": {
+  "reports": [
+   {
+    "public_ref": "RL-MVQ4Y32H-TYFZK4",
+    "thread_id": "ddd03fcb-fff6-4131-9b2b-a3f3d5510a6a",
+    "content_hash": "b4a061425c5c8bf4725075552fd6384ccbb68b588d06beccdf1a238c67aff0ef",
+    "prev_chain_hash": "47d5e2d8ff01727032a65354728f67dad8e14064086b274ee980efa7d074ee8c",
+    "chain_hash": "11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4"
+   },
+   {
+    "public_ref": "RL-MVQ4Y33V-QRN252",
+    "thread_id": "2e3c343f-19f3-4fa1-a30b-0b0497e9a710",
+    "content_hash": "26b3ec5f048adf0542916b07537f91a660b711722b56ee8a64188f36b00ead1f",
+    "prev_chain_hash": "11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4",
+    "chain_hash": "358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03"
+   },
+   {
+    "public_ref": "RL-MVQ4Y34P-ABC2SB",
+    "thread_id": "cb016549-992b-4e10-a80c-5dde9d3290f0",
+    "content_hash": "6d296fdb59d77c95cd336bddbee1d088c79d53e58f6de255ee9f550af40f7b3a",
+    "prev_chain_hash": "358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03",
+    "chain_hash": "633d9f9872501c7e04734089c92225d895be8b85f87b4fc6dad9736977595bf1"
+   },
+   {
+    "public_ref": "RL-MVQ4Y361-RTY7T7",
+    "thread_id": "e6182177-6378-4f57-83a0-41ebf4baf1db",
+    "content_hash": "a5c8aebf0bde0eef601f1b68b1c8228623a7c63eef18f6e3d064fa5a346a8afc",
+    "prev_chain_hash": "283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a",
+    "chain_hash": "6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a"
+   },
+   {
+    "public_ref": "RL-MVQ4Y36X-CBANMW",
+    "thread_id": "9791465e-35a5-4d8e-a568-c2bacf6216b0",
+    "content_hash": "952b5a49ad690539e073b9bb4e578a2b85b654540fcec3fd0d77211c182cab7e",
+    "prev_chain_hash": "6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a",
+    "chain_hash": "6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f"
+   },
+   {
+    "public_ref": "RL-MVQ4Y37K-2VJYMG",
+    "thread_id": "9791465e-35a5-4d8e-a568-c2bacf6216b0",
+    "content_hash": "d52507c729cbf79ad8b1f61c03fc6ec2ac44268780f2915da4d563abd566da2e",
+    "prev_chain_hash": "6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f",
+    "chain_hash": "024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe"
+   },
+   {
+    "public_ref": "RL-MVQ4Y381-GBMGP9",
+    "thread_id": "8ad94308-a41c-40ea-9d77-2a4578cc49bb",
+    "content_hash": "7da4f6d638c36a89617cfc3fbc3a1cdad5d95f4346f1f5818dabb250a1afa79e",
+    "prev_chain_hash": "024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe",
+    "chain_hash": "ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903"
+   },
+   {
+    "public_ref": "RL-MVQ4Y38J-9V2HKJ",
+    "thread_id": "b8930e24-2559-4ef8-bba8-c9cd5447653a",
+    "content_hash": "b667b04df877d649e10e0fd5bc86368cd56985ecd7eb4ba6f5a6486b340c4470",
+    "prev_chain_hash": "ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903",
+    "chain_hash": "2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6"
+   },
+   {
+    "public_ref": "RL-MVQ4Y38Z-ANQF7G",
+    "thread_id": "e9b4a597-067a-40d3-895a-445e44fb7224",
+    "content_hash": "d119ffdee28d0e8ad75d98b68886e3d34322f0395e9542c4e643344df1bfc814",
+    "prev_chain_hash": "2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6",
+    "chain_hash": "cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116"
+   },
+   {
+    "public_ref": "RL-MVQ4Y39Z-QTCYX1",
+    "thread_id": "43b8fa94-0641-401b-b9ee-e21a0c3ee774",
+    "content_hash": "41f89f76f22d2ee6b7d52e73af000328238ecb1ca548eff94f0f5c5fb671d758",
+    "prev_chain_hash": "1e2d41b8f54b16e8d5af7ca8c23923f368589c7eec5f5d2e1dcba6c53bafd0fb",
+    "chain_hash": "0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52"
+   },
+   {
+    "public_ref": "RL-MVQ4Y3BX-5Q4QXG",
+    "thread_id": "8e0dfc69-a82b-43b0-bb09-d5f23071b61a",
+    "content_hash": "68d50727ffe64edfae07bd32d8322654f9a1d4459d804cb7dc17d46187e925c7",
+    "prev_chain_hash": "cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116",
+    "chain_hash": "bbf8537a37b999776790767a9fa0aec7b982d966e900cdb31465befb8a76c331"
+   }
+  ],
+  "heads": [
+   {
+    "logbook": "demo-general",
+    "head": "bbf8537a37b999776790767a9fa0aec7b982d966e900cdb31465befb8a76c331",
+    "reports": 7
+   },
+   {
+    "logbook": "demo-listed",
+    "head": "0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52",
+    "reports": 1
+   },
+   {
+    "logbook": "demo-voting",
+    "head": "633d9f9872501c7e04734089c92225d895be8b85f87b4fc6dad9736977595bf1",
+    "reports": 3
+   }
+  ],
+  "verification": {
+   "RL-MVQ4Y32H-TYFZK4": {
+    "sha256": "8f07604a244f1c8327625fbad5e108393955fbd5513894c0e734a652c5fd79d8",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y33V-QRN252": {
+    "sha256": "2a632a1e8b265f7452ab68faa84935a869b7972429e8a77281d6213ec6529efa",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y34P-ABC2SB": {
+    "sha256": "99a94da33cbb6827c46d8bac90475f65970388fbc41292d4702c7923ef5bdce2",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y361-RTY7T7": {
+    "sha256": "689f0f16f684fcb504956b5490d2f32013cf530289c545505ad0a9cde64f8cff",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y36X-CBANMW": {
+    "sha256": "54130e5236d9d1c01074295fb9ffb587b6cce3ca17ea25f3c7c73bee29d13f6e",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y37K-2VJYMG": {
+    "sha256": "2eab5d0976ae7b5c220ef682afafc9d330ed081c0317284beb2b0d56fc1fdede",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y381-GBMGP9": {
+    "sha256": "c9977638d8aebfffb109d7e377ce1f611ec4cc0c74a1f3a8151672c30ea9b3a1",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y38J-9V2HKJ": {
+    "sha256": "d16254558949f896e77aa0e962d2310f83235066f18d7030a77c7e4ad300e73a",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y38Z-ANQF7G": {
+    "sha256": "20a0f3aedcf50a3539c7875ef1b6634de7ceb6a6424dcaf93fd87215b81f124d",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y39Z-QTCYX1": {
+    "sha256": "2340efc4e52a643d23e1b618ea08da94f01b124cb90240d54f182b94b52314b6",
+    "content": true,
+    "link": true,
+    "position": true
+   },
+   "RL-MVQ4Y3BX-5Q4QXG": {
+    "sha256": "456305af7e63bff9a04bd934f54d83dc7ce8fd291b55d5f6ca89c9dcb37bfe11",
+    "content": true,
+    "link": true,
+    "position": true
+   }
+  },
+  "responses": {
+   "/api/agreement/1": {
+    "status": 400,
+    "length": 120,
+    "sha256": "6fd25fede1b4c8cb41cea25a37a6ca1100f8d3eb040b1bfe9ef4108ef8204fbc",
+    "body": "{\"error\":{\"code\":\"invalid_request\",\"message\":\"/audience: Invalid option: expected one of \\\"moderator\\\"|\\\"journalist\\\"\"}}"
+   },
+   "/api/board": {
+    "status": 200,
+    "length": 3391,
+    "sha256": "20d833ca0cc85a51336d504c20155806e3afefe250897047e59d5d399ae6391d"
+   },
+   "/api/board/counts": {
+    "status": 200,
+    "length": 1075,
+    "sha256": "adf366a0cc350087c4770439d8a336fb0e8545898d6fe90c16418ec1bd5d974a",
+    "body": "{\"published\":true,\"as_of\":\"<time>\",\"note\":\"Counts of reports a moderator accepted for publication, by where they came from. Reports from the open form are not checked: anybody could have sent them. Times are when each report first arrived, in UTC.\",\"labels\":{\"organization\":\"Filed by an organization\",\"open_form\":\"Unverified public report\"},\"logbooks\":[{\"slug\":\"demo-listed\",\"title\":\"Logbook demo-listed\",\"counts_only\":false,\"published\":{\"organization\":0,\"open_form\":1},\"by_place\":[],\"by_day\":[],\"by_hour\":[{\"organization\":0,\"open_form\":1,\"hour\":\"2026-10-27T03:00:00.000Z\"}]},{\"slug\":\"demo-general\",\"title\":\"Logbook demo-general\",\"counts_only\":true,\"published\":{\"organization\":0,\"open_form\":3},\"by_place\":[],\"by_day\":[{\"organization\":0,\"open_form\":3,\"day\":\"2026-10-27\"}],\"by_hour\":[{\"organization\":0,\"open_form\":3,\"hour\":\"2026-10-27T03:00:00.000Z\"}]},{\"slug\":\"demo-voting\",\"title\":\"Log how voting went\",\"counts_only\":false,\"published\":{\"organization\":0,\"open_form\":1},\"by_place\":[],\"by_day\":[],\"by_hour\":[{\"organization\":0,\"open_form\":1,\"hour\":\"2026-10-27T03:00:00.000Z\"}]}]}"
+   },
+   "/api/board/declined": {
+    "status": 200,
+    "length": 499,
+    "sha256": "a05467af15d13418aae51760b1c07c3c7aaf556f7577ed297c0d7f70d4ad5fc1",
+    "body": "{\"published\":true,\"as_of\":\"<time>\",\"note\":\"How many reports a moderator declined, by the reason given. Declined reports stay in the sealed record and are never published; only these numbers are.\",\"logbooks\":[{\"slug\":\"demo-listed\",\"title\":\"Logbook demo-listed\",\"by_reason\":[]},{\"slug\":\"demo-general\",\"title\":\"Logbook demo-general\",\"by_reason\":[{\"code\":\"not_recorded\",\"label\":\"Declined before reasons were recorded.\",\"reports\":1}]},{\"slug\":\"demo-voting\",\"title\":\"Log how voting went\",\"by_reason\":[]}]}"
+   },
+   "/api/board/figures": {
+    "status": 200,
+    "length": 5741,
+    "sha256": "eceef499a343579261271a84f9e9a638240dd6e99d1b9d0838ebf5fb14a2d3ca"
+   },
+   "/api/board/reports": {
+    "status": 200,
+    "length": 903,
+    "sha256": "f3c613c143bbd73b86a08c150899c88aa0449ab4606e739429741ee1ca057c1f",
+    "body": "{\"published\":true,\"reports\":[{\"public_ref\":\"RL-MVQ4Y39Z-QTCYX1\",\"received_at\":\"2026-10-27T03:38:12.119Z\",\"logbook_slug\":\"demo-listed\",\"logbook_title\":\"Logbook demo-listed\",\"answers\":{\"what\":\"zqmark listed long answer 1963\",\"headline\":\"zqmark listed short answer 7742\"},\"corrected\":false,\"chain_hash\":\"0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52\",\"origin\":\"open_form\",\"label\":\"Unverified public report\"},{\"public_ref\":\"RL-MVQ4Y32H-TYFZK4\",\"received_at\":\"2026-10-27T03:38:11.850Z\",\"logbook_slug\":\"demo-voting\",\"logbook_title\":\"Log how voting went\",\"answers\":{\"date\":\"2026-11-03\",\"hour\":9,\"role\":\"voter\",\"wait\":\"under_30\",\"state\":\"AZ\",\"county\":\"04013\",\"method\":\"election_day\",\"outcome\":\"fine\"},\"corrected\":false,\"chain_hash\":\"11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4\",\"origin\":\"open_form\",\"label\":\"Unverified public report\"}],\"total\":2,\"page\":1,\"page_size\":100}"
+   },
+   "/api/board/reports.csv": {
+    "status": 404,
+    "length": 121,
+    "sha256": "630cca517974e4638dcd449c1e2c909765f7d117770ee8dd67ae7a6c2372f9b6",
+    "body": "{\"error\":{\"code\":\"not_distributed\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y32H-TYFZK4": {
+    "status": 200,
+    "length": 470,
+    "sha256": "2c793c0befb5602716cf442b18432f504e7cb9f00510f0b9e0f13c4bcf812ca6",
+    "body": "{\"published\":true,\"report\":{\"public_ref\":\"RL-MVQ4Y32H-TYFZK4\",\"received_at\":\"2026-10-27T03:38:11.850Z\",\"logbook_slug\":\"demo-voting\",\"logbook_title\":\"Log how voting went\",\"answers\":{\"date\":\"2026-11-03\",\"hour\":9,\"role\":\"voter\",\"wait\":\"under_30\",\"state\":\"AZ\",\"county\":\"04013\",\"method\":\"election_day\",\"outcome\":\"fine\"},\"corrected\":false,\"chain_hash\":\"11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4\",\"origin\":\"open_form\",\"label\":\"Unverified public report\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y33V-QRN252": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y34P-ABC2SB": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y361-RTY7T7": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y36X-CBANMW": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y37K-2VJYMG": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y381-GBMGP9": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y38J-9V2HKJ": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y38Z-ANQF7G": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y39Z-QTCYX1": {
+    "status": 200,
+    "length": 422,
+    "sha256": "6674f56575c98ccbb50a96c15477acfefeb359deba876a1f49c26755496a761e",
+    "body": "{\"published\":true,\"report\":{\"public_ref\":\"RL-MVQ4Y39Z-QTCYX1\",\"received_at\":\"2026-10-27T03:38:12.119Z\",\"logbook_slug\":\"demo-listed\",\"logbook_title\":\"Logbook demo-listed\",\"answers\":{\"what\":\"zqmark listed long answer 1963\",\"headline\":\"zqmark listed short answer 7742\"},\"corrected\":false,\"chain_hash\":\"0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52\",\"origin\":\"open_form\",\"label\":\"Unverified public report\"}}"
+   },
+   "/api/board/reports/RL-MVQ4Y3BX-5Q4QXG": {
+    "status": 404,
+    "length": 92,
+    "sha256": "2307950438bb5e029a11c1dd2ba582b0f93ca485b583f7a41778692460d2f05f",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no published report with that reference.\"}}"
+   },
+   "/api/board/stats": {
+    "status": 200,
+    "length": 811,
+    "sha256": "730f577fd57e142858f635dcc37734730b8ecffd94c8009d4874307ca494ab9a",
+    "body": "{\"as_of\":\"<time>\",\"note\":\"Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.\",\"not_a_sample\":\"These are reports people chose to file. They are not a sample and cannot be read as a rate.\",\"published_reports\":{\"by_logbook\":{\"demo-listed\":{\"title\":\"Logbook demo-listed\",\"published\":1,\"by_question\":{}},\"demo-general\":{\"title\":\"Logbook demo-general\",\"published\":3,\"by_question\":{}},\"demo-voting\":{\"title\":\"Log how voting went\",\"published\":1,\"by_question\":{\"outcome\":{\"label\":\"How did it go?\",\"counts\":{\"fine\":1},\"unanswered\":0},\"method\":{\"label\":\"How did you vote, or try to vote?\",\"counts\":{\"election_day\":1},\"unanswered\":0},\"state\":{\"label\":\"State\",\"counts\":{\"Azerbaijan\":1},\"unanswered\":0}}}}},\"published\":true}"
+   },
+   "/api/board/switches": {
+    "status": 200,
+    "length": 355,
+    "sha256": "b80787662a23c1d6bacd0151479b2e37fde88df203a342cf17c2ddb754d6cb7d",
+    "body": "{\"pause\":{\"paused\":false,\"since\":null,\"notice\":\"Intake is paused. The moderators have stopped taking new reports and tips for now, usually because of a flood of submissions. Everything already sent is safe. Please try again later.\"},\"puzzle\":\"normal\",\"uses\":[{\"switch\":\"counts_only\",\"value\":\"on\",\"subject\":\"demo-general\",\"at\":\"2026-10-27T03:38:11.962Z\"}]}"
+   },
+   "/api/chain/demo-election": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/chain/demo-general": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/chain/demo-listed": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/chain/demo-tips": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/chain/demo-volunteers": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/chain/demo-voting": {
+    "status": 404,
+    "length": 115,
+    "sha256": "c16218279a6d94d79938fde1a9ed32c04e9ffa8b0f1cbd002126d7526d027f6b",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This site does not offer its archive for download. Read it on the board.\"}}"
+   },
+   "/api/desk/alerts": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/desk/links": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/desk/sources": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/directory": {
+    "status": 200,
+    "length": 346,
+    "sha256": "8fd13476f498c6955926c2872c04e715426e8a64a7eb578a97fea5bf2b9b0f5f",
+    "body": "{\"name\":\"Participating organizations\",\"disclaimer\":\"Listing here is not verification. These organizations asked to be listed; nobody has checked them against a standard, because no standard for verifying an organization has been published yet. Treat this as a list of who is taking part, not as an endorsement of any of them.\",\"organizations\":[]}"
+   },
+   "/api/directory/listing/1": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/directory/logos/1": {
+    "status": 404,
+    "length": 65,
+    "sha256": "3a916e429859448d452906cbda00c78227b0c726ef7310928c08483ee4d8d28c",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no such logo.\"}}"
+   },
+   "/api/doors": {
+    "status": 200,
+    "length": 12,
+    "sha256": "5fbacd38be2fce7ba5be4b46dd8b2a7efc725cbebb3dcacd943f70c2bb2721e5",
+    "body": "{\"doors\":[]}"
+   },
+   "/api/erase/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 82,
+    "sha256": "abc9a0bf47255f5d17e1c533d85af00bc6a0e1d92cf95e17d3cb605fce26f397",
+    "body": "{\"state\":\"not_yet_filed\",\"logbook_title\":\"Logbook demo-general\",\"public_ref\":null}"
+   },
+   "/api/feedback": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/feedback/1": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/files/public/1": {
+    "status": 404,
+    "length": 87,
+    "sha256": "f299f8092e1005526a1df7fbe750893a15981c8684746e6736a2c541e479a743",
+    "body": "{\"error\":{\"code\":\"files_off\",\"message\":\"This site is not taking files at the moment.\"}}"
+   },
+   "/api/files/public/1/page/1": {
+    "status": 404,
+    "length": 87,
+    "sha256": "f299f8092e1005526a1df7fbe750893a15981c8684746e6736a2c541e479a743",
+    "body": "{\"error\":{\"code\":\"files_off\",\"message\":\"This site is not taking files at the moment.\"}}"
+   },
+   "/api/files/public/1/poster": {
+    "status": 404,
+    "length": 87,
+    "sha256": "f299f8092e1005526a1df7fbe750893a15981c8684746e6736a2c541e479a743",
+    "body": "{\"error\":{\"code\":\"files_off\",\"message\":\"This site is not taking files at the moment.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y32H-TYFZK4": {
+    "status": 200,
+    "length": 29,
+    "sha256": "73f753cd92c335f5339cf3cfa1d804788f985a360a449fb4d20c4f12754e6b06",
+    "body": "{\"attached\":0,\"published\":[]}"
+   },
+   "/api/files/report/RL-MVQ4Y33V-QRN252": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y34P-ABC2SB": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y361-RTY7T7": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y36X-CBANMW": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y37K-2VJYMG": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y381-GBMGP9": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y38J-9V2HKJ": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y38Z-ANQF7G": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/files/report/RL-MVQ4Y39Z-QTCYX1": {
+    "status": 200,
+    "length": 29,
+    "sha256": "73f753cd92c335f5339cf3cfa1d804788f985a360a449fb4d20c4f12754e6b06",
+    "body": "{\"attached\":0,\"published\":[]}"
+   },
+   "/api/files/report/RL-MVQ4Y3BX-5Q4QXG": {
+    "status": 404,
+    "length": 89,
+    "sha256": "d65503b21298ac2801016f9999855b18c683c6a8cae369e7914ccc7fb5e67fc9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no public report with that reference.\"}}"
+   },
+   "/api/health": {
+    "status": 200,
+    "length": 27,
+    "sha256": "c172013c21a804d7ce6f0c067d631bdfbe57741a49b1ddd98e596fbc91e59fd7",
+    "body": "{\"ok\":true,\"database\":\"up\"}"
+   },
+   "/api/home-buttons": {
+    "status": 200,
+    "length": 1773,
+    "sha256": "8a0c4d14468f3470b7a8c2382fe9a63dd703bab41b3cd86294c703d52407157e",
+    "body": "{\"buttons\":[{\"kind\":\"logbook\",\"ref\":\"demo-voting\",\"label\":\"Log how voting went\",\"href\":\"/file/demo-voting\",\"action\":null,\"blurb\":\"One logbook for every voter in the US or abroad, every voting method, good and bad.\",\"help\":null,\"title\":\"Log how voting went\",\"accent\":true},{\"kind\":\"logbook\",\"ref\":\"demo-general\",\"label\":\"Logbook demo-general\",\"href\":\"/file/demo-general\",\"action\":null,\"blurb\":null,\"help\":null,\"title\":\"Logbook demo-general\",\"accent\":false},{\"kind\":\"logbook\",\"ref\":\"demo-listed\",\"label\":\"Logbook demo-listed\",\"href\":\"/file/demo-listed\",\"action\":null,\"blurb\":null,\"help\":null,\"title\":\"Logbook demo-listed\",\"accent\":false},{\"kind\":\"list\",\"ref\":\"demo-tips\",\"label\":\"Send a link\",\"href\":\"/demo-tips\",\"action\":null,\"blurb\":\"Links to posts, articles or video about something that happened. Not your own account of what you saw, and no uploads.\",\"help\":null,\"title\":\"Send a link\",\"accent\":false},{\"kind\":\"list\",\"ref\":\"demo-election\",\"label\":\"Election tips\",\"href\":\"/demo-election\",\"action\":null,\"blurb\":\"Links to posts, articles or video about something that happened at an election. Not your own account of what you saw, and no uploads.\",\"help\":null,\"title\":\"Election tips\",\"accent\":false},{\"kind\":\"list\",\"ref\":\"demo-volunteers\",\"label\":\"Volunteer\",\"href\":\"/demo-volunteers\",\"action\":null,\"blurb\":\"Offer to help.\",\"help\":null,\"title\":\"Volunteer\",\"accent\":false},{\"kind\":\"builtin\",\"ref\":\"board\",\"label\":\"View Live Report Board\",\"href\":\"/board\",\"action\":null,\"blurb\":null,\"help\":\"The published record.\",\"title\":\"View Live Report Board\",\"accent\":false},{\"kind\":\"builtin\",\"ref\":\"alerts\",\"label\":\"Get alerts as reports come in\",\"href\":null,\"action\":\"alerts\",\"blurb\":null,\"help\":\"The sign-up for the alert list.\",\"title\":\"Get alerts as reports come in\",\"accent\":false}]}"
+   },
+   "/api/illegal-content/status/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 404,
+    "length": 104,
+    "sha256": "c525777175702d6ee0986dff1db94f5e88e8b0eebc700db0c6fdf35136fe9867",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"That link does not match a notice. It may have been mistyped.\"}}"
+   },
+   "/api/intake-links/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/intake-pause": {
+    "status": 200,
+    "length": 223,
+    "sha256": "41f09e0284a59c99cb3d7a7364788b0c275f33d08f16aa825670ba32ad6f82f3",
+    "body": "{\"paused\":false,\"since\":null,\"notice\":\"Intake is paused. The moderators have stopped taking new reports and tips for now, usually because of a flood of submissions. Everything already sent is safe. Please try again later.\"}"
+   },
+   "/api/intake-switch": {
+    "status": 200,
+    "length": 13,
+    "sha256": "1707653503031fdafc9426974f942b65c4e4b61c181ef3924587f307f7889d5a",
+    "body": "{\"open\":true}"
+   },
+   "/api/journalists/access/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 16,
+    "sha256": "8f70466dee68d2d47e3b2bffe9c66aeb676c657084cca466406b86c005270706",
+    "body": "{\"state\":\"gone\"}"
+   },
+   "/api/journalists/confirm/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 16,
+    "sha256": "8f70466dee68d2d47e3b2bffe9c66aeb676c657084cca466406b86c005270706",
+    "body": "{\"state\":\"gone\"}"
+   },
+   "/api/journalists/settings/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 16,
+    "sha256": "8f70466dee68d2d47e3b2bffe9c66aeb676c657084cca466406b86c005270706",
+    "body": "{\"state\":\"gone\"}"
+   },
+   "/api/journalists/stop/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 16,
+    "sha256": "8f70466dee68d2d47e3b2bffe9c66aeb676c657084cca466406b86c005270706",
+    "body": "{\"state\":\"gone\"}"
+   },
+   "/api/legal": {
+    "status": 200,
+    "length": 33,
+    "sha256": "535addea23ffe28232c2df0c79e9ea598e3c7410ecd53698f1315fd9480c1852",
+    "body": "{\"impressum\":null,\"privacy\":null}"
+   },
+   "/api/link-checks": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/link-checks/1/history": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/link-checks/blocklist": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/list-mail/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 1203,
+    "sha256": "ab82e608e78b5176fe72fa8acb121e7ea7d33c6969f33b6756a4e1a7e506b1b4",
+    "body": "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<meta name=\"robots\" content=\"noindex\">\n<title>Receive new entries by email</title>\n<style>\nbody{margin:0;font:16px/1.5 system-ui,sans-serif;background:#f6f5f1;color:#1d1d1b}\nmain{max-width:34rem;margin:0 auto;padding:3rem 1rem}\nh1{font-size:1.6rem;line-height:1.2;margin:0 0 1rem}\np{margin:0 0 1rem}\nbutton{font:inherit;font-weight:600;padding:.6rem 1.2rem;border-radius:.4rem;border:1px solid #1d1d1b;background:#f2c94c;color:#1d1d1b;cursor:pointer}\nbutton:focus-visible{outline:3px solid #1d1d1b;outline-offset:2px}\n@media (prefers-color-scheme:dark){body{background:#1d1d1b;color:#f6f5f1}button{border-color:#f6f5f1}}\n</style>\n</head><body><main>\n<h1>Receive new entries by email</h1>\n<p>Each new entry on this form will be emailed to you, including what people wrote and their email address if they gave one.</p>\n<p>An administrator of the site can take you off at any time.</p>\n<form method=\"post\" action=\"/api/list-mail/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f\">\n<button type=\"submit\">Yes, send them to me</button>\n</form>\n</main></body></html>"
+   },
+   "/api/lists": {
+    "status": 200,
+    "length": 448,
+    "sha256": "4e6e256fe70b3f5ce5dd8aeb298592a8fac9840f93389719ac48843535f10014",
+    "body": "{\"lists\":[{\"slug\":\"demo-tips\",\"title\":\"Send a link\",\"blurb\":\"Links to posts, articles or video about something that happened. Not your own account of what you saw, and no uploads.\"},{\"slug\":\"demo-election\",\"title\":\"Election tips\",\"blurb\":\"Links to posts, articles or video about something that happened at an election. Not your own account of what you saw, and no uploads.\"},{\"slug\":\"demo-volunteers\",\"title\":\"Volunteer\",\"blurb\":\"Offer to help.\"}]}"
+   },
+   "/api/lists/demo-election": {
+    "status": 200,
+    "length": 4018,
+    "sha256": "c9cd78ae650a70b705450a3cc17f2f1500127a6e88c365687622ae75118d7ab3"
+   },
+   "/api/lists/demo-election/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/lists/demo-general": {
+    "status": 404,
+    "length": 76,
+    "sha256": "bfbbe304ae3801ad0d1b874dd07bba9b446ee63bc25f2a769063631bd6122e0e",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no form at this address.\"}}"
+   },
+   "/api/lists/demo-general/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/lists/demo-listed": {
+    "status": 404,
+    "length": 76,
+    "sha256": "bfbbe304ae3801ad0d1b874dd07bba9b446ee63bc25f2a769063631bd6122e0e",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no form at this address.\"}}"
+   },
+   "/api/lists/demo-listed/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/lists/demo-tips": {
+    "status": 200,
+    "length": 1143,
+    "sha256": "6bee73f71a867d5cc8487fedb9ec8db31108e7d8e8c0b1344956105afb43f122",
+    "body": "{\"slug\":\"demo-tips\",\"title\":\"Send a link\",\"blurb\":\"Links to posts, articles or video about something that happened. Not your own account of what you saw, and no uploads.\",\"accepting\":true,\"opens_at\":null,\"closes_at\":null,\"asks_email\":true,\"email_when\":\"if-written\",\"email_reason\":\"erase\",\"write_back\":false,\"personal_keys\":[\"description\"],\"personal_days\":365,\"fields\":[{\"key\":\"links\",\"kind\":\"url\",\"label\":\"Link\",\"help\":\"A post, article or video about something that happened. Up to three.\",\"required\":true,\"max_values\":3,\"options\":[],\"allow_other\":false,\"erased\":false},{\"key\":\"state\",\"kind\":\"choice_one\",\"label\":\"Where\",\"help\":null,\"required\":true,\"max_values\":1,\"options\":[\"Not sure\"],\"allow_other\":false,\"erased\":false},{\"key\":\"category\",\"kind\":\"choice_one\",\"label\":\"What kind of thing is it\",\"help\":null,\"required\":true,\"max_values\":1,\"options\":[\"Not sure\"],\"allow_other\":false,\"erased\":false},{\"key\":\"description\",\"kind\":\"long_text\",\"label\":\"Anything we should know about the link\",\"help\":\"Optional. Context about the link, not an account of what you saw.\",\"required\":false,\"max_values\":1,\"options\":[],\"allow_other\":false,\"erased\":true}]}"
+   },
+   "/api/lists/demo-tips/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/lists/demo-volunteers": {
+    "status": 200,
+    "length": 771,
+    "sha256": "0960f89dea7e2e153899b85f1b6e278ad2e2f06e51dd00355a75a863ab023b44",
+    "body": "{\"slug\":\"demo-volunteers\",\"title\":\"Volunteer\",\"blurb\":\"Offer to help.\",\"accepting\":true,\"opens_at\":null,\"closes_at\":null,\"asks_email\":true,\"email_when\":\"always\",\"email_reason\":\"erase\",\"write_back\":false,\"personal_keys\":[\"name\",\"note\"],\"personal_days\":365,\"fields\":[{\"key\":\"name\",\"kind\":\"short_text\",\"label\":\"Your name\",\"help\":null,\"required\":true,\"max_values\":1,\"options\":[],\"allow_other\":false,\"erased\":true},{\"key\":\"role\",\"kind\":\"choice_one\",\"label\":\"How would you like to help?\",\"help\":null,\"required\":true,\"max_values\":1,\"options\":[\"Checking links\",\"Translating\",\"Something else\"],\"allow_other\":false,\"erased\":false},{\"key\":\"note\",\"kind\":\"long_text\",\"label\":\"Anything else\",\"help\":null,\"required\":false,\"max_values\":1,\"options\":[],\"allow_other\":false,\"erased\":true}]}"
+   },
+   "/api/lists/demo-volunteers/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/lists/demo-voting": {
+    "status": 404,
+    "length": 76,
+    "sha256": "bfbbe304ae3801ad0d1b874dd07bba9b446ee63bc25f2a769063631bd6122e0e",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no form at this address.\"}}"
+   },
+   "/api/lists/demo-voting/counts": {
+    "status": 404,
+    "length": 87,
+    "sha256": "d2e0a7af49300e74c10afed5468757b28a44fb08394e5706a55a46a2dde4e5c9",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There are no published counts for that list.\"}}"
+   },
+   "/api/logbooks": {
+    "status": 200,
+    "length": 383,
+    "sha256": "12a23cf541632866d94ca98b14086ef81688ff27c961f674d41f62c4926145e3",
+    "body": "{\"logbooks\":[{\"slug\":\"demo-voting\",\"title\":\"Log how voting went\",\"blurb\":\"One logbook for every voter in the US or abroad, every voting method, good and bad.\",\"state\":\"open\",\"questions\":11},{\"slug\":\"demo-general\",\"title\":\"Logbook demo-general\",\"blurb\":null,\"state\":\"open\",\"questions\":5},{\"slug\":\"demo-listed\",\"title\":\"Logbook demo-listed\",\"blurb\":null,\"state\":\"open\",\"questions\":5}]}"
+   },
+   "/api/logbooks/demo-election": {
+    "status": 404,
+    "length": 79,
+    "sha256": "eec082525fbc9b46cbe8949134b824bf8a62e4c5b5101162ea3afcb0b919c8cd",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no logbook at that address.\"}}"
+   },
+   "/api/logbooks/demo-general": {
+    "status": 200,
+    "length": 1080,
+    "sha256": "98744fd8c6c6f4cf1ca3651dca7298171df8df2680b6a6563bb6fa0ba650cd4e",
+    "body": "{\"slug\":\"demo-general\",\"title\":\"Logbook demo-general\",\"blurb\":null,\"state\":\"open\",\"opens_at\":null,\"closes_at\":null,\"accepting\":true,\"asks_for_files\":false,\"asks_email\":true,\"fields\":[{\"key\":\"what\",\"kind\":\"long_text\",\"label\":\"What happened?\",\"required\":true,\"settings\":{}},{\"key\":\"headline\",\"kind\":\"short_text\",\"label\":\"In a few words\",\"required\":false,\"settings\":{}},{\"key\":\"reply_to\",\"kind\":\"email\",\"label\":\"Another address\",\"required\":false,\"settings\":{}},{\"key\":\"page\",\"kind\":\"url\",\"label\":\"A page about it\",\"required\":false,\"settings\":{}},{\"key\":\"size\",\"kind\":\"choice_one\",\"label\":\"How big?\",\"required\":false,\"settings\":{\"options\":[\"small\",\"large\"]}}],\"filters\":[],\"form\":\"9ab751ed5a6c236a06c7ae5f56afb6cd9dce29d54ada13ea8d742d6e2503a0ff\",\"help_now\":\"This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.\",\"site_cta\":{\"heading\":\"If someone needs help right now\",\"body\":\"This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.\",\"button_label\":\"\",\"button_url\":\"\"}}"
+   },
+   "/api/logbooks/demo-listed": {
+    "status": 200,
+    "length": 1078,
+    "sha256": "c91f6c3ddf5d079701f7f7bba983a7ba6fa6aabf487c08b681739a10701cb59b",
+    "body": "{\"slug\":\"demo-listed\",\"title\":\"Logbook demo-listed\",\"blurb\":null,\"state\":\"open\",\"opens_at\":null,\"closes_at\":null,\"accepting\":true,\"asks_for_files\":false,\"asks_email\":true,\"fields\":[{\"key\":\"what\",\"kind\":\"long_text\",\"label\":\"What happened?\",\"required\":true,\"settings\":{}},{\"key\":\"headline\",\"kind\":\"short_text\",\"label\":\"In a few words\",\"required\":false,\"settings\":{}},{\"key\":\"reply_to\",\"kind\":\"email\",\"label\":\"Another address\",\"required\":false,\"settings\":{}},{\"key\":\"page\",\"kind\":\"url\",\"label\":\"A page about it\",\"required\":false,\"settings\":{}},{\"key\":\"size\",\"kind\":\"choice_one\",\"label\":\"How big?\",\"required\":false,\"settings\":{\"options\":[\"small\",\"large\"]}}],\"filters\":[],\"form\":\"db1240e47538c0e4226bc489b06172bf23bc165da7c8c3a569b0f76e09be2f35\",\"help_now\":\"This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.\",\"site_cta\":{\"heading\":\"If someone needs help right now\",\"body\":\"This is a record, not an emergency line. If you or someone else is in danger, call your local emergency number.\",\"button_label\":\"\",\"button_url\":\"\"}}"
+   },
+   "/api/logbooks/demo-tips": {
+    "status": 404,
+    "length": 79,
+    "sha256": "eec082525fbc9b46cbe8949134b824bf8a62e4c5b5101162ea3afcb0b919c8cd",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no logbook at that address.\"}}"
+   },
+   "/api/logbooks/demo-volunteers": {
+    "status": 404,
+    "length": 79,
+    "sha256": "eec082525fbc9b46cbe8949134b824bf8a62e4c5b5101162ea3afcb0b919c8cd",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no logbook at that address.\"}}"
+   },
+   "/api/logbooks/demo-voting": {
+    "status": 200,
+    "length": 13723,
+    "sha256": "154c429910509e2c6eaddbcd815316d367388d75eeab4385e027c8da21692ac8"
+   },
+   "/api/looks/1/1": {
+    "status": 404,
+    "length": 70,
+    "sha256": "95f6bb997bb0aa8bfd2b4918476eeeadbf23b78b419484e81101ef2dbe10b211",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no such look file.\"}}"
+   },
+   "/api/maps": {
+    "status": 200,
+    "length": 11,
+    "sha256": "6853c4e0ede70f034f62b4536274bdbf301ade273430860595484efdbc73c377",
+    "body": "{\"maps\":[]}"
+   },
+   "/api/maps/demo-election": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/maps/demo-general": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/maps/demo-listed": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/maps/demo-tips": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/maps/demo-volunteers": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/maps/demo-voting": {
+    "status": 404,
+    "length": 69,
+    "sha256": "4a2a847fcc735c18ccd1e24573abc4db022682f101f991b8843c4f2939eb2f44",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"This map is not published.\"}}"
+   },
+   "/api/menu/waiting": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/notifications": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/notifications/stop/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 16,
+    "sha256": "8f70466dee68d2d47e3b2bffe9c66aeb676c657084cca466406b86c005270706",
+    "body": "{\"state\":\"gone\"}"
+   },
+   "/api/owner/journalists": {
+    "status": 401,
+    "length": 102,
+    "sha256": "e55317c5408d40b9c62bd43098506e6f948edc791e7ec5726a6d8bb88e60f730",
+    "body": "{\"error\":{\"code\":\"not_signed_in\",\"message\":\"Sign in first. This page is for people with an account.\"}}"
+   },
+   "/api/press": {
+    "status": 200,
+    "length": 181,
+    "sha256": "199425b493a3556b64103f7c479a70e93a8bb70a4eacbee14ecbdb5967dc73cb",
+    "body": "{\"state\":\"none\",\"version\":null,\"commit\":null,\"built_at\":null,\"files\":[],\"not_a_sample\":\"These are reports people chose to file. They are not a sample and cannot be read as a rate.\"}"
+   },
+   "/api/press/1": {
+    "status": 404,
+    "length": 83,
+    "sha256": "5c5844c3be1fb1a7d1471abd62369c63743c44461cedd097c24a357328cf4ca3",
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"There is no such file in the press pack.\"}}"
+   },
+   "/api/publication-card": {
+    "status": 200,
+    "length": 993,
+    "sha256": "a68c4a63f3bf68ff511dc637498749c208e69611d081776eb762b8f83673e4bf",
+    "body": "{\"variant\":\"general\",\"question\":\"Should this report be published?\",\"body\":[\"If it is published, it goes on a public archive that anyone can read, search and download. Publication is permanent. You can ask later for a published report to be hidden from the public archive, but it cannot be unpublished as though it had never been public.\",\"This covers the report itself — your answers, in your words. Your email address is not part of what would be published.\",\"Anything you attached is asked about separately, and that one you can change your mind about: switching it off later takes any published file back down. This answer, about the report itself, is sealed into the record and cannot be changed afterwards.\"],\"optionality\":\"Your report is recorded and reviewed either way. If you do not answer, it will not be published.\",\"options\":{\"yes\":\"Yes, it may be published\",\"no\":\"No, keep it out of the public archive\"},\"digest\":\"c92ca7aa3daa8e6b1d2fdb701c2e31379c633fc2f623272a3db58e3eacc8313a\"}"
+   },
+   "/api/reports/RL-MVQ4Y32H-TYFZK4/verify": {
+    "status": 200,
+    "length": 2012,
+    "sha256": "8f07604a244f1c8327625fbad5e108393955fbd5513894c0e734a652c5fd79d8"
+   },
+   "/api/reports/RL-MVQ4Y33V-QRN252/verify": {
+    "status": 200,
+    "length": 908,
+    "sha256": "5955ab03bc211f74b27315c21563e85b3f11b60ee9ace57b9b761bb42e841bb7",
+    "body": "{\"public_ref\":\"RL-MVQ4Y33V-QRN252\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:11.899Z\",\"chain\":{\"logbook\":\"demo-voting\",\"logbook_title\":\"Log how voting went\",\"genesis\":\"47d5e2d8ff01727032a65354728f67dad8e14064086b274ee980efa7d074ee8c\"},\"content\":{\"recorded\":\"26b3ec5f048adf0542916b07537f91a660b711722b56ee8a64188f36b00ead1f\",\"computed\":\"26b3ec5f048adf0542916b07537f91a660b711722b56ee8a64188f36b00ead1f\",\"ok\":true},\"link\":{\"recorded\":\"358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03\",\"computed\":\"358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03\",\"prev_chain_hash\":\"11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4\",\"ok\":true},\"position\":{\"expected_prev\":\"11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4\",\"recorded_prev\":\"11ae86fbf9f0cb7cb3e556041ea230e6275b1807a0391b0c29dad29ad21db4d4\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y34P-ABC2SB/verify": {
+    "status": 200,
+    "length": 908,
+    "sha256": "47493cfc4344dc6c5967eba35b11afe443cd3c64511890d06aa8a66bfa4843f5",
+    "body": "{\"public_ref\":\"RL-MVQ4Y34P-ABC2SB\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:11.929Z\",\"chain\":{\"logbook\":\"demo-voting\",\"logbook_title\":\"Log how voting went\",\"genesis\":\"47d5e2d8ff01727032a65354728f67dad8e14064086b274ee980efa7d074ee8c\"},\"content\":{\"recorded\":\"6d296fdb59d77c95cd336bddbee1d088c79d53e58f6de255ee9f550af40f7b3a\",\"computed\":\"6d296fdb59d77c95cd336bddbee1d088c79d53e58f6de255ee9f550af40f7b3a\",\"ok\":true},\"link\":{\"recorded\":\"633d9f9872501c7e04734089c92225d895be8b85f87b4fc6dad9736977595bf1\",\"computed\":\"633d9f9872501c7e04734089c92225d895be8b85f87b4fc6dad9736977595bf1\",\"prev_chain_hash\":\"358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03\",\"ok\":true},\"position\":{\"expected_prev\":\"358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03\",\"recorded_prev\":\"358fc6832b1cad755622a13ef3c90ef56c800d7fcbb404f1342405410baa8f03\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y361-RTY7T7/verify": {
+    "status": 200,
+    "length": 909,
+    "sha256": "9a79ee94cefd7e7499cd1627669b3eff564b9f36f03b6cc5ccba296e59dca6ad",
+    "body": "{\"public_ref\":\"RL-MVQ4Y361-RTY7T7\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:11.977Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"a5c8aebf0bde0eef601f1b68b1c8228623a7c63eef18f6e3d064fa5a346a8afc\",\"computed\":\"a5c8aebf0bde0eef601f1b68b1c8228623a7c63eef18f6e3d064fa5a346a8afc\",\"ok\":true},\"link\":{\"recorded\":\"6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a\",\"computed\":\"6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a\",\"prev_chain_hash\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\",\"ok\":true},\"position\":{\"expected_prev\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\",\"recorded_prev\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\",\"ok\":true,\"is_first\":true},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y36X-CBANMW/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "5792aa47845c0127a04b4e5212cb97acc5c079f0fa3bea3c6a06ee7ac2d26131",
+    "body": "{\"public_ref\":\"RL-MVQ4Y36X-CBANMW\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.009Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"952b5a49ad690539e073b9bb4e578a2b85b654540fcec3fd0d77211c182cab7e\",\"computed\":\"952b5a49ad690539e073b9bb4e578a2b85b654540fcec3fd0d77211c182cab7e\",\"ok\":true},\"link\":{\"recorded\":\"6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f\",\"computed\":\"6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f\",\"prev_chain_hash\":\"6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a\",\"ok\":true},\"position\":{\"expected_prev\":\"6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a\",\"recorded_prev\":\"6b234704103a8e4cf6abbba7edcd00481f4395eff6a9cf450e46d01824a2cc9a\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y37K-2VJYMG/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "45f30cadff23603193cfc951f723c2096854e960a7aec1d82599601d204d38cf",
+    "body": "{\"public_ref\":\"RL-MVQ4Y37K-2VJYMG\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.032Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"d52507c729cbf79ad8b1f61c03fc6ec2ac44268780f2915da4d563abd566da2e\",\"computed\":\"d52507c729cbf79ad8b1f61c03fc6ec2ac44268780f2915da4d563abd566da2e\",\"ok\":true},\"link\":{\"recorded\":\"024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe\",\"computed\":\"024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe\",\"prev_chain_hash\":\"6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f\",\"ok\":true},\"position\":{\"expected_prev\":\"6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f\",\"recorded_prev\":\"6b5202afdf635042239e88d784f7c9d2f9242aa220590d0f7848ed0685058e4f\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y381-GBMGP9/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "6f226c5a0af92856e3b62665868dc0c9c2fecb29b0f2a8b72a7665ba3c2c2011",
+    "body": "{\"public_ref\":\"RL-MVQ4Y381-GBMGP9\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.049Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"7da4f6d638c36a89617cfc3fbc3a1cdad5d95f4346f1f5818dabb250a1afa79e\",\"computed\":\"7da4f6d638c36a89617cfc3fbc3a1cdad5d95f4346f1f5818dabb250a1afa79e\",\"ok\":true},\"link\":{\"recorded\":\"ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903\",\"computed\":\"ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903\",\"prev_chain_hash\":\"024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe\",\"ok\":true},\"position\":{\"expected_prev\":\"024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe\",\"recorded_prev\":\"024a18302d8294ec49557d5d96e95e5b73015713719ed8c5740f90b78c887ffe\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y38J-9V2HKJ/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "1b922524cd27a4e4b54942230477ea326e5c436268b6189c4abf251f50f6fe98",
+    "body": "{\"public_ref\":\"RL-MVQ4Y38J-9V2HKJ\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.067Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"b667b04df877d649e10e0fd5bc86368cd56985ecd7eb4ba6f5a6486b340c4470\",\"computed\":\"b667b04df877d649e10e0fd5bc86368cd56985ecd7eb4ba6f5a6486b340c4470\",\"ok\":true},\"link\":{\"recorded\":\"2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6\",\"computed\":\"2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6\",\"prev_chain_hash\":\"ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903\",\"ok\":true},\"position\":{\"expected_prev\":\"ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903\",\"recorded_prev\":\"ddd6b6359ddd9b8baa98ccdca605837531eee47b45db0c75d06d001848f4e903\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y38Z-ANQF7G/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "7bc18479b3101b413d07360cbb90925955908e01b458ea990d774d2d9b58255d",
+    "body": "{\"public_ref\":\"RL-MVQ4Y38Z-ANQF7G\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.083Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"d119ffdee28d0e8ad75d98b68886e3d34322f0395e9542c4e643344df1bfc814\",\"computed\":\"d119ffdee28d0e8ad75d98b68886e3d34322f0395e9542c4e643344df1bfc814\",\"ok\":true},\"link\":{\"recorded\":\"cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116\",\"computed\":\"cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116\",\"prev_chain_hash\":\"2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6\",\"ok\":true},\"position\":{\"expected_prev\":\"2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6\",\"recorded_prev\":\"2462733fbc74e8c5f3c313eb4daed92a1e4dee1b6fd1f49b530b792cb2486de6\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y39Z-QTCYX1/verify": {
+    "status": 200,
+    "length": 1894,
+    "sha256": "2340efc4e52a643d23e1b618ea08da94f01b124cb90240d54f182b94b52314b6",
+    "body": "{\"public_ref\":\"RL-MVQ4Y39Z-QTCYX1\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.119Z\",\"chain\":{\"logbook\":\"demo-listed\",\"logbook_title\":\"Logbook demo-listed\",\"genesis\":\"1e2d41b8f54b16e8d5af7ca8c23923f368589c7eec5f5d2e1dcba6c53bafd0fb\"},\"hashed_fields\":{\"public_ref\":\"RL-MVQ4Y39Z-QTCYX1\",\"received_at\":\"2026-10-27T03:38:12.119Z\",\"thread_id\":\"43b8fa94-0641-401b-b9ee-e21a0c3ee774\",\"corrects_id\":null,\"logbook\":\"demo-listed\",\"logbook_form\":\"db1240e47538c0e4226bc489b06172bf23bc165da7c8c3a569b0f76e09be2f35\",\"answers\":{\"what\":\"zqmark listed long answer 1963\",\"headline\":\"zqmark listed short answer 7742\"},\"may_publish\":true,\"may_publish_digest\":\"c92ca7aa3daa8e6b1d2fdb701c2e31379c633fc2f623272a3db58e3eacc8313a\"},\"canonical_json\":\"{\\\"answers\\\":{\\\"headline\\\":\\\"zqmark listed short answer 7742\\\",\\\"what\\\":\\\"zqmark listed long answer 1963\\\"},\\\"corrects_id\\\":null,\\\"logbook\\\":\\\"demo-listed\\\",\\\"logbook_form\\\":\\\"db1240e47538c0e4226bc489b06172bf23bc165da7c8c3a569b0f76e09be2f35\\\",\\\"may_publish\\\":true,\\\"may_publish_digest\\\":\\\"c92ca7aa3daa8e6b1d2fdb701c2e31379c633fc2f623272a3db58e3eacc8313a\\\",\\\"public_ref\\\":\\\"RL-MVQ4Y39Z-QTCYX1\\\",\\\"received_at\\\":\\\"2026-10-27T03:38:12.119Z\\\",\\\"thread_id\\\":\\\"43b8fa94-0641-401b-b9ee-e21a0c3ee774\\\"}\",\"content\":{\"recorded\":\"41f89f76f22d2ee6b7d52e73af000328238ecb1ca548eff94f0f5c5fb671d758\",\"computed\":\"41f89f76f22d2ee6b7d52e73af000328238ecb1ca548eff94f0f5c5fb671d758\",\"ok\":true},\"link\":{\"recorded\":\"0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52\",\"computed\":\"0da9fa70f87ecad6d0d92b18eb2456aae74b59b648895579344cd49339d78d52\",\"prev_chain_hash\":\"1e2d41b8f54b16e8d5af7ca8c23923f368589c7eec5f5d2e1dcba6c53bafd0fb\",\"ok\":true},\"position\":{\"expected_prev\":\"1e2d41b8f54b16e8d5af7ca8c23923f368589c7eec5f5d2e1dcba6c53bafd0fb\",\"recorded_prev\":\"1e2d41b8f54b16e8d5af7ca8c23923f368589c7eec5f5d2e1dcba6c53bafd0fb\",\"ok\":true,\"is_first\":true},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/RL-MVQ4Y3BX-5Q4QXG/verify": {
+    "status": 200,
+    "length": 910,
+    "sha256": "0e0ab52b48a39d054061801544d551e95732c7cc064031c87ecf3d46b841424e",
+    "body": "{\"public_ref\":\"RL-MVQ4Y3BX-5Q4QXG\",\"recipe\":1,\"received_at\":\"2026-10-27T03:38:12.189Z\",\"chain\":{\"logbook\":\"demo-general\",\"logbook_title\":\"Logbook demo-general\",\"genesis\":\"283c00aaed110268cfaab1f5d540e5bb90d4c2066f50d56bd86f2e8955c3690a\"},\"content\":{\"recorded\":\"68d50727ffe64edfae07bd32d8322654f9a1d4459d804cb7dc17d46187e925c7\",\"computed\":\"68d50727ffe64edfae07bd32d8322654f9a1d4459d804cb7dc17d46187e925c7\",\"ok\":true},\"link\":{\"recorded\":\"bbf8537a37b999776790767a9fa0aec7b982d966e900cdb31465befb8a76c331\",\"computed\":\"bbf8537a37b999776790767a9fa0aec7b982d966e900cdb31465befb8a76c331\",\"prev_chain_hash\":\"cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116\",\"ok\":true},\"position\":{\"expected_prev\":\"cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116\",\"recorded_prev\":\"cd20819a8889d4a0b2b4319e5bd5dcaff613e8e470f59502825c53091f47e116\",\"ok\":true,\"is_first\":false},\"anchor\":{\"anchored\":false}}"
+   },
+   "/api/reports/confirm/292f149727dac17357aee6a39a7a4f865e28853ba6350ed36f454e57260e091f": {
+    "status": 200,
+    "length": 119,
+    "sha256": "8ebe80034e586cef41506b47132db115f29fb16f80125f72104d993784958aac",
+    "body": "{\"confirmation\":{\"state\":\"unconfirmed\",\"logbook_title\":\"Logbook demo-general\",\"expires_at\":\"2099-01-01T00:00:00.000Z\"}}"
+   },
+   "/api/site": {
+    "status": 200,
+    "length": 2642,
+    "sha256": "2af75a57cd0098e5fddece31d16af06d6e6946156b0cac6a5e07a0ec474ed616"
+   },
+   "/api/site-access/status": {
+    "status": 200,
+    "length": 229,
+    "sha256": "b26ef7658bf2381d267239185172663182a92d7bfc9a5ca700c0c4d58ffff312",
+    "body": "{\"locked\":false,\"dev_mode_until\":null,\"look\":{\"palette\":\"newsdesk\",\"theme\":\"newsdesk\",\"panel_head\":\"double-rule\",\"texture\":\"none\",\"width\":\"wide\",\"columns\":\"single\",\"scale\":\"large\",\"surface\":\"ruled\",\"dark\":false,\"stylesheets\":[]}}"
+   },
+   "/api/site/manifest.webmanifest": {
+    "status": 200,
+    "length": 676,
+    "sha256": "eb5f3d0c003cb72ed3dd2bb87f0006abd4f2eced8b782711a2d34bdaacbd5e8d",
+    "body": "{\"id\":\"/\",\"name\":\"ReportLog\",\"short_name\":\"ReportLog\",\"description\":\"File and check incident reports in a tamper-evident archive.\",\"start_url\":\"/\",\"scope\":\"/\",\"display\":\"standalone\",\"display_override\":[\"standalone\",\"minimal-ui\"],\"background_color\":\"#f3f0e8\",\"theme_color\":\"#161512\",\"lang\":\"en\",\"dir\":\"ltr\",\"icons\":[{\"src\":\"/icons/icon-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\",\"purpose\":\"any\"},{\"src\":\"/icons/icon-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\",\"purpose\":\"any\"},{\"src\":\"/icons/icon-maskable-192.png\",\"sizes\":\"192x192\",\"type\":\"image/png\",\"purpose\":\"maskable\"},{\"src\":\"/icons/icon-maskable-512.png\",\"sizes\":\"512x512\",\"type\":\"image/png\",\"purpose\":\"maskable\"}]}"
+   },
+   "/api/site/pages/1": {
+    "status": 400,
+    "length": 123,
+    "sha256": "f62ada361a9562d09d974f65457c341a3f33ed6c69307304f65cafffd315af04",
+    "body": "{\"error\":{\"code\":\"invalid_request\",\"message\":\"/page: Invalid option: expected one of \\\"home\\\"|\\\"about\\\"|\\\"get-involved\\\"\"}}"
+   },
+   "/api/site/pages/1/editor": {
+    "status": 400,
+    "length": 123,
+    "sha256": "f62ada361a9562d09d974f65457c341a3f33ed6c69307304f65cafffd315af04",
+    "body": "{\"error\":{\"code\":\"invalid_request\",\"message\":\"/page: Invalid option: expected one of \\\"home\\\"|\\\"about\\\"|\\\"get-involved\\\"\"}}"
+   },
+   "/api/telemetry": {
+    "status": 200,
+    "length": 16,
+    "sha256": "ce0e44b3069fa4902e93009e7b72790c09c878fbbe73cd4f9dfd3e6e332871e3",
+    "body": "{\"errors\":false}"
+   },
+   "/api/v1": {
+    "status": 200,
+    "length": 851,
+    "sha256": "0f9e69b04821a43119058b55d9ad775f8e2690413f323291b3eef552cde347da",
+    "body": "{\"name\":\"ReportLog public API\",\"version\":1,\"licence\":{\"covers\":\"The aggregate counts and the consent wordings served under /api/v1.\",\"terms\":\"CC BY 4.0, attributed to https://reports.example.test\",\"excludes\":\"The reports themselves. Each is its own author’s account, published here with their permission; that permission is not ours to pass on.\"},\"endpoints\":{\"/api/v1/stats\":\"Aggregate counts over the published record. Cached for 60 seconds.\",\"/api/v1/consent-texts\":\"Every wording of the publication question this site has shown, by digest. A published report seals the digest of the exact sentence its reporter answered; this is how that digest is read back. The digest is the SHA-256 of the body, so it can be checked.\"},\"stability\":\"Fields may be added. Existing fields will not be renamed, retyped or removed without a new version at /api/v2.\"}"
+   },
+   "/api/v1/consent-texts": {
+    "status": 200,
+    "length": 2924,
+    "sha256": "cd652ec7bc8061b22bc8f3ae47adec190dc4d9a45592596a66db8f4f5dbafd65"
+   },
+   "/api/v1/stats": {
+    "status": 200,
+    "length": 917,
+    "sha256": "c2938887a3ea476da92373b542eb071f10a614eaecfad9448d9bbde50e4d0c5b",
+    "body": "{\"as_of\":\"<time>\",\"note\":\"Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.\",\"not_a_sample\":\"These are reports people chose to file. They are not a sample and cannot be read as a rate.\",\"published_reports\":{\"by_logbook\":{\"demo-listed\":{\"title\":\"Logbook demo-listed\",\"published\":1,\"by_question\":{}},\"demo-general\":{\"title\":\"Logbook demo-general\",\"published\":3,\"by_question\":{}},\"demo-voting\":{\"title\":\"Log how voting went\",\"published\":1,\"by_question\":{\"outcome\":{\"label\":\"How did it go?\",\"counts\":{\"fine\":1},\"unanswered\":0},\"method\":{\"label\":\"How did you vote, or try to vote?\",\"counts\":{\"election_day\":1},\"unanswered\":0},\"state\":{\"label\":\"State\",\"counts\":{\"Azerbaijan\":1},\"unanswered\":0}}}}},\"published\":true,\"api_version\":1,\"licence\":\"CC BY 4.0 (these figures only; not the reports), https://reports.example.test\"}"
+   }
+  }
+ }
+}
