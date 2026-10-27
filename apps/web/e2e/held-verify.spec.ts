@@ -20,6 +20,9 @@ const heldState = (...args: string[]) =>
   execFileSync('node', ['--env-file-if-exists=../../.env', 'src/dev/held-state.ts', ...args], {
     cwd: apiDir,
     encoding: 'utf8',
+    // The test server's own key (playwright.config.ts), not the one in .env:
+    // the held values were stored under the server's.
+    env: { ...process.env, CONTACT_KEY: Buffer.alloc(32, 9).toString('base64') },
   }).trim();
 
 const baseURL = 'http://127.0.0.1:4173';
