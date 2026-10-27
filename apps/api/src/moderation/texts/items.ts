@@ -163,8 +163,7 @@ export async function listPage(
   filter: Filter,
   { limit, offset }: { limit: number; offset: number },
 ): Promise<Page> {
-  const where =
-    filter === 'waiting' ? sql`outcome IS NULL` : sql`outcome = ${filter}`;
+  const where = filter === 'waiting' ? sql`outcome IS NULL` : sql`outcome = ${filter}`;
   const total = await sql<{ n: string }>`
     SELECT count(*) AS n FROM (${WITH_ITEM}) x WHERE ${where}`.execute(db);
   const rows = await sql<Candidate>`
@@ -177,7 +176,11 @@ export async function listPage(
 }
 
 /** Candidates as the screens show them. Opens the words: callers are behind the moderator scope. */
-export async function present(db: Db, keys: LinkKeys, rows: readonly Candidate[]): Promise<TextView[]> {
+export async function present(
+  db: Db,
+  keys: LinkKeys,
+  rows: readonly Candidate[],
+): Promise<TextView[]> {
   if (!rows.length) return [];
   const reportRows = rows.filter((r) => r.source === 'report');
   const tipRows = rows.filter((r) => r.source === 'tip');
@@ -245,26 +248,8 @@ export async function present(db: Db, keys: LinkKeys, rows: readonly Candidate[]
 
   const itemIds = rows.flatMap((r) => (r.item_id === null ? [] : [r.item_id]));
   const redactions = itemIds.length
-    ? await db
-        .selectFrom('text_redactions')
-        .selectAll()
-        .where('item_id', 'in', itemIds)
-        .execute()
+    ? await db.selectFrom('text_redactions').selectAll().where('item_id', 'in', itemIds).execute()
     : [];
-
-  const placeOf = (
-    fields: readonly { key: string; settings: unknown }[],
-    answers: Record<string, unknown>,
-  ): string | null => {
-    for (const f of fields) {
-      const v = answers[f.key];
-      if (typeof v === 'string' && v) {
-        const d = describeAnswer({ kind: 'location', settings: f.settings as FieldSettings }, v);
-        if (d) return d;
-      }
-    }
-    return null;
-  };
 
   return rows.flatMap((c): TextView[] => {
     const redaction = redactions.find((x) => x.item_id === c.item_id);
@@ -332,6 +317,21 @@ export async function present(db: Db, keys: LinkKeys, rows: readonly Candidate[]
       },
     ];
   });
+}
+
+/** "Fulton County, Georgia": the first location answer a form asked, in words. */
+export function placeOf(
+  fields: readonly { key: string; settings: unknown }[],
+  answers: Record<string, unknown>,
+): string | null {
+  for (const f of fields) {
+    const v = answers[f.key];
+    if (typeof v === 'string' && v) {
+      const d = describeAnswer({ kind: 'location', settings: f.settings as FieldSettings }, v);
+      if (d) return d;
+    }
+  }
+  return null;
 }
 
 export function tipText(erasable: unknown, key: string): string | null {
@@ -432,7 +432,11 @@ export async function checkText(
   return db.transaction().execute(async (trx) => {
     const item = await ensureItem(trx, subject);
     if (item.outcome === 'illegal') {
-      throw refuse(409, 'already_erased', 'This was found illegal and erased. Nothing is left to check.');
+      throw refuse(
+        409,
+        'already_erased',
+        'This was found illegal and erased. Nothing is left to check.',
+      );
     }
     // Checked means "a journalist may read it": only if the reporter allows it.
     if (outcome === 'checked' && !(await sharingOf(trx, subject))) throw NOT_SHARED;
@@ -475,7 +479,7 @@ export async function checkText(
 
 /** The marks the copy must carry: a [bracketed] piece the original does not have. */
 export function carriesNewMarker(original: string, copy: string): boolean {
-  const marks = copy.match(/\[[^\[\]\n]{1,80}\]/g) ?? [];
+  const marks = copy.match(/\[[^[\]\n]{1,80}\]/g) ?? [];
   return marks.some((m) => !original.includes(m));
 }
 
@@ -509,7 +513,11 @@ export async function redactText(
   return db.transaction().execute(async (trx) => {
     const item = await ensureItem(trx, subject);
     if (item.outcome === 'illegal') {
-      throw refuse(409, 'already_erased', 'This was found illegal and erased. Nothing is left to redact.');
+      throw refuse(
+        409,
+        'already_erased',
+        'This was found illegal and erased. Nothing is left to redact.',
+      );
     }
     if (!(await sharingOf(trx, subject))) throw NOT_SHARED;
     const sealed = sealReportValue(keys, body);
@@ -597,13 +605,14 @@ export async function reviewRedaction(
 
 export async function detail(db: Db, keys: LinkKeys, rawRef: string) {
   const subject = await resolve(db, keys, rawRef);
-  const itemRow = await (subject.ref.source === 'report' && subject.fingerprint
-    ? db.selectFrom('text_items').selectAll().where('fingerprint', '=', subject.fingerprint)
-    : db
-        .selectFrom('text_items')
-        .selectAll()
-        .where('entry_id', '=', subject.ref.source === 'tip' ? subject.ref.entryId : -1)
-        .where('field_key', '=', subject.ref.source === 'tip' ? subject.ref.fieldKey : '')
+  const itemRow = await (
+    subject.ref.source === 'report' && subject.fingerprint
+      ? db.selectFrom('text_items').selectAll().where('fingerprint', '=', subject.fingerprint)
+      : db
+          .selectFrom('text_items')
+          .selectAll()
+          .where('entry_id', '=', subject.ref.source === 'tip' ? subject.ref.entryId : -1)
+          .where('field_key', '=', subject.ref.source === 'tip' ? subject.ref.fieldKey : '')
   ).executeTakeFirst();
   const cand: Candidate = {
     source: subject.ref.source,

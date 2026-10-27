@@ -66,11 +66,7 @@ export async function eraseHeldValue(trx: Db, valueId: number, input: EraseInput
  * report half of an "illegal" link check. One tombstone per version that held
  * it. Returns how many rows went.
  */
-export async function eraseHeldGroup(
-  trx: Db,
-  groupId: number,
-  input: EraseInput,
-): Promise<number> {
+export async function eraseHeldGroup(trx: Db, groupId: number, input: EraseInput): Promise<number> {
   return eraseWhere(trx, { groupId }, input);
 }
 
@@ -102,9 +98,10 @@ async function eraseWhere(
   }
   if (!input.actor.trim()) throw new Error('An erasure needs somebody to have done it.');
   const del = trx.deleteFrom('report_values');
-  const gone = await ('fingerprint' in where
-    ? del.where('fingerprint', '=', where.fingerprint)
-    : del.where('group_id', '=', where.groupId)
+  const gone = await (
+    'fingerprint' in where
+      ? del.where('fingerprint', '=', where.fingerprint)
+      : del.where('group_id', '=', where.groupId)
   )
     .returning(['report_id', 'field_key', 'kind', 'position', 'fingerprint', 'group_id'])
     .execute();

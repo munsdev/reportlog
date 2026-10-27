@@ -9,8 +9,7 @@
  * an older version of the same words still finds the same item.
  */
 export type TextRef =
-  | { source: 'report'; valueId: number }
-  | { source: 'tip'; entryId: number; fieldKey: string };
+  { source: 'report'; valueId: number } | { source: 'tip'; entryId: number; fieldKey: string };
 
 export function parseRef(raw: string): TextRef | null {
   const report = /^report-(\d{1,15})$/.exec(raw);

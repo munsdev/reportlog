@@ -22,7 +22,7 @@ import { requireUser, roleGuard } from '../identity/guards.ts';
 import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
-import { deskGuard, deskLinkPage, deskSourcePage } from './desk.ts';
+import { deskGuard, deskLinkPage, deskSourcePage, deskTextPage } from './desk.ts';
 import {
   applyConfirm,
   deskStates,
@@ -190,6 +190,16 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
     route(desk, C.deskLinks, async ({ query, request }) => {
       const email = requireUser(request).email;
       return deskLinkPage(
+        deps.db,
+        await needKeys(),
+        email,
+        query.page === undefined ? undefined : Number(query.page),
+        await filterOf(query, email),
+      );
+    });
+    route(desk, C.deskTexts, async ({ query, request }) => {
+      const email = requireUser(request).email;
+      return deskTextPage(
         deps.db,
         await needKeys(),
         email,

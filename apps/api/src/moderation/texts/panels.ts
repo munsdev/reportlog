@@ -22,7 +22,11 @@ async function threadReports(db: Db, threadId: string) {
     .where('thread_id', '=', threadId)
     .executeTakeFirst();
   if (!head) throw notFound('There is no report with that reference.');
-  const all = await db.selectFrom('reports').select('id').where('thread_id', '=', threadId).execute();
+  const all = await db
+    .selectFrom('reports')
+    .select('id')
+    .where('thread_id', '=', threadId)
+    .execute();
   return { head: head.current_report_id, all: all.map((r) => r.id) };
 }
 
@@ -75,7 +79,11 @@ export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
   );
   const groupIds = held.flatMap((h) => (h.kind === 'private_link' && h.groupId ? [h.groupId] : []));
   const groups = groupIds.length
-    ? await db.selectFrom('link_groups').select(['id', 'outcome']).where('id', 'in', groupIds).execute()
+    ? await db
+        .selectFrom('link_groups')
+        .select(['id', 'outcome'])
+        .where('id', 'in', groupIds)
+        .execute()
     : [];
   const links = [];
   for (const h of held.filter((x) => x.kind === 'private_link')) {
@@ -140,11 +148,7 @@ export async function myWritten(db: Db, keys: LinkKeys, threadId: string) {
         return {
           field_key: h.fieldKey,
           text: h.value,
-          outcome: (o === 'checked' || o === 'redacted' || o === 'withheld' ? o : 'waiting') as
-            | 'waiting'
-            | 'checked'
-            | 'redacted'
-            | 'withheld',
+          outcome: (o === 'checked' || o === 'redacted' || o === 'withheld' ? o : 'waiting'),
           checked_at: it?.checked_at ? new Date(it.checked_at).toISOString() : null,
         };
       }),
@@ -156,10 +160,7 @@ export async function myWritten(db: Db, keys: LinkKeys, threadId: string) {
         return {
           field_key: h.fieldKey,
           url: h.value,
-          outcome: (o === 'checked' || o === 'withheld' ? o : 'waiting') as
-            | 'waiting'
-            | 'checked'
-            | 'withheld',
+          outcome: (o === 'checked' || o === 'withheld' ? o : 'waiting'),
           checked_at: g?.checked_at ? new Date(g.checked_at).toISOString() : null,
         };
       }),
@@ -173,5 +174,7 @@ export async function eraseMyWritten(db: Db, threadId: string): Promise<number> 
   const { all } = await threadReports(db, threadId);
   return db
     .transaction()
-    .execute((trx) => eraseHeldValuesOf(trx, all, { reason: 'reporter-request', actor: 'reporter' }));
+    .execute((trx) =>
+      eraseHeldValuesOf(trx, all, { reason: 'reporter-request', actor: 'reporter' }),
+    );
 }

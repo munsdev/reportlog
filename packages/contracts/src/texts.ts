@@ -103,7 +103,14 @@ export const TEXT_PAGE_SIZE = 20;
 export const TextHistoryItem = z.object({
   at: Timestamp,
   by: z.string(),
-  kind: z.enum(['checked', 'redacted', 'withheld', 'illegal', 'review_approved', 'review_returned']),
+  kind: z.enum([
+    'checked',
+    'redacted',
+    'withheld',
+    'illegal',
+    'review_approved',
+    'review_returned',
+  ]),
   reason_category: z.string().nullable(),
 });
 
