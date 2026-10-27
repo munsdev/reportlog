@@ -40,11 +40,11 @@ export function StaffHead({
     document.title = `${title} · ${siteName}`;
   }, [title, siteName]);
   return (
-    <header className="flex flex-col gap-2">
-      <Eyebrow>{eyebrow ?? `${siteName} · Staff`}</Eyebrow>
+    <header className="flex flex-col items-start gap-1.5">
+      <Eyebrow className="font-mono tracking-[0.12em]">{eyebrow ?? `${siteName} · Staff`}</Eyebrow>
       <h1
         className={cn(
-          'text-title font-bold break-words',
+          'text-[clamp(1.6rem,3.6vw,2.4rem)] leading-[1.05] font-bold break-words',
           mono ? 'font-mono tracking-tight' : 'font-display',
         )}
       >

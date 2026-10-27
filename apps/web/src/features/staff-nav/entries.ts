@@ -88,7 +88,7 @@ export const STAFF_AREAS: readonly StaffArea[] = [
         under: ['/moderate/'],
         waiting: 'reports',
       },
-      { to: '/lists/links', label: 'Tip links', for: MOD, waiting: 'tip_links' },
+      { to: '/lists/links', label: 'Links', for: MOD, waiting: 'tip_links' },
       {
         to: '/lists/review',
         label: 'List entries',
@@ -113,7 +113,7 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       { to: '/logbooks', label: 'Logbooks', for: ADMIN, under: ['/logbooks/'] },
       { to: '/lists', label: 'Lists', for: ADMIN, under: ['/lists/'] },
       { to: '/maps', label: 'Maps', for: ADMIN, under: ['/maps/'] },
-      { to: '/lists/search', label: 'Find entries', for: ADMIN },
+      { to: '/lists/search', label: 'Find somebody’s entries', for: ADMIN },
       { to: '/settings/forms', label: 'Report and tip forms', for: ADMIN },
       { to: '/settings/starting-points', label: 'Starting points', for: ADMIN },
       { to: '/logbooks/front-page', label: 'Front page', for: ADMIN },
@@ -223,13 +223,12 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
     id: 'you',
     label: 'You',
     pages: [
-      { to: '/home', label: 'Overview', for: ['anyone'] },
+      { to: '/home', label: 'Your dashboard', for: ['anyone'] },
       { to: '/mine', label: 'My reports', for: ['anyone'], under: ['/mine/'] },
       { to: '/notifications', label: 'Email updates', for: ['anyone'] },
-      // /access is People and roles for those who grant access; this is the
-      // same page for everybody else, so it is never marked as "here" itself.
-      { to: '/access', label: 'Account', for: ['anyone'], alias: true },
-      { to: '/access/security', label: 'Account and security', for: ['role'] },
+      // The mock-up's You group has no Account row: the account chip in the
+      // top bar (StaffShell.tsx) is the way to /access for everybody.
+      { to: '/access/security', label: 'Signing in', for: ['role'] },
     ],
   },
   {
@@ -239,14 +238,19 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
     pages: [
       { to: '/desk', label: 'Checked links', for: ['journalist'] },
       { to: '/desk/sources', label: 'Sources', for: ['journalist'] },
-      { to: '/desk/alerts', label: 'Alerts', for: ['journalist'] },
+      { to: '/desk/alerts', label: 'Your alerts', for: ['journalist'] },
     ],
   },
   {
     id: 'organization',
     label: 'Your organization',
     pages: [
-      { to: '/intake', label: 'Intake', for: ['organization'], under: ['/intake/'] },
+      {
+        to: '/intake',
+        label: 'Filing for an organization',
+        for: ['organization'],
+        under: ['/intake/'],
+      },
       { to: '/intake/links', label: 'Volunteer links', for: ['organization'] },
     ],
   },

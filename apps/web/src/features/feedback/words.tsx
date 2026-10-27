@@ -31,7 +31,7 @@ export function pageNameFor(routeId: string): string | null {
   const entry = entryAt(path);
   // The settings overview has a route but no menu entry any more.
   if (!entry) return path === '/settings' ? 'Site settings' : null;
-  return entry.label === 'Overview' ? 'Your dashboard' : entry.label;
+  return entry.label;
 }
 
 /** One line under an issue's title: what it is, how bad, where it stands, who filed it. */

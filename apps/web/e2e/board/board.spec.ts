@@ -122,7 +122,7 @@ test.describe('the moderation screens', () => {
       if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
     });
     await page.goto('/moderate');
-    await expect(page.getByRole('heading', { level: 1, name: 'Moderation' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
     await page.goto('/moderate/settings');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Moderation settings' }),

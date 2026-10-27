@@ -42,11 +42,11 @@ export function ReviewQueues() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <StaffHead
-          title="List entries to review"
-          lede="Entries, not reports: nothing on a list is sealed, and nothing is counted publicly until it is approved here. Entries are read a page at a time and approved together."
+          title="List entries"
+          lede="Entries sent to lists. Nothing here is published, and nothing on a list is sealed or counted publicly until it is approved here. Entries are read a page at a time and approved together."
         />
         <Button asChild variant="secondary" className="self-start sm:self-end">
-          <Link to="/lists/links">Check links</Link>
+          <Link to="/lists/links">Links</Link>
         </Button>
       </div>
       {query.isPending ? <p role="status">Reading the lists…</p> : null}

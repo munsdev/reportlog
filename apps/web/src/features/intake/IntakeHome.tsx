@@ -39,6 +39,7 @@ export function IntakeHome() {
 
   return (
     <StaffPage
+      area="Your organization"
       title="Filing for an organization"
       lede="Type up accounts somebody gave you on paper, by phone or in person. Nothing is filed until you have checked the whole batch and said so."
       width="prose"

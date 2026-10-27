@@ -60,6 +60,7 @@ import { evidenceQuery } from '../files/staff/queries.ts';
 import { useMe } from '../identity/session.ts';
 import { ClosedRow } from './ClosedRow.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
+import { Meta } from '../../components/ui/type.tsx';
 import type { Decided, Decision } from './DecideForm.tsx';
 import { AnswerList, StaffHead, StatusChip, useWide, waited, when } from './parts.tsx';
 import { noteQuery, queueItemQuery, queueQuery } from './queries.ts';
@@ -144,19 +145,20 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
       ? `${r.logbook_title} · waiting ${waited(r.received_at)}`
       : `${r.logbook_title} · ${state ?? ''}`;
 
+  // The mock-up's order: eyebrow, the reference, the way back, where it
+  // stands in one line, then its chips.
   const head = (
-    <div className="flex flex-col gap-3">
+    <StaffHead title={r.public_ref} mono>
       {back}
-      <StaffHead eyebrow={eyebrow} title={r.public_ref} mono>
-        <div className="flex flex-wrap gap-1.5">
-          <StatusChip r={r} />
-          <Chip tone="tag">{r.public ? 'Public' : 'Not public'}</Chip>
-          {r.needs_review ? <Chip tone="tag">Second read</Chip> : null}
-          {r.reporter_withdrew ? <Chip tone="tag">Withdrawn by its reporter</Chip> : null}
-          {r.threat_open ? <Chip tone="serious">Threat to safety</Chip> : null}
-        </div>
-      </StaffHead>
-    </div>
+      <Meta>{eyebrow}</Meta>
+      <div className="flex flex-wrap gap-1.5">
+        <StatusChip r={r} />
+        <Chip tone="tag">{r.public ? 'Public' : 'Not public'}</Chip>
+        {r.needs_review ? <Chip tone="tag">Second read</Chip> : null}
+        {r.reporter_withdrew ? <Chip tone="tag">Withdrawn by its reporter</Chip> : null}
+        {r.threat_open ? <Chip tone="serious">Threat to safety</Chip> : null}
+      </div>
+    </StaffHead>
   );
 
   const said = <Said r={r} />;

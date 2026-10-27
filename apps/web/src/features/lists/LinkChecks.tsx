@@ -90,8 +90,8 @@ export function LinkChecksPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <StaffHead
-          title="Check links"
-          lede="Links are never published. A link that passes may be shared with vetted journalists. One entry per address however many tips sent it; a check covers every copy, and later ones too."
+          title="Links"
+          lede="Links from the tip line, one entry per address however many tips sent it. A checked link may be shared with vetted journalists; nothing here is published. A check covers every copy, and later ones too."
         />
         <Button asChild variant="secondary" className="self-start sm:self-end">
           <Link to="/lists/review">List entries</Link>

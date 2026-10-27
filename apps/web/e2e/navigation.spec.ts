@@ -142,10 +142,10 @@ test.describe('the staff area’s top bar', () => {
         height: el.firstElementChild?.getBoundingClientRect().height ?? 0,
         sideways: document.documentElement.scrollWidth > window.innerWidth,
       }));
-      expect(box.height).toBeLessThanOrEqual(56);
+      expect(box.height).toBeLessThanOrEqual(72);
       expect(box.sideways).toBe(false);
-      if (width < 768) {
-        // The drawer: open, Escape closes it, and focus is back on its button.
+      if (width < 900) {
+        // The drawer (below the mock-up's 900px): open, Escape closes it, and focus is back on its button.
         const button = banner.getByRole('button', { name: 'Menu' });
         await button.click();
         await expect(page.getByRole('navigation', { name: 'Your pages' })).toBeVisible();
@@ -252,13 +252,7 @@ for (const role of ROLES) {
     const door = menu.getByRole('link', { name: /^Your dashboard/ });
     await expect(door).toHaveCount(mine.length ? 1 : 0);
     // Everybody signed in has their own pages in the menu (decision 71).
-    const ownPages = new Set([
-      'My reports',
-      'Email updates',
-      'Account',
-      'Account and security',
-      'Overview',
-    ]);
+    const ownPages = new Set(['My reports', 'Email updates', 'Your dashboard', 'Signing in']);
     for (const p of ALL_PAGES.filter((p) => !ownPages.has(p.label)))
       await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
     if (role === 'visitor') {
