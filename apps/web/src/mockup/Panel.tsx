@@ -1,21 +1,44 @@
-import { messageOf } from '../features/identity/ui.tsx';
 import type { ReactNode } from 'react';
+import { messageOf } from '../features/identity/ui.tsx';
 
-/** The mock-up's `.panel` section: a heading and its words ("quiet", "deep", "danger" variants). */
+/**
+ * The mock-up's `.panel` (staff.py `panel`): a titled box. `kind` (or its older
+ * name `variant`) is deep, quiet, danger or closed.
+ */
 export function Panel({
   title,
+  sub,
+  kind,
   variant,
+  id,
+  as: Tag = 'section',
+  head,
   children,
 }: {
   title?: ReactNode;
-  variant?: 'quiet' | 'deep' | 'danger';
-  children: ReactNode;
+  sub?: ReactNode;
+  kind?: 'deep' | 'quiet' | 'danger' | 'closed';
+  variant?: 'deep' | 'quiet' | 'danger';
+  id?: string;
+  as?: 'section' | 'article';
+  /** Something at the right of the title (a status chip): the mock-up's `.closed-head`. */
+  head?: ReactNode;
+  children?: ReactNode;
 }) {
+  const k = kind ?? variant;
   return (
-    <section className={variant ? `panel ${variant}` : 'panel'}>
-      {title ? <h2>{title}</h2> : null}
+    <Tag className={k ? `panel ${k}` : 'panel'} {...(id ? { id } : {})}>
+      {head ? (
+        <div className="closed-head">
+          {title ? <h2>{title}</h2> : null}
+          {head}
+        </div>
+      ) : title ? (
+        <h2>{title}</h2>
+      ) : null}
+      {sub ? <p className="sub">{sub}</p> : null}
       {children}
-    </section>
+    </Tag>
   );
 }
 

@@ -8,9 +8,8 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Note } from '../../mockup/Note.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
 import { placedMapsQuery } from '../maps/queries.ts';
@@ -26,16 +25,21 @@ export function BoardMapsPage() {
   return (
     <BoardFrame
       title="Maps"
-      heading="Maps"
       lede="Where published reports say things happened. An area with too few reports to count safely is not shaded and its number is not shown."
     >
       {placed.isPending ? <p role="status">Loading the maps…</p> : null}
       {placed.isError ? (
-        <Alert tone="serious" title="The maps could not be loaded">
-          {placed.error.message}
-        </Alert>
+        <Note warn>
+          <span role="alert">
+            <b>The maps could not be loaded.</b> {placed.error.message}
+          </span>
+        </Note>
       ) : null}
-      {off ? <Alert>{off}</Alert> : null}
+      {off ? (
+        <Note>
+          <span>{off}</span>
+        </Note>
+      ) : null}
       {none ? <Empty title="No maps here">There are no maps on the board.</Empty> : null}
       <MapSlot slot="board_tab" />
     </BoardFrame>
@@ -43,15 +47,15 @@ export function BoardMapsPage() {
 }
 
 /**
- * The board's button to its maps page, shown only when a map is placed there:
+ * The board's link to its maps page, shown only when a map is placed there:
  * a button to an empty page is a promise the board does not keep.
  */
 export function BoardMapsButton() {
   const placed = useQuery(placedMapsQuery());
   if (!placed.data?.maps.some((m) => m.slot === 'board_tab')) return null;
   return (
-    <Button asChild variant="secondary">
-      <Link to="/board/maps">Maps</Link>
-    </Button>
+    <Link className="btn sm flat" to="/board/maps">
+      Maps
+    </Link>
   );
 }
