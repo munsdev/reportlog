@@ -1,31 +1,40 @@
 import { useRouter } from '@tanstack/react-router';
-import { BrandName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow, Lede } from '@/components/ui/type.tsx';
+import { useState } from 'react';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { SignInForm } from './SignInForm.tsx';
 import { useIdentityChanged } from './session.ts';
 
 /**
- * /access/sign-in (account.md §02). `next` is where to go afterwards: a path
- * on this site, never another one.
+ * /access/sign-in (account.md §02; mock-up sign-in.html). `next` is where to
+ * go afterwards: a path on this site, never another one.
  */
 export function SignInPage({ next }: { next: string | undefined }) {
+  useBodyClass('light', 'form');
   const router = useRouter();
   const changed = useIdentityChanged();
-  const site = useSite();
+  const [step, setStep] = useState<'email' | 'code'>('email');
   return (
-    <section className="flex max-w-prose flex-col gap-4">
-      <Eyebrow>{site.data ? <BrandName parts={site.data.name_parts} /> : 'ReportLog'}</Eyebrow>
-      <h1 className="font-display text-title font-bold">Sign in</h1>
-      <Lede>
-        We send a six-digit code. Staff then confirm with a passkey or an authenticator app.
-      </Lede>
-      <SignInForm
-        onSignedIn={async () => {
-          await changed();
-          router.history.push(next ?? '/home');
-        }}
-      />
-    </section>
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 30 }}>
+        <div className="form-stack" style={{ maxWidth: 460 }}>
+          <span className="eyebrow">Sign in</span>
+          <h1 className="h-page" id="h1">
+            {step === 'email' ? 'Your email first' : 'Now the code'}
+          </h1>
+          <p className="muted">
+            We send a six-digit code. Moderators and administrators then confirm with their second
+            factor.
+          </p>
+          <SignInForm
+            onStep={setStep}
+            onSignedIn={async () => {
+              await changed();
+              router.history.push(next ?? '/home');
+            }}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
