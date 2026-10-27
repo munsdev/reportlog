@@ -181,29 +181,28 @@ export function HeaderBackgroundEditor({
       {shapes.length ? (
         <Group title="Big shapes">
           <div className="bge-shapes">
-            {shapes
-              .filter((e) => B.on[e.id])
-              .map((e) => {
-                const current: ShapeStyle = B.style[e.id] ?? e.style ?? 'filled';
-                return (
-                  <div key={e.id} className="bge-shape">
-                    <span>{e.label}</span>
-                    <div className="bge-row" role="group" aria-label={`${e.label} style`}>
-                      {(['filled', 'outline'] as const).map((style) => (
-                        <ToggleChip
-                          key={style}
-                          pressed={current === style}
-                          onClick={() => {
-                            set({ style: { ...B.style, [e.id]: style } });
-                          }}
-                        >
-                          {style === 'filled' ? 'Filled' : 'Outline'}
-                        </ToggleChip>
-                      ))}
-                    </div>
+            {/* Every shape, on or off, as in the mock-up's Look screen. */}
+            {shapes.map((e) => {
+              const current: ShapeStyle = B.style[e.id] ?? e.style ?? 'filled';
+              return (
+                <div key={e.id} className="bge-shape">
+                  <span>{e.label}</span>
+                  <div className="bge-row" role="group" aria-label={`${e.label} style`}>
+                    {(['filled', 'outline'] as const).map((style) => (
+                      <ToggleChip
+                        key={style}
+                        pressed={current === style}
+                        onClick={() => {
+                          set({ style: { ...B.style, [e.id]: style } });
+                        }}
+                      >
+                        {style === 'filled' ? 'Filled' : 'Outline'}
+                      </ToggleChip>
+                    ))}
                   </div>
-                );
-              })}
+                </div>
+              );
+            })}
           </div>
           <Slider
             label="Shape strength"
