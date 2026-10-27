@@ -86,8 +86,8 @@ describe('the look', () => {
     ]);
   });
 
-  it('offers twelve light palettes and seven dark ones', () => {
-    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(12);
+  it('offers fifteen light palettes (the three Civic ones among them) and seven dark ones', () => {
+    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(15);
     expect(PALETTES.filter((p) => p.dark)).toHaveLength(7);
     expect(isDarkPalette('midnight')).toBe(true);
     expect(isDarkPalette('flint')).toBe(false);
