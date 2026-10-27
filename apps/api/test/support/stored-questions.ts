@@ -13,7 +13,7 @@
  */
 import type { Question } from '@reportlog/contracts';
 import { canFilter, isPublishedFreeText } from '@reportlog/fields';
-import type { Kysely, Transaction } from 'kysely';
+import type { Transaction } from 'kysely';
 import { ensureFormVersion } from '../../src/chain/forms.ts';
 import { questionsFor } from '../../src/chain/questions.ts';
 import type { DB } from '../../src/db/schema.gen.ts';
@@ -31,7 +31,7 @@ export async function addStoredQuestion(
   const settings = L.settingsFor(spec.kind, spec.settings);
   if (!isPublishedFreeText({ kind: spec.kind, settings })) return L.addField(db, logbookId, spec);
 
-  return (db as Kysely<DB>).transaction().execute(async (trx: Transaction<DB>) => {
+  return db.transaction().execute(async (trx: Transaction<DB>) => {
     const lb = await trx
       .selectFrom('logbooks')
       .select(['id', 'slug', 'launched_at'])

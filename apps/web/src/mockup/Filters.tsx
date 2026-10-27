@@ -15,12 +15,11 @@ export function Filters<T extends string>({
   return (
     <div className="seg-filter" role="group" aria-label={label}>
       {options.map((o) => (
-        <a
+        <button
           key={o.value}
-          href="#"
-          {...(o.value === value ? { 'aria-current': 'true' as const } : {})}
-          onClick={(e) => {
-            e.preventDefault();
+          type="button"
+          aria-pressed={o.value === value}
+          onClick={() => {
             onChange(o.value);
           }}
         >
@@ -31,7 +30,7 @@ export function Filters<T extends string>({
               <span className="n">{o.n}</span>
             </>
           ) : null}
-        </a>
+        </button>
       ))}
     </div>
   );

@@ -15,6 +15,9 @@ export default tseslint.config(
       'apps/api/src/db/schema.gen.ts',
       // Design references (docs/design/looks/look-pack.mjs): read and ported, not run by the app.
       'docs/**',
+      // The approved mock-up's page script, ported as written (with marked
+      // changes): its own style, kept close to the original so it can be compared.
+      'apps/web/public/mockup/**',
     ],
   },
   js.configs.recommended,
