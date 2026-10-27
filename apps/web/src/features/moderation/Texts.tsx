@@ -27,22 +27,27 @@ import type { TextFilter, TextItem, TextOutcome } from '@reportlog/contracts';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useId, useRef, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Field, FieldDescription } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { Pagination } from '../../components/ui/pagination.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
-import { CountLine, Meta } from '../../components/ui/type.tsx';
+import { Back } from '../../mockup/Back.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Check, Choice, Choices } from '../../mockup/Choices.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import {
+  Field,
+  FieldDescription,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '../../mockup/Form.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Problem } from '../../mockup/Notice.tsx';
+import { Pager } from '../../mockup/Pager.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Seg } from '../../mockup/Seg.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { StaffHead, when } from './parts.tsx';
+import { when } from './parts.tsx';
 
 const REASON_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
   'child-sexual-abuse': 'Child sexual abuse material',
@@ -102,27 +107,25 @@ export function Reveal({
   });
   if (open.data) {
     return (
-      <p className={`max-w-prose whitespace-pre-wrap ${mono ? 'font-mono break-all' : ''}`}>
+      <p className={mono ? 'mono' : undefined} style={{ whiteSpace: 'pre-wrap' }}>
         {open.data.text}
       </p>
     );
   }
   return (
-    <div className="flex flex-col gap-2">
-      <Button
-        type="button"
-        variant="secondary"
-        className="self-start"
-        busy={open.isPending}
-        busyLabel="Opening…"
-        onClick={() => {
-          open.mutate();
-        }}
-      >
-        {label}
-      </Button>
-      <p className="text-sm text-ink-alt">Opening it is recorded with your name.</p>
-      {open.isError ? <Alert tone="serious">{open.error.message}</Alert> : null}
+    <div className="col">
+      <div className="acts">
+        <Btn
+          disabled={open.isPending}
+          onClick={() => {
+            open.mutate();
+          }}
+        >
+          {open.isPending ? 'Opening…' : label}
+        </Btn>
+      </div>
+      <p className="m">Opening it is recorded with your name.</p>
+      {open.isError ? <Problem>{open.error.message}</Problem> : null}
     </div>
   );
 }
@@ -139,41 +142,36 @@ export function TextsPage() {
   });
   const counts = q.data?.counts;
   return (
-    <div className="flex flex-col gap-6">
-      <StaffHead
-        title="Written accounts"
-        lede="What reporters wrote in their own words, and what tips described. Never published. Journalists see only a note a moderator writes, and only if the reporter allowed it."
+    <StaffPage
+      title="Written accounts"
+      lede="What reporters wrote in their own words, and what tips described. Never published. Journalists see only a note a moderator writes, and only if the reporter allowed it."
+    >
+      <Seg
+        label="Show"
+        options={TABS.map((t) => ({
+          key: t.value,
+          label: t.label,
+          n: counts?.[t.value],
+          pressed: filter === t.value,
+          onClick: () => {
+            setFilter(t.value);
+            setPage(1);
+          },
+        }))}
       />
-      <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <Button
-            key={t.value}
-            type="button"
-            variant="secondary"
-            aria-pressed={filter === t.value}
-            className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
-            onClick={() => {
-              setFilter(t.value);
-              setPage(1);
-            }}
-          >
-            {t.label}
-            {counts ? <span className="ml-1.5 font-mono">{counts[t.value]}</span> : null}
-          </Button>
-        ))}
-      </div>
-      <Alert tone="note" title="Only accounts the reporter shared can get a note.">
-        If they did not allow journalists, the choices are Keep internal or Illegal.
-      </Alert>
-      <CountLine
-        parts={[
-          q.data
-            ? `${String(counts?.[filter] ?? q.data.items.length)} ${TABS.find((t) => t.value === filter)?.label.toLowerCase() ?? ''}`
-            : null,
-        ]}
-      />
+      <Note>
+        <span>
+          <b>Only accounts the reporter shared can get a note.</b> If they did not allow
+          journalists, the choices are Keep internal or Illegal.
+        </span>
+      </Note>
+      <p className="m">
+        {q.data
+          ? `${String(counts?.[filter] ?? q.data.items.length)} ${TABS.find((t) => t.value === filter)?.label.toLowerCase() ?? ''}`
+          : ''}
+      </p>
       {q.isPending ? <p role="status">Reading the written accounts…</p> : null}
-      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      {q.isError ? <Problem>{q.error.message}</Problem> : null}
       {q.data?.items.length === 0 ? (
         <Empty title={filter === 'waiting' ? 'No written account waiting' : 'Nothing here'}>
           {filter === 'waiting'
@@ -181,53 +179,47 @@ export function TextsPage() {
             : 'No written account has been given this outcome.'}
         </Empty>
       ) : null}
-      <ul className="flex flex-col gap-4" aria-label="Written accounts">
-        {q.data?.items.map((item) => (
-          <li key={item.ref}>
-            <TextCard item={item} />
-          </li>
-        ))}
-      </ul>
+      {q.data?.items.map((item) => (
+        <TextCard key={item.ref} item={item} />
+      ))}
       {q.data ? (
-        <Pagination
+        <Pager
           page={q.data.page}
           pages={q.data.pages}
           label="Written accounts pages"
           onPage={setPage}
         />
       ) : null}
-    </div>
+    </StaffPage>
   );
 }
 
 function Chips({ item }: { item: TextItem }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      <Chip tone={item.shared ? 'confirmed' : 'open'}>
+    <div className="chips">
+      <Chip kind={item.shared ? 'ok' : 'off'}>
         {item.shared ? 'Shared with journalists' : 'Not shared'}
       </Chip>
       {item.source === 'report' ? (
-        <Chip tone="tag">{item.answers_public ? 'Answers public' : 'Answers waiting'}</Chip>
+        <Chip kind={item.answers_public ? 'ok' : 'wait'}>
+          {item.answers_public ? 'Answers public' : 'Answers waiting'}
+        </Chip>
       ) : (
-        <Chip tone="tag">Tip line</Chip>
+        <Chip kind="off">Tip line</Chip>
       )}
-      {item.outcome ? <Chip tone="tag">{SHORT[item.outcome]}</Chip> : null}
+      {item.outcome ? <Chip>{SHORT[item.outcome]}</Chip> : null}
     </div>
   );
 }
 
 function TextCard({ item }: { item: TextItem }) {
   return (
-    <Card>
+    <article className="panel">
       <Chips item={item} />
       <Reveal textRef={item.ref} />
-      <Meta>
+      <p className="m">
         {item.thread_id && item.reference ? (
-          <Link
-            to="/moderate/$threadId"
-            params={{ threadId: item.thread_id }}
-            className="underline"
-          >
+          <Link to="/moderate/$threadId" params={{ threadId: item.thread_id }} className="mono">
             {item.reference}
           </Link>
         ) : (
@@ -237,9 +229,9 @@ function TextCard({ item }: { item: TextItem }) {
         {item.checked_by && item.checked_at
           ? ` · decided by ${item.checked_by}, ${when(item.checked_at)}`
           : ''}
-      </Meta>
+      </p>
       <CheckForm item={item} withRedactLink />
-    </Card>
+    </article>
   );
 }
 
@@ -291,22 +283,29 @@ function CheckForm({
     (outcome !== 'illegal' || (reason !== '' && sure));
   const redactPath = { to: '/moderate/texts/$ref' as const, params: { ref: item.ref } };
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend className="label-face text-xs text-ink-alt">Decide</legend>
-      <RadioGroup
-        aria-label="Decide"
-        name={id}
-        value={outcome}
-        onValueChange={(v) => {
-          setOutcome(v as TextOutcome);
-        }}
-      >
-        {choices.map((o) => (
-          <RadioOption key={o} id={`${id}-${o}`} value={o} label={words[o]} />
-        ))}
-      </RadioGroup>
+    <>
+      <div role="radiogroup" aria-labelledby={`${id}-decide`}>
+        <span className="lbl" id={`${id}-decide`}>
+          Decide
+        </span>
+        <Choices>
+          {choices.map((o) => (
+            <Choice
+              key={o}
+              name={id}
+              value={o}
+              checked={outcome === o}
+              onChange={() => {
+                setOutcome(o);
+              }}
+            >
+              {words[o]}
+            </Choice>
+          ))}
+        </Choices>
+      </div>
       {outcome === 'illegal' ? (
-        <div className="flex flex-col gap-3 rounded-card border border-line p-3">
+        <>
           <Field>
             <Label>Why it is illegal</Label>
             <Select
@@ -323,15 +322,16 @@ function CheckForm({
               ))}
             </Select>
           </Field>
-          <CheckOption
+          <Check
             id={`${id}-sure`}
-            label="The words will be erased now and cannot be brought back. A marker stays."
             checked={sure}
-            onCheckedChange={(on) => {
-              setSure(on === true);
+            onChange={(e) => {
+              setSure(e.target.checked);
             }}
-          />
-        </div>
+          >
+            The words will be erased now and cannot be brought back. A marker stays.
+          </Check>
+        </>
       ) : null}
       {outcome !== '' && outcome !== 'redacted' ? (
         <Field>
@@ -350,10 +350,10 @@ function CheckForm({
           />
         </Field>
       ) : null}
-      {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
+      {save.isError ? <Problem>{save.error.message}</Problem> : null}
+      <div className="acts">
+        <Btn
+          kind="ink"
           disabled={!ready || save.isPending}
           onClick={() => {
             if (outcome === 'redacted') {
@@ -364,14 +364,14 @@ function CheckForm({
           }}
         >
           {outcome === 'redacted' ? 'Write the note' : 'Record the decision'}
-        </Button>
+        </Btn>
         {withRedactLink && item.shared ? (
-          <Button asChild variant="secondary">
-            <Link {...redactPath}>Write a note</Link>
-          </Button>
+          <Link className="btn sm flat" {...redactPath}>
+            Write a note
+          </Link>
         ) : null}
       </div>
-    </fieldset>
+    </>
   );
 }
 
@@ -428,44 +428,42 @@ export function RedactPage({ textRef }: { textRef: string }) {
     setBody(`${copy.slice(0, at)}"${picked}"${copy.slice(end)}`);
   };
   return (
-    <div className="flex flex-col gap-6">
-      <StaffHead title={title} mono />
-      <Button asChild variant="quiet" className="self-start">
-        <Link to="/moderate/texts">← Written accounts</Link>
-      </Button>
+    <StaffPage title={title} mono>
+      <Back to="/moderate/texts">Written accounts</Back>
       {q.isPending ? <p role="status">Reading it…</p> : null}
-      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      {q.isError ? <Problem>{q.error.message}</Problem> : null}
       {item ? (
-        <div className="grid items-start gap-6 md:grid-cols-2">
-          <Card variant="quiet" heading="The original · kept, never changed">
-            <div ref={originalBox}>
-              <Reveal
-                textRef={textRef}
-                onOpened={() => {
-                  setShown(true);
-                }}
-              />
-            </div>
-            {shown ? (
-              <>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  className="self-start"
-                  onMouseDown={(e) => {
-                    // Keep the selection while the button is pressed.
-                    e.preventDefault();
+        <div className="grid2 even">
+          <div className="col">
+            <Panel kind="quiet" title="The original · kept, never changed">
+              <div ref={originalBox}>
+                <Reveal
+                  textRef={textRef}
+                  onOpened={() => {
+                    setShown(true);
                   }}
-                  onClick={quote}
-                >
-                  Quote selection
-                </Button>
-                {quoteError ? <Alert tone="serious">{quoteError}</Alert> : null}
-              </>
-            ) : null}
-          </Card>
-          <div className="flex flex-col gap-6">
-            <Card heading="The note journalists read">
+                />
+              </div>
+              {shown ? (
+                <>
+                  <div className="acts">
+                    <Btn
+                      onMouseDown={(e) => {
+                        // Keep the selection while the button is pressed.
+                        e.preventDefault();
+                      }}
+                      onClick={quote}
+                    >
+                      Quote selection
+                    </Btn>
+                  </div>
+                  {quoteError ? <Problem>{quoteError}</Problem> : null}
+                </>
+              ) : null}
+            </Panel>
+          </div>
+          <div className="col">
+            <Panel title="The note journalists read">
               <Field>
                 <Label>Your note</Label>
                 <Textarea
@@ -495,84 +493,80 @@ export function RedactPage({ textRef }: { textRef: string }) {
                   }}
                 />
               </Field>
-              {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
+              {save.isError ? <Problem>{save.error.message}</Problem> : null}
               {save.isSuccess ? (
                 <p role="status">Saved. Journalists can now read this note.</p>
               ) : null}
-              <Button
-                type="button"
-                className="self-start"
-                disabled={save.isPending || why.trim().length < WHY_MIN || copy.trim() === ''}
-                onClick={() => {
-                  save.mutate(copy);
-                }}
-              >
-                Save the note
-              </Button>
-              <p className="text-sm text-ink-alt">
-                Saving gives journalists this note, and never the original.
-              </p>
-            </Card>
+              <div className="acts">
+                <Btn
+                  kind="ink"
+                  disabled={save.isPending || why.trim().length < WHY_MIN || copy.trim() === ''}
+                  onClick={() => {
+                    save.mutate(copy);
+                  }}
+                >
+                  Save the note
+                </Btn>
+              </div>
+              <p className="m">Saving gives journalists this note, and never the original.</p>
+            </Panel>
             {red ? (
-              <Card variant="quiet" heading="Review of the note">
-                <p className="text-sm">
+              <Panel kind="quiet" title="Review of the note">
+                <p>
                   Written by {red.redacted_by}, {when(red.redacted_at)}. Reason: {red.reason}
                 </p>
                 {red.review_verdict ? (
-                  <p className="text-sm">
+                  <p>
                     {red.review_verdict === 'approved' ? 'Approved' : 'Returned'} by{' '}
                     {red.reviewed_by ?? 'a reviewer'}
                     {red.reviewed_at ? `, ${when(red.reviewed_at)}` : ''}.
                   </p>
                 ) : (
                   <>
-                    <p className="text-sm text-ink-alt">
+                    <p className="muted">
                       Another moderator, or the owner, reviews it. Returning it deletes the note and
                       the account waits again.
                     </p>
-                    {review.isError ? <Alert tone="serious">{review.error.message}</Alert> : null}
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
+                    {review.isError ? <Problem>{review.error.message}</Problem> : null}
+                    <div className="acts">
+                      <Btn
+                        kind="ink"
                         disabled={review.isPending}
                         onClick={() => {
                           review.mutate('approved');
                         }}
                       >
                         Approve the note
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="secondary"
+                      </Btn>
+                      <Btn
                         disabled={review.isPending}
                         onClick={() => {
                           review.mutate('returned');
                         }}
                       >
                         Return it
-                      </Button>
+                      </Btn>
                     </div>
                   </>
                 )}
-              </Card>
+              </Panel>
             ) : null}
           </div>
         </div>
       ) : null}
       {q.data?.history.length ? (
-        <Card variant="quiet" heading="History">
-          <ol className="flex flex-col gap-1 font-mono text-sm">
-            {q.data.history.map((h) => (
-              <li key={`${h.at}-${h.kind}`}>
-                {when(h.at)} · {h.kind.replace('_', ' ')} · {h.by}
-                {h.reason_category ? ` · ${h.reason_category}` : ''}
-                {h.reason ? ` · ${h.reason}` : ''}
-              </li>
-            ))}
-          </ol>
-        </Card>
+        <Panel kind="quiet" title="History">
+          <div className="code">
+            {q.data.history
+              .map(
+                (h) =>
+                  `${when(h.at)} · ${h.kind.replace('_', ' ')} · ${h.by}${h.reason_category ? ` · ${h.reason_category}` : ''}${h.reason ? ` · ${h.reason}` : ''}`,
+              )
+              .join('\n')}
+          </div>
+        </Panel>
       ) : null}
-    </div>
+    </StaffPage>
   );
 }
 
@@ -589,14 +583,14 @@ export function ReportWritten({ threadId }: { threadId: string }) {
     queryFn: ({ signal }) => call(getReportWritten, { params: { threadId }, signal }),
   });
   const data = q.data;
-  if (!data) return q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null;
+  if (!data) return q.isError ? <Problem>{q.error.message}</Problem> : null;
   if (!data.texts.length && !data.links.length && !data.erased.length) return null;
   return (
     <>
       {data.texts.map((t) => (
-        <Card key={t.ref} heading="Written account · not published">
+        <Panel key={t.ref} title="Written account · not published">
           <Reveal textRef={t.ref} />
-          <p className="text-sm text-ink-alt">
+          <p className="m">
             {characters(t.length)} ·{' '}
             {t.shared
               ? 'the reporter allows vetted journalists to read it'
@@ -605,51 +599,46 @@ export function ReportWritten({ threadId }: { threadId: string }) {
           </p>
           <CheckForm item={t} long />
           {t.shared ? (
-            <Button asChild variant="quiet" className="self-start">
-              <Link to="/moderate/texts/$ref" params={{ ref: t.ref }}>
+            <div className="acts">
+              <Link className="btn sm flat ghost" to="/moderate/texts/$ref" params={{ ref: t.ref }}>
                 Write a note
               </Link>
-            </Button>
+            </div>
           ) : null}
-        </Card>
+        </Panel>
       ))}
       {data.erased
         .filter((e) => e.kind === 'private_text')
         .map((e) => (
-          <Alert
-            key={`${e.kind}-${e.field_key}-${e.erased_at}`}
-            tone="note"
-            title="Written account erased"
-          >
-            {when(e.erased_at)}. The words are gone; this marker stays.
-          </Alert>
+          <Note key={`${e.kind}-${e.field_key}-${e.erased_at}`}>
+            <span>
+              <b>Written account erased</b> {when(e.erased_at)}. The words are gone; this marker
+              stays.
+            </span>
+          </Note>
         ))}
       {data.links.length ? (
-        <Card heading="Link · not published">
-          <ul className="flex flex-col gap-3">
-            {data.links.map((l) => (
-              <li key={l.ref} className="flex flex-col gap-1">
-                <Reveal textRef={l.ref} label="Show the link" mono />
-                <p className="text-sm text-ink-alt">
-                  {l.also_tips || l.also_reports ? alsoSent(l.also_tips, l.also_reports) : ''}
-                  {l.outcome ? `Checked once as ${l.outcome}. ` : 'Not checked yet. '}
-                  Checked once, on{' '}
-                  <Link to="/lists/links" className="underline">
-                    Links
-                  </Link>
-                  , for every copy.
-                </p>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        <Panel title="Link · not published">
+          {data.links.map((l) => (
+            <div key={l.ref} className="col">
+              <Reveal textRef={l.ref} label="Show the link" mono />
+              <p className="m">
+                {l.also_tips || l.also_reports ? alsoSent(l.also_tips, l.also_reports) : ''}
+                {l.outcome ? `Checked once as ${l.outcome}. ` : 'Not checked yet. '}
+                Checked once, on <Link to="/lists/links">Links</Link>, for every copy.
+              </p>
+            </div>
+          ))}
+        </Panel>
       ) : null}
       {data.erased
         .filter((e) => e.kind === 'private_link')
         .map((e) => (
-          <Alert key={`${e.kind}-${e.field_key}-${e.erased_at}`} tone="note" title="Link erased">
-            {when(e.erased_at)}. The address is gone; this marker stays.
-          </Alert>
+          <Note key={`${e.kind}-${e.field_key}-${e.erased_at}`}>
+            <span>
+              <b>Link erased</b> {when(e.erased_at)}. The address is gone; this marker stays.
+            </span>
+          </Note>
         ))}
     </>
   );
