@@ -52,7 +52,15 @@ async function erasedMarkers(db: Db, reportIds: readonly number[]) {
 /** The moderator's report page: the newest version's words and links, and the tombstones. */
 export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
   const { head, all } = await threadReports(db, threadId);
-  const held = await readForModerator(db, keys, [head]);
+  // Ids and groups only: no value is decrypted for a link here, and the words
+  // are opened one at a time through openText, which logs each opening.
+  const held = await db
+    .selectFrom('report_values')
+    .select(['id', 'kind', 'group_id'])
+    .where('report_id', '=', head)
+    .orderBy('position')
+    .orderBy('id')
+    .execute();
   const ids = held.filter((h) => h.kind === 'private_text').map((h) => h.id);
   const cands = ids.length
     ? await db
@@ -84,7 +92,9 @@ export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
       checked_by: c.checked_by,
     })),
   );
-  const groupIds = held.flatMap((h) => (h.kind === 'private_link' && h.groupId ? [h.groupId] : []));
+  const groupIds = held.flatMap((h) =>
+    h.kind === 'private_link' && h.group_id ? [h.group_id] : [],
+  );
   const groups = groupIds.length
     ? await db
         .selectFrom('link_groups')
@@ -94,28 +104,28 @@ export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
     : [];
   const links = [];
   for (const h of held.filter((x) => x.kind === 'private_link')) {
-    const g = groups.find((x) => x.id === h.groupId);
+    const g = groups.find((x) => x.id === h.group_id);
     let alsoTips = 0;
     let alsoReports = 0;
-    if (h.groupId) {
+    if (h.group_id) {
       const t = await db
         .selectFrom('links')
         .select((eb) => eb.fn.countAll<string>().as('n'))
-        .where('group_id', '=', h.groupId)
+        .where('group_id', '=', h.group_id)
         .executeTakeFirstOrThrow();
       alsoTips = Number(t.n);
       const r = await db
         .selectFrom('report_values as rv')
         .innerJoin('report_heads as hd', 'hd.current_report_id', 'rv.report_id')
         .select((eb) => eb.fn.count<string>('hd.thread_id').distinct().as('n'))
-        .where('rv.group_id', '=', h.groupId)
+        .where('rv.group_id', '=', h.group_id)
         .where('hd.thread_id', '<>', threadId)
         .executeTakeFirstOrThrow();
       alsoReports = Number(r.n);
     }
     links.push({
-      group_id: h.groupId,
-      url: h.value,
+      group_id: h.group_id,
+      ref: `link-${String(h.id)}`,
       outcome: (g?.outcome ?? null) as 'checked' | 'withheld' | 'illegal' | null,
       also_tips: alsoTips,
       also_reports: alsoReports,

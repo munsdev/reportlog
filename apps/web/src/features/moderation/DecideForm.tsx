@@ -11,18 +11,42 @@
  * every decision with a written reason (queue.ts, `reasonOf`), and that rule
  * has its own test. So the form asks for it, and says it is never sent.
  */
-import { REJECTION_REASONS, decideReport } from '@reportlog/contracts';
+import {
+  REJECTION_REASONS,
+  TEXT_ERASE_REASONS,
+  decideReport,
+  getReportWritten,
+} from '@reportlog/contracts';
 import type { QueueItem } from '@reportlog/contracts';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
+import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
+
+const WHY_MIN = 10;
+const WHY_MAX = 500;
+
+interface WrittenChoice {
+  outcome: string;
+  why: string;
+  reason: string;
+}
+const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '' };
+const ERASE_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
+  'child-sexual-abuse': 'Child sexual abuse material',
+  'terrorist-content': 'Terrorist content',
+  'non-consensual-intimate-imagery': 'Intimate images shared without consent',
+  'incitement-or-threats': 'Incitement or threats',
+  'other-illegal': 'Other illegal content',
+  'personal-data': 'Personal data that must not be kept',
+};
 
 export type Decision = 'valid' | 'invalid' | 'unknown';
 
@@ -55,7 +79,7 @@ export function DecideForm({
   onCancel,
   focusOnOpen = false,
 }: {
-  report: Pick<QueueItem, 'thread_id' | 'public_ref'>;
+  report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written'>;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
   initial?: Decision | undefined;
   onDecided?: (d: Decided) => void;
@@ -71,10 +95,12 @@ export function DecideForm({
   const [choice, setChoice] = useState<Decision | ''>(initial ?? '');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
+  const [written, setWritten] = useState<Record<string, WrittenChoice>>({});
   const [problems, setProblems] = useState<{
     choice?: string | undefined;
     reason?: string | undefined;
     note?: string | undefined;
+    written?: string | undefined;
   }>({});
   const choiceRef = useRef<HTMLDivElement>(null);
   const reasonRef = useRef<HTMLSelectElement>(null);
@@ -90,6 +116,39 @@ export function DecideForm({
     choiceRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
   }, [focusOnOpen]);
 
+  // Approving a report that holds a written account or link nobody has
+  // decided asks for a decision on each, with a reason, in this same step.
+  const needsWritten = choice === 'valid' && report.has_undecided_written;
+  const panel = useQuery({
+    queryKey: ['written', report.thread_id],
+    queryFn: ({ signal }) =>
+      call(getReportWritten, { params: { threadId: report.thread_id }, signal }),
+    enabled: needsWritten,
+  });
+  const undecided = needsWritten
+    ? [
+        ...(panel.data?.texts ?? [])
+          .filter((t) => t.outcome === null)
+          .map((t) => ({ ref: t.ref, name: 'Written account', shared: t.shared })),
+        ...(panel.data?.links ?? [])
+          .filter((l) => l.outcome === null && l.group_id !== null)
+          .map((l) => ({ ref: l.ref, name: 'Link', shared: panel.data?.shared ?? false })),
+      ]
+    : [];
+  const choiceOf = (ref: string) => written[ref] ?? EMPTY_CHOICE;
+  const setChoiceOf = (ref: string, patch: Partial<WrittenChoice>) => {
+    setWritten((w) => ({ ...w, [ref]: { ...(w[ref] ?? EMPTY_CHOICE), ...patch } }));
+  };
+  const writtenReady = undecided.every((u) => {
+    const c = choiceOf(u.ref);
+    return (
+      c.outcome !== '' &&
+      c.why.trim().length >= WHY_MIN &&
+      c.why.trim().length <= WHY_MAX &&
+      (c.outcome !== 'illegal' || c.reason !== '')
+    );
+  });
+
   const decide = useMutation({
     mutationFn: (status: Decision) =>
       call(decideReport, {
@@ -98,6 +157,19 @@ export function DecideForm({
           status,
           ...(note.trim() ? { comment: note.trim() } : {}),
           ...(status === 'invalid' ? { reason_code: reason } : {}),
+          ...(status === 'valid' && undecided.length
+            ? {
+                written: undecided.map((u) => {
+                  const c = choiceOf(u.ref);
+                  return {
+                    ref: u.ref,
+                    outcome: c.outcome,
+                    why: c.why.trim(),
+                    ...(c.outcome === 'illegal' ? { reason: c.reason } : {}),
+                  };
+                }),
+              }
+            : {}),
         },
       }),
     onSuccess: async (out, status) => {
@@ -127,6 +199,14 @@ export function DecideForm({
     }
     if (found.note) {
       noteRef.current?.focus();
+      return;
+    }
+    if (needsWritten && (panel.isPending || !writtenReady)) {
+      setProblems((p) => ({
+        ...p,
+        written:
+          'Decide each written account and link below, with a reason of 10 to 500 characters.',
+      }));
       return;
     }
     if (choice) decide.mutate(choice);
@@ -198,6 +278,82 @@ export function DecideForm({
           </Select>
           <FieldError>{problems.reason}</FieldError>
         </Field>
+      ) : null}
+      {needsWritten ? (
+        <fieldset className="flex flex-col gap-4 rounded-card border border-line p-3">
+          <legend className="label-face text-sm">Written accounts and links</legend>
+          <p className="text-sm text-ink-alt">
+            This report holds words or links nobody has decided yet. Decide each one, with a reason.
+            Open them on the report page first if you need to read them.
+          </p>
+          {panel.isPending ? <p role="status">Reading what the report holds…</p> : null}
+          {panel.isError ? <Alert tone="serious">{panel.error.message}</Alert> : null}
+          {undecided.map((u) => {
+            const c = choiceOf(u.ref);
+            const options = u.shared
+              ? [
+                  ['checked', 'Checked: journalists may read it'],
+                  ['withheld', 'Withheld: nobody outside moderation reads it'],
+                  ['illegal', 'Illegal: erase it now'],
+                ]
+              : [
+                  ['withheld', 'Withheld: nobody outside moderation reads it'],
+                  ['illegal', 'Illegal: erase it now'],
+                ];
+            return (
+              <div key={u.ref} className="flex flex-col gap-3">
+                <Field>
+                  <Label>{`${u.name}: your decision`}</Label>
+                  <Select
+                    value={c.outcome}
+                    onChange={(e) => {
+                      setChoiceOf(u.ref, { outcome: e.target.value });
+                    }}
+                  >
+                    <option value="">Choose one</option>
+                    {options.map(([v, label]) => (
+                      <option key={v} value={v}>
+                        {label}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                {c.outcome === 'illegal' ? (
+                  <Field>
+                    <Label>Why it is illegal</Label>
+                    <Select
+                      value={c.reason}
+                      onChange={(e) => {
+                        setChoiceOf(u.ref, { reason: e.target.value });
+                      }}
+                    >
+                      <option value="">Choose one</option>
+                      {TEXT_ERASE_REASONS.filter(
+                        (r) => u.name !== 'Link' || r !== 'personal-data',
+                      ).map((r) => (
+                        <option key={r} value={r}>
+                          {ERASE_WORDS[r]}
+                        </option>
+                      ))}
+                    </Select>
+                  </Field>
+                ) : null}
+                <Field>
+                  <Label>{`${u.name}: why (for the record)`}</Label>
+                  <FieldDescription>10 to 500 characters. Only staff can read it.</FieldDescription>
+                  <Input
+                    value={c.why}
+                    maxLength={WHY_MAX}
+                    onChange={(e) => {
+                      setChoiceOf(u.ref, { why: e.target.value });
+                    }}
+                  />
+                </Field>
+              </div>
+            );
+          })}
+          <FieldError>{problems.written}</FieldError>
+        </fieldset>
       ) : null}
       <Field>
         <Label optional>Note for the record (never sent)</Label>

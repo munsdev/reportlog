@@ -33,6 +33,8 @@ export interface CheckInput {
   reason?: ReasonCategory | undefined;
   /** "illegal" only: also blocklist the exact address, or its whole domain. */
   block?: BlockKind | undefined;
+  /** Why, 10 to 500 characters, kept internally with the check. Asked when a report is approved. */
+  why?: string | undefined;
 }
 
 export async function checkGroup(
@@ -54,7 +56,12 @@ export async function checkGroup(
 
     await trx
       .insertInto('link_checks')
-      .values({ group_id: groupId, outcome: input.outcome, actor_email: input.actor })
+      .values({
+        group_id: groupId,
+        outcome: input.outcome,
+        actor_email: input.actor,
+        reason: input.why ?? null,
+      })
       .execute();
 
     if (input.outcome !== 'illegal') {

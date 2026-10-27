@@ -48,7 +48,10 @@ export type TextRedactionInfo = z.infer<typeof TextRedactionInfo>;
 export const TextItem = z.object({
   ref: z.string(),
   source: TextSource,
-  /** The words as written. Null only if they could not be opened. */
+  /**
+   * Always null in a list or a page: the words come only from `openText`,
+   * which logs the opening first. (Kept in the shape for the screens that show them once opened.)
+   */
   text: z.string().nullable(),
   length: z.number().int(),
   outcome: TextOutcome.nullable(),
@@ -112,6 +115,8 @@ export const TextHistoryItem = z.object({
     'review_returned',
   ]),
   reason_category: z.string().nullable(),
+  /** The reason the moderator gave. Internal; null on decisions made before reasons were asked. */
+  reason: z.string().nullable(),
 });
 
 export const getText = defineRoute({
@@ -147,8 +152,19 @@ export const checkText = defineRoute({
     outcome: z.string(),
     /** Required for "illegal": one of TEXT_ERASE_REASONS. */
     reason: z.string().optional(),
+    /** Why, 10 to 500 characters. Required. Internal: staff see it in the history, nobody else. */
+    why: z.string().optional(),
   }),
   response: z.object({ outcome: TextOutcome, erased: z.boolean() }),
+});
+
+export const openText = defineRoute({
+  method: 'POST',
+  path: '/api/moderation/texts/:ref/open',
+  summary:
+    'Show one written account or link. Each press writes an entry in the access log first. No reason is asked.',
+  params: RefParams,
+  response: z.object({ text: z.string() }),
 });
 
 export const redactText = defineRoute({
@@ -160,7 +176,7 @@ export const redactText = defineRoute({
   body: z.object({
     /** The copy. Parts removed are marked in square brackets, e.g. [name removed]. */
     body: z.string(),
-    /** Why, for the record (1 to 500 characters). Never shown to a journalist. */
+    /** Why, for the record (10 to 500 characters). Never shown to a journalist. */
     why: z.string(),
   }),
   response: z.object({ outcome: z.literal('redacted') }),
@@ -181,7 +197,8 @@ export const reviewRedaction = defineRoute({
 export const ReportLinkPanel = z.object({
   /** link_groups.id: the check is made once on the Links page, for every copy. */
   group_id: z.number().int().nullable(),
-  url: z.string(),
+  /** Names the link for `openText`; the address itself is not in this list. */
+  ref: z.string(),
   outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
   /** Tips and other reports that sent the same address, besides this one. */
   also_tips: z.number().int(),

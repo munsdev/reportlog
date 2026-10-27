@@ -28,6 +28,7 @@ import { HttpError, notFound } from '../http/errors.ts';
 import { permissionsForMany } from '../permissions/log.ts';
 import type { Severity } from './assessment.ts';
 import { clearFlag } from './flags.ts';
+import { WRITTEN_SKIP_WHY, holdsUndecided, undecidedWritten } from './texts/approval.ts';
 
 export const DECISIONS = ['valid', 'invalid', 'unknown'] as const;
 export type Decision = (typeof DECISIONS)[number];
@@ -265,6 +266,19 @@ export async function listQueue(
       .as('versions'),
     answerSet.as('answer_set'),
     organizationOf.as('organization_id'),
+    // Holds a written account or link nobody has decided yet: it cannot be
+    // approved in a batch (approval.ts). Ids only; nothing is decrypted.
+    sql<boolean>`exists (
+      select 1 from report_values wv
+       where wv.report_id = h.current_report_id
+         and ((wv.kind = 'private_text'
+               and not exists (select 1 from text_items wt
+                                where wt.fingerprint = wv.fingerprint and wt.outcome is not null))
+           or (wv.kind = 'private_link'
+               and exists (select 1 from link_groups wg
+                            where wg.id = wv.group_id and wg.outcome is null))))`.as(
+      'has_undecided_written',
+    ),
   ]);
 
   const status = filter.status ?? 'all';
@@ -302,6 +316,7 @@ export async function listQueue(
     reporter_withdrew: Boolean(r.reporter_withdrew),
     origin: r.third_party === true ? ('organization' as const) : ('open_form' as const),
     organization_id: r.organization_id,
+    has_undecided_written: r.has_undecided_written,
   }));
 }
 
@@ -391,6 +406,9 @@ export const BATCH_REASON = 'Approved in a batch.';
  * the comment. No reason is asked: the moderator has read them, and the
  * reason for approving is the standard.
  *
+ * A report holding a written account or link nobody has decided yet is
+ * skipped too: those need their own look, with a reason.
+ *
  * A report that cannot be approved here is skipped with the reason, never
  * approved anyway: one withdrawn report must not stop the other ninety-nine,
  * and must not be put back on the board by being in the same list.
@@ -405,6 +423,10 @@ export async function decideBatch(db: Kysely<DB>, threadIds: readonly string[], 
         if (head.withdrawn) throw refuse(409, 'withdrawn', 'It is withdrawn.');
         if (head.moderation_status === 'valid')
           throw refuse(409, 'already', 'It is already approved.');
+        // Words and links are decided on their own, with a reason (approval.ts).
+        if (holdsUndecided(await undecidedWritten(trx, head.current_report_id))) {
+          throw refuse(409, 'written_needs_look', WRITTEN_SKIP_WHY);
+        }
         await trx
           .updateTable('report_heads')
           .set({ moderation_status: 'valid', updated_at: new Date() })

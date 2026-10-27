@@ -616,7 +616,12 @@ describe('W5 · the desk reads checked text and report links, while the reporter
   let cleared: Awaited<ReturnType<typeof fileHeld>>;
 
   const ok = async (outcome: 'checked' | 'withheld', ref: string) =>
-    checkText(h.db, keys, ref, { outcome, reason: undefined, actor: MOD });
+    checkText(h.db, keys, ref, {
+      outcome,
+      reason: undefined,
+      why: 'Checked for the record.',
+      actor: MOD,
+    });
   const desk = async (path: string) => {
     const r = await call({ method: 'GET', url: path });
     expect(r.statusCode, r.body).toBe(200);
@@ -691,6 +696,7 @@ describe('W5 · the desk reads checked text and report links, while the reporter
     await checkText(h.db, keys, `tip-${String(await tipEntryId())}-description`, {
       outcome: 'checked',
       reason: undefined,
+      why: 'Checked for the record.',
       actor: MOD,
     });
   });
@@ -846,7 +852,12 @@ describe('W5 · the desk reads checked text and report links, while the reporter
     const ref = await textRef(h.db, victim.reportId);
     await ok('checked', ref);
     expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(true);
-    await checkText(h.db, keys, ref, { outcome: 'illegal', reason: 'other-illegal', actor: MOD });
+    await checkText(h.db, keys, ref, {
+      outcome: 'illegal',
+      reason: 'other-illegal',
+      why: 'Checked for the record.',
+      actor: MOD,
+    });
     expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(false);
     for (const u of ['/api/desk/texts.csv', '/api/desk/texts/all']) {
       expect((await call({ method: 'GET', url: u })).statusCode, u).toBe(404);

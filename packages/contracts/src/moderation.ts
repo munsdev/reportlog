@@ -59,6 +59,8 @@ export const QueueItem = z.object({
   review_terms: z.array(z.string()),
   notes_enabled: z.boolean(),
   has_note: z.boolean(),
+  /** Holds a written account or link nobody has decided: no batch approval, its own look. */
+  has_undecided_written: z.boolean(),
   has_contact: z.boolean(),
   file_count: z.number().int(),
   /** How many of this version's files a moderator has published (workstream F's decision, per file). */
@@ -227,6 +229,22 @@ export const decideReport = defineRoute({
   body: z.object({
     status: z.string().optional(),
     comment: z.string().optional(),
+    /**
+     * Approving a report that holds written accounts or links nobody has
+     * decided: one decision for each, with a reason (10 to 500 characters).
+     * `ref` is the item's ref from the report's written panel.
+     */
+    written: z
+      .array(
+        z.object({
+          ref: z.string(),
+          outcome: z.string(),
+          why: z.string(),
+          /** "illegal" only. */
+          reason: z.string().optional(),
+        }),
+      )
+      .optional(),
     /** Required to decline: the reason from the fixed list that the reporter is emailed (platform.ts). */
     reason_code: z.string().optional(),
   }),
@@ -382,8 +400,10 @@ export const getAccessLog = defineRoute({
         /** Unique across both logs this reads (contact_access_log and F's file events). */
         id: z.string(),
         staff_email: z.string(),
-        /** contact, contact_used, file_preview, file_original, chain_file, or audit_log. */
+        /** contact, contact_used, file_preview, file_original, chain_file, text_read, or audit_log. */
         kind: z.string(),
+        /** A text_read's item (report-12, tip-3-what, link-9); null for every other kind. */
+        read_ref: z.string().nullable(),
         reason: z.string().nullable(),
         accessed_at: Timestamp,
         thread_id: z.string().nullable(),

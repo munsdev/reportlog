@@ -33,7 +33,16 @@ export const LOOKED: Record<string, string> = {
   chain_file: 'Downloaded the complete chain file',
   desk_link: 'Read a checked link on the journalist desk',
   desk_report: 'Read the Sources on the journalist desk',
+  text_read: 'Opened a written account or link',
 };
+
+/** What a text_read opened, in words: report-12 is a written account, link-9 a link, tip-3-x a tip. */
+const readName = (ref: string) =>
+  ref.startsWith('link-')
+    ? 'a link'
+    : ref.startsWith('tip-')
+      ? 'a tip’s description'
+      : 'a written account';
 
 const when = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('T', ' ');
 const day = (iso: string) =>
@@ -50,7 +59,7 @@ export function AccessLogPage() {
   return (
     <StaffPage
       title="Who opened protected data"
-      lede="Every look at protected data, with the reason given."
+      lede="Every look at protected data. Contact details and files carry the reason given; opening a written account or link is recorded without one."
     >
       {query.isPending ? <p role="status">Reading the log…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
@@ -92,11 +101,16 @@ export function AccessLogPage() {
                     <td>
                       {LOOKED[e.kind] ?? 'Opened'}
                       {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`}
+                      {e.read_ref === null ? '' : ` (${readName(e.read_ref)})`}
                     </td>
                     <td className="font-mono whitespace-nowrap">
                       {e.public_ref ?? e.logbook ?? (
                         <span className="font-sans text-ink-alt">
-                          {e.kind === 'desk_link' ? 'None' : 'A report'}
+                          {e.kind === 'desk_link'
+                            ? 'None'
+                            : e.read_ref?.startsWith('tip-')
+                              ? 'A tip'
+                              : 'A report'}
                         </span>
                       )}
                     </td>

@@ -130,6 +130,7 @@ export interface ContactAccessLog {
   kind: string;
   link_group_id: number | null;
   logbook_id: number | null;
+  read_ref: string | null;
   reason: string | null;
   report_id: number | null;
   staff_email: string;
@@ -464,6 +465,7 @@ export interface LinkChecks {
   group_id: number;
   id: Generated<number>;
   outcome: string;
+  reason: string | null;
 }
 
 export interface LinkComments {
@@ -1054,6 +1056,7 @@ export interface TextChecks {
   id: Generated<number>;
   item_id: number;
   outcome: string;
+  reason: string | null;
   reason_category: string | null;
 }
 

@@ -614,6 +614,10 @@ function FilterPanel({
 
 const selectable = (r: QueueItem) => r.moderation_status !== 'valid' && !r.withdrawn;
 
+/** Why a row's batch box is off. Shown on the row, not hidden. */
+const WRITTEN_WHY = 'It has a written account, which needs its own look.';
+const needsOwnLook = (r: QueueItem) => selectable(r) && r.has_undecided_written;
+
 function QueueList({
   search,
   status,
@@ -656,7 +660,7 @@ function QueueList({
     setOpen(threadId);
   };
 
-  const pickable = data.reports.filter(selectable);
+  const pickable = data.reports.filter((r) => selectable(r) && !needsOwnLook(r));
   const filtered =
     Boolean(search.q) || Boolean(search.flagged) || PANEL_KEYS.some((k) => Boolean(search[k]));
 
@@ -708,7 +712,7 @@ function QueueList({
               search={search}
               picked={picked.has(r.thread_id)}
               onPick={
-                selectable(r)
+                selectable(r) && !needsOwnLook(r)
                   ? (on) => {
                       setPicked((was) => {
                         const next = new Set(was);
@@ -799,9 +803,20 @@ function QueueRow({
   onDecided: (d: { status: 'valid' | 'invalid' | 'unknown'; notice: string }) => void;
 }) {
   const formId = useId();
+  const whyId = useId();
+  const blocked = needsOwnLook(r);
   return (
     <Card className="flex-row items-start gap-3 p-4 sm:gap-4 sm:p-5">
-      {onPick ? (
+      {blocked ? (
+        <span className="-m-2.5 flex size-11 shrink-0 items-center justify-center">
+          <Checkbox
+            aria-label={`Select ${r.public_ref}`}
+            aria-describedby={whyId}
+            checked={false}
+            disabled
+          />
+        </span>
+      ) : onPick ? (
         // The box is small; an edge drawn around it, inside the control, makes
         // the 44px target.
         <span className="-m-2.5 flex size-11 shrink-0 items-center justify-center">
@@ -828,6 +843,11 @@ function QueueRow({
               {r.origin === 'organization' ? <Chip tone="tag">Organization</Chip> : null}
               {r.public ? <Chip tone="tag">Public</Chip> : null}
             </div>
+            {blocked ? (
+              <p id={whyId} className="text-sm text-ink-alt">
+                {WRITTEN_WHY}
+              </p>
+            ) : null}
             <AnswerLine slug={r.logbook_slug} answers={r.answers} />
             <Meta>
               {r.public_ref} · {r.logbook_title} · arrived {when(r.received_at)}

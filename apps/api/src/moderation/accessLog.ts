@@ -17,6 +17,10 @@
  *   - a file's re-encoded copy, a still or a page: `recordFilePreview`,
  *     called by F's view route ('file_preview'). For oversight only; the
  *     reporter is not shown these;
+ *   - a moderator, administrator or owner pressing "Show the written account"
+ *     (or the link): `openText` in texts/items.ts writes 'text_read' first, with
+ *     no typed reason. Never shown to a reporter (`accessesForThreads` lists
+ *     only contact kinds);
  *   - a read of this log by an administrator ('audit_log').
  *
  * THE ONLY WAY TO READ CONTACT DETAILS FOR STAFF IS `openContactLogged`. It
@@ -182,6 +186,7 @@ export async function recentAccesses(
       'a.id',
       'a.staff_email',
       'a.kind',
+      'a.read_ref',
       'a.reason',
       'a.accessed_at',
       'a.thread_id',
@@ -221,6 +226,7 @@ export async function recentAccesses(
       // A moderator's event always carries the address (F's CHECK).
       staff_email: e.actor_email ?? '',
       kind: 'file_original',
+      read_ref: null,
       reason: e.reason,
       accessed_at: e.created_at,
       thread_id: e.thread_id,

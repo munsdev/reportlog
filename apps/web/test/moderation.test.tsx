@@ -49,6 +49,7 @@ const REPORT: QueueItem = {
   review_terms: [],
   notes_enabled: false,
   has_note: false,
+  has_undecided_written: false,
   has_contact: true,
   file_count: 0,
   published_files: 0,
