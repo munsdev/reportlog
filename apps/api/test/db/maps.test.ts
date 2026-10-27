@@ -850,6 +850,45 @@ describe('counties shown on their own, past a threshold of their own', () => {
     expect(computed.map.areas['US-AZ']?.n).toBe(3);
   });
 
+  it('places a county sealed as its five FIPS digits, and a state sealed as its postal code', async () => {
+    const CODED: FieldDefinition[] = [
+      {
+        key: 'state',
+        kind: 'location',
+        label: 'Which state',
+        settings: { scope: 'us', depth: 'state', code: 'postal' },
+      },
+      {
+        key: 'county',
+        kind: 'location',
+        label: 'Which county',
+        settings: { scope: 'us', depth: 'county', code: 'fips', within: 'state' },
+      },
+    ];
+    const byCounty = await launchedLogbook(db, CODED);
+    const byState = await launchedLogbook(db, CODED);
+    await setLogbookPlace(db, byCounty.id, 'county');
+    await setLogbookPlace(db, byState.id, 'state');
+    for (const lb of [byCounty, byState]) {
+      for (const county of ['04013', '04013', '04019'])
+        await report(lb, CODED, { state: 'AZ', county });
+    }
+    const county = await run({
+      enabled: true,
+      min_area: 1,
+      county_min: 2,
+      logbook_ids: [byCounty.id],
+    });
+    const state = await run({ enabled: true, min_area: 1, logbook_ids: [byState.id] });
+    if (!county.computed.map.published || !state.computed.map.published)
+      throw new Error('unpublished');
+    expect(county.computed.unplaced.no_question).toBe(0);
+    expect(county.computed.map.areas['US-AZ']?.n).toBe(3);
+    expect(county.computed.map.counties['US-AZ-04013']?.n).toBe(2);
+    expect(state.computed.unplaced.no_question).toBe(0);
+    expect(state.computed.map.areas['US-AZ']?.n).toBe(3);
+  });
+
   it('never shows a county below the map’s own threshold', async () => {
     const { computed } = await run({
       enabled: true,
