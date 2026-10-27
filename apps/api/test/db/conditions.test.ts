@@ -18,6 +18,7 @@ import { createFromFile, toFile } from '../../src/logbooks/logbookFile.ts';
 import * as L from '../../src/logbooks/logbooks.ts';
 import { recordCardTexts } from '../../src/consent/cards.ts';
 import { fileReport, testDatabase, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 
 const db = testDatabase();
 // A report seals an answer to card wording the server recorded.
@@ -57,7 +58,7 @@ describe('authoring', () => {
   it('refuses a condition naming a question that does not exist yet', async () => {
     const r = await refusal(
       L.addField(db, id, {
-        kind: 'short_text',
+        kind: 'private_text',
         label: 'Too early',
         key: 'too_early',
         shown_when: { field: 'not_yet', in: ['yes'] },
@@ -68,7 +69,7 @@ describe('authoring', () => {
 
   it('stores a condition on an earlier question', async () => {
     const dependent = await L.addField(db, id, {
-      kind: 'short_text',
+      kind: 'private_text',
       label: 'What is it of?',
       key: 'clip_of',
       shown_when: { field: 'has_files', in: [' yes '] },
@@ -78,10 +79,10 @@ describe('authoring', () => {
   });
 
   it('refuses a condition on free prose, and creates nothing', async () => {
-    await L.addField(db, id, { kind: 'long_text', label: 'Account', key: 'account' });
+    await L.addField(db, id, { kind: 'private_text', label: 'Account', key: 'account' });
     const r = await refusal(
       L.addField(db, id, {
-        kind: 'short_text',
+        kind: 'private_text',
         label: 'No',
         key: 'nope',
         shown_when: { field: 'account', in: ['police'] },
@@ -94,7 +95,7 @@ describe('authoring', () => {
   it('refuses a condition on an answer that question cannot give, and names it', async () => {
     const r = await refusal(
       L.addField(db, id, {
-        kind: 'short_text',
+        kind: 'private_text',
         label: 'No',
         key: 'nope2',
         shown_when: { field: 'has_files', in: ['maybe'] },
@@ -150,7 +151,7 @@ describe('authoring', () => {
       settings: { options: ['Voter', 'Observer'] },
     });
     await L.addField(db, lb.id, {
-      kind: 'short_text',
+      kind: 'private_text',
       label: 'Which organisation?',
       key: 'org',
       shown_when: { field: 'role', in: ['Observer'] },
@@ -168,7 +169,7 @@ describe('authoring', () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('off'), title: 'Off' });
     await L.addField(db, lb.id, { kind: 'yes_no', label: 'Hurt?', key: 'hurt' });
     const q = await L.addField(db, lb.id, {
-      kind: 'short_text',
+      kind: 'private_text',
       label: 'How?',
       key: 'how',
       shown_when: { field: 'hurt', in: ['yes'] },
@@ -200,6 +201,20 @@ describe('the logbook file carries it, both ways', () => {
 describe('a question nobody was asked seals nothing', () => {
   let questions: ReturnType<typeof L.toDefinitions>;
   beforeAll(async () => {
+    // These two were authored above as held notes, which is all `addField`
+    // allows now. This part is about what a SEALED text answer does when it
+    // was not asked, so before launch they become the sealed kinds a
+    // logbook made earlier still holds (a draft allows it).
+    for (const [key, kind] of [
+      ['clip_of', 'short_text'],
+      ['account', 'long_text'],
+    ] as const)
+      await db
+        .updateTable('logbook_fields')
+        .set({ kind, settings: JSON.stringify(L.settingsFor(kind, undefined)) })
+        .where('logbook_id', '=', id)
+        .where('key', '=', key)
+        .execute();
     await L.launch(db, id);
     questions = L.toDefinitions(await L.fieldsFor(db, id));
   });
@@ -247,7 +262,7 @@ describe('THE REGRESSION THAT WOULD BE WORST', () => {
   it('a logbook with no conditions hashes exactly as it did before conditions existed', async () => {
     const plainSlug = uniqueSlug('plain');
     const lb = await L.createLogbook(db, { title: 'Plain', slug: plainSlug });
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'What happened?', key: 'what' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What happened?', key: 'what' });
     const rows = await L.fieldsFor(db, lb.id);
     expect(rows[0]?.shown_when).toBeNull();
 

@@ -22,6 +22,7 @@ import {
 } from '../../src/logbooks/templates.ts';
 import { recordCardTexts } from '../../src/consent/cards.ts';
 import { fileReport, testDatabase, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 
 const db = testDatabase();
 // A report seals an answer to card wording the server recorded.
@@ -39,7 +40,7 @@ let filedRef: string;
 
 beforeAll(async () => {
   const lb = await L.createLogbook(db, { title: 'Our own', slug: uniqueSlug('own') });
-  await L.addField(db, lb.id, { kind: 'long_text', label: 'What happened', key: 'what' });
+  await addStoredQuestion(db, lb.id, { kind: 'long_text', label: 'What happened', key: 'what' });
   await L.launch(db, lb.id);
   own = lb;
   const questions = L.toDefinitions(await L.fieldsFor(db, lb.id));
@@ -95,8 +96,8 @@ describe('a starting point', () => {
       starting_point: 'how-voting-went',
       title: '',
     });
-    await L.addField(db, lb.id, { kind: 'long_text', label: 'Anything else, in your own words?' });
-    await L.addField(db, lb.id, { kind: 'file', label: 'Photos, video or documents' });
+    await addStoredQuestion(db, lb.id, { kind: 'long_text', label: 'Anything else, in your own words?' });
+    await addStoredQuestion(db, lb.id, { kind: 'file', label: 'Photos, video or documents' });
     expect((await L.logbookById(db, lb.id))?.asks_for_files).toBe(true);
   });
 
