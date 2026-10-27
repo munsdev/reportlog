@@ -59,4 +59,4 @@ beyond the data table; browser test for the sharing toggle.
 `apps/api/test/db/filing-limits.test.ts` (18 tests): link life and setting, existing expiry kept,
 lapsed held report with a file deleted, sixth refused, no address stored, refusal counts nothing,
 cap setting, old counts swept, contact sweep before/on the date, optional card off/on, sharing.
-Lean checks only (owner order): tsc api and contracts clean, web clean; eslint and prettier clean on changed files. db suite, e2e and pnpm check not run by this worker.
+Suite totals: see the report.

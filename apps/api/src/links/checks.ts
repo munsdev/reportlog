@@ -18,6 +18,8 @@ import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { addBlock } from './blocklist.ts';
 import type { BlockKind, ReasonCategory } from './blocklist.ts';
+import { eraseHeldGroup } from '../reportValues/erase.ts';
+import { openRow } from '../reportValues/store.ts';
 import { domainHash, openValue } from './keys.ts';
 import type { LinkKeys } from './keys.ts';
 import { LinkRefusal } from './refusals.ts';
@@ -80,8 +82,21 @@ export async function checkGroup(
         .select(['value_enc', 'value_key'])
         .where('group_id', '=', groupId)
         .executeTakeFirst();
-      if (!one) throw new LinkRefusal('no-domain-left');
-      const host = new URL(openValue(keys, one.value_enc, one.value_key)).hostname;
+      // A group that only reports carry has its copy in report_values.
+      const heldOne = one
+        ? undefined
+        : await trx
+            .selectFrom('report_values')
+            .select(['value_enc', 'value_key'])
+            .where('group_id', '=', groupId)
+            .executeTakeFirst();
+      const url = one
+        ? openValue(keys, one.value_enc, one.value_key)
+        : heldOne
+          ? openRow(keys, heldOne.value_enc, heldOne.value_key).value
+          : null;
+      if (url === null) throw new LinkRefusal('no-domain-left');
+      const host = new URL(url).hostname;
       await addBlock(
         trx,
         { kind: 'domain', hash: domainHash(keys, host) },
@@ -90,7 +105,10 @@ export async function checkGroup(
     }
 
     const gone = await trx.deleteFrom('links').where('group_id', '=', groupId).executeTakeFirst();
-    const erased = Number(gone.numDeletedRows);
+    // Every report's copy too, each with its tombstone (X3): the reports keep
+    // their sealed fingerprints and still verify.
+    const heldGone = await eraseHeldGroup(trx, groupId, { reason, actor: input.actor });
+    const erased = Number(gone.numDeletedRows) + heldGone;
     await trx
       .insertInto('link_erasures')
       .values({

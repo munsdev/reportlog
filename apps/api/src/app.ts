@@ -37,6 +37,7 @@ import { lookRoutes } from './looks/routes.ts';
 import { logbookRoutes } from './logbooks/routes.ts';
 import { platformRoutes } from './moderation/platformRoutes.ts';
 import { moderationRoutes } from './moderation/routes.ts';
+import { textRoutes } from './moderation/texts/routes.ts';
 import { floodRoutes } from './moderation/floodRoutes.ts';
 import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
@@ -238,6 +239,12 @@ export async function buildApp({
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     mailer: mail,
     siteOrigin,
+  });
+  textRoutes(app, {
+    db,
+    keys: linkKeys,
+    contactKey: config.CONTACT_KEY,
+    publicRefPrefix: config.PUBLIC_REF_PREFIX,
   });
   await platformRoutes(app, { db, mailer: mail, siteOrigin });
   await floodRoutes(app, { db, siteOrigin, linkKeys });

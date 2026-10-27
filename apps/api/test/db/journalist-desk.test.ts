@@ -21,7 +21,10 @@ import { createFromTemplate } from '../../src/lists/manage.ts';
 import { DEFAULT_LIST_SETTINGS } from '../../src/lists/retention.ts';
 import type { LoadedList } from '../../src/lists/rows.ts';
 import { addLink, writeNote } from '../../src/moderation/notes.ts';
+import { setPermission } from '../../src/permissions/log.ts';
+import { checkText, redactText } from '../../src/moderation/texts/items.ts';
 import { fileReport, launchedLogbook, uniqueSlug } from './helpers.ts';
+import { HELD_QUESTIONS, fileHeld, textRef } from './written-helpers.ts';
 import { address, as, roleOf, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 import { LINK_CONTACT_KEY, linkKeys } from './links-helpers.ts';
@@ -420,6 +423,7 @@ describe('J9 to J12 · the desk', () => {
         {
           url: CHECKED,
           tips: 3,
+          reports: 0,
           comment: COMMENT,
           checked_at: expect.any(String) as string,
           context: [
@@ -462,7 +466,7 @@ describe('J9 to J12 · the desk', () => {
     });
   });
 
-  it('J10 · never an email, a tip comment, an unchecked, withheld or illegal link, or a moderator', async () => {
+  it('J10 · (D7 amends it, see W5) never an email, an unchecked tip comment, an unchecked, withheld or illegal link, or a moderator', async () => {
     const both = [
       (await call({ method: 'GET', url: '/api/desk/links' })).body,
       (await call({ method: 'GET', url: '/api/desk/sources' })).body,
@@ -585,6 +589,273 @@ describe('J9 to J12 · the desk', () => {
       { kind: 'desk_link', link_group_id: await groupOf(CHECKED), thread_id: null },
       { kind: 'desk_report', link_group_id: null, thread_id: expect.any(String) as string },
     ]);
+  });
+});
+
+describe('W5 · the desk reads checked text and report links, while the reporter allows it (D7)', () => {
+  // Words and addresses that must, or must never, come out of the desk.
+  const CLEARED_TEXT = `Cleared-as-written account ${run}: the doors opened late.`;
+  const ORIGINAL = `ORIGINAL-WITH-NAME ${run}: a poll worker named Mary told us to leave.`;
+  const COPY = `Redacted copy ${run}: a poll worker [name removed] told us to leave.`;
+  const WITHHELD_TEXT = `WITHHELD-TEXT ${run}`;
+  const WAITING_TEXT = `WAITING-TEXT ${run}`;
+  const UNSHARED_TEXT = `UNSHARED-TEXT ${run}`;
+  const REVOKED_TEXT = `REVOKED-TEXT ${run}`;
+  const CORRECTED_TEXT = `CORRECTED-OLD-TEXT ${run}`;
+  const TIP_TEXT = `Tip description cleared ${run}`;
+  const REPORT_LINK = url('report-checked');
+  const UNSHARED_LINK = url('report-unshared');
+  const UNCHECKED_REPORT_LINK = url('report-unchecked');
+  const SHARED_ALSO_TIP = url('shared-also-tip');
+
+  let call: ReturnType<typeof as>;
+  let lb: { id: number; slug: string };
+  let revoked: Awaited<ReturnType<typeof fileHeld>>;
+  let withdrawn: Awaited<ReturnType<typeof fileHeld>>;
+  let corrected: Awaited<ReturnType<typeof fileHeld>>;
+  let cleared: Awaited<ReturnType<typeof fileHeld>>;
+
+  const ok = async (outcome: 'checked' | 'withheld', ref: string) =>
+    checkText(h.db, keys, ref, { outcome, reason: undefined, actor: MOD });
+  const desk = async (path: string) => {
+    const r = await call({ method: 'GET', url: path });
+    expect(r.statusCode, r.body).toBe(200);
+    return r;
+  };
+  const texts = async () =>
+    (await desk('/api/desk/texts')).json<{
+      texts: { text: string; reference: string | null; outcome: string; source: string }[];
+    }>().texts;
+
+  beforeAll(async () => {
+    call = as(h, await signIn(h, journalist));
+    lb = await launchedLogbook(h.db, HELD_QUESTIONS);
+    // Shared and checked as written, with a checked link of its own.
+    cleared = await fileHeld(
+      h.db,
+      keys,
+      lb,
+      { text: { what: CLEARED_TEXT }, links: { links: [REPORT_LINK, UNCHECKED_REPORT_LINK] } },
+      { share: true },
+    );
+    await ok('checked', await textRef(h.db, cleared.reportId));
+    await checkGroup(h.db, keys, await groupOf(REPORT_LINK), { outcome: 'checked', actor: MOD });
+    // Shared, checked with redaction: the desk shows only the copy.
+    const redacted = await fileHeld(h.db, keys, lb, { text: { what: ORIGINAL } }, { share: true });
+    await redactText(h.db, keys, await textRef(h.db, redacted.reportId), {
+      body: COPY,
+      why: 'Names a private person.',
+      actor: MOD,
+    });
+    // Withheld, waiting, and a report that did not share.
+    const w = await fileHeld(h.db, keys, lb, { text: { what: WITHHELD_TEXT } }, { share: true });
+    await ok('withheld', await textRef(h.db, w.reportId));
+    await fileHeld(h.db, keys, lb, { text: { what: WAITING_TEXT } }, { share: true });
+    const unshared = await fileHeld(
+      h.db,
+      keys,
+      lb,
+      { text: { what: UNSHARED_TEXT }, links: { links: [UNSHARED_LINK] } },
+      { share: false },
+    );
+    await ok('withheld', await textRef(h.db, unshared.reportId));
+    // Checked for safety, though no journalist may ever see it.
+    await checkGroup(h.db, keys, await groupOf(UNSHARED_LINK), { outcome: 'checked', actor: MOD });
+    // The same address from a tip and from a report that did not share it.
+    await tip(SHARED_ALSO_TIP);
+    await fileHeld(h.db, keys, lb, { links: { links: [SHARED_ALSO_TIP] } }, { share: false });
+    await checkGroup(h.db, keys, await groupOf(SHARED_ALSO_TIP), {
+      outcome: 'checked',
+      actor: MOD,
+    });
+    // Checked, then the reporter takes it back / withdraws / corrects.
+    revoked = await fileHeld(h.db, keys, lb, { text: { what: REVOKED_TEXT } }, { share: true });
+    await ok('checked', await textRef(h.db, revoked.reportId));
+    withdrawn = await fileHeld(
+      h.db,
+      keys,
+      lb,
+      { text: { what: `WITHDRAWN ${run}` } },
+      { share: true },
+    );
+    await ok('checked', await textRef(h.db, withdrawn.reportId));
+    corrected = await fileHeld(h.db, keys, lb, { text: { what: CORRECTED_TEXT } }, { share: true });
+    await ok('checked', await textRef(h.db, corrected.reportId));
+    // A tip's description, checked; another not.
+    await tip(url('tip-text'));
+    await h.db
+      .updateTable('list_entries')
+      .set({ erasable_answers: { description: TIP_TEXT } })
+      .where('id', '=', await tipEntryId())
+      .execute();
+    await checkText(h.db, keys, `tip-${String(await tipEntryId())}-description`, {
+      outcome: 'checked',
+      reason: undefined,
+      actor: MOD,
+    });
+  });
+
+  async function tipEntryId(): Promise<number> {
+    // The newest entry of the tips list is the one just filed.
+    return (
+      await h.db
+        .selectFrom('list_entries')
+        .select('id')
+        .where('list_id', '=', tips.id)
+        .orderBy('id', 'desc')
+        .executeTakeFirstOrThrow()
+    ).id;
+  }
+
+  it('shows checked text, the redacted copy only for a redacted one, and a checked tip text', async () => {
+    const got = await texts();
+    const words = got.map((t) => t.text);
+    expect(words).toContain(CLEARED_TEXT);
+    expect(words).toContain(COPY);
+    expect(words).toContain(TIP_TEXT);
+    const mine = got.find((t) => t.text === CLEARED_TEXT);
+    expect(mine).toMatchObject({
+      reference: cleared.publicRef,
+      outcome: 'checked',
+      source: 'report',
+    });
+    expect(got.find((t) => t.text === COPY)?.outcome).toBe('redacted');
+    expect(got.find((t) => t.text === TIP_TEXT)).toMatchObject({ reference: null, source: 'tip' });
+  });
+
+  it('J10 · never the original of a redacted account, withheld or unchecked text, or an unshared report', async () => {
+    const body = [
+      (await desk('/api/desk/texts')).body,
+      (await desk('/api/desk/links')).body,
+      (await desk('/api/desk/sources')).body,
+    ].join('\n');
+    for (const never of [
+      ORIGINAL,
+      'Mary',
+      WITHHELD_TEXT,
+      WAITING_TEXT,
+      UNSHARED_TEXT,
+      UNSHARED_LINK,
+      UNCHECKED_REPORT_LINK,
+      TIP_COMMENT,
+      TIPSTER,
+      MOD,
+      'Names a private person',
+      'email',
+      'thread_id',
+      'entry_id',
+    ]) {
+      expect(body, never).not.toContain(never);
+    }
+  });
+
+  it('shows a report link that its reporter shared and a moderator checked, counted apart from tips', async () => {
+    const links = (await desk('/api/desk/links')).json<{
+      links: { url: string; tips: number; reports: number }[];
+    }>().links;
+    expect(links.find((l) => l.url === REPORT_LINK)).toMatchObject({ tips: 0, reports: 1 });
+    // A tip also sent this address; the unshared report's copy is not counted.
+    expect(links.find((l) => l.url === SHARED_ALSO_TIP)).toMatchObject({ tips: 1, reports: 0 });
+    // A link only an unshared report carries, checked for safety, is not on the desk at all.
+    expect(links.find((l) => l.url === UNSHARED_LINK)).toBeUndefined();
+  });
+
+  it('logs every text shown before it is read, under the journalist, with no words in the log', async () => {
+    const before = await h.db
+      .selectFrom('contact_access_log')
+      .select('id')
+      .where('staff_email', '=', journalist)
+      .execute();
+    await texts();
+    const after = await h.db
+      .selectFrom('contact_access_log')
+      .select(['kind', 'text_item_id', 'thread_id', 'report_id'])
+      .where('staff_email', '=', journalist)
+      .orderBy('id')
+      .execute();
+    const added = after.slice(before.length);
+    expect(added.length).toBeGreaterThanOrEqual(3);
+    expect(added.every((a) => a.kind === 'desk_text' || a.kind === 'desk_tip_text')).toBe(true);
+    expect(added.every((a) => a.text_item_id !== null)).toBe(true);
+    expect(JSON.stringify(added)).not.toContain('doors opened');
+  });
+
+  it('revoking the permission takes the text and the link off at once', async () => {
+    expect((await texts()).map((t) => t.text)).toContain(REVOKED_TEXT);
+    await setPermission(h.db, {
+      threadId: revoked.threadId,
+      permission: 'journalist_sharing',
+      granted: false,
+    });
+    expect((await texts()).map((t) => t.text)).not.toContain(REVOKED_TEXT);
+    // And granting it again brings it back: the check was never lost.
+    await setPermission(h.db, {
+      threadId: revoked.threadId,
+      permission: 'journalist_sharing',
+      granted: true,
+    });
+    expect((await texts()).map((t) => t.text)).toContain(REVOKED_TEXT);
+    await setPermission(h.db, {
+      threadId: cleared.threadId,
+      permission: 'journalist_sharing',
+      granted: false,
+    });
+    const links = (await desk('/api/desk/links')).json<{ links: { url: string }[] }>().links;
+    expect(links.map((l) => l.url)).not.toContain(REPORT_LINK);
+    await setPermission(h.db, {
+      threadId: cleared.threadId,
+      permission: 'journalist_sharing',
+      granted: true,
+    });
+  });
+
+  it('a withdrawal takes the report’s text off the desk (D2)', async () => {
+    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN'))).toBe(true);
+    await h.db
+      .updateTable('report_heads')
+      .set({ withdrawn: true })
+      .where('thread_id', '=', withdrawn.threadId)
+      .execute();
+    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN'))).toBe(false);
+  });
+
+  it('a correction that changes the words drops the old clearance until the new words are checked (D2)', async () => {
+    expect((await texts()).map((t) => t.text)).toContain(CORRECTED_TEXT);
+    const next = await fileHeld(
+      h.db,
+      keys,
+      lb,
+      { text: { what: `CORRECTED-NEW-TEXT ${run}` } },
+      { threadId: corrected.threadId, correctsId: corrected.reportId },
+    );
+    const after = (await texts()).map((t) => t.text);
+    expect(after).not.toContain(CORRECTED_TEXT);
+    expect(after).not.toContain(`CORRECTED-NEW-TEXT ${run}`);
+    await ok('checked', await textRef(h.db, next.reportId));
+    expect((await texts()).map((t) => t.text)).toContain(`CORRECTED-NEW-TEXT ${run}`);
+  });
+
+  it('erasing the words (illegal) removes them from the desk, and no other route lists them', async () => {
+    const victim = await fileHeld(
+      h.db,
+      keys,
+      lb,
+      { text: { what: `ILLEGAL-TEXT ${run}` } },
+      { share: true },
+    );
+    const ref = await textRef(h.db, victim.reportId);
+    await ok('checked', ref);
+    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(true);
+    await checkText(h.db, keys, ref, { outcome: 'illegal', reason: 'other-illegal', actor: MOD });
+    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(false);
+    for (const u of ['/api/desk/texts.csv', '/api/desk/texts/all']) {
+      expect((await call({ method: 'GET', url: u })).statusCode, u).toBe(404);
+    }
+  });
+
+  it('a signed-out visitor and a moderator are refused the text route', async () => {
+    expect((await h.app.inject({ method: 'GET', url: '/api/desk/texts' })).statusCode).toBe(401);
+    expect((await admin.call({ method: 'GET', url: '/api/desk/texts' })).statusCode).toBe(403);
   });
 });
 

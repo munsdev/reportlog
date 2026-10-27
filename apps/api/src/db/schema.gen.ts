@@ -133,6 +133,7 @@ export interface ContactAccessLog {
   reason: string | null;
   report_id: number | null;
   staff_email: string;
+  text_item_id: number | null;
   thread_id: string | null;
 }
 
@@ -1046,6 +1047,39 @@ export interface StorageDeletions {
   last_error: string | null;
 }
 
+export interface TextChecks {
+  actor_email: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  item_id: number;
+  outcome: string;
+  reason_category: string | null;
+}
+
+export interface TextItems {
+  checked_at: Timestamp | null;
+  checked_by: string | null;
+  created_at: Generated<Timestamp>;
+  entry_id: number | null;
+  field_key: string | null;
+  fingerprint: string | null;
+  id: Generated<number>;
+  outcome: string | null;
+  source: string;
+}
+
+export interface TextRedactions {
+  body_enc: Buffer;
+  body_key: Buffer;
+  item_id: number;
+  reason: string;
+  redacted_at: Generated<Timestamp>;
+  redacted_by: string;
+  review_verdict: string | null;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+}
+
 export interface ThreatEvents {
   action: string;
   actor_email: string;
@@ -1239,6 +1273,9 @@ export interface DB {
   site_settings: SiteSettings;
   site_switch_log: SiteSwitchLog;
   storage_deletions: StorageDeletions;
+  text_checks: TextChecks;
+  text_items: TextItems;
+  text_redactions: TextRedactions;
   threat_events: ThreatEvents;
   two_factor_attempts: TwoFactorAttempts;
   two_factor_challenges: TwoFactorChallenges;

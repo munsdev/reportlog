@@ -425,6 +425,16 @@ async function plantOneRowEach(): Promise<void> {
       actor_email: actor,
     })
     .execute();
+  // W4: the history of checks on written accounts.
+  const textItem = await db
+    .insertInto('text_items')
+    .values({ source: 'tip', entry_id: 1, field_key: 'sweep' })
+    .returning('id')
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto('text_checks')
+    .values({ item_id: textItem.id, outcome: 'withheld', actor_email: actor })
+    .execute();
   await db
     .insertInto('link_block_log')
     .values({
@@ -505,6 +515,8 @@ describe('I4 · APPEND-ONLY MEANS APPEND-ONLY, for every table that says so', ()
       'link_block_log',
       // W1: erasing a report's held text or link.
       'report_value_erasures',
+      // W4: the history of checks on written accounts.
+      'text_checks',
     ]) {
       expect(tables).toContain(t);
     }

@@ -325,6 +325,8 @@ export const DeskLink = z.object({
   url: z.string(),
   /** How many tips carried it. */
   tips: z.number().int(),
+  /** How many reports carried it whose reporters allow journalists to read their links. */
+  reports: z.number().int(),
   /** The moderator's comment for journalists, if there is one. */
   comment: z.string().nullable(),
   checked_at: z.string(),
@@ -347,6 +349,27 @@ export const DeskReport = z.object({
 });
 export type DeskReport = z.infer<typeof DeskReport>;
 
+/**
+ * A written account on the desk (W5, D7): what a reporter wrote, or a tip's
+ * description, ONLY if a moderator checked it and, for a report, only while
+ * the reporter allows journalists to read it. A redacted account is the
+ * moderators' copy, never the original. No email, no entry id, no thread id,
+ * no moderator's address, and nothing to say what was removed.
+ */
+export const DeskText = z.object({
+  text: z.string(),
+  /** A report's public reference (it is public on the board). Null for a tip. */
+  reference: z.string().nullable(),
+  /** Where it said, as the board would: "Fulton County, Georgia". */
+  place: z.string().nullable(),
+  /** "checked" as written, or "redacted": a moderator's edited copy. */
+  outcome: z.enum(['checked', 'redacted']),
+  /** Whether it came from a report or the tip line. */
+  source: z.enum(['report', 'tip']),
+  checked_at: z.string(),
+});
+export type DeskText = z.infer<typeof DeskText>;
+
 const Page = { page: z.number().int(), pages: z.number().int() };
 
 export const deskLinks = defineRoute({
@@ -363,4 +386,13 @@ export const deskSources = defineRoute({
   summary: 'Moderators’ Sources links and notes on published reports. Vetted journalists only.',
   query: PageQuery,
   response: z.object({ ...Page, reports: z.array(DeskReport) }),
+});
+
+export const deskTexts = defineRoute({
+  method: 'GET',
+  path: '/api/desk/texts',
+  summary:
+    'Written accounts a moderator checked and the reporter allows journalists to read, a page at a time. Vetted journalists only.',
+  query: PageQuery,
+  response: z.object({ ...Page, texts: z.array(DeskText) }),
 });

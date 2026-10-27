@@ -19,6 +19,8 @@ export const MenuWaiting = z.object({
   list_entries: Count.optional(),
   /** Tip links nobody has checked yet. */
   tip_links: Count.optional(),
+  /** Written accounts (report text and tip descriptions) nobody has checked yet. */
+  texts: Count.optional(),
   /** Feedback issues still open (new, investigating, in progress, waiting on the tester). */
   feedback: Count.optional(),
 });

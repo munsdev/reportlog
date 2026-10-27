@@ -18,6 +18,7 @@
  * a new fingerprint: that one is NOT erased with it, as the brief asks.
  */
 import { REASON_CATEGORIES } from '../links/blocklist.ts';
+import { dropEmptyGroups } from '../links/store.ts';
 import type { Db } from '../links/rows.ts';
 
 /**
@@ -31,6 +32,9 @@ export const ERASURE_REASONS = [
   'personal-data',
   // The reporter asked, from My reports.
   'reporter-request',
+  // The link store's blocklist matched it as the report was filed, so it was
+  // never kept (links/reportLinks.ts).
+  'blocklisted',
 ] as const;
 export type ErasureReason = (typeof ERASURE_REASONS)[number];
 
@@ -57,6 +61,15 @@ export async function eraseHeldValue(trx: Db, valueId: number, input: EraseInput
   return eraseWhere(trx, { fingerprint: row.fingerprint }, input);
 }
 
+/**
+ * Erase every copy of a link group's address that reports hold (W3, X3): the
+ * report half of an "illegal" link check. One tombstone per version that held
+ * it. Returns how many rows went.
+ */
+export async function eraseHeldGroup(trx: Db, groupId: number, input: EraseInput): Promise<number> {
+  return eraseWhere(trx, { groupId }, input);
+}
+
 /** Erase everything these versions hold: a reporter erasing their own words. */
 export async function eraseHeldValuesOf(
   trx: Db,
@@ -77,19 +90,35 @@ export async function eraseHeldValuesOf(
 
 async function eraseWhere(
   trx: Db,
-  where: { fingerprint: string },
+  where: { fingerprint: string } | { groupId: number },
   input: EraseInput,
 ): Promise<number> {
   if (!(ERASURE_REASONS as readonly string[]).includes(input.reason)) {
     throw new Error(`Not an erasure reason: ${input.reason}`);
   }
   if (!input.actor.trim()) throw new Error('An erasure needs somebody to have done it.');
-  const gone = await trx
-    .deleteFrom('report_values')
-    .where('fingerprint', '=', where.fingerprint)
-    .returning(['report_id', 'field_key', 'kind', 'position', 'fingerprint'])
+  const del = trx.deleteFrom('report_values');
+  const gone = await (
+    'fingerprint' in where
+      ? del.where('fingerprint', '=', where.fingerprint)
+      : del.where('group_id', '=', where.groupId)
+  )
+    .returning(['report_id', 'field_key', 'kind', 'position', 'fingerprint', 'group_id'])
     .execute();
   if (!gone.length) return 0;
+  // A redacted copy was made from the words that just went (W4): it goes with
+  // them. Written here, not through moderation/, because the chain reaches
+  // this file and may not reach moderation.
+  const prints = [...new Set(gone.map((g) => g.fingerprint))];
+  await trx
+    .deleteFrom('text_redactions')
+    .where('item_id', 'in', (eb) =>
+      eb.selectFrom('text_items').select('id').where('fingerprint', 'in', prints),
+    )
+    .execute();
+  const groups = [...new Set(gone.flatMap((g) => (g.group_id === null ? [] : [g.group_id])))];
+  // An erased GROUP is the caller's to settle (checkGroup marks it illegal).
+  if (groups.length && 'fingerprint' in where) await dropEmptyGroups(trx, groups);
   await trx
     .insertInto('report_value_erasures')
     .values(

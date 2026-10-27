@@ -7,7 +7,7 @@
  * accepted before anything is shown, so until the owner publishes one the
  * desk is closed. Staff do not use the desk; they have their own screens.
  *
- * WHAT. Two read-only lists, a fixed page at a time (J11: no export, no
+ * WHAT. Three read-only lists, a fixed page at a time (J11: no export, no
  * page size to ask for, nothing else to list):
  *   - checked links, one entry per link group, from `checkedLinks` and
  *     nothing else in links/ (so an unchecked, withheld or illegal link can
@@ -18,10 +18,19 @@
  *   - moderators' Sources links and notes on PUBLISHED reports (owner
  *     decision 37: staff and vetted journalists only).
  *
- * WHAT NEVER (J10). No email, no tip comment or any other free-text answer,
- * no entry id, no moderator's address, no other moderator note, nothing
- * from the erasable half of an entry. Each is left out by what is SELECTED,
- * not filtered afterwards, so a new column cannot leak by default.
+ * WHAT NEVER (J10, as amended by owner decision D7). No email, no entry id,
+ * no moderator's address, no other moderator note, nothing from the erasable
+ * half of an entry EXCEPT the words a moderator checked (below), no withheld
+ * or unchecked item, and nothing from a report whose reporter does not allow
+ * journalists to read it. Each is left out by what is SELECTED, not filtered
+ * afterwards, so a new column cannot leak by default.
+ *
+ * WHAT NOW (W5). Written accounts: a report's text, or a tip's description,
+ * that a moderator checked, only while the reporter's `journalist_sharing` is
+ * granted (checked as written, or the redacted copy; never the original of a
+ * redacted one). Report links join the checked links through `checkedLinks`,
+ * under the same condition. Revoking, withdrawing or correcting takes them off
+ * at once (reportValues/onDesk.ts; the permission is read live).
  *
  * J12. Every link group and every report a page shows is written to the
  * staff access log BEFORE anything is decrypted, in the same request, so an
@@ -30,7 +39,7 @@
 import { DESK_PAGE_SIZE } from '@reportlog/contracts';
 import { describeAnswer, placeLabel } from '@reportlog/fields';
 import type { FieldSettings } from '@reportlog/fields';
-import type { DeskLink, DeskReport } from '@reportlog/contracts';
+import type { DeskLink, DeskReport, DeskText } from '@reportlog/contracts';
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import { sql } from 'kysely';
 import type { Kysely } from 'kysely';
@@ -41,6 +50,8 @@ import { requireRole } from '../identity/guards.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { checkedLinks } from '../links/reads.ts';
 import { agreementRequired, hasAccepted, newestText } from '../moderation/agreement.ts';
+import { clearedTexts, readCleared } from '../moderation/texts/clearance.ts';
+import { sharedHeldValues } from '../reportValues/onDesk.ts';
 
 /**
  * The kinds whose answers come from a fixed list, so none can carry somebody's
@@ -141,28 +152,55 @@ export async function deskLinkPage(
 ): Promise<{ page: number; pages: number; links: DeskLink[] }> {
   const page = pageOf(rawPage);
   const states = filter.states;
+  // A group is on the desk when it is checked AND somebody the desk may show
+  // carries it: a tip, or a report whose reporter allows journalists to read
+  // its links (W5). A report that did not share does not make a group appear,
+  // however the group was checked.
   let checked = db
     .selectFrom('link_groups as g')
     .where('g.outcome', '=', 'checked')
     .where((eb) =>
-      eb.exists(eb.selectFrom('links as l').select('l.id').whereRef('l.group_id', '=', 'g.id')),
+      eb.or([
+        eb.exists(eb.selectFrom('links as l').select('l.id').whereRef('l.group_id', '=', 'g.id')),
+        eb.exists(
+          sharedHeldValues(db)
+            .select('rv.id')
+            .where('rv.kind', '=', 'private_link')
+            .where(sql<boolean>`rv.group_id = g.id`),
+        ),
+      ]),
     );
   if (states) {
-    // A tip's state is its list's location answer rolled up to the state.
+    // A tip's state is its list's location answer rolled up to the state; a
+    // report's is its logbook's.
     checked = checked.where((eb) =>
-      eb.exists(
-        eb
-          .selectFrom('links as sl')
-          .innerJoin('list_entries as e', 'e.id', 'sl.entry_id')
-          .innerJoin('list_fields as f', (j) =>
-            j.onRef('f.list_id', '=', 'e.list_id').on('f.kind', '=', 'location'),
-          )
-          .select('sl.id')
-          .whereRef('sl.group_id', '=', 'g.id')
-          .where(
-            sql<boolean>`${stateOfAnswer(sql.ref('e.answers'), sql.ref('f.key'))} = any(${[...states]}::text[])`,
-          ),
-      ),
+      eb.or([
+        eb.exists(
+          eb
+            .selectFrom('links as sl')
+            .innerJoin('list_entries as e', 'e.id', 'sl.entry_id')
+            .innerJoin('list_fields as f', (j) =>
+              j.onRef('f.list_id', '=', 'e.list_id').on('f.kind', '=', 'location'),
+            )
+            .select('sl.id')
+            .whereRef('sl.group_id', '=', 'g.id')
+            .where(
+              sql<boolean>`${stateOfAnswer(sql.ref('e.answers'), sql.ref('f.key'))} = any(${[...states]}::text[])`,
+            ),
+        ),
+        eb.exists(
+          sharedHeldValues(db)
+            .innerJoin('logbook_fields as f', (j) =>
+              j.onRef('f.logbook_id', '=', 'r.logbook_id').on('f.kind', '=', 'location'),
+            )
+            .select('rv.id')
+            .where('rv.kind', '=', 'private_link')
+            .where(sql<boolean>`rv.group_id = g.id`)
+            .where(
+              sql<boolean>`${stateOfAnswer(sql.ref('r.answers'), sql.ref('f.key'))} = any(${[...states]}::text[])`,
+            ),
+        ),
+      ]),
     );
   }
   const words = filter.q?.trim().toLowerCase();
@@ -213,6 +251,7 @@ export async function deskLinkPage(
 
   const groups = await checkedLinks(db, keys, { groupIds: ids });
   const context = await choiceContext(db, [...new Set(groups.flatMap((g) => g.entry_ids))]);
+  const reportCtx = await reportContext(db, [...new Set(groups.flatMap((g) => g.report_ids))]);
   const kinds = await linkKinds(
     db,
     groups.flatMap((g) => g.types),
@@ -225,19 +264,61 @@ export async function deskLinkPage(
       {
         url: g.url,
         tips: g.entry_ids.length,
+        reports: g.report_ids.length,
         comment: g.comment,
         checked_at: g.checked_at,
-        context: summarize(
-          g.entry_ids.map((e) => [
+        context: summarize([
+          ...g.entry_ids.map((e) => [
             // THE KIND OF LINK EACH TIP SAID IT IS, first, beside the link (J9).
             ...kinds(g.types.filter((t) => t.entry_id === e)),
             ...(context.get(e) ?? []),
           ]),
-        ),
+          // A report's fixed-list answers, the same way: choices, place, date.
+          ...g.report_ids.map((r) => reportCtx.get(r) ?? []),
+        ]),
       },
     ];
   });
   return { page, pages, links };
+}
+
+/**
+ * A report's answers to its logbook's fixed-list questions, by report.
+ * Reads `answers` and the questions' kinds; never a held value, an email, or
+ * any question that takes the reporter's own words.
+ */
+async function reportContext(
+  db: Kysely<DB>,
+  reportIds: number[],
+): Promise<Map<number, Answered[]>> {
+  const out = new Map<number, Answered[]>();
+  if (!reportIds.length) return out;
+  const rows = await db
+    .selectFrom('reports')
+    .select(['id', 'logbook_id', 'answers'])
+    .where('id', 'in', reportIds)
+    .execute();
+  const fields = await db
+    .selectFrom('logbook_fields')
+    .select(['logbook_id', 'key', 'kind', 'label', 'position', 'settings'])
+    .where('logbook_id', 'in', [...new Set(rows.map((r) => r.logbook_id))])
+    .where('kind', 'in', CONTEXT_KINDS)
+    .orderBy('position')
+    .execute();
+  for (const r of rows) {
+    const answers = (r.answers ?? {}) as Record<string, unknown>;
+    const mine: Answered[] = [];
+    for (const f of fields) {
+      if (f.logbook_id !== r.logbook_id) continue;
+      const v = answers[f.key];
+      const values = (Array.isArray(v) ? v : [v])
+        .filter((x): x is string => typeof x === 'string')
+        .map((x) => shown(f.kind, x, f.settings as FieldSettings));
+      if (values.length) mine.push({ question: f.label, answers: values });
+    }
+    out.set(r.id, mine);
+  }
+  return out;
 }
 
 interface Answered {
@@ -323,6 +404,86 @@ function summarize(perTip: Answered[][]): DeskLink['context'] {
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .map(([answer, tips]) => ({ answer, tips })),
   }));
+}
+
+/**
+ * Written accounts (W5, D7): report text and tip descriptions a moderator
+ * checked, shown only while they remain cleared (moderation/texts/clearance.ts
+ * reads the reporter's permission live). A page of ids is chosen from what
+ * decrypts nothing; the page is written to the access log; only then is any
+ * of it decrypted. A search has to open its candidates first, as the link
+ * search does, and logs only what it then shows.
+ *
+ * WHAT THE JOURNALIST GETS: the words (or the moderators' redacted copy, never
+ * the original of a redacted account), a report's public reference, a place,
+ * and whether it was edited. Not an email, not a thread or entry id, not who
+ * checked it or who redacted it, and nothing that says what was removed.
+ */
+export async function deskTextPage(
+  db: Kysely<DB>,
+  keys: LinkKeys,
+  reader: string,
+  rawPage: number | undefined,
+  filter: DeskFilter = {},
+): Promise<{ page: number; pages: number; texts: DeskText[] }> {
+  const page = pageOf(rawPage);
+  let cleared = await clearedTexts(db);
+  if (filter.states) {
+    const mine = new Set(filter.states);
+    cleared = cleared.filter((c) => c.state !== null && mine.has(c.state));
+  }
+  const words = filter.q?.trim().toLowerCase();
+  let reads: Awaited<ReturnType<typeof readCleared>> | undefined;
+  if (words) {
+    reads = await readCleared(db, keys, cleared);
+    cleared = cleared.filter((c) => {
+      const r = reads?.get(c.itemId);
+      return (
+        r !== undefined &&
+        (r.text.toLowerCase().includes(words) || (c.reference ?? '').toLowerCase().includes(words))
+      );
+    });
+  }
+  const pages = pagesOf(cleared.length);
+  const shown = cleared.slice((page - 1) * DESK_PAGE_SIZE, page * DESK_PAGE_SIZE);
+  if (!shown.length) return { page, pages, texts: [] };
+
+  await db
+    .insertInto('contact_access_log')
+    .values(
+      shown.map((c) =>
+        c.source === 'report'
+          ? {
+              staff_email: reader,
+              kind: 'desk_text',
+              thread_id: c.threadId,
+              report_id: c.reportId,
+              text_item_id: c.itemId,
+            }
+          : { staff_email: reader, kind: 'desk_tip_text', text_item_id: c.itemId },
+      ),
+    )
+    .execute();
+
+  const opened = reads ?? (await readCleared(db, keys, shown));
+  return {
+    page,
+    pages,
+    texts: shown.flatMap((c) => {
+      const r = opened.get(c.itemId);
+      if (!r) return [];
+      return [
+        {
+          text: r.text,
+          reference: c.reference,
+          place: r.place,
+          outcome: c.outcome,
+          source: c.source,
+          checked_at: c.checkedAt,
+        },
+      ];
+    }),
+  };
 }
 
 /** Published reports with live Sources links, and the published note beside them. */
