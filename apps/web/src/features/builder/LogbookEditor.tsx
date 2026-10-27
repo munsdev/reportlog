@@ -617,24 +617,32 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
               <div className="acts">
                 {!launched && (
                   <>
-                    <Btn look="ghost" sm flat
-                      
+                    <Btn
+                      look="ghost"
+                      sm
+                      flat
+
                       disabled={i === 0}
                       aria-label={`Move up: “${q.label}”`}
                       onClick={() => void move(i, -1)}
                     >
                       ↑
                     </Btn>
-                    <Btn look="ghost" sm flat
-                      
+                    <Btn
+                      look="ghost"
+                      sm
+                      flat
+
                       disabled={i === lb.fields.length - 1}
                       aria-label={`Move down: “${q.label}”`}
                       onClick={() => void move(i, 1)}
                     >
                       ↓
                     </Btn>
-                    <Btn sm flat
-                      
+                    <Btn
+                      sm
+                      flat
+
                       aria-label={`Change “${q.label}”`}
                       onClick={() => {
                         setEditing(q.id);
@@ -642,8 +650,11 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                     >
                       Change
                     </Btn>
-                    <Btn look="ghost" sm flat
-                      
+                    <Btn
+                      look="ghost"
+                      sm
+                      flat
+
                       aria-label={`Remove “${q.label}”`}
                       onClick={() =>
                         void run(() =>
@@ -656,8 +667,10 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                   </>
                 )}
                 {launched && (
-                  <Btn sm flat
-                    
+                  <Btn
+                    sm
+                    flat
+
                     aria-label={`Reword “${q.label}”`}
                     onClick={() => {
                       setEditing(q.id);
@@ -747,8 +760,10 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
         Closing stops new reports and keeps every report already filed. It can be undone.
       </p>
       <Problem error={closed.error} />
-      <Btn sm flat
-        
+      <Btn
+        sm
+        flat
+
         disabled={closed.isPending}
         onClick={() => {
           closed.mutate(!isClosed);
@@ -790,7 +805,7 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           )}
         </Field>
         <Problem error={schedule.error} />
-        <Btn sm flat type="submit"  disabled={schedule.isPending}>
+        <Btn sm flat type="submit" disabled={schedule.isPending}>
           Save the opening times
         </Btn>
       </form>

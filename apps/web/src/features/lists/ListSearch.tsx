@@ -52,7 +52,7 @@ export function ListSearch() {
                 setQ(e.target.value);
               }}
             />
-            <Btn sm flat type="submit"  disabled={search.isPending}>
+            <Btn sm flat type="submit" disabled={search.isPending}>
               Find
             </Btn>
           </div>

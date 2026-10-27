@@ -78,7 +78,11 @@ function Shown({ file }: { file: PublishedFile }) {
           src={i === 0 ? FILE_PATHS.publicFile(file.key) : FILE_PATHS.publicPage(file.key, i + 1)}
           alt={file.pages > 1 ? `${file.alt_text} (page ${String(i + 1)})` : file.alt_text}
           loading="lazy"
-          style={{ maxWidth: '100%', borderRadius: 'var(--rl-radius)', border: '1.5px solid var(--rl-border)' }}
+          style={{
+            maxWidth: '100%',
+            borderRadius: 'var(--rl-radius)',
+            border: '1.5px solid var(--rl-border)',
+          }}
         />
       ))}
     </div>

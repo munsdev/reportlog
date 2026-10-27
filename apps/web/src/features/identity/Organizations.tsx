@@ -185,7 +185,9 @@ export function OrganizationPage({ id }: { id: number }) {
                   <Chip>{m.role}</Chip>
                   {m.pending ? <Chip kind="off">Not joined yet</Chip> : null}
                 </>,
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   aria-label={`Remove ${m.email}`}
                   onClick={() => {
@@ -313,7 +315,9 @@ function LogoPanel({
             {save.isPending ? 'Saving…' : 'Use this image'}
           </Btn>
           {logo && (
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               disabled={remove.isPending}
               onClick={() => {
@@ -464,7 +468,9 @@ function InvitationRow({
       </p>
       <div className="acts">
         {i.status === 'pending' && (
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             onClick={() => {
               resend.mutate();
             }}
@@ -473,7 +479,9 @@ function InvitationRow({
           </Btn>
         )}
         {i.status === 'awaiting_approval' && youGrantAccess && (
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             onClick={() => {
               approve.mutate();
             }}
@@ -481,7 +489,9 @@ function InvitationRow({
             Approve and send
           </Btn>
         )}
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           look="ghost"
           onClick={() => {
             withdraw.mutate();

@@ -13,8 +13,7 @@ export function CopyText({ slot, className }: { slot: CopyKey; className?: strin
   const text = useSite().data?.copy[slot];
   if (!text) return null;
   return (
-    <p data-copy={slot} className={className}
-      style={{ whiteSpace: 'pre-wrap' }}>
+    <p data-copy={slot} className={className} style={{ whiteSpace: 'pre-wrap' }}>
       {text}
     </p>
   );

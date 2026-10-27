@@ -63,7 +63,9 @@ export function FeedbackQueue() {
         >
           <IssueLine issue={issue} author={issue.submitter_email} />
           <div className="acts">
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               aria-expanded={openId === issue.id}
               onClick={() => {
                 setOpenId(openId === issue.id ? null : issue.id);

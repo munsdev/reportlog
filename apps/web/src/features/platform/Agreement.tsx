@@ -70,7 +70,10 @@ export function AgreementGate({
         </Note>
       ) : null}
       <div>
-        <Btn look="ink" sm flat
+        <Btn
+          look="ink"
+          sm
+          flat
           type="button"
           disabled={accept.isPending}
           onClick={() => {

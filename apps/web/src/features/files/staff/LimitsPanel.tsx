@@ -87,8 +87,10 @@ export function LimitsPanel({
         <>
           <Dl items={limitsSummary(layers, mine)} />
           <div className="acts">
-            <Btn sm flat
-              
+            <Btn
+              sm
+              flat
+
               aria-label={`Edit ${LIMITS_TITLE}`}
               onClick={() => {
                 setOpen(true);

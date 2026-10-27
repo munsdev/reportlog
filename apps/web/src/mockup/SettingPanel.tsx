@@ -111,11 +111,14 @@ export function SettingPanels({ children }: { children: ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Btn sm flat  onClick={discard}>
+            <Btn sm flat onClick={discard}>
               Leave them
             </Btn>
-            <Btn look="ghost" sm flat
-              
+            <Btn
+              look="ghost"
+              sm
+              flat
+
               onClick={() => {
                 setAsking(null);
               }}
@@ -185,8 +188,10 @@ export function SettingPanel({
     <Panel title={title} kind="closed" {...(className ? { className } : {})}>
       <Dl items={summary} />
       <div className="acts">
-        <Btn sm flat
-          
+        <Btn
+          sm
+          flat
+
           aria-label={`Edit ${title}`}
           onClick={() => {
             panels.open(id);

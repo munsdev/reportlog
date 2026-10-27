@@ -170,7 +170,9 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
             setDraft({ ...draft, q: e.target.value });
           }}
         />
-        <Btn sm flat type="submit">Search</Btn>
+        <Btn sm flat type="submit">
+          Search
+        </Btn>
       </div>
       {hasStates ? (
         <CheckBox
@@ -200,7 +202,9 @@ function CopyableLink({ url }: { url: string }) {
     <div className="copybox">
       <div className="row">
         <code>{url}</code>
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           onClick={() => {
             void navigator.clipboard.writeText(url).then(
               () => {

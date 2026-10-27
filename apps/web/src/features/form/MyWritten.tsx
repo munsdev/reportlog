@@ -150,7 +150,9 @@ export function WrittenPanel({
             I understand this cannot be undone.
           </CheckBox>
           <ErrorLine error={erase.error} />
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             look="bad"
             disabled={!sure || erase.isPending}
             onClick={() => {

@@ -75,8 +75,11 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
           </Note>
         ) : null}
       </div>
-      <Btn look="ghost" sm flat
-        
+      <Btn
+        look="ghost"
+        sm
+        flat
+
         busy={busy}
         busyLabel="Removing…"
         aria-label={`Remove ${pack.label}`}

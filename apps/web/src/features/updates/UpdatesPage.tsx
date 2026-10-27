@@ -110,7 +110,9 @@ export function UpdatesPage() {
               ]}
             />
             {d.fetch_failed ? <p className="error">{d.fetch_failed}</p> : null}
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               disabled={busy(d) || ask.isPending}
               onClick={() => {
                 ask.mutate({ action: 'check' });
@@ -149,7 +151,9 @@ export function UpdatesPage() {
                   new one is ready, and goes back to it by itself if the new one does not start.
                 </p>
                 <div className="acts">
-                  <Btn sm flat
+                  <Btn
+                    sm
+                    flat
                     look="ink"
                     disabled={busy(d) || ask.isPending}
                     onClick={() => {
@@ -191,7 +195,9 @@ export function UpdatesPage() {
             }
             buttons={
               <>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   onClick={() => {
                     setConfirming(null);
@@ -199,7 +205,9 @@ export function UpdatesPage() {
                 >
                   Cancel
                 </Btn>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ink"
                   disabled={busy(d) || ask.isPending}
                   onClick={() => {
@@ -240,7 +248,9 @@ function TestBuildButtons({
 }) {
   return (
     <>
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         disabled={disabled}
         onClick={() => {
           onAsk('test');
@@ -248,7 +258,9 @@ function TestBuildButtons({
       >
         Update to test build
       </Btn>
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         disabled={disabled}
         onClick={() => {
           onAsk('rollback');

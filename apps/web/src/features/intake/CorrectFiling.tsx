@@ -12,7 +12,15 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
-import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  CheckBox,
+  Field,
+  FieldDescription,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';

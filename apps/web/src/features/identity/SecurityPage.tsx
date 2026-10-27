@@ -157,7 +157,9 @@ function Factors() {
               }}
             />
             <div className="acts">
-              <Btn sm flat
+              <Btn
+                sm
+                flat
                 look="ghost"
                 onClick={() => {
                   setAdding(null);
@@ -170,7 +172,9 @@ function Factors() {
         ) : (
           <div className="acts">
             {s.totpAvailable ? (
-              <Btn sm flat
+              <Btn
+                sm
+                flat
                 onClick={() => {
                   setSaid(null);
                   setAdding('app');
@@ -184,7 +188,9 @@ function Factors() {
               </p>
             )}
             {s.totp && ways > 1 ? (
-              <Btn sm flat
+              <Btn
+                sm
+                flat
                 look="ghost"
                 disabled={dropApp.isPending}
                 onClick={() => {
@@ -218,7 +224,9 @@ function Factors() {
                   {p.last_used_at ? `, last used ${day(p.last_used_at)}` : ''}
                 </>,
                 ways > 1 ? (
-                  <Btn sm flat
+                  <Btn
+                    sm
+                    flat
                     look="ghost"
                     onClick={() => {
                       dropPasskey.reset();
@@ -252,7 +260,9 @@ function Factors() {
               }}
             />
             <div className="acts">
-              <Btn sm flat
+              <Btn
+                sm
+                flat
                 look="ghost"
                 onClick={() => {
                   setAdding(null);
@@ -264,7 +274,9 @@ function Factors() {
           </div>
         ) : (
           <div className="acts">
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               onClick={() => {
                 setSaid(null);
                 setAdding('passkey');
@@ -285,7 +297,9 @@ function Factors() {
           Making new ones stops the old ones working.
         </p>
         <div className="acts">
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             disabled={remake.isPending}
             onClick={() => {
               remake.mutate();
@@ -310,7 +324,9 @@ function Factors() {
         }
         buttons={
           <>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               onClick={() => {
                 setRemoving(null);
@@ -318,7 +334,9 @@ function Factors() {
             >
               Keep it
             </Btn>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               disabled={dropPasskey.isPending}
               onClick={() => {

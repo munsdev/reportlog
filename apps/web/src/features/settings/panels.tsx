@@ -61,7 +61,7 @@ export function LinkPanel({
       {children}
       <Dl items={summary} />
       <div className="acts">
-        <Btn sm flat asChild >
+        <Btn sm flat asChild>
           <Link to={to} aria-label={`${linkLabel} ${title}`}>
             {linkLabel}
           </Link>

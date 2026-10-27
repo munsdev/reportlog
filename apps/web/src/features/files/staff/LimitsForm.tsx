@@ -215,7 +215,7 @@ export function LimitsForm({
             : 'Clear every limit set here'}
         </Btn>
         {onCancel ? (
-          <Btn look="ghost" sm flat type="button"  disabled={busy} onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button" disabled={busy} onClick={onCancel}>
             Cancel
           </Btn>
         ) : null}

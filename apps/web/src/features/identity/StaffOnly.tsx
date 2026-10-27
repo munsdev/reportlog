@@ -46,8 +46,8 @@ export function StaffOnly({
   const acting = me.data.roles;
   if (!roles.some((r) => roleSatisfies(acting, r))) {
     return (
-      <section className="space-y-3">
-        <h1 className="font-display text-2xl font-bold">Not for this account</h1>
+      <section className="form-stack">
+        <h1 className="h-page">Not for this account</h1>
         <p>
           Only {roles.map((r) => WHO[r] ?? r).join(' or ')} can open this page. Ask one if you need
           to.

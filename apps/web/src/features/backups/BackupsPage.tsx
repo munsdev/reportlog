@@ -40,7 +40,9 @@ function RestoreCommand({ command }: { command: string }) {
   return (
     <>
       <div className="code">{command}</div>
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         look="ghost"
         onClick={() => {
           navigator.clipboard.writeText(command).then(
@@ -164,7 +166,9 @@ export function BackupsPage() {
                 <b>The last backup failed</b> At {query.data.failure.step}: {query.data.failure.why}
               </Note>
             ) : null}
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
@@ -188,7 +192,9 @@ export function BackupsPage() {
             ) : null}
           </Panel>
           <Panel title="Archive exports">
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
               }

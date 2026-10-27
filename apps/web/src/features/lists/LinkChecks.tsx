@@ -37,7 +37,15 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  CheckBox,
+  Field,
+  FieldDescription,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Problem } from '../../mockup/Notice.tsx';

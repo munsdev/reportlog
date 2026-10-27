@@ -161,7 +161,10 @@ function Switch({
       ) : null}
       {chosen !== now ? (
         <div className="acts">
-          <Btn look="ink" sm flat
+          <Btn
+            look="ink"
+            sm
+            flat
             busy={save.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -307,7 +310,7 @@ export function EraseFilePage() {
           <FieldError>{tried ? problem : null}</FieldError>
         </Field>
         <div className="acts">
-          <Btn sm flat type="submit" >
+          <Btn sm flat type="submit">
             Show its files
           </Btn>
         </div>
@@ -345,7 +348,7 @@ function ErasingList({ data }: { data: ErasingData }) {
               <div className="acts">
                 <AskDialog
                   trigger={(open) => (
-                    <Btn look="bad" sm flat  onClick={open}>
+                    <Btn look="bad" sm flat onClick={open}>
                       Erase this file…
                     </Btn>
                   )}

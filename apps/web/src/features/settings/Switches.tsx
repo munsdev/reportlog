@@ -15,7 +15,14 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Modal.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/mockup/Modal.tsx';
 import { Switch } from '@/mockup/Switch.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -133,8 +140,11 @@ export function AcceptingReportsPanel() {
             </Note>
           ) : null}
           <DialogFooter>
-            <Btn look="bad" sm flat
-              
+            <Btn
+              look="bad"
+              sm
+              flat
+
               busy={save.isPending}
               busyLabel="Changing…"
               onClick={() => {
@@ -143,8 +153,11 @@ export function AcceptingReportsPanel() {
             >
               Turn it off
             </Btn>
-            <Btn look="ghost" sm flat
-              
+            <Btn
+              look="ghost"
+              sm
+              flat
+
               onClick={() => {
                 setAsking(false);
               }}

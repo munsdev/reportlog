@@ -193,8 +193,11 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       )}
                     </div>
                     <div className="acts">
-                      <Btn look="ghost" sm flat
-                        
+                      <Btn
+                        look="ghost"
+                        sm
+                        flat
+
                         disabled={i === 0}
                         aria-label={`Move up: “${name}”`}
                         onClick={() => {
@@ -203,8 +206,11 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         ↑
                       </Btn>
-                      <Btn look="ghost" sm flat
-                        
+                      <Btn
+                        look="ghost"
+                        sm
+                        flat
+
                         disabled={i === rows.length - 1}
                         aria-label={`Move down: “${name}”`}
                         onClick={() => {
@@ -213,8 +219,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         ↓
                       </Btn>
-                      <Btn sm flat
-                        
+                      <Btn
+                        sm
+                        flat
+
                         aria-label={`Change: “${name}”`}
                         aria-expanded={open}
                         onClick={() => {
@@ -223,8 +231,11 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         Change
                       </Btn>
-                      <Btn look="ghost" sm flat
-                        
+                      <Btn
+                        look="ghost"
+                        sm
+                        flat
+
                         aria-label={`Remove: “${name}”`}
                         onClick={() => {
                           setRows((now) => now.filter((_, j) => j !== i));
@@ -311,8 +322,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
           {unfinished && <p>Choose a target for every button before saving.</p>}
           <Problem error={save.error ?? reset.error} />
           <div className="acts">
-            <Btn sm flat
-              
+            <Btn
+              sm
+              flat
+
               onClick={() => {
                 setRows((now) => [...now, { id: next, target: '', label: '', sub: '' }]);
                 setNext((n) => n + 1);
@@ -320,8 +333,11 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
             >
               Add a button
             </Btn>
-            <Btn look="ink" sm flat
-              
+            <Btn
+              look="ink"
+              sm
+              flat
+
               disabled={save.isPending || unfinished}
               onClick={() => {
                 save.mutate();
@@ -329,8 +345,11 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
             >
               Save this order
             </Btn>
-            <Btn look="ghost" sm flat
-              
+            <Btn
+              look="ghost"
+              sm
+              flat
+
               disabled={reset.isPending}
               onClick={() => {
                 reset.mutate();

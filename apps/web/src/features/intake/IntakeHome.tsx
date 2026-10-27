@@ -63,7 +63,9 @@ export function IntakeHome() {
           <p>The accounts will be filed for {list[0].name}.</p>
         ) : null}
         <ErrorLine error={start.error} />
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           look="ink"
           disabled={orgId === undefined || start.isPending}
           onClick={() => {

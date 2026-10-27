@@ -211,7 +211,8 @@ function MyReportView({ threadId }: { threadId: string }) {
           <Link
             to="/mine/declaration/$threadId"
             params={{ threadId: r.thread_id }}
-            className={btnClass({ sm: true, flat: true })}>
+            className={btnClass({ sm: true, flat: true })}
+          >
             Print a signed declaration
           </Link>
         </div>
@@ -310,7 +311,9 @@ function Permissions({ r }: { r: MyReportDetail }) {
         }
         buttons={
           <>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               onClick={() => {
                 setAskTakeDown(false);
@@ -318,7 +321,9 @@ function Permissions({ r }: { r: MyReportDetail }) {
             >
               Leave it on
             </Btn>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               onClick={() => {
                 setAskTakeDown(false);
@@ -428,7 +433,9 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
       {problem ? <p className="error">{problem}</p> : null}
       {send.isError ? <ErrorLine error={send.error} /> : null}
       {done ? <Saved>{done}</Saved> : null}
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         look="ink"
         disabled={send.isPending}
         onClick={() => {
@@ -477,7 +484,9 @@ function Withdraw({ r }: { r: MyReportDetail }) {
         }}
       />
       <ErrorLine error={go.error} />
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         disabled={!comment.trim() || go.isPending}
         onClick={() => {
           go.mutate();
@@ -517,7 +526,9 @@ function Erase({ r }: { r: MyReportDetail }) {
         I understand this cannot be undone.
       </CheckBox>
       <ErrorLine error={go.error} />
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         look="bad"
         disabled={!sure || go.isPending}
         onClick={() => {

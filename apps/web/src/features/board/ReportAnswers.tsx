@@ -32,11 +32,13 @@ export function ReportAnswers({
     // Before the questions arrive, or if they cannot: the keys, plainly.
     const rows = Object.entries(answers).slice(0, only);
     return (
-      <dl className="flex flex-col gap-2">
+      <dl className="dl">
         {rows.map(([k, v]) => (
           <div key={k}>
-            <dt className="text-sm font-semibold text-ink-alt">{k}</dt>
-            <dd className="whitespace-pre-wrap">{Array.isArray(v) ? v.join(', ') : String(v)}</dd>
+            <dt>{k}</dt>
+            <dd style={{ whiteSpace: 'pre-wrap' }}>
+              {Array.isArray(v) ? v.join(', ') : String(v)}
+            </dd>
           </div>
         ))}
       </dl>
@@ -52,26 +54,36 @@ export function ReportAnswers({
     const short = all.filter((x) => x.q.kind !== 'long_text').slice(0, only);
     const words = all.filter((x) => x.q.kind === 'long_text');
     return (
-      <div className="flex flex-col gap-3">
+      <div style={{ display: 'grid', gap: 12 }}>
         {short.length ? (
-          <dl className="flex flex-wrap gap-2">
+          <dl className="chips" style={{ margin: 0 }}>
             {short.map(({ q, text }) => (
               <div
                 key={q.key}
-                className="flex max-w-full flex-wrap gap-x-1 rounded-control border border-ink-alt px-2.5 py-1 text-sm"
+                className="st"
+                style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '0 4px', maxWidth: '100%' }}
               >
-                <dt className="text-ink-alt">
+                <dt>
                   {q.label}
                   <span aria-hidden="true"> ·</span>
                 </dt>
-                <dd className="min-w-0 break-words">{text}</dd>
+                <dd style={{ margin: 0, minWidth: 0, overflowWrap: 'anywhere' }}>{text}</dd>
               </div>
             ))}
           </dl>
         ) : null}
         {words.map(({ q, text }) => (
-          <p key={q.key} className="line-clamp-4 max-w-prose whitespace-pre-wrap">
-            <span className="sr-only">{q.label}: </span>
+          <p
+            key={q.key}
+            style={{
+              whiteSpace: 'pre-wrap',
+              display: '-webkit-box',
+              WebkitLineClamp: 4,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            <span className="vh">{q.label}: </span>
             {text}
           </p>
         ))}

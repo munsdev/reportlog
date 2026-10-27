@@ -31,6 +31,8 @@ export function CopyButton({
           void navigator.clipboard.writeText(text).then(
             () => {
               setCopied(true);
+              // Also said in the page's toast, when the page has one.
+              (window as unknown as { elSay?: (m: string) => void }).elSay?.('Copied');
             },
             () => {
               setCopied(false);

@@ -57,7 +57,10 @@ export function ListAdmin() {
   const query = useQuery(listsQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Btn look="ink" sm flat
+    <Btn
+      look="ink"
+      sm
+      flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -121,10 +124,10 @@ export function ListAdmin() {
               ))}
             </Rows>
             <div className="acts">
-              <Btn sm flat asChild >
+              <Btn sm flat asChild>
                 <Link to="/lists/review">Review entries</Link>
               </Btn>
-              <Btn sm flat asChild >
+              <Btn sm flat asChild>
                 <Link to="/lists/search">Find somebody&apos;s entries</Link>
               </Btn>
             </div>
@@ -273,7 +276,7 @@ function NewList({ onCancel }: { onCancel: () => void }) {
             </>
           ) : null}
           <div>
-            <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
+            <Btn look="ghost" sm flat type="button" onClick={onCancel}>
               Cancel
             </Btn>
           </div>

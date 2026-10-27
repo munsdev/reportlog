@@ -122,7 +122,7 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
         <FieldError>{save.error ? save.error.message : null}</FieldError>
       </Field>
       <div>
-        <Btn sm flat type="submit"  disabled={save.isPending}>
+        <Btn sm flat type="submit" disabled={save.isPending}>
           {save.isPending ? 'Saving…' : 'Save the threshold'}
         </Btn>
       </div>

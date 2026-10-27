@@ -54,7 +54,15 @@ import { Empty } from '@/mockup/Empty.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { CheckOption } from '@/mockup/Choice.tsx';
-import { Field, FieldDescription, FieldError, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
@@ -80,7 +88,10 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
   const [making, setMaking] = useState(false);
   const none = maps.data?.maps.length === 0;
   const make = (
-    <Btn look="ink" sm flat
+    <Btn
+      look="ink"
+      sm
+      flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -374,10 +385,10 @@ function NewMap({ onDone }: { onDone: () => void }) {
             />
           </Field>
           <div className="acts">
-            <Btn look="ink" sm flat type="submit"  disabled={make.isPending}>
+            <Btn look="ink" sm flat type="submit" disabled={make.isPending}>
               Make the map
             </Btn>
-            <Btn look="ghost" sm flat type="button"  onClick={onDone}>
+            <Btn look="ghost" sm flat type="button" onClick={onDone}>
               Cancel
             </Btn>
           </div>
@@ -462,10 +473,11 @@ function MapCard({
           ]}
         />
         <div className="acts">
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             type="button"
 
-            
             aria-expanded={open}
             onClick={() => {
               if (open && guard?.has(map.id) && !guard.ask(unsavedMapsQuestion([map.title]))) {
@@ -476,10 +488,12 @@ function MapCard({
           >
             {open ? 'Close' : 'Change'}
           </Btn>
-          <Btn look="ghost" sm flat
+          <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
 
-            
             aria-label="Move up"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
@@ -488,10 +502,12 @@ function MapCard({
           >
             ↑
           </Btn>
-          <Btn look="ghost" sm flat
+          <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
 
-            
             aria-label="Move down"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
@@ -501,7 +517,7 @@ function MapCard({
             ↓
           </Btn>
           {map.enabled ? (
-            <Btn look="ghost" sm flat asChild >
+            <Btn look="ghost" sm flat asChild>
               <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
@@ -944,7 +960,7 @@ function MapEditor({
       {save.isError ? (
         <FieldError>{save.error.message}</FieldError>
       ) : save.isSuccess ? (
-        <p role="status" className="text-sm">
+        <p role="status" className="m">
           Saved.
         </p>
       ) : null}
@@ -953,9 +969,11 @@ function MapEditor({
         <Btn look="ink" sm flat type="submit" disabled={save.isPending}>
           Save the map
         </Btn>
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           type="button"
-          
+
           onClick={() => {
             preview.mutate();
           }}
@@ -963,9 +981,11 @@ function MapEditor({
           What would it publish?
         </Btn>
         {confirmDelete ? (
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             type="button"
-            
+
             onClick={() => {
               remove.mutate();
             }}
@@ -973,9 +993,12 @@ function MapEditor({
             Yes, delete this map
           </Btn>
         ) : (
-          <Btn look="ghost" sm flat
+          <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
-            
+
             onClick={() => {
               setConfirmDelete(true);
             }}

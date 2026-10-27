@@ -183,10 +183,10 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
       ))}
       <Problem error={error} />
       <div className="acts">
-        <Btn sm flat type="submit"  disabled={busy}>
+        <Btn sm flat type="submit" disabled={busy}>
           Save the wording
         </Btn>
-        <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
+        <Btn look="ghost" sm flat type="button" onClick={onCancel}>
           Cancel
         </Btn>
       </div>

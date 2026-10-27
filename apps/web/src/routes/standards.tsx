@@ -34,7 +34,7 @@ function StandardsPage() {
         </Note>
       ) : null}
       <CopyText slot="standards" />
-      <p className="text-sm text-ink-alt">
+      <p className="m">
         Holding a report back is not a finding that it is false, and publishing one is not a finding
         that it is true. A moderator judges whether an account may be published, nothing more.
       </p>

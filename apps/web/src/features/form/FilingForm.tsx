@@ -808,7 +808,7 @@ function Cards({
                 {STATEMENT}
               </CheckBox>
               {/* The operator's own line about sending, when they wrote one. */}
-              <CopyText slot="send_note" className="font-semibold" />
+              <CopyText slot="send_note" className="lbl" />
               {/* G7, D2: said only when no address was given. With one, the
                   report can be corrected or withdrawn from My reports, and says so. */}
               {givesAddress ? (

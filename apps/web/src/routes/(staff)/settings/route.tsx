@@ -17,7 +17,7 @@ export const Route = createFileRoute('/(staff)/settings')({
 function SettingsLayout() {
   return (
     <StaffOnly needs="admin">
-      <div className="flex flex-col gap-6">
+      <div style={{ display: 'grid', gap: 24 }}>
         <UnsavedChangesGuard>
           <Outlet />
         </UnsavedChangesGuard>

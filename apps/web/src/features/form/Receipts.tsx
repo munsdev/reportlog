@@ -15,7 +15,7 @@
 import { FollowBand } from '@/features/follow/FollowBand.tsx';
 import { useGateMode } from '@/features/identity/gateMode.ts';
 import { Btn, BtnLink } from '@/mockup/Btn.tsx';
-import { CopyBtn } from '@/mockup/CopyBtn.tsx';
+import { CopyButton } from '@/mockup/CopyButton.tsx';
 import { Note } from '@/mockup/Note.tsx';
 import { useBodyClass } from '@/mockup/useBodyClass.ts';
 import { useFocusOnMount } from './CardFrame.tsx';
@@ -44,9 +44,7 @@ export function FiledReceipt({ reference }: { title: string; reference: string }
               ties this report to you, so it cannot be changed now. If something was wrong, file a
               new one.
             </p>
-            <CopyBtn text={reference} label="Copy the reference">
-              Copy reference
-            </CopyBtn>
+            <CopyButton text={reference} what="the reference" label="Copy reference" />
           </div>
           <ol className="steps">
             <li>

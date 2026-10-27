@@ -90,7 +90,9 @@ function FileForm({ from }: { from?: string | undefined }) {
         {about ? (
           <p>
             <Chip>About: {pageNameFor(about) ?? about}</Chip>{' '}
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               onClick={() => {
                 setAbout(undefined);
@@ -193,7 +195,9 @@ function Issues() {
               <>
                 {issue.title}
                 <IssueLine issue={issue} />
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   aria-expanded={openId === issue.id}
                   onClick={() => {

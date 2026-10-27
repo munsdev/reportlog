@@ -105,9 +105,12 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
       </Field>
       {entry.published ? (
         <div className="acts">
-          <Btn look="ghost" sm flat
+          <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
-            
+
             onClick={() => {
               // The box then holds the outline the server starts from
               // again, so nothing reads as unsaved afterwards.

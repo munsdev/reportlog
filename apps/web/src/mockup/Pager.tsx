@@ -47,10 +47,7 @@ export function Pager({
   return (
     <nav className="pager print:hidden" aria-label={label}>
       {page > 1 ? (
-        <button
-          type="button"
-          onClick={go(page - 1)}
-        >
+        <button type="button" onClick={go(page - 1)}>
           Previous
         </button>
       ) : null}
@@ -61,12 +58,7 @@ export function Pager({
             {p}
           </span>
         ) : (
-          <button
-            key={p}
-            type="button"
-            aria-label={`Page ${String(p)}`}
-            onClick={go(p)}
-          >
+          <button key={p} type="button" aria-label={`Page ${String(p)}`} onClick={go(p)}>
             {p}
           </button>
         ),
@@ -75,10 +67,7 @@ export function Pager({
         <span aria-hidden="true">…</span>
       ) : null}
       {page < pages ? (
-        <button
-          type="button"
-          onClick={go(page + 1)}
-        >
+        <button type="button" onClick={go(page + 1)}>
           Next
         </button>
       ) : null}

@@ -17,7 +17,15 @@ import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Modal.tsx';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/mockup/Modal.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { call } from '@/lib/api.ts';
@@ -117,9 +125,12 @@ export function StartingPointsPage() {
             ))}
           </ul>
           <div className="acts">
-            <Btn look="ink" sm flat
+            <Btn
+              look="ink"
+              sm
+              flat
               type="button"
-              
+
               onClick={() => {
                 apply.reset();
                 setAsking(chosen);
@@ -157,13 +168,16 @@ export function StartingPointsPage() {
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Btn sm flat type="button"  disabled={apply.isPending}>
+                <Btn sm flat type="button" disabled={apply.isPending}>
                   Cancel
                 </Btn>
               </DialogClose>
-              <Btn look="ink" sm flat
+              <Btn
+                look="ink"
+                sm
+                flat
                 type="button"
-                
+
                 disabled={apply.isPending}
                 onClick={() => {
                   apply.mutate(asking.id);

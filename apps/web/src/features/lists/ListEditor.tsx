@@ -24,7 +24,15 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { CheckOption } from '@/mockup/Choice.tsx';
-import { Field, FieldDescription, FieldError, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { CoverPanel } from '../builder/CoverPanel.tsx';
 import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
@@ -578,9 +586,12 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   <small className="mono">{d.key || 'new question'}</small>
                 </div>
                 <div className="acts">
-                  <Btn look="ghost" sm flat
+                  <Btn
+                    look="ghost"
+                    sm
+                    flat
                     type="button"
-                    
+
                     disabled={i === 0}
                     aria-label={`Move “${d.label || d.key}” up`}
                     onClick={() => {
@@ -589,9 +600,12 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     ↑
                   </Btn>
-                  <Btn look="ghost" sm flat
+                  <Btn
+                    look="ghost"
+                    sm
+                    flat
                     type="button"
-                    
+
                     disabled={i === drafts.length - 1}
                     aria-label={`Move “${d.label || d.key}” down`}
                     onClick={() => {
@@ -600,9 +614,11 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     ↓
                   </Btn>
-                  <Btn sm flat
+                  <Btn
+                    sm
+                    flat
                     type="button"
-                    
+
                     aria-label={`Change “${d.label || d.key}”`}
                     aria-expanded={editing}
                     onClick={() => {
@@ -611,9 +627,12 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     Change
                   </Btn>
-                  <Btn look="ghost" sm flat
+                  <Btn
+                    look="ghost"
+                    sm
+                    flat
                     type="button"
-                    
+
                     aria-label={`Remove “${d.label || d.key}”`}
                     onClick={() => {
                       setOpen(null);
@@ -746,9 +765,11 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
             ))}
           </Select>
         </Field>
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           type="button"
-          
+
           onClick={() => {
             setOpen(drafts.length);
             setDrafts((all) => [
@@ -774,9 +795,12 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
       {save.isError ? <Note tone="serious">{save.error.message}</Note> : null}
       {save.isSuccess ? <Note tone="done">The questions are saved.</Note> : null}
       <div className="acts">
-        <Btn look="ink" sm flat
+        <Btn
+          look="ink"
+          sm
+          flat
           type="button"
-          
+
           disabled={save.isPending}
           onClick={() => {
             save.mutate();
@@ -848,9 +872,12 @@ function Remove({ list }: { list: ListAdminDetail }) {
   return (
     <Panel kind="danger" title="Delete this list">
       <div className="acts">
-        <Btn look="bad" sm flat
+        <Btn
+          look="bad"
+          sm
+          flat
           type="button"
-          
+
           disabled={remove.isPending}
           onClick={() => {
             remove.mutate();

@@ -206,7 +206,13 @@ export function QrCode({ text, label }: { text: string; label: string }) {
       aria-label={label}
       viewBox={`0 0 ${String(n + 8)} ${String(n + 8)}`}
       className="qr"
-      style={{ width: 224, height: 224, background: 'none', border: 0, outline: '1px solid var(--rl-border)' }}
+      style={{
+        width: 224,
+        height: 224,
+        background: 'none',
+        border: 0,
+        outline: '1px solid var(--rl-border)',
+      }}
       shapeRendering="crispEdges"
     >
       <rect width="100%" height="100%" fill="white" />

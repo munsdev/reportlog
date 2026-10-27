@@ -96,8 +96,10 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
       )}
       <Problem error={freeze.error} />
       {frozen ? (
-        <Btn sm flat
-          
+        <Btn
+          sm
+          flat
+
           disabled={freeze.isPending}
           onClick={() => {
             freeze.mutate(false);
@@ -114,7 +116,10 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
             filed or published is hidden, and you can take the freeze off at any time.
           </p>
           <div className="acts">
-            <Btn look="ink" sm flat
+            <Btn
+              look="ink"
+              sm
+              flat
               disabled={freeze.isPending}
               onClick={() => {
                 freeze.mutate(true);
@@ -122,8 +127,10 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
             >
               Freeze uploads
             </Btn>
-            <Btn sm flat
-              
+            <Btn
+              sm
+              flat
+
               onClick={() => {
                 setAsking(false);
               }}
@@ -133,8 +140,10 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
           </div>
         </div>
       ) : (
-        <Btn sm flat
-          
+        <Btn
+          sm
+          flat
+
           onClick={() => {
             setAsking(true);
           }}

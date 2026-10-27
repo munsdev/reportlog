@@ -224,10 +224,7 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
           </div>
         </div>
       </MotifHost>
-      <section
-        className="zone"
-        data-zone={draft?.options.zones === 'single' ? 'a' : 'b'}
-      >
+      <section className="zone" data-zone={draft?.options.zones === 'single' ? 'a' : 'b'}>
         <div className="wrap" style={{ display: 'grid', gap: 16 }}>
           <h2 className="h-page">A record of what happened</h2>
           <Panel title="RL-7K2M-4QXD" headingLevel={3}>

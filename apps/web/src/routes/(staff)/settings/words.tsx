@@ -23,7 +23,15 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Field, FieldDescription, FieldError, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
@@ -90,9 +98,11 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
         ) : null}
       </Field>
       <div className="acts">
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           type="button"
-          
+
           disabled={!current}
           onClick={() => {
             if (current) onInsert(`{{ [${current.id}] }}`);
@@ -248,9 +258,12 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           {slot.kind === 'block' && slot.key !== 'lock_intro' && slot.key !== 'help_now' ? (
             <div className="form-stack" style={{ maxWidth: 'none' }}>
               <div className="acts">
-                <Btn look="ghost" sm flat
+                <Btn
+                  look="ghost"
+                  sm
+                  flat
                   type="button"
-                  
+
                   aria-expanded={picking}
                   onClick={() => {
                     setPicking(!picking);
@@ -264,9 +277,12 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           ) : null}
           {slot.written ? (
             <div className="acts">
-              <Btn look="ghost" sm flat
+              <Btn
+                look="ghost"
+                sm
+                flat
                 type="button"
-                
+
                 onClick={() => {
                   write('').then(
                     () => {

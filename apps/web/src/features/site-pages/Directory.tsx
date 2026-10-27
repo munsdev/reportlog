@@ -55,7 +55,10 @@ export function DirectoryPage() {
       {dir.data.organizations.length === 0 ? (
         <Empty title="Nobody listed yet">No organization has asked to be listed yet.</Empty>
       ) : (
-        <ol style={{ display: 'grid', gap: 18, listStyle: 'none', padding: 0 }} aria-label="Organizations, by members">
+        <ol
+          style={{ display: 'grid', gap: 18, listStyle: 'none', padding: 0 }}
+          aria-label="Organizations, by members"
+        >
           {dir.data.organizations.map((o) => (
             <li key={o.name}>
               <OrganizationRow

@@ -486,11 +486,11 @@ export function QuestionForm({
 
       <Problem error={error} />
       <div className="acts">
-        <Btn sm flat type="submit"  disabled={busy}>
+        <Btn sm flat type="submit" disabled={busy}>
           {submitLabel}
         </Btn>
         {onCancel && (
-          <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button" onClick={onCancel}>
             Cancel
           </Btn>
         )}

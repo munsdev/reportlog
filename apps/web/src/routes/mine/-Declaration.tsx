@@ -136,7 +136,9 @@ function Declaration({ threadId }: { threadId: string }) {
                 </Choice>
               </Choices>
             </div>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               onClick={() => {
                 window.print();

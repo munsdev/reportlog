@@ -31,7 +31,10 @@ export function LogbookList() {
   const query = useQuery(logbooksQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Btn look="ink" sm flat
+    <Btn
+      look="ink"
+      sm
+      flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -221,10 +224,10 @@ function NewLogbook({ onCancel }: { onCancel: () => void }) {
         <p className="muted">It is made as a draft. Nobody sees it until you launch it.</p>
         <Problem error={make.error} />
         <div className="acts">
-          <Btn look="ink" sm flat type="submit"  busy={make.isPending} busyLabel="Making it…">
+          <Btn look="ink" sm flat type="submit" busy={make.isPending} busyLabel="Making it…">
             Make the draft
           </Btn>
-          <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button" onClick={onCancel}>
             Cancel
           </Btn>
         </div>

@@ -82,7 +82,9 @@ export function Testers() {
                     ? ` (${t.roles.map((r) => (ROLE_LABELS as Record<string, string>)[r] ?? r).join(', ')})`
                     : ''}
                 </>,
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   disabled={change.isPending}
                   onClick={() => {

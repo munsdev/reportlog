@@ -271,7 +271,10 @@ export function LookOptionsPanel() {
       </section>
 
       <div className="acts">
-        <Btn look="ink" sm flat
+        <Btn
+          look="ink"
+          sm
+          flat
           busy={save.isPending}
           busyLabel="Saving…"
           disabled={!dirty}
@@ -282,7 +285,7 @@ export function LookOptionsPanel() {
           Save these choices
         </Btn>
         {dirty ? (
-          <Btn look="ghost" sm flat  onClick={d.reset}>
+          <Btn look="ghost" sm flat onClick={d.reset}>
             Discard changes
           </Btn>
         ) : null}

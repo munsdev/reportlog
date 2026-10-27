@@ -80,7 +80,9 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
         I understand this cannot be undone.
       </CheckBox>
       <ErrorLine error={go.error} />
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         look="bad"
         disabled={!sure || !matches || go.isPending}
         onClick={() => {

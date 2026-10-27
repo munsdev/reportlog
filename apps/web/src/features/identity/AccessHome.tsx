@@ -331,7 +331,9 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
         {accept.isSuccess ? (
           <Saved>You are now the owner.</Saved>
         ) : (
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             look="ink"
             disabled={accept.isPending}
             onClick={() => {
@@ -364,7 +366,9 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
             {new Date(o.pending.expiresAt).toUTCString()}.
           </p>
           {o.iAmOwner && (
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               onClick={() => {
                 cancel.mutate();
               }}
@@ -447,7 +451,9 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
             <Btn sm flat look="ink" type="submit" disabled={offer.isPending}>
               Offer the deployment
             </Btn>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               onClick={() => {
                 setCodeSent(false);

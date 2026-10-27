@@ -30,7 +30,15 @@ import { useId, useRef, useState } from 'react';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
-import { CheckBox, Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import {
+  CheckBox,
+  Field,
+  FieldDescription,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';

@@ -157,7 +157,10 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
           <PackContents pack={state.pack} />
           {state.error ? <Note tone="serious" title={state.error} /> : null}
           <div className="acts">
-            <Btn look="ink" sm flat
+            <Btn
+              look="ink"
+              sm
+              flat
               busy={state.at === 'installing'}
               busyLabel="Installing…"
               onClick={() => void install()}

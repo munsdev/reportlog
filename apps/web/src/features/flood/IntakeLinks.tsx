@@ -131,7 +131,9 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
                 l.disabled_at ? ` · switched off ${new Date(l.disabled_at).toLocaleString()}` : ''
               }`,
               !l.disabled_at ? (
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   disabled={off.isPending}
                   aria-label={`Switch off: ${l.label}`}
@@ -167,7 +169,9 @@ function NewLink({ url }: { url: string }) {
       <div className="copybox">
         <div className="row">
           <code>{url}</code>
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             onClick={() => {
               navigator.clipboard.writeText(url).then(
                 () => {

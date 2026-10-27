@@ -126,7 +126,9 @@ export function BundlePage() {
           It holds nothing from the archive: no logbooks, questions, lists, reports, entries, people
           or files.
         </p>
-        <Btn sm flat
+        <Btn
+          sm
+          flat
           look="ink"
           disabled={download.isPending}
           onClick={() => {
@@ -160,7 +162,9 @@ export function BundlePage() {
             title="Replace these settings?"
             buttons={
               <>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="bad"
                   disabled={upload.isPending}
                   onClick={() => {
@@ -169,7 +173,9 @@ export function BundlePage() {
                 >
                   Replace them
                 </Btn>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   onClick={() => {
                     setBundle(null);
@@ -223,7 +229,9 @@ export function BundlePage() {
             title="Restore the settings from before the last import?"
             buttons={
               <>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="bad"
                   disabled={restore.isPending}
                   onClick={() => {
@@ -232,7 +240,9 @@ export function BundlePage() {
                 >
                   Restore them
                 </Btn>
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   onClick={() => {
                     setAsking(false);
@@ -249,7 +259,9 @@ export function BundlePage() {
             </p>
           </Dlg>
         ) : (
-          <Btn sm flat
+          <Btn
+            sm
+            flat
             look="ghost"
             disabled={!last}
             onClick={() => {

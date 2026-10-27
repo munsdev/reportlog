@@ -60,7 +60,9 @@ export function StatesPicker({
               }
             }}
           />
-          <Btn sm flat onClick={apply}>Find</Btn>
+          <Btn sm flat onClick={apply}>
+            Find
+          </Btn>
         </div>
       </div>
       <div role="group" aria-label="States">

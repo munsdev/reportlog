@@ -116,7 +116,9 @@ function Roster() {
                 ) : (
                   'Never'
                 ),
-                <Btn sm flat
+                <Btn
+                  sm
+                  flat
                   look="ghost"
                   aria-label={`Change the team and desks of ${p.email}`}
                   onClick={() => {

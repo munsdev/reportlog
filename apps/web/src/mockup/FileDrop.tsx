@@ -43,6 +43,8 @@ export function FileDrop({
   };
   return (
     <>
+      {/* Dropping is an extra for a mouse; the label opens the file box for everybody else. */}
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <label
         className="file-drop"
         htmlFor={id}

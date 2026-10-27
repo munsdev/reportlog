@@ -22,7 +22,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { TabRow } from '@/features/nav/AreaTabs.tsx';
+import { PTabs } from '@/mockup/PTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
@@ -41,7 +41,7 @@ export function JournalistTabs() {
   const { pathname } = useLocation();
   const agreement = pathname.replace(/\/+$/, '').endsWith('/agreement');
   return (
-    <TabRow
+    <PTabs
       label="Journalists"
       tabs={[
         { to: '/access/journalists', label: 'Requests', current: !agreement },
@@ -130,7 +130,9 @@ function RevokeButton({ r }: { r: AccessRequestView }) {
   });
   return (
     <>
-      <Btn sm flat
+      <Btn
+        sm
+        flat
         look="ghost"
         disabled={act.isPending}
         title="Takes effect on their next request to the desk. They stay on the alert list."
@@ -196,7 +198,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         <ErrorLine error={act.error} />
         {r.status === 'pending' ? (
           <div className="acts">
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               disabled={act.isPending}
               onClick={() => {
@@ -205,7 +209,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
             >
               Approve
             </Btn>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               disabled={act.isPending}
               onClick={() => {
@@ -226,7 +232,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         text="This deletes what they sent: their outlet, role, what they said about themselves and press card. It cannot be undone. They stay on the alert list and can ask again."
         buttons={
           <>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ghost"
               onClick={() => {
                 setAsking(false);
@@ -234,7 +242,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
             >
               Keep the request
             </Btn>
-            <Btn sm flat
+            <Btn
+              sm
+              flat
               look="ink"
               disabled={act.isPending}
               onClick={() => {

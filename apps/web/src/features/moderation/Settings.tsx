@@ -181,9 +181,12 @@ function Keywords() {
       </Field>
       {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
       <div className="acts">
-        <Btn look="ghost" sm flat
+        <Btn
+          look="ghost"
+          sm
+          flat
           type="button"
-          
+
           busy={save.isPending}
           busyLabel="Going back…"
           onClick={() => {
