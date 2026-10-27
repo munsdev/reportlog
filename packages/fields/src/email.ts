@@ -87,3 +87,16 @@ export function formAsksEmail(
 ): boolean {
   return operatorRequires || questions.some(questionNeedsEmail);
 }
+
+/**
+ * Whether a logbook question would be sealed as the reporter typed it: the
+ * plain text kinds and a place that takes any words. A logbook may not ask
+ * one (nothing a reporter types freely reaches the public record); the held
+ * kinds are the free text it may ask. Lists are not subject to this.
+ */
+export function isPublishedFreeText(q: Pick<FieldDefinition, 'kind' | 'settings'>): boolean {
+  if (q.kind === 'place') return questionNeedsEmail(q);
+  return (
+    q.kind === 'short_text' || q.kind === 'long_text' || q.kind === 'url' || q.kind === 'email'
+  );
+}

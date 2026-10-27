@@ -84,6 +84,29 @@ const PRESETS: Record<string, { label: string; help: string }> = {
   },
 };
 
+/**
+ * A logbook cannot ask for free text that would be published as typed. The
+ * only free text it may ask is an attached note or link, which is held apart
+ * and never published (the server refuses the rest). Lists are unaffected:
+ * they have their own form.
+ */
+const PLAIN_TEXT_KINDS: ReadonlySet<string> = new Set(['short_text', 'long_text', 'url', 'email']);
+
+const PICKER_WORDS: Record<string, { label: string; help: string }> = {
+  private_text: {
+    label: 'Attached note (never published)',
+    help: 'Several paragraphs in the reporter’s own words. Never published; a moderator can read it and it can be erased. Asked only if the logbook lets reporters attach a note or link.',
+  },
+  private_link: {
+    label: 'Attached link (never published)',
+    help: 'Up to three links to a post, photo or video. Never published; a moderator can read them and each can be erased. Asked only if the logbook lets reporters attach a note or link.',
+  },
+  place: {
+    label: 'Place (pick from your list)',
+    help: 'Somewhere, chosen from a list you supply.',
+  },
+};
+
 /** The kinds that may carry an earliest and a latest answer (E4), and how each is typed. */
 const LIMIT_INPUT: Record<string, { type: string; example: string }> = {
   date: { type: 'date', example: '2026-11-03' },
@@ -104,13 +127,15 @@ export function QuestionForm({
   onCancel,
 }: Props) {
   const editing = Boolean(initial);
-  const [kind, setKind] = useState(initial?.kind ?? 'short_text');
-  const [label, setLabel] = useState(initial?.label ?? '');
-  const [help, setHelp] = useState(initial?.help ?? '');
+  const [kind, setKind] = useState(initial?.kind ?? 'private_text');
+  const [label, setLabel] = useState(initial?.label ?? PRESETS.private_text?.label ?? '');
+  const [help, setHelp] = useState(initial?.help ?? PRESETS.private_text?.help ?? '');
   const [required, setRequired] = useState(initial?.required ?? false);
   const [filterable, setFilterable] = useState(initial?.filterable ?? false);
   const [options, setOptions] = useState(optionsOf(initial).join('\n'));
-  const [allowOther, setAllowOther] = useState(initial?.settings.allowOther !== false);
+  // A new place is always a closed list: a typed place would be published as
+  // typed. One that already allows typing keeps doing so until it is replaced.
+  const allowOther = initial?.kind === 'place' && initial.settings.allowOther !== false;
   const [scope, setScope] = useState(
     typeof initial?.settings.scope === 'string' ? initial.settings.scope : 'us',
   );
@@ -213,7 +238,7 @@ export function QuestionForm({
       }}
     >
       {!editing && (
-        <Field label="Kind of question" help={type?.description}>
+        <Field label="Kind of question" help={PICKER_WORDS[kind]?.help ?? type?.description}>
           {(p) => (
             <Select
               {...p}
@@ -228,9 +253,9 @@ export function QuestionForm({
                 if (now && (help.trim() === '' || help === was?.help)) setHelp(now.help);
               }}
             >
-              {FIELD_TYPES.map((t) => (
+              {FIELD_TYPES.filter((t) => !PLAIN_TEXT_KINDS.has(t.id)).map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.label}
+                  {PICKER_WORDS[t.id]?.label ?? t.label}
                 </option>
               ))}
             </Select>
@@ -288,8 +313,9 @@ export function QuestionForm({
 
       {(kind === 'private_text' || kind === 'private_link') && (
         <p className="text-sm text-ink-alt">
-          A reporter who writes something or gives a link is asked for an email address and whether
-          vetted journalists may read it. After launch this can only be added as an optional
+          Reporters are asked this only if “Reporters may attach a note or link” is on for the
+          logbook. One who writes something or gives a link is asked for an email address and
+          whether vetted journalists may read it. After launch this can only be added as an optional
           question.
         </p>
       )}
@@ -299,7 +325,7 @@ export function QuestionForm({
           label="Choices, one per line"
           help={
             kind === 'place'
-              ? 'Leave empty to let people type any place.'
+              ? 'Reporters pick from this list. Typed places are not allowed on a logbook, because they would be published as typed.'
               : 'To keep a code apart from the words, write code | words, for example fine | It went fine. The code is what is sealed; the words can be changed after launch.'
           }
         >
@@ -313,15 +339,6 @@ export function QuestionForm({
             />
           )}
         </Field>
-      )}
-      {kind === 'place' && (
-        <Check
-          label="Let people type a place that is not on the list"
-          checked={allowOther}
-          onCheckedChange={(on) => {
-            setAllowOther(on);
-          }}
-        />
       )}
       {kind === LOCATION_TYPE && (
         <Field label="Which places it offers">

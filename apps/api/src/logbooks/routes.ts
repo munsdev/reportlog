@@ -143,7 +143,11 @@ export function logbookRoutes(
     const lb = await logbookByAddress(db, params.slug);
     // A draft is not merely closed to filing: it does not exist publicly.
     if (!lb || lb.state === 'draft') throw notFound('There is no logbook at that address.');
-    const fields = await fieldsFor(db, lb.id);
+    // The attached note and link questions are asked only where the operator
+    // turned them on (N1); otherwise the form never mentions them.
+    const fields = (await fieldsFor(db, lb.id)).filter(
+      (f) => lb.accepts_notes || (f.kind !== 'private_text' && f.kind !== 'private_link'),
+    );
     return {
       slug: lb.slug,
       title: lb.title,
@@ -229,6 +233,7 @@ export function logbookRoutes(
           blurb?: string | null;
           email_required?: boolean;
           email_optional?: boolean;
+          accepts_notes?: boolean;
           publish_by_terms?: boolean;
           show_on_front?: boolean;
           short_slug?: string | null;

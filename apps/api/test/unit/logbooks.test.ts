@@ -3,6 +3,7 @@
  * Ported from the logbook, template and home-button groups of
  * legacy/scripts/selftest.js. Nothing here needs a database.
  */
+import { isPublishedFreeText } from '@reportlog/fields';
 import type { AvailableButton } from '@reportlog/contracts';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
@@ -140,19 +141,43 @@ describe('starting points', () => {
     expect(startingPoints().find((p) => p.id === 'how-voting-went')?.typed).toBe(false);
   });
 
+  it('ask no free text that would be published: only the attached note and link kinds', () => {
+    for (const id of STARTING_POINTS) {
+      for (const q of templateLogbook(id).questions) {
+        const settings =
+          q.kind === 'place' ? { options: q.options ?? [], allowOther: q.allow_other ?? true } : {};
+        expect(isPublishedFreeText({ kind: q.kind, settings }), `${id}.${q.key}`).toBe(false);
+      }
+    }
+  });
+
+  it('knows which kinds are published as typed', () => {
+    for (const kind of ['short_text', 'long_text', 'url', 'email'])
+      expect(isPublishedFreeText({ kind, settings: {} }), kind).toBe(true);
+    for (const kind of ['private_text', 'private_link', 'choice_one', 'file', 'number'])
+      expect(isPublishedFreeText({ kind, settings: {} }), kind).toBe(false);
+    expect(
+      isPublishedFreeText({ kind: 'place', settings: { options: ['A'], allowOther: false } }),
+    ).toBe(false);
+    expect(
+      isPublishedFreeText({ kind: 'place', settings: { options: ['A'], allowOther: true } }),
+    ).toBe(true);
+    expect(isPublishedFreeText({ kind: 'place', settings: {} })).toBe(true);
+  });
+
   it('include a general one: no subject, takes up to three files, and the evidence pattern', () => {
     const f = templateLogbook('general');
     expect(f.slug).toBe('reports');
     expect(f.accepts_files).toBe(true);
     expect(f.max_files).toBe(3);
     expect(f.questions.map((q) => [q.key, q.kind, Boolean(q.required)])).toEqual([
-      ['account', 'long_text', true],
+      ['account', 'private_text', false],
       ['date', 'date', true],
       ['time', 'time', false],
-      ['place', 'short_text', false],
+      ['place', 'private_text', false],
       ['saw', 'choice_one', true],
       ['has_evidence', 'evidence_declaration', false],
-      ['evidence_of', 'short_text', false],
+      ['evidence_of', 'private_text', false],
     ]);
     expect(f.questions.at(-1)?.shown_when).toEqual({ field: 'has_evidence', in: ['yes'] });
   });
@@ -163,7 +188,7 @@ describe('starting points', () => {
     expect(d?.required).toBeFalsy();
     expect(d?.help).toMatch(/Nothing is uploaded/);
     const follow = qs.find((q) => q.shown_when?.field === d?.key);
-    expect(follow?.kind).toBe('short_text');
+    expect(follow?.kind).toBe('private_text');
     expect(follow?.shown_when?.in).toEqual(['yes']);
     expect(follow?.required).toBeFalsy();
     expect(follow && d && qs.indexOf(follow) > qs.indexOf(d)).toBe(true);

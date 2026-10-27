@@ -22,11 +22,12 @@ import {
   updateQuestion,
 } from '@reportlog/contracts';
 import type { LogbookDetail, Question } from '@reportlog/contracts';
-import { canFilter, describeCondition, fieldType } from '@reportlog/fields';
+import { canFilter, describeCondition, fieldType, isPublishedFreeText } from '@reportlog/fields';
 import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
+import { Alert } from '../../components/ui/alert.tsx';
 import { Button, buttonVariants } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
@@ -108,6 +109,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
               await refresh();
             }}
           />
+          <NotesRule lb={lb} refresh={refresh} />
           <EmailRule lb={lb} refresh={refresh} />
           <PublicationRule lb={lb} refresh={refresh} />
           <FrontPageSwitch lb={lb} refresh={refresh} />
@@ -280,6 +282,56 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
         </Field>
         <Problem error={save.error} />
       </div>
+    </GuardedPanel>
+  );
+}
+
+/**
+ * WHETHER REPORTERS MAY ATTACH A NOTE OR LINK (N1). The attached note and
+ * link questions are the only free text a logbook may ask, and they are never
+ * published. Off, they are not asked at all and do not call for an email
+ * address. A setting and not a question, so it can change after launch; off
+ * for every logbook until an operator turns it on (D21).
+ */
+function NotesRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const [on, setOn] = useState(lb.accepts_notes);
+  const save = useMutation({
+    mutationFn: () => call(updateLogbook, { params: { id: lb.id }, body: { accepts_notes: on } }),
+    onSuccess: refresh,
+  });
+  const resetSave = save.reset;
+  const reset = useCallback(() => {
+    setOn(lb.accepts_notes);
+    resetSave();
+  }, [lb.accepts_notes, resetSave]);
+  const asks = lb.fields.some((f) => f.kind === 'private_text' || f.kind === 'private_link');
+  return (
+    <GuardedPanel
+      id="notes"
+      title="Notes and links from reporters"
+      summary={[
+        { key: 'Reporters may attach a note or link', value: lb.accepts_notes ? 'Yes' : 'No' },
+      ]}
+      dirty={on !== lb.accepts_notes}
+      onSave={() => save.mutateAsync()}
+      onCancel={reset}
+    >
+      <p className="text-sm text-muted">
+        {lb.accepts_notes
+          ? 'Reporters are asked this logbook’s attached note and link questions. What they write is never published. A reporter who writes something is asked for an email address, so they can correct or erase it.'
+          : 'Reporters are not asked for a note or a link, and nothing they type reaches this logbook. Its attached note and link questions, if it has any, are skipped.'}
+      </p>
+      <Check
+        label="Reporters may attach a note or link"
+        checked={on}
+        help={
+          asks
+            ? 'Turn it on to ask this logbook’s attached note and link questions. It can be changed at any time, even after launch.'
+            : 'This logbook has no attached note or link question yet. Add one under Questions, then turn this on.'
+        }
+        onCheckedChange={setOn}
+      />
+      <Problem error={save.error} />
     </GuardedPanel>
   );
 }
@@ -544,6 +596,11 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                   {q.filterable ? <Chip tone="tag">Filter</Chip> : null}
                   {q.shown_when ? <Chip tone="tag">Sometimes</Chip> : null}
                 </p>
+                {isPublishedFreeText(q) && (
+                  <Alert tone="warning">
+                    This question is published as typed and cannot be changed.
+                  </Alert>
+                )}
                 {q.help && <p className="text-sm text-ink-alt">{q.help}</p>}
                 {q.shown_when && (
                   <p className="text-sm">{describeCondition(q.shown_when, defs(lb.fields))}</p>

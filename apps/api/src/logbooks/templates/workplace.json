@@ -38,7 +38,7 @@
     },
     {
       "key": "where",
-      "kind": "short_text",
+      "kind": "private_text",
       "label": "Where did it happen?",
       "help": "The area, the room, the machine — however people here would say it.",
       "required": false,
@@ -75,10 +75,10 @@
     },
     {
       "key": "account",
-      "kind": "long_text",
+      "kind": "private_text",
       "label": "Tell us what happened",
       "help": "In your own words. What led up to it, what happened, and what happened next.",
-      "required": true,
+      "required": false,
       "filterable": false
     },
     {
@@ -91,7 +91,7 @@
     },
     {
       "key": "evidence_of",
-      "kind": "short_text",
+      "kind": "private_text",
       "label": "What is it of?",
       "help": "One line. 'A photo of the guard rail', or 'the shift sheet for that day'.",
       "required": false,
