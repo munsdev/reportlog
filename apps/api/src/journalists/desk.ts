@@ -20,15 +20,15 @@
  *
  * WHAT NEVER (J10, as amended by owner decision D7). No email, no entry id,
  * no moderator's address, no other moderator note, nothing from the erasable
- * half of an entry EXCEPT the words a moderator checked (below), no withheld
+ * half of an entry EXCEPT the note a moderator wrote (below), no withheld
  * or unchecked item, and nothing from a report whose reporter does not allow
  * journalists to read it. Each is left out by what is SELECTED, not filtered
  * afterwards, so a new column cannot leak by default.
  *
- * WHAT NOW (W5). Written accounts: a report's text, or a tip's description,
- * that a moderator checked, only while the reporter's `journalist_sharing` is
- * granted (checked as written, or the redacted copy; never the original of a
- * redacted one). Report links join the checked links through `checkedLinks`,
+ * WHAT NOW (W5, N3). Written accounts: only a NOTE a moderator wrote from a
+ * report's text or a tip's description, only while the reporter's
+ * `journalist_sharing` is granted. The reporter's own words are never passed
+ * on, only quoted by the moderator inside the note. Report links join the checked links through `checkedLinks`,
  * under the same condition. Revoking, withdrawing or correcting takes them off
  * at once (reportValues/onDesk.ts; the permission is read live).
  *
@@ -408,16 +408,15 @@ function summarize(perTip: Answered[][]): DeskLink['context'] {
 
 /**
  * Written accounts (W5, D7): report text and tip descriptions a moderator
- * checked, shown only while they remain cleared (moderation/texts/clearance.ts
+ * wrote a note for, shown only while they remain cleared (moderation/texts/clearance.ts
  * reads the reporter's permission live). A page of ids is chosen from what
  * decrypts nothing; the page is written to the access log; only then is any
  * of it decrypted. A search has to open its candidates first, as the link
  * search does, and logs only what it then shows.
  *
- * WHAT THE JOURNALIST GETS: the words (or the moderators' redacted copy, never
- * the original of a redacted account), a report's public reference, a place,
- * and whether it was edited. Not an email, not a thread or entry id, not who
- * checked it or who redacted it, and nothing that says what was removed.
+ * WHAT THE JOURNALIST GETS: the moderator's note (never the original), a
+ * report's public reference and a place. Not an email, not a thread or entry
+ * id, not who wrote the note.
  */
 export async function deskTextPage(
   db: Kysely<DB>,

@@ -3,15 +3,14 @@
  *
  * A text reaches the desk only if ALL of these hold, read now on every
  * request:
- *   - a moderator checked it (checked, or checked with redaction);
+ *   - a moderator wrote a note for journalists (stored as `redacted`);
  *   - for a report, the reporter's `journalist_sharing` is granted, the
  *     report is the newest version of its thread, not withdrawn and not
  *     declined (reportValues/onDesk.ts). Revoking or withdrawing therefore
  *     takes it off at once. A correction that re-sent the words made a new
  *     fingerprint, which has no check, so it is off until checked again;
- *   - for "checked with redaction" there is a redacted copy, and the desk
- *     shows THAT copy. The original is never read for such an item: the code
- *     path for it does not open the original at all.
+ *   - the desk shows THAT note. The original is never read: nothing here opens
+ *     it, and an old `checked` row (the retired "as written") never matches.
  *
  * `clearedTexts` returns ids and context only: it decrypts nothing, so the
  * desk can write its access log before `readCleared` decrypts anything.
@@ -23,15 +22,14 @@ import type { DB } from '../../db/schema.gen.ts';
 import type { LinkKeys } from '../../links/keys.ts';
 import { openReportValue } from '../../links/keys.ts';
 import { sharedHeldValues } from '../../reportValues/onDesk.ts';
-import { readForDesk } from '../../reportValues/reads.ts';
-import { placeOf, tipText } from './items.ts';
+import { placeOf } from './items.ts';
 
 type Db = Kysely<DB>;
 
 export interface Cleared {
   itemId: number;
   source: 'report' | 'tip';
-  outcome: 'checked' | 'redacted';
+  outcome: 'redacted';
   checkedAt: string;
   /** Report: the value row of the newest version. */
   valueId: number | null;
@@ -69,18 +67,15 @@ export async function clearedTexts(db: Db): Promise<Cleared[]> {
         ORDER BY lf.position LIMIT 1)`.as('state'),
     ])
     .where('rv.kind', '=', 'private_text')
-    .where('ti.outcome', 'in', ['checked', 'redacted'])
-    // A redacted item with no copy shows nothing: there is nothing to show.
+    .where('ti.outcome', '=', 'redacted')
+    // A note that was never saved shows nothing: there is nothing to show.
     .where((eb) =>
-      eb.or([
-        eb('ti.outcome', '=', 'checked'),
-        eb.exists(
-          eb
-            .selectFrom('text_redactions as x')
-            .select('x.item_id')
-            .whereRef('x.item_id', '=', 'ti.id'),
-        ),
-      ]),
+      eb.exists(
+        eb
+          .selectFrom('text_redactions as x')
+          .select('x.item_id')
+          .whereRef('x.item_id', '=', 'ti.id'),
+      ),
     )
     .execute();
   const tips = await db
@@ -97,28 +92,25 @@ export async function clearedTexts(db: Db): Promise<Cleared[]> {
         ORDER BY lf.position LIMIT 1)`.as('state'),
     ])
     .where('ti.source', '=', 'tip')
-    .where('ti.outcome', 'in', ['checked', 'redacted'])
+    .where('ti.outcome', '=', 'redacted')
     .where('e.review_state', '<>', 'rejected')
     .where(
       sql<boolean>`e.erasable_answers IS NOT NULL AND jsonb_exists(e.erasable_answers, ti.field_key)`,
     )
     .where((eb) =>
-      eb.or([
-        eb('ti.outcome', '=', 'checked'),
-        eb.exists(
-          eb
-            .selectFrom('text_redactions as x')
-            .select('x.item_id')
-            .whereRef('x.item_id', '=', 'ti.id'),
-        ),
-      ]),
+      eb.exists(
+        eb
+          .selectFrom('text_redactions as x')
+          .select('x.item_id')
+          .whereRef('x.item_id', '=', 'ti.id'),
+      ),
     )
     .execute();
   const out: Cleared[] = [
     ...reports.map((r) => ({
       itemId: r.item_id,
       source: 'report' as const,
-      outcome: r.outcome as 'checked' | 'redacted',
+      outcome: 'redacted' as const,
       checkedAt: new Date(r.checked_at ?? 0).toISOString(),
       valueId: r.value_id,
       reportId: r.report_id,
@@ -132,7 +124,7 @@ export async function clearedTexts(db: Db): Promise<Cleared[]> {
     ...tips.map((t) => ({
       itemId: t.item_id,
       source: 'tip' as const,
-      outcome: t.outcome as 'checked' | 'redacted',
+      outcome: 'redacted' as const,
       checkedAt: new Date(t.checked_at ?? 0).toISOString(),
       valueId: null,
       reportId: null,
@@ -153,8 +145,8 @@ export interface DeskTextRead {
 }
 
 /**
- * Decrypt exactly these cleared items. Callers log first. A "checked" item
- * opens the original; a "redacted" one opens only the copy.
+ * Decrypt exactly these cleared items. Callers log first. Only the moderator's
+ * note is opened; the reporter's original is never read here.
  */
 export async function readCleared(
   db: Db,
@@ -170,14 +162,9 @@ export async function readCleared(
     .where(
       'item_id',
       'in',
-      items.filter((i) => i.outcome === 'redacted').map((i) => i.itemId),
+      items.map((i) => i.itemId),
     )
     .execute();
-  const originals = await readForDesk(
-    db,
-    keys,
-    items.flatMap((i) => (i.outcome === 'checked' && i.valueId !== null ? [i.valueId] : [])),
-  );
 
   const reportIds = items.flatMap((i) => (i.reportId === null ? [] : [i.reportId]));
   const reports = reportIds.length
@@ -216,16 +203,8 @@ export async function readCleared(
     : [];
 
   for (const i of items) {
-    let text: string | null = null;
-    if (i.outcome === 'redacted') {
-      const c = copies.find((x) => x.item_id === i.itemId);
-      text = c ? openReportValue(keys, c.body_enc, c.body_key) : null;
-    } else if (i.valueId !== null) {
-      text = originals.find((o) => o.id === i.valueId)?.value ?? null;
-    } else if (i.entryId !== null && i.fieldKey !== null) {
-      const e = entries.find((x) => x.id === i.entryId);
-      text = e ? tipText(e.erasable_answers, i.fieldKey) : null;
-    }
+    const c = copies.find((x) => x.item_id === i.itemId);
+    const text = c ? openReportValue(keys, c.body_enc, c.body_key) : null;
     if (text === null) continue;
     let place: string | null = null;
     if (i.reportId !== null) {

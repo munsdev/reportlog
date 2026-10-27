@@ -7,9 +7,13 @@
  * fingerprint and starts unchecked: the old clearance drops by itself. A tip's
  * long-text answer is named by entry and question.
  *
- * THE FOUR OUTCOMES. checked (journalists read it as written), redacted
- * (they read a separate copy, never the original), withheld (nobody outside
- * moderation reads it), illegal (the words are erased now). Without the
+ * THE THREE OUTCOMES. "Write a note" (stored as `redacted`: journalists read
+ * a note a moderator wrote, never the original; the editor starts blank and
+ * the moderator quotes what they choose), "keep internal" (stored as
+ * `withheld`: nobody outside moderation reads it), illegal (the words are
+ * erased now). A moderator never passes a reporter's words to a journalist.
+ * An old `checked` row (the retired "as written" outcome) is read as waiting
+ * and never reaches the desk. Without the
  * reporter's `journalist_sharing` a report's text can only be withheld or
  * illegal, and withdrawing or revoking takes it off the desk at once because
  * the desk reads that permission live (reportValues/onDesk.ts), not a copy of
@@ -38,7 +42,7 @@ import type { TextRef } from './ref.ts';
 
 type Db = Kysely<DB>;
 
-export const OUTCOMES = ['checked', 'redacted', 'withheld', 'illegal'] as const;
+export const OUTCOMES = ['redacted', 'withheld', 'illegal'] as const;
 export type Outcome = (typeof OUTCOMES)[number];
 
 export const MAX_REDACTED = 6000;
@@ -81,7 +85,7 @@ export function whyOf(raw: unknown): string {
 export const NOT_SHARED = refuse(
   409,
   'not_shared',
-  'The reporter has not allowed journalists to read this, so it can only be withheld or marked illegal.',
+  'The reporter has not allowed journalists to read this, so it can only be kept internal or marked illegal.',
 );
 
 // ── the candidates ────────────────────────────────────────────────────────
@@ -121,17 +125,16 @@ const WITH_ITEM = sql`
       ON (c.source = 'report' AND ti.fingerprint = c.fingerprint)
       OR (c.source = 'tip' AND ti.entry_id = c.subject_id AND ti.field_key = c.field_key)`;
 
-export type Filter = 'waiting' | 'checked' | 'redacted' | 'withheld';
+export type Filter = 'waiting' | 'redacted' | 'withheld';
 
 export async function countsOf(db: Db) {
   const r = await sql<{ outcome: string | null; n: string }>`
     SELECT outcome, count(*) AS n FROM (${WITH_ITEM}) x GROUP BY outcome`.execute(db);
-  const out = { waiting: 0, checked: 0, redacted: 0, withheld: 0 };
+  const out = { waiting: 0, redacted: 0, withheld: 0 };
   for (const row of r.rows) {
     const n = Number(row.n);
-    if (row.outcome === null) out.waiting += n;
-    else if (row.outcome === 'checked' || row.outcome === 'redacted' || row.outcome === 'withheld')
-      out[row.outcome] += n;
+    if (row.outcome === null || row.outcome === 'checked') out.waiting += n;
+    else if (row.outcome === 'redacted' || row.outcome === 'withheld') out[row.outcome] += n;
   }
   return out;
 }
@@ -181,7 +184,8 @@ export async function listPage(
   filter: Filter,
   { limit, offset }: { limit: number; offset: number },
 ): Promise<Page> {
-  const where = filter === 'waiting' ? sql`outcome IS NULL` : sql`outcome = ${filter}`;
+  const where =
+    filter === 'waiting' ? sql`(outcome IS NULL OR outcome = 'checked')` : sql`outcome = ${filter}`;
   const total = await sql<{ n: string }>`
     SELECT count(*) AS n FROM (${WITH_ITEM}) x WHERE ${where}`.execute(db);
   const rows = await sql<Candidate>`
@@ -282,7 +286,8 @@ export async function present(
         }
       : null;
     const common = {
-      outcome: c.outcome,
+      // The retired "checked as written" reads as waiting.
+      outcome: (c.outcome as string | null) === 'checked' ? null : c.outcome,
       checked_at: iso(c.checked_at),
       checked_by: c.checked_by,
       redaction: red,
@@ -438,11 +443,11 @@ export async function checkText(
   input: { outcome: unknown; reason: unknown; why: unknown; actor: string },
 ): Promise<{ outcome: Outcome; erased: boolean }> {
   const outcome = input.outcome;
-  if (outcome !== 'checked' && outcome !== 'withheld' && outcome !== 'illegal') {
+  if (outcome !== 'withheld' && outcome !== 'illegal') {
     throw refuse(
       400,
       'not_an_outcome',
-      'A written account is checked, withheld or illegal. To check it with redaction, save a redacted copy.',
+      'A written account is kept internal or marked illegal. To give journalists something to read, write a note.',
     );
   }
   if (outcome === 'illegal' && !isEraseReason(input.reason)) {
@@ -459,8 +464,6 @@ export async function checkText(
         'This was found illegal and erased. Nothing is left to check.',
       );
     }
-    // Checked means "a journalist may read it": only if the reporter allows it.
-    if (outcome === 'checked' && !(await sharingOf(trx, subject))) throw NOT_SHARED;
     await trx
       .insertInto('text_checks')
       .values({
@@ -499,12 +502,6 @@ export async function checkText(
 
 // ── the redacted copy ─────────────────────────────────────────────────────
 
-/** The marks the copy must carry: a [bracketed] piece the original does not have. */
-export function carriesNewMarker(original: string, copy: string): boolean {
-  const marks = copy.match(/\[[^[\]\n]{1,80}\]/g) ?? [];
-  return marks.some((m) => !original.includes(m));
-}
-
 export async function redactText(
   db: Db,
   keys: LinkKeys,
@@ -512,17 +509,19 @@ export async function redactText(
   input: { body: unknown; why: unknown; actor: string },
 ): Promise<{ outcome: 'redacted' }> {
   const body = typeof input.body === 'string' ? input.body.trim() : '';
-  if (!body) throw refuse(400, 'copy_needed', 'Write the copy journalists will read.');
+  if (!body) throw refuse(400, 'copy_needed', 'Write the note journalists will read.');
   if (body.length > MAX_REDACTED) {
-    throw refuse(400, 'copy_too_long', `Keep the copy under ${String(MAX_REDACTED)} characters.`);
+    throw refuse(400, 'copy_too_long', `Keep the note under ${String(MAX_REDACTED)} characters.`);
   }
   const why = whyOf(input.why);
   const subject = await resolve(db, keys, rawRef);
-  if (body === subject.text.trim() || !carriesNewMarker(subject.text, body)) {
+  // The note is the moderator's own writing. Pasting the whole account in is
+  // the one-click pass-through the owner ruled out.
+  if (body === subject.text.trim()) {
     throw refuse(
       400,
-      'redaction_unmarked',
-      'Mark what you removed in square brackets, for example [name removed], so a reader can tell it was edited.',
+      'note_is_original',
+      'Write the note in your own words. Quote only the parts journalists need.',
     );
   }
   return db.transaction().execute(async (trx) => {
@@ -663,7 +662,7 @@ export async function detail(db: Db, keys: LinkKeys, rawRef: string) {
     history: history.map((h) => ({
       at: new Date(h.created_at).toISOString(),
       by: h.actor_email,
-      kind: h.outcome as Outcome | 'review_approved' | 'review_returned',
+      kind: h.outcome as Outcome | 'checked' | 'review_approved' | 'review_returned',
       reason_category: h.reason_category,
       // Internal: this route is for staff only (moderator scope).
       reason: h.reason,
