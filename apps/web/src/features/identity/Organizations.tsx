@@ -29,7 +29,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '@/mockup/Btn.tsx';

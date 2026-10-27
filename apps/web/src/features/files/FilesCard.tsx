@@ -9,8 +9,8 @@
 import { DRAFT_HEADER, FILE_PATHS, createUpload, newUploadDraft } from '@reportlog/contracts';
 import type { UploadConfig } from '@reportlog/contracts';
 import { useId, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { call } from '@/lib/api.ts';
 import { megabytes, refusalFor } from './uploader.ts';
 import type { Item, Target, Uploader } from './uploader.ts';
@@ -92,45 +92,47 @@ export function FileList({
 }) {
   if (!items.length) return null;
   return (
-    <ul
-      className="flex flex-col divide-y divide-line rounded-card border border-ink-alt bg-surface"
-      aria-label="Your files"
-    >
+    <div style={{ display: 'grid', gap: 12 }} role="list" aria-label="Your files">
       {items.map((i) => (
-        <li key={i.id} className="flex flex-col gap-1 px-4 py-3">
-          <div className="flex items-center justify-between gap-3">
-            <span className="min-w-0 font-semibold break-all">{i.name}</span>
-            <Button
-              type="button"
-              variant="quiet"
-              className="-my-2 shrink-0"
-              onClick={() => {
-                onRemove(i);
-              }}
-              aria-label={`Remove ${i.name}`}
-            >
-              Remove
-            </Button>
-          </div>
-          <span className="font-mono text-[0.8125rem] text-ink-alt">
-            {megabytes(i.size)} · <span data-status={i.status}>{statusWords(i)}</span>
+        <div className="filerow" role="listitem" key={i.id}>
+          <span className="fic" aria-hidden="true">
+            {(i.name.split('.').pop() ?? '').slice(0, 4).toUpperCase()}
           </span>
-          {i.status === 'uploading' ? (
-            <div
-              role="progressbar"
-              aria-label={`Sending ${i.name}`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={i.progress}
-              className="h-1.5 w-full overflow-hidden rounded-full bg-paper-alt"
-            >
-              <div className="h-full bg-ink" style={{ width: `${String(i.progress)}%` }} />
+          <div>
+            <b style={{ overflowWrap: 'anywhere' }}>{i.name}</b>
+            <p className="m">
+              {megabytes(i.size)} · <span data-status={i.status}>{statusWords(i)}</span>
+            </p>
+            {i.status === 'uploading' ? (
+              <div
+                className="progress"
+                role="progressbar"
+                aria-label={`Sending ${i.name}`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={i.progress}
+              >
+                <span style={{ width: `${String(i.progress)}%` }} />
+              </div>
+            ) : null}
+            {i.error ? <p className="error">{i.error}</p> : null}
+            <div className="acts">
+              <Btn
+                sm
+                flat
+                look="ghost"
+                onClick={() => {
+                  onRemove(i);
+                }}
+                aria-label={`Remove ${i.name}`}
+              >
+                Remove
+              </Btn>
             </div>
-          ) : null}
-          {i.error ? <span className="text-sm font-semibold text-serious">{i.error}</span> : null}
-        </li>
+          </div>
+        </div>
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -154,15 +156,15 @@ export function FilePicker({
   const [problem, setProblem] = useState<string | null>(null);
   const room = uploader.kept.length < config.max_files;
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-ink-alt" id={`${id}-limits`}>
+    <div style={{ display: 'grid', gap: 12 }}>
+      <p className="m" id={`${id}-limits`}>
         {config.max_files === 1 ? 'One file' : `Up to ${String(config.max_files)} files`}, together
         less than {megabytes(config.max_total_bytes)}.{' '}
         {config.kinds.includes('video') || config.kinds.includes('audio')
           ? `Video and sound up to ${config.max_video_seconds < 90 ? `${String(config.max_video_seconds)} seconds` : `${String(Math.round(config.max_video_seconds / 60))} minutes`}.`
           : null}
       </p>
-      <p className="max-w-prose text-sm">
+      <p className="m">
         Photos and videos carry hidden details: where they were taken, when, and on what. Those are
         removed from any copy that could ever be shown. The file as you send it is kept, locked, as
         evidence.{filing ? ' Nothing is filed until you confirm from your email.' : null}
@@ -197,7 +199,7 @@ export function FilePicker({
         }}
       />
       {problem ? (
-        <p role="alert" className="text-sm font-semibold text-serious">
+        <p role="alert" className="error">
           {problem}
         </p>
       ) : null}

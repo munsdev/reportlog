@@ -24,7 +24,7 @@ import {
 import type { FormQuestion, UploadConfig } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { FileList } from '@/features/files/FilesCard.tsx';
 import { megabytes, refusalFor, useUploader } from '@/features/files/uploader.ts';
 import type { Item, Target } from '@/features/files/uploader.ts';
