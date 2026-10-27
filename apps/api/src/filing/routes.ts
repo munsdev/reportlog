@@ -36,6 +36,8 @@ import { IntakeCorrection } from './intakeCorrection.ts';
 import { IntakeFiles } from './intakeFiles.ts';
 import { intakeIsOpen, setIntakeSwitch, storedIntakeSwitch } from './intakeSwitch.ts';
 import { Mine } from './mine.ts';
+import { linkKeySource } from '../links/keys.ts';
+import type { LinkKeys } from '../links/keys.ts';
 import type { Door } from '../door/index.ts';
 import { refuseWhilePaused } from '../moderation/switches.ts';
 
@@ -56,6 +58,8 @@ export interface FilingRouteDeps {
   files?: Files | null;
   /** The checks every report passes before it is read (door/). */
   door: Door;
+  /** The link keys, shared with the rest of the app. Made from CONTACT_KEY when left out. */
+  linkKeys?: (() => Promise<LinkKeys>) | null;
 }
 
 /** The request body, already validated against the contract by Fastify. */
@@ -68,6 +72,9 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     app.log.warn('CONTACT_KEY is not set: this site will refuse every report until it is.');
   }
   const prefix = deps.publicRefPrefix ?? 'RL-';
+  // A report's held text and links are kept under these (reportValues/).
+  const linkKeys =
+    deps.linkKeys ?? linkKeySource(deps.db, deps.contactKey, deps.previousContactKey);
   const filing: FilingDeps = {
     db: deps.db,
     mailer: deps.mailer,
@@ -75,8 +82,9 @@ export async function filingRoutes(app: FastifyInstance, deps: FilingRouteDeps):
     ring,
     publicRefPrefix: prefix,
     filesOn: () => filesOn(deps.files ?? null),
+    linkKeys,
   };
-  const mine = new Mine(deps.db, ring, prefix);
+  const mine = new Mine(deps.db, ring, prefix, linkKeys);
   const intake = new Intake(deps.db, ring, prefix, deps.files ?? null);
   const intakeFiles = new IntakeFiles(deps.db, intake, deps.files ?? null);
   const intakeCorrection = new IntakeCorrection(deps.db, prefix);

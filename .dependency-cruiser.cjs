@@ -63,6 +63,16 @@ module.exports = {
       to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
     },
     {
+      name: 'held-values-never-reach-the-chain',
+      comment:
+        "A report's held text and links are read by moderators and the desk, which may not " +
+        'reach the chain. So the store under them may not either: the fingerprints are made in ' +
+        'apps/api/src/chain/held.ts and handed in (W1).',
+      severity: 'error',
+      from: { path: '^apps/api/src/reportValues/' },
+      to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
+    },
+    {
       name: 'journalists-never-reach-the-chain',
       comment:
         'The alert list and the desk hold people and checked links, not reports. Nothing under journalists may reach the ' +

@@ -35,6 +35,9 @@ import type { Confirmation } from '@reportlog/contracts';
 import {
   LIMITED_KINDS,
   buildAnswers,
+  buildHeldValues,
+  holdsAnything,
+  maxLinksOf,
   normalizeAnswer,
   strictProblems,
   withoutWording,
@@ -48,6 +51,9 @@ import { sql } from 'kysely';
 import type { Kysely, Transaction } from 'kysely';
 import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
+import { prepareHeld } from '../chain/held.ts';
+import type { LinkKeys } from '../links/keys.ts';
+import { hasStagedHeld, stageHeld, takeStagedHeld } from '../reportValues/store.ts';
 import { questionsFor } from '../chain/questions.ts';
 import { isKnownDigest } from '../consent/cards.ts';
 import { publicArchiveAvailable } from '../board/publication.ts';
@@ -113,6 +119,11 @@ export interface FilingDeps {
   publicRefPrefix: string;
   /** Whether this site is taking files at all (the site-wide switch). */
   filesOn?: () => Promise<boolean>;
+  /**
+   * The keys a report's held text and links are kept under (reportValues/).
+   * Null on a site without CONTACT_KEY, which then takes no held value.
+   */
+  linkKeys?: (() => Promise<LinkKeys>) | null;
 }
 
 export const confirmEmail = (logbookTitle: string, link: string, eraseLink?: string) => ({
@@ -180,6 +191,47 @@ export function answerRefusals(
     ...bad.map((l) => `${l} must be one of the choices offered.`),
     ...late.map((l) => `${l} is outside the dates or times this form takes.`),
   ];
+}
+
+/**
+ * A COORDINATOR FILES NO HELD VALUE YET. Their paths (intake.ts,
+ * intakeCorrection.ts) seal through `appendReportVersion` like any other, but
+ * nothing carries a held value from a batch or a paper form into the store,
+ * so one sent is refused rather than dropped without a word.
+ */
+export function coordinatorHeldRefusals(
+  questions: readonly FieldDefinition[],
+  body: Record<string, unknown>,
+  answers: Answers | undefined,
+): string[] {
+  const built = buildHeldValues(questions, body, answers);
+  if (holdsAnything(built.held) || built.problems.length) {
+    return [
+      'Text and links that are never published cannot be filed for somebody else yet. Leave them out.',
+    ];
+  }
+  if (built.errors.length) {
+    return ['This logbook needs text or a link that cannot be filed for somebody else yet.'];
+  }
+  return [];
+}
+
+/** The held values a submission sent that are not ones its question takes, as sentences. */
+export function heldRefusals(
+  questions: readonly FieldDefinition[],
+  problems: readonly { key: string; reason: 'not-accepted' | 'too-many' }[],
+): string[] {
+  return problems.map((p) => {
+    const q = questions.find((x) => x.key === p.key);
+    const label = q?.label ?? p.key;
+    if (p.reason === 'too-many') {
+      const n = maxLinksOf(q?.settings);
+      return `${label} takes at most ${String(n)} link${n === 1 ? '' : 's'}.`;
+    }
+    return q?.kind === 'private_link'
+      ? `${label} must be a web address starting with http:// or https://.`
+      : `${label} must be written as text.`;
+  });
 }
 
 /**
@@ -303,7 +355,14 @@ export async function stageSubmission(
   const { answers, errors } = buildAnswers(questions, b.answers ?? {});
   problems.push(...answerRefusals(questions, b.answers ?? {}));
   problems.push(...errors.map((e) => `${e}.`));
+  // Text and links kept apart from the report, so they can be erased (W1).
+  const built = buildHeldValues(questions, b.answers ?? {}, answers);
+  problems.push(...built.errors.map((e) => `${e}.`), ...heldRefusals(questions, built.problems));
   if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
+  const held = holdsAnything(built.held) ? built.held : undefined;
+  // A held value asks for an address (TYPED_KINDS), so it always waits for
+  // its link below. Without the keys it cannot be kept at all.
+  if (held && (!asksEmail || !deps.linkKeys)) throw notConfigured();
 
   // The digest arrives from the client, so it is not trusted: it has to name
   // wording this site actually put on screen, and the general card's at that.
@@ -401,6 +460,8 @@ export async function stageSubmission(
       })
       .returning('id')
       .executeTakeFirstOrThrow();
+    // Never in `payload`, which outlives confirmation: encrypted, beside it.
+    if (held && deps.linkKeys) await stageHeld(trx, await deps.linkKeys(), sub.id, held);
     // Files staged while the report was written now belong to it, and the
     // worker may start on them: nothing is worked on before Send. On a
     // logbook whose uploads were frozen meanwhile they are dropped instead.
@@ -508,6 +569,9 @@ export async function confirmSubmission(
   if (!found) throw linkNotFound();
   if (!deps.ring) throw notConfigured();
   const ring = deps.ring;
+  // Opened only for a report that holds a value: loading the keys makes the
+  // link secret on first use, under whatever CONTACT_KEY is current.
+  const linkKeys = deps.linkKeys ?? null;
 
   // Files still being prepared: this is not the moment to seal, because
   // confirming is the last moment the manifest can change. Nothing is
@@ -542,7 +606,7 @@ export async function confirmSubmission(
       .executeTakeFirstOrThrow();
     if (row.confirmed_at || !row.email) return null;
     if (row.expires_at < new Date()) return null;
-    return fileFromSubmission(trx, deps.publicRefPrefix, ring, {
+    return fileFromSubmission(trx, deps.publicRefPrefix, ring, linkKeys, {
       ...row,
       email: row.email,
     });
@@ -556,6 +620,7 @@ async function fileFromSubmission(
   trx: Transaction<DB>,
   publicRefPrefix: string,
   ring: ContactKeyring,
+  linkKeys: (() => Promise<LinkKeys>) | null,
   row: {
     id: number;
     logbook_id: number;
@@ -569,6 +634,12 @@ async function fileFromSubmission(
   const threadId = randomUUID();
   // The finished files, sealed into this version and linked to exactly it.
   const files = await sealFiles(trx, { submissionId: row.id }, threadId);
+  // Its held text and links, removed from where they waited as they are
+  // read, sealed as fingerprints and stored under fresh keys (W1).
+  const waiting = await hasStagedHeld(trx, row.id);
+  if (waiting && !linkKeys) throw notConfigured();
+  const keys = waiting && linkKeys ? await linkKeys() : null;
+  const staged = keys ? await takeStagedHeld(trx, keys, row.id) : undefined;
   const { row: report } = await appendReportVersion(trx, {
     logbookId: row.logbook_id,
     threadId,
@@ -576,6 +647,7 @@ async function fileFromSubmission(
     attachments: files.manifest,
     formId: row.form_id,
     publicRefPrefix,
+    ...(staged && keys ? { held: { keys, rows: prepareHeld(staged) } } : {}),
   });
   await files.link(report.id);
   await startThread(trx, threadId, report);

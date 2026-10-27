@@ -131,13 +131,48 @@ export const FIELD_TYPES: readonly FieldTypeInfo[] = [
       're-encoded, so camera metadata and location do not survive.',
     settings: {},
   },
+  // THE TWO ERASABLE KINDS (W1). Their answers are NOT in `answers` either:
+  // each value is held outside the report, under a key of its own, and the
+  // seal holds only a fingerprint of it and a random value kept with it
+  // (`text_fingerprints`, `link_fingerprints` in packages/seal/src/report.ts).
+  // Erasing destroys the value and its key; the fingerprint stays, so the
+  // report still verifies. They are never public (gap report D10, D17).
+  // `short_text`, `long_text` and `url` stay as they were: they are sealed
+  // as typed, and every report that answered one is sealed that way.
+  {
+    id: 'private_text',
+    label: 'Text that is never published',
+    description:
+      'Several paragraphs in their own words. Never published. Kept apart from ' +
+      'the report so it can be erased, and only a fingerprint of it is sealed.',
+    settings: { maxLength: 5000 },
+  },
+  {
+    id: 'private_link',
+    label: 'Links that are never published',
+    description:
+      'Up to three links to a post, photo or video. Never published. Kept apart ' +
+      'from the report so each can be erased, and only a fingerprint of each is sealed.',
+    settings: { maxValues: 1 },
+  },
 ];
 
 /** The upload type. A form has at most one. */
 export const FILE_TYPE = 'file' satisfies FieldKind;
 
-/** Types that never carry a sealed answer of their own. */
-export const UNSEALED_TYPES: ReadonlySet<string> = new Set([FILE_TYPE]);
+/** Erasable text: held outside the report, sealed as a fingerprint (held.ts). */
+export const PRIVATE_TEXT_TYPE = 'private_text' satisfies FieldKind;
+/** Erasable links: held in the link store, each sealed as a fingerprint (held.ts). */
+export const PRIVATE_LINK_TYPE = 'private_link' satisfies FieldKind;
+
+/** The kinds whose values are held outside the report and sealed as fingerprints. */
+export const HELD_TYPES: ReadonlySet<string> = new Set([PRIVATE_TEXT_TYPE, PRIVATE_LINK_TYPE]);
+
+/**
+ * Types that never carry a sealed answer of their own, in `answers`. A file
+ * is sealed in `attachments`; a held value in its fingerprint key.
+ */
+export const UNSEALED_TYPES: ReadonlySet<string> = new Set([FILE_TYPE, ...HELD_TYPES]);
 
 export const FIELD_TYPE_IDS: readonly FieldKind[] = FIELD_TYPES.map((t) => t.id);
 

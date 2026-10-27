@@ -18,6 +18,14 @@
  * link exactly those files to the returned row (report_attachments) in the
  * same transaction; the verifier rebuilds the manifest from that table and a
  * difference shows as a report that no longer matches its fingerprint.
+ *
+ * HELD VALUES (W1). Erasable text and links are sealed as fingerprints and
+ * stored outside the report. Both are written HERE, from the same rows, in
+ * the same transaction, so the fingerprints sealed and the values kept cannot
+ * disagree: a caller hands over the values (`held.rows`, from prepareHeld) or
+ * the version to carry them from, never fingerprints of its own. Only a
+ * replayed archive brings fingerprints in its fields, because the values do
+ * not travel with it (anchor/archive.ts).
  */
 import {
   buildSealedObject,
@@ -25,12 +33,17 @@ import {
   chainHash,
   contentHash,
   genPublicRef,
+  heldFingerprint,
 } from '@reportlog/seal';
 import type { AttachmentEntry, ReportFields, SealedReport } from '@reportlog/seal';
 import { sql } from 'kysely';
 import type { Selectable, Transaction } from 'kysely';
 import type { DB, Reports } from '../db/schema.gen.ts';
+import type { LinkKeys } from '../links/keys.ts';
+import { carryHeldRows, heldSlotsOf, storeHeldRows } from '../reportValues/store.ts';
+import type { HeldRow, HeldSlot } from '../reportValues/store.ts';
 import { ensureFormVersion } from './forms.ts';
+import { fingerprintKeys } from './held.ts';
 import { questionsFor } from './questions.ts';
 
 export interface AppendInput {
@@ -49,6 +62,12 @@ export interface AppendInput {
   publicRefPrefix: string;
   /** Only for replaying an exported archive into a new chain. */
   replay?: { publicRef: string; receivedAt: string };
+  /**
+   * The version's held values: fresh ones, each with its nonce (prepareHeld
+   * in held.ts), or every value an earlier version of the thread still
+   * holds, carried unchanged. Left out, the version holds none.
+   */
+  held?: { keys: LinkKeys; rows: readonly HeldRow[] } | { carryFrom: number };
 }
 
 export interface AppendResult {
@@ -96,7 +115,24 @@ export async function appendReportVersion(
     if (!row) throw new ChainError("That form version is not this logbook's");
     form = { id: row.id, hash: row.form_hash };
   }
-  const fields: ReportFields = { ...input.fields, logbook_form: form.hash };
+  // The fingerprint keys come from the held values and from nowhere else.
+  if (
+    !input.replay &&
+    (input.fields.text_fingerprints !== undefined || input.fields.link_fingerprints !== undefined)
+  ) {
+    throw new ChainError('Fingerprints of held values are made here, from the values themselves');
+  }
+  let slots: HeldSlot[] = [];
+  if (input.held && 'rows' in input.held) {
+    slots = checkedRows(input.held.rows);
+  } else if (input.held) {
+    slots = await heldSlotsOf(trx, input.held.carryFrom);
+  }
+  const fields: ReportFields = {
+    ...input.fields,
+    ...fingerprintKeys(slots),
+    logbook_form: form.hash,
+  };
 
   const latest = await trx
     .selectFrom('reports')
@@ -134,6 +170,17 @@ export async function appendReportVersion(
       // the request, so the column cannot drift from the seal. Absent is
       // NULL, never {}.
       answers: sealed.answers ? JSON.stringify(sealed.answers) : null,
+      // Likewise: what was sealed under these keys, never {}. NAMED ONLY WHEN
+      // PRESENT (the column default is NULL), so a report without a held
+      // value is the same INSERT as before the columns existed: this code
+      // files it on a database that has not yet run their migration, which
+      // is how the upgrade test files its "before" reports.
+      ...(sealed.text_fingerprints
+        ? { text_fingerprints: JSON.stringify(sealed.text_fingerprints) }
+        : {}),
+      ...(sealed.link_fingerprints
+        ? { link_fingerprints: JSON.stringify(sealed.link_fingerprints) }
+        : {}),
       may_publish: sealed.may_publish,
       may_publish_digest: sealed.may_publish_digest,
       // Null on a direct report, so the row and the seal say the same thing.
@@ -146,5 +193,30 @@ export async function appendReportVersion(
     .returningAll()
     .executeTakeFirstOrThrow();
 
+  if (input.held && 'rows' in input.held) {
+    await storeHeldRows(trx, input.held.keys, row.id, input.held.rows);
+  } else if (input.held) {
+    const carried = await carryHeldRows(trx, input.held.carryFrom, row.id);
+    // Read twice in one transaction: an erasure that landed in between would
+    // seal a fingerprint with nothing behind it. Refuse; the caller retries.
+    if (JSON.stringify(carried) !== JSON.stringify(slots)) {
+      throw new ChainError('The held values changed while this version was being written');
+    }
+  }
+
   return { row, sealed };
+}
+
+/** Fresh rows: each fingerprint really is of its own nonce and value, and no slot twice. */
+function checkedRows(rows: readonly HeldRow[]): HeldSlot[] {
+  const seen = new Set<string>();
+  return rows.map((r) => {
+    const slot = `${r.fieldKey}/${String(r.position)}`;
+    if (seen.has(slot)) throw new ChainError(`Two held values for ${slot}`);
+    seen.add(slot);
+    if (heldFingerprint(r.nonce, r.value) !== r.fingerprint) {
+      throw new ChainError(`The fingerprint of ${slot} is not of its value`);
+    }
+    return { fieldKey: r.fieldKey, kind: r.kind, position: r.position, fingerprint: r.fingerprint };
+  });
 }

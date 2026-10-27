@@ -7,7 +7,12 @@
  * rather than quietly rebuilding a different object.
  */
 import type { Answers } from '@reportlog/fields';
-import type { AttachmentEntry, StoredReportRecord } from '@reportlog/seal';
+import type {
+  AttachmentEntry,
+  LinkFingerprints,
+  StoredReportRecord,
+  TextFingerprints,
+} from '@reportlog/seal';
 import type { Kysely, Selectable } from 'kysely';
 import type { DB, Reports } from '../db/schema.gen.ts';
 
@@ -42,6 +47,11 @@ export function toStoredRecord(row: SealedReportRow): StoredReportRecord {
     form_id: row.form_id,
     logbook_form: row.logbook_form,
     answers: row.answers as Answers | null,
+    // Written from the sealed object at insert, in its shape (append.ts).
+    // `?? null`: read from a database before their migration, the columns
+    // are not there at all, and that report held nothing.
+    text_fingerprints: (row.text_fingerprints ?? null) as TextFingerprints | null,
+    link_fingerprints: (row.link_fingerprints ?? null) as LinkFingerprints | null,
     third_party: row.third_party,
     filed_via: row.filed_via,
     intake_method: row.intake_method,

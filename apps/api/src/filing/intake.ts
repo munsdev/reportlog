@@ -43,7 +43,14 @@ import { logbookBySlug } from '../logbooks/logbooks.ts';
 import type { LogbookSummary } from '@reportlog/contracts';
 import { sealContact } from './contactKeys.ts';
 import type { ContactKeyring } from './contactKeys.ts';
-import { answerRefusals, intakeClosed, notConfigured, refused, startThread } from './filing.ts';
+import {
+  answerRefusals,
+  coordinatorHeldRefusals,
+  intakeClosed,
+  notConfigured,
+  refused,
+  startThread,
+} from './filing.ts';
 import { accountDraft, fileProblems } from './intakeFiles.ts';
 import { intakeIsOpen } from './intakeSwitch.ts';
 
@@ -280,7 +287,11 @@ export class Intake {
       else if (hit.lb.state !== 'open') problems.push('names a logbook that is not taking reports');
       else {
         problems.push(...answerRefusals(hit.questions, payload.answers ?? {}));
-        problems.push(...buildAnswers(hit.questions, payload.answers ?? {}).errors);
+        const built = buildAnswers(hit.questions, payload.answers ?? {});
+        problems.push(...built.errors);
+        problems.push(
+          ...coordinatorHeldRefusals(hit.questions, payload.answers ?? {}, built.answers),
+        );
         if (draftId !== undefined) {
           problems.push(
             ...(await fileProblems(

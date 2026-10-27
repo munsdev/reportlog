@@ -16,6 +16,8 @@ import { appendReportVersion } from '../chain/append.ts';
 import { ensureFormVersion } from '../chain/forms.ts';
 import { manifestFor } from '../chain/record.ts';
 import type { DB, Reports } from '../db/schema.gen.ts';
+import type { LinkKeys } from '../links/keys.ts';
+import type { HeldRow } from '../reportValues/store.ts';
 import { flagReport } from '../moderation/flags.ts';
 
 /** Take the thread's head. Two corrections at once must not both correct the same version. */
@@ -40,6 +42,8 @@ export async function appendCorrection(
     questions: FieldDefinition[];
     fields: ReportFields;
     publicRefPrefix: string;
+    /** The correction's own held values, fresh (chain/held.ts). Left out, it holds none. */
+    held?: { keys: LinkKeys; rows: readonly HeldRow[] };
   },
 ): Promise<Selectable<Reports>> {
   const lb = await trx
@@ -69,6 +73,7 @@ export async function appendCorrection(
     attachments: manifest,
     formId: form.id,
     publicRefPrefix: input.publicRefPrefix,
+    ...(input.held ? { held: input.held } : {}),
   });
   if (inherited.length) {
     await trx

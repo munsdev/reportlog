@@ -23,6 +23,8 @@ import type { FieldDefinition } from './types.ts';
  *   email                   a second address is an address.
  *   url                     typed, and a link can name a person's own page.
  *   place                   free text unless it is a closed list (below).
+ *   private_text,           held outside the report, erasable, never
+ *     private_link          published (held.ts).
  *
  * NOT here, because the answer is the operator's vocabulary or a bounded
  * value that cannot carry a sentence: a choice, yes/no, a location code, a
@@ -33,6 +35,10 @@ export const TYPED_KINDS: ReadonlySet<string> = new Set([
   'long_text',
   'email',
   'url',
+  // Erasable text and links (held.ts): typed, and the reporter's to correct
+  // or erase, which is what the address is for (gap report D8).
+  'private_text',
+  'private_link',
 ]);
 
 /**

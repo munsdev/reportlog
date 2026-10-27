@@ -75,6 +75,10 @@ export const EXCLUDED: Readonly<Record<string, string>> = {
   ownership_transfers: "A handover of the owner's seat in progress, with its code. Start it again.",
   report_submissions:
     'Unconfirmed filings, holding an address in the clear until confirmed or swept. An unconfirmed filing is not yet in the archive.',
+  report_values:
+    "A report's held text and links, each under a key hung from this server's link secret, which does not travel either. A copy in an export file would outlive an erasure. The fingerprints travel with the reports, so every report still verifies.",
+  report_submission_values:
+    'Held text and links of unconfirmed filings, which do not travel (report_submissions).',
   anchor_runs: "This server's record of its own anchor runs.",
   chain_anchors:
     'Carried as previous_chain_anchors, and restored only when every fingerprint replays identically.',

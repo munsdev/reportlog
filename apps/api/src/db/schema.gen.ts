@@ -877,6 +877,7 @@ export interface Reports {
   form_id: number | null;
   id: Generated<number>;
   intake_method: string | null;
+  link_fingerprints: Json | null;
   logbook_id: number;
   may_publish: boolean;
   may_publish_digest: string;
@@ -884,6 +885,7 @@ export interface Reports {
   public_ref: string;
   received_at: Timestamp;
   recipe: Generated<number>;
+  text_fingerprints: Json | null;
   third_party: boolean | null;
   thread_id: string;
 }
@@ -899,6 +901,38 @@ export interface ReportSubmissions {
   payload: Json;
   thread_id: string | null;
   token_hash: string;
+}
+
+export interface ReportSubmissionValues {
+  created_at: Generated<Timestamp>;
+  submission_id: number;
+  value_enc: Buffer;
+  value_key: Buffer;
+}
+
+export interface ReportValueErasures {
+  actor: string;
+  created_at: Generated<Timestamp>;
+  field_key: string;
+  fingerprint: string;
+  id: Generated<number>;
+  kind: string;
+  position: number;
+  reason_category: string;
+  report_id: number;
+}
+
+export interface ReportValues {
+  created_at: Generated<Timestamp>;
+  field_key: string;
+  fingerprint: string;
+  group_id: number | null;
+  id: Generated<number>;
+  kind: string;
+  position: Generated<number>;
+  report_id: number;
+  value_enc: Buffer;
+  value_key: Buffer;
 }
 
 export interface RoleAudit {
@@ -1170,7 +1204,10 @@ export interface DB {
   report_heads: ReportHeads;
   report_permissions_log: ReportPermissionsLog;
   report_review_flags: ReportReviewFlags;
+  report_submission_values: ReportSubmissionValues;
   report_submissions: ReportSubmissions;
+  report_value_erasures: ReportValueErasures;
+  report_values: ReportValues;
   reporter_actions: ReporterActions;
   reports: Reports;
   role_audit: RoleAudit;

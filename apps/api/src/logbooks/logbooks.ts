@@ -20,6 +20,7 @@ import {
   FILE_TYPE,
   LOCATION_SCOPES,
   LOCATION_TYPE,
+  MAX_PRIVATE_LINKS,
   canFilter,
   cardProblem,
   fieldType,
@@ -615,6 +616,9 @@ const SETTING_KEYS: Record<string, readonly string[]> = {
   date: ['earliest', 'latest'],
   time: ['earliest', 'latest'],
   datetime: ['earliest', 'latest'],
+  // Held outside the report, erasable (packages/fields/src/held.ts).
+  private_text: ['maxLength'],
+  private_link: ['maxValues'],
 };
 const NEEDS_OPTIONS: ReadonlySet<string> = new Set(['choice_one', 'choice_many']);
 const OPTION_CODE_RE = /^[a-z0-9][a-z0-9_]{0,62}$/;
@@ -668,6 +672,11 @@ export function settingsFor(kind: string, given: QuestionSettingsInput | undefin
   if ('maxLength' in out) {
     const n = out.maxLength;
     if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 100_000) refuse('max-length');
+  }
+  if ('maxValues' in out) {
+    const n = out.maxValues;
+    if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > MAX_PRIVATE_LINKS)
+      refuse('max-values');
   }
   /* OPTION SETS REPLACE THE LIST, so a question with them has no `options`
      key at all (not an empty one): one place says what is offered. Each

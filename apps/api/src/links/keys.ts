@@ -33,6 +33,12 @@ export interface LinkKeys {
   domain: Buffer;
   /** The keyed digest of an entry's email, for a subject access search. */
   email: Buffer;
+  /**
+   * Wraps each held report value's own key (apps/api/src/reportValues/):
+   * a report's erasable text and links. A label of its own, so a report
+   * value and a tip link are never opened by the same key.
+   */
+  values: Buffer;
 }
 
 const derive = (secret: Buffer, label: string) =>
@@ -73,6 +79,7 @@ function keysFrom(secret: Buffer): LinkKeys {
     match: derive(secret, 'reportlog link match v1'),
     domain: derive(secret, 'reportlog link domain v1'),
     email: derive(secret, 'reportlog list email v1'),
+    values: derive(secret, 'reportlog report value wrap v1'),
   };
 }
 
@@ -180,6 +187,16 @@ export function sealValue(keys: LinkKeys, plain: string): { enc: Buffer; key: Bu
 
 export function openValue(keys: LinkKeys, enc: Buffer, key: Buffer): string {
   return decrypt(decrypt(keys.wrap, key), enc).toString('utf8');
+}
+
+/** A held report value under a key of its own, wrapped by `keys.values`. */
+export function sealReportValue(keys: LinkKeys, plain: string): { enc: Buffer; key: Buffer } {
+  const dek = randomBytes(32);
+  return { enc: encrypt(dek, Buffer.from(plain, 'utf8')), key: encrypt(keys.values, dek) };
+}
+
+export function openReportValue(keys: LinkKeys, enc: Buffer, key: Buffer): string {
+  return decrypt(decrypt(keys.values, key), enc).toString('utf8');
 }
 
 const hmac = (key: Buffer, text: string) =>
