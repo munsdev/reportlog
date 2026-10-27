@@ -88,7 +88,7 @@ export async function groupsForCheck(
     ]);
   q =
     filter === 'unchecked'
-      ? // A group nobody carries any more (its last copy was corrected away or erased) is not waiting.
+      ? // A group only an OLDER version of a report still carries (the link was corrected away) is not waiting.
         q.where('g.outcome', 'is', null).where(sql<boolean>`(${TIP_COPIES} + ${REPORT_COPIES}) > 0`)
       : q.where('g.outcome', '=', filter);
   const rows = await q

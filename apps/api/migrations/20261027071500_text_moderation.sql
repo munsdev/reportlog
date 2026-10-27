@@ -40,8 +40,8 @@ CREATE UNIQUE INDEX text_items_entry_key ON text_items (entry_id, field_key) WHE
 
 -- ── the history behind the projection: append-only ───────────────────────
 
--- Every check, every saved redaction and every review, with who and when. A
--- re-check is another row. Never the words, and `reason_category` is a
+-- APPEND-ONLY. Every check, every saved redaction and every review, with who
+-- and when. A re-check is another row. Never the words, and `reason_category` is a
 -- category (as in the link store), never a description of the content.
 CREATE TABLE text_checks (
   id              bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

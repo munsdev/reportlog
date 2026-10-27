@@ -57,13 +57,13 @@ export async function tipLinksWaiting(db: Database): Promise<number> {
     .selectFrom('link_groups as g')
     .select((eb) => eb.fn.countAll<string>().as('n'))
     .where('g.outcome', 'is', null)
-    // Only a link somebody still carries: a tip's copy, or the newest version
-    // of a report (links/reads.ts counts the same way).
+    // Not a group only an older version of a report still carries (the link
+    // was corrected away): links/reads.ts hides those from the queue too.
     .where(
-      sql<boolean>`(EXISTS (SELECT 1 FROM links l WHERE l.group_id = g.id)
-        OR EXISTS (SELECT 1 FROM report_values rv
-             JOIN report_heads h ON h.current_report_id = rv.report_id
-            WHERE rv.group_id = g.id))`,
+      sql<boolean>`NOT (NOT EXISTS (SELECT 1 FROM links l WHERE l.group_id = g.id)
+        AND NOT EXISTS (SELECT 1 FROM report_values rv
+             JOIN report_heads h ON h.current_report_id = rv.report_id WHERE rv.group_id = g.id)
+        AND EXISTS (SELECT 1 FROM report_values o WHERE o.group_id = g.id))`,
     )
     .executeTakeFirstOrThrow();
   return Number(r.n);

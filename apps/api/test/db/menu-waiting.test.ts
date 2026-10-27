@@ -144,7 +144,7 @@ describe('GET /api/menu/waiting', () => {
   });
 
   it('gives a moderator the queue, list review and tip links, and not feedback', async () => {
-    expect(await waiting(mod)).toEqual({ reports: 3, list_entries: 2, tip_links: 4 });
+    expect(await waiting(mod)).toEqual({ reports: 3, list_entries: 2, texts: 0, tip_links: 4 });
   });
 
   it('the report count is the queue’s own count of reports waiting for a moderator', async () => {
@@ -159,7 +159,7 @@ describe('GET /api/menu/waiting', () => {
   });
 
   it('gives an administrator and the owner everything; admin does not need the moderator role here', async () => {
-    const all = { reports: 3, list_entries: 2, tip_links: 4, feedback: 2 };
+    const all = { reports: 3, list_entries: 2, texts: 0, tip_links: 4, feedback: 2 };
     expect(await waiting(admin)).toEqual(all);
     expect(await waiting(owner)).toEqual(all);
   });
@@ -222,6 +222,6 @@ describe('GET /api/menu/waiting', () => {
       payload: { digest: state.current.digest },
     });
     expect(accepted.statusCode, accepted.body).toBe(200);
-    expect(await waiting(mod)).toEqual({ reports: 3, list_entries: 2, tip_links: 4 });
+    expect(await waiting(mod)).toEqual({ reports: 3, list_entries: 2, texts: 0, tip_links: 4 });
   });
 });
