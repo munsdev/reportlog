@@ -59,11 +59,8 @@ import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import {
   DoorPuzzle,
   Honeypot,
@@ -74,15 +71,19 @@ import {
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
+import { CheckBox, Field } from '@/mockup/Field.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
-import { CardBar, CardFrame, FilingProgress, useCardTitle, useFocusOnMount } from './CardFrame.tsx';
+import { CardBar, CardError, CardFrame, FilingProgress, useCardTitle } from './CardFrame.tsx';
 import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { FormColumn, FormNotice } from './FormNotice.tsx';
 import { Cover } from './Cover.tsx';
 import { ContactCard, ManageCard, ShareCard, shortened } from './WrittenCards.tsx';
 import type { CtaProps } from './HelpNow.tsx';
-import { QuestionControl, kindHelp } from './QuestionControl.tsx';
+import { QuestionControl, isTiles, kindHelp } from './QuestionControl.tsx';
 import { rememberForTip } from './tipOffer.tsx';
 import { FiledReceipt, LimitPage, SentReceipt } from './Receipts.tsx';
 import {
@@ -446,13 +447,11 @@ function Cards({
   // it, and the answers are still here behind it.
   if (send.isError && send.error instanceof ApiRequestError && send.error.code === 'try_later') {
     return (
-      <FormColumn>
-        <LimitPage
-          onBack={() => {
-            send.reset();
-          }}
-        />
-      </FormColumn>
+      <LimitPage
+        onBack={() => {
+          send.reset();
+        }}
+      />
     );
   }
 
@@ -545,267 +544,291 @@ function Cards({
     sending.press();
   };
 
+  // The cards share the mock-up's `.qcard` form: the progress bar at the top,
+  // the card, then the bar with Back and Next. Enter in a box presses Next,
+  // as the button does; choosing an answer never does.
+  const cardBar =
+    step === 'intro' ? null : (
+      <CardBar
+        submit
+        go={step === 'review'}
+        onBack={back}
+        primary={step === 'review' ? 'Send' : 'Next'}
+        busy={step === 'review' && (send.isPending || sending.waiting)}
+        busyLabel="Sending…"
+        above={
+          step === 'review' ? (
+            <ReviewMessages
+              problem={problem}
+              failure={send.isError ? send.error.message : null}
+              status={doorStatus(door)}
+            />
+          ) : null
+        }
+      />
+    );
+
   return (
     <FormColumn>
       <Honeypot door={door} />
       <DoorPuzzle door={door} />
-      <FilingProgress
-        value={progress}
-        question={step === 'intro' || step === 'review' ? null : at}
-      />
 
       {step === 'intro' ? (
-        <Cover
-          kind="logbook"
-          title={title}
-          blurb={blurb}
-          cover={cover}
-          site={siteCta}
-          onStart={next}
-        />
-      ) : null}
-
-      {shownCard ? (
-        <QuestionCard
-          key={shownCard.id}
-          eyebrow={title}
-          parts={shownCard.parts}
-          heading={shownHeading}
-          help={helpFor(
-            questions.find((q) => q.key === shownCard.id) ?? shownCard.parts[0] ?? { help: null },
-            sealed,
-          )}
-          raw={raw}
-          answers={sealed}
-          onChange={(key, v) => {
-            setProblem(null);
-            setRaw((r) => withChange(questions, r, key, v));
+        <>
+          <FilingProgress value={progress} question={null} />
+          <Cover
+            kind="logbook"
+            title={title}
+            blurb={blurb}
+            cover={cover}
+            site={siteCta}
+            onStart={next}
+          />
+        </>
+      ) : (
+        <form
+          noValidate
+          className="qcard"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (step === 'review') sendNow();
+            else next();
           }}
-          problem={problem}
-          onSkip={skip}
-        />
-      ) : null}
-
-      {step === 'publish' ? (
-        <PublishCard
-          eyebrow={title}
-          card={card}
-          failed={cardError}
-          onRetry={retryCard}
-          value={publish}
-          onChange={(v) => {
-            setProblem(null);
-            setPublish(v);
-          }}
-          problem={problem}
-        />
-      ) : null}
-
-      {step === 'share' ? (
-        <ShareCard
-          eyebrow={title}
-          value={share}
-          onChange={(v) => {
-            setProblem(null);
-            setShare(v);
-          }}
-          problem={problem}
-        />
-      ) : null}
-
-      {step === 'contact' ? (
-        <ContactCard
-          eyebrow={title}
-          wrote={wrote}
-          deleteOn={deleteOn}
-          value={email}
-          onChange={(v) => {
-            setProblem(null);
-            setEmail(v);
-          }}
-          problem={problem}
-        />
-      ) : null}
-
-      {step === 'manage' ? (
-        <ManageCard
-          eyebrow={title}
-          deleteOn={deleteOn}
-          value={email}
-          onChange={(v) => {
-            setProblem(null);
-            setEmail(v);
-          }}
-          problem={problem}
-        />
-      ) : null}
-
-      {step === 'files' && fileQuestion && uploadConfig.data ? (
-        <CardFrame
-          eyebrow={title}
-          heading={fileQuestion.label}
-          focusKey={step}
-          headingId="files-card-heading"
-          optional={!fileQuestion.required}
-          help={
-            fileQuestion.help ? (
-              <p className="max-w-prose whitespace-pre-wrap text-ink-alt">{fileQuestion.help}</p>
-            ) : null
-          }
-          error={problem}
         >
-          <FilePicker
-            config={uploadConfig.data}
-            uploader={uploader}
-            labelledBy="files-card-heading"
-          />
-        </CardFrame>
-      ) : null}
+          <FilingProgress value={progress} question={step === 'review' ? null : at} />
 
-      {step === 'review' ? (
-        <CardFrame eyebrow={title} stepLabel="Review" heading="Check your answers" focusKey={step}>
-          <p className="max-w-prose">
-            {givesAddress
-              ? 'Nothing is filed until you confirm it from your email. Check it over first.'
-              : 'Your report is filed the moment you send it, and you cannot come back to it. Check it over first.'}
-          </p>
-          <dl className="flex flex-col divide-y divide-line border-y border-line">
-            {asked.map((q) => (
-              <ReviewRow
-                key={q.key}
-                label={isHeldKind(q.kind) ? `${q.label} · not published` : q.label}
-                value={shortened(shownAnswer(q, raw, questions), q.kind)}
-                required={q.required}
-                onChange={() => {
-                  go(`q:${cardOf.get(q.key) ?? q.key}`, true);
-                }}
-              />
-            ))}
-            {terms ? null : (
-              <ReviewRow
-                label="Published if approved"
-                value={
-                  publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')
-                }
-                required
-                onChange={() => {
-                  go('publish', true);
-                }}
-              />
-            )}
-            {takesFiles && fileQuestion ? (
-              <ReviewRow
-                label={fileQuestion.label}
-                value={uploader.kept.length ? uploader.kept.map((f) => f.name).join(', ') : null}
-                required={fileQuestion.required}
-                onChange={() => {
-                  go('files', true);
-                }}
-              />
-            ) : null}
-            {wrote ? (
-              <ReviewRow
-                label="Vetted journalists"
-                value={
-                  share === 'yes'
-                    ? 'May read it after a moderator checks it'
-                    : share === 'no'
-                      ? 'Moderators only'
-                      : null
-                }
-                required
-                onChange={() => {
-                  go('share', true);
-                }}
-              />
-            ) : null}
-            {needsAddress ? (
-              <ReviewRow
-                label={wrote ? 'Email' : 'Your email address'}
-                value={email.trim() || null}
-                required
-                onChange={() => {
-                  go('contact', true);
-                }}
-              />
-            ) : manageCard ? (
-              <ReviewRow
-                label="Manage link sent to"
-                value={email.trim() || 'Nobody (skipped)'}
-                required={false}
-                onChange={() => {
-                  go('manage', true);
-                }}
-              />
-            ) : null}
-          </dl>
-          {wrote ? (
-            <Card variant="quiet" className="gap-1">
-              <p className="font-semibold">What is published</p>
-              <p className="max-w-prose text-sm">
-                After a moderator approves it, your answers are published on the board. What you
-                wrote and any links are never published. The original always stays in the record,
-                even if you correct or withdraw it later.
-              </p>
-            </Card>
+          {shownCard ? (
+            <QuestionCard
+              key={shownCard.id}
+              eyebrow={title}
+              parts={shownCard.parts}
+              heading={shownHeading}
+              help={helpFor(
+                questions.find((q) => q.key === shownCard.id) ??
+                  shownCard.parts[0] ?? { help: null },
+                sealed,
+              )}
+              raw={raw}
+              answers={sealed}
+              onChange={(key, v) => {
+                setProblem(null);
+                setRaw((r) => withChange(questions, r, key, v));
+              }}
+              problem={problem}
+              onSkip={skip}
+            />
           ) : null}
-          {terms ? (
-            <div className="flex max-w-prose flex-col gap-2">
-              <p className="font-semibold">{terms.heading}</p>
-              {terms.body.map((line) => (
-                <p key={line} className="text-sm text-muted">
-                  {line}
-                </p>
-              ))}
-            </div>
-          ) : null}
-          <CheckOption
-            id="filing-statement"
-            checked={consent}
-            onCheckedChange={(on) => {
-              setProblem(null);
-              setConsent(on === true);
-            }}
-            label={STATEMENT}
-          />
-          {/* The operator's own line about sending, when they wrote one. */}
-          <CopyText slot="send_note" className="font-semibold" />
-          {/* G7, D2: said only when no address was given. With one, the
-              report can be corrected or withdrawn from My reports, and says so. */}
-          {givesAddress ? (
-            <Card variant="quiet" className="gap-1">
-              <p className="font-semibold">
-                You can correct or withdraw this report from My reports. The original stays in the
-                record.
-              </p>
-            </Card>
-          ) : (
-            <Card variant="deep" className="gap-1">
-              <p className="font-semibold">
-                This report can’t be changed or withdrawn after you send it.
-              </p>
-            </Card>
-          )}
-        </CardFrame>
-      ) : null}
 
-      {step === 'intro' ? null : (
-        <CardBar
-          onBack={back}
-          primary={step === 'review' ? 'Send report' : 'Next'}
-          onPrimary={step === 'review' ? sendNow : next}
-          busy={step === 'review' && (send.isPending || sending.waiting)}
-          busyLabel="Sending…"
-          above={
-            step === 'review' ? (
-              <ReviewMessages
-                problem={problem}
-                failure={send.isError ? send.error.message : null}
-                status={doorStatus(door)}
+          {step === 'publish' ? (
+            <PublishCard
+              eyebrow={title}
+              card={card}
+              failed={cardError}
+              onRetry={retryCard}
+              value={publish}
+              onChange={(v) => {
+                setProblem(null);
+                setPublish(v);
+              }}
+              problem={problem}
+            />
+          ) : null}
+
+          {step === 'share' ? (
+            <ShareCard
+              eyebrow={title}
+              value={share}
+              onChange={(v) => {
+                setProblem(null);
+                setShare(v);
+              }}
+              problem={problem}
+            />
+          ) : null}
+
+          {step === 'contact' ? (
+            <ContactCard
+              eyebrow={title}
+              wrote={wrote}
+              deleteOn={deleteOn}
+              value={email}
+              onChange={(v) => {
+                setProblem(null);
+                setEmail(v);
+              }}
+              problem={problem}
+            />
+          ) : null}
+
+          {step === 'manage' ? (
+            <ManageCard
+              eyebrow={title}
+              deleteOn={deleteOn}
+              value={email}
+              onChange={(v) => {
+                setProblem(null);
+                setEmail(v);
+              }}
+              problem={problem}
+            />
+          ) : null}
+
+          {step === 'files' && fileQuestion && uploadConfig.data ? (
+            <CardFrame
+              eyebrow={title}
+              heading={fileQuestion.label}
+              focusKey={step}
+              headingId="files-card-heading"
+              optional={!fileQuestion.required}
+              help={
+                fileQuestion.help ? (
+                  <p className="muted whitespace-pre-wrap">{fileQuestion.help}</p>
+                ) : null
+              }
+              error={problem}
+            >
+              <FilePicker
+                config={uploadConfig.data}
+                uploader={uploader}
+                labelledBy="files-card-heading"
               />
-            ) : null
-          }
-        />
+            </CardFrame>
+          ) : null}
+
+          {step === 'review' ? (
+            <CardFrame
+              eyebrow={title}
+              stepLabel="Review"
+              heading="Check your answers"
+              headingId="review-heading"
+              focusKey={step}
+            >
+              <p className="muted">
+                {givesAddress
+                  ? 'Nothing is filed until you confirm it from your email. Check it over first.'
+                  : 'Your report is filed the moment you send it, and you cannot come back to it. Check it over first.'}
+              </p>
+              <div className="review">
+                {asked.map((q) => (
+                  <ReviewRow
+                    key={q.key}
+                    label={isHeldKind(q.kind) ? `${q.label} · not published` : q.label}
+                    value={shortened(shownAnswer(q, raw, questions), q.kind)}
+                    required={q.required}
+                    onChange={() => {
+                      go(`q:${cardOf.get(q.key) ?? q.key}`, true);
+                    }}
+                  />
+                ))}
+                {terms ? null : (
+                  <ReviewRow
+                    label="Published if approved"
+                    value={
+                      publish === 'yes' ? (card?.options.yes ?? 'Yes') : (card?.options.no ?? 'No')
+                    }
+                    required
+                    onChange={() => {
+                      go('publish', true);
+                    }}
+                  />
+                )}
+                {takesFiles && fileQuestion ? (
+                  <ReviewRow
+                    label={fileQuestion.label}
+                    value={
+                      uploader.kept.length ? uploader.kept.map((f) => f.name).join(', ') : null
+                    }
+                    required={fileQuestion.required}
+                    onChange={() => {
+                      go('files', true);
+                    }}
+                  />
+                ) : null}
+                {wrote ? (
+                  <ReviewRow
+                    label="Vetted journalists"
+                    value={
+                      share === 'yes'
+                        ? 'May read it after a moderator checks it'
+                        : share === 'no'
+                          ? 'Moderators only'
+                          : null
+                    }
+                    required
+                    onChange={() => {
+                      go('share', true);
+                    }}
+                  />
+                ) : null}
+                {needsAddress ? (
+                  <ReviewRow
+                    label={wrote ? 'Email' : 'Your email address'}
+                    value={email.trim() || null}
+                    required
+                    onChange={() => {
+                      go('contact', true);
+                    }}
+                  />
+                ) : manageCard ? (
+                  <ReviewRow
+                    label="Manage link sent to"
+                    value={email.trim() || 'Nobody (skipped)'}
+                    required={false}
+                    onChange={() => {
+                      go('manage', true);
+                    }}
+                  />
+                ) : null}
+              </div>
+              {wrote ? (
+                <div className="cta">
+                  <span className="mark">What is published</span>
+                  <p>
+                    After a moderator approves it, your answers are published on the board. What you
+                    wrote and any links are never published. The original always stays in the
+                    record, even if you correct or withdraw it later.
+                  </p>
+                </div>
+              ) : null}
+              {terms ? (
+                <div className="cta">
+                  <span className="mark">{terms.heading}</span>
+                  {terms.body.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </div>
+              ) : null}
+              <CheckBox
+                id="filing-statement"
+                checked={consent}
+                onChange={(e) => {
+                  setProblem(null);
+                  setConsent(e.target.checked);
+                }}
+              >
+                {STATEMENT}
+              </CheckBox>
+              {/* The operator's own line about sending, when they wrote one. */}
+              <CopyText slot="send_note" className="font-semibold" />
+              {/* G7, D2: said only when no address was given. With one, the
+                  report can be corrected or withdrawn from My reports, and says so. */}
+              {givesAddress ? (
+                <Note>
+                  <b>
+                    You can correct or withdraw this report from My reports. The original stays in
+                    the record.
+                  </b>
+                </Note>
+              ) : (
+                <Note warn>
+                  <b>This report can’t be changed or withdrawn after you send it.</b>
+                </Note>
+              )}
+            </CardFrame>
+          ) : null}
+
+          {cardBar}
+        </form>
       )}
     </FormColumn>
   );
@@ -828,25 +851,22 @@ function ReviewMessages({
 }) {
   return (
     <>
-      {problem ? <FocusedAlert key={problem} title={problem} /> : null}
+      {problem ? (
+        <CardError key={problem} focus>
+          {problem}
+        </CardError>
+      ) : null}
       {failure ? (
-        <FocusedAlert key={failure} title="The report was not sent" body={failure} />
+        <CardError key={failure} focus>
+          <b>The report was not sent.</b> {failure}
+        </CardError>
       ) : null}
       {status ? (
-        <p role="status" className="text-sm text-ink-alt">
+        <p role="status" className="muted">
           {status}
         </p>
       ) : null}
     </>
-  );
-}
-
-function FocusedAlert({ title, body }: { title: string; body?: string }) {
-  const ref = useFocusOnMount<HTMLDivElement>();
-  return (
-    <Alert ref={ref} tone="serious" title={title} tabIndex={-1} className="outline-none">
-      {body}
-    </Alert>
   );
 }
 
@@ -887,19 +907,25 @@ function QuestionCard({
   // What the kind itself needs said ("Tick everything that applies.", a
   // date's format, whose clock a time is in), unless the wording says it.
   const extra = single ? kindHelp(single, `${heading} ${help ?? ''}`) : null;
+  const held = Boolean(single && isHeldKind(single.kind));
+  // A question an earlier answer turned on says so, as the mock-up's step does.
+  const turnedOn = parts[0]?.shown_when ? 'asked because of an earlier answer' : undefined;
+  const grouped = Boolean(single && isTiles(single, sealedSoFar));
   return (
     <CardFrame
       eyebrow={eyebrow}
       heading={heading}
       focusKey={parts[0]?.key ?? ''}
       headingId={headingId}
-      optional={Boolean(single && !single.required)}
-      step={single && isHeldKind(single.kind) && !single.required ? 'Optional' : undefined}
+      optional={Boolean(single && !held && !single.required)}
+      step={held && single && !single.required ? 'Optional' : undefined}
+      note={turnedOn}
+      grouped={grouped}
       help={
         help || extra ? (
-          <div id={helpId} className="flex max-w-prose flex-col gap-1 text-ink-alt">
-            {help ? <p className="whitespace-pre-wrap">{help}</p> : null}
-            {extra ? <p>{extra}</p> : null}
+          <div id={helpId} style={{ display: 'grid', gap: 4 }}>
+            {help ? <p className="muted whitespace-pre-wrap">{help}</p> : null}
+            {extra ? <p className="muted">{extra}</p> : null}
           </div>
         ) : null
       }
@@ -922,49 +948,57 @@ function QuestionCard({
             invalid={Boolean(problem)}
             answers={sealedSoFar}
             raw={raw}
+            grouped={grouped}
           />
-          {isHeldKind(single.kind) && !single.required ? (
-            <Button
-              type="button"
-              variant="quiet"
-              className="self-start"
-              onClick={() => {
+          {held && !single.required ? (
+            <a
+              className="skip-link"
+              href="#skip"
+              role="button"
+              onClick={(e) => {
+                e.preventDefault();
                 onSkip(single.key);
               }}
             >
               Skip this
-            </Button>
+            </a>
           ) : null}
         </>
       ) : (
-        <div className="flex flex-col gap-5" role="group" aria-labelledby={headingId}>
+        <div role="group" aria-labelledby={headingId} style={{ display: 'grid', gap: 16 }}>
           {parts.map((part, i) => {
             const partId = `${id}-part-${String(i)}`;
             // A tick box carries its own label beside the box.
             const box = part.kind === 'yes_no' && part.settings.checkbox === true;
+            const tiles = isTiles(part, sealedSoFar);
             const partHelp = [i === 0 ? undefined : part.help, kindHelp(part, part.label)]
               .filter(Boolean)
               .join(' ');
             return (
-              <div key={part.key} className="flex flex-col gap-1.5">
-                {box ? null : (
-                  <p id={partId} className="label-face text-[0.8125rem]">
-                    {part.label}
-                    {part.required ? null : (
-                      <span className="font-sans font-normal tracking-normal normal-case text-ink-alt">
-                        {' '}
-                        Optional.
-                      </span>
-                    )}
-                  </p>
-                )}
-                {partHelp ? (
-                  <p id={`${partId}-help`} className="text-sm text-ink-alt">
-                    {partHelp}
-                  </p>
-                ) : null}
+              <Field
+                key={part.key}
+                {...(box
+                  ? {}
+                  : {
+                      label: (
+                        <>
+                          {part.label}
+                          {part.required ? null : (
+                            <>
+                              {' '}
+                              <span className="muted">(optional)</span>
+                            </>
+                          )}
+                        </>
+                      ),
+                    })}
+                {...(tiles ? { labelId: partId } : { htmlFor: partId })}
+                help={partHelp || undefined}
+                helpId={`${partId}-help`}
+              >
                 <QuestionControl
                   question={part}
+                  id={partId}
                   value={raw[part.key]}
                   onChange={(v) => {
                     onChange(part.key, v);
@@ -979,7 +1013,7 @@ function QuestionCard({
                   answers={sealedSoFar}
                   raw={raw}
                 />
-              </div>
+              </Field>
             );
           })}
         </div>
@@ -1022,20 +1056,22 @@ function PublishCard({
         error={problem}
       >
         {failed ? (
-          <Alert tone="serious" title="The wording of this question did not load">
-            <span className="flex flex-col items-start gap-3">
-              <span>The report cannot be sent without it.</span>
-              <Button type="button" variant="secondary" onClick={onRetry}>
-                Try again
-              </Button>
-            </span>
-          </Alert>
+          <Note warn role="alert">
+            <b>The wording of this question did not load.</b> The report cannot be sent without it.{' '}
+            <Btn sm flat onClick={onRetry}>
+              Try again
+            </Btn>
+          </Note>
         ) : (
-          <p role="status">Loading the wording…</p>
+          <p role="status" className="muted">
+            Loading the wording…
+          </p>
         )}
       </CardFrame>
     );
   }
+  // NOTHING IS SELECTED until the reporter chooses: both tiles stay unchecked
+  // while `value` is '' and the card says what not answering means.
   return (
     <CardFrame
       eyebrow={eyebrow}
@@ -1043,23 +1079,44 @@ function PublishCard({
       focusKey="publish"
       headingId={`${id}-q`}
       help={
-        <div className="flex max-w-prose flex-col gap-2">
+        <>
           {card.body.map((line) => (
-            <p key={line}>{line}</p>
+            <p key={line} className="muted">
+              {line}
+            </p>
           ))}
-          <p className="font-semibold">{card.optionality}</p>
-        </div>
+          <p className="muted">
+            <b>{card.optionality}</b>
+          </p>
+        </>
       }
       error={problem}
     >
-      <RadioGroup value={value} onValueChange={onChange} aria-labelledby={`${id}-q`}>
-        <RadioOption value="yes" label={card.options.yes} />
-        <RadioOption value="no" label={card.options.no} />
-      </RadioGroup>
+      <Choices role="radiogroup" aria-labelledby={`${id}-q`}>
+        <Choice
+          name={`${id}-publish`}
+          checked={value === 'yes'}
+          onChange={() => {
+            onChange('yes');
+          }}
+        >
+          {card.options.yes}
+        </Choice>
+        <Choice
+          name={`${id}-publish`}
+          checked={value === 'no'}
+          onChange={() => {
+            onChange('no');
+          }}
+        >
+          {card.options.no}
+        </Choice>
+      </Choices>
     </CardFrame>
   );
 }
 
+/** One line of the mock-up's review (site.css `.review`): the question, the answer, Change. */
 function ReviewRow({
   label,
   value,
@@ -1071,31 +1128,21 @@ function ReviewRow({
   required: boolean;
   onChange: () => void;
 }) {
-  // A group in a <dl> may hold only its <dt> and <dd>, so the Change button
-  // is inside the answer, not beside it.
   return (
-    <div className="flex flex-col gap-1 py-3">
-      <dt className="label-face text-xs text-ink-alt">{label}</dt>
-      <dd className="flex items-start justify-between gap-3">
-        <span className="min-w-0 break-words whitespace-pre-wrap">
-          {value ??
-            (required ? (
-              // The cards do not let this happen; said plainly if it ever does.
-              <span className="font-semibold text-serious">Not answered</span>
-            ) : (
-              <span className="text-ink-alt">Not answered</span>
-            ))}
-        </span>
-        <Button
-          type="button"
-          variant="quiet"
-          className="shrink-0"
-          onClick={onChange}
-          aria-label={`Change: ${label}`}
-        >
-          Change
-        </Button>
-      </dd>
+    <div>
+      <span className="q">{label}</span>
+      <span className="a" style={{ overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+        {value ??
+          // The cards do not let this happen; said plainly if it ever does.
+          (required ? (
+            <span style={{ color: 'var(--rl-serious)' }}>Not answered</span>
+          ) : (
+            <span className="muted">Not answered</span>
+          ))}
+      </span>
+      <Btn sm flat onClick={onChange} aria-label={`Change: ${label}`}>
+        Change
+      </Btn>
     </div>
   );
 }

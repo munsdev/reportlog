@@ -1,90 +1,80 @@
 /**
- * THE FOLLOW ALONG BAND (decision D11): a large button per account, each with
- * its mark, the platform and the handle. Other pages drop it in by name:
- * `<FollowBand placement="after_filing" />`. Each placement is a switch on
- * Site → Social media, so a page never decides for itself; it draws nothing,
- * not an empty box, when no account is on or its placement is off.
+ * THE FOLLOW ALONG BAND (decision D11), as the mock-up draws it
+ * (`.follow`): the eyebrow, a heading and a line, and a large button per
+ * account with its mark, the platform and the handle. Other pages drop it in
+ * by name: `<FollowBand placement="after_filing" />`. Each placement is a
+ * switch on Site → Social media, so a page never decides for itself; it
+ * draws nothing, not an empty box, when no account is on or its placement is
+ * off.
  *
  * NO HANDLE SHIPS IN CODE. Everything on it comes from the accounts an
- * administrator typed in, and the wording is neutral. The links are the same
- * plain links as everywhere else (social-links.tsx): no referrer, nothing
- * embedded, nothing fetched.
+ * administrator typed in, and the heading and line from the Follow along
+ * words (neutral until written). The links are plain links: no referrer,
+ * nothing embedded, nothing fetched.
  *
- * `bleed` is the front page's, full width under the header; without it the
- * band is a card in the page's own column.
+ * `bleed` is kept for the pages that pass it; the band is always full width.
+ * `tight` is the mock-up's smaller band for the middle of a page.
  */
 import type { SocialPlacement } from '@reportlog/contracts';
 import { SOCIAL_RULES } from '@reportlog/contracts';
-import { SocialIcon } from '@/components/ui/social-icon.tsx';
-import { cn } from '@/lib/utils.ts';
+import { useSite } from '@/components/ui/site.tsx';
+import { SocialMark } from '@/mockup/SocialMark.tsx';
 import { socialHandle } from './handle.ts';
 import { useFollow } from './useFollow.ts';
 
 export function FollowBand({
   placement,
-  bleed = false,
+  tight = false,
+  title,
+  line,
   className,
 }: {
   placement: SocialPlacement;
   bleed?: boolean;
+  tight?: boolean;
+  /** Overrides the Follow along heading, for a page with its own. */
+  title?: string;
+  line?: string;
   className?: string;
 }) {
   const { links, name } = useFollow(placement);
+  const copy = useSite().data?.copy;
   if (!links.length) return null;
-  const heading = `follow-${placement}`;
   return (
     <section
-      aria-labelledby={heading}
+      className={['follow', tight ? 'tight' : '', className ?? ''].filter(Boolean).join(' ')}
+      aria-labelledby="follow-h"
       data-follow-band={placement}
-      className={cn(
-        'bg-deep text-on-deep print:hidden',
-        bleed ? 'border-b border-line-on-deep' : 'rounded-card border border-line-on-deep',
-        className,
-      )}
     >
-      <div
-        className={cn(
-          'grid gap-5 py-6 lg:items-center',
-          bleed
-            ? 'mx-auto max-w-[76rem] px-[max(1rem,env(safe-area-inset-left))] md:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]'
-            : 'px-5',
-        )}
-      >
-        <div className="min-w-0">
-          <p className="label-face text-xs text-on-deep-muted">Follow {name}</p>
-          <h2 id={heading} className="font-display text-2xl leading-tight">
-            Follow along
-          </h2>
+      <div className="wrap">
+        <div className="follow-txt">
+          <span className="eyebrow">Follow {name}</span>
+          <h2 id="follow-h">{title ?? copy?.follow_heading ?? 'Follow along'}</h2>
+          <p>{line ?? copy?.follow_line ?? ''}</p>
         </div>
-        <ul
-          className={cn(
-            'grid grid-cols-1 gap-2.5 min-[480px]:grid-cols-2',
-            bleed && 'lg:grid-cols-4',
-          )}
-        >
+        <div className="follow-btns">
           {links.map((l) => {
             const handle = socialHandle(l.id, l.url);
             return (
-              <li key={l.id} className="min-w-0">
-                <a
-                  href={l.url}
-                  rel="me noopener noreferrer"
-                  referrerPolicy="no-referrer"
-                  data-social={l.id}
-                  className="flex min-h-14 items-center gap-3 rounded-card bg-surface px-3.5 py-2.5 text-ink hover:bg-paper-alt focus-visible:outline-on-deep"
-                >
-                  <SocialIcon platform={l.id} className="size-7 shrink-0" />
-                  <span className="min-w-0">
-                    <b className="block font-display leading-tight">{SOCIAL_RULES[l.id].name}</b>
-                    {handle ? (
-                      <small className="block truncate text-sm text-ink-alt">{handle}</small>
-                    ) : null}
-                  </span>
-                </a>
-              </li>
+              <a
+                key={l.id}
+                className="fbtn"
+                href={l.url}
+                rel="me noopener noreferrer"
+                referrerPolicy="no-referrer"
+                data-social={l.id}
+              >
+                <span className="fic2">
+                  <SocialMark platform={l.id} />
+                </span>
+                <span>
+                  <b>{SOCIAL_RULES[l.id].name}</b>
+                  {handle ? <small>{handle}</small> : null}
+                </span>
+              </a>
             );
           })}
-        </ul>
+        </div>
       </div>
     </section>
   );

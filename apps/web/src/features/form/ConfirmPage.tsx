@@ -15,14 +15,13 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { Link } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Wrap } from '@/components/ui/band.tsx';
 import { FollowBand } from '@/features/follow/FollowBand.tsx';
-import { Eyebrow, Meta } from '@/components/ui/type.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { Btn, BtnLink, btnClass } from '@/mockup/Btn.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 import { TipOffer } from './tipOffer.tsx';
 
 const confirmationQuery = (token: string) =>
@@ -53,7 +52,7 @@ export function ConfirmPage({ token }: { token: string }) {
     const missing = state.error instanceof ApiRequestError && state.error.status === 404;
     return (
       <Column title="This link does not work">
-        <p className="max-w-prose">
+        <p>
           {missing
             ? 'It is not a link this site sent, or the report it was for has had its details erased. Check that the whole link was copied.'
             : state.error.message}
@@ -76,8 +75,8 @@ export function ConfirmPage({ token }: { token: string }) {
 }
 
 /**
- * Every state in one centred column, the logbook as the eyebrow (filing.md
- * §09). The tab is named after the state, as every page's is.
+ * Every state in one column, the logbook as the eyebrow (t-confirm.html,
+ * t-confirmed.html). The tab is named after the state, as every page's is.
  */
 function Column({
   eyebrow,
@@ -91,23 +90,24 @@ function Column({
   follow?: boolean;
   children: ReactNode;
 }) {
+  useBodyClass('light', 'form');
   const site = plainSiteName(useSite().data);
   useEffect(() => {
     if (title) document.title = `${title} · ${site}`;
   }, [title, site]);
   return (
-    <div data-bleed className="flex flex-col">
-      <Wrap className="pt-8 pb-12">
-        <section className="flex max-w-[40rem] flex-col gap-6">
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 28 }}>
+        <div style={{ display: 'grid', gap: 18, maxWidth: 720 }}>
+          {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
           {title ? (
-            <div className="flex flex-col gap-2">
-              {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-              <h1 className="font-display text-title">{title}</h1>
-            </div>
+            <h1 className="h-page" id="h1">
+              {title}
+            </h1>
           ) : null}
           {children}
-        </section>
-      </Wrap>
+        </div>
+      </div>
       {follow ? <FollowBand placement="after_filing" bleed /> : null}
     </div>
   );
@@ -118,11 +118,9 @@ function HomeLink() {
   const onDoor = useGateMode() === 'door';
   if (onDoor) return null;
   return (
-    <p>
-      <Button asChild variant="secondary">
-        <a href="/">The front page</a>
-      </Button>
-    </p>
+    <BtnLink href="/" style={{ justifySelf: 'start' }}>
+      The front page
+    </BtnLink>
   );
 }
 
@@ -143,30 +141,27 @@ function Shown({
   if (c.state === 'unconfirmed') {
     return (
       <Column eyebrow={c.logbook_title} title="Confirm your report">
-        <p className="max-w-prose">
-          Press the button to file your report. A moderator reads it before anything is public.
+        <p>
+          Press the button to file your report. Until you do, nothing is filed. A moderator reads it
+          before anything is public.
         </p>
-        <p className="text-sm text-ink-alt">
-          This link works until <Meta>{new Date(c.expires_at).toLocaleString()}</Meta>.
-        </p>
+        <p className="m">This link works until {new Date(c.expires_at).toLocaleString()}.</p>
         {failure ? (
-          <Alert tone="serious" title="It was not filed">
-            {failure}
-          </Alert>
+          <Note warn role="alert">
+            <b>It was not filed.</b> {failure}
+          </Note>
         ) : null}
-        <div className="flex flex-col sm:items-start">
-          <Button
-            type="button"
-            size="lg"
-            block
-            className="sm:w-auto"
-            busy={pressing}
-            busyLabel="Filing…"
-            onClick={onConfirm}
-          >
-            Confirm and file my report
-          </Button>
-        </div>
+        <Btn
+          sm
+          flat
+          look="go"
+          style={{ justifySelf: 'start' }}
+          busy={pressing}
+          busyLabel="Filing…"
+          onClick={onConfirm}
+        >
+          Confirm and file my report
+        </Btn>
       </Column>
     );
   }
@@ -176,53 +171,52 @@ function Shown({
   if (c.state === 'preparing') {
     return (
       <Column eyebrow={c.logbook_title} title="Your files are still being prepared">
-        <p className="max-w-prose">
+        <p>
           Nothing has been filed yet. Every file is checked and re-encoded first, so that no
           location or camera details are kept in any copy that could be shown. That can take a
           minute or two for a video.
         </p>
-        <ul
-          aria-label="Your files"
-          className="flex flex-col divide-y divide-line rounded-card border border-ink-alt bg-surface"
-        >
+        <div className="review" aria-label="Your files">
           {c.files.map((f) => (
-            <li key={f} className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="min-w-0 font-semibold break-all">{f}</span>
-              <Meta className="shrink-0">Preparing</Meta>
-            </li>
+            <div key={f}>
+              <span className="a" style={{ overflowWrap: 'anywhere' }}>
+                {f}
+              </span>
+              <span className="m">Preparing</span>
+            </div>
           ))}
-        </ul>
-        {failure ? (
-          <Alert tone="serious" title="It was not filed">
-            {failure}
-          </Alert>
-        ) : null}
-        <div>
-          <Button
-            type="button"
-            variant="secondary"
-            busy={pressing}
-            busyLabel="Trying…"
-            onClick={onConfirm}
-          >
-            Try again
-          </Button>
         </div>
+        {failure ? (
+          <Note warn role="alert">
+            <b>It was not filed.</b> {failure}
+          </Note>
+        ) : null}
+        <Btn
+          sm
+          flat
+          style={{ justifySelf: 'start' }}
+          busy={pressing}
+          busyLabel="Trying…"
+          onClick={onConfirm}
+        >
+          Try again
+        </Btn>
       </Column>
     );
   }
   if (c.state === 'expired') {
     return (
       <Column eyebrow={c.logbook_title} title="This link has expired">
-        <p className="max-w-prose">
+        <p>
           Nothing was filed. Links work for 90 days. If you still want to file it, send the report
           to “{c.logbook_title}” again.
         </p>
-        <p>
-          <Button asChild variant="secondary">
-            <a href={`/file/${encodeURIComponent(c.logbook_slug)}`}>File it again</a>
-          </Button>
-        </p>
+        <BtnLink
+          href={`/file/${encodeURIComponent(c.logbook_slug)}`}
+          style={{ justifySelf: 'start' }}
+        >
+          File it again
+        </BtnLink>
       </Column>
     );
   }
@@ -237,16 +231,10 @@ function Shown({
     <Column eyebrow={c.logbook_title} title={title} follow={!onDoor}>
       {/* Quiet, never teal: teal is a moderator's word, and this page says
           only where the report stands. */}
-      <div className="grid content-start gap-2.5 rounded-card border-(length:--rl-border-main) border-ink bg-surface p-[18px] shadow-raised">
-        <p className="grid gap-1">
-          <span className="font-mono text-xs tracking-[0.1em] text-muted uppercase">
-            Its reference is
-          </span>{' '}
-          <span className="font-display text-[clamp(2rem,8vw,3.5rem)] leading-none tracking-[0.02em] break-all">
-            {c.public_ref}
-          </span>
-        </p>
-        <p className="text-[0.95rem] text-ink-alt">
+      <div className="card">
+        <span className="tag">Its reference</span>
+        <p className="ref">{c.public_ref}</p>
+        <p>
           {c.state === 'public'
             ? 'A moderator approved it, and it is on the public archive.'
             : c.state === 'counted'
@@ -256,31 +244,33 @@ function Shown({
                 // says the word (decisions.md §5).
                 c.archive_closed
                 ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
-                : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
+                : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}{' '}
+          Keep the reference. Sign in with your email to find it under your reports.
         </p>
       </div>
       {c.files ? <FilesFiled files={c.files} /> : null}
-      <p className="max-w-prose">
-        Keep the reference. Sign in with your email to find it under your reports.
-      </p>
       {/* Behind the password, the rest of the site is not this page's to offer. */}
       {onDoor ? null : (
-        <div className="flex flex-col items-start gap-2">
+        <div className="btn-row">
           {c.state === 'public' ? (
-            <Button asChild variant="secondary">
-              <Link to="/board/$ref" params={{ ref: c.public_ref }}>
-                See it on the board
-              </Link>
-            </Button>
-          ) : null}
-          <p className="flex flex-wrap gap-x-2">
-            <Button asChild variant="quiet">
-              <Link to="/mine">See your reports</Link>
-            </Button>
-          </p>
+            <Link className={btnClass({})} to="/board/$ref" params={{ ref: c.public_ref }}>
+              See it on the board
+            </Link>
+          ) : (
+            <Link className={btnClass({})} to="/board">
+              See the board
+            </Link>
+          )}
+          <Link className={btnClass({})} to="/mine">
+            See your reports
+          </Link>
         </div>
       )}
-      {onDoor || c.state === 'public' ? null : <TipOffer />}
+      {onDoor || c.state === 'public' ? null : (
+        <div className="cards two">
+          <TipOffer />
+        </div>
+      )}
     </Column>
   );
 }
@@ -292,23 +282,24 @@ function FilesFiled({
   files: NonNullable<Extract<Confirmation, { state: 'received' }>['files']>;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <p>
         {files.attached === 1
           ? 'One file is part of the report.'
           : `${String(files.attached)} files are part of the report.`}
       </p>
       {files.not_attached.length ? (
-        <Alert tone="serious" title="Some files are not part of the report">
-          <ul className="list-disc pl-6">
+        <Note warn role="alert">
+          <b>Some files are not part of the report.</b>
+          <ul style={{ paddingLeft: 18 }}>
             {files.not_attached.map((f, i) => (
               <li key={`${f.name}-${String(i)}`}>
                 {f.name}: {f.reason}.
               </li>
             ))}
           </ul>
-        </Alert>
+        </Note>
       ) : null}
-    </div>
+    </>
   );
 }

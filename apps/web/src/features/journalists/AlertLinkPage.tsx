@@ -20,10 +20,10 @@ import {
 import type { AlertLink } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button.tsx';
-import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { call } from '../../lib/api.ts';
-import { ErrorText } from '../identity/ui.tsx';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { ErrorNote, Waiting } from '../../mockup/Panel.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 
 type Kind = 'confirm' | 'stop';
 
@@ -38,7 +38,9 @@ const linkQuery = (kind: Kind, token: string) =>
     retry: false,
   });
 
+/** Mock-up t-j-confirm.html (kind confirm) and t-stop.html's journalist twin (kind stop). */
 export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
+  useBodyClass('light', 'form');
   const client = useQueryClient();
   const state = useQuery(linkQuery(kind, token));
   const press = useMutation({
@@ -48,33 +50,39 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
     },
   });
 
-  if (state.isPending) return <p role="status">Checking this link…</p>;
+  if (state.isPending) {
+    return (
+      <Narrow>
+        <Waiting>Checking this link…</Waiting>
+      </Narrow>
+    );
+  }
   if (state.isError) {
     return (
-      <PublicPage title="This link could not be checked" width="prose">
-        <ErrorText error={state.error} />
-      </PublicPage>
+      <TokenPage title="This link could not be checked">
+        <ErrorNote error={state.error} />
+      </TokenPage>
     );
   }
   const s = state.data;
   if (s.state === 'gone') {
     return (
-      <PublicPage title="This link does not work any more" width="prose">
+      <TokenPage title="This link does not work any more">
         <p>
           It may have expired, been used already, or not been copied whole.{' '}
           {kind === 'confirm'
             ? 'To join the alert list, ask for a new confirmation email on the signup page.'
             : 'If you removed yourself from the list, there is nothing more to do. Every alert carries its own link.'}
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'confirmed') {
     return (
-      <PublicPage title="You are on the alert list" width="prose">
+      <TokenPage title="You are on the alert list">
         <p role="status">
-          <strong>{s.address}</strong> will get an email when there are new approved reports in your
-          states. Every email has a link to change or stop them.
+          {s.address} will get an email when there are new approved reports in your states. Every
+          email has a link to change or stop them.
         </p>
         {s.desk === 'pending' ? (
           <p>
@@ -84,52 +92,50 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
         ) : s.desk === 'approved' ? null : (
           <p>
             A journalist can also{' '}
-            <Link to="/journalists/access" className="underline">
-              ask for access to the journalist desk
-            </Link>
-            , where vetted journalists read links moderators have checked.
+            <Link to="/journalists/access">ask for access to the journalist desk</Link>, where
+            vetted journalists read links moderators have checked.
           </p>
         )}
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'stopped') {
     return (
-      <PublicPage title="You are off the alert list" width="prose">
+      <TokenPage title="You are off the alert list">
         <p role="status">No more alerts will be emailed, and your details are deleted.</p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'paused') {
     return (
-      <PublicPage title="Alerts are off" width="prose">
+      <TokenPage title="Alerts are off">
         <p role="status">
-          No more alerts will be emailed to <strong>{s.address}</strong>. You are still on the list,
-          and any journalist desk access you have is unchanged.
+          No more alerts will be emailed to {s.address}. You are still on the list, and any
+          journalist desk access you have is unchanged.
         </p>
         <p>
-          <Link to="/journalists/settings/$token" params={{ token }} className="underline">
+          <Link to="/journalists/settings/$token" params={{ token }}>
             Change your alerts
           </Link>{' '}
           to turn them back on, choose different states, or remove yourself from the list entirely.
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   const joining = s.state === 'pending';
   // Signed up with alerts off, to ask only for the desk (decision 69).
   const quiet = joining && s.alerts === 'off';
   return (
-    <PublicPage title={joining ? 'Join the alert list?' : 'Stop these alerts?'} width="prose">
+    <TokenPage title={joining ? 'Join the alert list?' : 'Stop these alerts?'}>
       {quiet ? (
         <p>
-          <strong>{s.address}</strong> would be on the list with alerts off. You can turn them on
-          later from any email we send.
+          {s.address} would be on the list with alerts off. You can turn them on later from any
+          email we send.
         </p>
       ) : (
         <p>
-          <strong>{s.address}</strong> {joining ? 'would get' : 'gets'} an email when there are new
-          approved reports in: {s.states.join(', ')}.
+          {s.address} {joining ? 'would get' : 'gets'} an email when there are new approved reports
+          in: {s.states.join(', ')}.
         </p>
       )}
       {joining && s.desk === 'pending' ? (
@@ -145,27 +151,33 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
           : 'Alerts stop only when you press the button. You stay on the list, and keep any journalist desk access.'}
       </p>
       <div>
-        <Button
+        <button
+          className={joining ? 'btn sm flat go' : 'btn sm flat ink'}
           type="button"
-          busy={press.isPending}
-          busyLabel={joining ? 'Joining…' : 'Stopping…'}
+          disabled={press.isPending}
           onClick={() => {
             press.mutate();
           }}
         >
-          {joining ? 'Join the alert list' : 'Stop alerts'}
-        </Button>
+          {press.isPending
+            ? joining
+              ? 'Joining…'
+              : 'Stopping…'
+            : joining
+              ? 'Join the alert list'
+              : 'Stop alerts'}
+        </button>
       </div>
-      <ErrorText error={press.error} />
+      <ErrorNote error={press.error} />
       {joining ? null : (
         <p>
           Or{' '}
-          <Link to="/journalists/settings/$token" params={{ token }} className="underline">
+          <Link to="/journalists/settings/$token" params={{ token }}>
             change your alerts
           </Link>{' '}
           instead: choose different states, or remove yourself from the list entirely.
         </p>
       )}
-    </PublicPage>
+    </TokenPage>
   );
 }

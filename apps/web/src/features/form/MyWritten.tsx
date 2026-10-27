@@ -16,7 +16,7 @@ import type { FormQuestion, MyWritten } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { call } from '@/lib/api.ts';
-import { Btn } from '../../mockup/Btn.tsx';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
 import { Check } from '../../mockup/Choices.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';

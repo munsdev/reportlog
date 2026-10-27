@@ -19,7 +19,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { Btn } from '../../mockup/Btn.tsx';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '../../mockup/Panel.tsx';

@@ -13,64 +13,66 @@ import type { AccessLink } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { call } from '../../lib/api.ts';
-import { ErrorText, TextField } from '../identity/ui.tsx';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { ErrorNote, Note, Waiting } from '../../mockup/Panel.tsx';
+import { Field } from '../../mockup/Qcard.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 
+/** Mock-up t-j-access.html. */
 export function AskAccessPage() {
+  useBodyClass('light', 'form');
   const [email, setEmail] = useState('');
   const ask = useMutation({ mutationFn: () => call(askForAccessLink, { body: { email } }) });
   if (ask.isSuccess) {
     return (
-      <PublicPage title="Check your email" width="prose">
-        <p role="status">
+      <TokenPage title="Check your email">
+        <Note>
           If that address is on the journalist alert list, we have sent it a link to the request
           form.
-        </p>
-      </PublicPage>
+        </Note>
+      </TokenPage>
     );
   }
   return (
-    <PublicPage
-      title="Ask for access to the journalist desk"
-      width="prose"
-      lede="Vetted journalists can read links that moderators have checked. The owner of this site reads every request; nothing is approved automatically."
-    >
+    <TokenPage title="Ask for access to the journalist desk">
+      <p>
+        Vetted journalists can read links that moderators have checked. The owner of this site reads
+        every request; nothing is approved automatically.
+      </p>
       <form
-        className="flex flex-col gap-6"
+        style={{ display: 'grid', gap: 18 }}
         onSubmit={(e) => {
           e.preventDefault();
           ask.mutate();
         }}
       >
-        <TextField
-          label="The address you joined the alert list with"
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={254}
-          value={email}
-          onChange={(e) => {
-            setEmail(e.target.value);
-          }}
-        />
-        <ErrorText error={ask.error} />
+        <Field label="The address you joined the alert list with" htmlFor="access-email">
+          <input
+            className="input"
+            id="access-email"
+            type="email"
+            autoComplete="email"
+            required
+            maxLength={254}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+            }}
+          />
+        </Field>
+        <ErrorNote error={ask.error} />
         <div>
-          <Button type="submit" busy={ask.isPending} busyLabel="Sending…">
-            Email me the request form
-          </Button>
+          <button className="btn sm flat ink" type="submit" disabled={ask.isPending}>
+            {ask.isPending ? 'Sending…' : 'Email me the request form'}
+          </button>
         </div>
-        <p className="text-sm text-muted">
-          Not on the list yet?{' '}
-          <Link to="/journalists/alerts" className="underline">
-            Join the alert list
-          </Link>{' '}
-          first.
+        <p>
+          <Link to="/journalists/alerts">Not on the list yet? Join the alert list</Link>
         </p>
       </form>
-    </PublicPage>
+    </TokenPage>
   );
 }
 
@@ -81,7 +83,9 @@ const linkQuery = (token: string) =>
     retry: false,
   });
 
+/** Mock-up t-j-request.html. */
 export function AccessLinkPage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const client = useQueryClient();
   const state = useQuery(linkQuery(token));
   const [draft, setDraft] = useState(EMPTY_ACCESS);
@@ -92,78 +96,79 @@ export function AccessLinkPage({ token }: { token: string }) {
     },
   });
 
-  if (state.isPending) return <p role="status">Checking this link…</p>;
+  if (state.isPending) {
+    return (
+      <Narrow>
+        <Waiting>Checking this link…</Waiting>
+      </Narrow>
+    );
+  }
   if (state.isError) {
     return (
-      <PublicPage title="This link could not be checked" width="prose">
-        <ErrorText error={state.error} />
-      </PublicPage>
+      <TokenPage title="This link could not be checked">
+        <ErrorNote error={state.error} />
+      </TokenPage>
     );
   }
   const s = state.data;
   if (s.state === 'gone') {
     return (
-      <PublicPage title="This link does not work any more" width="prose">
+      <TokenPage title="This link does not work any more">
         <p>
           It may have expired, been used already, or not been copied whole. Ask for a new one on the
           access request page.
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'pending') {
     return (
-      <PublicPage title="Your request is with the owner" width="prose">
+      <TokenPage title="Your request is with the owner">
         <p role="status">
-          The request for <strong>{s.address}</strong> is waiting. You will get an email when the
-          owner decides.
+          The request for {s.address} is waiting. You will get an email when the owner decides.
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'approved') {
     return (
-      <PublicPage title="You already have access" width="prose">
-        <p>
-          <strong>{s.address}</strong> is approved.
-        </p>
+      <TokenPage title="You already have access">
+        <p>{s.address} is approved.</p>
         <p>
           Sign in with that address and we email you a code. Type it, accept the journalist
           agreement when it is shown, and the desk opens.
         </p>
         <p>
-          <Link to="/access/sign-in" search={{ next: '/desk' }} className="underline">
+          <Link to="/access/sign-in" search={{ next: '/desk' }}>
             Sign in to open the desk
           </Link>
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   return (
-    <PublicPage
-      title="Ask for access to the journalist desk"
-      width="prose"
-      lede={`For ${s.address}. Text and links only. Nothing is sent until you press the button.`}
-    >
+    <TokenPage title="Ask for access to the journalist desk">
+      <p>For {s.address}.</p>
       <form
-        className="flex flex-col gap-6"
+        style={{ display: 'grid', gap: 18 }}
         onSubmit={(e) => {
           e.preventDefault();
           send.mutate();
         }}
       >
         <AccessFields value={draft} onChange={setDraft} />
-        <ErrorText error={send.error} />
+        <ErrorNote error={send.error} />
         <div>
-          <Button type="submit" busy={send.isPending} busyLabel="Sending…">
-            Send my request to the owner
-          </Button>
+          <button className="btn sm flat go" type="submit" disabled={send.isPending}>
+            {send.isPending ? 'Sending…' : 'Send my request to the owner'}
+          </button>
         </div>
-        <p className="text-sm text-muted">
-          What you send is kept encrypted and read only by the owner. If the request is not
-          approved, it is deleted and you stay on the alert list.
+        <p className="m">
+          Text and links only. Nothing is sent until you press the button. What you send is kept
+          encrypted and read only by the owner. If the request is not approved, it is deleted and
+          you stay on the alert list.
         </p>
       </form>
-    </PublicPage>
+    </TokenPage>
   );
 }

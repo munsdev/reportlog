@@ -11,3 +11,5 @@ tools/geo/data/
 docs/design/mockups/
 docs/design/looks/looks.css
 apps/web/src/looks.gen.css
+apps/web/src/mockup/site.css
+apps/web/public/mockup/

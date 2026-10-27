@@ -13,7 +13,6 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -22,6 +21,9 @@ import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 
 export function IllegalContentPage() {
   const [where, setWhere] = useState('');
@@ -166,48 +168,60 @@ const DECISION_WORDS = {
   no_action: 'We did not remove the content.',
 } as const;
 
+/** Mock-up t-notice.html. */
 export function NoticeStatusPage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const state = useQuery(statusQuery(token));
   const onDoor = useGateMode() === 'door';
-  if (state.isPending) return <p role="status">Checking this link…</p>;
+  if (state.isPending) {
+    return (
+      <Narrow>
+        <p role="status" className="muted">
+          Checking this link…
+        </p>
+      </Narrow>
+    );
+  }
   if (state.isError) {
     const missing = state.error instanceof ApiRequestError && state.error.status === 404;
     return (
-      <PublicPage title="This link does not match a notice" width="prose">
-        <p className="max-w-prose">
-          {missing ? 'Check that the whole link was copied.' : state.error.message}
-        </p>
-      </PublicPage>
+      <TokenPage title="This link does not match a notice">
+        <p>{missing ? 'Check that the whole link was copied.' : state.error.message}</p>
+      </TokenPage>
     );
   }
   const n = state.data;
   return (
-    <PublicPage title={`Notice ${n.receipt}`} width="prose">
-      <p>Received {new Date(n.received_at).toLocaleString()}.</p>
+    <TokenPage title={`Notice ${n.receipt}`}>
+      <p className="m">Received {new Date(n.received_at).toLocaleString()}.</p>
       {/* Quiet either way, never teal: teal is a moderator confirming a
           report, and this is a decision about a notice. */}
       {n.status === 'open' || !n.decision ? (
-        <Card variant="quiet" heading="Not decided yet">
+        <Panel variant="quiet" title="Not decided yet">
           <p>
             A person will look at it and tell you what was decided and why. This page shows the
             decision when it is made.
           </p>
-        </Card>
+        </Panel>
       ) : (
-        <Card variant="quiet" heading="What we decided">
-          <p className="font-semibold">{DECISION_WORDS[n.decision]}</p>
-          <p className="whitespace-pre-wrap">{n.decision_reason}</p>
-        </Card>
+        <Panel variant="quiet" title="What we decided">
+          <p>
+            {DECISION_WORDS[n.decision]}
+            {n.decision_reason ? ' ' : ''}
+            <span className="whitespace-pre-wrap">{n.decision_reason}</span>
+          </p>
+          {onDoor ? null : (
+            <p>
+              <Link to="/terms">The terms this decision follows</Link>
+            </p>
+          )}
+        </Panel>
       )}
-      {onDoor ? null : (
+      {onDoor || !(n.status === 'open' || !n.decision) ? null : (
         <p>
-          How to ask us to look again is in the{' '}
-          <Link to="/terms" className="underline">
-            terms of use
-          </Link>
-          .
+          How to ask us to look again is in the <Link to="/terms">terms of use</Link>.
         </p>
       )}
-    </PublicPage>
+    </TokenPage>
   );
 }

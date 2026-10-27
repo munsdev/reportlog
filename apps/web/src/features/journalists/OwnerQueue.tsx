@@ -25,7 +25,7 @@ import type { ReactNode } from 'react';
 import { TabRow } from '@/features/nav/AreaTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { Btn } from '../../mockup/Btn.tsx';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { Empty } from '../../mockup/Empty.tsx';

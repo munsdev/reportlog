@@ -21,12 +21,9 @@ import {
 } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Lede, Meta } from '@/components/ui/type.tsx';
+import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
+import { Note, Panel } from '@/mockup/Panel.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 import { PERMISSION_WORDS } from '@/features/form/permissionWords.ts';
 import { call } from '@/lib/api.ts';
 import { FilePicker } from './FilesCard.tsx';
@@ -35,7 +32,9 @@ import type { Target } from './uploader.ts';
 
 const IN_FLIGHT = new Set(['uploading', 'uploaded', 'pending', 'processing']);
 
+/** Mock-up t-evidence.html. */
 export function EvidencePage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const ask = useQuery({
     queryKey: ['evidence', token],
     queryFn: ({ signal }) => call(getEvidenceRequest, { params: { token }, signal }),
@@ -75,26 +74,35 @@ export function EvidencePage({ token }: { token: string }) {
 
   const send = useMutation({ mutationFn: () => call(sendEvidence, { params: { token } }) });
 
-  if (ask.isPending) return <p role="status">Opening this request…</p>;
+  if (ask.isPending) {
+    return (
+      <Narrow>
+        <p role="status" className="muted">
+          Opening this request…
+        </p>
+      </Narrow>
+    );
+  }
   if (ask.isError) {
     return (
-      <SmallPage title="This link is not open">
-        <p className="max-w-prose">{ask.error.message}</p>
-      </SmallPage>
+      <TokenPage title="This link is not open">
+        <p>{ask.error.message}</p>
+      </TokenPage>
     );
   }
   const a = ask.data;
   if (send.isSuccess) {
     return (
-      <SmallPage title="Thank you" reference={send.data.public_ref}>
-        <Alert tone="done" title={`Your files are part of report ${send.data.public_ref}`}>
+      <TokenPage title="Thank you">
+        <p className="m">{send.data.public_ref}</p>
+        <Note title={`Your files are part of report ${send.data.public_ref}.`}>
           {send.data.attached === 1
             ? 'One file was added'
             : `${String(send.data.attached)} files were added`}{' '}
           as a new version of your report. Nothing you wrote was changed. A moderator looks at every
           file before anything is shown.
-        </Alert>
-      </SmallPage>
+        </Note>
+      </TokenPage>
     );
   }
   const ready = uploader.kept.filter((i) => i.status === 'clean').length;
@@ -102,23 +110,20 @@ export function EvidencePage({ token }: { token: string }) {
   // Pressable only when there is something to send and every file is Ready.
   const canSend = ready > 0 && !waiting;
   return (
-    <SmallPage
-      title="A moderator asked for evidence"
-      reference={a.public_ref}
-      lede={`About your report to “${a.logbook_title}”.`}
-    >
-      <Card variant="quiet" className="gap-2">
-        <h2 className="label-face text-xs text-ink-alt">What they asked</h2>
-        <p className="max-w-prose whitespace-pre-wrap">{a.message}</p>
-      </Card>
-      <p className="max-w-prose text-sm text-ink-alt">
-        This link works once, until <Meta>{new Date(a.expires_at).toLocaleString()}</Meta>. You do
-        not have to answer.
+    <TokenPage title="A moderator asked for evidence">
+      {a.public_ref ? <p className="m">{a.public_ref}</p> : null}
+      <p>{`About your report to “${a.logbook_title}”.`}</p>
+      <Panel variant="quiet" title="What they asked">
+        <p className="whitespace-pre-wrap">{a.message}</p>
+      </Panel>
+      <p className="m">
+        This link works once, until {new Date(a.expires_at).toLocaleString()}. You do not have to
+        answer.
       </p>
       {/* Where they land, the way out of being asked at all. Words, not a
           link: on a site behind its password "My reports" is behind it too,
           and this page is a door that may call nothing else. */}
-      <p className="max-w-prose text-sm text-ink-alt">
+      <p className="m">
         To stop being asked for evidence about this report, sign in to “My reports” with the email
         address you filed from and switch off “{PERMISSION_WORDS.evidence_request.label}”. That also
         closes this link.
@@ -127,7 +132,7 @@ export function EvidencePage({ token }: { token: string }) {
         <>
           {/* The picker's box is named by this heading: without it, a
               screen reader announces an unnamed file control. */}
-          <h2 id="evidence-files-heading" className="font-display text-xl font-bold">
+          <h2 id="evidence-files-heading" style={{ fontFamily: 'var(--rl-font-display)' }}>
             Send what you have
           </h2>
           <FilePicker
@@ -137,27 +142,23 @@ export function EvidencePage({ token }: { token: string }) {
             filing={false}
           />
           {send.isError ? (
-            <Alert tone="serious" title="Nothing was sent">
+            <Note warn title="Nothing was sent.">
               {send.error.message}
-            </Alert>
+            </Note>
           ) : null}
-          <div className="flex flex-col items-stretch gap-2 sm:items-start">
-            <Button
+          <div>
+            <button
+              className="btn sm flat go"
               type="button"
-              size="lg"
-              block
-              className="sm:w-auto"
-              disabled={!canSend}
-              busy={send.isPending}
-              busyLabel="Sending…"
+              disabled={!canSend || send.isPending}
               aria-describedby="evidence-send-why"
               onClick={() => {
                 send.mutate();
               }}
             >
-              Send these files
-            </Button>
-            <p id="evidence-send-why" role="status" className="text-sm text-ink-alt">
+              {send.isPending ? 'Sending…' : 'Send these files'}
+            </button>
+            <p id="evidence-send-why" role="status" className="m">
               {preparing
                 ? preparing === 1
                   ? 'One file is still being prepared. Send works once it says Ready.'
@@ -169,41 +170,10 @@ export function EvidencePage({ token }: { token: string }) {
           </div>
         </>
       ) : (
-        <Alert title="Files cannot be taken at the moment">
+        <Note title="Files cannot be taken at the moment.">
           This site is not taking files right now. Please try the link again later.
-        </Alert>
+        </Note>
       )}
-    </SmallPage>
-  );
-}
-
-/**
- * The frame of a page reached from a link in an email: a heading, the
- * report's reference in mono, and nothing from the rest of the site.
- */
-function SmallPage({
-  title,
-  reference,
-  lede,
-  children,
-}: {
-  title: string;
-  reference?: string | undefined;
-  lede?: string | undefined;
-  children: ReactNode;
-}) {
-  const site = plainSiteName(useSite().data);
-  useEffect(() => {
-    document.title = `${title} · ${site}`;
-  }, [title, site]);
-  return (
-    <section className="flex w-full max-w-[40rem] flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-title">{title}</h1>
-        {reference ? <Meta className="text-base text-ink">{reference}</Meta> : null}
-        {lede ? <Lede>{lede}</Lede> : null}
-      </div>
-      {children}
-    </section>
+    </TokenPage>
   );
 }

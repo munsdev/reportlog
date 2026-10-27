@@ -10,31 +10,43 @@
  * navigation stage's file), which is where it is wired in.
  */
 import { Link } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button.tsx';
+import { MockPage } from '../../mockup/Band.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { usePageTitle } from '../../mockup/usePageTitle.ts';
 import { useMainAction } from '../nav/Menu.tsx';
-import { PublicPage } from './PublicPage.tsx';
 
 export function NotFoundPage() {
   const { label, href } = useMainAction();
+  useBodyClass('dark');
+  usePageTitle('Page not found');
   return (
-    <PublicPage
-      eyebrow="404"
-      title="That page isn't here"
-      lede="The link may be old, or the report may not be published yet. Check the reference, or start from the front page."
-      width="prose"
-    >
-      <ul className="flex flex-wrap gap-3" aria-label="Where to go instead">
-        <li>
-          <Button asChild>
-            {href === '/submit' ? <Link to="/submit">{label}</Link> : <a href={href}>{label}</a>}
-          </Button>
-        </li>
-        <li>
-          <Button asChild variant="secondary">
-            <Link to="/">Front page</Link>
-          </Button>
-        </li>
-      </ul>
-    </PublicPage>
+    <MockPage>
+      <div className="wrap oops">
+        <span className="eyebrow">404</span>
+        <h1 className="display" style={{ fontSize: 'clamp(2.6rem,9vw,6rem)' }}>
+          That page
+          <br />
+          <span className="two">isn&rsquo;t here</span>
+        </h1>
+        <p className="lead">
+          The link may be old, or the report may not be published yet. Check the reference, or start
+          from the front page.
+        </p>
+        <div className="btn-row" aria-label="Where to go instead">
+          {href === '/submit' ? (
+            <Link className="btn go" to="/submit">
+              {label}
+            </Link>
+          ) : (
+            <a className="btn go" href={href}>
+              {label}
+            </a>
+          )}
+          <Link className="btn ghost" to="/">
+            Front page
+          </Link>
+        </div>
+      </div>
+    </MockPage>
   );
 }

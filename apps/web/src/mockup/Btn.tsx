@@ -1,37 +1,71 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Link } from '@tanstack/react-router';
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '@/lib/utils.ts';
 
-export type BtnKind = 'ink' | 'go' | 'ghost' | 'bad' | '';
+/**
+ * The mock-up's button (site.css `.btn`): `go` is the action colour, `ink` the
+ * dark fill, `ghost` no fill and no shadow; `sm`, `lg` and `flat` are its
+ * sizes and shadow. A link dressed as a button is `BtnLink`.
+ */
+export interface BtnLook {
+  look?: 'go' | 'ink' | 'ghost' | undefined;
+  sm?: boolean | undefined;
+  lg?: boolean | undefined;
+  flat?: boolean | undefined;
+}
 
-/** The mock-up's small flat button (staff.py `btn`): `btn sm flat` plus a kind. */
+export const btnClass = ({ look, sm, lg, flat }: BtnLook, extra?: string) =>
+  cn('btn', look, sm && 'sm', lg && 'lg', flat && 'flat', extra);
+
 export function Btn({
-  kind = '',
+  look,
+  sm,
+  lg,
+  flat,
   className,
-  type = 'button',
+  busy = false,
+  busyLabel,
   children,
-  ...rest
-}: { kind?: BtnKind; children?: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  const cls = `btn sm flat ${kind}`.trim();
+  onClick,
+  type = 'button',
+  ...props
+}: BtnLook &
+  Omit<ComponentProps<'button'>, 'children'> & {
+    /** Working on it: the label says what it is doing and a second press does nothing. */
+    busy?: boolean;
+    busyLabel?: ReactNode;
+    children?: ReactNode;
+  }) {
   return (
-    <button {...rest} type={type} className={className ? `${cls} ${className}` : cls}>
-      {children}
+    <button
+      {...props}
+      type={type}
+      className={btnClass({ look, sm, lg, flat }, className)}
+      aria-busy={busy || undefined}
+      onClick={
+        busy
+          ? (e) => {
+              e.preventDefault();
+            }
+          : onClick
+      }
+    >
+      {busy && busyLabel ? busyLabel : children}
     </button>
   );
 }
 
-/** The same button as a link. */
 export function BtnLink({
-  kind = '',
-  to,
+  look,
+  sm,
+  lg,
+  flat,
+  className,
   children,
-}: {
-  kind?: BtnKind;
-  to: string;
-  children?: ReactNode;
-}) {
+  ...props
+}: BtnLook & ComponentProps<'a'>) {
   return (
-    <Link to={to} className={`btn sm flat ${kind}`.trim()}>
+    <a {...props} className={btnClass({ look, sm, lg, flat }, className)}>
       {children}
-    </Link>
+    </a>
   );
 }

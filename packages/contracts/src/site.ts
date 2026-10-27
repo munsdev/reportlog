@@ -276,6 +276,11 @@ export const COPY_KEYS = [
   // strip under the header. Both are the operator's words, so both ship empty.
   'home_slogan',
   'ticker_text',
+  // The Follow along band's heading and line (D11), the same on every page it is on.
+  'follow_heading',
+  'follow_line',
+  // The footer's slogan: two lines, the second quieter.
+  'footer_slogan',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);

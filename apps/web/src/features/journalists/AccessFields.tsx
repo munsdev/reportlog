@@ -6,9 +6,7 @@
  */
 import type { AccessRequestBody } from '@reportlog/contracts';
 import { useId } from 'react';
-import { Label } from '@/components/ui/label.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
-import { TextField } from '../identity/ui.tsx';
+import { Field } from '../../mockup/Qcard.tsx';
 
 export interface AccessDraft {
   outlet: string;
@@ -48,50 +46,60 @@ export function AccessFields({
   };
   return (
     <>
-      <TextField
-        label="Your outlet"
-        autoComplete="organization"
-        required
-        maxLength={160}
-        value={value.outlet}
-        onChange={set('outlet')}
-      />
-      <TextField
-        label="Your role there"
-        hint="Reporter, editor, producer."
-        required
-        maxLength={120}
-        value={value.role}
-        onChange={set('role')}
-      />
-      <div className="flex flex-col gap-2">
-        <Label htmlFor={`${id}-about`}>Who are you?</Label>
-        <p id={`${id}-about-hint`} className="text-sm text-muted">
-          Enough for the owner to tell who you are and what you cover. Links to your published work
-          or a profile help most, if you have them.
-        </p>
-        <Textarea
+      <Field label="Your outlet" htmlFor={`${id}-outlet`}>
+        <input
+          className="input"
+          id={`${id}-outlet`}
+          autoComplete="organization"
+          required
+          maxLength={160}
+          value={value.outlet}
+          onChange={set('outlet')}
+        />
+      </Field>
+      <Field label="Your role there" htmlFor={`${id}-role`} help="Reporter, editor, producer.">
+        <input
+          className="input"
+          id={`${id}-role`}
+          required
+          maxLength={120}
+          value={value.role}
+          onChange={set('role')}
+        />
+      </Field>
+      <Field
+        label="Who are you?"
+        htmlFor={`${id}-about`}
+        help="Enough for the owner to tell who you are and what you cover. Links to your published work or a profile help most, if you have them."
+      >
+        <textarea
+          className="textarea"
           id={`${id}-about`}
-          aria-describedby={`${id}-about-hint`}
           required
           maxLength={4000}
           rows={5}
           value={value.about}
           onChange={set('about')}
         />
-      </div>
-      <TextField
-        label="Press card number (optional)"
-        maxLength={80}
-        value={value.cardNumber}
-        onChange={set('cardNumber')}
-      />
-      <TextField
-        label="Who issued the press card (optional)"
-        maxLength={160}
-        value={value.cardIssuer}
-        onChange={set('cardIssuer')}
-      />
+      </Field>
+      <Field label="Press card number (optional)" htmlFor={`${id}-card`}>
+        <input
+          className="input"
+          id={`${id}-card`}
+          maxLength={80}
+          value={value.cardNumber}
+          onChange={set('cardNumber')}
+        />
+      </Field>
+      <Field label="Who issued the press card (optional)" htmlFor={`${id}-issuer`}>
+        <input
+          className="input"
+          id={`${id}-issuer`}
+          maxLength={160}
+          value={value.cardIssuer}
+          onChange={set('cardIssuer')}
+        />
+      </Field>
     </>
   );
 }
