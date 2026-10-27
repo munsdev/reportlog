@@ -22,7 +22,9 @@ describe('who sees the intake screens', () => {
   });
 
   it('not an administrator, or the owner, who is in no organization', () => {
-    expect(labels({ roles: ['admin'], tester: false, memberships: [] })).not.toContain('Filing for an organization');
+    expect(labels({ roles: ['admin'], tester: false, memberships: [] })).not.toContain(
+      'Filing for an organization',
+    );
     expect(labels({ roles: ['owner'], tester: false })).not.toContain('Filing for an organization');
   });
 });

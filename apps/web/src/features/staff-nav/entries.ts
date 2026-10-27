@@ -245,7 +245,12 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
     id: 'organization',
     label: 'Your organization',
     pages: [
-      { to: '/intake', label: 'Filing for an organization', for: ['organization'], under: ['/intake/'] },
+      {
+        to: '/intake',
+        label: 'Filing for an organization',
+        for: ['organization'],
+        under: ['/intake/'],
+      },
       { to: '/intake/links', label: 'Volunteer links', for: ['organization'] },
     ],
   },

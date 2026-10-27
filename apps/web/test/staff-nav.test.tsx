@@ -139,9 +139,7 @@ describe('who sees which staff area and page', () => {
   it('lists every staff screen once, and /maps for the first time', () => {
     // The site password entry is an alias of /access and shares its address
     // on purpose.
-    const keys = STAFF_ENTRIES.filter((e) => !e.alias).map(
-      (e) => `${e.to}#${e.hash ?? ''}`,
-    );
+    const keys = STAFF_ENTRIES.filter((e) => !e.alias).map((e) => `${e.to}#${e.hash ?? ''}`);
     expect(new Set(keys).size).toBe(keys.length);
     // Only an alias may share an address with another entry.
     const real = STAFF_ENTRIES.filter((e) => !e.alias).map((e) => e.to);
