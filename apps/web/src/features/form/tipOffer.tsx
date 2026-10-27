@@ -11,7 +11,7 @@
  * the confirmation link is usually opened in another tab; it is removed as
  * soon as the tip form has used it and expires with the confirmation link.
  */
-import { Button } from '@/components/ui/button.tsx';
+import { BtnLink } from '@/mockup/Btn.tsx';
 
 const STORAGE_KEY = 'reportlog:tip-prefill';
 const KEYS = ['state', 'county', 'time'] as const;
@@ -80,14 +80,12 @@ export function clearTipPrefill(): void {
  */
 export function TipOffer() {
   return (
-    <div className="grid content-start gap-2.5 rounded-card border-[1.5px] border-line bg-surface p-[18px]">
-      <h2 className="font-display text-[1.35rem] leading-none">Saw it online too?</h2>
-      <p className="max-w-prose text-[0.95rem] text-ink-alt">
-        Thank you. Have a link? Send it as a tip.
-      </p>
-      <Button asChild variant="secondary" className="justify-self-start">
-        <a href="/list/tips">Send a link</a>
-      </Button>
+    <div className="card plain">
+      <h3>Saw it online too?</h3>
+      <p>Thank you. Have a link? Send it as a tip.</p>
+      <BtnLink sm flat href="/list/tips">
+        Send a link
+      </BtnLink>
     </div>
   );
 }

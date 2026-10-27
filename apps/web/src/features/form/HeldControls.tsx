@@ -8,11 +8,11 @@
  */
 import type { FormQuestion } from '@reportlog/contracts';
 import { maxLinksOf } from '@reportlog/fields';
+import { useId } from 'react';
 
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Field, TextArea, TextInput } from '@/mockup/Field.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import type { RawValue } from './walk.ts';
 
 /** The words under both controls. Plain: what it is, who may read it, that it can go. */
@@ -23,11 +23,9 @@ export const NOT_PUBLISHED = {
 
 export function NotPublished() {
   return (
-    <Alert tone="note">
-      <span>
-        <b>{NOT_PUBLISHED.lead}</b> {NOT_PUBLISHED.rest}
-      </span>
-    </Alert>
+    <Note lock>
+      <b>{NOT_PUBLISHED.lead}</b> {NOT_PUBLISHED.rest}
+    </Note>
   );
 }
 
@@ -38,42 +36,53 @@ interface HeldProps {
   labelledBy: string;
   describedBy?: string | undefined;
   invalid: boolean;
+  id?: string | undefined;
 }
 
 export const TEXT_MAX = 5000;
+
+/** The mock-up's "(optional)" after a label. */
+const Optional = () => <span className="muted">(optional)</span>;
 
 export function PrivateTextControl({
   question: q,
   value,
   onChange,
-  labelledBy,
   describedBy,
   invalid,
+  id,
 }: HeldProps) {
+  const own = useId();
+  const boxId = id ?? own;
   const text = typeof value === 'string' ? value : '';
   const max = typeof q.settings.maxLength === 'number' ? q.settings.maxLength : TEXT_MAX;
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <Textarea
+    <>
+      <Field
+        label={<>What happened {q.required ? null : <Optional />}</>}
+        htmlFor={boxId}
+        // Always shown: unlike a short box, it is the reader's place to see how much room is left.
+        help={
+          <span aria-live="polite">
+            {text.length} / {max}
+          </span>
+        }
+        helpMono
+      >
+        <TextArea
+          id={boxId}
           value={text}
           rows={7}
           maxLength={max}
-          className="min-h-40"
-          aria-labelledby={labelledBy}
           aria-describedby={describedBy}
           aria-invalid={invalid || undefined}
           onChange={(e) => {
             onChange(e.target.value);
           }}
         />
-        {/* Always shown: unlike a short box, it is the reader's place to see how much room is left. */}
-        <p aria-live="polite" className="font-mono text-[0.8125rem] text-muted">
-          {text.length} / {max}
-        </p>
-      </div>
+      </Field>
       <NotPublished />
-    </div>
+    </>
   );
 }
 
@@ -81,10 +90,12 @@ export function PrivateLinksControl({
   question: q,
   value,
   onChange,
-  labelledBy,
   describedBy,
   invalid,
+  id,
 }: HeldProps) {
+  const own = useId();
+  const boxId = id ?? own;
   const max = maxLinksOf(q.settings);
   const boxes = Array.isArray(value) ? value : typeof value === 'string' ? [value] : [];
   // One box to start with; a box is added only when the reporter asks.
@@ -95,39 +106,48 @@ export function PrivateLinksControl({
     onChange(next);
   };
   return (
-    <div className="flex flex-col gap-4">
-      <div role="group" aria-labelledby={labelledBy} className="flex flex-col gap-3">
-        {shown.map((link, i) => (
-          <Input
-            // The position IS the identity of a box the reporter is typing in.
-            key={i}
+    <>
+      {shown.map((link, i) => (
+        // The position IS the identity of a box the reporter is typing in.
+        <Field
+          key={i}
+          label={
+            <>
+              {i === 0 ? 'Link' : `Link ${String(i + 1)}`}{' '}
+              {i === 0 && !q.required ? <Optional /> : null}
+            </>
+          }
+          htmlFor={`${boxId}-${String(i)}`}
+        >
+          <TextInput
+            id={`${boxId}-${String(i)}`}
             type="url"
             inputMode="url"
             autoComplete="off"
             placeholder="https://"
             value={link}
-            aria-label={max > 1 ? `Link ${String(i + 1)}` : 'Link'}
             aria-describedby={describedBy}
             aria-invalid={invalid || undefined}
             onChange={(e) => {
               set(i, e.target.value);
             }}
           />
-        ))}
-      </div>
+        </Field>
+      ))}
       {shown.length < max ? (
-        <Button
-          type="button"
-          variant="secondary"
-          className="self-start"
+        <Btn
+          sm
+          flat
+          look="ghost"
+          style={{ justifySelf: 'start' }}
           onClick={() => {
             onChange([...shown, '']);
           }}
         >
           Add another link
-        </Button>
+        </Btn>
       ) : null}
       <NotPublished />
-    </div>
+    </>
   );
 }
