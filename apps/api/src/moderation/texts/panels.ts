@@ -15,6 +15,13 @@ import type { Outcome } from './items.ts';
 
 type Db = Kysely<DB>;
 
+type TextState = 'waiting' | 'checked' | 'redacted' | 'withheld';
+type LinkState = 'waiting' | 'checked' | 'withheld';
+const textState = (o: string | null | undefined): TextState =>
+  o === 'checked' || o === 'redacted' || o === 'withheld' ? o : 'waiting';
+const linkState = (o: string | null | undefined): LinkState =>
+  o === 'checked' || o === 'withheld' ? o : 'waiting';
+
 async function threadReports(db: Db, threadId: string) {
   const head = await db
     .selectFrom('report_heads')
@@ -148,7 +155,7 @@ export async function myWritten(db: Db, keys: LinkKeys, threadId: string) {
         return {
           field_key: h.fieldKey,
           text: h.value,
-          outcome: (o === 'checked' || o === 'redacted' || o === 'withheld' ? o : 'waiting'),
+          outcome: textState(o),
           checked_at: it?.checked_at ? new Date(it.checked_at).toISOString() : null,
         };
       }),
@@ -160,7 +167,7 @@ export async function myWritten(db: Db, keys: LinkKeys, threadId: string) {
         return {
           field_key: h.fieldKey,
           url: h.value,
-          outcome: (o === 'checked' || o === 'withheld' ? o : 'waiting'),
+          outcome: linkState(o),
           checked_at: g?.checked_at ? new Date(g.checked_at).toISOString() : null,
         };
       }),
