@@ -17,15 +17,7 @@ import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/mockup/Dialog.tsx';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Modal.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { call } from '@/lib/api.ts';

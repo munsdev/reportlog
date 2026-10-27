@@ -22,7 +22,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './Dialog.tsx';
+} from './Modal.tsx';
 import { Dl } from './Dl.tsx';
 import type { DlItem } from './Dl.tsx';
 import { Panel } from './Panel.tsx';

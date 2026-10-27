@@ -17,10 +17,10 @@ import type { BundleResult } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRef, useState } from 'react';
 import { call } from '@/lib/api.ts';
-import { Dlg } from '@/mockup/Dlg.tsx';
-import { Note } from '@/mockup/Note.tsx';
-import { ErrorNote, Panel } from '@/mockup/Panel.tsx';
-import { SmBtn as Btn } from '@/mockup/SmBtn.tsx';
+import { Dlg } from '@/mockup/Modal.tsx';
+import { ErrorNote, Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 
 /** What the file holds, in words, for the confirm step. */
 function holds(b: SiteBundle): string[] {
@@ -126,8 +126,8 @@ export function BundlePage() {
           It holds nothing from the archive: no logbooks, questions, lists, reports, entries, people
           or files.
         </p>
-        <Btn
-          kind="ink"
+        <Btn sm flat
+          look="ink"
           disabled={download.isPending}
           onClick={() => {
             download.mutate();
@@ -160,8 +160,8 @@ export function BundlePage() {
             title="Replace these settings?"
             buttons={
               <>
-                <Btn
-                  kind="bad"
+                <Btn sm flat
+                  look="bad"
                   disabled={upload.isPending}
                   onClick={() => {
                     upload.mutate(bundle);
@@ -169,8 +169,8 @@ export function BundlePage() {
                 >
                   Replace them
                 </Btn>
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   onClick={() => {
                     setBundle(null);
                     if (input.current) input.current.value = '';
@@ -223,8 +223,8 @@ export function BundlePage() {
             title="Restore the settings from before the last import?"
             buttons={
               <>
-                <Btn
-                  kind="bad"
+                <Btn sm flat
+                  look="bad"
                   disabled={restore.isPending}
                   onClick={() => {
                     restore.mutate();
@@ -232,8 +232,8 @@ export function BundlePage() {
                 >
                   Restore them
                 </Btn>
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   onClick={() => {
                     setAsking(false);
                   }}
@@ -249,8 +249,8 @@ export function BundlePage() {
             </p>
           </Dlg>
         ) : (
-          <Btn
-            kind="ghost"
+          <Btn sm flat
+            look="ghost"
             disabled={!last}
             onClick={() => {
               setAsking(true);

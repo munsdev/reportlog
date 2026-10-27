@@ -15,14 +15,7 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/mockup/Dialog.tsx';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Modal.tsx';
 import { Switch } from '@/mockup/Switch.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
