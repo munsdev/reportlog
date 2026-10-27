@@ -4,3 +4,44 @@
 .panel > form {
   display: contents;
 }
+
+/* The Look screen's named looks: a card each, with a strip of the palette's own colours.
+   The strip carries data-palette, so the stylesheet paints it; nothing is computed in code. */
+.lookcards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+.lookcard {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+  border: 1.5px solid var(--rl-border);
+  border-radius: var(--rl-radius);
+  background: var(--rl-surface);
+  cursor: pointer;
+}
+.lookcard:has(input:checked) {
+  border-color: var(--rl-border-main);
+  box-shadow: 3px 3px 0 var(--rl-border-main);
+}
+.lookcard:has(input:focus-visible) {
+  outline: 3px solid var(--rl-action);
+  outline-offset: 2px;
+}
+.lookcard .strip {
+  display: flex;
+  height: 36px;
+  overflow: hidden;
+  border: 1.5px solid var(--rl-border);
+  border-radius: 6px;
+}
+.lookcard .strip span {
+  flex: 1;
+}
+.lookcard small {
+  color: var(--rl-text-muted);
+  font-size: 0.8rem;
+}

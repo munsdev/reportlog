@@ -23,7 +23,7 @@ import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
@@ -79,6 +79,24 @@ function useColumnWide(min: number) {
   return [ref, wide] as const;
 }
 
+/** Whether the window is at least 900px wide: the staff layout's own breakpoint. */
+function useDesktop() {
+  const [yes, setYes] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 900px)').matches,
+  );
+  useEffect(() => {
+    const q = window.matchMedia('(min-width: 900px)');
+    const read = () => {
+      setYes(q.matches);
+    };
+    q.addEventListener('change', read);
+    return () => {
+      q.removeEventListener('change', read);
+    };
+  }, []);
+  return yes;
+}
+
 export function LookScreen({ state }: { state: SiteEditor }) {
   const client = useQueryClient();
   return (
@@ -105,6 +123,19 @@ function LookChoice({ state }: { state: SiteEditor }) {
   useUnsavedChanges('the look', previewing);
   // The frames sit under the chooser at the page's own width.
   const [column, wide] = useColumnWide(896);
+  const desktop = useDesktop();
+  const applyIt = () => {
+    apply.mutate(chosen, {
+      onSuccess: (next) => {
+        setChosen(next.look);
+        toast.show('The new look is live.');
+      },
+    });
+  };
+  const back = () => {
+    apply.reset();
+    setChosen(current);
+  };
 
   return (
     <div ref={column} style={{ maxWidth: 960 }}>
@@ -124,29 +155,12 @@ function LookChoice({ state }: { state: SiteEditor }) {
             )}
           </span>
         </div>
-        {previewing ? (
+        {previewing && desktop ? (
           <div className="acts">
-            <Btn look="ink" sm flat
-              busy={apply.isPending}
-              busyLabel="Applying…"
-              onClick={() => {
-                apply.mutate(chosen, {
-                  onSuccess: (next) => {
-                    setChosen(next.look);
-                    toast.show('The new look is live.');
-                  },
-                });
-              }}
-            >
+            <Btn look="ink" sm flat busy={apply.isPending} busyLabel="Applying…" onClick={applyIt}>
               Apply to the site
             </Btn>
-            <Btn look="ghost" sm flat
-              
-              onClick={() => {
-                apply.reset();
-                setChosen(current);
-              }}
-            >
+            <Btn look="ghost" sm flat onClick={back}>
               Back to what the site shows
             </Btn>
           </div>
@@ -162,6 +176,20 @@ function LookChoice({ state }: { state: SiteEditor }) {
       <LookOptionsPanel />
 
       <LookPacks />
+
+      {/* On a phone the decision stays at the foot of the screen while the previews scroll. */}
+      {previewing && !desktop ? (
+        <div className="phone-decide">
+          <div className="in">
+            <Btn look="ghost" sm flat onClick={back}>
+              Back
+            </Btn>
+            <Btn look="ink" sm flat busy={apply.isPending} busyLabel="Applying…" onClick={applyIt}>
+              Apply
+            </Btn>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

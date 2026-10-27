@@ -451,10 +451,10 @@ function StartStep({ onDone, back }: StepProps) {
         <Choices label="Starting points" value={picked ?? ''} onChange={setPicked}>
           {templates.map((t) => (
             <Choice key={t.id} value={t.id} title={t.label}>
-              <span className="block">{t.description}</span>
-              <span className="block">
+              <span style={{ display: 'block' }}>{t.description}</span>
+              <span style={{ display: 'block' }}>
                 {t.sets.map((line) => (
-                  <span key={line} className="block">
+                  <span key={line} style={{ display: 'block' }}>
                     · {line}
                   </span>
                 ))}
@@ -656,17 +656,17 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
         any time under Site settings.
       </p>
       {/* Said politely as it changes; the frames below are pictures only. */}
-      <p aria-live="polite" className="font-semibold">
-        Previewing {lookName(look)}.
+      <p aria-live="polite">
+        <b>Previewing {lookName(look)}.</b>
       </p>
       {/* Side by side from lg up, as on the Look screen: the previews stay in
           view while the chooser scrolls. Frames first below lg. */}
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start xl:grid-cols-[minmax(0,1fr)_minmax(0,34rem)]">
-        <div className="min-w-0 lg:sticky lg:top-4 lg:order-2">
-          <LookFrames look={look} name={parseBrand(name)} fit />
-        </div>
-        <div className="min-w-0 lg:order-1">
+      <div className="two-col">
+        <div>
           <LookChooser value={look} onChange={setLookState} />
+        </div>
+        <div>
+          <LookFrames look={look} name={parseBrand(name)} fit />
         </div>
       </div>
       <Problem error={save.error} />
