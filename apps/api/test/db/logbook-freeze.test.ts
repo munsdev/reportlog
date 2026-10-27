@@ -23,6 +23,7 @@ import { filesHarness } from './files-helpers.ts';
 import type { FilesHarness } from './files-helpers.ts';
 import { spine, tokenFor } from './filing-helpers.ts';
 import { launchedLogbook, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 import { address, seat, signIn } from './identity-helpers.ts';
 import { doorPass } from '../door-pass.ts';
 
@@ -232,8 +233,8 @@ describe('the freeze on a launched logbook', () => {
 describe('the freeze and the one-way door', () => {
   it('works on a draft, and launching a frozen draft keeps it frozen', async () => {
     const draft = await L.createLogbook(h.db, { title: 'Frozen draft', slug: uniqueSlug('fz') });
-    await L.addField(h.db, draft.id, { kind: 'long_text', label: 'What happened', required: true });
-    await L.addField(h.db, draft.id, { kind: 'file', label: 'Photos' });
+    await addStoredQuestion(h.db, draft.id, { kind: 'long_text', label: 'What happened', required: true });
+    await addStoredQuestion(h.db, draft.id, { kind: 'file', label: 'Photos' });
     const frozen = await freeze(draft.id, true);
     expect(frozen.statusCode).toBe(200);
     await L.launch(h.db, draft.id);

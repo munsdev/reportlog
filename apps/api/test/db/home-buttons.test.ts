@@ -28,13 +28,14 @@ import * as L from '../../src/logbooks/logbooks.ts';
 import { buttonTargets, editorRows } from '../../src/logbooks/homeButtons.ts';
 import { writeSettings } from '../../src/site/settings.ts';
 import { testDatabase, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 
 const db = testDatabase();
 
 /** A launched logbook, with the question `launch` insists on. */
 async function logbook(title: string) {
   const lb = await L.createLogbook(db, { title, slug: uniqueSlug('hb') });
-  await L.addField(db, lb.id, { key: 'account', kind: 'long_text', label: 'What happened?' });
+  await addStoredQuestion(db, lb.id, { key: 'account', kind: 'long_text', label: 'What happened?' });
   return L.launch(db, lb.id);
 }
 
