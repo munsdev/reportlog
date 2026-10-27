@@ -18,19 +18,10 @@ import type { DraftPayload, IntakeDraft } from '@reportlog/contracts';
 import { INTAKE_METHODS, INTAKE_METHOD_LABELS } from '@reportlog/seal';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { Select } from '@/components/ui/select.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Field, FieldDescription, Input, Label, Select } from '../../mockup/Form.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Problem } from '../../mockup/Notice.tsx';
 import { rawFromAnswers, toSubmission, withChange } from '@/features/form/walk.ts';
 import type { RawAnswers } from '@/features/form/walk.ts';
 import { call } from '@/lib/api.ts';
@@ -90,117 +81,106 @@ export function AccountDialog({
   });
 
   return (
-    <Dialog
+    <Modal
+      title={`Account ${String(draft.ordinal)}`}
+      description="Type it as it was given to you. Anything missing is listed before the batch is filed."
       open
-      onOpenChange={(on) => {
-        if (!on) onClose();
+      onClose={onClose}
+      onSubmit={() => {
+        if (!save.isPending && !sending) save.mutate();
       }}
-    >
-      <DialogContent>
-        <DialogTitle>Account {draft.ordinal}</DialogTitle>
-        <DialogDescription>
-          Type it as it was given to you. Anything missing is listed before the batch is filed.
-        </DialogDescription>
-        <Field>
-          <Label>Which logbook</Label>
-          <Select
-            value={slug}
-            onChange={(e) => {
-              setSlug(e.target.value);
-              setRaw({});
-            }}
-          >
-            <option value="">{open.length ? 'Choose one' : 'No logbook is taking reports'}</option>
-            {open.map((l) => (
-              <option key={l.slug} value={l.slug}>
-                {l.title}
-              </option>
-            ))}
-            {slug && !open.some((l) => l.slug === slug) ? (
-              <option value={slug}>{slug} (not taking reports)</option>
-            ) : null}
-          </Select>
-        </Field>
-        {form.isPending && slug ? <p role="status">Loading the questions…</p> : null}
-        <Questions
-          idPrefix={`draft-${String(draft.id)}`}
-          questions={questions}
-          raw={shown}
-          onChange={(key, v) => {
-            setRaw(withChange(questions, shown, key, v));
-          }}
-          showProblems={false}
-        />
-        {slug && fileQuestion ? (
-          <AccountFiles
-            key={slug}
-            draftId={draft.id}
-            logbook={slug}
-            question={fileQuestion}
-            onBusy={setSending}
-          />
-        ) : null}
-        <Field>
-          <Label>How it was collected</Label>
-          <Select
-            value={method}
-            onChange={(e) => {
-              setMethod(e.target.value);
-            }}
-          >
-            <option value="">Choose one</option>
-            {INTAKE_METHODS.map((m) => (
-              <option key={m} value={m}>
-                {INTAKE_METHOD_LABELS[m]}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field>
-          <Label>The day it was collected</Label>
-          <FieldDescription>If you know it.</FieldDescription>
-          <Input
-            type="date"
-            value={collected}
-            onChange={(e) => {
-              setCollected(e.target.value);
-            }}
-          />
-        </Field>
-        <Field>
-          <Label>Your own reference for it</Label>
-          <FieldDescription>
-            Which sheet or call it was, so you can find it again. Never published, and not part of
-            the report.
-          </FieldDescription>
-          <Input
-            value={sourceRef}
-            onChange={(e) => {
-              setSourceRef(e.target.value);
-            }}
-          />
-        </Field>
-        <PublicationChoice card={card.data} value={publish} onChange={setPublish} />
-        {save.isError ? (
-          <Alert tone="serious" title="It was not saved">
-            {save.error.message}
-          </Alert>
-        ) : null}
-        <DialogFooter>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={save.isPending || sending}
-            onClick={() => {
-              save.mutate();
-            }}
-          >
+      buttons={
+        <>
+          <Btn sm flat look="ink" type="submit" disabled={save.isPending || sending}>
             {sending ? 'A file is still sending…' : 'Save this account'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          </Btn>
+          <Btn sm flat look="ghost" onClick={onClose}>
+            Cancel
+          </Btn>
+        </>
+      }
+    >
+      <Field>
+        <Label>Which logbook</Label>
+        <Select
+          value={slug}
+          onChange={(e) => {
+            setSlug(e.target.value);
+            setRaw({});
+          }}
+        >
+          <option value="">{open.length ? 'Choose one' : 'No logbook is taking reports'}</option>
+          {open.map((l) => (
+            <option key={l.slug} value={l.slug}>
+              {l.title}
+            </option>
+          ))}
+          {slug && !open.some((l) => l.slug === slug) ? (
+            <option value={slug}>{slug} (not taking reports)</option>
+          ) : null}
+        </Select>
+      </Field>
+      {form.isPending && slug ? <p role="status">Loading the questions…</p> : null}
+      <Questions
+        idPrefix={`draft-${String(draft.id)}`}
+        questions={questions}
+        raw={shown}
+        onChange={(key, v) => {
+          setRaw(withChange(questions, shown, key, v));
+        }}
+        showProblems={false}
+      />
+      {slug && fileQuestion ? (
+        <AccountFiles
+          key={slug}
+          draftId={draft.id}
+          logbook={slug}
+          question={fileQuestion}
+          onBusy={setSending}
+        />
+      ) : null}
+      <Field>
+        <Label>How it was collected</Label>
+        <Select
+          value={method}
+          onChange={(e) => {
+            setMethod(e.target.value);
+          }}
+        >
+          <option value="">Choose one</option>
+          {INTAKE_METHODS.map((m) => (
+            <option key={m} value={m}>
+              {INTAKE_METHOD_LABELS[m]}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <Field>
+        <Label>The day it was collected</Label>
+        <FieldDescription>If you know it.</FieldDescription>
+        <Input
+          type="date"
+          value={collected}
+          onChange={(e) => {
+            setCollected(e.target.value);
+          }}
+        />
+      </Field>
+      <Field>
+        <Label>Your own reference for it</Label>
+        <FieldDescription>
+          Which sheet or call it was, so you can find it again. Never published, and not part of the
+          report.
+        </FieldDescription>
+        <Input
+          value={sourceRef}
+          onChange={(e) => {
+            setSourceRef(e.target.value);
+          }}
+        />
+      </Field>
+      <PublicationChoice card={card.data} value={publish} onChange={setPublish} />
+      {save.isError ? <Problem title="It was not saved.">{save.error.message}</Problem> : null}
+    </Modal>
   );
 }

@@ -9,17 +9,15 @@ import { correctIntakeFiling } from '@reportlog/contracts';
 import type { IntakeFiling } from '@reportlog/contracts';
 import { INTAKE_METHODS, INTAKE_METHOD_LABELS } from '@reportlog/seal';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Back } from '../../mockup/Back.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Check } from '../../mockup/Choices.tsx';
+import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Problem } from '../../mockup/Notice.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/components/ui/select.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
 import {
   askedQuestions,
   cardProblem,
@@ -39,11 +37,9 @@ export function CorrectFiling({ threadId }: { threadId: string }) {
   if (filing.isPending) return <p role="status">Loading…</p>;
   if (filing.isError) {
     return (
-      <StaffPage area="Your organization" title="Not an account you filed" width="prose">
+      <StaffPage area="Your organization" title="Not an account you filed">
         <p>{filing.error.message}</p>
-        <Link to="/intake" className="underline">
-          All your batches
-        </Link>
+        <Back to="/intake">All your batches</Back>
       </StaffPage>
     );
   }
@@ -94,22 +90,18 @@ function CorrectForm({
     <StaffPage
       area="Your organization"
       title={`Correct ${f.public_ref}`}
+      mono
       lede={`${f.logbook_title} · filed through ${f.filed_via} · ${f.moderation_status === 'pending' ? 'waiting for a moderator' : 'read by a moderator'}`}
-      width="prose"
     >
-      <Link to="/intake/$id" params={{ id: String(f.batch_id) }} className="underline">
-        Back to the batch
-      </Link>
-      {done ? <Alert tone="done" title={done} /> : null}
+      <Back to={`/intake/${String(f.batch_id)}`}>Back to the batch</Back>
+      {done ? (
+        <Note>
+          <b>{done}</b>
+        </Note>
+      ) : null}
 
-      <section
-        aria-labelledby="the-correction"
-        className="flex flex-col gap-4 rounded-card border border-line bg-surface p-5"
-      >
-        <h2 id="the-correction" className="font-display text-xl font-bold">
-          The correction
-        </h2>
-        <p className="text-ink-alt">
+      <Panel title="The correction">
+        <p className="muted">
           A correction is a new version of the report. The one before it is kept, and both can be
           checked. It is recorded as yours; the organization is shown publicly, you are not.
         </p>
@@ -167,28 +159,28 @@ function CorrectForm({
             }}
           />
         </Field>
-        <CheckOption
+        <Check
           id="attest-correction"
           checked={attested}
-          onCheckedChange={(on) => {
-            setAttested(on === true);
+          onChange={(e) => {
+            setAttested(e.target.checked);
           }}
-          label={CORRECTION_STATEMENT}
-        />
+        >
+          {CORRECTION_STATEMENT}
+        </Check>
         {f.may_publish && publish === 'no' ? (
-          <Alert tone="note" title="Keeping it out cannot be undone">
-            A correction can take permission to publish back, never give it.
-          </Alert>
+          <Note>
+            <b>Keeping it out cannot be undone.</b> A correction can take permission to publish
+            back, never give it.
+          </Note>
         ) : null}
-        {problem ? <Alert tone="serious" title={problem} /> : null}
-        {send.isError ? (
-          <Alert tone="serious" title="Nothing was filed">
-            {send.error.message}
-          </Alert>
-        ) : null}
-        <div>
-          <Button
-            type="button"
+        {problem ? <Problem>{problem}</Problem> : null}
+        {send.isError ? <Problem title="Nothing was filed.">{send.error.message}</Problem> : null}
+        <div className="acts">
+          <Btn
+            sm
+            flat
+            look="ink"
             disabled={send.isPending}
             onClick={() => {
               setDone(null);
@@ -210,25 +202,20 @@ function CorrectForm({
             }}
           >
             File the correction
-          </Button>
+          </Btn>
         </div>
-      </section>
+      </Panel>
 
-      <section aria-labelledby="history" className="flex flex-col gap-2">
-        <h2 id="history" className="font-display text-xl font-bold">
-          What has been done to it
-        </h2>
-        <ul className="flex flex-col gap-2">
-          {f.history.map((h) => (
-            <li key={h.public_ref} className="text-sm">
-              <time dateTime={h.at}>{new Date(h.at).toLocaleString()}</time> ·{' '}
-              {h.action === 'filed' ? 'Filed' : 'Corrected'} as{' '}
-              <span className="font-mono">{h.public_ref}</span> by {h.by}
-              {h.comment ? `: ${h.comment}` : ''}
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Panel title="What has been done to it">
+        <div className="code">
+          {f.history
+            .map(
+              (h) =>
+                `${new Date(h.at).toLocaleString()} · ${h.action === 'filed' ? 'Filed' : 'Corrected'} as ${h.public_ref} by ${h.by}${h.comment ? `: ${h.comment}` : ''}`,
+            )
+            .join('\n')}
+        </div>
+      </Panel>
     </StaffPage>
   );
 }
