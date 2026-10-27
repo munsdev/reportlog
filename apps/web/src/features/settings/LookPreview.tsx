@@ -30,7 +30,11 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { Chip } from '@/components/ui/chip.tsx';
 import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
+import { FitHeadline } from '@/components/ui/fit-headline.tsx';
 import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
+import { Zone } from '@/components/ui/zone.tsx';
+import { MotifHost } from '../looks/header-background/HeaderBackground.tsx';
+import { usePreviewOptions } from '../looks/previewOptions.tsx';
 import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, layoutIn } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
@@ -163,6 +167,8 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
 
 /** The site, drawn small: what every frame shows. */
 export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
+  // The header background being edited, if the Look screen is editing one.
+  const draft = usePreviewOptions();
   return (
     <div className="min-h-screen bg-paper font-sans text-ink">
       <div className="border-b-[6px] border-brand-on-deep bg-deep text-on-deep">
@@ -175,6 +181,18 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
           </span>
         </div>
       </div>
+      <Zone tone="deep" {...(draft ? { zones: draft.options.zones } : {})}>
+        <MotifHost
+          slot="hero"
+          className="py-10"
+          {...(draft ? { options: draft.options, kit: draft.kit } : {})}
+        >
+          <div className="mx-auto flex max-w-page flex-col gap-3 px-4">
+            <FitHeadline as="p" lines={['Report what', { text: 'you saw', two: true }]} />
+            <p className="rl-tagline">Keep a record.</p>
+          </div>
+        </MotifHost>
+      </Zone>
       <div className="mx-auto flex max-w-page flex-col gap-4 px-4 py-6">
         <Eyebrow>
           <BrandName parts={parts} />

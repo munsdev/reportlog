@@ -14,6 +14,7 @@
  */
 import { z } from 'zod';
 import { Figure } from './board.ts';
+import { LookKitPath, LookOptions } from './look/header.ts';
 import { ENUMS } from './look/pack.ts';
 import type { ThemeLayout } from './look/pack.ts';
 import { defineRoute } from './route.ts';
@@ -42,6 +43,7 @@ export {
   DEFAULT_LOOK,
   LEGACY_LOOK,
   LOOKS,
+  PREVIOUS_DEFAULT_LOOK,
   PALETTES,
   PALETTE_IDS,
   RETIRED_IDS,
@@ -101,14 +103,33 @@ export const PaintedLook = Look.extend({
    * sends it, empty when there are no packs.
    */
   stylesheets: z.array(LookStylesheet).max(100).optional(),
+  /** Format 2 themes: the headline's second line and its tag. Optional like the four above. */
+  second: z.enum(ENUMS.second).optional(),
+  tag: z.enum(ENUMS.tag).optional(),
+  /**
+   * Zones, motion and the header background (look/header.ts). Optional so a
+   * look remembered before they existed still parses; the page then draws
+   * the defaults until the server answers.
+   */
+  options: LookOptions.optional(),
+  /**
+   * Each installed pack's header kit (its elements and shapes), by address.
+   * Fetched by the page only where a header background is drawn.
+   */
+  kits: z.array(LookKitPath).max(100).optional(),
 });
 export type PaintedLook = z.infer<typeof PaintedLook>;
 
 /** A theme's layout choices, as PaintedLook names them. */
 export function paintedLayout(
   layout: ThemeLayout,
-): Pick<PaintedLook, 'panel_head' | 'texture' | 'width' | 'columns' | 'scale' | 'surface'> {
+): Pick<
+  PaintedLook,
+  'panel_head' | 'texture' | 'width' | 'columns' | 'scale' | 'surface' | 'second' | 'tag'
+> {
   return {
+    second: layout.second,
+    tag: layout.tag,
     panel_head: layout.panelHead,
     texture: layout.texture,
     width: layout.width,
@@ -440,6 +461,8 @@ export const LegalEditor = z.object({
 
 export const SiteEditor = z.object({
   look: Look,
+  /** Zones, motion and the header background, whole. */
+  look_options: LookOptions,
   /** The stored name, or null when the site uses the default. */
   name: z.string().nullable(),
   effective_name: z.string(),
@@ -473,6 +496,40 @@ export const setLook = defineRoute({
   body: z.object({ palette: z.string().optional(), theme: z.string().optional() }),
   response: SiteEditor,
 });
+
+/**
+ * Zones, motion and the header background, whole. Owner only (the page that
+ * every visitor sees first). `image.file` must be the one already uploaded,
+ * or null; a different name is refused, so no stored file name can be made
+ * to point somewhere else.
+ */
+export const setLookOptions = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/site/look-options',
+  summary: 'Set how sections alternate, whether decoration moves, and the header background.',
+  body: LookOptions,
+  response: SiteEditor,
+});
+
+/**
+ * The header image. The body is the picture itself, not JSON (the page has
+ * already scaled it to 1600 px). It is decoded and re-encoded before it is
+ * kept, so nothing but the picture survives. Owner only.
+ */
+export const uploadHeaderImage = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/site/header-image',
+  summary: 'Replace the header image with the image in the body.',
+  response: SiteEditor,
+});
+export const removeHeaderImage = defineRoute({
+  method: 'DELETE',
+  path: '/api/admin/site/header-image',
+  summary: 'Remove the header image.',
+  response: SiteEditor,
+});
+/** Where the header image is served from, behind the site password like the pages it appears on. */
+export const HEADER_IMAGE_ROUTE = '/api/site/header-image/:file';
 
 export const setSiteName = defineRoute({
   method: 'PUT',

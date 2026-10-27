@@ -18,7 +18,20 @@ type Bag = Record<string, unknown>;
 const isBag = (v: unknown): v is Bag => v !== null && typeof v === 'object' && !Array.isArray(v);
 
 const FIELDS = {
-  pack: ['format', 'id', 'label', 'version', 'author', 'fonts', 'palettes', 'themes', 'looks'],
+  pack: [
+    'format',
+    'id',
+    'label',
+    'version',
+    'author',
+    'credit',
+    'fonts',
+    'palettes',
+    'themes',
+    'looks',
+    'shapes',
+    'elements',
+  ],
   font: ['family', 'licence', 'files'],
   file: ['file', 'weight', 'style', 'stretch'],
   palette: ['id', 'label', 'description', 'dark', 'colors'],
@@ -35,7 +48,22 @@ const FIELDS = {
     'columns',
     'scale',
     'surface',
+    'display',
   ],
+  display: [
+    'lineHeight',
+    'headlineStretch',
+    'headlineWeight',
+    'fit',
+    'band',
+    'second',
+    'tag',
+    'buttonCase',
+    'radiusButton',
+  ],
+  range: ['min', 'max'],
+  headerShape: ['v', 'd'],
+  element: ['id', 'label', 'kind', 'shape', 'h', 'style', 'depth'],
   type: ['heading', 'body', 'label', 'mono', 'h1'],
   face: ['family', 'stretch', 'weight', 'case', 'tracking', 'size'],
   h1: ['min', 'max'],
@@ -121,7 +149,29 @@ export function shapeProblems(input: unknown): string[] {
       if (isBag(t.type.h1)) extra(`${where} h1`, t.type.h1, FIELDS.h1);
     }
     if (isBag(t.shape)) extra(`${where} shape`, t.shape, FIELDS.shape);
+    if (isBag(t.display)) {
+      extra(`${where} display`, t.display, FIELDS.display);
+      for (const k of ['fit', 'band'] as const) {
+        const r = t.display[k];
+        if (isBag(r)) extra(`${where} display ${k}`, r, FIELDS.range);
+      }
+    }
   }
+
+  if (input.shapes !== undefined) {
+    if (!isBag(input.shapes)) out.push('In look.json, "shapes" must be an object.');
+    else
+      for (const [id, sh] of Object.entries(input.shapes))
+        if (isBag(sh)) extra(`The shape "${id.slice(0, 40)}"`, sh, FIELDS.headerShape);
+        else out.push(`The shape "${id.slice(0, 40)}" must be { "v": …, "d": … }.`);
+  }
+  for (const e of items('elements')) {
+    const where = `The header element "${named(e.id)}"`;
+    extra(where, e, FIELDS.element);
+    if (!text(e.label, LABEL))
+      out.push(`${where} needs a label: text, up to ${String(LABEL)} characters.`);
+  }
+  if (!text(input.credit, 400, true)) out.push('The credit must be text, up to 400 characters.');
 
   for (const l of items('looks')) {
     const where = `The look "${named(l.id)}"`;

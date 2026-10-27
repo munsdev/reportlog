@@ -16,7 +16,9 @@ import type {
   Look,
   PanelHead,
   Scale,
+  Second,
   Surface,
+  Tag,
   Texture,
   ThemeLayout,
   Width,
@@ -51,6 +53,8 @@ export interface CatalogueTheme {
   columns?: Columns | undefined;
   scale?: Scale | undefined;
   surface?: Surface | undefined;
+  second?: Second | undefined;
+  tag?: Tag | undefined;
 }
 
 export interface LookCatalogue {

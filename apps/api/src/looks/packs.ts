@@ -28,6 +28,7 @@ import {
 import type {
   InstalledLookPack,
   Installed,
+  LookKit,
   LookPack,
   LookPackSummary,
   ThemeLayout,
@@ -76,13 +77,34 @@ export interface LookCatalogue {
   palettes: readonly { id: string; dark: boolean; background: string; deep: string }[];
   themes: readonly ({ id: string } & ThemeLayout)[];
   stylesheets: readonly string[];
+  /** Each installed pack's header kit (its elements and shapes), by address. */
+  kits: readonly string[];
 }
 
 export const BUILT_IN_CATALOGUE: LookCatalogue = {
   palettes: PALETTES,
   themes: THEMES,
   stylesheets: [],
+  kits: [],
 };
+
+/**
+ * What a pack adds to the header background, as the page reads it. Built
+ * from the stored manifest (which passed check()), so it holds only ids,
+ * labels, numbers and path data.
+ */
+export function kitOf(pack: LookPack): LookKit | null {
+  if (!pack.elements?.length) return null;
+  return {
+    pack: pack.id,
+    label: pack.label,
+    ...(pack.credit ? { credit: pack.credit } : {}),
+    elements: pack.elements,
+    shapes: pack.shapes ?? {},
+  };
+}
+const kitHash = (kit: LookKit) => sha256(JSON.stringify(kit));
+const kitPath = (kit: LookKit) => `/api/looks/${kit.pack}/${kitHash(kit)}.json`;
 
 export function catalogueOf(rows: readonly PackRow[]): LookCatalogue {
   return {
@@ -104,6 +126,10 @@ export function catalogueOf(rows: readonly PackRow[]): LookCatalogue {
       ),
     ],
     stylesheets: rows.map((r) => stylesheetPath(r.id, r.css_sha256)),
+    kits: rows.flatMap((r) => {
+      const kit = kitOf(r.manifest);
+      return kit ? [kitPath(kit)] : [];
+    }),
   };
 }
 
@@ -142,6 +168,10 @@ export function summarize(pack: LookPack): LookPackSummary {
       theme: l.theme,
     })),
     fonts: (pack.fonts ?? []).map((f) => f.family),
+    ...(pack.credit ? { credit: pack.credit } : {}),
+    ...(pack.elements?.length
+      ? { elements: pack.elements.map((e) => ({ id: e.id, label: e.label })) }
+      : {}),
   };
 }
 
@@ -166,6 +196,8 @@ function installedBesides(others: readonly PackRow[]): Installed {
     themes: new Set(all.flatMap((p) => (p.themes ?? []).map((x) => x.id))),
     looks: new Set(all.flatMap((p) => (p.looks ?? []).map((x) => x.id))),
     families: new Set(all.flatMap(families)),
+    elements: new Set(all.flatMap((p) => (p.elements ?? []).map((x) => x.id))),
+    shapes: new Set(all.flatMap((p) => Object.keys(p.shapes ?? {}))),
   };
 }
 
@@ -186,11 +218,13 @@ function stillNeeded(
     palettes: new Set((replacement?.palettes ?? []).map((p) => p.id)),
     themes: new Set((replacement?.themes ?? []).map((t) => t.id)),
     families: new Set(replacement ? families(replacement) : []),
+    shapes: new Set(Object.keys(replacement?.shapes ?? {})),
   };
   const lost = {
     palettes: (gone.manifest.palettes ?? []).filter((p) => !keeps.palettes.has(p.id)),
     themes: (gone.manifest.themes ?? []).filter((t) => !keeps.themes.has(t.id)),
     families: families(gone.manifest).filter((f) => !keeps.families.has(f)),
+    shapes: Object.keys(gone.manifest.shapes ?? {}).filter((x) => !keeps.shapes.has(x)),
   };
   const what = replacement ? 'this version does not have it' : 'it comes from this pack';
   if (worn) {
@@ -206,6 +240,11 @@ function stillNeeded(
       );
   }
   for (const other of others) {
+    for (const e of other.manifest.elements ?? [])
+      if (e.shape !== undefined && lost.shapes.includes(e.shape))
+        out.push(
+          `The header element "${e.label}" in the pack "${other.manifest.label}" draws the shape "${e.shape}".`,
+        );
     const used = familiesUsed(other.manifest);
     for (const f of lost.families)
       if (used.has(f)) out.push(`The look pack "${other.manifest.label}" uses the font "${f}".`);
@@ -469,17 +508,33 @@ export async function listPacks(db: Database): Promise<InstalledLookPack[]> {
 
 // ── serving ─────────────────────────────────────────────────────────────
 
-const FILE = /^([0-9a-f]{64})\.(css|woff2)$/;
+const FILE = /^([0-9a-f]{64})\.(css|woff2|json)$/;
 
 /** A pack's stylesheet or one of its fonts, by the hash in its name; null for anything else. */
 export async function packFile(
   db: Database,
   packId: string,
   file: string,
-): Promise<{ type: 'text/css; charset=utf-8' | 'font/woff2'; body: string | Buffer } | null> {
+): Promise<{
+  type: 'text/css; charset=utf-8' | 'font/woff2' | 'application/json; charset=utf-8';
+  body: string | Buffer;
+} | null> {
   const m = FILE.exec(file);
   if (!m) return null;
   const [, hash = '', ext] = m;
+  if (ext === 'json') {
+    const row = await db
+      .selectFrom('look_packs')
+      .select('manifest')
+      .where('id', '=', packId)
+      .executeTakeFirst();
+    const kit = row ? kitOf(row.manifest as unknown as LookPack) : null;
+    // Named by the hash of what it holds, like the stylesheet, so a replaced
+    // pack's old address is a 404 rather than the new content under an old name.
+    return kit && kitHash(kit) === hash
+      ? { type: 'application/json; charset=utf-8', body: JSON.stringify(kit) }
+      : null;
+  }
   if (ext === 'css') {
     const row = await db
       .selectFrom('look_packs')

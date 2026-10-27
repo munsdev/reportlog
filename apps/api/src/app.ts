@@ -47,6 +47,7 @@ import { verifyRoutes } from './routes/verify.ts';
 import { feedbackRoutes } from './feedback/routes.ts';
 import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { pageAdminRoutes, pageRoutes } from './pages/routes.ts';
+import { headerRoutes } from './site/headerRoutes.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 import { templateRoutes } from './site/templates.ts';
 import { telemetryRoutes } from './telemetry/routes.ts';
@@ -221,6 +222,7 @@ export async function buildApp({
   });
   await fileRoutes(app, { db, files });
   await logoRoutes(app, { db, files });
+  await headerRoutes(app, { db, files });
   await evidenceRoutes(app, {
     db,
     files,

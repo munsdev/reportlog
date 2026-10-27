@@ -9,7 +9,7 @@
  * page has no stylesheet for: it falls back to the default instead.
  */
 import { DEFAULT_LOOK, RETIRED_IDS, paintedLayout, themeLayout } from '@reportlog/contracts';
-import type { Look, PaintedLook } from '@reportlog/contracts';
+import type { Look, LookOptions, PaintedLook } from '@reportlog/contracts';
 import { BUILT_IN_CATALOGUE } from '../looks/packs.ts';
 import type { LookCatalogue } from '../looks/packs.ts';
 import type { Checked } from './result.ts';
@@ -58,6 +58,12 @@ export function resolveLook(
 export function paintedLook(
   stored: { palette?: unknown; theme?: unknown } | null,
   catalogue: LookCatalogue = BUILT_IN_CATALOGUE,
+  /**
+   * Zones, motion and the header background. Left out on the lock screen and
+   * the doors, which show none of them: they are for the pages behind the
+   * password, and the header image is served behind it too.
+   */
+  options?: LookOptions,
 ): PaintedLook {
   const look = resolveLook(stored, catalogue);
   const theme =
@@ -68,6 +74,7 @@ export function paintedLook(
     ...paintedLayout(themeLayout(theme ?? { panelHead: 'plain', texture: 'none' })),
     dark: catalogue.palettes.some((p) => p.id === look.palette && p.dark),
     stylesheets: [...catalogue.stylesheets],
+    ...(options ? { options, kits: [...catalogue.kits] } : {}),
   };
 }
 

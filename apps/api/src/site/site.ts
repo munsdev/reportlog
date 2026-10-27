@@ -5,6 +5,7 @@ import {
   parseBrand,
   plainName,
   resolveHomeSections,
+  resolveLookOptions,
   resolveSocialFloat,
   resolveSocialLinks,
   shownSocialLinks,
@@ -64,7 +65,7 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     name,
     name_parts: parseBrand(name),
     plain_name: plainName(name),
-    look: paintedLook(settings, looks),
+    look: paintedLook(settings, looks, resolveLookOptions(settings.look_options)),
     copy: await renderCopy(db, resolveCopy(rows)),
     dev_mode_until: dev.until,
     version,
@@ -91,6 +92,7 @@ export async function editorState(db: Database): Promise<SiteEditor> {
   ]);
   return {
     look: resolveLook(settings, looks),
+    look_options: resolveLookOptions(settings.look_options),
     name: settings.site_name,
     effective_name: resolveSiteName(settings.site_name),
     copy: editorCopy(rows),

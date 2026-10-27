@@ -313,6 +313,10 @@ describe('with the site password on', () => {
           columns: 'split',
           scale: 'standard',
           surface: 'outlined',
+          // U1: the headline's second line and tag. No zones, motion or
+          // header background: the lock screen and doors show none of them.
+          second: 'muted',
+          tag: 'plain',
           // Stage 6: whether the palette is dark (for Easier reading), and the
           // installed packs' stylesheets, served in front of the password too.
           dark: true,

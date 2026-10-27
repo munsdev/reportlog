@@ -1,10 +1,16 @@
 /** An editor state as the server would send it, for screens tested without one. */
-import { resolveHomeSections, resolveSocialFloat, resolveSocialLinks } from '@reportlog/contracts';
+import {
+  DEFAULT_LOOK_OPTIONS,
+  resolveHomeSections,
+  resolveSocialFloat,
+  resolveSocialLinks,
+} from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 
 export function editorState(overrides: Partial<SiteEditor> = {}): SiteEditor {
   return {
     look: { palette: 'flint', theme: 'signal' },
+    look_options: DEFAULT_LOOK_OPTIONS,
     name: null,
     effective_name: 'ReportLog',
     copy: [

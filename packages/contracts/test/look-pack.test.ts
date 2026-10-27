@@ -28,7 +28,10 @@ function one<T extends { id: string }>(items: T[] | undefined, id: string): T {
 const palette = (pack: LookPack, id = 'harbour'): Palette => one(pack.palettes, id);
 const theme = (pack: LookPack, id = 'harbour'): Theme => one(pack.themes, id);
 
-const desk = theme(CORE_PACK, 'desk');
+// Format 1 had no `display` block: a pack written then carries none, and
+// must keep passing and painting as it did.
+const desk: Theme = structuredClone(theme(CORE_PACK, 'desk'));
+delete desk.display;
 const platinum = palette(CORE_PACK, 'platinum');
 
 /** A small pack that passes, to break one thing at a time. */
@@ -78,14 +81,14 @@ describe('the built-in pack', () => {
     expect(check(CORE_PACK, emptyInstalled(), null, { builtIn: true })).toEqual([]);
   });
 
-  it('holds the library decision 63 approved, plus Newsdesk: 18 palettes, 11 themes, 17 looks', () => {
-    expect(PALETTES).toHaveLength(18);
-    expect(THEMES).toHaveLength(11);
-    expect(LOOKS).toHaveLength(17);
+  it('holds the library decision 63 approved, plus Newsdesk, Workstation and Poster tempered: 19 palettes, 13 themes, 18 looks', () => {
+    expect(PALETTES).toHaveLength(19);
+    expect(THEMES).toHaveLength(13);
+    expect(LOOKS).toHaveLength(18);
   });
 
-  it('has exactly one default, Newsdesk, and Civic is Flint with Signal', () => {
-    expect(LOOKS.filter((l) => l.default).map((l) => l.id)).toEqual(['newsdesk']);
+  it('has exactly one default, Workstation, and Civic is Flint with Signal', () => {
+    expect(LOOKS.filter((l) => l.default).map((l) => l.id)).toEqual(['workstation']);
     expect(LOOKS.find((l) => l.id === 'civic')).toMatchObject({
       palette: 'flint',
       theme: 'signal',
@@ -230,6 +233,8 @@ describe('a pack that is refused, and the sentence it is refused with', () => {
       columns: 'split',
       scale: 'standard',
       surface: 'outlined',
+      second: 'solid',
+      tag: 'plain',
     });
   });
 
@@ -286,8 +291,8 @@ describe('the stylesheet', () => {
   it('writes no :root unless asked, and then only the default look', () => {
     expect(toCss(goodPack(), undefined, { root: true })).not.toContain(':root');
     const core = toCss(CORE_PACK, undefined, { root: true });
-    expect(core).toContain(":root,\n[data-palette='newsdesk']");
-    expect(core).toContain(":root,\n[data-theme='newsdesk']");
+    expect(core).toContain(":root,\n[data-palette='workstation']");
+    expect(core).toContain(":root,\n[data-theme='workstation']");
     expect(core.match(/:root/g)).toHaveLength(2);
   });
 
@@ -316,5 +321,204 @@ describe('the stylesheet', () => {
 
   it('page titles are fluid between the theme’s two sizes', () => {
     expect(toCss(CORE_PACK)).toContain('--rl-h1-size: clamp(2rem, 1.562rem + 1.798vw, 3rem);');
+  });
+});
+
+// ── format 2 ──────────────────────────────────────────────────────────────
+
+/** A format 2 pack: a poster-style theme, a shape and the elements that draw it. */
+function posterPack(): LookPack {
+  const base = goodPack();
+  const t = theme(base);
+  return {
+    ...base,
+    format: 2,
+    credit: 'Silhouettes drawn for this pack.',
+    shapes: { square: { v: '0 0 100 100', d: 'M10 10 L90 10 L90 90 L10 90 Z' } },
+    elements: [
+      { id: 'poster-stars', label: 'Stars', kind: 'stars' },
+      {
+        id: 'poster-square',
+        label: 'Square',
+        kind: 'shape',
+        shape: 'square',
+        h: 0.6,
+        style: 'outline',
+      },
+    ],
+    themes: [
+      {
+        ...t,
+        display: {
+          lineHeight: 0.9,
+          headlineStretch: 110,
+          headlineWeight: 800,
+          fit: { min: 40, max: 140 },
+          band: { min: 30, max: 90 },
+          second: 'outline',
+          tag: 'bar',
+          buttonCase: 'upper',
+          radiusButton: 12,
+        },
+      },
+    ],
+  };
+}
+
+describe('format 2: the display block, header shapes and elements', () => {
+  const refused = (pack: unknown) => check(pack, installed, goodFiles());
+
+  it('a format 2 pack with all of it passes', () => {
+    expect(refused(posterPack())).toEqual([]);
+  });
+
+  it('format 1 is still read, and a format 3 is refused in a sentence', () => {
+    expect(refused(goodPack())).toEqual([]);
+    expect(refused({ ...goodPack(), format: 3 })).toContain(
+      'This pack is format 3; this site reads formats 1 and 2.',
+    );
+  });
+
+  it('a format 1 pack may not use what only format 2 has', () => {
+    const pack = { ...posterPack(), format: 1 };
+    const said = refused(pack);
+    expect(said).toContain('A credit line needs a pack in format 2. Set "format" to 2.');
+    expect(said).toContain('Header shapes needs a pack in format 2. Set "format" to 2.');
+    expect(said).toContain('Header elements needs a pack in format 2. Set "format" to 2.');
+    expect(said).toContain(
+      'Theme "harbour" display settings needs a pack in format 2. Set "format" to 2.',
+    );
+  });
+
+  it('refuses a fit range, a line height and a second line it cannot draw', () => {
+    const pack = posterPack();
+    const d = theme(pack).display;
+    if (!d) throw new Error('no display');
+    d.fit = { min: 150, max: 40 };
+    d.lineHeight = 3;
+    d.second = 'sparkle' as never;
+    const said = refused(pack);
+    expect(said).toContain('Theme "harbour": the smallest fit size is larger than the largest.');
+    expect(said).toContain('Theme "harbour" line height must be a number from 0.8 to 1.4.');
+    expect(said).toContain(
+      'Theme "harbour" second headline line must be one of outline, muted, solid, action.',
+    );
+  });
+
+  it('refuses a shape that is not path data, and one that is not there', () => {
+    const pack = posterPack();
+    pack.shapes = { square: { v: '0 0 100 100', d: 'M0 0 <script>alert(1)</script>' } };
+    pack.elements = [{ id: 'poster-ghost', label: 'Ghost', kind: 'shape', shape: 'nothing' }];
+    const said = refused(pack);
+    expect(said).toContain(
+      'The shape "square": "d" must be path data, with only path letters, numbers and separators.',
+    );
+    expect(said).toContain(
+      'The header element "poster-ghost" names a shape nobody provides: "nothing".',
+    );
+  });
+
+  it('refuses a viewBox that is not four numbers, and a shape larger than the limit', () => {
+    const pack = posterPack();
+    pack.shapes = {
+      square: { v: '0 0 100', d: 'M0 0 L1 1 Z' },
+      huge: { v: '0 0 10 10', d: `M0 0 ${'L1 1 '.repeat(40_000)}Z` },
+    };
+    const said = refused(pack);
+    expect(said).toContain(
+      'The shape "square": "v" must be four numbers like "0 0 100 100", the last two above zero.',
+    );
+    expect(said).toContain('The shape "huge" is larger than 150 KB.');
+  });
+
+  it('refuses an element id another pack already provides, and a non-shape with a shape', () => {
+    const pack = posterPack();
+    const said = check(pack, { ...installed, elements: new Set(['poster-stars']) }, goodFiles());
+    expect(said).toContain(
+      'A header element called "poster-stars" is already installed or listed twice.',
+    );
+    pack.elements = [{ id: 'poster-lines', label: 'Lines', kind: 'ruled', shape: 'square' }];
+    expect(refused(pack)).toContain(
+      'The header element "poster-lines" is not a shape, so it cannot have a shape, height or style.',
+    );
+  });
+
+  it('writes the display variables, and none for a theme without a block', () => {
+    const css = toCss(posterPack());
+    expect(css).toContain('--rl-display-lh: 0.9;');
+    expect(css).toContain('--rl-headline-stretch: 110%;');
+    expect(css).toContain('--rl-fit-min: 40;');
+    expect(css).toContain('--rl-fit-max: 140;');
+    expect(css).toContain('--rl-band-max: 90;');
+    expect(css).toContain('--rl-radius-btn: 12px;');
+    expect(css).toContain('--rl-btn-transform: uppercase;');
+    expect(toCss(goodPack())).not.toContain('--rl-fit-min');
+  });
+
+  it('a theme carries its second line and tag into its layout, and defaults when it has none', () => {
+    const t = theme(posterPack());
+    expect(themeLayout(t)).toMatchObject({ second: 'outline', tag: 'bar' });
+    expect(themeLayout({ panelHead: 'plain', texture: 'none' })).toMatchObject({
+      second: 'solid',
+      tag: 'plain',
+    });
+  });
+
+  it('every core theme states its display block, inside the ranges', () => {
+    for (const t of CORE_PACK.themes ?? []) {
+      expect(t.display, t.id).toBeDefined();
+    }
+    expect(check(CORE_PACK, emptyInstalled(), null, { builtIn: true })).toEqual([]);
+  });
+});
+
+describe('the default look (Workstation)', () => {
+  const colors = derived(palette(CORE_PACK, 'workstation').colors);
+
+  it('is the default, for a new site', async () => {
+    const { DEFAULT_LOOK } = await import('../src/index.ts');
+    expect(DEFAULT_LOOK).toEqual({ palette: 'workstation', theme: 'workstation' });
+  });
+
+  it('reads at 4.5:1 or better in every pair a page uses, measured with contrast()', () => {
+    const pairs: [keyof typeof colors, keyof typeof colors][] = [
+      ['text', 'background'],
+      ['text', 'surface'],
+      ['text-alt', 'background'],
+      ['text-muted', 'background'],
+      ['text-muted', 'surface'],
+      ['text-on-deep', 'background-deep'],
+      ['text-on-deep-muted', 'background-deep'],
+      ['brand-on-deep', 'background-deep'],
+      ['brand', 'background'],
+      ['on-action', 'action'],
+    ];
+    for (const [fg, bg] of pairs)
+      expect(contrast(colors[fg], colors[bg]), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('the action colour is found on the page by its edge: 3:1', () => {
+    expect(contrast(colors.action, colors.background)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('status colours lifted on a deep zone (styles.css: 45% of the page colour, 55% white)', () => {
+  const lift = (hexColor: string) => {
+    const c = [1, 3, 5].map((i) => Number.parseInt(hexColor.slice(i, i + 2), 16));
+    return `#${c
+      .map((x) =>
+        Math.round(x * 0.45 + 255 * 0.55)
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')}`;
+  };
+  it('reads at 4.5:1 on the deep surface in every built-in light palette', () => {
+    for (const p of CORE_PACK.palettes ?? []) {
+      if (p.dark) continue;
+      const deep = p.colors['background-deep'];
+      for (const role of ['serious', 'confirmed'] as const)
+        expect(contrast(lift(p.colors[role]), deep), `${p.id} ${role}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 });

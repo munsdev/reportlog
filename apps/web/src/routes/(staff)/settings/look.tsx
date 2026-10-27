@@ -21,6 +21,7 @@
 import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -32,10 +33,14 @@ import { cn } from '@/lib/utils.ts';
 import { LookChooser } from '../../../features/settings/LookChooser.tsx';
 import { LookFrames } from '../../../features/settings/LookPreview.tsx';
 import { LookPacks } from '../../../features/settings/LookPacks.tsx';
+import {
+  LookOptionsPanel,
+  LookOptionsProvider,
+} from '../../../features/looks/LookOptionsPanel.tsx';
 import { lookName, sameLook, useLookCatalogue } from '../../../features/settings/looks.ts';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
 import { useWide } from '../../../features/moderation/parts.tsx';
-import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
+import { WithEditor, editorQuery, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/look')({
   component: () => (
@@ -51,6 +56,21 @@ export const Route = createFileRoute('/(staff)/settings/look')({
 });
 
 export function LookScreen({ state }: { state: SiteEditor }) {
+  const client = useQueryClient();
+  return (
+    <LookOptionsProvider
+      state={state}
+      onEditor={(next) => {
+        client.setQueryData(editorQuery.queryKey, next);
+        void client.invalidateQueries({ queryKey: ['site'] });
+      }}
+    >
+      <LookChoice state={state} />
+    </LookOptionsProvider>
+  );
+}
+
+function LookChoice({ state }: { state: SiteEditor }) {
   const current = state.look;
   const [chosen, setChosen] = useState<Look>(current);
   const toast = useToast();
@@ -134,6 +154,8 @@ export function LookScreen({ state }: { state: SiteEditor }) {
         <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
 
         <LookPacks />
+
+        <LookOptionsPanel />
       </div>
 
       {wide ? null : (

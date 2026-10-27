@@ -15,7 +15,18 @@
  * Pure: runs on the server and in the browser alike.
  */
 
-export const FORMAT = 1;
+/**
+ * The format a pack is written in. Format 2 adds, to format 1, a theme's
+ * `display` block (the poster-style headline: fit ranges, line height, the
+ * outlined second line, the tag style, the button case), header `shapes` and
+ * `elements`, and a `credit` line. Everything format 1 had reads the same;
+ * a format 1 pack stays valid and keeps painting exactly as it did, and
+ * check() refuses a format 1 pack that uses a format 2 field, so a pack can
+ * never half-claim the newer format.
+ */
+export const FORMAT = 2;
+/** Formats this site reads. */
+export const READS = [1, 2] as const;
 
 export const ROLES = [
   'background',
@@ -85,6 +96,13 @@ export const ENUMS = {
   columns: ['single', 'split'],
   scale: ['standard', 'large'],
   surface: ['outlined', 'filled', 'ruled'],
+  // Format 2: the headline's second line, the tag under it, button text.
+  second: ['outline', 'muted', 'solid', 'action'],
+  tag: ['bar', 'rule', 'plain'],
+  buttonCase: ['none', 'upper'],
+  // Header background: what the engine knows how to draw.
+  element: ['ruled', 'stars', 'stripes', 'shape'],
+  shapeStyle: ['filled', 'outline'],
 } as const;
 export type PanelHead = (typeof ENUMS.panelHead)[number];
 export type Texture = (typeof ENUMS.texture)[number];
@@ -92,6 +110,11 @@ export type Width = (typeof ENUMS.width)[number];
 export type Columns = (typeof ENUMS.columns)[number];
 export type Scale = (typeof ENUMS.scale)[number];
 export type Surface = (typeof ENUMS.surface)[number];
+export type Second = (typeof ENUMS.second)[number];
+export type Tag = (typeof ENUMS.tag)[number];
+export type ButtonCase = (typeof ENUMS.buttonCase)[number];
+export type ElementKind = (typeof ENUMS.element)[number];
+export type ShapeStyle = (typeof ENUMS.shapeStyle)[number];
 
 /**
  * The page widths a theme names. `full` has no number: the page runs edge
@@ -113,8 +136,26 @@ export const RANGES = {
   shadow: [0, 6],
   press: [0, 4],
   pageMax: [640, 1280],
+  // Format 2. Fit sizes are px, as the mock-up's: a headline is fitted
+  // between its smallest and its largest.
+  lineHeight: [0.8, 1.4],
+  fit: [20, 200],
+  band: [20, 140],
+  radiusButton: [0, 999],
+  depth: [0, 0.6],
+  shapeHeight: [0.2, 1],
 } as const satisfies Record<string, readonly [number, number]>;
-export const LIMITS = { fileBytes: 1_000_000, packBytes: 10_000_000, files: 120 };
+export const LIMITS = {
+  fileBytes: 1_000_000,
+  packBytes: 10_000_000,
+  files: 120,
+  // Header shapes are inline path data. 150 KB covers a detailed
+  // silhouette; more is a picture that should have been an image.
+  shapeBytes: 150_000,
+  shapes: 8,
+  elements: 12,
+  credit: 400,
+};
 
 // ── the shape of a pack that passed ─────────────────────────────────────
 
@@ -169,6 +210,54 @@ export interface Theme {
   scale?: Scale;
   /** How a panel is drawn: an edge and a hard shadow, a soft tinted fill, or a rule on top. */
   surface?: Surface;
+  /** Format 2: the display headline and what goes with it. See ThemeDisplay. */
+  display?: ThemeDisplay;
+}
+
+/**
+ * Format 2. How the big headline behaves. The face, weight, width, case and
+ * tracking of the headline are the theme's `type.heading`; these are the
+ * rest of what the mock-up's themes state.
+ */
+export interface ThemeDisplay {
+  /** The headline's line height, unitless. */
+  lineHeight: number;
+  /** Width axis of the section headings (h2, h3) as a percentage; defaults to 100. */
+  headlineStretch?: number;
+  /** Weight of the section headings; defaults to the heading weight. */
+  headlineWeight?: number;
+  /** The front-page headline is fitted between these, in px. */
+  fit: { min: number; max: number };
+  /** The same for a section band's headline. */
+  band: { min: number; max: number };
+  /** What the second line of a headline looks like. */
+  second: Second;
+  /** The tagline under a headline. */
+  tag: Tag;
+  /** Button text. */
+  buttonCase: ButtonCase;
+  /** Button corner radius in px, apart from the panels'. */
+  radiusButton: number;
+}
+
+/** A silhouette the header background can draw. `v` is its viewBox, `d` its path. */
+export interface HeaderShape {
+  v: string;
+  d: string;
+}
+/** Something the header background can switch on. */
+export interface HeaderElement {
+  id: string;
+  label: string;
+  kind: ElementKind;
+  /** For kind `shape`: which of the pack's (or an installed pack's) shapes. */
+  shape?: string;
+  /** For a shape: its height as a share of the header, 0.2 to 1. */
+  h?: number;
+  /** For a shape: filled or outline until the owner chooses. */
+  style?: ShapeStyle;
+  /** How far it drifts as the page scrolls, 0 to 0.6. */
+  depth?: number;
 }
 
 /** Everything a theme decides that the page sets on <html> rather than as a CSS value. */
@@ -179,6 +268,9 @@ export interface ThemeLayout {
   columns: Columns;
   scale: Scale;
   surface: Surface;
+  /** Format 2. The headline's second line and the tag under it; what every page did before when absent. */
+  second: Second;
+  tag: Tag;
 }
 export interface NamedLook {
   id: string;
@@ -197,6 +289,12 @@ export interface LookPack {
   palettes?: Palette[];
   themes?: Theme[];
   looks?: NamedLook[];
+  /** Format 2. Credit for a shape or a font, shown on the Look screen. */
+  credit?: string;
+  /** Format 2. Silhouettes the header background can use. */
+  shapes?: Record<string, HeaderShape>;
+  /** Format 2. What the header background can switch on. */
+  elements?: HeaderElement[];
 }
 
 /** What other packs already provide; ids are unique across every installed pack. */
@@ -205,10 +303,20 @@ export interface Installed {
   themes: ReadonlySet<string>;
   looks: ReadonlySet<string>;
   families: ReadonlySet<string>;
+  /** Header elements and shapes, by id. Optional so a caller from before format 2 still compiles. */
+  elements?: ReadonlySet<string>;
+  shapes?: ReadonlySet<string>;
 }
 
 export function emptyInstalled(): Installed {
-  return { palettes: new Set(), themes: new Set(), looks: new Set(), families: new Set() };
+  return {
+    palettes: new Set(),
+    themes: new Set(),
+    looks: new Set(),
+    families: new Set(),
+    elements: new Set(),
+    shapes: new Set(),
+  };
 }
 
 const ID = /^[a-z][a-z0-9-]{1,39}$/;
@@ -220,6 +328,11 @@ const FAMILY = /^[A-Za-z0-9 ]{1,60}$/;
 const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,4}$/;
 const WEIGHT = /^(\d{3})( \d{3})?$/;
 const STRETCH = /^(\d{2,3})( \d{2,3})?$/;
+// A shape's viewBox: four numbers, the last two above zero. Its path: path
+// commands, digits and separators only, so it cannot carry a tag, a URL or
+// a script into the page that draws it.
+const VIEWBOX = /^-?\d+(\.\d+)?( -?\d+(\.\d+)?){3}$/;
+const PATH_DATA = /^[MmLlHhVvCcSsQqTtAaZz0-9eE.,\s+-]+$/;
 
 /** An id a pack may use for a palette, theme or look. */
 export function isLookId(value: unknown): value is string {
@@ -309,8 +422,19 @@ export function check(
   if (Object.hasOwn(pack, 'builtIn')) say('A pack may not say whether it is built in.');
   if (pack.version !== undefined && !VERSION.test(shown(pack.version)))
     say('The version must look like 1.2.3.');
-  if (pack.format !== FORMAT)
-    say(`This pack is format ${shown(pack.format)}; this site reads format ${String(FORMAT)}.`);
+  if (!(READS as readonly unknown[]).includes(pack.format))
+    say(`This pack is format ${shown(pack.format)}; this site reads formats 1 and 2.`);
+  // A format 1 pack that uses what only format 2 has would be read by an
+  // older site as a pack it can paint, and it could not.
+  const v2 = pack.format === 2;
+  const needsV2 = (what: string) => {
+    if (!v2) say(`${what} needs a pack in format 2. Set "format" to 2.`);
+  };
+  if (pack.credit !== undefined) {
+    needsV2('A credit line');
+    if (typeof pack.credit !== 'string' || pack.credit.length > LIMITS.credit)
+      say(`The credit must be text, up to ${String(LIMITS.credit)} characters.`);
+  }
   if (!ID.test(str(pack.id)))
     say('The pack needs an id of lower-case letters, digits and hyphens.');
   if (!pack.label) say('The pack needs a label.');
@@ -359,6 +483,78 @@ export function check(
     }
     if (files.size > LIMITS.files) say('The pack has too many files.');
     if (total > LIMITS.packBytes) say('The pack is larger than 10 MB.');
+  }
+
+  const inRange = (what: string, v: unknown, [lo, hi]: readonly [number, number]) => {
+    if (typeof v !== 'number' || v < lo || v > hi)
+      say(`${what} must be a number from ${String(lo)} to ${String(hi)}.`);
+  };
+
+  // ── header shapes and elements (format 2) ──
+  const shapeIds = new Set(installed.shapes ?? []);
+  const packShapes = bag(pack.shapes);
+  if (pack.shapes !== undefined) {
+    needsV2('Header shapes');
+    const entries = Object.entries(packShapes);
+    if (Array.isArray(pack.shapes) || typeof pack.shapes !== 'object')
+      say('"shapes" must be an object of { "id": { "v": viewBox, "d": path } }.');
+    if (entries.length > LIMITS.shapes)
+      say(`A pack may add at most ${String(LIMITS.shapes)} shapes.`);
+    for (const [id, raw] of entries) {
+      const sh = bag(raw);
+      if (!ID.test(id)) {
+        say(
+          `A shape needs an id of lower-case letters, digits and hyphens ("${id.slice(0, 40)}").`,
+        );
+        continue;
+      }
+      if (shapeIds.has(id)) say(`A shape called "${id}" is already installed from another pack.`);
+      shapeIds.add(id);
+      const v = str(sh.v);
+      const box = v.split(' ').map(Number);
+      if (!VIEWBOX.test(v) || (box[2] ?? 0) <= 0 || (box[3] ?? 0) <= 0)
+        say(
+          `The shape "${id}": "v" must be four numbers like "0 0 100 100", the last two above zero.`,
+        );
+      const d = str(sh.d);
+      if (!d || !PATH_DATA.test(d))
+        say(
+          `The shape "${id}": "d" must be path data, with only path letters, numbers and separators.`,
+        );
+      else if (d.length > LIMITS.shapeBytes)
+        say(`The shape "${id}" is larger than ${String(LIMITS.shapeBytes / 1000)} KB.`);
+    }
+  }
+  const elementIds = new Set(installed.elements ?? []);
+  if (pack.elements !== undefined) {
+    if (!Array.isArray(pack.elements)) say('"elements" must be a list of { … }.');
+    else if (pack.elements.length > LIMITS.elements)
+      say(`A pack may add at most ${String(LIMITS.elements)} header elements.`);
+    const own = list(pack.elements);
+    if (own.length) needsV2('Header elements');
+    for (const e of own) {
+      const id = shown(e.id);
+      if (!ID.test(str(e.id)))
+        say(`A header element needs an id of lower-case letters, digits and hyphens.`);
+      else if (elementIds.has(str(e.id)))
+        say(`A header element called "${id}" is already installed or listed twice.`);
+      elementIds.add(str(e.id));
+      if (!e.label || typeof e.label !== 'string') say(`The header element "${id}" needs a label.`);
+      if (!oneOf(ENUMS.element, e.kind))
+        say(`The header element "${id}": kind must be one of ${ENUMS.element.join(', ')}.`);
+      if (e.kind === 'shape') {
+        if (typeof e.shape !== 'string' || !shapeIds.has(e.shape))
+          say(`The header element "${id}" names a shape nobody provides: "${shown(e.shape)}".`);
+        if (e.h !== undefined)
+          inRange(`The header element "${id}" height`, e.h, RANGES.shapeHeight);
+        if (e.style !== undefined && !oneOf(ENUMS.shapeStyle, e.style))
+          say(`The header element "${id}": style must be one of ${ENUMS.shapeStyle.join(', ')}.`);
+      } else if (e.shape !== undefined || e.h !== undefined || e.style !== undefined)
+        say(
+          `The header element "${id}" is not a shape, so it cannot have a shape, height or style.`,
+        );
+      if (e.depth !== undefined) inRange(`The header element "${id}" depth`, e.depth, RANGES.depth);
+    }
   }
 
   const seen = new Set<string>();
@@ -410,10 +606,6 @@ export function check(
       );
   }
 
-  const inRange = (what: string, v: unknown, [lo, hi]: readonly [number, number]) => {
-    if (typeof v !== 'number' || v < lo || v > hi)
-      say(`${what} must be a number from ${String(lo)} to ${String(hi)}.`);
-  };
   const themes = list(pack.themes);
   for (const t of themes) {
     const id = shown(t.id);
@@ -464,6 +656,29 @@ export function check(
       say(`Theme "${id}" panel heading must be one of ${ENUMS.panelHead.join(', ')}.`);
     if (!oneOf(ENUMS.texture, t.texture))
       say(`Theme "${id}" texture must be one of ${ENUMS.texture.join(', ')}.`);
+    if (t.display !== undefined) {
+      needsV2(`Theme "${id}" display settings`);
+      const dp = bag(t.display);
+      inRange(`Theme "${id}" line height`, dp.lineHeight, RANGES.lineHeight);
+      if (dp.headlineStretch !== undefined)
+        inRange(`Theme "${id}" headline stretch`, dp.headlineStretch, RANGES.stretch);
+      if (dp.headlineWeight !== undefined)
+        inRange(`Theme "${id}" headline weight`, dp.headlineWeight, RANGES.weight);
+      for (const k of ['fit', 'band'] as const) {
+        const r = bag(dp[k]);
+        inRange(`Theme "${id}" ${k} smallest size`, r.min, RANGES[k]);
+        inRange(`Theme "${id}" ${k} largest size`, r.max, RANGES[k]);
+        if (typeof r.min === 'number' && typeof r.max === 'number' && r.min > r.max)
+          say(`Theme "${id}": the smallest ${k} size is larger than the largest.`);
+      }
+      if (!oneOf(ENUMS.second, dp.second))
+        say(`Theme "${id}" second headline line must be one of ${ENUMS.second.join(', ')}.`);
+      if (!oneOf(ENUMS.tag, dp.tag))
+        say(`Theme "${id}" tag style must be one of ${ENUMS.tag.join(', ')}.`);
+      if (!oneOf(ENUMS.buttonCase, dp.buttonCase))
+        say(`Theme "${id}" button case must be one of ${ENUMS.buttonCase.join(', ')}.`);
+      inRange(`Theme "${id}" button radius`, dp.radiusButton, RANGES.radiusButton);
+    }
     // Only the fields that become CSS are searched; a description may say "#1".
     if (
       t.colors !== undefined ||
@@ -486,7 +701,13 @@ export function check(
       say(`The look "${id}" names a theme nobody provides: "${shown(l.theme)}".`);
     if (l.default && !builtIn) say(`Only the built-in pack may mark the default look ("${id}").`);
   }
-  if (!(palettes.length || themes.length || looks.length)) say('The pack adds nothing.');
+  if (!(
+    palettes.length ||
+    themes.length ||
+    looks.length ||
+    (pack.elements !== undefined && list(pack.elements).length)
+  ))
+    say('The pack adds nothing.');
   return out;
 }
 
@@ -520,6 +741,27 @@ function pageMax(t: Theme): string {
 function pill(shape: Theme['shape']): number {
   if (shape.radiusSmall === 0) return 0;
   return shape.radius >= 12 ? 999 : shape.radiusSmall;
+}
+
+/**
+ * A format 2 theme's headline variables. A theme without a `display` block
+ * writes none, so a pack written before them is painted byte for byte as it
+ * was, and styles.css's `:where(:root)` defaults fill the gap.
+ */
+function displayLines(t: Theme): string[] {
+  const d = t.display;
+  if (!d) return [];
+  return [
+    `  --rl-display-lh: ${String(d.lineHeight)};`,
+    `  --rl-headline-stretch: ${String(d.headlineStretch ?? 100)}%;`,
+    `  --rl-headline-weight: ${String(d.headlineWeight ?? t.type.heading.weight)};`,
+    `  --rl-fit-min: ${String(d.fit.min)};`,
+    `  --rl-fit-max: ${String(d.fit.max)};`,
+    `  --rl-band-min: ${String(d.band.min)};`,
+    `  --rl-band-max: ${String(d.band.max)};`,
+    `  --rl-radius-btn: ${String(d.radiusButton)}px;`,
+    `  --rl-btn-transform: ${d.buttonCase === 'upper' ? 'uppercase' : 'none'};`,
+  ];
 }
 
 /**
@@ -593,6 +835,7 @@ export function toCss(
       `  --rl-h1-tracking: ${em(ty.heading.tracking ?? 0)};`,
       `  --rl-h1-size: clamp(${String(ty.h1.min)}rem, ${base.toFixed(3)}rem + ${(slope * 100).toFixed(3)}vw, ${String(ty.h1.max)}rem);`,
       `  --rl-display-transform: ${ty.heading.case === 'upper' ? 'uppercase' : 'none'};`,
+      ...displayLines(t),
       '}',
     );
   }
@@ -623,6 +866,10 @@ export function themeLayout(theme: {
   columns?: Columns | undefined;
   scale?: Scale | undefined;
   surface?: Surface | undefined;
+  display?: { second: Second; tag: Tag } | undefined;
+  /** Already flattened, as a catalogue entry carries them. */
+  second?: Second | undefined;
+  tag?: Tag | undefined;
 }): ThemeLayout {
   return {
     panelHead: theme.panelHead,
@@ -631,5 +878,7 @@ export function themeLayout(theme: {
     columns: theme.columns ?? 'split',
     scale: theme.scale ?? 'standard',
     surface: theme.surface ?? 'outlined',
+    second: theme.second ?? theme.display?.second ?? 'solid',
+    tag: theme.tag ?? theme.display?.tag ?? 'plain',
   };
 }

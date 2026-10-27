@@ -57,6 +57,310 @@
   --rl-border-on-deep: color-mix(in srgb, var(--rl-text-on-deep) 18%, var(--rl-background-deep));
 }
 
+/* ---- format 2: headline, zones, header background --------------------------
+   (U1, the looks workstream.) Everything below reads tokens a theme or a
+   palette wrote; nothing here names a colour or a size of its own.
+
+   THE THEME'S HEADLINE VARIABLES (look/pack.ts displayLines()), with the
+   values a theme that states none gets. `:where(:root)` has no specificity,
+   so a theme's own block always wins whatever order the sheets load in. A
+   format 1 pack written before these existed gets exactly this, and its
+   headlines fit between a conservative pair of sizes.
+     --rl-display-lh        line height of the big headline, unitless
+     --rl-headline-stretch  width of section headings (h2, h3)
+     --rl-headline-weight   weight of section headings
+     --rl-fit-min/-max      the front-page headline is fitted between these, px
+     --rl-band-min/-max     the same for a section band's headline, px
+     --rl-radius-btn        a button's corner, apart from the panels'
+     --rl-btn-transform     button text case                                    */
+:where(:root) {
+  --rl-display-lh: 1.05;
+  --rl-headline-stretch: 100%;
+  --rl-headline-weight: 700;
+  --rl-fit-min: 30;
+  --rl-fit-max: 72;
+  --rl-band-min: 28;
+  --rl-band-max: 52;
+}
+
+/* ZONES. A page is a stack of grounds. `data-zone="deep"` puts a region on
+   the palette's deep surface (the header's ground, in every palette) and
+   re-points the page roles at their deep counterparts, so everything inside
+   it, Tailwind's bg-paper and text-ink included, reads correctly with no
+   class of its own. `data-zone="page"` puts it back on the palette's own
+   page, which is how a LIGHT CARD sits on a dark ground.
+   The page's own colours are copied once, on the element that carries the
+   palette, into --rl-page-*; a descendant can then restore them even after
+   an ancestor re-pointed the roles. */
+:root,
+[data-palette] {
+  --rl-page-background: var(--rl-background);
+  --rl-page-background-alt: var(--rl-background-alt);
+  --rl-page-surface: var(--rl-surface);
+  --rl-page-border: var(--rl-border);
+  --rl-page-text: var(--rl-text);
+  --rl-page-text-alt: var(--rl-text-alt);
+  --rl-page-text-muted: var(--rl-text-muted);
+  --rl-page-brand: var(--rl-brand);
+  --rl-page-serious: var(--rl-serious);
+  --rl-page-confirmed: var(--rl-confirmed);
+}
+[data-zone='deep'] {
+  --rl-background: var(--rl-background-deep);
+  --rl-background-alt: var(--rl-background-deeper);
+  --rl-surface: color-mix(in srgb, var(--rl-background-deep) 91%, #fff);
+  --rl-border: var(--rl-border-on-deep);
+  --rl-text: var(--rl-text-on-deep);
+  --rl-text-alt: color-mix(in srgb, var(--rl-text-on-deep) 84%, var(--rl-background-deep));
+  --rl-text-muted: var(--rl-text-on-deep-muted);
+  --rl-brand: var(--rl-brand-on-deep);
+  /* Status colours are tuned for the page; on the deep ground they are
+     lifted toward white so they still read (5:1 and up on every shipped
+     deep surface; the suite measures it). */
+  --rl-serious: color-mix(in srgb, var(--rl-page-serious) 45%, #fff);
+  --rl-confirmed: color-mix(in srgb, var(--rl-page-confirmed) 45%, #fff);
+  --rl-motif-k: 1;
+  color-scheme: dark;
+  background-color: var(--rl-background);
+  color: var(--rl-text);
+}
+[data-zone='page'] {
+  --rl-background: var(--rl-page-background);
+  --rl-background-alt: var(--rl-page-background-alt);
+  --rl-surface: var(--rl-page-surface);
+  --rl-border: var(--rl-page-border);
+  --rl-text: var(--rl-page-text);
+  --rl-text-alt: var(--rl-page-text-alt);
+  --rl-text-muted: var(--rl-page-text-muted);
+  --rl-brand: var(--rl-page-brand);
+  --rl-serious: var(--rl-page-serious);
+  --rl-confirmed: var(--rl-page-confirmed);
+  --rl-motif-k: 0.55;
+  background-color: var(--rl-background);
+  color: var(--rl-text);
+}
+/* A band between two zones is ruled off in the text colour, as the mock-up's
+   .zone is. The first zone on a page has nothing above it to rule. */
+[data-zone][data-ruled] {
+  border-top: max(var(--rl-border-main), 2px) solid var(--rl-text);
+}
+/* A light card on a dark ground keeps the theme's hard shadow, drawn in a
+   tint of the ground so it is seen rather than lost. */
+[data-zone='deep'] [data-zone='page'][data-raised] {
+  border: max(var(--rl-border-main), 2px) solid var(--rl-page-text);
+  box-shadow: var(--rl-shadow-offset) var(--rl-shadow-offset) 0
+    color-mix(in srgb, var(--rl-background-deep) 70%, #fff);
+}
+
+/* THE BIG HEADLINE (components/ui/fit-headline.tsx). The component measures
+   and writes font-size in px between --rl-fit-min and --rl-fit-max (or the
+   band pair); this is only what it looks like. Each typed line is a
+   `.ln`; a line that cannot fit even at the smallest size wraps to two
+   rows, balanced (`data-wrap`). The clamp is the size before the first
+   measurement, so server-rendered or JS-less text is already near right. */
+.rl-display {
+  min-width: 0;
+  max-width: 100%;
+  font-family: var(--rl-font-display);
+  font-weight: var(--rl-h1-weight);
+  font-stretch: var(--rl-display-stretch);
+  text-transform: var(--rl-display-transform);
+  letter-spacing: var(--rl-h1-tracking);
+  line-height: var(--rl-display-lh);
+  font-size: clamp(calc(var(--rl-fit-min) * 1px), 12vw, calc(var(--rl-fit-max) * 1px));
+  text-wrap: balance;
+}
+.rl-display[data-band] {
+  line-height: calc(var(--rl-display-lh) + 0.04);
+  font-size: clamp(calc(var(--rl-band-min) * 1px), 8vw, calc(var(--rl-band-max) * 1px));
+}
+.rl-display .ln {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.rl-display[data-wrap] .ln {
+  width: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
+/* The second line: solid in the text colour, or as the theme says. */
+.rl-display .two {
+  color: var(--rl-text);
+  -webkit-text-stroke: 0;
+}
+html[data-second='outline'] .rl-display .two {
+  color: transparent;
+  -webkit-text-stroke: max(2px, 0.025em) var(--rl-text);
+}
+html[data-second='muted'] .rl-display .two {
+  color: var(--rl-text-muted);
+}
+html[data-second='action'] .rl-display .two {
+  color: var(--rl-brand);
+}
+/* Where outlining text is not supported, the line stays readable. */
+@supports not (-webkit-text-stroke: 2px #fff) {
+  html[data-second='outline'] .rl-display .two {
+    color: var(--rl-text-muted);
+  }
+}
+/* Easier reading: a solid second line, whatever the theme. */
+html[data-easy] .rl-display .two {
+  color: var(--rl-text) !important;
+  -webkit-text-stroke: 0 !important;
+}
+
+/* The tagline under a headline: a solid bar, a short rule before the words,
+   or plain text, as the theme's `tag` says (set on <html> as data-tag). */
+.rl-tagline {
+  width: max-content;
+  max-width: 100%;
+  padding: 0.7rem 1rem 0.6rem;
+  border-radius: var(--rl-radius-sm);
+  background: var(--rl-text);
+  color: var(--rl-background);
+  font-family: var(--rl-font-display);
+  font-weight: 800;
+  font-stretch: var(--rl-display-stretch);
+  text-transform: var(--rl-display-transform);
+  letter-spacing: 0.05em;
+  font-size: clamp(1.05rem, 3.3vw, 1.9rem);
+  line-height: 1.1;
+}
+html[data-tag='rule'] .rl-tagline {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0;
+  background: none;
+  color: var(--rl-text);
+}
+html[data-tag='rule'] .rl-tagline::before {
+  content: '';
+  flex: 0 0 clamp(28px, 6vw, 56px);
+  height: 5px;
+  background: currentColor;
+}
+html[data-tag='plain'] .rl-tagline {
+  padding: 0;
+  background: none;
+  color: var(--rl-text-alt);
+}
+
+/* A button takes the theme's own corner and case when it states them; a
+   theme that does not leaves the button as the controls' radius and the
+   label face. Unlayered so it beats the utilities the button was written
+   with. */
+.button-face {
+  border-radius: var(--rl-radius-btn, var(--rl-radius-sm));
+  text-transform: var(--rl-btn-transform, var(--rl-label-transform));
+}
+
+/* THE HEADER BACKGROUND (features/looks/header-background). Layers behind a
+   headline: pattern svgs, large shapes, an optional picture. The host is
+   `.rl-motif-host` (its own stacking context, so nothing in it can reach
+   over the navigation bar or a form), the layers live in `.rl-ov`, drawn in
+   the text colour of the zone they sit in. Never behind form questions or
+   report text: only a host carries one. */
+.rl-motif-host {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.rl-ov {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  color: var(--rl-text);
+  pointer-events: none;
+  overflow: hidden;
+  -webkit-mask-image: var(--rl-ov-mask, linear-gradient(90deg, transparent 20%, #000 50%));
+  mask-image: var(--rl-ov-mask, linear-gradient(90deg, transparent 20%, #000 50%));
+}
+.rl-ov > * {
+  position: absolute;
+  left: 0;
+  top: -18%;
+  width: 100%;
+  height: 136%;
+  will-change: transform;
+}
+.rl-ov svg.pat {
+  opacity: calc(var(--rl-pat-op, 0.14) * var(--rl-motif-k, 1));
+}
+@media (max-width: 700px) {
+  .rl-ov {
+    -webkit-mask-image: var(--rl-ov-mask-sm, none);
+    mask-image: var(--rl-ov-mask-sm, none);
+  }
+}
+.rl-ov .bgimg {
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: var(--rl-img-op, 0.4);
+}
+@media (max-width: 700px) {
+  .rl-ov .bgimg {
+    opacity: min(var(--rl-img-op, 0.4), 0.35);
+  }
+}
+.tone-mono {
+  filter: grayscale(1) contrast(1.08);
+}
+.tone-dark {
+  filter: grayscale(0.35) brightness(0.55) contrast(1.1);
+}
+.rl-ov .taped {
+  left: auto;
+  right: 6%;
+  top: 16%;
+  width: min(32%, 360px);
+  height: auto;
+  aspect-ratio: 4/5;
+  transform-origin: center;
+  background: #fff;
+  padding: 10px 10px 34px;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.35);
+  rotate: 3deg;
+}
+.rl-ov .taped-ph {
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+.rl-ov .tape {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 44%;
+  height: 28px;
+  translate: -50% 0;
+  rotate: -4deg;
+  background: rgb(240 232 210 / 0.82);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.15);
+}
+@media (max-width: 820px) {
+  .rl-ov .taped {
+    right: -6%;
+    top: 6%;
+    width: 46%;
+    opacity: 0.35 !important;
+  }
+}
+/* Easier reading takes the decoration away altogether. */
+html[data-easy] .rl-ov {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rl-ov > * {
+    transform: none !important;
+  }
+}
+
 @theme inline {
   --color-paper: var(--rl-background);
   --color-paper-alt: var(--rl-background-alt);

@@ -15,6 +15,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
+import { DEFAULT_LOOK_OPTIONS } from '@reportlog/contracts';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { STEP_UP_MS } from '../../src/identity/secondFactor.ts';
 import { hashPassword, sha256Hex } from '../../src/identity/secrets.ts';
@@ -289,8 +290,12 @@ describe('the good pack', () => {
       columns: 'split',
       scale: 'standard',
       surface: 'outlined',
+      second: 'solid',
+      tag: 'plain',
       dark: true,
       stylesheets: [stylesheet],
+      options: DEFAULT_LOOK_OPTIONS,
+      kits: [],
     });
   });
 
@@ -451,7 +456,7 @@ describe('the good pack', () => {
     const site = (await h.app.inject({ method: 'GET', url: '/api/site' })).json<{
       look: { palette: string; theme: string };
     }>();
-    expect(site.look).toMatchObject({ palette: 'newsdesk', theme: 'newsdesk' });
+    expect(site.look).toMatchObject({ palette: 'workstation', theme: 'workstation' });
     await writeSettings(h.db, { palette: 'flint', theme: 'signal' });
   });
 });
