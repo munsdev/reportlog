@@ -275,7 +275,7 @@ function Cards({ form }: { form: Form }) {
     <FormColumn>
       <form
         noValidate
-        className="flex flex-col gap-6"
+        className="qcard"
         onSubmit={(e) => {
           e.preventDefault();
           next();

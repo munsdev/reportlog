@@ -2,17 +2,17 @@
  * The frame around every filing card, for a logbook (FilingForm) and a list
  * (ListForm) alike (docs/design/screens/filing.md §02).
  *
- *   eyebrow     the logbook's or list's title, in the label face
- *   heading     the question, as the page's one <h1>, set in the section
- *               size. It takes focus on every card change, because the page
+ *   step label  "Question 3" (or the card's own: "Optional", "Review"), in the
+ *               mock-up's .step face
+ *   heading     the question, as the page's one <h1>. It takes focus on every card change, because the page
  *               does not reload between questions and nothing else would
  *               tell a screen reader the content changed
- *   help        under the question, in the second text colour
+ *   help        under the question, in the muted colour
  *   the control
  *   the error   a sentence with a mark, `role="alert"`
- *   the bar     Back and Next. Fixed to the bottom of a phone's screen, so a
- *               thumb finds them without scrolling past a long list, and
- *               above the on-screen keyboard; under the control on a desktop
+ *   the bar     Back and Next, fixed to the bottom of the screen so a thumb
+ *               finds them without scrolling past a long list, and above
+ *               the on-screen keyboard
  *
  * NEXT IS NEVER DISABLED. Pressing it on a card that needs an answer keeps
  * the person on the card and says why; a dead button says nothing.
@@ -24,12 +24,9 @@
  * are shown: a total that falls as you answer reads as a trap.
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react';
-import { BottomBar } from '@/components/ui/bottom-bar.tsx';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { cn } from '@/lib/utils.ts';
 
 // ── the progress rule ───────────────────────────────────────────────────
 
@@ -121,14 +118,14 @@ export function FilingProgress({
   const percent = Math.round(Math.min(1, Math.max(0, value)) * 100);
   return (
     <div
+      className="progress"
       role="progressbar"
-      aria-label="How far through the form"
+      aria-valuenow={percent}
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={percent}
-      className="h-1.5 overflow-hidden rounded-[3px] bg-line"
+      aria-label="Progress"
     >
-      <span className="block h-full bg-ink" style={{ width: `${String(percent)}%` }} />
+      <span style={{ width: `${String(percent)}%` }} />
     </div>
   );
 }
@@ -167,19 +164,26 @@ export function useFocusOnMount<T extends HTMLElement>() {
 export interface CardFrameProps {
   /** The logbook's or list's title: shown where no step label applies. */
   eyebrow: ReactNode;
-  /** The card's step label ("Review", "Optional"), instead of "Question n". */
+  /** The card's step label ("Review"), instead of "Question n". */
   stepLabel?: ReactNode;
   heading: ReactNode;
   /** Changes when the card does: the heading takes focus again. */
   focusKey: string;
   headingId?: string | undefined;
-  /** "Optional." after the question. */
+  /** Says "optional" after the question's number. */
   optional?: boolean | undefined;
   /**
-   * What kind of card this is, said above the question when it is not an
-   * ordinary one: "Optional", "Asked because you wrote something".
+   * What kind of card this is, said in place of the question's number when it
+   * is not an ordinary one: "Optional", "Asked because you wrote something".
    */
   step?: string | undefined;
+  /** Said after the question's number: "asked because of an earlier answer". */
+  note?: string | undefined;
+  /**
+   * The question is a group of answer tiles: the heading is the legend of a
+   * fieldset, as in the mock-up, and names the group.
+   */
+  grouped?: boolean | undefined;
   /** Help under the question. Give it an id if the control points at it. */
   help?: ReactNode;
   /** The sentence that says what is wrong, or nothing. */
@@ -188,6 +192,11 @@ export interface CardFrameProps {
   children?: ReactNode;
 }
 
+/**
+ * One card's content, drawn inside the mock-up's `.qcard` form (the step
+ * label, the heading as the page's one <h1>, its help, the control, and the
+ * error). The progress bar and the bar with Back and Next are the form's.
+ */
 export function CardFrame({
   eyebrow,
   stepLabel,
@@ -196,6 +205,8 @@ export function CardFrame({
   headingId,
   optional = false,
   step,
+  note,
+  grouped = false,
   help,
   error,
   errorId,
@@ -203,36 +214,44 @@ export function CardFrame({
 }: CardFrameProps) {
   const ref = useRef<HTMLHeadingElement>(null);
   const n = useFilingQuestion();
-  const label = stepLabel ?? (n === null ? eyebrow : `Question ${String(n)}`);
+  const base = stepLabel ?? (n === null ? eyebrow : `Question ${String(n)}`);
+  const tail = note ?? (optional ? 'optional' : null);
   useEffect(() => {
     ref.current?.focus();
     // jsdom has no layout to scroll; a browser goes back to the top.
     if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
   }, [focusKey]);
+  const title = (
+    <h1 ref={ref} id={headingId} tabIndex={-1} className="outline-none">
+      {heading}
+    </h1>
+  );
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>{label}</Eyebrow>
-        {step ? <p className="label-face text-xs text-ink-alt">{step}</p> : null}
-        <h1
-          ref={ref}
-          id={headingId}
-          tabIndex={-1}
-          className="font-display text-section font-bold outline-none"
-        >
-          {heading}
-        </h1>
-        {optional && !step ? <p className="text-sm text-ink-alt">Optional.</p> : null}
-        {help}
-      </div>
-      {children}
+    <>
+      <span className="step">
+        {step ?? base}
+        {step || !tail ? null : ` · ${tail}`}
+      </span>
+      {grouped ? (
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 14 }}>
+          <legend>{title}</legend>
+          {help}
+          {children}
+        </fieldset>
+      ) : (
+        <>
+          {title}
+          {help}
+          {children}
+        </>
+      )}
       {/* Keyed by its words, so a different problem is announced and focused anew. */}
       {error ? (
         <CardError key={error} id={errorId} focus>
           {error}
         </CardError>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -247,23 +266,25 @@ export function CardError({
   focus?: boolean;
   children: ReactNode;
 }) {
-  const ref = useRef<HTMLParagraphElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (focus) ref.current?.focus();
   }, [focus]);
   return (
-    <p
+    <div
       ref={ref}
       id={id}
       role="alert"
       tabIndex={focus ? -1 : undefined}
-      className="flex gap-1.5 text-sm font-semibold text-serious outline-none"
+      className="note warn outline-none"
     >
-      <span aria-hidden="true">!</span>
+      <span aria-hidden="true">
+        <b>!</b>
+      </span>
       <span>
         <span className="sr-only">Error:</span> {children}
       </span>
-    </p>
+    </div>
   );
 }
 
@@ -279,8 +300,7 @@ function keyboardInset(): number {
 /**
  * Keeps `--rl-card-bar-inset` on <html> at the keyboard's height while a bar
  * is on screen, read from `visualViewport` (the keyboard shrinks the visual
- * viewport and not the layout one), as the Save bar does. A variable rather
- * than an inline style: no component carries a style of its own.
+ * viewport and not the layout one), so the bar sits above the keyboard.
  */
 function useKeyboardInset(): void {
   useEffect(() => {
@@ -303,11 +323,13 @@ function useKeyboardInset(): void {
 export interface CardBarProps {
   /** Left out on a card with nowhere to go back to. */
   onBack?: (() => void) | undefined;
-  /** The primary: Start, Next, Send report. Never disabled. */
+  /** The primary: Start, Next, Send. Never disabled. */
   primary: ReactNode;
   onPrimary?: (() => void) | undefined;
   /** A submit button for the form around the card, rather than a click. */
   submit?: boolean | undefined;
+  /** The action colour (Send) instead of the dark fill (Next). */
+  go?: boolean | undefined;
   busy?: boolean | undefined;
   busyLabel?: ReactNode;
   /** A line above the buttons: the door's status, a send refused. */
@@ -315,16 +337,17 @@ export interface CardBarProps {
 }
 
 /**
- * Back takes a third and the primary two thirds on a phone, fixed to the
- * bottom of the screen with a spacer of its height in the page, so the last
- * choice on a long list can always be scrolled clear of it. On a desktop
- * they sit under the card, the primary on the right.
+ * The mock-up's bottom bar: Back at the left, the primary at the right,
+ * fixed to the bottom of the screen (the form leaves room for it). A message
+ * for above the buttons sits in the card, just before the bar, so a long one
+ * cannot cover the answers.
  */
 export function CardBar({
   onBack,
   primary,
   onPrimary,
   submit = false,
+  go = false,
   busy = false,
   busyLabel,
   above,
@@ -332,41 +355,31 @@ export function CardBar({
   useKeyboardInset();
   return (
     <>
-      <div aria-hidden="true" className="h-36 sm:hidden" />
-      <BottomBar
+      {above}
+      <div
+        className="bottom-bar"
         data-card-bar=""
-        className={cn(
-          'fixed inset-x-0 bottom-(--rl-card-bar-inset,0px) z-30 flex flex-col gap-3 border-t-(length:--rl-border-main) border-ink-alt bg-surface p-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] print:hidden',
-          'sm:static sm:z-auto sm:border-t-0 sm:bg-transparent sm:p-0 sm:pt-2',
-        )}
+        style={{ bottom: 'var(--rl-card-bar-inset, 0px)' }}
       >
-        {above}
-        <div className="flex gap-3 sm:justify-between">
+        <div className="in">
           {onBack ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="basis-1/3 sm:basis-auto"
-              onClick={onBack}
-            >
+            <Btn look="ghost" onClick={onBack}>
               Back
-            </Button>
+            </Btn>
           ) : (
-            <span className="hidden sm:block" />
+            <span />
           )}
-          <Button
+          <Btn
+            look={go ? 'go' : 'ink'}
             type={submit ? 'submit' : 'button'}
-            size="lg"
-            className={cn('grow sm:grow-0', onBack ? 'basis-2/3 sm:basis-auto' : 'basis-full')}
             busy={busy}
             busyLabel={busyLabel}
-            onClick={onPrimary}
+            {...(submit ? {} : { onClick: onPrimary })}
           >
             {primary}
-          </Button>
+          </Btn>
         </div>
-      </BottomBar>
+      </div>
     </>
   );
 }

@@ -16,9 +16,7 @@
  */
 import { countyOptions, stateOfPlace } from '@reportlog/fields';
 import { useId } from 'react';
-import { FieldReset } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { Select } from '@/components/ui/select.tsx';
+import { Field, SelectBox } from '@/mockup/Field.tsx';
 
 interface Props {
   states: readonly { code: string; name: string }[];
@@ -33,59 +31,59 @@ export function CountyPicker({ states, value, onChange, labelledBy, describedBy,
   const id = useId();
   const state = value ? stateOfPlace(value) : '';
   const counties = state ? countyOptions(state) : [];
+  // The mock-up's two fields (file-3.html): a state, then a county with its
+  // help under it.
   return (
     <div
       role="group"
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
-      className="flex flex-col gap-4"
+      style={{ display: 'grid', gap: 16 }}
     >
-      <FieldReset>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={`${id}-state`}>State</Label>
-          <Select
-            id={`${id}-state`}
-            value={state}
-            aria-invalid={invalid ? true : undefined}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
-          >
-            <option value="">Choose a state</option>
-            {states.map((p) => (
-              <option key={p.code} value={p.code}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor={`${id}-county`}>County, if you know it</Label>
-          <p id={`${id}-county-help`} className="text-sm text-ink-alt">
-            The list follows the state you choose.
-          </p>
-          <Select
-            id={`${id}-county`}
-            aria-describedby={`${id}-county-help`}
-            value={state ? value : ''}
-            disabled={!state}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
-          >
-            {state ? (
-              <option value={state}>Not sure which county</option>
-            ) : (
-              <option value="">Choose a state first</option>
-            )}
-            {counties.map((p) => (
-              <option key={p.code} value={p.code}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </FieldReset>
+      <Field label="State" htmlFor={`${id}-state`}>
+        <SelectBox
+          id={`${id}-state`}
+          value={state}
+          aria-invalid={invalid ? true : undefined}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+        >
+          <option value="">Choose a state</option>
+          {states.map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.name}
+            </option>
+          ))}
+        </SelectBox>
+      </Field>
+      <Field
+        label="County, if you know it"
+        htmlFor={`${id}-county`}
+        help="The list follows the state you choose."
+        helpId={`${id}-county-help`}
+      >
+        <SelectBox
+          id={`${id}-county`}
+          aria-describedby={`${id}-county-help`}
+          value={state ? value : ''}
+          disabled={!state}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+        >
+          {state ? (
+            <option value={state}>Not sure which county</option>
+          ) : (
+            <option value="">Choose a state first</option>
+          )}
+          {counties.map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.name}
+            </option>
+          ))}
+        </SelectBox>
+      </Field>
     </div>
   );
 }
