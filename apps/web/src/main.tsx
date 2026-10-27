@@ -7,6 +7,8 @@ import { installErrorReporting, rootErrorHandlers } from './features/telemetry/r
 import { createQueryClient } from './lib/queryClient.ts';
 import { routeTree } from './routeTree.gen.ts';
 import './styles.css';
+// The approved mock-up's stylesheet, after Tailwind so its rules win.
+import './mockup/site.css';
 
 const queryClient = createQueryClient();
 const router = createRouter({ routeTree, context: { queryClient }, defaultPreload: 'intent' });
@@ -19,6 +21,17 @@ declare module '@tanstack/react-router' {
 
 // Errors go to this site's server, and on to Bugsink only if it is set up.
 // Nothing is asked or loaded until one happens.
+// The mock-up's page script (public/mockup/site.js) fits headlines and draws the
+// header background on what is on the page; redo it after each page is drawn.
+declare global {
+  interface Window {
+    elRefresh?: () => void;
+  }
+}
+router.subscribe('onResolved', () => {
+  requestAnimationFrame(() => window.elRefresh?.());
+});
+
 installErrorReporting(() => router.state.matches.at(-1)?.routeId);
 
 const root = document.getElementById('root');
