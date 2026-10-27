@@ -16,6 +16,7 @@ import { Ticker } from '../features/nav/Ticker.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
 import { inFrame } from '../features/staff-nav/entries.ts';
 import { EasyClass } from '../mockup/EasierReading.tsx';
+import { SiteLookScript } from '../mockup/siteLook.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -30,6 +31,7 @@ function RootLayout() {
   return (
     <HeaderProgressProvider>
       <SiteLook />
+      <SiteLookScript />
       <Frame />
       <DevBadge />
       <FollowButton />

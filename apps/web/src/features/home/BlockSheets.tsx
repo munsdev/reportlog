@@ -1,6 +1,6 @@
 /**
  * The forms inside the editor's sheet, one for each kind of block, in the
- * mock-up's markup (editor.js, `openSheet`). Each edits a copy; Save hands
+ * mock-up's markup (the mock-up's block editor). Each edits a copy; Save hands
  * the whole set of fields back, Cancel throws the copy away. What a field is
  * called, what its help says and how many entries it takes are the mock-up's.
  *

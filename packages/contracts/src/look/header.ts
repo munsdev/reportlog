@@ -113,6 +113,48 @@ export const KitElement = z.object({
 });
 export type KitElement = z.infer<typeof KitElement>;
 export type KitShape = z.infer<typeof KitShape>;
+/**
+ * The parts of a pack's palettes and themes the page script needs to paint a
+ * look without the pack's stylesheet (the colours and the headline's
+ * settings, in the pack's own format 2 words). Loose: the pack passed check()
+ * before it was stored, and the page reads only the fields it names.
+ */
+export const KitPalette = z.looseObject({
+  id: ElementId,
+  label: z.string(),
+  colors: z.record(z.string(), z.string()),
+});
+export const KitTheme = z.looseObject({
+  id: ElementId,
+  label: z.string(),
+  type: z.looseObject({
+    heading: z.looseObject({
+      family: z.string(),
+      stretch: z.number().optional(),
+      weight: z.number(),
+      case: z.string(),
+      tracking: z.number().optional(),
+    }),
+    body: z.looseObject({ family: z.string() }),
+    h1: z.looseObject({ max: z.number() }),
+  }),
+  shape: z.looseObject({ radius: z.number(), border: z.number(), shadow: z.number() }),
+  display: z
+    .looseObject({
+      lineHeight: z.number(),
+      headlineStretch: z.number().optional(),
+      headlineWeight: z.number().optional(),
+      fit: z.looseObject({ min: z.number(), max: z.number() }),
+      band: z.looseObject({ min: z.number(), max: z.number() }),
+      second: z.string(),
+      tag: z.string(),
+      buttonCase: z.string(),
+      radiusButton: z.number(),
+    })
+    .optional(),
+});
+export type KitPalette = z.infer<typeof KitPalette>;
+export type KitTheme = z.infer<typeof KitTheme>;
 /** One pack's header kit: served as `/api/looks/<pack>/<sha256>.json`. */
 export const LookKit = z.object({
   pack: z.string(),
@@ -120,6 +162,9 @@ export const LookKit = z.object({
   credit: z.string().optional(),
   elements: z.array(KitElement).max(32),
   shapes: z.record(ElementId, KitShape),
+  /** Absent when the pack adds none, so a pack with only elements keeps its address. */
+  palettes: z.array(KitPalette).max(32).optional(),
+  themes: z.array(KitTheme).max(32).optional(),
 });
 export type LookKit = z.infer<typeof LookKit>;
 

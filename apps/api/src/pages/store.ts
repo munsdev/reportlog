@@ -93,8 +93,18 @@ export async function savePage(
   stored: readonly Block[],
   userId: number | null,
 ): Promise<void> {
+  await db.transaction().execute((trx) => savePageIn(trx, page, stored, userId));
+}
+
+/** The same, inside a transaction somebody else opened (the site bundle's import). */
+export async function savePageIn(
+  trx: Database,
+  page: PageId,
+  stored: readonly Block[],
+  userId: number | null,
+): Promise<void> {
   const blocks = resolvePageBlocks(stored);
-  await db.transaction().execute(async (trx) => {
+  {
     await lock(page).execute(trx);
     const row = await live(trx, page);
     let parent = row?.edit_id ?? null;
@@ -130,7 +140,7 @@ export async function savePage(
         and id not in (select id from site_page_edits where page = ${page} order by id desc limit ${PAGE_UNDO_DEPTH})`.execute(
       trx,
     );
-  });
+  }
 }
 
 export async function undoPage(db: Database, page: PageId): Promise<void> {

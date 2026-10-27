@@ -990,6 +990,14 @@ export interface SiteAccessTokens {
   token_hash: string;
 }
 
+export interface SiteBundleBackups {
+  created_at: Generated<Timestamp>;
+  created_by: string;
+  id: Generated<number>;
+  restored_at: Timestamp | null;
+  snapshot: Json;
+}
+
 export interface SiteCopy {
   body: string;
   key: string;
@@ -1271,6 +1279,7 @@ export interface DB {
   sessions: Sessions;
   site_access: SiteAccess;
   site_access_tokens: SiteAccessTokens;
+  site_bundle_backups: SiteBundleBackups;
   site_copy: SiteCopy;
   site_page_edits: SitePageEdits;
   site_pages: SitePages;

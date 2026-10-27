@@ -94,13 +94,36 @@ export const BUILT_IN_CATALOGUE: LookCatalogue = {
  * labels, numbers and path data.
  */
 export function kitOf(pack: LookPack): LookKit | null {
-  if (!pack.elements?.length) return null;
+  if (!pack.elements?.length && !pack.palettes?.length && !pack.themes?.length) return null;
   return {
     pack: pack.id,
     label: pack.label,
     ...(pack.credit ? { credit: pack.credit } : {}),
-    elements: pack.elements,
+    elements: pack.elements ?? [],
     shapes: pack.shapes ?? {},
+    // The page script paints from these (apps/web/src/mockup/siteLook.tsx).
+    ...(pack.palettes?.length
+      ? {
+          palettes: pack.palettes.map((p) => ({
+            id: p.id,
+            label: p.label,
+            colors: p.colors,
+          })),
+        }
+      : {}),
+    ...(pack.themes?.length
+      ? {
+          // The kit's schema is loose (it reads only what it names); the
+          // manifest passed check(), so it has every field named there.
+          themes: pack.themes.map((t) => ({
+            id: t.id,
+            label: t.label,
+            type: t.type,
+            shape: t.shape,
+            ...(t.display ? { display: t.display } : {}),
+          })) as unknown as NonNullable<LookKit['themes']>,
+        }
+      : {}),
   };
 }
 const kitHash = (kit: LookKit) => sha256(JSON.stringify(kit));
@@ -400,7 +423,16 @@ export async function installPack(
   zip: Uint8Array,
   actor: string,
 ): Promise<Installation> {
-  return db.transaction().execute(async (trx) => {
+  return db.transaction().execute((trx) => installPackIn(trx, zip, actor));
+}
+
+/** The same, inside a transaction somebody else opened (the site bundle's import). */
+export async function installPackIn(
+  trx: Database,
+  zip: Uint8Array,
+  actor: string,
+): Promise<Installation> {
+  {
     await lock(trx);
     const seen = await inspectPack(trx, zip);
     if (!seen.pack) return { ok: false, problems: seen.problems };
@@ -454,7 +486,7 @@ export async function installPack(
     const installed = (await listPacks(trx)).find((p) => p.id === pack.id);
     if (!installed) throw new Error(`look pack ${pack.id} vanished inside its own transaction`);
     return { ok: true, pack: installed, replaced };
-  });
+  }
 }
 
 export type Removal = { ok: true } | { ok: false; status: 404 | 409; message: string };
