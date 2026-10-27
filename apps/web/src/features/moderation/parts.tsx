@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import { Chip } from '../../components/ui/chip.tsx';
 import { KeyValueList } from '../../components/ui/key-value-list.tsx';
 import { plainSiteName, useSite } from '../../components/ui/site.tsx';
-import { Eyebrow, Lede, Meta } from '../../components/ui/type.tsx';
+import { Eyebrow, Lede } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { publicLogbookQuery } from '../form/FilingForm.tsx';
 import { askedQuestions, rawFromAnswers, shownAnswer } from '../form/walk.ts';

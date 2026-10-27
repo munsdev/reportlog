@@ -32,7 +32,7 @@
 import type { MenuWaiting } from '@reportlog/contracts';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { ReactNode, RefObject } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Count } from '@/components/ui/count.tsx';
 import { SiteFooter } from '@/components/ui/site-footer.tsx';
@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils.ts';
 import { PauseBanner } from '../flood/IntakePaused.tsx';
 import type { SignedInMe } from '../identity/session.ts';
 import { rolesLabel, useSignOut } from '../identity/session.ts';
-import { areasFor, entryAt, groupsFor, mayOpen } from '../staff-nav/entries.ts';
+import { areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
 import type { StaffEntry } from '../staff-nav/entries.ts';
 import { AccountLinks, BugLink } from './Menu.tsx';
 import { usePopup, useNoScroll } from './popup.ts';
@@ -111,7 +111,7 @@ export function StaffShell({
           <div className="flex min-w-0 items-center gap-2.5">
             <Wordmark />
             <span className="shrink-0 rounded-control bg-brand-on-deep px-2 py-0.5 font-mono text-[0.68rem] tracking-[0.12em] text-deep uppercase">
-              {me && me.heldRoles.length === 0 ? 'Account' : 'Staff'}
+              {me?.heldRoles.length === 0 ? 'Account' : 'Staff'}
             </span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
