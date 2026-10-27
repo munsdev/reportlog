@@ -41,7 +41,7 @@ import { isAllowedType, kindFor } from './kinds.ts';
 import { limitsFor, maxBytesForKind } from './limits.ts';
 import { randomKey } from './storage.ts';
 
-/** As long as a confirmation link: a staged file and its report expire together. */
+/** An unsent draft file lasts a day. Once the report is sent, its files take the link’s expiry. */
 export const SLOT_TTL_MS = 24 * 60 * 60 * 1000;
 
 /** How a slot can end without reaching a report. */

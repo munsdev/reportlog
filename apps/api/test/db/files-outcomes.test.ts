@@ -68,8 +68,8 @@ afterAll(async () => {
 });
 
 describe('a staged file and its confirmation link expire together', () => {
-  it('the shipped lifetimes are the same', () => {
-    expect(SLOT_TTL_MS).toBe(LINK_TTL_MS);
+  it('an unsent draft file expires sooner than the link (a sent one takes the link’s)', () => {
+    expect(SLOT_TTL_MS).toBeLessThan(LINK_TTL_MS);
   });
 
   it('Send gives every file of the draft the link’s expiry, whenever it was staged', async () => {

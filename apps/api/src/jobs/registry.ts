@@ -70,6 +70,17 @@ export const JOBS: readonly JobDefinition[] = [
     run: (ctx) => import('./lists-sweep.ts').then((m) => m.runListsSweep(ctx)),
   },
   {
+    // NOT the sweeps above (see contacts-sweep.ts): one date, set in the
+    // filing settings, after which no report keeps a contact.
+    name: 'contacts-sweep',
+    what: 'From the set date (31 January 2027 unless changed), delete every report contact.',
+    owner: 'E',
+    onCalendar: '*-*-* 03:50:00',
+    randomizedDelaySec: 600,
+    persistent: true,
+    run: (ctx) => import('./contacts-sweep.ts').then((m) => m.runContactsSweep(ctx)),
+  },
+  {
     name: 'anchor',
     what: "Timestamp the list of every logbook's chain head and publish it to the transparency log.",
     owner: 'D',

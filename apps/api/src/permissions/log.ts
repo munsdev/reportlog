@@ -20,6 +20,14 @@
  *                           itself, which is a sealed answer: what somebody
  *                           said they had is a fact about the filing; whether
  *                           they want to be asked about it is not
+ *   journalist_sharing      may a journalist be shown the words and links the
+ *                           reporter wrote, once a moderator has checked
+ *                           them. Asked at filing (the API takes the answer)
+ *                           and changeable from My reports. NEVER SEALED:
+ *                           it can be taken back, and a report must not verify
+ *                           differently because somebody changed their mind.
+ *                           Moderation and the desk read it through
+ *                           `sharingGranted`; no route of theirs writes it.
  *
  * THE CURRENT VALUE IS A PROJECTION: the newest row for a thread and a
  * permission wins. NO ROWS MEANS NOT GRANTED, the safe direction.
@@ -39,6 +47,7 @@ export const NONE_GRANTED: Readonly<Permissions> = Object.freeze({
   contact_passing: false,
   attachment_publication: false,
   evidence_request: false,
+  journalist_sharing: false,
 });
 
 export function isPermission(name: unknown): name is Permission {
@@ -115,4 +124,22 @@ export async function permissionHistory(db: Kysely<DB>, threadId: string) {
       reason: r.reason,
       at: r.created_at.toISOString(),
     }));
+}
+
+/**
+ * Is journalist sharing granted for this thread RIGHT NOW? The newest row
+ * wins and no rows means no. For moderation (what it may mark as shareable)
+ * and the desk (what it may show), which read this and never write it.
+ */
+export async function sharingGranted(db: Kysely<DB>, threadId: string): Promise<boolean> {
+  return (await permissionsFor(db, threadId)).journalist_sharing;
+}
+
+/** The same for many threads at once: the set of those that grant it. */
+export async function sharingGrantedAmong(
+  db: Kysely<DB>,
+  threadIds: readonly string[],
+): Promise<Set<string>> {
+  const all = await permissionsForMany(db, threadIds);
+  return new Set(threadIds.filter((t) => all.get(t)?.journalist_sharing === true));
 }

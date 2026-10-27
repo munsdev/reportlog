@@ -1,5 +1,5 @@
 /**
- * The reporter's three switches, in the words "My reports" shows them. Kept
+ * The reporter's switches, in the words "My reports" shows them. Kept
  * apart so the evidence page can name the switch that stops the asking in
  * exactly the words the reporter will find, without importing the page.
  */
@@ -17,5 +17,10 @@ export const PERMISSION_WORDS: Record<Permission, { label: string; hint: string 
   evidence_request: {
     label: 'An editor may contact me to ask for the evidence I said I have',
     hint: 'What you said you have is part of the report. Whether you want to be asked about it is this.',
+  },
+  journalist_sharing: {
+    label:
+      'Journalists may be shown the words and links I wrote, after a moderator has checked them',
+    hint: 'Off unless you switch it on. Switching it off takes them off the journalists’ desk.',
   },
 };

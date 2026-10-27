@@ -976,7 +976,7 @@ function SentReceipt({ email, title }: { email: string; title: string }) {
     <Receipt heading="Check your email">
       <p className="max-w-prose">
         We have sent a link to <strong className="break-all">{email}</strong>. Nothing is filed in “
-        {title}” until you press the button on that page. The link works for 24 hours.
+        {title}” until you press the button on that page. The link works for 90 days.
       </p>
       <p className="max-w-prose text-ink-alt">
         If nothing arrives in a few minutes, look in your spam folder.

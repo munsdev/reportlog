@@ -42,6 +42,8 @@ export const submitReport = defineRoute({
     draft_token: z.string().optional(),
     /** The form version the page showed (getPublicLogbook's `form`). */
     form: z.string().optional(),
+    /** G5: may journalists be shown the checked words and links. Left out is no. Never sealed. */
+    journalist_sharing: z.boolean().optional(),
     ...DoorFields,
   }),
   /**
@@ -176,6 +178,8 @@ export const PERMISSIONS = [
   'contact_passing',
   'attachment_publication',
   'evidence_request',
+  /** May a journalist be shown the text and links the reporter wrote, once a moderator has checked them (G5). */
+  'journalist_sharing',
 ] as const;
 export const Permission = z.enum(PERMISSIONS);
 export type Permission = z.infer<typeof Permission>;
@@ -183,6 +187,7 @@ export const Permissions = z.object({
   contact_passing: z.boolean(),
   attachment_publication: z.boolean(),
   evidence_request: z.boolean(),
+  journalist_sharing: z.boolean(),
 });
 export type Permissions = z.infer<typeof Permissions>;
 
