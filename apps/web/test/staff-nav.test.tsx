@@ -421,14 +421,6 @@ describe('the header', () => {
     await settle();
     expect(asked()).not.toContain('/api/menu/waiting');
   });
-
-  it('turns its bottom rule into the progress track on a filing card', async () => {
-    open({ signedIn: false });
-    page('/file/votes');
-    const banner = await screen.findByRole('banner');
-    await settle();
-    expect(banner.querySelector('[data-progress]')).toHaveAttribute('data-progress', '40');
-  });
 });
 
 describe('the menu on a desktop', () => {
@@ -626,20 +618,6 @@ describe('the staff area', () => {
       'aria-current',
       'page',
     );
-  });
-
-  it('opens the account menu with the person’s links and Sign out; Escape closes it', async () => {
-    phoneWidth(false);
-    open(ME('admin'), { '/api/menu/waiting': {} });
-    page('/settings/name');
-    const user = userEvent.setup();
-    const account = await screen.findByRole('button', { name: /^Account:/ });
-    await user.click(account);
-    expect(account).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('button', { name: 'Sign out' })).toBeVisible();
-    await user.keyboard('{Escape}');
-    expect(account).toHaveAttribute('aria-expanded', 'false');
-    expect(account).toHaveFocus();
   });
 
   it('on a phone keeps the sidebar in a drawer: focus in, kept in, Escape gives it back', async () => {

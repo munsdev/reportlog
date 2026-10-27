@@ -14,6 +14,8 @@ import type { InstalledLookPack, LookPackSummary } from '@reportlog/contracts';
 import { applyLook, rememberedLook } from '../src/components/ui/site.tsx';
 import { AddLookPack } from '../src/features/looks/AddLookPack.tsx';
 import { InstalledLookPacks } from '../src/features/looks/InstalledLookPacks.tsx';
+import { LookPacks } from '../src/features/settings/LookPacks.tsx';
+import { ToastProvider } from '../src/components/ui/toast.tsx';
 import { addsWhat, groupProblems } from '../src/features/looks/queries.ts';
 import { linkStylesheets, linkedStylesheets } from '../src/features/looks/stylesheets.ts';
 import { SettingsFrame } from '../src/features/settings/panels.tsx';
@@ -341,9 +343,14 @@ describe('the installed packs', () => {
         },
       },
     });
-    wrap(<InstalledLookPacks />);
+    // The built-in row is drawn by the section around the installed list (LookPacks).
+    wrap(
+      <ToastProvider>
+        <LookPacks />
+      </ToastProvider>,
+    );
     expect(screen.getByText('ReportLog, built in')).toBeVisible();
-    expect(screen.getByText('19 palettes · 13 themes · 18 looks')).toBeVisible();
+    expect(screen.getByText('22 palettes · 14 themes · 19 looks')).toBeVisible();
     expect(
       await screen.findByText(/2 palettes · 1 theme · 2 looks · installed 22 Oct 2026 by/),
     ).toBeVisible();
