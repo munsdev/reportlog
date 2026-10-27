@@ -56,10 +56,7 @@ function Roster() {
   const people = [...(roster.data?.people ?? [])].sort((a, b) => a.email.localeCompare(b.email));
 
   return (
-    <StaffPage
-      title="Who is doing what"
-      lede="Everybody with a role, a flag or an organization. The numbers are reports typed up through intake: by the person themselves, and by anybody for the organizations they belong to. Nothing here is flagged for volume; filing a lot is what a coordinator is for."
-    >
+    <StaffPage title="Who is doing what" lede="Who is on the team and what they have done lately.">
       <TeamForm key={editing.email} initial={editing} panelRef={formRef} />
 
       <Card heading="People">
@@ -98,40 +95,28 @@ function Roster() {
               ]}
             />
             <ScrollX label="Who is doing what">
-              <table className="w-full text-left text-sm">
+              <table className="data-table">
                 <caption className="sr-only">
                   The roster, counting reports from the last {String(roster.data.days)} days
                 </caption>
                 <thead>
-                  <tr className="border-b border-ink-alt">
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      Address
-                    </th>
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      Role and flags
-                    </th>
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      Organizations
-                    </th>
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      Typed up by them
-                    </th>
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      For their organizations
-                    </th>
-                    <th scope="col" className="py-2 pr-4 label-face text-xs">
-                      Last acted as staff
-                    </th>
-                    <th scope="col" className="py-2">
+                  <tr>
+                    <th scope="col">Address</th>
+                    <th scope="col">Role and flags</th>
+                    <th scope="col">Organizations</th>
+                    <th scope="col">Typed up by them</th>
+                    <th scope="col">For their organizations</th>
+                    <th scope="col">Last acted as staff</th>
+                    <th scope="col">
                       <span className="sr-only">Change</span>
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {people.map((p) => (
-                    <tr key={p.email} className="border-b border-line align-top last:border-0">
-                      <td className="py-2 pr-4 font-mono break-all">{p.email}</td>
-                      <td className="py-2 pr-4">
+                    <tr key={p.email} className="align-top">
+                      <td className="font-mono break-all">{p.email}</td>
+                      <td>
                         {[
                           p.roles.length ? rolesLabel(p.roles) : null,
                           p.tester ? 'tester' : null,
@@ -142,19 +127,17 @@ function Roster() {
                           .filter(Boolean)
                           .join(', ')}
                       </td>
-                      <td className="py-2 pr-4">
-                        {p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}
-                      </td>
-                      <td className="py-2 pr-4 font-mono">{p.filedByThem}</td>
-                      <td className="py-2 pr-4 font-mono">{p.filedForTheirOrganizations}</td>
-                      <td className="py-2 pr-4 font-mono whitespace-nowrap">
+                      <td>{p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}</td>
+                      <td className="font-mono">{p.filedByThem}</td>
+                      <td className="font-mono">{p.filedForTheirOrganizations}</td>
+                      <td className="font-mono whitespace-nowrap">
                         {p.lastStaffAction ? (
                           <time dateTime={p.lastStaffAction}>{p.lastStaffAction.slice(0, 10)}</time>
                         ) : (
                           <span className="font-sans text-ink-alt">Never</span>
                         )}
                       </td>
-                      <td className="py-1">
+                      <td>
                         <Button
                           type="button"
                           variant="quiet"

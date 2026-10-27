@@ -18,6 +18,7 @@ import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
+import { RowItem, Rows, rowLink } from '../../components/ui/rows.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { FileDrop } from '../../components/ui/file-drop.tsx';
@@ -70,22 +71,10 @@ export function ListAdmin() {
   return (
     <StaffPage
       title="Lists"
-      lede="A list is a form whose entries are not sealed or chained. Its personal half is deleted on a timer, a moderator approves entries in bulk, and only counts are ever published."
+      lede="A list collects things that are not reports: tips, sign-ups, offers to help. Nothing on a list is sealed or published."
       // One "Make" button at a time: an empty page carries it in its empty state.
       actions={making || query.data?.lists.length === 0 ? null : make}
     >
-      <p className="text-ink-alt">
-        Entries are approved under{' '}
-        <Link to="/lists/review" className="underline underline-offset-4">
-          Review entries
-        </Link>
-        ; one person’s entries across every list are under{' '}
-        <Link to="/lists/search" className="underline underline-offset-4">
-          Find somebody's entries
-        </Link>
-        .
-      </p>
-
       {making ? (
         <NewList
           onCancel={() => {
@@ -105,34 +94,42 @@ export function ListAdmin() {
             </Empty>
           )
         ) : (
-          <ul className="flex flex-col gap-3" aria-label="Lists">
-            {query.data.lists.map((l) => (
-              <li key={l.id}>
-                <Card className="gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-lg font-bold">{l.title}</span>
+          <>
+            <Rows label="Lists">
+              {query.data.lists.map((l) => (
+                <RowItem key={l.id}>
+                  <Link
+                    to="/lists/$id"
+                    params={{ id: l.id }}
+                    aria-label={`Open ${l.title}`}
+                    className={rowLink('end')}
+                  >
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-display font-bold">{l.title}</span>
+                      <span className="font-mono text-[0.78rem] break-all text-muted">
+                        /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
+                        for review
+                      </span>
+                    </span>
+                    <span className="flex flex-wrap gap-1.5">
                       <Chip tone="tag">{VISIBILITY[l.visibility].label}</Chip>
-                      <Chip tone={l.accepting ? 'tag' : 'open'}>
+                      <Chip tone={l.accepting ? 'confirmed' : 'off'}>
                         {l.accepting ? 'Taking entries' : 'Not taking entries'}
                       </Chip>
                     </span>
-                    <span className="font-mono text-sm break-all text-muted">
-                      /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
-                      for review
-                    </span>
-                  </div>
-                  <div className="shrink-0">
-                    <Button asChild variant="secondary">
-                      <Link to="/lists/$id" params={{ id: l.id }} aria-label={`Open ${l.title}`}>
-                        Open
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
+                  </Link>
+                </RowItem>
+              ))}
+            </Rows>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="secondary">
+                <Link to="/lists/review">Review entries</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link to="/lists/search">Find somebody&apos;s entries</Link>
+              </Button>
+            </div>
+          </>
         )
       ) : null}
     </StaffPage>

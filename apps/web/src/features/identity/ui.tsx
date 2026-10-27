@@ -103,7 +103,7 @@ export function Section({
   const id = useId();
   return (
     <section aria-labelledby={id} className="flex flex-col gap-4">
-      <h2 id={id} className="font-display text-2xl font-bold">
+      <h2 id={id} className="font-display text-xl font-bold">
         {title}
       </h2>
       {lede ? <p className="max-w-prose text-ink-alt">{lede}</p> : null}

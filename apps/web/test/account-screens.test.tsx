@@ -285,7 +285,7 @@ describe('the logbook list', () => {
     expect(await screen.findByRole('region', { name: 'Make a logbook' })).toBeInTheDocument();
     expect(screen.getByRole('radio', { name: 'Start from nothing' })).toBeChecked();
     // The site-wide switch is not here any more; the page points to it.
-    expect(screen.getByRole('link', { name: 'Site settings, Accepting reports' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Site settings' })).toHaveAttribute(
       'href',
       '/settings',
     );

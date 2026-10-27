@@ -14,10 +14,8 @@ import { useId, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
-import { plainSiteName, useSite } from '../../components/ui/site.tsx';
+import { Card } from '../../components/ui/card.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { useMe } from '../identity/session.ts';
@@ -43,13 +41,11 @@ const FREQUENCY_WORDS: Record<DigestFrequency, { label: string; hint: string }> 
 export function NotificationsPage() {
   const me = useMe();
   const query = useQuery({ ...notificationsQuery, enabled: Boolean(me.data?.signedIn) });
-  const siteName = plainSiteName(useSite().data);
   return (
-    <Page
-      eyebrow={siteName}
+    <StaffPage
+      area="Account"
       title="Email updates"
-      width="prose"
-      lede="Hear about reports when a moderator publishes them. Only what anybody can read on the board is ever emailed."
+      lede="What you hear about new published reports. Only what anybody can read on the board is ever emailed."
     >
       {me.isPending || (me.data?.signedIn && query.isPending) ? (
         <p role="status">Loading…</p>
@@ -61,7 +57,7 @@ export function NotificationsPage() {
         </Alert>
       ) : null}
       {query.data ? <NotificationsForm current={query.data} /> : null}
-    </Page>
+    </StaffPage>
   );
 }
 
@@ -88,9 +84,9 @@ export function NotificationsForm({ current }: { current: Notifications }) {
         if (!nothingPicked) save.mutate();
       }}
     >
-      <Field>
-        <Label>How often</Label>
+      <Card heading="How often">
         <RadioGroup
+          aria-label="How often"
           value={frequency}
           onValueChange={(v) => {
             setFrequency(v as DigestFrequency);
@@ -105,43 +101,45 @@ export function NotificationsForm({ current }: { current: Notifications }) {
             />
           ))}
         </RadioGroup>
-      </Field>
+      </Card>
 
       {frequency !== 'none' ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="mb-2 label-face text-xs text-ink">From which logbooks</legend>
-          <CheckOption
-            id={allId}
-            checked={all}
-            onCheckedChange={(on) => {
-              setAll(on === true);
-            }}
-            label="Every logbook, including new ones"
-          />
-          {!all ? (
-            <div className="flex flex-col gap-3 pl-9" data-testid="logbook-choices">
-              {current.choices.length === 0 ? <p>No logbook has been launched yet.</p> : null}
-              {current.choices.map((c, i) => (
-                <CheckOption
-                  key={c.slug}
-                  id={`${allId}-${String(i)}`}
-                  label={c.title}
-                  checked={picked.includes(c.slug)}
-                  onCheckedChange={(on) => {
-                    setPicked(
-                      on === true ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
-                    );
-                  }}
-                />
-              ))}
-              {nothingPicked ? (
-                <p role="alert" className="text-sm">
-                  Choose at least one logbook, or tick “Every logbook”.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </fieldset>
+        <Card heading="From which logbooks">
+          <fieldset className="flex flex-col gap-3">
+            <legend className="sr-only">From which logbooks</legend>
+            <CheckOption
+              id={allId}
+              checked={all}
+              onCheckedChange={(on) => {
+                setAll(on === true);
+              }}
+              label="Every logbook, including new ones"
+            />
+            {!all ? (
+              <div className="flex flex-col gap-3 pl-9" data-testid="logbook-choices">
+                {current.choices.length === 0 ? <p>No logbook has been launched yet.</p> : null}
+                {current.choices.map((c, i) => (
+                  <CheckOption
+                    key={c.slug}
+                    id={`${allId}-${String(i)}`}
+                    label={c.title}
+                    checked={picked.includes(c.slug)}
+                    onCheckedChange={(on) => {
+                      setPicked(
+                        on === true ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
+                      );
+                    }}
+                  />
+                ))}
+                {nothingPicked ? (
+                  <p role="alert" className="text-sm">
+                    Choose at least one logbook, or tick “Every logbook”.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </fieldset>
+        </Card>
       ) : null}
 
       {save.isError ? (

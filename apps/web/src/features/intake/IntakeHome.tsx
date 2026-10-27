@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
+import { RowItem, Rows, rowLink } from '@/components/ui/rows.tsx';
 import { Chip } from '@/components/ui/chip.tsx';
 import { Empty } from '@/components/ui/empty.tsx';
 import { Field } from '@/components/ui/field.tsx';
@@ -41,8 +42,7 @@ export function IntakeHome() {
     <StaffPage
       area="Your organization"
       title="Filing for an organization"
-      lede="Type up accounts somebody gave you on paper, by phone or in person. Nothing is filed until you have checked the whole batch and said so."
-      width="prose"
+      lede="Type up accounts your observers collected, then file them together. Nothing is filed until you have checked the whole batch and said so."
     >
       <Card heading="A new batch">
         {list.length > 1 ? (
@@ -83,7 +83,7 @@ export function IntakeHome() {
       </Card>
 
       <section aria-labelledby="your-batches" className="flex flex-col gap-3">
-        <h2 id="your-batches" className="font-display text-2xl font-bold">
+        <h2 id="your-batches" className="font-display text-xl font-bold">
           Your batches
         </h2>
         {batches.isPending ? <p role="status">Loading…</p> : null}
@@ -93,43 +93,37 @@ export function IntakeHome() {
             A batch holds the accounts you type up until you file them together.
           </Empty>
         ) : null}
-        <ul className="flex flex-col gap-3">
-          {batches.data?.batches.map((b) => {
-            const started = new Date(b.created_at).toLocaleString();
-            const filed = b.status === 'submitted';
-            return (
-              <li key={b.id}>
-                <Card className="gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-lg font-bold">
-                        <time dateTime={b.created_at}>{started}</time>
+        {batches.data?.batches.length ? (
+          <Rows label="Your batches">
+            {batches.data.batches.map((b) => {
+              const started = new Date(b.created_at).toLocaleString();
+              const filed = b.status === 'submitted';
+              return (
+                <RowItem key={b.id}>
+                  <Link
+                    to="/intake/$id"
+                    params={{ id: String(b.id) }}
+                    aria-label={`Open the batch started ${started}`}
+                    className={rowLink('end')}
+                  >
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="font-display font-bold">
+                        Batch of <time dateTime={b.created_at}>{started}</time>
                       </span>
-                      <Chip tone={filed ? 'tag' : 'open'}>{filed ? 'Filed' : 'Open'}</Chip>
+                      <span className="text-sm text-ink-alt">{b.organization}</span>
+                      <span className="font-mono text-[0.78rem] text-muted">
+                        {filed
+                          ? `${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'} filed`
+                          : `${String(b.entries)} ${b.entries === 1 ? 'account' : 'accounts'} · ${String(b.entries - b.filed)} waiting · ${String(b.filed)} filed`}
+                      </span>
                     </span>
-                    <span className="text-sm text-ink-alt">{b.organization}</span>
-                    <span className="font-mono text-sm">
-                      {filed
-                        ? `${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'} filed`
-                        : `${String(b.entries)} ${b.entries === 1 ? 'account' : 'accounts'} · ${String(b.entries - b.filed)} waiting · ${String(b.filed)} filed`}
-                    </span>
-                  </div>
-                  <div className="shrink-0">
-                    <Button asChild variant="secondary">
-                      <Link
-                        to="/intake/$id"
-                        params={{ id: String(b.id) }}
-                        aria-label={`Open the batch started ${started}`}
-                      >
-                        Open
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            );
-          })}
-        </ul>
+                    <Chip tone={filed ? 'confirmed' : 'open'}>{filed ? 'Filed' : 'Open'}</Chip>
+                  </Link>
+                </RowItem>
+              );
+            })}
+          </Rows>
+        ) : null}
       </section>
     </StaffPage>
   );

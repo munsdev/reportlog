@@ -50,7 +50,7 @@ export function UpdatesPage() {
     <StaffPage
       title="Updates"
       width="prose"
-      lede="Whether a newer version of ReportLog is available, and a button to install it. The server does the work itself; nobody needs to log in to it."
+      lede="The software this site runs, and new versions of it."
     >
       {q.isPending ? <p role="status">Loading…</p> : null}
       {q.isError && !d ? <Alert tone="serious">{q.error.message}</Alert> : null}

@@ -107,43 +107,44 @@ function Editor({ list }: { list: ListAdminDetail }) {
   return (
     <StaffPage
       title={list.title}
-      lede={
-        <>
-          The form is at{' '}
-          <a href={`/list/${list.slug}`} className="font-mono underline">
-            /list/{list.slug}
-          </a>
-          . {scheduleSentence(list)}{' '}
-          {list.requires_email
-            ? 'It can collect something personal, so it asks for an email address from anybody who writes something.'
-            : 'Nothing it asks is personal, so it asks nobody for an email address.'}
-        </>
-      }
+      lede={`${scheduleSentence(list)} ${
+        list.requires_email
+          ? 'It can collect something personal, so it asks for an email address from anybody who writes something.'
+          : 'Nothing it asks is personal, so it asks nobody for an email address.'
+      }`}
       actions={
-        <>
-          {/* A plain link, as the logbook's is: the server sends it as a download. */}
-          <a
-            href={`/api/admin/lists/${String(list.id)}/file`}
-            download={`list-${list.slug}.json`}
-            className={buttonVariants({ variant: 'secondary' })}
-          >
-            Download as file
-          </a>
-          <Button asChild variant="secondary">
-            <Link to="/lists">All lists</Link>
-          </Button>
-        </>
+        // A plain link, as the logbook's is: the server sends it as a download.
+        <a
+          href={`/api/admin/lists/${String(list.id)}/file`}
+          download={`list-${list.slug}.json`}
+          className={buttonVariants({ variant: 'secondary' })}
+        >
+          Download as file
+        </a>
       }
     >
-      <Settings list={list} onSaved={refresh} />
-      <CoverPanel
-        kind="list"
-        cover={list.cover}
-        save={async (cover) => {
-          await call(updateList, { params: { id: list.id }, body: { cover } });
-          await refresh();
-        }}
-      />
+      <p>
+        <Link to="/lists" className="text-sm font-semibold underline">
+          ← All lists
+        </Link>
+      </p>
+      <p className="font-mono text-sm break-all text-muted">
+        The form is at{' '}
+        <a href={`/list/${list.slug}`} className="underline">
+          /list/{list.slug}
+        </a>
+      </p>
+      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+        <Settings list={list} onSaved={refresh} />
+        <CoverPanel
+          kind="list"
+          cover={list.cover}
+          save={async (cover) => {
+            await call(updateList, { params: { id: list.id }, body: { cover } });
+            await refresh();
+          }}
+        />
+      </div>
       <Questions key={list.fields.map((f) => f.id).join('-')} list={list} onSaved={refresh} />
       <Counts list={list} />
       <Remove list={list} />
@@ -734,8 +735,8 @@ function Counts({ list }: { list: ListAdminDetail }) {
       </CardHeader>
       <CardContent className="space-y-3">
         <p>
-          {String(totals.received)} received, {String(totals.approved)} approved,{' '}
-          {String(totals.rejected)} rejected.
+          {String(totals.received)} {totals.received === 1 ? 'entry' : 'entries'} ·{' '}
+          {String(totals.approved)} approved · {String(totals.rejected)} rejected.
           {totals.last_entry
             ? ` The last arrived ${new Date(totals.last_entry).toLocaleString()}.`
             : ''}
@@ -774,25 +775,30 @@ function Remove({ list }: { list: ListAdminDetail }) {
   });
   if (list.summary.totals.received > 0) {
     return (
-      <p className="text-sm text-ink-alt">
-        This list has taken entries, so it cannot be deleted: that would destroy the links it keeps
-        and break every deletion link already emailed. Untick “Taking entries” to close it instead.
-      </p>
+      <Card variant="danger" heading="Delete this list">
+        <p className="text-sm text-ink-alt">
+          This list has taken entries, so it cannot be deleted: that would destroy the links it
+          keeps and break every deletion link already emailed. Untick “Taking entries” to close it
+          instead.
+        </p>
+      </Card>
     );
   }
   return (
-    <div className="space-y-2">
-      <Button
-        type="button"
-        variant="secondary"
-        disabled={remove.isPending}
-        onClick={() => {
-          remove.mutate();
-        }}
-      >
-        Delete this list
-      </Button>
-      <FieldError>{remove.error?.message}</FieldError>
-    </div>
+    <Card variant="danger" heading="Delete this list">
+      <div className="space-y-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={remove.isPending}
+          onClick={() => {
+            remove.mutate();
+          }}
+        >
+          Delete this list
+        </Button>
+        <FieldError>{remove.error?.message}</FieldError>
+      </div>
+    </Card>
   );
 }

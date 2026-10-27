@@ -73,7 +73,7 @@ export function TransparencyLogPage() {
   return (
     <StaffPage
       title="Transparency log"
-      lede="Once a day the newest report of every logbook is timestamped by an outside authority and published to a public repository. Anybody can then check that nothing filed before that day was changed."
+      lede="The daily values that let anyone check nothing was quietly changed."
       width="prose"
     >
       {query.isPending ? <p role="status">Reading the anchor…</p> : null}
@@ -94,31 +94,23 @@ export function TransparencyLogPage() {
               <p>Nothing has been anchored yet.</p>
             ) : (
               <ScrollX label="Anchors, newest first">
-                <table className="w-full text-left text-sm">
+                <table className="data-table">
                   <caption className="sr-only">Anchors, newest first</caption>
                   <thead>
-                    <tr className="border-b border-ink-alt">
-                      <th scope="col" className="py-2 pr-4">
-                        Date
-                      </th>
-                      <th scope="col" className="py-2 pr-4">
-                        Chain heads
-                      </th>
-                      <th scope="col" className="py-2 pr-4">
-                        Digest
-                      </th>
-                      <th scope="col" className="py-2">
-                        In the log
-                      </th>
+                    <tr>
+                      <th scope="col">Date</th>
+                      <th scope="col">Chain heads</th>
+                      <th scope="col">Digest</th>
+                      <th scope="col">In the log</th>
                     </tr>
                   </thead>
                   <tbody>
                     {query.data.anchors.map((a) => (
-                      <tr key={a.date} className="border-b border-line align-top last:border-0">
-                        <td className="py-2 pr-4 font-mono whitespace-nowrap">{a.date}</td>
-                        <td className="py-2 pr-4 font-mono">{String(a.logbooks)}</td>
-                        <td className="py-2 pr-4 font-mono break-all">{a.root_chain_hash}</td>
-                        <td className="py-2 font-mono break-all">
+                      <tr key={a.date} className="align-top">
+                        <td className="font-mono whitespace-nowrap">{a.date}</td>
+                        <td className="font-mono">{String(a.logbooks)}</td>
+                        <td className="font-mono break-all">{a.root_chain_hash}</td>
+                        <td className="font-mono break-all">
                           {a.public_log_ref ?? (
                             <span className="font-sans text-ink-alt">Not in the log yet</span>
                           )}

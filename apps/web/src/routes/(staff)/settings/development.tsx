@@ -22,7 +22,7 @@ function DevelopmentPage() {
       <StaffPage
         title="Development notice"
         width="prose"
-        lede="A note in the corner of every page saying the site is being worked on and may change while somebody uses it."
+        lede="A small notice for testing periods."
       >
         <p>
           Each new release turns it on for a few hours by itself, so testers know why something just

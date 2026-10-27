@@ -74,10 +74,7 @@ export function wordingSummary(copy: SiteEditor['copy']) {
 function SettingsHome() {
   return (
     <SettingsFrame>
-      <StaffPage
-        title="Site settings"
-        lede="Everything set here applies to the whole site. Each panel shows what is set now; open one to change it. None of it is part of any report: renaming the site or changing its look never changes how a report checks out."
-      >
+      <StaffPage title="Site settings" lede="The switches that affect the whole site.">
         <div className="layout-split grid items-start gap-6 lg:grid-cols-2">
           <AcceptingReportsPanel />
           <PublishingPanel />

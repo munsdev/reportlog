@@ -31,8 +31,8 @@ export function FeedbackQueue() {
 
   return (
     <StaffPage
-      title="Feedback"
-      lede="Every issue testers have filed. Anything still open is in the weekly email until somebody moves it."
+      title="Feedback queue"
+      lede="Everything testers and staff have filed. Anything still open is in the weekly email until somebody moves it."
     >
       {/* Pressed buttons with counts, as the moderation queue filters. */}
       <div role="group" aria-label="Show" className="flex flex-wrap gap-2">

@@ -35,11 +35,7 @@ export function Testers() {
   });
 
   return (
-    <StaffPage
-      title="Testers"
-      width="prose"
-      lede="Testers can file feedback and read what other testers filed. That is all the flag does: it shows no report and grants no role."
-    >
+    <StaffPage title="Testers" width="prose" lede="Testers can file feedback from any page.">
       <p className="text-ink-alt">
         Testers see each other’s issues under a masked handle (the first letters of an address),
         never the address itself.
@@ -81,7 +77,7 @@ export function Testers() {
       </Card>
 
       <section className="flex flex-col gap-3" aria-labelledby="testers-now">
-        <h2 id="testers-now" className="font-display text-2xl font-bold">
+        <h2 id="testers-now" className="font-display text-xl font-bold">
           Testers now
         </h2>
         {list.isPending ? <p role="status">Loading…</p> : null}

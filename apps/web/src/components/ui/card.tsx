@@ -4,6 +4,7 @@
  *
  *   raised  (default) the surface, an edge and the theme's shadow. Holds a
  *           decision, a setting, a report.
+ *   danger  as raised, with the serious colour on its edge: delete, erase.
  *   quiet   the page's second ground, no edge. Help, side information.
  *   deep    the deep surface. A notice that must not be missed.
  *   plain   no fill, a rule on top. A section of a long settings page.
@@ -24,6 +25,8 @@ export const cardVariants = cva('panel flex flex-col rounded-card', {
   variants: {
     variant: {
       raised: 'border-(length:--rl-border-main) border-ink-alt bg-surface text-ink shadow-raised',
+      /** Something that cannot be undone: the serious colour on the edge only. */
+      danger: 'border-(length:--rl-border-main) border-serious bg-surface text-ink shadow-raised',
       quiet: 'bg-paper-alt text-ink',
       deep: 'bg-deep text-on-deep',
       plain: 'rounded-none border-t border-ink-alt text-ink',
@@ -49,11 +52,13 @@ export function Card({
   ...props
 }: CardProps) {
   const v = variant ?? 'raised';
+  // A danger panel wears the raised panel's theme heading; only its edge differs.
+  const themed = v === 'danger' ? 'raised' : v;
   const headingId = useId();
   if (heading === undefined) {
     return (
       <div
-        data-variant={v}
+        data-variant={themed}
         className={cn(cardVariants({ variant: v }), 'gap-4 p-5', className)}
         {...props}
       >
@@ -65,7 +70,7 @@ export function Card({
   return (
     <section
       aria-labelledby={headingId}
-      data-variant={v}
+      data-variant={themed}
       className={cn(cardVariants({ variant: v }), 'overflow-hidden', className)}
       {...props}
     >

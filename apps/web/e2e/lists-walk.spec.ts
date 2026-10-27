@@ -178,7 +178,7 @@ test('an administrator finds what somebody wrote, and after they erase it, finds
   ).toBeVisible();
   const search = async (q: string) => {
     await page.getByRole('searchbox', { name: 'Look for' }).fill(q);
-    await page.getByRole('button', { name: 'Search' }).click();
+    await page.getByRole('button', { name: 'Find' }).click();
   };
   await search(email);
   const found = page.getByRole('list', { name: 'Entries' }).getByRole('listitem');

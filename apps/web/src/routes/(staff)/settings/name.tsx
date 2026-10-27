@@ -31,7 +31,7 @@ export const Route = createFileRoute('/(staff)/settings/name')({
       <StaffPage
         title="Name"
         width="prose"
-        lede="What this site calls itself in its header, its emails and its browser tab."
+        lede="How the name is drawn in the header and the footer."
       >
         <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
       </StaffPage>

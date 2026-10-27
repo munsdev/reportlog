@@ -97,7 +97,7 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
     <UnsavedMaps ask={ask}>
       <StaffPage
         title="Maps"
-        lede="Where published reports came from, as counts. Make as many maps as you want. Each is off until you turn it on, and an area with fewer reports than its threshold is never published with its number."
+        lede="Maps count published reports by place. Small numbers are never shown exactly."
         // One "Make" button at a time: an empty page carries it in its empty state.
         actions={making || none ? null : make}
       >
@@ -127,7 +127,7 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
               if (!here.length) return null;
               return (
                 <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
-                  <h2 className="font-display text-2xl font-bold">{slot.label}</h2>
+                  <h2 className="font-display text-xl font-bold">{slot.label}</h2>
                   <p className="text-sm text-muted">{slot.description}</p>
                   <ul className="flex flex-col gap-3">
                     {here.map((m, i) => (

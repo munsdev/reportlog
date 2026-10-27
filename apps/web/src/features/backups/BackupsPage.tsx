@@ -155,7 +155,7 @@ export function BackupsPage() {
     <StaffPage
       title="Backups and exports"
       width="prose"
-      lede="A copy of the whole archive, made on this server and downloaded straight from it. Only the owner can see this page."
+      lede="Copies of everything, for the owner only."
     >
       {query.isPending ? <p role="status">Loading…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}

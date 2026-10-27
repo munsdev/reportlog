@@ -39,7 +39,7 @@ export function FeedbackPage({ from }: { from?: string | undefined }) {
   return (
     <StaffPage
       title="Feedback"
-      lede="Tell us what is broken, what is confusing, or what would help. This is about the site itself, not about any report."
+      lede="Tell the people building this what is broken or confusing. This is about the site itself, not about any report."
     >
       <FileForm from={from} />
       <Issues />
@@ -194,7 +194,7 @@ function Issues() {
   }
   return (
     <section className="flex flex-col gap-3" aria-labelledby="filed">
-      <h2 id="filed" className="font-display text-2xl font-bold">
+      <h2 id="filed" className="font-display text-xl font-bold">
         What has been filed
       </h2>
       <p className="text-sm text-ink-alt">

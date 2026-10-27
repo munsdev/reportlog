@@ -51,7 +51,7 @@ export function EvidenceRequests({
       {...(bare ? {} : { 'aria-labelledby': 'evidence-heading' })}
     >
       {bare ? null : (
-        <h2 id="evidence-heading" className="font-display text-2xl font-bold">
+        <h2 id="evidence-heading" className="font-display text-xl font-bold">
           Asking for evidence
         </h2>
       )}

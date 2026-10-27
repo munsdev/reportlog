@@ -121,7 +121,7 @@ export const Route = createFileRoute('/(staff)/settings/words')({
     <SettingsFrame>
       <StaffPage
         title="Wording"
-        lede="What this archive is for, in your own words. Each piece shows what it says now; open one to change it and see it where it sits."
+        lede="Every piece of text the software ships, grouped by where it appears."
       >
         <WithEditor>{(state) => <WordingList slots={state.copy} />}</WithEditor>
       </StaffPage>

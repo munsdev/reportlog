@@ -66,20 +66,20 @@ export function StartingPointsPage() {
     <StaffPage
       title="Starting points"
       width="prose"
-      lede="The bundles of settings the setup wizard offered, for starting again or adding another kind of logbook."
+      lede="A starting point fills in a logbook, lists and wording you can then change."
     >
-      <p>
-        Each one lists what it changes: page wording, whether reports are published, whether files
-        are taken, and most also make a <strong>draft</strong> logbook. None touches the legal
-        notices, and a draft takes no reports until you launch it yourself, under Logbooks.
-        Everything one sets stays yours to change afterwards.
-      </p>
       {applied ? (
         <p className="text-sm text-ink-alt">
           This site was last started from “{appliedLabel ?? applied.id}”, on {when(applied.at)}.
         </p>
       ) : null}
 
+      <p>
+        Each one lists what it changes: page wording, whether reports are published, whether files
+        are taken, and most also make a <strong>draft</strong> logbook. None touches the legal
+        notices, and a draft takes no reports until you launch it yourself, under Logbooks.
+        Everything one sets stays yours to change afterwards.
+      </p>
       {apply.data ? (
         <Alert tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
           {apply.data.logbook ? (

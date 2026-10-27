@@ -29,8 +29,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
 import { Chip } from '@/components/ui/chip.tsx';
+import { RowItem, Rows, rowLink } from '@/components/ui/rows.tsx';
 import { Empty } from '@/components/ui/empty.tsx';
 import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
@@ -67,7 +67,7 @@ export function OrganizationsPage() {
   return (
     <StaffPage
       title="Organizations"
-      lede="Groups that file reports under their own name: their managers and coordinators, their invitations, and how they appear in the public directory."
+      lede="Groups whose members file through their own links and see their reports first."
     >
       <ErrorText error={orgs.error} />
       {orgs.isPending ? <p role="status">Reading the organizations…</p> : null}
@@ -85,22 +85,20 @@ export function OrganizationsPage() {
               `${String(list.length)} ${list.length === 1 ? 'organization' : 'organizations'}`,
             ]}
           />
-          <ul className="flex flex-col gap-3">
+          <Rows label="Organizations">
             {list.map((o) => (
-              <li key={o.id}>
-                <Card className="flex-row flex-wrap items-center gap-3 py-3">
-                  <Link
-                    to="/access/orgs/$id"
-                    params={{ id: String(o.id) }}
-                    className="min-h-11 flex-1 content-center font-display text-lg font-bold underline"
-                  >
-                    {o.name}
-                  </Link>
-                  {o.role ? <Chip tone="tag">You are its {o.role}</Chip> : null}
-                </Card>
-              </li>
+              <RowItem key={o.id}>
+                <Link
+                  to="/access/orgs/$id"
+                  params={{ id: String(o.id) }}
+                  className={rowLink('end')}
+                >
+                  <span className="font-display font-bold">{o.name}</span>
+                  {o.role ? <Chip tone="tag">You are its {o.role}</Chip> : <span />}
+                </Link>
+              </RowItem>
             ))}
-          </ul>
+          </Rows>
         </>
       ) : null}
       {me.data.grantsAccess && (

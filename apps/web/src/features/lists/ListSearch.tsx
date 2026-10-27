@@ -12,7 +12,6 @@
 import { searchListEntries } from '@reportlog/contracts';
 import type { FoundListEntry, ListSearchResult } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
@@ -32,12 +31,7 @@ export function ListSearch() {
   return (
     <StaffPage
       title="Find somebody's entries"
-      lede="For when somebody asks what this site holds about them. This looks through what people wrote on every list, and the email addresses they gave. Anything already deleted, by the timer or by its sender, is not found, because it is not kept."
-      actions={
-        <Button asChild variant="secondary">
-          <Link to="/lists">All lists</Link>
-        </Button>
-      }
+      lede="For answering a request to see or delete what somebody sent. It looks through what people wrote on every list and the email addresses they gave. Anything already deleted is not found, because it is not kept."
     >
       <form
         className="space-y-3"
@@ -50,6 +44,7 @@ export function ListSearch() {
           <Label>Look for</Label>
           <Input
             type="search"
+            placeholder="A name, an email address, or words they wrote"
             value={q}
             maxLength={200}
             onChange={(e) => {
@@ -62,7 +57,7 @@ export function ListSearch() {
           </FieldDescription>
         </Field>
         <Button type="submit" disabled={search.isPending}>
-          Search
+          Find
         </Button>
       </form>
       {search.isPending ? <p role="status">Looking…</p> : null}
