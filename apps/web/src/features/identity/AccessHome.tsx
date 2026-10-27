@@ -22,20 +22,25 @@ import {
 import type { HeldRoleName } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useId, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { call } from '../../lib/api.ts';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Dl } from '../../mockup/Dl.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Saved } from '../../mockup/Saved.tsx';
+import { Switch } from '../../mockup/Switch.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
+import { TextField } from '../../mockup/Field.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { DeleteAccount } from './DeleteAccount.tsx';
 import { desksFor } from './desks.ts';
-import { ROLE_EXPLAINED, ROLE_LABELS, rolesLabel, useIdentityChanged, useMe } from './session.ts';
+import { ROLE_LABELS, rolesLabel, useIdentityChanged, useMe } from './session.ts';
 import type { SignedInMe } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInPrompt } from './SignInPrompt.tsx';
-import { Done, ErrorText, Panel, TextField } from './ui.tsx';
-import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 export function AccessHome() {
   const me = useMe();
@@ -64,15 +69,9 @@ export function AccessHome() {
         )}
         {user.roles.includes('owner') && <ResetSecondFactor />}
         {/* An anchor of its own: the staff sidebar links straight here. */}
-        {hasAdminAuthority(user.roles) && (
-          <div id="site-password" className="scroll-mt-24">
-            <SitePassword />
-          </div>
-        )}
+        {hasAdminAuthority(user.roles) && <SitePassword />}
         {/* An anchor of its own: "Delete your account" sends the owner here. */}
-        <div id="owner-seat" className="scroll-mt-24">
-          <OwnerSeat me={user} />
-        </div>
+        <OwnerSeat me={user} />
         <DeleteAccount me={user} />
       </StaffPage>
     </SecondFactorGate>
@@ -80,98 +79,68 @@ export function AccessHome() {
 }
 
 function YourAccount({ me }: { me: SignedInMe }) {
+  const desks = me.teamMember ? desksFor(me.desks, me) : [];
+  const items: [ReactNode, ReactNode][] = [
+    ['Signed in as', me.email],
+    ['Roles', rolesLabel(me.heldRoles)],
+  ];
+  if (me.memberships.length > 0) {
+    items.push([
+      'Organizations',
+      me.memberships.map((m, i) => (
+        <span key={m.organization_id}>
+          {i > 0 ? ', ' : ''}
+          {m.role === 'manager' ? (
+            <Link to="/access/orgs/$id" params={{ id: String(m.organization_id) }}>
+              {m.name}
+            </Link>
+          ) : (
+            m.name
+          )}{' '}
+          ({m.role === 'manager' ? 'manager' : 'coordinator'})
+        </span>
+      )),
+    ]);
+  }
+  if (me.secondFactor === 'done' || me.secondFactor === 'optional') {
+    items.push([
+      'Second factor',
+      <>
+        {me.secondFactor === 'done'
+          ? 'Asked for when you sign in · '
+          : 'Optional for journalists, and we encourage it · '}
+        <Link to="/access/security">Signing in</Link>
+      </>,
+    ]);
+  }
+  if (me.tester) items.push(['Tester', 'You can open the feedback tracker.']);
+  if (me.teamMember) {
+    items.push([
+      'The team',
+      'You are on the team. That opens the team’s guides; it opens no report.',
+    ]);
+    if (desks.length > 0) {
+      items.push([
+        'Your desks',
+        desks.map((d, i) => (
+          <span key={d.id}>
+            {i > 0 ? '; ' : ''}
+            {d.label}
+            {d.start && (
+              <>
+                {': start at '}
+                <Link to={d.start.to}>{d.start.label}</Link>
+              </>
+            )}
+          </span>
+        )),
+      ]);
+    }
+  }
   return (
     <Panel title="You">
-      <p>
-        Signed in as <strong>{me.email}</strong>.
-      </p>
-      {me.heldRoles.length === 0 ? (
-        <p>
-          Role: <strong>{ROLE_LABELS.user}</strong>. {ROLE_EXPLAINED.user}
-        </p>
-      ) : (
-        <>
-          <p>{me.heldRoles.length > 1 ? 'Roles:' : 'Role:'}</p>
-          <ul className="list-disc space-y-1 pl-6">
-            {me.heldRoles.map((r) => (
-              <li key={r}>
-                <strong>{ROLE_LABELS[r]}</strong>. {ROLE_EXPLAINED[r]}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      {me.memberships.length > 0 && (
-        <ul className="list-disc space-y-1 pl-6">
-          {me.memberships.map((m) => (
-            <li key={m.organization_id}>
-              {m.role === 'manager' ? (
-                <Link
-                  to="/access/orgs/$id"
-                  params={{ id: String(m.organization_id) }}
-                  className="underline"
-                >
-                  {m.name}
-                </Link>
-              ) : (
-                m.name
-              )}{' '}
-              ({m.role === 'manager' ? 'manager' : 'coordinator'})
-            </li>
-          ))}
-        </ul>
-      )}
-      {me.secondFactor === 'done' && (
-        <p>
-          Your role asks for a second factor when you sign in.{' '}
-          <Link to="/access/security" className="underline">
-            Your authenticator app, passkeys and recovery codes
-          </Link>
-          .
-        </p>
-      )}
-      {me.secondFactor === 'optional' && (
-        <p>
-          A second factor is optional for journalists, and we encourage it.{' '}
-          <Link to="/access/security" className="underline">
-            Set one up on Account and security
-          </Link>
-          .
-        </p>
-      )}
-      {me.tester && <p>You are a tester: you can open the feedback tracker.</p>}
-      {me.teamMember && <TeamDesks me={me} />}
+      <Dl items={items} />
     </Panel>
-  );
-}
-
-/** Being on the team, and where each of your desks suggests you start. Display only. */
-function TeamDesks({ me }: { me: SignedInMe }) {
-  const desks = desksFor(me.desks, me);
-  return (
-    <div className="space-y-2">
-      <p>You are on the team. That opens the team’s guides; it opens no report.</p>
-      {desks.length > 0 && (
-        <>
-          <h3 className="font-semibold">Your desks</h3>
-          <ul className="list-disc space-y-1 pl-6">
-            {desks.map((d) => (
-              <li key={d.id}>
-                {d.label}
-                {d.start && (
-                  <>
-                    {': start at '}
-                    <Link to={d.start.to} className="underline">
-                      {d.start.label}
-                    </Link>
-                  </>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -192,7 +161,6 @@ const peopleQuery = {
 function GrantRole({ me }: { me: SignedInMe }) {
   const client = useQueryClient();
   const changed = useIdentityChanged();
-  const staffId = useId();
   const people = useQuery(peopleQuery);
   const [email, setEmail] = useState('');
   // null follows what the person holds now; a list is what has been ticked.
@@ -225,12 +193,7 @@ function GrantRole({ me }: { me: SignedInMe }) {
 
   return (
     <Panel title="Give somebody a role">
-      <p className="text-ink-alt">
-        A person can hold more than one staff role. They do not need an account yet: a role waits
-        for them and is theirs the first time they sign in. To take a role away, untick it.
-      </p>
       <form
-        className="flex flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           save.mutate();
@@ -247,62 +210,46 @@ function GrantRole({ me }: { me: SignedInMe }) {
             save.reset();
           }}
         />
-        <fieldset className="flex flex-col gap-3" aria-labelledby={staffId}>
-          <legend id={staffId} className="label-face text-xs">
-            Staff roles
-          </legend>
+        <Choices>
           {STAFF_CHOICES.map((r) => {
-            const box = `${staffId}-${r}`;
             // A journalist holds no staff role, and nobody changes their own roles.
             const allowed = canGrantSystemRole(me.roles, r) && !isJournalist && !isMe;
             return (
-              <div key={r} className="flex items-start gap-3">
-                <Checkbox
-                  id={box}
-                  checked={wanted.includes(r)}
-                  disabled={!allowed}
-                  onCheckedChange={(on) => {
-                    setPicked(on === true ? [...wanted, r] : wanted.filter((x) => x !== r));
-                    save.reset();
-                  }}
-                />
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <Label htmlFor={box} className="font-normal">
-                    {ROLE_LABELS[r]}
-                  </Label>
-                  <span className="text-sm text-ink-alt">{ROLE_EXPLAINED[r]}</span>
-                </div>
-              </div>
+              <Choice
+                multi
+                key={r}
+                name="roles"
+                checked={wanted.includes(r)}
+                disabled={!allowed}
+                onChange={(e) => {
+                  setPicked(e.target.checked ? [...wanted, r] : wanted.filter((x) => x !== r));
+                  save.reset();
+                }}
+              >
+                {ROLE_LABELS[r]}
+              </Choice>
             );
           })}
-        </fieldset>
-        <div className="flex flex-col gap-1">
-          <p className="label-face text-xs">Journalist</p>
-          <p className="text-sm text-ink-alt">
-            {isJournalist ? 'This person is a journalist. ' : ''}
-            Only by approving an access request. A journalist cannot also hold a staff role.
-          </p>
-        </div>
-        {isMe && <p className="text-sm text-ink-alt">You cannot change your own roles.</p>}
-        <div>
-          <Button
-            type="submit"
-            busy={save.isPending}
-            busyLabel="Saving…"
-            disabled={!changes.length}
-          >
-            Save
-          </Button>
-        </div>
+        </Choices>
+        <p className="m">
+          {isMe
+            ? 'You cannot change your own roles.'
+            : isJournalist
+              ? 'This person is a journalist, and a journalist cannot also hold a staff role.'
+              : 'A role waits for somebody without an account and is theirs when they first sign in. To take a role away, untick it. A journalist role comes only from approving a request.'}
+        </p>
+        <ErrorLine error={save.error} />
+        {save.isSuccess && (
+          <Saved>
+            {save.data.length
+              ? `${typed} now holds: ${rolesLabel(save.data)}.`
+              : `${typed} now holds no role.`}
+          </Saved>
+        )}
+        <Btn kind="ink" type="submit" disabled={!changes.length || save.isPending}>
+          {save.isPending ? 'Saving…' : 'Give the role'}
+        </Btn>
       </form>
-      <ErrorText error={save.error} />
-      {save.isSuccess && (
-        <Done>
-          {save.data.length
-            ? `${typed} now holds: ${rolesLabel(save.data)}.`
-            : `${typed} now holds no role.`}
-        </Done>
-      )}
     </Panel>
   );
 }
@@ -311,30 +258,20 @@ function People() {
   const people = useQuery(peopleQuery);
   return (
     <Panel title="People with a role">
-      <ErrorText error={people.error} />
+      <ErrorLine error={people.error} />
       {people.data?.people.length === 0 && <p>Nobody holds a role yet.</p>}
       {people.data && people.data.people.length > 0 && (
-        <ScrollX label="People with a role">
-          <table className="data-table">
-            <caption className="sr-only">People with a role</caption>
-            <thead>
-              <tr>
-                <th scope="col">Address</th>
-                <th scope="col">Role</th>
-                <th scope="col">Organizations</th>
-              </tr>
-            </thead>
-            <tbody>
-              {people.data.people.map((p) => (
-                <tr key={p.email}>
-                  <td className="break-all">{p.email}</td>
-                  <td>{rolesLabel(p.roles)}</td>
-                  <td>{p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </ScrollX>
+        <Tbl
+          cols={['Address', 'Role', 'Organizations']}
+          rows={people.data.people.map((p) => ({
+            key: p.email,
+            cells: [
+              p.email,
+              rolesLabel(p.roles),
+              p.organizations.map((o) => `${o.name} (${o.role})`).join(', '),
+            ],
+          }))}
+        />
       )}
     </Panel>
   );
@@ -380,29 +317,29 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
   });
 
   const o = owner.data;
-  if (!o) return <ErrorText error={owner.error} />;
+  if (!o) return <ErrorLine error={owner.error} />;
 
   if (o.awaitingMyAcceptance) {
     return (
-      <Panel title="You have been offered this deployment">
+      <Panel title="You have been offered this deployment" id="owner-seat">
         <p>
           The owner has offered to hand this deployment to you. If you accept, you become its owner:
           the one person who appoints administrators and can hand it on again. The current owner
           becomes an administrator.
         </p>
-        <ErrorText error={accept.error} />
+        <ErrorLine error={accept.error} />
         {accept.isSuccess ? (
-          <Done>You are now the owner.</Done>
+          <Saved>You are now the owner.</Saved>
         ) : (
-          <Button
-            type="button"
+          <Btn
+            kind="ink"
             disabled={accept.isPending}
             onClick={() => {
               accept.mutate();
             }}
           >
             Accept ownership
-          </Button>
+          </Btn>
         )}
       </Panel>
     );
@@ -410,7 +347,7 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
   if (!me.grantsAccess) return null;
 
   return (
-    <Panel title="The owner">
+    <Panel title="The owner" id="owner-seat">
       <p>
         {o.iAmOwner ? (
           'You own this deployment.'
@@ -421,33 +358,49 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
         )}
       </p>
       {o.pending && (
-        <div className="space-y-2">
+        <>
           <p>
             Offered to <strong>{o.pending.to}</strong>, waiting for them to accept, until{' '}
             {new Date(o.pending.expiresAt).toUTCString()}.
           </p>
           {o.iAmOwner && (
-            <Button
-              type="button"
-              variant="secondary"
+            <Btn
               onClick={() => {
                 cancel.mutate();
               }}
             >
               Withdraw the offer
-            </Button>
+            </Btn>
           )}
-        </div>
+        </>
+      )}
+      {o.iAmOwner && (
+        <ol className="steps">
+          <li>
+            <span>
+              <b>Hand it to</b>Their email address
+            </span>
+          </li>
+          <li>
+            <span>
+              <b>Email me a code</b>Confirms it is you
+            </span>
+          </li>
+          <li>
+            <span>
+              <b>Offer the deployment</b>They accept on their account
+            </span>
+          </li>
+        </ol>
       )}
       {o.iAmOwner && !codeSent && (
         <form
-          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             askCode.mutate();
           }}
         >
-          <p className="text-ink-alt">
+          <p className="m">
             Handing the deployment on cannot be undone once the other person accepts: only they can
             appoint administrators afterwards. We will email you a code that works for this address
             and no other.
@@ -461,15 +414,14 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
               setTo(e.target.value);
             }}
           />
-          <ErrorText error={askCode.error} />
-          <Button type="submit" variant="secondary" disabled={askCode.isPending}>
-            Email me a code
-          </Button>
+          <ErrorLine error={askCode.error} />
+          <Btn type="submit" disabled={askCode.isPending}>
+            Start the hand-over
+          </Btn>
         </form>
       )}
       {o.iAmOwner && codeSent && (
         <form
-          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             offer.mutate();
@@ -490,24 +442,23 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
               setCode(e.target.value.replace(/\D/g, ''));
             }}
           />
-          <ErrorText error={offer.error} />
-          <div className="flex flex-wrap gap-4">
-            <Button type="submit" variant="secondary" disabled={offer.isPending}>
+          <ErrorLine error={offer.error} />
+          <div className="acts">
+            <Btn kind="ink" type="submit" disabled={offer.isPending}>
               Offer the deployment
-            </Button>
-            <Button
-              type="button"
-              variant="quiet"
+            </Btn>
+            <Btn
+              kind="ghost"
               onClick={() => {
                 setCodeSent(false);
               }}
             >
               Change the address
-            </Button>
+            </Btn>
           </div>
         </form>
       )}
-      {offer.isSuccess && <Done>Offered. Nothing changes until they accept.</Done>}
+      {offer.isSuccess && <Saved>Offered. Nothing changes until they accept.</Saved>}
     </Panel>
   );
 }
@@ -530,29 +481,26 @@ function SitePassword() {
     },
   });
   const s = settings.data;
-  if (!s) return <ErrorText error={settings.error} />;
+  if (!s) return <ErrorLine error={settings.error} />;
   const on = s.enabled && s.hasPassword;
   return (
-    <Panel title="The site password">
-      <p>
-        {on
-          ? 'The site is behind a password. Only people who have it can see anything.'
-          : 'The site is open: there is no password in front of it.'}
-      </p>
+    <Panel title="The site password" id="site-password">
       {s.hasPassword && (
-        <Button
-          type="button"
-          variant="secondary"
+        <Switch
+          title="Password on"
+          sub={
+            on
+              ? 'Everyone but the open forms needs the password.'
+              : 'The site is open: there is no password in front of it.'
+          }
+          on={on}
           disabled={save.isPending}
-          onClick={() => {
-            save.mutate({ enabled: !s.enabled });
+          onChange={(next) => {
+            save.mutate({ enabled: next });
           }}
-        >
-          {s.enabled ? 'Turn the password off' : 'Turn the password back on'}
-        </Button>
+        />
       )}
       <form
-        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           save.mutate({ password, passwordConfirm: confirm });
@@ -560,7 +508,7 @@ function SitePassword() {
       >
         <TextField
           label={s.hasPassword ? 'New site password' : 'Site password'}
-          hint={`At least ${String(s.minPassword)} characters. Setting one turns the password on.`}
+          help={`At least ${String(s.minPassword)} characters. Setting one turns the password on.`}
           type="password"
           autoComplete="new-password"
           value={password}
@@ -577,10 +525,10 @@ function SitePassword() {
             setConfirm(e.target.value);
           }}
         />
-        <ErrorText error={save.error} />
-        <Button type="submit" variant="secondary" disabled={save.isPending || !password}>
+        <ErrorLine error={save.error} />
+        <Btn kind="ink" type="submit" disabled={save.isPending || !password}>
           Set the password
-        </Button>
+        </Btn>
       </form>
     </Panel>
   );
@@ -604,13 +552,7 @@ function ResetSecondFactor() {
   });
   return (
     <Panel title="Reset somebody's second factor">
-      <p>
-        For somebody who has lost their authenticator app, their passkeys and their recovery codes.
-        It signs them out everywhere; their next sign-in sets a new one up. Your own is reset only
-        on the server: <code>sudo reportlog reset-2fa</code> and your address.
-      </p>
       <form
-        className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault();
           setDoneFor(null);
@@ -618,7 +560,14 @@ function ResetSecondFactor() {
         }}
       >
         <TextField
-          label="Whose second factor to reset (an email address)"
+          label="Their email address"
+          help={
+            <>
+              For somebody who has lost their authenticator app, their passkeys and their recovery
+              codes. It signs them out everywhere; their next sign-in sets a new one up. Your own is
+              reset only on the server: <code>sudo reportlog reset-2fa</code> and your address.
+            </>
+          }
           type="email"
           required
           value={email}
@@ -626,13 +575,13 @@ function ResetSecondFactor() {
             setEmail(e.target.value);
           }}
         />
-        <ErrorText error={reset.error} />
+        <ErrorLine error={reset.error} />
         {doneFor && (
-          <Done>Reset. {doneFor} sets a new second factor up when they next sign in.</Done>
+          <Saved>Reset. {doneFor} sets a new second factor up when they next sign in.</Saved>
         )}
-        <Button type="submit" variant="secondary" disabled={reset.isPending}>
+        <Btn type="submit" disabled={reset.isPending}>
           Reset their second factor
-        </Button>
+        </Btn>
       </form>
     </Panel>
   );

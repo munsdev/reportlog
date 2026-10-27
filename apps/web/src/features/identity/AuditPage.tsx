@@ -10,28 +10,31 @@ import { listAudit } from '@reportlog/contracts';
 import type { ResponseOf } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Card } from '@/components/ui/card.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { Pagination } from '@/components/ui/pagination.tsx';
-import { CountLine } from '@/components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Pager } from '../../mockup/Pager.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
-import { ErrorText } from './ui.tsx';
-import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 type AuditEntry = ResponseOf<typeof listAudit>['entries'][number];
 
 const PER_PAGE = 25;
 
-/** One change as a sentence: who did what to whom. */
-export function auditSentence(e: AuditEntry): string {
+/** What a change did, without who did it (that is the table's own column). */
+export function auditWhat(e: AuditEntry): string {
   // A copy of the whole archive taken off the server (the owner's backups
   // and exports): nobody else is its subject.
-  if (e.action === 'download') return `${e.actor_email} downloaded ${e.detail}`;
-  const verb = e.action === 'grant' ? 'gave' : e.action === 'revoke' ? 'took from' : 'changed, for';
-  return `${e.actor_email} ${verb} ${e.subject_email}: ${e.detail}${e.organization ? ` (${e.organization})` : ''}`;
+  if (e.action === 'download') return `Downloaded ${e.detail}`;
+  const verb = e.action === 'grant' ? 'Gave' : e.action === 'revoke' ? 'Took from' : 'Changed, for';
+  return `${verb} ${e.subject_email}: ${e.detail}${e.organization ? ` (${e.organization})` : ''}`;
+}
+
+/** One change as a sentence: who did what to whom. */
+export function auditSentence(e: AuditEntry): string {
+  return `${e.actor_email} ${auditWhat(e).replace(/^./, (c) => c.toLowerCase())}`;
 }
 
 const when = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('T', ' ');
@@ -54,7 +57,7 @@ export function AuditPage() {
       title="Who granted what"
       lede="Every role and access change, and every copy of the archive taken off the server, newest first."
     >
-      <ErrorText error={audit.error} />
+      <ErrorLine error={audit.error} />
       {audit.isPending ? <p role="status">Reading the record…</p> : null}
       {audit.data && entries.length === 0 ? (
         <Empty title="Nothing recorded yet">
@@ -62,40 +65,20 @@ export function AuditPage() {
         </Empty>
       ) : null}
       {entries.length > 0 ? (
-        <Card>
-          <CountLine
-            parts={[
-              `${String(entries.length)} ${entries.length === 1 ? 'change' : 'changes'}`,
-              'newest first',
-              'times in UTC',
-            ]}
+        <>
+          <Tbl
+            cols={['When', 'Who', 'What changed']}
+            rows={shown.map((e, i) => ({
+              key: `${e.created_at}-${String(i)}`,
+              cells: [
+                <time dateTime={e.created_at}>{when(e.created_at)} UTC</time>,
+                e.actor_email,
+                auditWhat(e),
+              ],
+            }))}
           />
-          <ScrollX label="Changes to who may do what, newest first">
-            <table className="data-table">
-              <caption className="sr-only">Changes to who may do what, newest first</caption>
-              <thead>
-                <tr>
-                  <th scope="col">When</th>
-                  <th scope="col">What changed</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shown.map((e, i) => (
-                  <tr
-                    key={`${e.created_at}-${String(i)}`}
-                    className="border-b border-line align-top last:border-0"
-                  >
-                    <td className="font-mono whitespace-nowrap">
-                      <time dateTime={e.created_at}>{when(e.created_at)}</time>
-                    </td>
-                    <td className="break-words">{auditSentence(e)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollX>
-          <Pagination page={page} pages={pages} onPage={setPage} label="Pages of changes" />
-        </Card>
+          <Pager page={page} pages={pages} onPage={setPage} label="Pages of changes" />
+        </>
       ) : null}
     </StaffPage>
   );

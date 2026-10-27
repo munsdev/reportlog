@@ -14,19 +14,19 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { Select } from '@/components/ui/select.tsx';
-import { CountLine } from '@/components/ui/type.tsx';
 import { call } from '../../lib/api.ts';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { TextField } from '../../mockup/Field.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Saved } from '../../mockup/Saved.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { deskLabel } from './desks.ts';
 import { rolesLabel, useIdentityChanged } from './session.ts';
 import { StaffOnly } from './StaffOnly.tsx';
-import { Done, ErrorText, TextField } from './ui.tsx';
-import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 const PERIODS = [7, 30, 90, 365] as const;
 
@@ -39,7 +39,6 @@ export function RosterPage() {
 }
 
 function Roster() {
-  const periodId = useId();
   const [days, setDays] = useState<number>(30);
   const roster = useQuery({
     queryKey: ['identity', 'roster', days],
@@ -59,26 +58,25 @@ function Roster() {
     <StaffPage title="Who is doing what" lede="Who is on the team and what they have done lately.">
       <TeamForm key={editing.email} initial={editing} panelRef={formRef} />
 
-      <Card heading="People">
-        <div className="flex max-w-xs flex-col gap-1.5">
-          <label htmlFor={periodId} className="label-face text-xs text-ink">
-            Count reports from the last
+      <Panel title="People">
+        <div className="toolbar">
+          <label className="select">
+            Count reports from the last{' '}
+            <select
+              value={days}
+              onChange={(e) => {
+                setDays(Number(e.target.value));
+              }}
+            >
+              {PERIODS.map((d) => (
+                <option key={d} value={d}>
+                  {d === 365 ? 'year' : `${String(d)} days`}
+                </option>
+              ))}
+            </select>
           </label>
-          <Select
-            id={periodId}
-            value={days}
-            onChange={(e) => {
-              setDays(Number(e.target.value));
-            }}
-          >
-            {PERIODS.map((d) => (
-              <option key={d} value={d}>
-                {d === 365 ? 'year' : `${String(d)} days`}
-              </option>
-            ))}
-          </Select>
         </div>
-        <ErrorText error={roster.error} />
+        <ErrorLine error={roster.error} />
         {roster.isPending ? <p role="status">Reading the roster…</p> : null}
         {roster.data?.people.length === 0 && (
           <Empty title="Nobody yet">
@@ -86,84 +84,55 @@ function Roster() {
           </Empty>
         )}
         {roster.data && people.length > 0 && (
-          <>
-            <CountLine
-              parts={[
-                `${String(people.length)} ${people.length === 1 ? 'person' : 'people'}`,
-                'sorted by address',
-                `reports from the last ${roster.data.days === 365 ? 'year' : `${String(roster.data.days)} days`}`,
-              ]}
-            />
-            <ScrollX label="Who is doing what">
-              <table className="data-table">
-                <caption className="sr-only">
-                  The roster, counting reports from the last {String(roster.data.days)} days
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Address</th>
-                    <th scope="col">Role and flags</th>
-                    <th scope="col">Organizations</th>
-                    <th scope="col">Typed up by them</th>
-                    <th scope="col">For their organizations</th>
-                    <th scope="col">Last acted as staff</th>
-                    <th scope="col">
-                      <span className="sr-only">Change</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {people.map((p) => (
-                    <tr key={p.email} className="align-top">
-                      <td className="font-mono break-all">{p.email}</td>
-                      <td>
-                        {[
-                          p.roles.length ? rolesLabel(p.roles) : null,
-                          p.tester ? 'tester' : null,
-                          p.teamMember
-                            ? `team${p.desks.length ? ` (${p.desks.map((d) => deskLabel(d) ?? d).join(', ')})` : ''}`
-                            : null,
-                        ]
-                          .filter(Boolean)
-                          .join(', ')}
-                      </td>
-                      <td>{p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}</td>
-                      <td className="font-mono">{p.filedByThem}</td>
-                      <td className="font-mono">{p.filedForTheirOrganizations}</td>
-                      <td className="font-mono whitespace-nowrap">
-                        {p.lastStaffAction ? (
-                          <time dateTime={p.lastStaffAction}>{p.lastStaffAction.slice(0, 10)}</time>
-                        ) : (
-                          <span className="font-sans text-ink-alt">Never</span>
-                        )}
-                      </td>
-                      <td>
-                        <Button
-                          type="button"
-                          variant="quiet"
-                          aria-label={`Change the team and desks of ${p.email}`}
-                          onClick={() => {
-                            setEditing({ email: p.email, team: p.teamMember, desks: p.desks });
-                            formRef.current?.scrollIntoView({ block: 'start' });
-                          }}
-                        >
-                          Team and desks
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </ScrollX>
-          </>
+          <Tbl
+            cols={[
+              'Address',
+              'Role and flags',
+              'Organizations',
+              'Typed up by them',
+              'For their organizations',
+              'Last acted as staff',
+              '',
+            ]}
+            widths="1.4fr 1.2fr 1.2fr .8fr .8fr .8fr auto"
+            rows={people.map((p) => ({
+              key: p.email,
+              cells: [
+                p.email,
+                [
+                  p.roles.length ? rolesLabel(p.roles) : null,
+                  p.tester ? 'tester' : null,
+                  p.teamMember
+                    ? `team${p.desks.length ? ` (${p.desks.map((d) => deskLabel(d) ?? d).join(', ')})` : ''}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(', '),
+                p.organizations.map((o) => `${o.name} (${o.role})`).join(', '),
+                p.filedByThem,
+                p.filedForTheirOrganizations,
+                p.lastStaffAction ? (
+                  <time dateTime={p.lastStaffAction}>{p.lastStaffAction.slice(0, 10)}</time>
+                ) : (
+                  'Never'
+                ),
+                <Btn
+                  kind="ghost"
+                  aria-label={`Change the team and desks of ${p.email}`}
+                  onClick={() => {
+                    setEditing({ email: p.email, team: p.teamMember, desks: p.desks });
+                    formRef.current?.scrollIntoView({ block: 'start' });
+                  }}
+                >
+                  Team and desks
+                </Btn>,
+              ],
+            }))}
+          />
         )}
-      </Card>
-      <p>
-        The tester flag is given on the{' '}
-        <Link to="/feedback/testers" className="underline">
-          testers page
-        </Link>
-        .
+      </Panel>
+      <p className="m">
+        The tester flag is given on the <Link to="/feedback/testers">testers page</Link>.
       </p>
     </StaffPage>
   );
@@ -178,7 +147,6 @@ function TeamForm({
 }) {
   const client = useQueryClient();
   const changed = useIdentityChanged();
-  const teamId = useId();
   const [email, setEmail] = useState(initial.email);
   const [team, setTeam] = useState(initial.team);
   const [desks, setDesks] = useState<string[]>(initial.desks);
@@ -191,14 +159,8 @@ function TeamForm({
   });
   return (
     <section ref={panelRef}>
-      <Card heading="The team">
-        <p className="text-ink-alt">
-          Being on the team opens the team’s guides and nothing else: no report, no role. Desks say
-          what somebody does, so their account page can suggest where they start. A desk grants
-          nothing.
-        </p>
+      <Panel title="The team">
         <form
-          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
             save.mutate();
@@ -206,6 +168,7 @@ function TeamForm({
         >
           <TextField
             label="Their email address"
+            help="Being on the team opens the team’s guides and nothing else: no report, no role. Desks say what somebody does, so their account page can suggest where they start. A desk grants nothing."
             type="email"
             required
             value={email}
@@ -214,52 +177,54 @@ function TeamForm({
               save.reset();
             }}
           />
-          <CheckOption
-            id={teamId}
-            label="On the team"
-            checked={team}
-            onCheckedChange={(on) => {
-              setTeam(on === true);
-              save.reset();
-            }}
-          />
-          <fieldset className="space-y-2" disabled={!team}>
-            <legend className="label-face text-xs text-ink">Desks</legend>
-            {!team && (
-              <p className="text-sm text-muted">Somebody not on the team holds no desks.</p>
-            )}
-            <div className="grid gap-2 sm:grid-cols-2">
-              {DESKS.map((d) => (
-                <CheckOption
-                  key={d.id}
-                  label={d.label}
-                  disabled={!team}
-                  checked={team && desks.includes(d.id)}
-                  onCheckedChange={(on) => {
-                    setDesks((now) =>
-                      on === true ? [...now, d.id] : now.filter((x) => x !== d.id),
-                    );
-                    save.reset();
-                  }}
-                />
-              ))}
-            </div>
-          </fieldset>
-          <Button type="submit" disabled={save.isPending}>
+          <Choices>
+            <Choice
+              multi
+              name="team"
+              checked={team}
+              onChange={(e) => {
+                setTeam(e.target.checked);
+                save.reset();
+              }}
+            >
+              On the team
+            </Choice>
+          </Choices>
+          {!team && <p className="m">Somebody not on the team holds no desks.</p>}
+          <Choices>
+            {DESKS.map((d) => (
+              <Choice
+                multi
+                key={d.id}
+                name="desk"
+                disabled={!team}
+                checked={team && desks.includes(d.id)}
+                onChange={(e) => {
+                  setDesks((now) =>
+                    e.target.checked ? [...now, d.id] : now.filter((x) => x !== d.id),
+                  );
+                  save.reset();
+                }}
+              >
+                {d.label}
+              </Choice>
+            ))}
+          </Choices>
+          <ErrorLine error={save.error} />
+          {save.isSuccess && (
+            <Saved>
+              {save.data.unchanged
+                ? `Nothing changed for ${email.trim()}.`
+                : team
+                  ? `${email.trim()} is on the team${save.data.desks.length ? `: ${save.data.desks.map((d) => deskLabel(d) ?? d).join(', ')}` : ''}.`
+                  : `${email.trim()} is not on the team.`}
+            </Saved>
+          )}
+          <Btn kind="ink" type="submit" disabled={save.isPending}>
             Save
-          </Button>
+          </Btn>
         </form>
-        <ErrorText error={save.error} />
-        {save.isSuccess && (
-          <Done>
-            {save.data.unchanged
-              ? `Nothing changed for ${email.trim()}.`
-              : team
-                ? `${email.trim()} is on the team${save.data.desks.length ? `: ${save.data.desks.map((d) => deskLabel(d) ?? d).join(', ')}` : ''}.`
-                : `${email.trim()} is not on the team.`}
-          </Done>
-        )}
-      </Card>
+      </Panel>
     </section>
   );
 }
