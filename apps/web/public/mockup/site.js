@@ -409,6 +409,61 @@
   }
   window.elBgEditor = { create: bgEditor };
 
+  /* ---------- Floating look switcher ----------
+     Shown to administrators and the owner only: the app calls
+     window.elLookSwitcher(true) for them and (false) for everybody else. */
+  function buildLookSwitcher() {
+    if (document.getElementById("lookfab")) return;
+    var fabBtn = h("button", { type: "button", id: "lookfab", "class": "lookfab", "aria-expanded": "false", "aria-controls": "lookpanel" });
+    fabBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A5.6 5.6 0 0 0 22 9.8C22 5.5 17.5 2 12 2zM6.5 13a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg><span>Look</span>';
+    var panel = h("div", { id: "lookpanel", "class": "lookpanel", role: "dialog", "aria-label": "Try a look" });
+    var close = h("button", { type: "button", "class": "lp-x", text: "Close" });
+    panel.appendChild(h("div", { "class": "lp-head" }, [h("b", { text: "Try a look" }), close]));
+
+    function section(title, body) { var s = h("section", {}, [h("h3", { text: title }), body]); panel.appendChild(s); return s; }
+    var palGrid = h("div", { "class": "lp-grid" }), thmGrid = h("div", { "class": "lp-grid" }), motRow = h("div", { "class": "lp-row" });
+    Object.keys(PALETTES).forEach(function (id) {
+      var P = PALETTES[id];
+      var sw = h("span", { "class": "lp-sw", "aria-hidden": "true" }, [P.deep, P.paper, P.action, P.brand].map(function (c) { var i = h("i"); i.style.background = c; return i; }));
+      var b = h("button", { type: "button", "class": "lp-opt", "data-k": "palette", "data-v": id }, [sw, h("span", { "class": "nm", text: P.label }), h("span", { "class": "src", text: P.from })]);
+      palGrid.appendChild(b);
+    });
+    Object.keys(THEMES).forEach(function (id) {
+      var T = THEMES[id];
+      var aa = h("span", { "class": "lp-aa", text: T["case"] === "uppercase" ? "LOG IT!" : "Log it!", "aria-hidden": "true" });
+      aa.style.fontFamily = T.display; aa.style.fontWeight = T.weight; aa.style.fontStretch = T.stretch;
+      var b = h("button", { type: "button", "class": "lp-opt", "data-k": "theme", "data-v": id }, [aa, h("span", { "class": "nm", text: T.label }), h("span", { "class": "src", text: T.from })]);
+      thmGrid.appendChild(b);
+    });
+    [["on", "Parallax"], ["off", "Still"]].forEach(function (m) { motRow.appendChild(h("button", { type: "button", "class": "lp-chip", "data-k": "motion", "data-v": m[0], text: m[1] })); });
+    section("Palette", palGrid); section("Theme", thmGrid); var bgSec = section("Header background", bgEditor()); bgSec.id = "lp-bg"; section("Motion", motRow);
+    var reset = h("button", { type: "button", "class": "lp-chip", text: "Back to the Civic look" });
+    panel.appendChild(h("section", {}, [reset]));
+    panel.appendChild(h("p", { "class": "lp-note", text: "A mock-up tool for trying combinations. In the product these are the owner's choices in Settings › Look, and visitors don't see this button." }));
+
+    function sync() {
+      var cur = window.elLook.get();
+      panel.querySelectorAll("[data-k]").forEach(function (b) { b.setAttribute("aria-pressed", cur[b.dataset.k] === b.dataset.v ? "true" : "false"); });
+    }
+    panel.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-k]"); if (!b) return;
+      window.elLook.set(b.dataset.k, b.dataset.v); sync();
+    });
+    reset.addEventListener("click", function () { window.elLook.reset(); sync(); panel.querySelectorAll(".bge").forEach(function (b) { b.sync(); }); });
+    window.elOpenLook = function (toBg) { open(); if (toBg) { var sec = document.getElementById("lp-bg"); panel.scrollTop = sec.offsetTop - 56; } };
+    function open() { panel.setAttribute("open", ""); panel.querySelectorAll(".bge").forEach(function (b) { b.sync(); }); fabBtn.setAttribute("aria-expanded", "true"); sync(); var p = panel.querySelector('[aria-pressed="true"]') || close; p.focus(); }
+    function shut() { panel.removeAttribute("open"); fabBtn.setAttribute("aria-expanded", "false"); fabBtn.focus(); }
+    fabBtn.addEventListener("click", function () { panel.hasAttribute("open") ? shut() : open(); });
+    close.addEventListener("click", shut);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && panel.hasAttribute("open")) shut(); });
+    document.body.append(panel, fabBtn);
+  }
+  window.elLookSwitcher = function (on) {
+    var fab = document.getElementById("lookfab"), pnl = document.getElementById("lookpanel");
+    if (on) { if (!fab) buildLookSwitcher(); }
+    else { if (fab) fab.remove(); if (pnl) pnl.remove(); }
+  };
+
   /* Copy buttons */
   var toast = document.getElementById("toast");
   function say(msg) { if (!toast) return; toast.textContent = msg; toast.classList.add("show"); clearTimeout(say.t); say.t = setTimeout(function () { toast.classList.remove("show"); }, 1800); }

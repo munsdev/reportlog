@@ -1,4 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { Outlet, createRootRouteWithContext, useLocation } from '@tanstack/react-router';
 import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { FollowButton } from '../components/ui/follow-button.tsx';
@@ -33,8 +34,28 @@ function RootLayout() {
       <DevBadge />
       <FollowButton />
       <StepUpHost />
+      <LookSwitcher />
     </HeaderProgressProvider>
   );
+}
+
+/**
+ * The mock-up's floating look switcher (public/mockup/site.js), for an
+ * administrator or the owner only. Not on a door, which may not ask who is
+ * signed in.
+ */
+function LookSwitcher() {
+  return useGateMode() === 'door' ? null : <LookSwitcherFor />;
+}
+
+function LookSwitcherFor() {
+  const me = useMe();
+  const admin =
+    me.data?.signedIn === true && me.data.roles.some((r) => r === 'admin' || r === 'owner');
+  useEffect(() => {
+    window.elLookSwitcher?.(admin);
+  }, [admin]);
+  return null;
 }
 
 /**

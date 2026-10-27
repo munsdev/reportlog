@@ -26,6 +26,7 @@ declare module '@tanstack/react-router' {
 declare global {
   interface Window {
     elRefresh?: () => void;
+    elLookSwitcher?: (on: boolean) => void;
   }
 }
 router.subscribe('onResolved', () => {
