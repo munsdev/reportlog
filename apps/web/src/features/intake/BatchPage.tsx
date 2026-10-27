@@ -64,8 +64,8 @@ export function BatchPage({ id }: { id: number }) {
     return (
       <StaffPage area="Your organization" title="Not one of your batches" width="prose">
         <p>{batch.error.message}</p>
-        <Link to="/intake" className="underline">
-          All your batches
+        <Link to="/intake" className="text-sm font-semibold underline">
+          ← All your batches
         </Link>
       </StaffPage>
     );
@@ -87,8 +87,8 @@ export function BatchPage({ id }: { id: number }) {
       width="prose"
     >
       <p>
-        <Link to="/intake" className="underline">
-          All your batches
+        <Link to="/intake" className="text-sm font-semibold underline">
+          ← All your batches
         </Link>
       </p>
       {review.data && open ? (
@@ -120,7 +120,7 @@ export function BatchPage({ id }: { id: number }) {
       ) : null}
 
       <section aria-labelledby="accounts" className="flex flex-col gap-3">
-        <h2 id="accounts" className="font-display text-2xl font-bold">
+        <h2 id="accounts" className="font-display text-xl font-bold">
           Accounts
         </h2>
         {drafts.length === 0 ? (
@@ -128,7 +128,7 @@ export function BatchPage({ id }: { id: number }) {
             Add one for each account somebody gave you. Nothing is filed until you file the batch.
           </Empty>
         ) : null}
-        <ul className="flex flex-col gap-3">
+        <ul className="m-0 flex list-none flex-col gap-2 p-0">
           {drafts.map((d) => {
             const first = Object.values(d.payload.answers ?? {}).find(
               (v) => typeof v === 'string' && v.trim(),
@@ -138,7 +138,7 @@ export function BatchPage({ id }: { id: number }) {
             return (
               <li
                 key={d.id}
-                className="flex flex-col gap-1 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised"
+                className="flex flex-col gap-1 rounded-control border-[1.5px] border-line bg-surface px-3.5 py-3"
               >
                 <p className="font-semibold">
                   Account {n}

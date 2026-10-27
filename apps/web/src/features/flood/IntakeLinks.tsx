@@ -46,9 +46,9 @@ export function IntakeLinksPage() {
   const managed = orgs.data?.organizations.filter((o) => o.role === 'manager') ?? [];
   return (
     <StaffPage
+      area="Your organization"
       title="Volunteer links"
       lede="A link for your organization’s volunteers. Whoever opens it, signed in, joins as a coordinator and files for the organization. Each link works a set number of times, and you can switch it off."
-      width="prose"
     >
       {orgs.isPending ? <p role="status">Loading…</p> : null}
       {orgs.isError ? <Alert tone="serious">{orgs.error.message}</Alert> : null}
@@ -84,11 +84,7 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['intake-links', id] }),
   });
   return (
-    <section
-      aria-label={name}
-      className="flex flex-col gap-3 rounded-card border border-line bg-surface p-5"
-    >
-      <h2 className="font-display text-xl font-bold">{name}</h2>
+    <Card heading={name}>
       <form
         aria-label={`Make an intake link for ${name}`}
         className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -151,7 +147,7 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
         </ul>
       ) : null}
       {off.isError ? <Alert tone="serious">{off.error.message}</Alert> : null}
-    </section>
+    </Card>
   );
 }
 

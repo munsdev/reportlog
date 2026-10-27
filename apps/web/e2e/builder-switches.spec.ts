@@ -99,7 +99,7 @@ test('the settings overview says whether the site is taking reports at all, and 
   page,
 }) => {
   await page.goto('/logbooks');
-  await page.getByRole('link', { name: 'Site settings, Accepting reports' }).click();
+  await page.getByRole('link', { name: 'Site settings' }).click();
   const panel = page.getByRole('region', { name: 'Accepting reports' });
   await expect(panel).toContainText(/Accepting(Yes|No)/);
   await expect(panel).toContainText(/Logbooks open\d+ of \d+/);

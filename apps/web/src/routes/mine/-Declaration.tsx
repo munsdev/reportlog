@@ -25,6 +25,7 @@ import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { rawFromAnswers, shownAnswer } from '@/features/form/walk.ts';
@@ -79,10 +80,10 @@ function Declaration({ threadId }: { threadId: string }) {
   const answered = r.questions.filter((q) => r.answers[q.key] !== undefined);
 
   return (
-    <Page
+    <StaffPage
+      area="Account"
       title="A signed declaration"
-      lede="Print your report as a statement you sign, for a lawyer or an organization that asks for one. What you type here stays on this page: it is not sent or kept."
-      width="prose"
+      lede="Print your report as a statement you sign, for a lawyer or an organization that asks for one."
     >
       <p>
         <Link to="/mine/$threadId" params={{ threadId }} className="underline">
@@ -214,6 +215,6 @@ function Declaration({ threadId }: { threadId: string }) {
           Chain hash: <span className="font-mono break-all">{r.chain_hash}</span>
         </p>
       </section>
-    </Page>
+    </StaffPage>
   );
 }

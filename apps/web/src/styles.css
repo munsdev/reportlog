@@ -746,3 +746,38 @@ html[data-surface='ruled'][data-panel-head='double-rule'] .panel[data-variant='r
     inset: 0 auto auto 0;
   }
 }
+
+/*
+ * A table of facts in the staff screens (the mock-up's `.tbl`): one bordered
+ * box, a header row in the mono face, rows told apart by a thin rule. It is
+ * a real <table>, so a screen reader still gets rows and columns; the class
+ * only draws it. A phone scrolls it sideways inside its own box (ScrollX).
+ */
+@layer components {
+  .data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1.5px solid var(--rl-border);
+    border-radius: var(--rl-radius);
+    background: var(--rl-surface);
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  .data-table thead th {
+    padding: 0.5rem 0.875rem;
+    background: var(--rl-background-alt);
+    font-family: var(--rl-font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--rl-text-muted);
+  }
+  .data-table tbody th,
+  .data-table td {
+    padding: 0.75rem 0.875rem;
+    border-top: 1px solid var(--rl-border);
+    vertical-align: top;
+  }
+}

@@ -23,7 +23,7 @@ export function KeyValueList({ items, className, ...props }: KeyValueListProps) 
   return (
     <dl
       className={cn(
-        'm-0 grid grid-cols-1 sm:grid-cols-[minmax(0,14rem)_minmax(0,1fr)] sm:gap-x-6 sm:gap-y-1.5',
+        'm-0 grid grid-cols-1 border-t border-line sm:grid-cols-[minmax(0,12.5rem)_minmax(0,1fr)] sm:gap-x-3.5',
         className,
       )}
       {...props}
@@ -32,8 +32,15 @@ export function KeyValueList({ items, className, ...props }: KeyValueListProps) 
         // A <div> around each pair is allowed inside <dl>, and keeps a name
         // and its value together for anybody reading the source order.
         <div key={i} className="contents">
-          <dt className="text-ink-alt">{item.key}</dt>
-          <dd className={cn('m-0 mb-2 text-ink sm:mb-0', item.mono && 'font-mono text-sm')}>
+          <dt className="pt-2.5 font-mono text-[0.74rem] tracking-[0.06em] text-muted uppercase sm:border-b sm:border-line sm:pb-2.5">
+            {item.key}
+          </dt>
+          <dd
+            className={cn(
+              'm-0 border-b border-line pb-2.5 font-medium text-ink sm:pt-2.5',
+              item.mono && 'font-mono text-sm',
+            )}
+          >
             {item.value}
           </dd>
         </div>

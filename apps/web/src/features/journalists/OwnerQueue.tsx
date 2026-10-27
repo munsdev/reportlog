@@ -68,8 +68,8 @@ export function OwnerQueuePage() {
   const decided = all.filter((r) => r.status !== 'pending');
   return (
     <StaffPage
-      title="Journalists"
-      lede="Requests for access to the journalist desk. Only you decide them, one at a time; nothing is approved by itself."
+      title="Journalist requests"
+      lede="Journalists who asked for the desk. Approving lets them see checked links and sources. Only you decide, one at a time."
     >
       <JournalistTabs />
       {requests.isPending ? <p role="status">Loading…</p> : null}
@@ -84,7 +84,7 @@ export function OwnerQueuePage() {
             ]}
           />
           <section aria-labelledby="waiting" className="flex flex-col gap-4">
-            <h2 id="waiting" className="font-display text-2xl font-bold">
+            <h2 id="waiting" className="font-display text-xl font-bold">
               Waiting ({waiting.length})
             </h2>
             {waiting.length ? (
@@ -97,7 +97,7 @@ export function OwnerQueuePage() {
             )}
           </section>
           <section aria-labelledby="decided" className="flex flex-col gap-4">
-            <h2 id="decided" className="font-display text-2xl font-bold">
+            <h2 id="decided" className="font-display text-xl font-bold">
               Approved and revoked
             </h2>
             {decided.length ? (

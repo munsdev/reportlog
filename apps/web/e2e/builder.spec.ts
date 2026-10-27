@@ -219,6 +219,6 @@ test('the builder asks no third party for anything', async ({ page }) => {
   await page.goto('/logbooks');
   await expect(page.getByRole('heading', { name: 'Logbooks' })).toBeVisible();
   await page.goto('/logbooks/front-page');
-  await expect(page.getByRole('heading', { name: 'The front page’s buttons' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Front page' })).toBeVisible();
   expect(outside).toEqual([]);
 });

@@ -5,6 +5,9 @@
  *   serious    "Serious", or an error state.
  *   open       waiting, not assessed. No colour: a report nobody has
  *              assessed gets none.
+ *   wait       waiting for somebody: a dashed edge
+ *   off        switched off or not applicable: a faint edge
+ *   flag       needs a look: the serious colour on the edge, not filled
  *   tag        a neutral fact: "Single account", "Counts only", "Not public".
  *
  * The status colours live here and on alerts' edges, never on a button, a
@@ -23,7 +26,13 @@ export const chipVariants = cva(
       tone: {
         confirmed: 'bg-confirmed text-on-confirmed',
         serious: 'bg-serious text-on-serious',
-        open: 'border-[1.5px] border-ink-alt text-ink-alt',
+        open: 'border-[1.5px] border-dashed border-ink-alt text-ink-alt',
+        /** Waiting for somebody: the mock-up's dashed chip. */
+        wait: 'border-[1.5px] border-dashed border-ink text-ink',
+        /** A state that is off or not applicable: faint edge. */
+        off: 'border-[1.5px] border-line text-muted',
+        /** Needs a look: the serious colour on the edge only. */
+        flag: 'border-[1.5px] border-serious text-serious',
         tag: 'border-[1.5px] border-ink text-ink',
       },
     },

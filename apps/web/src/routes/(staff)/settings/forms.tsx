@@ -119,7 +119,7 @@ function FormsPage() {
     <StaffPage
       title="Report and tip forms"
       width="prose"
-      lede="The checks every report and tip passes before this site reads it."
+      lede="How forms tell people from scripts."
     >
       <p>
         Each form solves a small puzzle in the visitor’s own browser, carries a box nobody can see,

@@ -46,8 +46,8 @@ export function HomeButtonsEditor() {
     // The same leave-without-saving question the settings screens ask.
     <UnsavedChangesGuard>
       <StaffPage
-        title="The front page’s buttons"
-        lede="Each row is a button on the front page. Pick where it leads, and say what it says or leave the wording blank. The first button is the main one; to make a different button the main one, move it to the top. Logbooks and lists that are open and set to show on the front page are added at the end by themselves."
+        title="Front page"
+        lede="What the front page’s buttons lead to, and their order. The first is the main one. Logbooks and lists that are open and set to show on the front page are added at the end by themselves."
       >
         <p>
           <Link to="/logbooks" className="text-sm underline">

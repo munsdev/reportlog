@@ -74,54 +74,43 @@ function Editor({ lb }: { lb: LogbookDetail }) {
   };
 
   return (
-    <StaffPage
-      eyebrow={`Logbook · ${stateLabel[lb.state]}`}
-      title={lb.title}
-      lede={stateWords(lb)}
-      actions={<Downloads lb={lb} />}
-    >
+    <StaffPage eyebrow={`Logbook · ${stateLabel[lb.state]}`} title={lb.title} lede={stateWords(lb)}>
       <div className="flex flex-col gap-3">
         <p>
-          <Link to="/logbooks" className="text-sm underline">
+          <Link to="/logbooks" className="text-sm font-semibold underline">
             ← All logbooks
           </Link>
         </p>
         <p className="flex flex-wrap items-center gap-2">
-          <Chip tone="tag">{stateLabel[lb.state]}</Chip>
-          {lb.asks_for_files ? <Chip tone="tag">Takes files</Chip> : null}
-          <span data-filing-address className="font-mono text-sm break-all text-muted">
-            /file/{lb.slug}
-            {lb.short_slug ? ` · /${lb.short_slug}` : ''}
-          </span>
+          <Chip tone={lb.state === 'open' ? 'confirmed' : lb.state === 'draft' ? 'off' : 'tag'}>
+            {stateLabel[lb.state]}
+          </Chip>
+          <Chip tone="off">{lb.asks_for_files ? 'Takes files' : 'No files'}</Chip>
         </p>
-        {launched ? (
-          // Only a launched logbook has a form a reporter can open; a draft's
-          // is not served to anybody, so the button is left out until then.
-          <p>
-            <a
-              href={`/file/${lb.slug}`}
-              target="_blank"
-              rel="noopener"
-              className={buttonVariants({ variant: 'secondary' })}
-            >
-              Open the reporter’s form (new tab)
-            </a>
-          </p>
-        ) : null}
+        <p data-filing-address className="font-mono text-sm break-all text-muted">
+          /file/{lb.slug}
+          {lb.short_slug ? ` · /${lb.short_slug}` : ''}
+        </p>
+        <Downloads lb={lb} launched={launched} />
       </div>
 
-      <Details lb={lb} refresh={refresh} />
-      <CoverPanel
-        kind="logbook"
-        cover={lb.cover}
-        save={async (cover) => {
-          await call(updateLogbook, { params: { id: lb.id }, body: { cover } });
-          await refresh();
-        }}
-      />
-      <EmailRule lb={lb} refresh={refresh} />
-      <PublicationRule lb={lb} refresh={refresh} />
-      <FrontPageSwitch lb={lb} refresh={refresh} />
+      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+        <Details lb={lb} refresh={refresh} />
+        <CoverPanel
+          kind="logbook"
+          cover={lb.cover}
+          save={async (cover) => {
+            await call(updateLogbook, { params: { id: lb.id }, body: { cover } });
+            await refresh();
+          }}
+        />
+        <EmailRule lb={lb} refresh={refresh} />
+        <PublicationRule lb={lb} refresh={refresh} />
+        <FrontPageSwitch lb={lb} refresh={refresh} />
+        {launched && <Lifecycle lb={lb} refresh={refresh} />}
+        <OutsidePanel lb={lb} refresh={refresh} />
+        <FreezePanel lb={lb} refresh={refresh} />
+      </div>
 
       <Panel title="Questions">
         {launched && (
@@ -148,10 +137,6 @@ function Editor({ lb }: { lb: LogbookDetail }) {
         </Card>
       </Panel>
 
-      {launched && <Lifecycle lb={lb} refresh={refresh} />}
-      <OutsidePanel lb={lb} refresh={refresh} />
-      <FreezePanel lb={lb} refresh={refresh} />
-
       {!launched && <Launch lb={lb} refresh={refresh} />}
       {!launched && <DeleteDraft lb={lb} />}
     </StaffPage>
@@ -162,31 +147,40 @@ const day = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
 /**
- * "As a file", beside the title: the logbook file (its title and
+ * The row of buttons under the address: the reporter's form, the logbook file (its title and
  * questions, to keep or to start another from), and, once it has launched,
  * its complete chain, which asks for the step-up first (plan E, E3).
  */
-function Downloads({ lb }: { lb: LogbookDetail }) {
+function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
   return (
-    <div className="flex flex-col gap-2">
-      <span className="label-face text-xs text-ink-alt">As a file</span>
-      <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2">
+      {launched ? (
+        // Only a launched logbook has a form a reporter can open; a draft's
+        // is not served to anybody, so the button is left out until then.
         <a
-          href={`/api/admin/logbooks/${String(lb.id)}/file`}
-          download={`logbook-${lb.slug}.json`}
+          href={`/file/${lb.slug}`}
+          target="_blank"
+          rel="noopener"
           className={buttonVariants({ variant: 'secondary' })}
         >
-          The logbook file
+          Open the reporter’s form
         </a>
-        {lb.state !== 'draft' ? (
-          <StepUpDownload
-            href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
-            className={buttonVariants({ variant: 'secondary' })}
-          >
-            Its chain
-          </StepUpDownload>
-        ) : null}
-      </div>
+      ) : null}
+      <a
+        href={`/api/admin/logbooks/${String(lb.id)}/file`}
+        download={`logbook-${lb.slug}.json`}
+        className={buttonVariants({ variant: 'secondary' })}
+      >
+        The logbook file
+      </a>
+      {launched ? (
+        <StepUpDownload
+          href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
+          className={buttonVariants({ variant: 'secondary' })}
+        >
+          Its chain
+        </StepUpDownload>
+      ) : null}
     </div>
   );
 }
@@ -406,11 +400,11 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
   return (
     <>
       <Problem error={error} />
-      <ol className="space-y-3" aria-label="The questions, in order">
+      <ol className="m-0 grid list-none gap-2 p-0" aria-label="The questions, in order">
         {lb.fields.map((q, i) => (
           <li
             key={q.id}
-            className="flex flex-col gap-2 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised"
+            className="flex flex-col gap-2 rounded-control border-[1.5px] border-line bg-surface px-3 py-2.5"
           >
             {editing === q.id && launched ? (
               <RewordForm
@@ -442,8 +436,12 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
               />
             ) : (
               <>
-                <p className="font-display text-lg font-bold">
-                  {i + 1}. {q.label}
+                <p className="font-display font-bold">
+                  <span className="mr-2 font-mono font-normal text-muted" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <span className="sr-only">{i + 1}. </span>
+                  {q.label}
                 </p>
                 <p className="flex flex-wrap items-center gap-2">
                   <Chip tone="tag" className="font-mono">

@@ -45,10 +45,11 @@ export function AccessHome() {
   return (
     <SecondFactorGate>
       <StaffPage
-        title={user.grantsAccess ? 'Access' : 'Your account'}
+        title={user.grantsAccess ? 'People and roles' : 'Your account'}
+        {...(user.grantsAccess ? {} : { area: 'Account' })}
         lede={
           user.grantsAccess
-            ? 'Who may do what on this site. Each panel is shown only to those who may use it.'
+            ? 'Who can do what on this site.'
             : 'Your role on this site and how you sign in.'
         }
       >
@@ -314,29 +315,21 @@ function People() {
       {people.data?.people.length === 0 && <p>Nobody holds a role yet.</p>}
       {people.data && people.data.people.length > 0 && (
         <ScrollX label="People with a role">
-          <table className="w-full text-left text-sm">
+          <table className="data-table">
             <caption className="sr-only">People with a role</caption>
             <thead>
-              <tr className="border-b border-line">
-                <th scope="col" className="py-2 pr-4">
-                  Address
-                </th>
-                <th scope="col" className="py-2 pr-4">
-                  Role
-                </th>
-                <th scope="col" className="py-2">
-                  Organizations
-                </th>
+              <tr>
+                <th scope="col">Address</th>
+                <th scope="col">Role</th>
+                <th scope="col">Organizations</th>
               </tr>
             </thead>
             <tbody>
               {people.data.people.map((p) => (
-                <tr key={p.email} className="border-b border-line last:border-0">
-                  <td className="py-2 pr-4 break-all">{p.email}</td>
-                  <td className="py-2 pr-4">{rolesLabel(p.roles)}</td>
-                  <td className="py-2">
-                    {p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}
-                  </td>
+                <tr key={p.email}>
+                  <td className="break-all">{p.email}</td>
+                  <td>{rolesLabel(p.roles)}</td>
+                  <td>{p.organizations.map((o) => `${o.name} (${o.role})`).join(', ')}</td>
                 </tr>
               ))}
             </tbody>

@@ -33,7 +33,7 @@ export const Route = createFileRoute('/(staff)/settings/legal')({
       <StaffPage
         title="Legal notices"
         width="prose"
-        lede="Your imprint and privacy policy, published exactly as you write them."
+        lede="The imprint and privacy policy the law asks for. The responsible person’s name appears only here."
       >
         <WithEditor>
           {(state) => (

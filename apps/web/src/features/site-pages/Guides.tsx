@@ -14,7 +14,7 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Card } from '../../components/ui/card.tsx';
-import { Page } from '../../components/ui/page.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { ProseSection } from '../../components/ui/prose-section.tsx';
 import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 
@@ -69,10 +69,10 @@ function Guide({
 }) {
   const siteName = plainSiteName(useSite().data);
   return (
-    <Page eyebrow={`${siteName} · Guides`} title={title} lede={lede}>
-      <div className="layout-split grid items-start gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <StaffPage eyebrow={`${siteName} · Guides`} title={title} lede={lede}>
+      <div className="layout-split grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
         {/* Not numbered by the list: the steps carry their own numbers. */}
-        <nav aria-label="Contents" className="print:hidden">
+        <nav aria-label="Contents" className="print:hidden lg:order-2">
           <Card variant="quiet" heading="Contents" headingLevel={2}>
             <ul className="flex flex-col">
               {contents.map((c) => (
@@ -90,20 +90,19 @@ function Guide({
         </nav>
         <div className="flex max-w-prose flex-col gap-8">{children}</div>
       </div>
-    </Page>
+    </StaffPage>
   );
 }
 
 export function GuidesIndex() {
   const siteName = plainSiteName(useSite().data);
   return (
-    <Page
-      eyebrow={siteName}
+    <StaffPage
+      eyebrow={`${siteName} · Guides`}
       title="Guides"
-      width="prose"
       lede="How to run this archive once it is installed: making a logbook, deciding who reviews, and checking it all works."
     >
-      <ul className="flex flex-col gap-4">
+      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-3.5 p-0">
         <li>
           <Card>
             <h2 className="font-display text-xl font-bold">
@@ -136,7 +135,7 @@ export function GuidesIndex() {
           ships with the deployment files rather than on this site.
         </p>
       </Card>
-    </Page>
+    </StaffPage>
   );
 }
 

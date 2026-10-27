@@ -19,9 +19,11 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
+import { Card } from '../../components/ui/card.tsx';
 import { Field, FieldDescription } from '../../components/ui/field.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { Page } from '../../components/ui/page.tsx';
+import { ScrollX } from '../../components/ui/scroll-x.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -113,16 +115,18 @@ export function AgreementAdminPage({
   return (
     <StaffPage
       title={audience === 'journalist' ? 'Journalist agreement' : 'Moderator agreement'}
-      lede={`The words every ${audience === 'journalist' ? 'journalist accepts before they open the desk' : 'moderator accepts before they work on reports'}. Publishing a new version asks everybody to accept it again; the old versions and who accepted them stay on the record.`}
+      lede={`Every ${audience} accepts this before they can open the ${audience === 'journalist' ? 'desk' : 'queue'}. Publishing a new version asks everybody to accept it again.`}
     >
       {tabs}
       {state.data?.current ? (
-        <div className="rounded-card border border-line bg-surface p-5">
-          <h2 className="font-display text-xl font-bold">
-            Current: version {String(state.data.current.version)}
-          </h2>
-          <p className="mt-2 whitespace-pre-wrap">{state.data.current.body}</p>
-        </div>
+        <Card heading="The published version">
+          <p className="font-mono text-sm text-muted">
+            Version {String(state.data.current.version)}
+          </p>
+          <div className="rounded-control border border-line bg-paper p-5 text-ink">
+            <p className="whitespace-pre-wrap">{state.data.current.body}</p>
+          </div>
+        </Card>
       ) : (
         <Alert title="No agreement is published">
           {audience === 'journalist'
@@ -130,45 +134,62 @@ export function AgreementAdminPage({
             : 'Until one is, nobody is asked to accept anything before moderating.'}
         </Alert>
       )}
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          publish.mutate();
-        }}
-      >
-        <Field>
-          <Label>The new version</Label>
-          <Textarea
-            rows={10}
-            value={body}
-            onChange={(e) => {
-              setBody(e.target.value);
-            }}
-          />
-          <FieldDescription>Plain text. It is shown exactly as written.</FieldDescription>
-        </Field>
-        {publish.isError ? <Alert tone="serious">{publish.error.message}</Alert> : null}
-        {publish.isSuccess ? <Alert tone="done">Published.</Alert> : null}
-        <Button type="submit" className="self-start" disabled={publish.isPending}>
-          Publish this version
-        </Button>
-      </form>
-      <section aria-label="Who accepted" className="flex flex-col gap-2">
-        <h2 className="font-display text-xl font-bold">Who accepted</h2>
+      <Card heading="The new version">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            publish.mutate();
+          }}
+        >
+          <Field>
+            <Label>The new version</Label>
+            <Textarea
+              rows={10}
+              value={body}
+              onChange={(e) => {
+                setBody(e.target.value);
+              }}
+            />
+            <FieldDescription>
+              Plain text. It is shown exactly as written. Publishing it asks everybody to accept it
+              again.
+            </FieldDescription>
+          </Field>
+          {publish.isError ? <Alert tone="serious">{publish.error.message}</Alert> : null}
+          {publish.isSuccess ? <Alert tone="done">Published.</Alert> : null}
+          <Button type="submit" className="self-start" disabled={publish.isPending}>
+            Publish this version
+          </Button>
+        </form>
+      </Card>
+      <Card heading="Who accepted">
         {accepted.data?.acceptances.length ? (
-          <ul className="flex flex-col gap-1 text-sm">
-            {accepted.data.acceptances.map((a) => (
-              <li key={`${a.user_email}-${String(a.version)}-${a.accepted_at}`}>
-                {a.user_email} · version {String(a.version)} ·{' '}
-                {new Date(a.accepted_at).toLocaleString()}
-              </li>
-            ))}
-          </ul>
+          <ScrollX label="Who accepted">
+            <table className="data-table">
+              <caption className="sr-only">Who accepted</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Who</th>
+                  <th scope="col">Version</th>
+                  <th scope="col">When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accepted.data.acceptances.map((a) => (
+                  <tr key={`${a.user_email}-${String(a.version)}-${a.accepted_at}`}>
+                    <td className="break-all">{a.user_email}</td>
+                    <td>{String(a.version)}</td>
+                    <td>{new Date(a.accepted_at).toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ScrollX>
         ) : (
           <p className="text-ink-alt">Nobody yet.</p>
         )}
-      </section>
+      </Card>
     </StaffPage>
   );
 }

@@ -50,7 +50,7 @@ export function AccessLogPage() {
   return (
     <StaffPage
       title="Who opened protected data"
-      lede="Every opening of a reporter’s contact details or of a file’s original, with who did it, when, and the reason they wrote. Nothing here can be filtered out or changed. Opening this page is recorded too."
+      lede="Every look at protected data, with the reason given."
     >
       {query.isPending ? <p role="status">Reading the log…</p> : null}
       {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
@@ -71,46 +71,36 @@ export function AccessLogPage() {
             ]}
           />
           <ScrollX label="Every opening of protected data, newest first">
-            <table className="w-full text-left text-sm">
+            <table className="data-table">
               <caption className="sr-only">Every opening of protected data, newest first</caption>
               <thead>
-                <tr className="border-b border-ink-alt">
-                  <th scope="col" className="py-2 pr-4 label-face text-xs">
-                    When
-                  </th>
-                  <th scope="col" className="py-2 pr-4 label-face text-xs">
-                    Who
-                  </th>
-                  <th scope="col" className="py-2 pr-4 label-face text-xs">
-                    What
-                  </th>
-                  <th scope="col" className="py-2 pr-4 label-face text-xs">
-                    Report
-                  </th>
-                  <th scope="col" className="py-2 label-face text-xs">
-                    Their reason
-                  </th>
+                <tr>
+                  <th scope="col">When</th>
+                  <th scope="col">Who</th>
+                  <th scope="col">What</th>
+                  <th scope="col">Report</th>
+                  <th scope="col">Their reason</th>
                 </tr>
               </thead>
               <tbody>
                 {shown.map((e) => (
-                  <tr key={e.id} className="border-b border-line align-top last:border-0">
-                    <td className="py-2 pr-4 font-mono whitespace-nowrap">
+                  <tr key={e.id} className="align-top">
+                    <td className="font-mono whitespace-nowrap">
                       <time dateTime={e.accessed_at}>{when(e.accessed_at)}</time>
                     </td>
-                    <td className="py-2 pr-4 font-mono break-all">{e.staff_email}</td>
-                    <td className="py-2 pr-4">
+                    <td className="font-mono break-all">{e.staff_email}</td>
+                    <td>
                       {LOOKED[e.kind] ?? 'Opened'}
                       {e.attachment_id === null ? '' : ` (file ${String(e.attachment_id)})`}
                     </td>
-                    <td className="py-2 pr-4 font-mono whitespace-nowrap">
+                    <td className="font-mono whitespace-nowrap">
                       {e.public_ref ?? e.logbook ?? (
                         <span className="font-sans text-ink-alt">
                           {e.kind === 'desk_link' ? 'None' : 'A report'}
                         </span>
                       )}
                     </td>
-                    <td className="py-2 whitespace-pre-wrap">
+                    <td className="whitespace-pre-wrap">
                       {e.reason ?? <span className="text-ink-alt">None was asked for</span>}
                     </td>
                   </tr>

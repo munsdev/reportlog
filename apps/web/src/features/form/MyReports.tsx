@@ -39,8 +39,11 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog.tsx';
 import { Field, FieldDescription } from '@/components/ui/field.tsx';
+import { KeyValueList } from '@/components/ui/key-value-list.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
+import { RowItem, Rows, rowLink } from '@/components/ui/rows.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
@@ -114,11 +117,7 @@ export function MyReportsPage() {
 function MyReportsList() {
   const list = useQuery(myReportsQuery);
   return (
-    <Page
-      title="My reports"
-      lede="The reports filed from the address you signed in with."
-      width="prose"
-    >
+    <StaffPage area="Account" title="My reports" lede="Reports you filed while signed in.">
       {list.isPending ? <p role="status">Loading…</p> : null}
       {list.isError ? <Alert tone="serious" title={list.error.message} /> : null}
       {list.data?.reports.length === 0 ? (
@@ -127,35 +126,35 @@ function MyReportsList() {
           from the email, appear here.
         </Empty>
       ) : null}
-      <ul className="flex flex-col gap-3">
-        {list.data?.reports.map((r) => {
-          const chip = stateChip(r);
-          return (
-            <li key={r.thread_id}>
-              {/* The whole row opens it: that is all anybody comes to a row to do. */}
-              <Link
-                to="/mine/$threadId"
-                params={{ threadId: r.thread_id }}
-                aria-label={`Open ${r.public_ref}`}
-                className="flex flex-col gap-1 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised hover:bg-paper-alt"
-              >
-                <span className="flex flex-wrap items-center justify-between gap-2">
+      {list.data?.reports.length ? (
+        <Rows label="Your reports">
+          {list.data.reports.map((r) => {
+            const chip = stateChip(r);
+            return (
+              <RowItem key={r.thread_id}>
+                {/* The whole row opens it: that is all anybody comes to a row to do. */}
+                <Link
+                  to="/mine/$threadId"
+                  params={{ threadId: r.thread_id }}
+                  aria-label={`Open ${r.public_ref}`}
+                  className={rowLink('ref')}
+                >
                   <span className="font-mono font-semibold">{r.public_ref}</span>
+                  <span className="text-sm text-ink-alt">
+                    {r.logbook_title} · filed{' '}
+                    <time dateTime={r.first_received_at}>
+                      {new Date(r.first_received_at).toLocaleDateString()}
+                    </time>
+                    {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
+                  </span>
                   <Chip tone={chip.tone}>{chip.label}</Chip>
-                </span>
-                <span className="text-sm text-ink-alt">
-                  {r.logbook_title} · filed{' '}
-                  <time dateTime={r.first_received_at}>
-                    {new Date(r.first_received_at).toLocaleDateString()}
-                  </time>
-                  {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
-                </span>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </Page>
+                </Link>
+              </RowItem>
+            );
+          })}
+        </Rows>
+      ) : null}
+    </StaffPage>
   );
 }
 
@@ -182,47 +181,76 @@ function MyReportView({ threadId }: { threadId: string }) {
   }
   const r = report.data;
   return (
-    <>
-      <Link to="/mine" className="mb-3 inline-block underline underline-offset-4">
-        ← All your reports
-      </Link>
-      <Page
-        title={`Report ${r.public_ref}`}
-        lede={`${r.logbook_title} · ${statusOf(r)}`}
-        width="prose"
-      >
-        <Answers r={r} />
-        <Permissions r={r} />
-        <ContactAccesses threadId={r.thread_id} />
-        <Correct r={r} />
-        {r.withdrawn ? null : <Withdraw r={r} />}
-        <Erase r={r} />
-      </Page>
-    </>
+    <StaffPage
+      area="Account"
+      mono
+      title={`Report ${r.public_ref}`}
+      lede={`${r.logbook_title} · ${statusOf(r)}`}
+    >
+      <p>
+        <Link to="/mine" className="text-sm font-semibold underline underline-offset-4">
+          ← All your reports
+        </Link>
+      </p>
+      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-[1.5fr_1fr]">
+        <div className="grid min-w-0 content-start gap-[18px]">
+          <Answers r={r} />
+          {/* The written account and its sharing switch (free-text work) belong here, under the answers. */}
+          <Permissions r={r} />
+          <ContactAccesses threadId={r.thread_id} />
+        </div>
+        <div className="grid min-w-0 content-start gap-[18px]">
+          <Correct r={r} />
+          {r.withdrawn ? null : <Withdraw r={r} />}
+          <Erase r={r} />
+          <div>
+            <Button asChild variant="secondary">
+              <Link to="/mine/declaration/$threadId" params={{ threadId: r.thread_id }}>
+                Print a signed declaration
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    </StaffPage>
   );
 }
 
 /** A section of the page: a panel with its own H2, in the theme's heading. */
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <Card heading={title}>{children}</Card>;
+function Section({
+  title,
+  danger = false,
+  children,
+}: {
+  title: string;
+  danger?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <Card heading={title} variant={danger ? 'danger' : 'raised'}>
+      {children}
+    </Card>
+  );
 }
 
 function Answers({ r }: { r: MyReportDetail }) {
   const raw = rawFromAnswers(r.questions, r.answers);
   return (
     <Section title="What it says now">
-      <dl className="flex flex-col gap-3">
-        {askedQuestions(r.questions, raw).map((q) => (
-          <div key={q.key}>
-            <dt className="text-sm font-semibold text-ink-alt">{q.label}</dt>
-            <dd className="whitespace-pre-wrap">{shownAnswer(q, raw, r.questions) ?? '—'}</dd>
-          </div>
-        ))}
-        <div>
-          <dt className="text-sm font-semibold text-ink-alt">May it be published?</dt>
-          <dd>{r.may_publish ? 'Yes, if a moderator approves it' : 'No'}</dd>
-        </div>
-      </dl>
+      <KeyValueList
+        items={[
+          ...askedQuestions(r.questions, raw).map((q) => ({
+            key: q.label,
+            value: (
+              <span className="whitespace-pre-wrap">{shownAnswer(q, raw, r.questions) ?? '—'}</span>
+            ),
+          })),
+          {
+            key: 'May it be published?',
+            value: r.may_publish ? 'Yes, if a moderator approves it' : 'No',
+          },
+        ]}
+      />
     </Section>
   );
 }
@@ -492,7 +520,7 @@ function Erase({ r }: { r: MyReportDetail }) {
     },
   });
   return (
-    <Section title="Erase your contact details">
+    <Section title="Erase your contact details" danger>
       <p className="text-ink-alt">
         Your email address is destroyed. Your report is not withdrawn: it stays as it is (it never
         held your address), and is published or not exactly as before. Afterwards it no longer

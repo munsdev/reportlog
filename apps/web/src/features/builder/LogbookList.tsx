@@ -16,11 +16,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { FileDrop } from '../../components/ui/file-drop.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
+import { RowItem, Rows, rowLink } from '../../components/ui/rows.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, TextInput } from './controls.tsx';
@@ -43,18 +43,18 @@ export function LogbookList() {
   return (
     <StaffPage
       title="Logbooks"
-      lede="A logbook is one named place to file reports, with its own questions. Every report in it is fingerprinted and chained to the one before."
+      lede="A logbook is a permanent, checkable record: once launched, its reports are sealed and chained."
       // One "Make" button at a time: an empty page carries it in its empty state.
       actions={making || query.data?.logbooks.length === 0 ? null : make}
     >
       <p className="text-ink-alt">
-        Whether the site takes new reports at all is set under{' '}
+        Whether reports are taken at all is on{' '}
         <Link to="/settings" className="underline underline-offset-4">
-          Site settings, Accepting reports
+          Site settings
         </Link>
-        . The order of the front page’s buttons is under{' '}
+        . The front page’s buttons are on{' '}
         <Link to="/logbooks/front-page" className="underline underline-offset-4">
-          Arrange the front page’s buttons
+          Front page
         </Link>
         .
       </p>
@@ -78,17 +78,18 @@ export function LogbookList() {
             </Empty>
           )
         ) : (
-          <ul className="flex flex-col gap-3" aria-label="Logbooks">
+          <Rows label="Logbooks">
             {query.data.logbooks.map((l) => (
-              <li key={l.id}>
-                <Card className="gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex min-w-0 flex-col gap-1">
-                    <span className="flex flex-wrap items-center gap-2">
-                      <span className="font-display text-lg font-bold">{l.title}</span>
-                      <Chip tone="tag">{stateLabel[l.state]}</Chip>
-                    </span>
-                    <span className="text-sm text-ink-alt">{stateWords(l)}</span>
-                    <span className="font-mono text-sm break-all text-muted">
+              <RowItem key={l.id}>
+                <Link
+                  to="/logbooks/$id"
+                  params={{ id: l.id }}
+                  aria-label={`Open ${l.title}`}
+                  className={rowLink('end')}
+                >
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-display font-bold">{l.title}</span>
+                    <span className="font-mono text-[0.78rem] break-all text-muted">
                       /file/{l.slug} · {l.question_count} question
                       {l.question_count === 1 ? '' : 's'} ·{' '}
                       {l.asks_for_files
@@ -97,18 +98,17 @@ export function LogbookList() {
                           : 'asks for files'
                         : 'no files'}
                     </span>
-                  </div>
-                  <div className="shrink-0">
-                    <Button asChild variant="secondary">
-                      <Link to="/logbooks/$id" params={{ id: l.id }} aria-label={`Open ${l.title}`}>
-                        Open
-                      </Link>
-                    </Button>
-                  </div>
-                </Card>
-              </li>
+                    <span className="text-sm text-ink-alt">{stateWords(l)}</span>
+                  </span>
+                  <Chip
+                    tone={l.state === 'open' ? 'confirmed' : l.state === 'draft' ? 'off' : 'tag'}
+                  >
+                    {stateLabel[l.state]}
+                  </Chip>
+                </Link>
+              </RowItem>
             ))}
-          </ul>
+          </Rows>
         ))}
     </StaffPage>
   );

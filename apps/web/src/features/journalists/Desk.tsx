@@ -30,7 +30,7 @@ import { Empty } from '@/components/ui/empty.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
-import { Page } from '@/components/ui/page.tsx';
+import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Pagination } from '@/components/ui/pagination.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
@@ -57,7 +57,7 @@ function DeskSection({
   return (
     <StaffOnly needs="journalist">
       <AgreementGate audience="journalist">
-        <Page eyebrow={siteName} title={title} lede={lede}>
+        <StaffPage eyebrow={`${siteName} · Journalist desk`} title={title} lede={lede}>
           {warn ? (
             <Alert tone="warning" title="Before you use a link">
               A moderator checked each link, but did not verify what it shows. Treat it as a lead,
@@ -68,7 +68,7 @@ function DeskSection({
           <p className="text-sm text-ink-alt">
             Every page you open here is recorded in the access log.
           </p>
-        </Page>
+        </StaffPage>
       </AgreementGate>
     </StaffOnly>
   );
@@ -76,10 +76,7 @@ function DeskSection({
 
 export function DeskLinksPage() {
   return (
-    <DeskSection
-      title="Checked links"
-      lede="Links moderators have checked, with how many tips sent each. Read only; nothing here is public."
-    >
+    <DeskSection title="Checked links" lede="Links from the tip line that a moderator has checked.">
       <CheckedLinks />
     </DeskSection>
   );

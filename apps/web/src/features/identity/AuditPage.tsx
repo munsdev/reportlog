@@ -52,7 +52,7 @@ export function AuditPage() {
   return (
     <StaffPage
       title="Who granted what"
-      lede="Every change to who may do what, and every copy of the whole archive taken off the server, as it was made. Nothing here can be edited or removed."
+      lede="Every role and access change, and every copy of the archive taken off the server, newest first."
     >
       <ErrorText error={audit.error} />
       {audit.isPending ? <p role="status">Reading the record…</p> : null}
@@ -71,16 +71,12 @@ export function AuditPage() {
             ]}
           />
           <ScrollX label="Changes to who may do what, newest first">
-            <table className="w-full text-left text-sm">
+            <table className="data-table">
               <caption className="sr-only">Changes to who may do what, newest first</caption>
               <thead>
-                <tr className="border-b border-ink-alt">
-                  <th scope="col" className="py-2 pr-4 label-face text-xs">
-                    When
-                  </th>
-                  <th scope="col" className="py-2 label-face text-xs">
-                    What changed
-                  </th>
+                <tr>
+                  <th scope="col">When</th>
+                  <th scope="col">What changed</th>
                 </tr>
               </thead>
               <tbody>
@@ -89,10 +85,10 @@ export function AuditPage() {
                     key={`${e.created_at}-${String(i)}`}
                     className="border-b border-line align-top last:border-0"
                   >
-                    <td className="py-2 pr-4 font-mono whitespace-nowrap">
+                    <td className="font-mono whitespace-nowrap">
                       <time dateTime={e.created_at}>{when(e.created_at)}</time>
                     </td>
-                    <td className="py-2 break-words">{auditSentence(e)}</td>
+                    <td className="break-words">{auditSentence(e)}</td>
                   </tr>
                 ))}
               </tbody>

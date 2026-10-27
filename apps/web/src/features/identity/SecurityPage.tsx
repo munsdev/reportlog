@@ -30,8 +30,7 @@ import {
 } from '@/components/ui/dialog.tsx';
 import { KeyValueList } from '@/components/ui/key-value-list.tsx';
 import type { KeyValue } from '@/components/ui/key-value-list.tsx';
-import { Eyebrow, Lede } from '@/components/ui/type.tsx';
-import { BrandName, useSite } from '@/components/ui/site.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import {
   AddAuthenticatorApp,
@@ -44,29 +43,18 @@ import { useMe } from './session.ts';
 import { SignInPrompt } from './SignInPrompt.tsx';
 import { ErrorText } from './ui.tsx';
 
-function Heading() {
-  const site = useSite();
-  return (
-    <>
-      <Eyebrow>{site.data ? <BrandName parts={site.data.name_parts} /> : 'ReportLog'}</Eyebrow>
-      <h1 className="font-display text-title font-bold">Signing in</h1>
-    </>
-  );
-}
-
 export function SecurityPage() {
   const me = useMe();
   if (me.isPending) return <p role="status">Loading…</p>;
   if (!me.data?.signedIn) return <SignInPrompt next="/access/security" />;
   if (me.data.secondFactor === 'not-needed') {
     return (
-      <section className="flex max-w-prose flex-col gap-3">
-        <Heading />
-        <Lede>
-          Your account has no role on this site, so it signs in with the emailed code alone. A
-          second factor is asked of everybody with a role.
-        </Lede>
-      </section>
+      <StaffPage
+        area="Account"
+        title="Signing in"
+        width="prose"
+        lede="Your account has no role on this site, so it signs in with the emailed code alone. A second factor is asked of everybody with a role."
+      />
     );
   }
   return (
@@ -205,23 +193,15 @@ function Factors() {
   };
 
   return (
-    <section className="flex max-w-3xl flex-col gap-6">
-      <div className="flex flex-col gap-3">
-        <Heading />
-        {optional ? (
-          <Lede>
-            A second factor is optional for journalists, and we encourage it. Your desk shows links
-            people sent in, and an email code alone is the only thing between a stranger and your
-            inbox. With one set up, sign-in asks for a code from your authenticator app or a passkey
-            after the emailed code. You can add one now and remove it later.
-          </Lede>
-        ) : (
-          <Lede>
-            After the emailed code, your account asks for a second factor: a code from your
-            authenticator app or one of your passkeys. Either works wherever one is asked for.
-          </Lede>
-        )}
-      </div>
+    <StaffPage
+      area="Account"
+      title="Signing in"
+      lede={
+        optional
+          ? 'A second factor is optional for journalists, and we encourage it. Your desk shows links people sent in, and an email code alone is the only thing between a stranger and your inbox. With one set up, sign-in asks for a code from your authenticator app or a passkey after the emailed code. You can add one now and remove it later.'
+          : 'Staff confirm with an authenticator app or a passkey after the emailed code. Either works wherever one is asked for.'
+      }
+    >
       {said ? (
         <div ref={done} tabIndex={-1} className="outline-none">
           <Alert tone="done" title={said} />
@@ -432,6 +412,6 @@ function Factors() {
           </DialogContent>
         ) : null}
       </Dialog>
-    </section>
+    </StaffPage>
   );
 }
