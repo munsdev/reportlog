@@ -485,14 +485,14 @@ update_status() {
 run_update_request() {
   local req="$REQUEST_DIR/request" action sha ref tip rc=0 log="$STATUS_DIR/log"
   [ -f "$req" ] || return 0
-  action=$(sed -n 's/^action=\([a-z]*\)$/\1/p' "$req" | head -n 1)
+  action=$(sed -n 's/^action=\([a-z_]*\)$/\1/p' "$req" | head -n 1)
   sha=$(sed -n 's/^sha=\([0-9a-f]\{40\}\)$/\1/p' "$req" | head -n 1)
   # Removed before anything runs, so a request runs once even if it fails
   # and the path unit does not start it again.
   rm -f "$req"
   install -d -m 0755 "$STATUS_DIR"
   case "$action" in
-    check | apply) ;;
+    check | apply | apply_test | rollback) ;;
     *)
       update_status refused unknown ""
       return 0
@@ -507,7 +507,50 @@ run_update_request() {
     return 0
   fi
   update_status running "$action" "$sha"
+  # ROLLBACK: the release that ran before this one, exactly `reportlog
+  # rollback` with no argument (no release is named by the request). It needs
+  # no network, so it comes before the fetch. The database keeps what the
+  # newer release added; older code runs on it.
+  if [ "$action" = rollback ]; then
+    # ONCE, THEN IT STAYS. Release ids start with their UTC time, so a
+    # rollback is allowed only while `previous` is OLDER than what is running.
+    # After one rollback `previous` is the newer release it left, so a second
+    # request would only go forward again: refused. A new deploy makes `previous`
+    # older again. (The terminal command `reportlog rollback` still toggles.)
+    local now_id back_id
+    now_id=$(basename "$(release_of "$CURRENT")")
+    back_id=$(basename "$(release_of "$PREVIOUS")")
+    if [ -z "$back_id" ] || [ "$back_id" = "$now_id" ] \
+      || [ "$(printf '%s\n%s\n' "$back_id" "$now_id" | LC_ALL=C sort | head -n 1)" != "$back_id" ]; then
+      echo "There is nothing older to go back to. The site has already been rolled back, or this is its first release. To move forward, install an update." >>"$log"
+      update_status refused "$action" ""
+      return 0
+    fi
+    exec 8>&-
+    "$LIB/rollback.sh" >>"$log" 2>&1 || rc=$?
+    if [ "$rc" -eq 0 ]; then
+      update_status "done" "$action" ""
+    else
+      update_status failed "$action" ""
+    fi
+    return 0
+  fi
   update_check >>"$log" 2>&1 || rc=$?
+  # THE TEST BUILD. The one branch name this accepts is fixed here, never
+  # read from the request: the file can say "apply_test" and nothing more.
+  if [ "$action" = apply_test ] && [ "$rc" -eq 0 ]; then
+    tip=$(git -C "$MIRROR" rev-parse --verify --quiet "refs/heads/test^{commit}" 2>/dev/null || true)
+    if [ -z "$tip" ]; then
+      echo "There is no branch called test on the repository, so there is no test build." >>"$log"
+      update_status refused "$action" ""
+      return 0
+    fi
+    echo "Installing the test build $tip." >>"$log"
+    exec 8>&-
+    "$LIB/deploy.sh" "$tip" >>"$log" 2>&1 || rc=$?
+    update_check >/dev/null 2>&1 || true
+    sha=$tip
+  fi
   if [ "$action" = apply ] && [ "$rc" -eq 0 ]; then
     ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
     tip=$(git -C "$MIRROR" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null || true)

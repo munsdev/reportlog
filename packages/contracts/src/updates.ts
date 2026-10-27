@@ -58,6 +58,14 @@ export const requestUpdate = defineRoute({
     z.object({ action: z.literal('check') }),
     /** The commit the page offered: refused if what is on offer has changed. */
     z.object({ action: z.literal('apply'), sha: Sha }),
+    /**
+     * The test build: the newest commit of the branch called `test`, whatever
+     * DEPLOY_REF says. No commit is named: the server works out which one after
+     * a fresh fetch, and no other branch can be asked for.
+     */
+    z.object({ action: z.literal('apply_test') }),
+    /** Back to the release that ran before this one (what `sudo reportlog rollback` does). */
+    z.object({ action: z.literal('rollback') }),
   ]),
   response: UpdatesView,
 });

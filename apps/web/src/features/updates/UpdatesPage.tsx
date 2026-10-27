@@ -10,9 +10,18 @@
 import { getUpdates, requestUpdate } from '@reportlog/contracts';
 import type { UpdatesView } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
 
@@ -27,6 +36,12 @@ const updatesQuery = queryOptions({
 
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString() : 'never');
 
+const LAST_NAMES: Record<string, string> = {
+  apply: 'update',
+  apply_test: 'test build',
+  rollback: 'roll back',
+};
+
 const LAST_WORDS: Record<string, string> = {
   running: 'Under way',
   done: 'Finished',
@@ -34,12 +49,24 @@ const LAST_WORDS: Record<string, string> = {
   refused: 'Not started',
 };
 
+/** How many presses of the version line show the test build button. */
+const TAPS_FOR_TEST_BUILD = 8;
+
 export function UpdatesPage() {
   const qc = useQueryClient();
   const q = useQuery(updatesQuery);
+  // Page state on purpose: a refresh hides the test build button again.
+  const [taps, setTaps] = useState(0);
+  const [confirming, setConfirming] = useState<'test' | 'rollback' | null>(null);
+  const showTestBuild = taps >= TAPS_FOR_TEST_BUILD;
   const ask = useMutation({
-    mutationFn: (body: { action: 'check' } | { action: 'apply'; sha: string }) =>
-      call(requestUpdate, { body }),
+    mutationFn: (
+      body:
+        | { action: 'check' }
+        | { action: 'apply'; sha: string }
+        | { action: 'apply_test' }
+        | { action: 'rollback' },
+    ) => call(requestUpdate, { body }),
     onSuccess: (d) => {
       qc.setQueryData(updatesQuery.queryKey, d);
     },
@@ -57,11 +84,19 @@ export function UpdatesPage() {
       {d ? (
         <>
           <Card heading="This site">
-            <p>
+            {/* A real button, drawn as plain text, so the eight presses are
+                reachable without a mouse and the linter has nothing to object to. */}
+            <button
+              type="button"
+              className="appearance-none bg-transparent p-0 text-left"
+              onClick={() => {
+                setTaps((n) => n + 1);
+              }}
+            >
               Running {d.current_version ?? 'an unnumbered version'}
               {d.current ? ` (${d.current.slice(0, 12)})` : ''}, following{' '}
               <code>{d.ref || 'no branch set'}</code>.
-            </p>
+            </button>
             <p className="text-sm text-muted">Last checked: {when(d.checked_at)}</p>
             {d.fetch_failed ? <Alert tone="serious">{d.fetch_failed}</Alert> : null}
             <div>
@@ -103,7 +138,7 @@ export function UpdatesPage() {
                   Installing takes a few minutes. The site stays up on the current version until the
                   new one is ready, and goes back to it by itself if the new one does not start.
                 </p>
-                <div>
+                <div className="flex flex-wrap gap-2">
                   <Button
                     disabled={busy(d) || ask.isPending}
                     onClick={() => {
@@ -112,19 +147,79 @@ export function UpdatesPage() {
                   >
                     Install the update
                   </Button>
+                  {showTestBuild ? (
+                    <TestBuildButtons disabled={busy(d) || ask.isPending} onAsk={setConfirming} />
+                  ) : null}
                 </div>
               </>
             ) : (
-              <p>This site is running the newest version on its branch.</p>
+              <>
+                <p>This site is running the newest version on its branch.</p>
+                {showTestBuild ? (
+                  <div className="flex flex-wrap gap-2">
+                    <TestBuildButtons disabled={busy(d) || ask.isPending} onAsk={setConfirming} />
+                  </div>
+                ) : null}
+              </>
             )}
           </Card>
+          <Dialog
+            open={confirming !== null}
+            onOpenChange={(open) => {
+              if (!open) setConfirming(null);
+            }}
+          >
+            <DialogContent>
+              {confirming === 'rollback' ? (
+                <DialogHeader>
+                  <DialogTitle>Go back to the previous version?</DialogTitle>
+                  <DialogDescription>
+                    The site goes back to the version it ran before the last update. The database
+                    keeps what the newer version added, which the older one ignores. This can be
+                    done once: to move forward again, install an update.
+                  </DialogDescription>
+                </DialogHeader>
+              ) : (
+                <DialogHeader>
+                  <DialogTitle>This is a TEST BUILD</DialogTitle>
+                  <DialogDescription>
+                    A test build is unfinished work. It may break things, and it may change the
+                    database in ways that the normal version cannot go back from. The Roll back
+                    button beside this one returns to the previous version. Only do this on a test
+                    server.
+                  </DialogDescription>
+                </DialogHeader>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setConfirming(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={busy(d) || ask.isPending}
+                  onClick={() => {
+                    const what = confirming;
+                    setConfirming(null);
+                    if (what === 'rollback') ask.mutate({ action: 'rollback' });
+                    if (what === 'test') ask.mutate({ action: 'apply_test' });
+                  }}
+                >
+                  {confirming === 'rollback' ? 'Roll back' : 'Install the test build'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {ask.isError ? <Alert tone="serious">{ask.error.message}</Alert> : null}
           {d.waiting ? (
             <Alert tone="note">Asked. The server picks it up within a few seconds.</Alert>
           ) : null}
           {d.last ? (
-            <Card heading={`Last ${d.last.action === 'apply' ? 'update' : 'check'}`}>
+            <Card heading={`Last ${LAST_NAMES[d.last.action] ?? 'check'}`}>
               <p role="status">
                 {LAST_WORDS[d.last.state] ?? d.last.state} · {when(d.last.at)}
               </p>
@@ -138,5 +233,36 @@ export function UpdatesPage() {
         </>
       ) : null}
     </StaffPage>
+  );
+}
+
+function TestBuildButtons({
+  disabled,
+  onAsk,
+}: {
+  disabled: boolean;
+  onAsk: (what: 'test' | 'rollback') => void;
+}) {
+  return (
+    <>
+      <Button
+        variant="secondary"
+        disabled={disabled}
+        onClick={() => {
+          onAsk('test');
+        }}
+      >
+        Update to test build
+      </Button>
+      <Button
+        variant="secondary"
+        disabled={disabled}
+        onClick={() => {
+          onAsk('rollback');
+        }}
+      >
+        Roll back
+      </Button>
+    </>
   );
 }
