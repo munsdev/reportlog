@@ -16,10 +16,13 @@ import { BASELINE_SCHEMA } from './baseline-schema.ts';
 
 /**
  * Columns whose values are MEANT to be on a public page, as `table.column`,
- * each with the reason. Empty today. Adding to it is a decision a reviewer
- * should see, which is why it is a list in a file and not a flag.
+ * each with the reason. Adding to it is a decision a reviewer should see,
+ * which is why it is a list in a file and not a flag.
  */
-export const MEANT_TO_BE_PUBLIC: Readonly<Record<string, string>> = {};
+export const MEANT_TO_BE_PUBLIC: Readonly<Record<string, string>> = {
+  'site_bundle_backups.snapshot':
+    "A copy of the site's own wording, pages and look, kept before an import so the owner can put them back: the same values the public pages show. It holds nothing anybody filed.",
+};
 
 export interface Found {
   where: string;

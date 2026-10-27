@@ -295,7 +295,8 @@ describe('the good pack', () => {
       dark: true,
       stylesheets: [stylesheet],
       options: DEFAULT_LOOK_OPTIONS,
-      kits: [],
+      // A pack that adds palettes or themes ships a header kit the page script reads.
+      kits: [expect.stringMatching(/^\/api\/looks\/tideline\/[0-9a-f]{64}\.json$/)],
     });
   });
 
