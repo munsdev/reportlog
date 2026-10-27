@@ -12,7 +12,7 @@
  */
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useSettingPanels } from '../../components/ui/setting-panel.tsx';
+import { useSettingPanels } from '../../mockup/SettingPanel.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
 import { SaveBar } from '../../mockup/SaveBar.tsx';
 

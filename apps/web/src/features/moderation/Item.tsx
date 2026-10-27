@@ -38,7 +38,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
-import { SettingPanels, useSettingPanels } from '../../components/ui/setting-panel.tsx';
+import { SettingPanels, useSettingPanels } from '../../mockup/SettingPanel.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';

@@ -14,7 +14,7 @@ import { NOT_A_SAMPLE } from '@reportlog/contracts';
 
 export function NotASample({ line }: { line?: string | undefined }) {
   return (
-    <p className="text-sm text-ink-alt" data-not-a-sample>
+    <p className="muted" data-not-a-sample>
       {line === undefined || line === '' ? NOT_A_SAMPLE : line}
     </p>
   );

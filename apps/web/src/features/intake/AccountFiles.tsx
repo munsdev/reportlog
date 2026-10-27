@@ -120,12 +120,12 @@ export function AccountFiles({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <p id={headingId} className="font-semibold">
+    <div className="field">
+      <span id={headingId} className="lbl">
         {question.label}
         {question.required ? '' : ' (optional)'}
-      </p>
-      {question.help ? <p className="text-sm text-ink-alt">{question.help}</p> : null}
+      </span>
+      {question.help ? <span className="help">{question.help}</span> : null}
       {config.data?.enabled ? (
         <Picker
           config={config.data}
@@ -137,16 +137,16 @@ export function AccountFiles({
           onRefused={setProblem}
         />
       ) : config.data ? (
-        <p className="text-sm">
+        <p className="m">
           This site is not taking files at the moment, so the account is filed without them.
         </p>
       ) : (
-        <p role="status" className="text-sm">
+        <p role="status" className="muted">
           Loading…
         </p>
       )}
       {problem ? (
-        <p role="alert" className="text-sm font-semibold text-serious">
+        <p role="alert" className="error">
           {problem}
         </p>
       ) : null}
@@ -171,12 +171,12 @@ function Picker({
 }) {
   const id = useId();
   return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm text-ink-alt" id={`${id}-limits`}>
+    <div style={{ display: 'grid', gap: 12 }}>
+      <p className="m" id={`${id}-limits`}>
         {config.max_files === 1 ? 'One file' : `Up to ${String(config.max_files)} files`}, together
         less than {megabytes(config.max_total_bytes)}.
       </p>
-      <p className="text-sm">
+      <p className="m">
         Hidden details in photos and videos (where, when, on what) are removed from any copy that
         could ever be shown. The file as you attach it is kept, locked, as evidence. It is filed
         with the account, when you file the batch.

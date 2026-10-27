@@ -25,7 +25,6 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from './button.tsx';
 
 export const TOAST_MS = 5000;
 
@@ -58,10 +57,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div
-        role="status"
-        className="pointer-events-none fixed inset-x-0 bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] z-40 flex justify-center px-4 print:hidden"
-      >
+      <div className="print:hidden" role="status" aria-live="polite">
         {shown ? (
           <Toast
             key={shown.id}
@@ -98,7 +94,8 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
     // inside is how anybody, with any input, acts on the toast.
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
-      className="pointer-events-auto flex max-w-full items-center gap-4 rounded-control bg-deep py-2.5 pr-3 pl-4.5 text-on-deep shadow-raised"
+      className="toast show"
+      style={{ display: 'flex', alignItems: 'center', gap: 12, borderRadius: 24 }}
       onMouseEnter={() => {
         setHeld((h) => ({ ...h, hover: true }));
       }}
@@ -112,10 +109,22 @@ function Toast({ message, onDone }: { message: string; onDone: () => void }) {
         if (!e.currentTarget.contains(e.relatedTarget)) setHeld((h) => ({ ...h, focus: false }));
       }}
     >
-      <p className="min-w-0">{message}</p>
-      <Button variant="quiet" className="shrink-0 text-on-deep" onClick={onDone}>
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onDone}
+        style={{
+          font: 'inherit',
+          color: 'inherit',
+          background: 'transparent',
+          border: 0,
+          textDecoration: 'underline',
+          cursor: 'pointer',
+          minHeight: 36,
+        }}
+      >
         Dismiss
-      </Button>
+      </button>
     </div>
   );
 }
