@@ -70,7 +70,7 @@ export function FiledReceipt({ title, reference }: { title: string; reference: s
 
 export function SentReceipt({ email, title }: { email: string; title: string }) {
   return (
-    <Receipt eyebrow="One more step" heading="Check your email to finish">
+    <Receipt eyebrow="One more step" heading="Check your email to finish" after={<TipOffer />}>
       <p className="max-w-[62ch] text-lede text-ink-alt">
         We have sent a link to <strong className="break-all text-ink">{email}</strong>.{' '}
         <b className="text-ink">Your report is filed when you press it.</b> Nothing is filed in “

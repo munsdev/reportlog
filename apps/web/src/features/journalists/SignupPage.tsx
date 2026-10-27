@@ -23,6 +23,7 @@ import { CheckOption } from '@/components/ui/choice.tsx';
 import { Field } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
+import { FollowBand } from '../follow/FollowBand.tsx';
 import { CardError } from '../form/CardFrame.tsx';
 import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -66,6 +67,7 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
             already on the list, we have sent it a link to the request form instead.
           </p>
         ) : null}
+        <FollowBand placement="after_tip" />
       </PublicPage>
     );
   }

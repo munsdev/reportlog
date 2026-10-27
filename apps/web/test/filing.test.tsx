@@ -210,7 +210,7 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
     await user.click(screen.getByRole('button', { name: 'Send report' }));
-    expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Check your email/ })).toBeInTheDocument();
 
     expect([...new Set(calls)].sort()).toEqual([
       'GET /api/intake-pause',
@@ -257,7 +257,7 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('checkbox', { name: /I confirm this report is accurate/ }));
     await user.click(screen.getByRole('button', { name: 'Send report' }));
-    expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Check your email/ })).toBeInTheDocument();
     expect(screen.getByText(/Thank you\. Have a link\?/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Send a link' })).toHaveAttribute('href', '/list/tips');
     const kept = JSON.parse(localStorage.getItem('reportlog:tip-prefill') ?? 'null') as {

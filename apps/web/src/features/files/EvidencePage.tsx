@@ -197,7 +197,7 @@ function SmallPage({
     document.title = `${title} · ${site}`;
   }, [title, site]);
   return (
-    <section className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
+    <section className="flex w-full max-w-[40rem] flex-col gap-6">
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-title">{title}</h1>
         {reference ? <Meta className="text-base text-ink">{reference}</Meta> : null}

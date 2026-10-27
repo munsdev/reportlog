@@ -16,6 +16,7 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'evidence',
   'feedback',
   'file',
+  'get-involved',
   'home',
   'how',
   'illegal-content',

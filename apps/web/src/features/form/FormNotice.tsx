@@ -16,7 +16,7 @@ import { Eyebrow } from '@/components/ui/type.tsx';
 import { useGateMode } from '@/features/identity/gateMode.ts';
 
 export function FormColumn({ children }: { children: ReactNode }) {
-  return <section className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">{children}</section>;
+  return <section className="flex w-full max-w-[40rem] flex-col gap-6">{children}</section>;
 }
 
 export function FormNotice({
