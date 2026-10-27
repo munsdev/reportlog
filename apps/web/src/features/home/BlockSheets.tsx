@@ -368,23 +368,21 @@ export function BlockForm({
           </span>
         </div>
         <Fld label="Line under the buttons" value={t('who')} onChange={set('who')} />
-        {typeof window !== 'undefined' && typeof window.elOpenLook === 'function' ? (
-          <div className="field">
-            <span className="lbl">Background</span>
-            <button
-              className="btn sm flat"
-              type="button"
-              style={{ justifySelf: 'start' }}
-              onClick={() => {
-                onCancel();
-                window.elOpenLook?.(true);
-              }}
-            >
-              Edit header background
-            </button>
-            <span className="help">Elements, image, fade. Applies to every page header.</span>
-          </div>
-        ) : null}
+        {/* Always offered, and to the Look screen, where the header background
+            is saved for the whole site. It used to show only once the floating
+            Look panel had been built, which was usually after this sheet drew. */}
+        <div className="field">
+          <span className="lbl">Background</span>
+          <Link
+            className="btn sm flat"
+            to="/settings/look"
+            hash="look-bg"
+            style={{ justifySelf: 'start' }}
+          >
+            Edit header background
+          </Link>
+          <span className="help">Elements, image, fade. Applies to every page header.</span>
+        </div>
       </>
     );
   } else if (block.type === 'cta') {

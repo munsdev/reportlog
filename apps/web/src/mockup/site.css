@@ -101,6 +101,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .menu-btn{min-height:44px;min-width:44px;padding:0 12px;background:transparent;border:2px solid var(--on-chrome-muted);color:#fff;border-radius:var(--rl-radius-sm);font-family:var(--rl-font-mono);font-size:.75rem;letter-spacing:.12em;cursor:pointer}
 .menu-btn:hover{border-color:#fff}
 @media (max-width:440px){.wm{font-size:.85rem}.site-head .btn.sm{padding:0 10px;font-size:.72rem}.menu-btn{padding:0 9px}}
+/* Port: with the real display font the phone header (wordmark, main button, MENU) ran past 390px and cut MENU off. */
+@media (max-width:440px){.site-head .wrap{gap:8px}.wm{font-size:.78rem}.site-head .btn.sm{padding:0 8px;font-size:.68rem;letter-spacing:.04em}.menu-btn{padding:0 8px}}
 
 /* ---------- ticker ---------- */
 .ticker{background:var(--ticker-bg);color:var(--ticker-fg)}

@@ -292,8 +292,9 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
   const out = useSignOut();
   const navigate = useNavigate();
   // `open` is the stylesheet's switch (`.menu[open]`), not a div attribute
-  // React knows, so it goes in as a plain string attribute.
-  const open = { open: '' } as Record<string, string>;
+  // React knows. It must be `true`: React drops an empty string for `open`,
+  // and the drawer never showed.
+  const open = { open: true } as Record<string, boolean>;
   return (
     <div
       ref={panel}
