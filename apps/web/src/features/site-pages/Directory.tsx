@@ -15,17 +15,16 @@ import { getDirectory, getListing, setListing } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { CopyText } from '../../components/ui/copy-text.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
-import { Field } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { Meta } from '../../components/ui/type.tsx';
 import { PublicPage } from './PublicPage.tsx';
 import { call } from '../../lib/api.ts';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { Note, Panel } from '../../mockup/Panel.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 
@@ -114,6 +113,7 @@ export function ListingPage({ id }: { id: number }) {
 }
 
 function Listing({ id }: { id: number }) {
+  useBodyClass('light', 'form');
   const me = useMe();
   const client = useQueryClient();
   const toast = useToast();
@@ -137,83 +137,100 @@ function Listing({ id }: { id: number }) {
       );
     },
   });
-  if (me.isPending) return <p role="status">Loading…</p>;
+  if (me.isPending) {
+    return (
+      <Narrow>
+        <p role="status" className="muted">
+          Loading…
+        </p>
+      </Narrow>
+    );
+  }
   if (!me.data?.signedIn) return <SignInPrompt next={`/organizations/${String(id)}/listing`} />;
   if (state.isError) {
     return (
-      <Alert tone="serious" title="This could not be opened.">
-        {state.error.message}
-      </Alert>
+      <TokenPage title="This could not be opened.">
+        <Note warn>{state.error.message}</Note>
+      </TokenPage>
     );
   }
-  if (!state.data) return <p role="status">Loading…</p>;
+  if (!state.data) {
+    return (
+      <Narrow>
+        <p role="status" className="muted">
+          Loading…
+        </p>
+      </Narrow>
+    );
+  }
   const s = state.data;
   const value = chosen ?? (s.listed ? 'listed' : 'not');
   const changed = (value === 'listed') !== s.listed;
   return (
-    <PublicPage title={`${s.organization} in the directory`} width="prose">
+    <TokenPage title={`${s.organization} in the directory`}>
       <p>
         {s.listed
           ? `${s.organization} is listed in “${s.directory_name}”${s.joined ? `, since ${day(s.joined)}` : ''}.`
           : `${s.organization} is not listed in “${s.directory_name}”.`}
       </p>
       <form
-        className="flex flex-col gap-5"
+        style={{ display: 'grid', gap: 18 }}
         onSubmit={(e) => {
           e.preventDefault();
           change.mutate(value === 'listed');
         }}
       >
-        <Field>
-          <Label>In the directory</Label>
-          <RadioGroup
-            value={value}
-            onValueChange={(v) => {
-              setChosen(v === 'listed' ? 'listed' : 'not');
+        <div className="switch">
+          <div>
+            <b id="listing-label">Listed in the directory</b>
+            <span>{value === 'listed' ? 'Its row appears as shown below.' : s.leaving}</span>
+          </div>
+          <button
+            className="tgl"
+            type="button"
+            role="switch"
+            aria-checked={value === 'listed'}
+            aria-labelledby="listing-label"
+            onClick={() => {
+              setChosen(value === 'listed' ? 'not' : 'listed');
             }}
-          >
-            <RadioOption value="listed" label="Listed" hint="Its row appears as shown below." />
-            <RadioOption value="not" label="Not listed" hint={s.leaving} />
-          </RadioGroup>
-        </Field>
-        <section className="flex flex-col gap-3" aria-labelledby="appears">
-          <h2 id="appears" className="label-face text-xs text-ink-alt">
+          />
+        </div>
+        <Panel variant="quiet" title="What this list is">
+          <p className="whitespace-pre-wrap">{s.disclaimer}</p>
+        </Panel>
+        <section aria-labelledby="appears" style={{ display: 'grid', gap: 10 }}>
+          <h2 id="appears" className="eyebrow">
             How its row appears while it is listed
           </h2>
-          <Card variant="quiet" heading="What this list is">
-            <p className="whitespace-pre-wrap">{s.disclaimer}</p>
-          </Card>
-          <ul className="list-disc pl-6">
+          <ul style={{ paddingLeft: 24, listStyle: 'disc' }}>
             {s.what_appears.map((w) => (
               <li key={w}>{w}</li>
             ))}
           </ul>
-          <p className="text-sm text-ink-alt">
-            Today its number of members would be {String(s.member_count)}.
-          </p>
+          <p className="m">Today its number of members would be {String(s.member_count)}.</p>
         </section>
         {change.isError ? (
-          <Alert tone="serious" title="That did not change.">
+          <Note warn title="That did not change.">
             {change.error.message}
-          </Alert>
+          </Note>
         ) : null}
-        <div className="flex flex-col items-start gap-2">
-          <Button
+        <div>
+          <button
+            className="btn sm flat ink"
             type="submit"
-            disabled={!changed}
-            busy={change.isPending}
-            busyLabel="Saving…"
+            disabled={!changed || change.isPending}
             aria-describedby={changed ? undefined : 'listing-unchanged'}
           >
-            Save
-          </Button>
+            {change.isPending ? 'Saving…' : 'Save'}
+          </button>
           {changed ? null : (
-            <p id="listing-unchanged" className="text-sm text-ink-alt">
+            <p id="listing-unchanged" className="m">
               Nothing changed yet.
             </p>
           )}
         </div>
       </form>
-    </PublicPage>
+    </TokenPage>
   );
 }
