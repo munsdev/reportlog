@@ -41,10 +41,11 @@ describe('the browser suite’s menu table', () => {
 
   it('names every staff page, at its address and in its area', () => {
     expect(ALL_PAGES.map((p) => p.label)).toEqual(STAFF_ENTRIES.map((e) => e.label));
-    for (const e of STAFF_ENTRIES) {
-      const row = ALL_PAGES.find((p) => p.label === e.label);
+    // By position, not by label: two pages may share one (Written accounts).
+    STAFF_ENTRIES.forEach((e, i) => {
+      const row = ALL_PAGES[i];
       expect(row?.href).toBe(`${e.to}${e.hash ? `#${e.hash}` : ''}`);
       expect(row?.area).toBe(STAFF_AREAS.find((a) => a.pages.includes(e))?.label);
-    }
+    });
   });
 });

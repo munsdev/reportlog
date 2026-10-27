@@ -53,6 +53,7 @@ describe('who sees which staff area and page', () => {
     expect(shape(as('moderator'))).toEqual({
       Review: [
         'Reports queue',
+        'Written accounts',
         'Links',
         'List entries',
         'Files',
@@ -115,6 +116,7 @@ describe('who sees which staff area and page', () => {
       ...YOU,
       'Signing in',
       'Checked links',
+      'Written accounts',
       'Sources',
       'Your alerts',
     ]);

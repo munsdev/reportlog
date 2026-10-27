@@ -8,6 +8,7 @@
  * a refusal that keeps the screen, Skip, the storage note, and that nothing
  * is written that was not asked for.
  */
+import { DEFAULT_LOOK_OPTIONS } from '@reportlog/contracts';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -40,6 +41,7 @@ function fakeServer({ configured = true, refuseName = false } = {}) {
   const writes: Saved[] = [];
   const editor = () => ({
     look: state.look,
+    look_options: DEFAULT_LOOK_OPTIONS,
     name: state.name,
     effective_name: state.name ?? 'ReportLog',
     copy: [],

@@ -22,11 +22,15 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Email updates', href: '/notifications' },
   { label: 'Signing in', href: '/access/security' },
   { label: 'Checked links', href: '/desk' },
+  // Review has a "Written accounts" too: same words, a different page and a
+  // different reader, so anything that looks one up must go by address.
+  { label: 'Written accounts', href: '/desk/texts' },
   { label: 'Sources', href: '/desk/sources' },
   { label: 'Your alerts', href: '/desk/alerts' },
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
+  { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
   { area: 'Review', label: 'Links', href: '/lists/links' },
   { area: 'Review', label: 'List entries', href: '/lists/review' },
   { area: 'Review', label: 'Files', href: '/files' },
@@ -80,10 +84,15 @@ const pick = (...labels: string[]) => labels;
 const YOU = ['Your dashboard', 'My reports', 'Email updates'];
 /** Anyone holding a role also has the page to prove a second factor. */
 const YOU_STAFF = [...YOU, 'Signing in'];
-const ALL = ALL_PAGES.map((p) => p.label);
-const WITHOUT = (...gone: string[]) => ALL.filter((l) => !gone.includes(l));
 const ORG = ['Filing for an organization', 'Volunteer links'];
-const DESK = ['Checked links', 'Sources', 'Your alerts'];
+const DESK = ['Checked links', 'Written accounts', 'Sources', 'Your alerts'];
+/** Everything but the journalist desk: "Written accounts" is also Review's, which stays. */
+const WITHOUT_DESK = (...gone: string[]) => {
+  const desk = new Set(
+    ALL_PAGES.filter((p) => p.href === '/desk' || p.href.startsWith('/desk/')).map((p) => p.href),
+  );
+  return ALL_PAGES.filter((p) => !desk.has(p.href) && !gone.includes(p.label)).map((p) => p.label);
+};
 
 /** The pages each role's sidebar shows, by label, in the sidebar's order. */
 export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
@@ -93,6 +102,7 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
     ...YOU_STAFF,
     ...pick(
       'Reports queue',
+      'Written accounts',
       'Links',
       'List entries',
       'Files',
@@ -101,14 +111,8 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
       'Guides',
     ),
   ],
-  admin: WITHOUT(
-    'Journalist agreement',
-    'Journalist requests',
-    'Backups and exports',
-    ...DESK,
-    ...ORG,
-  ),
-  owner: WITHOUT(...DESK, ...ORG),
+  admin: WITHOUT_DESK('Journalist agreement', 'Journalist requests', 'Backups and exports', ...ORG),
+  owner: WITHOUT_DESK(...ORG),
   access_manager: [
     ...YOU_STAFF,
     ...pick(

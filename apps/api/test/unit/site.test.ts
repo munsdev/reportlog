@@ -44,8 +44,8 @@ describe('the look', () => {
     expect(validateLook({}).ok).toBe(false);
   });
 
-  it('nobody having chosen is Newsdesk, the default since 22 October 2026', () => {
-    expect(DEFAULT_LOOK).toEqual({ palette: 'newsdesk', theme: 'newsdesk' });
+  it('nobody having chosen is Workstation, the default since the owner approved it', () => {
+    expect(DEFAULT_LOOK).toEqual({ palette: 'workstation', theme: 'workstation' });
   });
 
   it('an id stored before the look library paints the one that replaced it', () => {
@@ -86,8 +86,8 @@ describe('the look', () => {
     ]);
   });
 
-  it('offers eleven light palettes and seven dark ones', () => {
-    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(11);
+  it('offers twelve light palettes and seven dark ones', () => {
+    expect(PALETTES.filter((p) => !p.dark)).toHaveLength(12);
     expect(PALETTES.filter((p) => p.dark)).toHaveLength(7);
     expect(isDarkPalette('midnight')).toBe(true);
     expect(isDarkPalette('flint')).toBe(false);

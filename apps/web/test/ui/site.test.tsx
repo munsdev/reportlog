@@ -14,14 +14,14 @@ afterEach(() => {
 });
 
 describe('applying the look', () => {
-  it('names the choice on <html>, and the default (Newsdesk) by naming nothing', () => {
+  it('names the choice on <html>, and the default (Workstation) by naming nothing', () => {
     const root = document.documentElement;
     applyLook({ palette: 'midnight', theme: 'signal', panel_head: 'bar', texture: 'none' });
     expect(root).toHaveAttribute('data-palette', 'midnight');
     expect(root).toHaveAttribute('data-theme', 'signal');
     applyLook({
-      palette: 'newsdesk',
-      theme: 'newsdesk',
+      palette: 'workstation',
+      theme: 'workstation',
       panel_head: 'double-rule',
       texture: 'none',
     });

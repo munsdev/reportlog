@@ -80,6 +80,7 @@ const STAFF_ELSEWHERE = [
   '/feedback/',
   '/feedback/testers',
   '/desk/',
+  '/desk/texts',
   '/desk/sources',
   '/desk/alerts',
 ] as const;
