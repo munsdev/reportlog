@@ -233,7 +233,11 @@ describe('the freeze on a launched logbook', () => {
 describe('the freeze and the one-way door', () => {
   it('works on a draft, and launching a frozen draft keeps it frozen', async () => {
     const draft = await L.createLogbook(h.db, { title: 'Frozen draft', slug: uniqueSlug('fz') });
-    await addStoredQuestion(h.db, draft.id, { kind: 'long_text', label: 'What happened', required: true });
+    await addStoredQuestion(h.db, draft.id, {
+      kind: 'long_text',
+      label: 'What happened',
+      required: true,
+    });
     await addStoredQuestion(h.db, draft.id, { kind: 'file', label: 'Photos' });
     const frozen = await freeze(draft.id, true);
     expect(frozen.statusCode).toBe(200);

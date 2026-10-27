@@ -95,11 +95,20 @@ describe('questions are made, not built in', () => {
     });
     expect(when.key).toBe('when_did_it_happen');
     expect(
-      (await addStoredQuestion(db, lb.id, { kind: 'place', label: 'Where it started', filterable: true }))
-        .filterable,
+      (
+        await addStoredQuestion(db, lb.id, {
+          kind: 'place',
+          label: 'Where it started',
+          filterable: true,
+        })
+      ).filterable,
     ).toBe(true);
     // A SECOND PLACE FIELD: the thing a fixed column could never do.
-    await addStoredQuestion(db, lb.id, { kind: 'place', label: 'Where it ended', filterable: true });
+    await addStoredQuestion(db, lb.id, {
+      kind: 'place',
+      label: 'Where it ended',
+      filterable: true,
+    });
     const notes = await addStoredQuestion(db, lb.id, {
       kind: 'long_text',
       label: 'Notes',
@@ -112,7 +121,10 @@ describe('questions are made, not built in', () => {
       'key-taken',
     );
     await refused(addStoredQuestion(db, lb.id, { kind: 'date', label: '' }), 'label');
-    await refused(addStoredQuestion(db, lb.id, { kind: 'date', label: 'X', key: 'Bad Key' }), 'key');
+    await refused(
+      addStoredQuestion(db, lb.id, { kind: 'date', label: 'X', key: 'Bad Key' }),
+      'key',
+    );
 
     const fields = await L.fieldsFor(db, lb.id);
     expect(fields.map((f) => f.key)).toEqual([
@@ -142,7 +154,11 @@ describe('questions are made, not built in', () => {
     const text = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Name' });
     expect(text.settings).toEqual({ maxLength: 200 });
     await refused(
-      addStoredQuestion(db, lb.id, { kind: 'location', label: 'Where', settings: { scope: 'mars' } }),
+      addStoredQuestion(db, lb.id, {
+        kind: 'location',
+        label: 'Where',
+        settings: { scope: 'mars' },
+      }),
       'location-scope',
     );
     await refused(
@@ -160,7 +176,10 @@ describe('questions are made, not built in', () => {
       settings: { scope: 'us', depth: 'state' },
     });
     expect(state.settings).toEqual({ scope: 'us' });
-    await refused(addStoredQuestion(db, lb.id, { kind: 'choice_one', label: 'Pick' }), 'choice-options');
+    await refused(
+      addStoredQuestion(db, lb.id, { kind: 'choice_one', label: 'Pick' }),
+      'choice-options',
+    );
     await refused(
       addStoredQuestion(db, lb.id, {
         kind: 'choice_one',
@@ -185,7 +204,10 @@ describe('questions are made, not built in', () => {
     );
     await addStoredQuestion(db, lb.id, { kind: 'file', label: 'Photos' });
     expect((await L.logbookById(db, lb.id))?.asks_for_files).toBe(true);
-    await refused(addStoredQuestion(db, lb.id, { kind: 'file', label: 'More files' }), 'file-exists');
+    await refused(
+      addStoredQuestion(db, lb.id, { kind: 'file', label: 'More files' }),
+      'file-exists',
+    );
   });
 });
 
@@ -286,7 +308,10 @@ describe('the one-way door', () => {
       addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Anything else?', required: true }),
       'launched-required',
     );
-    const added = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Anything else?' });
+    const added = await addStoredQuestion(db, lb.id, {
+      kind: 'short_text',
+      label: 'Anything else?',
+    });
     expect(added.required).toBe(false);
 
     const after = await L.fieldsFor(db, lb.id);

@@ -35,7 +35,11 @@ const db = testDatabase();
 /** A launched logbook, with the question `launch` insists on. */
 async function logbook(title: string) {
   const lb = await L.createLogbook(db, { title, slug: uniqueSlug('hb') });
-  await addStoredQuestion(db, lb.id, { key: 'account', kind: 'long_text', label: 'What happened?' });
+  await addStoredQuestion(db, lb.id, {
+    key: 'account',
+    kind: 'long_text',
+    label: 'What happened?',
+  });
   return L.launch(db, lb.id);
 }
 

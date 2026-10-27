@@ -96,7 +96,10 @@ describe('a starting point', () => {
       starting_point: 'how-voting-went',
       title: '',
     });
-    await addStoredQuestion(db, lb.id, { kind: 'long_text', label: 'Anything else, in your own words?' });
+    await addStoredQuestion(db, lb.id, {
+      kind: 'long_text',
+      label: 'Anything else, in your own words?',
+    });
     await addStoredQuestion(db, lb.id, { kind: 'file', label: 'Photos, video or documents' });
     expect((await L.logbookById(db, lb.id))?.asks_for_files).toBe(true);
   });

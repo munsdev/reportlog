@@ -164,7 +164,10 @@ describe('applying the general template', () => {
 
   it('leaves an ordinary logbook behind: it gains a written question like any other', async () => {
     const id = made.logbook?.id ?? 0;
-    await addStoredQuestion(h.db, id, { kind: 'long_text', label: 'Anything else, in your own words?' });
+    await addStoredQuestion(h.db, id, {
+      kind: 'long_text',
+      label: 'Anything else, in your own words?',
+    });
     expect((await L.fieldsFor(h.db, id)).at(-1)?.kind).toBe('long_text');
   });
 });

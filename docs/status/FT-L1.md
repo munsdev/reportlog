@@ -7,6 +7,7 @@ windows the chooser column was left about 200px. `KeyValueList` also used the
 window's `sm:` for its two columns, so the packs panel gave its value a sliver.
 
 Fix:
+
 - `routes/(staff)/settings/look.tsx`: two columns (chooser, 24rem sticky preview)
   only when the page's own column is >= 56rem (ResizeObserver); stacked below.
   The pinned quick-pick bar follows the same switch.

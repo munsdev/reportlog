@@ -262,7 +262,11 @@ describe('THE REGRESSION THAT WOULD BE WORST', () => {
   it('a logbook with no conditions hashes exactly as it did before conditions existed', async () => {
     const plainSlug = uniqueSlug('plain');
     const lb = await L.createLogbook(db, { title: 'Plain', slug: plainSlug });
-    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What happened?', key: 'what' });
+    await addStoredQuestion(db, lb.id, {
+      kind: 'short_text',
+      label: 'What happened?',
+      key: 'what',
+    });
     const rows = await L.fieldsFor(db, lb.id);
     expect(rows[0]?.shown_when).toBeNull();
 
