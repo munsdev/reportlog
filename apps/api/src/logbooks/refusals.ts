@@ -54,6 +54,7 @@ const SENTENCES = {
     'A location can be written as a postal code only for a US state, and as a county code only ' +
     'for a US county inside an earlier question asking for the state by postal code.',
   'max-length': 'The longest answer allowed must be a whole number from 1 to 100,000.',
+  'max-values': 'A link question can take from 1 to 3 links.',
   'number-range':
     'The smallest and largest numbers must be numbers, and the smallest must not be larger than the largest.',
   'file-exists':

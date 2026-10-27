@@ -170,9 +170,17 @@ export async function appendReportVersion(
       // the request, so the column cannot drift from the seal. Absent is
       // NULL, never {}.
       answers: sealed.answers ? JSON.stringify(sealed.answers) : null,
-      // Likewise: what was sealed under these keys, or NULL, never {}.
-      text_fingerprints: sealed.text_fingerprints ? JSON.stringify(sealed.text_fingerprints) : null,
-      link_fingerprints: sealed.link_fingerprints ? JSON.stringify(sealed.link_fingerprints) : null,
+      // Likewise: what was sealed under these keys, never {}. NAMED ONLY WHEN
+      // PRESENT (the column default is NULL), so a report without a held
+      // value is the same INSERT as before the columns existed: this code
+      // files it on a database that has not yet run their migration, which
+      // is how the upgrade test files its "before" reports.
+      ...(sealed.text_fingerprints
+        ? { text_fingerprints: JSON.stringify(sealed.text_fingerprints) }
+        : {}),
+      ...(sealed.link_fingerprints
+        ? { link_fingerprints: JSON.stringify(sealed.link_fingerprints) }
+        : {}),
       may_publish: sealed.may_publish,
       may_publish_digest: sealed.may_publish_digest,
       // Null on a direct report, so the row and the seal say the same thing.

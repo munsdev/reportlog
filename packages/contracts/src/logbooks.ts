@@ -36,6 +36,8 @@ export type OptionInput = z.infer<typeof OptionInput>;
 
 export const QuestionSettingsInput = z.strictObject({
   maxLength: z.number().int().optional(),
+  /** On a link question that is never published: how many links, 1 to 3. */
+  maxValues: z.number().int().optional(),
   options: z.array(OptionInput).optional(),
   /** In place of `options`: which list is offered depends on an earlier answer. */
   option_sets: z.array(z.object({ when: Condition, options: z.array(OptionInput) })).optional(),

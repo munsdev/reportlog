@@ -218,6 +218,7 @@ export async function buildApp({
     confirmsPerClient: config.FILING_CONFIRMS_PER_CLIENT,
     door,
     files: typeof files === 'string' ? null : files,
+    linkKeys,
   });
   await fileRoutes(app, { db, files });
   await logoRoutes(app, { db, files });

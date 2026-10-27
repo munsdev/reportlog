@@ -13,10 +13,12 @@
  * touched and still verifies.
  */
 import type { MyReport, MyReportDetail } from '@reportlog/contracts';
-import { buildAnswers } from '@reportlog/fields';
+import { buildAnswers, buildHeldValues, holdsAnything } from '@reportlog/fields';
 import { normalizeReportFields } from '@reportlog/seal';
 import type { Kysely } from 'kysely';
+import { prepareHeld } from '../chain/held.ts';
 import { questionsFor } from '../chain/questions.ts';
+import type { LinkKeys } from '../links/keys.ts';
 import { takeDownForReporter } from '../files/publication.ts';
 import type { DB } from '../db/schema.gen.ts';
 import { notFound } from '../http/errors.ts';
@@ -26,7 +28,7 @@ import { NONE_GRANTED, permissionHistory, permissionsForMany } from '../permissi
 import { emailDigests, eraseContact } from './contactKeys.ts';
 import { appendCorrection, lockHead } from './correction.ts';
 import type { ContactKeyring } from './contactKeys.ts';
-import { answerRefusals, notConfigured, refused } from './filing.ts';
+import { answerRefusals, heldRefusals, notConfigured, refused } from './filing.ts';
 
 const notYours = () => notFound('There is no report of yours with that reference.');
 
@@ -87,11 +89,18 @@ export class Mine {
   private readonly db: Kysely<DB>;
   private readonly ring: ContactKeyring | null;
   private readonly publicRefPrefix: string;
+  private readonly linkKeys: (() => Promise<LinkKeys>) | null;
 
-  constructor(db: Kysely<DB>, ring: ContactKeyring | null, publicRefPrefix: string) {
+  constructor(
+    db: Kysely<DB>,
+    ring: ContactKeyring | null,
+    publicRefPrefix: string,
+    linkKeys: (() => Promise<LinkKeys>) | null = null,
+  ) {
     this.db = db;
     this.ring = ring;
     this.publicRefPrefix = publicRefPrefix;
+    this.linkKeys = linkKeys;
   }
 
   /** Two digests only while CONTACT_KEY is being rotated (contactKeys.ts). */
@@ -180,8 +189,17 @@ export class Mine {
     const questions = await questionsFor(this.db, owned.logbook_id);
     const { answers, errors } = buildAnswers(questions, b.answers ?? {});
     const problems = [...answerRefusals(questions, b.answers ?? {}), ...errors.map((e) => `${e}.`)];
+    // A CORRECTION HOLDS WHAT IT SENDS, like its answers: each held value is
+    // new, under a new nonce and a new key, so the earlier version keeps its
+    // own and erasing one leaves the other (W1). A text or link left out is
+    // not in the new version.
+    const built = buildHeldValues(questions, b.answers ?? {}, answers);
+    problems.push(...built.errors.map((e) => `${e}.`), ...heldRefusals(questions, built.problems));
     if (!comment) problems.push('Say why you are correcting it.');
     if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
+    const held = holdsAnything(built.held) ? built.held : undefined;
+    if (held && !this.linkKeys) throw notConfigured();
+    const keys = held && this.linkKeys ? await this.linkKeys() : null;
 
     // A correction is a new sealed object, so it CAN carry a different
     // publication answer. Tightening is allowed: changing your mind towards
@@ -212,6 +230,7 @@ export class Mine {
         questions,
         fields,
         publicRefPrefix: this.publicRefPrefix,
+        ...(held && keys ? { held: { keys, rows: prepareHeld(held) } } : {}),
       });
       await trx
         .insertInto('reporter_actions')

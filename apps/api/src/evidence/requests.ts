@@ -451,6 +451,10 @@ export async function attachEvidence(
     // The questions the carried answers were answered against.
     ...(prev.form_id !== null ? { formId: prev.form_id } : {}),
     publicRefPrefix: input.publicRefPrefix,
+    // The words did not change, so the held text and links come with them,
+    // unchanged: same values, same fingerprints (W1). Without this a reporter
+    // sending a photo would silently lose what they wrote.
+    held: { carryFrom: prev.id },
   });
   if (inherited.length) {
     await trx

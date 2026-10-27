@@ -48,8 +48,10 @@ export function toStoredRecord(row: SealedReportRow): StoredReportRecord {
     logbook_form: row.logbook_form,
     answers: row.answers as Answers | null,
     // Written from the sealed object at insert, in its shape (append.ts).
-    text_fingerprints: row.text_fingerprints as TextFingerprints | null,
-    link_fingerprints: row.link_fingerprints as LinkFingerprints | null,
+    // `?? null`: read from a database before their migration, the columns
+    // are not there at all, and that report held nothing.
+    text_fingerprints: (row.text_fingerprints ?? null) as TextFingerprints | null,
+    link_fingerprints: (row.link_fingerprints ?? null) as LinkFingerprints | null,
     third_party: row.third_party,
     filed_via: row.filed_via,
     intake_method: row.intake_method,

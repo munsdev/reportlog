@@ -86,7 +86,15 @@ export const IMPERSONAL_KINDS: ReadonlySet<string> = new Set([
  * left to fall through the normalizer, because falling through is a builder
  * that offers the type and a form that refuses every answer to it.
  */
-export const FORBIDDEN_KINDS: ReadonlySet<string> = new Set(['file', 'evidence_declaration']);
+export const FORBIDDEN_KINDS: ReadonlySet<string> = new Set([
+  'file',
+  'evidence_declaration',
+  // A report's held text and links (packages/fields/src/held.ts). A list
+  // has its own erasable half and its own link store; these would be a
+  // question whose every answer is refused.
+  'private_text',
+  'private_link',
+]);
 
 /**
  * ONLY A CLOSED VOCABULARY CAN BE COUNTED. A cell of one IS the sentence
@@ -229,7 +237,9 @@ export function assertFieldDefinition(field: ListField): ListField & { retention
   }
   if (FORBIDDEN_KINDS.has(field.kind)) {
     throw new FieldRuleError(
-      `A list cannot ask for ${field.kind === 'file' ? 'files' : 'an evidence declaration'}: uploads and evidence belong to a logbook.`,
+      field.kind === 'private_text' || field.kind === 'private_link'
+        ? 'A list cannot ask for text or links that are kept apart from the report: use long text or a web address, which a list can erase on its own.'
+        : `A list cannot ask for ${field.kind === 'file' ? 'files' : 'an evidence declaration'}: uploads and evidence belong to a logbook.`,
     );
   }
   // KINDS OF LINK, asked beside each link: a code and a label each, on a link
