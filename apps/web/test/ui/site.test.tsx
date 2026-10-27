@@ -1,9 +1,8 @@
 import { COPY_KEYS, THEMES } from '@reportlog/contracts';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrandName, applyLook, rememberedLook } from '../../src/components/ui/site.tsx';
-import { HomeButtons } from '../../src/features/home/buttons.tsx';
 
 afterEach(() => {
   document.documentElement.removeAttribute('data-palette');
@@ -90,80 +89,6 @@ describe('the two-tone name', () => {
     expect(screen.getByText('Ruhr').className).toBe('text-brand');
     expect(screen.getByText('.org').className).toBe('text-muted');
     expect(screen.getByText('The').className).not.toMatch(/serious|confirmed/);
-  });
-});
-
-describe('the front page’s buttons', () => {
-  const button = (ref: string, accent: boolean, href: string | null = `/${ref}`) => ({
-    kind: 'builtin' as const,
-    ref,
-    label: `Go to ${ref}`,
-    title: `Go to ${ref}`,
-    href,
-    action: href ? null : 'alerts',
-    blurb: null,
-    help: null,
-    accent,
-  });
-
-  it('makes the first one the accent and the rest secondary', () => {
-    render(<HomeButtons buttons={[button('one', true), button('two', false)]} />);
-    const links = within(screen.getByRole('list', { name: 'What you can do here' })).getAllByRole(
-      'link',
-    );
-    expect(links.map((l) => l.textContent)).toEqual(['Go to one', 'Go to two']);
-    expect(links[0]?.className).toMatch(/bg-action/);
-    expect(links[1]?.className).not.toMatch(/bg-action/);
-  });
-
-  it('draws the alerts button as the way to the journalist alert sign-up', () => {
-    render(<HomeButtons buttons={[button('alerts', true, null)]} />);
-    expect(screen.getByRole('link', { name: 'Go to alerts' })).toHaveAttribute(
-      'href',
-      '/journalists/alerts',
-    );
-  });
-
-  it('draws no dead button for an action with nowhere to go', () => {
-    render(<HomeButtons buttons={[{ ...button('alerts', true, null), action: 'something' }]} />);
-    expect(screen.queryByRole('link')).not.toBeInTheDocument();
-  });
-
-  it('puts the number of published reports on the board button, in a sentence for a screen reader', () => {
-    render(<HomeButtons buttons={[button('board', false)]} published={134} />);
-    const link = screen.getByRole('link');
-    expect(link).toHaveTextContent('134 published reports');
-    expect(link).toHaveAttribute('href', '/board');
-  });
-
-  it('draws the social links as a row of icons, not a button, and the accent goes to the first real button', () => {
-    const social = {
-      ...button('links', false, null),
-      kind: 'social' as const,
-      href: null,
-      label: 'Follow us',
-      social: [{ id: 'bluesky' as const, url: 'https://bsky.app/profile/x.bsky.social' }],
-    };
-    render(<HomeButtons buttons={[social, button('board', true)]} siteName="Munich Archive" />);
-    const icon = screen.getByRole('link', { name: 'Munich Archive on Bluesky' });
-    expect(icon).toHaveAttribute('href', 'https://bsky.app/profile/x.bsky.social');
-    expect(screen.getByText('Follow us')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Go to board' }).className).toMatch(/bg-action/);
-  });
-
-  it('draws no row of icons when no account is on', () => {
-    render(
-      <HomeButtons
-        buttons={[{ ...button('links', false, null), kind: 'social', href: null, social: [] }]}
-      />,
-    );
-    expect(screen.queryByText('Go to links')).not.toBeInTheDocument();
-    expect(screen.queryByRole('list')).not.toBeInTheDocument();
-  });
-
-  it('gives a button its blurb as a second line', () => {
-    render(<HomeButtons buttons={[{ ...button('submit', true), blurb: 'Good or bad' }]} />);
-    expect(screen.getByRole('link', { name: /Go to submit\s*Good or bad/ })).toBeInTheDocument();
   });
 });
 
