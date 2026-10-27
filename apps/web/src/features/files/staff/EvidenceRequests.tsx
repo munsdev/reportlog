@@ -15,8 +15,10 @@
 import { askForEvidence, cancelEvidenceAsk } from '@reportlog/contracts';
 import type { ResponseOf, getEvidenceState } from '@reportlog/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert } from '../../../components/ui/alert.tsx';
-import { Button } from '../../../components/ui/button.tsx';
+import { Btn } from '../../../mockup/Btn.tsx';
+import { Note } from '../../../mockup/Note.tsx';
+import { Problem } from '../../../mockup/Notice.tsx';
+import { Panel } from '../../../mockup/Panel.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { evidenceQuery, refreshStaffViews } from './queries.ts';
@@ -44,37 +46,32 @@ export function EvidenceRequests({
   const query = useQuery(evidenceQuery(threadId));
   const refresh = () => refreshStaffViews(qc);
 
-  const Wrap = bare ? 'div' : 'section';
-  return (
-    <Wrap
-      className="flex flex-col gap-4"
-      {...(bare ? {} : { 'aria-labelledby': 'evidence-heading' })}
-    >
-      {bare ? null : (
-        <h2 id="evidence-heading" className="font-display text-xl font-bold">
-          Asking for evidence
-        </h2>
-      )}
+  const body = (
+    <>
       {query.isPending ? <p role="status">Reading…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data ? (
         <>
           {query.data.open ? (
-            <Alert title="An ask is open">
-              <p>
-                Asked by {query.data.open.asked_by} on {when(query.data.open.asked_at)}. The link
-                works until {when(query.data.open.expires_at)}.
-              </p>
-              <p className="mt-2 whitespace-pre-wrap">“{query.data.open.message}”</p>
-            </Alert>
+            <Note>
+              <b>An ask is open.</b> Asked by {query.data.open.asked_by} on{' '}
+              {when(query.data.open.asked_at)}. The link works until{' '}
+              {when(query.data.open.expires_at)}. “{query.data.open.message}”
+            </Note>
           ) : query.data.why_not ? (
-            <p>{query.data.why_not}</p>
-          ) : null}
+            <p className="muted">{query.data.why_not}</p>
+          ) : (
+            <p className="muted">No ask is open.</p>
+          )}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="acts">
             {query.data.askable ? (
               <AskDialog
-                trigger={<Button>Ask for evidence…</Button>}
+                trigger={(open) => (
+                  <Btn sm flat onClick={open}>
+                    Ask for evidence…
+                  </Btn>
+                )}
                 title="Ask the reporter for evidence"
                 description="They are emailed a link to send files. The link works for two weeks, once."
                 questions={[
@@ -99,7 +96,11 @@ export function EvidenceRequests({
             ) : null}
             {query.data.open ? (
               <AskDialog
-                trigger={<Button variant="secondary">Withdraw the ask…</Button>}
+                trigger={(open) => (
+                  <Btn sm flat onClick={open}>
+                    Withdraw the ask…
+                  </Btn>
+                )}
                 title="Withdraw the ask"
                 description="The link stops working straight away. The record of having asked stays, and you can ask again afterwards."
                 questions={[]}
@@ -113,23 +114,33 @@ export function EvidenceRequests({
           </div>
 
           {query.data.history.length ? (
-            <details>
-              <summary className="cursor-pointer text-sm font-semibold">
-                Every ask on this report ({String(query.data.history.length)})
-              </summary>
-              <ol className="mt-2 flex flex-col gap-2 text-sm" aria-label="Every ask">
-                {query.data.history.map((a) => (
-                  <li key={a.id}>
-                    {when(a.asked_at)} by {a.asked_by}, {outcome(a)}
-                    <span className="block whitespace-pre-wrap text-ink-alt">“{a.message}”</span>
-                  </li>
-                ))}
-              </ol>
+            <details className="tech">
+              <summary>Every ask on this report ({String(query.data.history.length)})</summary>
+              <div
+                className="in"
+                style={{ fontFamily: 'var(--rl-font-sans)', wordBreak: 'normal' }}
+              >
+                <ol aria-label="Every ask">
+                  {query.data.history.map((a) => (
+                    <li key={a.id}>
+                      {when(a.asked_at)} by {a.asked_by}, {outcome(a)}
+                      <span className="muted" style={{ display: 'block', whiteSpace: 'pre-wrap' }}>
+                        “{a.message}”
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             </details>
           ) : null}
         </>
       ) : null}
-    </Wrap>
+    </>
+  );
+  return bare ? (
+    <div className="col">{body}</div>
+  ) : (
+    <Panel title="Asking for evidence">{body}</Panel>
   );
 }
 

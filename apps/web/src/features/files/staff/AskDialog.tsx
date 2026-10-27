@@ -11,21 +11,17 @@
  */
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../../components/ui/alert.tsx';
-import { Button } from '../../../components/ui/button.tsx';
+import { Btn } from '../../../mockup/Btn.tsx';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '../../../components/ui/dialog.tsx';
-import { Field, FieldDescription, FieldError } from '../../../components/ui/field.tsx';
-import { Input } from '../../../components/ui/input.tsx';
-import { Label } from '../../../components/ui/label.tsx';
-import { Textarea } from '../../../components/ui/textarea.tsx';
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Textarea,
+} from '../../../mockup/Form.tsx';
+import { Modal } from '../../../mockup/Modal.tsx';
+import { Problem } from '../../../mockup/Notice.tsx';
 
 export interface Question {
   label: string;
@@ -47,7 +43,8 @@ export function AskDialog({
   onFinish,
   after,
 }: {
-  trigger: ReactNode;
+  /** Draws the button that opens it; `open` is what its click calls. */
+  trigger: (open: () => void) => ReactNode;
   title: string;
   description?: ReactNode;
   questions: readonly Question[];
@@ -106,84 +103,97 @@ export function AskDialog({
     }
   };
 
+  const answerStep = (
+    <>
+      {questions.length > 1 ? (
+        <span className="step">
+          Question {String(step + 1)} of {String(questions.length)}
+        </span>
+      ) : null}
+      {q ? (
+        <Field key={step}>
+          <Label>{q.label}</Label>
+          {q.hint ? <FieldDescription>{q.hint}</FieldDescription> : null}
+          {q.multiline ? (
+            <Textarea
+              rows={4}
+              value={value}
+              maxLength={q.max}
+              onChange={(e) => {
+                const v = e.target.value;
+                setAnswers((a) => a.map((x, i) => (i === step ? v : x)));
+              }}
+            />
+          ) : (
+            <Input
+              value={value}
+              maxLength={q.max}
+              autoComplete="off"
+              onChange={(e) => {
+                const v = e.target.value;
+                setAnswers((a) => a.map((x, i) => (i === step ? v : x)));
+              }}
+            />
+          )}
+          <FieldError>{tried ? problem : null}</FieldError>
+        </Field>
+      ) : null}
+      {failed ? <Problem>{failed}</Problem> : null}
+    </>
+  );
+  const close = () => {
+    setOpen(false);
+    reset();
+  };
+  const showingDone = done && after;
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(o) => {
-        setOpen(o);
-        if (!o) reset();
-      }}
-    >
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description ? <DialogDescription>{description}</DialogDescription> : null}
-        </DialogHeader>
-        {done && after ? (
-          after(answers.map((a) => a.trim()))
-        ) : (
-          <form
-            className="flex flex-col gap-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              void next();
-            }}
-          >
-            {questions.length > 1 ? (
-              <p className="text-sm text-ink-alt">
-                Question {String(step + 1)} of {String(questions.length)}
-              </p>
-            ) : null}
-            {q ? (
-              <Field key={step}>
-                <Label>{q.label}</Label>
-                {q.hint ? <FieldDescription>{q.hint}</FieldDescription> : null}
-                {q.multiline ? (
-                  <Textarea
-                    rows={4}
-                    value={value}
-                    maxLength={q.max}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setAnswers((a) => a.map((x, i) => (i === step ? v : x)));
-                    }}
-                  />
-                ) : (
-                  <Input
-                    value={value}
-                    maxLength={q.max}
-                    autoComplete="off"
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setAnswers((a) => a.map((x, i) => (i === step ? v : x)));
-                    }}
-                  />
-                )}
-                <FieldError>{tried ? problem : null}</FieldError>
-              </Field>
-            ) : null}
-            {failed ? <Alert tone="serious">{failed}</Alert> : null}
-            <DialogFooter>
+    <>
+      {trigger(() => {
+        setOpen(true);
+      })}
+      <Modal
+        title={title}
+        description={description}
+        open={open}
+        onClose={close}
+        {...(showingDone
+          ? {}
+          : {
+              onSubmit: () => {
+                void next();
+              },
+            })}
+        buttons={
+          showingDone ? (
+            <Btn sm flat className="ghost" onClick={close}>
+              Close
+            </Btn>
+          ) : (
+            <>
+              <Btn sm flat look="ink" type="submit" disabled={busy}>
+                {last ? finish : 'Next'}
+              </Btn>
               {step > 0 ? (
-                <Button
-                  type="button"
-                  variant="secondary"
+                <Btn
+                  sm
+                  flat
                   onClick={() => {
                     setTried(false);
                     setStep(step - 1);
                   }}
                 >
                   Back
-                </Button>
+                </Btn>
               ) : null}
-              <Button type="submit" disabled={busy}>
-                {last ? finish : 'Next'}
-              </Button>
-            </DialogFooter>
-          </form>
-        )}
-      </DialogContent>
-    </Dialog>
+              <Btn sm flat look="ghost" onClick={close}>
+                Cancel
+              </Btn>
+            </>
+          )
+        }
+      >
+        {showingDone ? after(answers.map((a) => a.trim())) : answerStep}
+      </Modal>
+    </>
   );
 }

@@ -7,7 +7,7 @@ import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { QuestionControl } from '@/features/form/QuestionControl.tsx';
 import { askedQuestions, cardProblem, sealedAnswers } from '@/features/form/walk.ts';
 import type { RawAnswers, RawValue } from '@/features/form/walk.ts';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
 
 /**
  * The statement, in the words the coordinator ticks. The server refuses to
@@ -44,12 +44,12 @@ export function Questions({
         const err = showProblems ? cardProblem(q, raw, questions) : null;
         const id = `${idPrefix}-${q.key}`;
         return (
-          <div key={q.key} className="flex flex-col gap-2">
-            <p id={id} className="font-semibold">
+          <div key={q.key} className="field">
+            <span className="lbl" id={id}>
               {q.label}
               {q.required ? '' : ' (optional)'}
-            </p>
-            {q.help ? <p className="text-sm text-ink-alt">{q.help}</p> : null}
+            </span>
+            {q.help ? <span className="help">{q.help}</span> : null}
             <QuestionControl
               question={q}
               value={raw[q.key]}
@@ -61,7 +61,11 @@ export function Questions({
               answers={answers}
               raw={raw}
             />
-            {err ? <p className="text-sm font-semibold text-serious">{err}</p> : null}
+            {err ? (
+              <p className="error" role="alert">
+                {err}
+              </p>
+            ) : null}
           </div>
         );
       })}
@@ -85,20 +89,30 @@ export function PublicationChoice({
   if (!card) return <p role="status">Loading the publication question…</p>;
   const offered = only ?? (['yes', 'no'] as const);
   return (
-    <fieldset className="flex flex-col gap-2">
-      <legend id="publish-question" className="font-semibold">
+    <div className="field" role="radiogroup" aria-labelledby="publish-question">
+      <span className="lbl" id="publish-question">
         {card.question} What the person said when you asked them:
-      </legend>
+      </span>
       {card.body.map((line) => (
-        <p key={line} className="text-sm text-ink-alt">
+        <span className="help" key={line}>
           {line}
-        </p>
+        </span>
       ))}
-      <RadioGroup value={value} onValueChange={onChange} aria-labelledby="publish-question">
+      <Choices>
         {offered.map((o) => (
-          <RadioOption key={o} value={o} label={card.options[o]} />
+          <Choice
+            key={o}
+            name="publish-answer"
+            value={o}
+            checked={value === o}
+            onChange={() => {
+              onChange(o);
+            }}
+          >
+            {card.options[o]}
+          </Choice>
         ))}
-      </RadioGroup>
-    </fieldset>
+      </Choices>
+    </div>
   );
 }

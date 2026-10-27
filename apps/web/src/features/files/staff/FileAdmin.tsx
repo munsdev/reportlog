@@ -346,7 +346,11 @@ function ErasingList({ data }: { data: ErasingData }) {
             ) : (
               <div className="acts">
                 <AskDialog
-                  trigger={<Btn variant="danger">Erase this file…</Btn>}
+                  trigger={(open) => (
+                    <Btn variant="danger" onClick={open}>
+                      Erase this file…
+                    </Btn>
+                  )}
                   title={`Erase ${name} for good`}
                   description={`Nobody will ever be able to open it again. If it is published, it is taken down first. The report ${data.public_ref} keeps its fingerprint.`}
                   questions={[
