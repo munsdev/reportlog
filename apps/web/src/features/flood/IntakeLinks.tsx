@@ -24,10 +24,11 @@ import { Card } from '../../components/ui/card.tsx';
 import { Field } from '../../components/ui/field.tsx';
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
-import { Page } from '../../components/ui/page.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
-import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { Note, Panel } from '../../mockup/Panel.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { useMe } from '../identity/session.ts';
 
@@ -196,9 +197,9 @@ function NewLink({ url }: { url: string }) {
  * visitor who is not is asked to sign in first and comes straight back.
  */
 export function JoinPage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const me = useMe();
   const signedIn = me.data?.signedIn === true;
-  const siteName = plainSiteName(useSite().data);
   const link = useQuery({
     queryKey: ['intake-links', 'describe', token],
     queryFn: ({ signal }) => call(describeIntakeLink, { params: { token }, signal }),
@@ -206,69 +207,68 @@ export function JoinPage({ token }: { token: string }) {
     retry: false,
   });
   const join = useMutation({ mutationFn: () => call(joinByIntakeLink, { params: { token } }) });
-  if (me.isPending) return <p role="status">Loading…</p>;
+  const loading = (
+    <Narrow>
+      <p role="status" className="muted">
+        {me.isPending ? 'Loading…' : 'Checking this link…'}
+      </p>
+    </Narrow>
+  );
+  if (me.isPending) return loading;
   if (!signedIn) return <SignInPrompt next={`/organizations/join/${token}`} />;
-  if (link.isPending) return <p role="status">Checking this link…</p>;
+  if (link.isPending) return loading;
   if (link.isError) {
     return (
-      <Page eyebrow={siteName} title="This link could not be checked" width="prose">
+      <TokenPage title="This link could not be checked">
         <p>{link.error.message}</p>
-      </Page>
+      </TokenPage>
     );
   }
   if (!link.data.usable) {
     return (
-      <Page eyebrow={siteName} title="This link does not work any more" width="prose">
+      <TokenPage title="This link does not work any more">
         <p>{link.data.why ?? 'It has been used up or switched off.'}</p>
-      </Page>
+      </TokenPage>
     );
   }
   if (join.data) {
     return (
-      <Page eyebrow={siteName} title="Welcome" width="prose">
-        <Alert tone="done">
+      <TokenPage title="Welcome">
+        <Note>
           {join.data.already_member
             ? `You are already in ${join.data.organization}.`
             : `You are now a coordinator of ${join.data.organization}.`}
-        </Alert>
+        </Note>
         <p>
-          <Link to="/intake" className="underline">
-            Go to intake
-          </Link>
+          <Link to="/intake">Go to intake</Link>
         </p>
-      </Page>
+      </TokenPage>
     );
   }
   return (
-    <Page
-      eyebrow={siteName}
-      title="Join an organization"
-      lede={`This link makes you a coordinator of ${link.data.organization}.`}
-      width="prose"
-    >
-      <Card variant="quiet" heading="A coordinator">
-        <ul className="list-disc space-y-1 pl-6">
+    <TokenPage title="Join an organization">
+      <p>{`This link makes you a coordinator of ${link.data.organization}.`}</p>
+      <Panel variant="quiet" title="A coordinator">
+        <ul style={{ paddingLeft: 24, listStyle: 'disc' }}>
           <li>files accounts for {link.data.organization} while signed in;</li>
           <li>cannot manage it, or invite anybody;</li>
           <li>can leave at any time.</li>
         </ul>
-      </Card>
-      <p>
-        You are signed in as <strong>{me.data?.signedIn ? me.data.email : ''}</strong>.
-      </p>
-      {join.isError ? <Alert tone="serious">{join.error.message}</Alert> : null}
+      </Panel>
+      <p className="m">You are signed in as {me.data?.signedIn ? me.data.email : ''}.</p>
+      {join.isError ? <Note warn>{join.error.message}</Note> : null}
       <div>
-        <Button
+        <button
+          className="btn sm flat go"
           type="button"
-          busy={join.isPending}
-          busyLabel="Joining…"
+          disabled={join.isPending}
           onClick={() => {
             join.mutate();
           }}
         >
-          Join
-        </Button>
+          {join.isPending ? 'Joining…' : 'Join'}
+        </button>
       </div>
-    </Page>
+    </TokenPage>
   );
 }

@@ -18,11 +18,8 @@ import {
 } from '@reportlog/fields';
 import type { Answers, FieldSettings } from '@reportlog/fields';
 import { useId } from 'react';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { Select } from '@/components/ui/select.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { Choice as Tile, Choices } from '@/mockup/Choice.tsx';
+import { CheckBox, SelectBox, TextArea, TextInput } from '@/mockup/Field.tsx';
 import { CountyPicker } from './CountyPicker.tsx';
 import { PrivateLinksControl, PrivateTextControl } from './HeldControls.tsx';
 import type { RawValue } from './walk.ts';
@@ -44,6 +41,13 @@ interface ControlProps {
   labelledBy: string;
   describedBy?: string | undefined;
   invalid: boolean;
+  /** The id of the box or select, for the label that points at it. */
+  id?: string | undefined;
+  /**
+   * The card's heading is the legend of a fieldset around the answer tiles
+   * (see `isTiles`), so the tiles do not name themselves again.
+   */
+  grouped?: boolean | undefined;
   /**
    * The answers given before this question, as they would be sealed, and as
    * the controls hold them. Decided before the card: an option list chosen by
@@ -97,14 +101,25 @@ const KEYBOARD: Record<string, { inputMode?: 'email' | 'url' | 'numeric'; autoCo
 export function CharacterCount({ length, max }: { length: number; max: number }) {
   if (length < max / 2) return null;
   return (
-    <p aria-live="polite" className="font-mono text-[0.8125rem] text-muted">
+    <span aria-live="polite" className="help mono">
       {length} of {max}
-    </p>
+    </span>
   );
 }
 
+/**
+ * Whether this question is drawn as answer tiles (radios or tick boxes),
+ * which the card then groups under its heading as a fieldset legend.
+ */
+export function isTiles(q: FormQuestion, answers?: Answers): boolean {
+  if (q.kind === 'yes_no') return q.settings.checkbox !== true;
+  if (q.kind === 'evidence_declaration' || q.kind === 'choice_one' || q.kind === 'choice_many')
+    return true;
+  return q.kind === 'place' && optionsOf(q, answers).length > 0 && !q.settings.allowOther;
+}
+
 export function QuestionControl(props: ControlProps) {
-  const { question: q, value, onChange, labelledBy, describedBy, invalid } = props;
+  const { question: q, value, onChange, labelledBy, describedBy, invalid, id, grouped } = props;
   const text = typeof value === 'string' ? value : '';
   if (q.kind === 'private_text') return <PrivateTextControl {...props} />;
   if (q.kind === 'private_link') return <PrivateLinksControl {...props} />;
@@ -113,20 +128,36 @@ export function QuestionControl(props: ControlProps) {
     'aria-describedby': describedBy,
     'aria-invalid': invalid || undefined,
   };
+  // Answer tiles: named by the fieldset's legend when the card has one,
+  // else by the heading or the part's label.
+  const tiles = grouped ? { 'aria-describedby': describedBy } : { role: 'radiogroup', ...common };
+  const radios = (list: Choice[]) => (
+    <Choices {...tiles}>
+      {list.map((o) => (
+        <RadioTile
+          key={o.value}
+          name={id ?? q.key}
+          option={o}
+          checked={text === o.value}
+          onPick={onChange}
+        />
+      ))}
+    </Choices>
+  );
 
   // A TICK BOX: ticked answers yes, unticked answers nothing at all.
   if (q.kind === 'yes_no' && q.settings.checkbox === true) {
-    const id = `${labelledBy}-box`;
     return (
-      <CheckOption
+      <CheckBox
         id={id}
         checked={text === 'yes'}
         aria-describedby={describedBy}
-        onCheckedChange={(on) => {
-          onChange(on === true ? 'yes' : undefined);
+        onChange={(e) => {
+          onChange(e.target.checked ? 'yes' : undefined);
         }}
-        label={q.label}
-      />
+      >
+        {q.label}
+      </CheckBox>
     );
   }
   // Either/or answers are tiles, never a checkbox: a checkbox cannot tell
@@ -137,29 +168,22 @@ export function QuestionControl(props: ControlProps) {
     // card asking whether somebody has footage reads as agreeing to send it.
     const [yes, no] =
       q.kind === 'yes_no' ? ['Yes', 'No'] : ['Yes, I have something', 'No, I do not'];
-    return (
-      <RadioGroup value={text} onValueChange={onChange} {...common}>
-        <RadioOption value="yes" label={yes} />
-        <RadioOption value="no" label={no} />
-      </RadioGroup>
-    );
+    return radios([
+      { value: 'yes', label: yes },
+      { value: 'no', label: no },
+    ]);
   }
   const options = optionsOf(q, props.answers);
   if (q.kind === 'choice_one' || (q.kind === 'place' && options.length && !q.settings.allowOther)) {
-    return (
-      <RadioGroup value={text} onValueChange={onChange} {...common}>
-        {options.map((o) => (
-          <RadioOption key={o.value} value={o.value} label={o.label} />
-        ))}
-      </RadioGroup>
-    );
+    return radios(options);
   }
   if (q.kind === 'choice_many') {
     return <ManyChoices {...props} options={options} />;
   }
   if (q.kind === 'number' && q.settings.picker === 'hour') {
     return (
-      <Select
+      <SelectBox
+        id={id}
         value={text}
         onChange={(e) => {
           onChange(e.target.value);
@@ -172,13 +196,14 @@ export function QuestionControl(props: ControlProps) {
             {hourLabel(h)}
           </option>
         ))}
-      </Select>
+      </SelectBox>
     );
   }
   if (q.kind === 'location' && q.settings.code === 'postal') {
     // A US state by its two letters: the same list, the code without `US-`.
     return (
-      <Select
+      <SelectBox
+        id={id}
         value={text}
         onChange={(e) => {
           onChange(e.target.value);
@@ -191,7 +216,7 @@ export function QuestionControl(props: ControlProps) {
             {p.name}
           </option>
         ))}
-      </Select>
+      </SelectBox>
     );
   }
   if (q.kind === 'location' && q.settings.code === 'fips') {
@@ -202,7 +227,8 @@ export function QuestionControl(props: ControlProps) {
     const state = typeof given === 'string' ? given : '';
     const counties = state ? countyOptions(`US-${state}`) : [];
     return (
-      <Select
+      <SelectBox
+        id={id}
         value={state ? text : ''}
         disabled={!state}
         onChange={(e) => {
@@ -216,7 +242,7 @@ export function QuestionControl(props: ControlProps) {
             {p.name}
           </option>
         ))}
-      </Select>
+      </SelectBox>
     );
   }
   if (q.kind === 'location') {
@@ -252,7 +278,8 @@ export function QuestionControl(props: ControlProps) {
         ))
       );
     return (
-      <Select
+      <SelectBox
+        id={id}
         value={text}
         onChange={(e) => {
           onChange(e.target.value);
@@ -262,20 +289,21 @@ export function QuestionControl(props: ControlProps) {
         <option value="">Choose a place</option>
         {group('United States', places.subdivisions)}
         {group('Countries', places.countries)}
-      </Select>
+      </SelectBox>
     );
   }
   if (q.kind === 'long_text') {
     const max = numberSetting(q, 'maxLength') ?? 5000;
     return (
-      <div className="flex flex-col gap-1">
+      <div className="field">
         {/* At least six lines, growing with what is written where the
             browser can (field-sizing), so nobody types into a slot. */}
-        <Textarea
+        <TextArea
+          id={id}
           value={text}
           rows={6}
           maxLength={max}
-          className="min-h-40 [field-sizing:content]"
+          className="[field-sizing:content]"
           onChange={(e) => {
             onChange(e.target.value);
           }}
@@ -288,8 +316,9 @@ export function QuestionControl(props: ControlProps) {
   const max =
     q.kind === 'short_text' || q.kind === 'place' ? (numberSetting(q, 'maxLength') ?? 200) : null;
   return (
-    <div className="flex flex-col gap-1">
-      <Input
+    <div className="field">
+      <TextInput
+        id={id}
         type={INPUT_TYPES[q.kind] ?? 'text'}
         value={text}
         {...(max === null ? {} : { maxLength: max })}
@@ -305,6 +334,32 @@ export function QuestionControl(props: ControlProps) {
       />
       {max === null ? null : <CharacterCount length={text.length} max={max} />}
     </div>
+  );
+}
+
+/** One radio tile: the code is what is sent, the label is what is read. */
+function RadioTile({
+  name,
+  option,
+  checked,
+  onPick,
+}: {
+  name: string;
+  option: Choice;
+  checked: boolean;
+  onPick: (value: RawValue | undefined) => void;
+}) {
+  return (
+    <Tile
+      name={name}
+      value={option.value}
+      checked={checked}
+      onChange={() => {
+        onPick(option.value);
+      }}
+    >
+      {option.label}
+    </Tile>
   );
 }
 
@@ -336,32 +391,35 @@ function ManyChoices({
   onChange,
   labelledBy,
   describedBy,
+  grouped,
   options,
 }: ControlProps & { options: Choice[] }) {
   const id = useId();
   const picked = Array.isArray(value) ? value : [];
   return (
-    <div
-      role="group"
-      aria-labelledby={labelledBy}
-      aria-describedby={describedBy}
-      className="flex flex-col gap-3"
+    <Choices
+      {...(grouped
+        ? { 'aria-describedby': describedBy }
+        : { role: 'group', 'aria-labelledby': labelledBy, 'aria-describedby': describedBy })}
     >
-      {options.map((o, i) => (
-        <CheckOption
+      {options.map((o) => (
+        <Tile
           key={o.value}
-          id={`${id}-${String(i)}`}
-          label={o.label}
+          multi
+          name={id}
+          value={o.value}
           checked={picked.includes(o.value)}
-          onCheckedChange={(on) => {
+          onChange={(e) => {
             // The order sent is the screen's, which is the operator's.
             const next = new Set(picked);
-            if (on === true) next.add(o.value);
+            if (e.target.checked) next.add(o.value);
             else next.delete(o.value);
             onChange(options.map((x) => x.value).filter((x) => next.has(x)));
           }}
-        />
+        >
+          {o.label}
+        </Tile>
       ))}
-    </div>
+    </Choices>
   );
 }

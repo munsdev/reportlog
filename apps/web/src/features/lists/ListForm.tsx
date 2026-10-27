@@ -24,38 +24,23 @@
 import { LINK_FIELD_WORDING, sendListEntry } from '@reportlog/contracts';
 import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import {
-  CardBar,
-  CardFrame,
-  FilingProgress,
-  useCardTitle,
-  useFocusOnMount,
-} from '../form/CardFrame.tsx';
-import { CountyPicker } from '../form/CountyPicker.tsx';
-import { FormColumn, FormNotice } from '../form/FormNotice.tsx';
-import { CharacterCount, inputLimits, kindHelp } from '../form/QuestionControl.tsx';
+import { useCardTitle, useFocusOnMount } from '../form/CardFrame.tsx';
+import { resolveCta } from '../form/Cover.tsx';
+import { HelpNow } from '../form/HelpNow.tsx';
+import { inputLimits, kindHelp } from '../form/QuestionControl.tsx';
 import { DoorPuzzle, Honeypot, doorStatus, useDoor, useSendWhenReady } from '../door/useDoor.tsx';
 import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Steps, Wrap } from '../../components/ui/band.tsx';
 import { FollowBand } from '../follow/FollowBand.tsx';
 import { useGateMode } from '../identity/gateMode.ts';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { FieldReset } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
 import { useSite } from '../../components/ui/site.tsx';
-import { Eyebrow, Lede } from '../../components/ui/type.tsx';
-import { Cover } from '../form/Cover.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Narrow } from '../../mockup/Narrow.tsx';
+import { Choice, Field, QBar, QCard, QError, QHeading, QProgress } from '../../mockup/Qcard.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { ListCounty } from './ListCounty.tsx';
 import { listFormQuery } from './queries.ts';
 import { keptFor } from './words.ts';
 
@@ -108,33 +93,72 @@ function answersToSend(values: Record<string, Value>): Record<string, Value> {
   return out;
 }
 
+/** The mock-up's light form page: ground class on <body> while it is shown. */
+function FormGround() {
+  useBodyClass('light', 'form');
+  return null;
+}
+
+/** A page that says something and stops (not found, not open): tips-sent's column. */
+function ListNotice({ title, children }: { title: string; children: ReactNode }) {
+  const onDoor = useGateMode() === 'door';
+  useCardTitle(title);
+  return (
+    <>
+      <FormGround />
+      <Narrow top={30} max={640} gap={20} inner>
+        <span className="eyebrow">Send something</span>
+        <h1 className="h-page" id="h1">
+          {title}
+        </h1>
+        {children}
+        {/* Both are behind the password on a door. */}
+        {onDoor ? null : (
+          <div className="btn-row">
+            <a className="btn" href="/">
+              The front page
+            </a>
+            <a className="btn ghost" href="/board">
+              The board
+            </a>
+          </div>
+        )}
+      </Narrow>
+    </>
+  );
+}
+
 export function ListFormPage({ slug }: { slug: string }) {
   const query = useQuery(listFormQuery(slug));
   if (query.isPending) {
     return (
-      <FormColumn>
-        <p role="status">Opening the form…</p>
-      </FormColumn>
+      <>
+        <FormGround />
+        <Narrow top={30} max={640} gap={20} inner>
+          <p role="status" className="muted">
+            Opening the form…
+          </p>
+        </Narrow>
+      </>
     );
   }
   if (query.isError) {
     const gone = query.error instanceof ApiRequestError && query.error.status === 404;
     return (
-      <FormNotice
-        eyebrow="Send something"
-        title={gone ? 'Not found' : 'This form could not be opened'}
-      >
+      <ListNotice title={gone ? 'Not found' : 'This form could not be opened'}>
         {gone ? (
-          <p className="max-w-prose">
+          <p>
             There is no form at this address. Check the address you were given. It may have a typing
             mistake in it.
           </p>
         ) : (
-          <Alert tone="serious" title="The form did not load">
-            Check your connection and try again.
-          </Alert>
+          <div className="note warn" role="alert">
+            <span>
+              <b>The form did not load.</b> Check your connection and try again.
+            </span>
+          </div>
         )}
-      </FormNotice>
+      </ListNotice>
     );
   }
   return <ListFormView form={query.data} />;
@@ -147,16 +171,16 @@ export function ListFormView({ form }: { form: Form }) {
   if (!form.accepting) {
     const opens = form.opens_at && new Date(form.opens_at) > new Date();
     return (
-      <FormNotice eyebrow="Send something" title={form.title}>
-        {form.blurb ? <Lede className="whitespace-pre-wrap">{form.blurb}</Lede> : null}
-        <Card variant="quiet">
-          <p className="max-w-prose">
+      <ListNotice title={form.title}>
+        {form.blurb ? <p className="whitespace-pre-wrap muted">{form.blurb}</p> : null}
+        <section className="panel quiet">
+          <p>
             {opens
               ? `This form opens on ${new Date(form.opens_at ?? '').toLocaleString()}.`
               : 'This form is not taking anything at the moment.'}
           </p>
-        </Card>
-      </FormNotice>
+        </section>
+      </ListNotice>
     );
   }
   return <Cards form={form} />;
@@ -269,28 +293,41 @@ function Cards({ form }: { form: Form }) {
   };
 
   // No numbers on the page, as on a logbook: the share of the cards done.
-  const progress = at === 0 ? null : at / steps.length;
+  const percent = (at / steps.length) * 100;
 
-  return (
-    <FormColumn>
-      <form
-        noValidate
-        className="flex flex-col gap-6"
-        onSubmit={(e) => {
-          e.preventDefault();
-          next();
-        }}
-      >
+  if (step.kind === 'intro') {
+    return (
+      <>
+        <FormGround />
         {/* A box nobody can see. Filled in means a script. */}
         <Honeypot door={door} />
         <DoorPuzzle door={door} />
-        <FilingProgress value={progress} question={at === 0 ? null : at} />
-        {step.kind === 'intro' ? (
-          <Intro form={form} />
-        ) : step.kind === 'question' ? (
+        <Intro
+          form={form}
+          onStart={() => {
+            go(1);
+          }}
+        />
+      </>
+    );
+  }
+
+  const statusLine = last && doorStatus(door);
+  return (
+    <>
+      <FormGround />
+      <QCard
+        headingId={step.kind === 'question' ? `q-${step.q.key}` : 'list-email-heading'}
+        onSubmit={next}
+      >
+        <Honeypot door={door} />
+        <DoorPuzzle door={door} />
+        <span className="eyebrow">Send something</span>
+        <QProgress percent={percent} />
+        <span className="step">Question {at}</span>
+        {step.kind === 'question' ? (
           <Question
             key={step.q.key}
-            eyebrow={form.title}
             q={step.q}
             days={form.personal_days}
             value={values[step.q.key]}
@@ -302,7 +339,6 @@ function Cards({ form }: { form: Form }) {
           />
         ) : (
           <EmailCard
-            eyebrow={form.title}
             form={form}
             wrote={wroteOnArrival}
             email={email}
@@ -315,47 +351,32 @@ function Cards({ form }: { form: Form }) {
             onConsent={setConsent}
           />
         )}
-        <CardBar
-          submit
-          onBack={
-            at > 0
-              ? () => {
-                  go(at - 1);
-                }
-              : undefined
-          }
-          primary={
-            last
-              ? 'Send'
-              : at === 0
-                ? form.cover?.button_label?.trim()
-                  ? form.cover.button_label.trim()
-                  : 'Start'
-                : 'Next'
-          }
+        <QBar
+          go={last}
+          onBack={() => {
+            go(at - 1);
+          }}
+          primary={last ? 'Send' : 'Next'}
           busy={send.isPending || sending.waiting}
           busyLabel="Sending…"
           above={
-            <>
-              {problem && step.kind === 'intro' ? <Alert tone="serious" title={problem} /> : null}
-              {last && doorStatus(door) ? (
-                <p role="status" className="text-sm text-ink-alt">
-                  {doorStatus(door)}
-                </p>
-              ) : null}
-            </>
+            statusLine ? (
+              <p role="status" className="muted">
+                {statusLine}
+              </p>
+            ) : null
           }
         />
-      </form>
-    </FormColumn>
+      </QCard>
+    </>
   );
 }
 
 /**
- * After sending (mock-up tips-sent.html): quiet, never teal. What happens
- * next is read from the list's own settings, so nothing here promises what
- * the list does not do. Focus moves to the heading; the Follow along band
- * (placement `after_tip`) sits under it.
+ * After sending (mock-up tips-sent.html). What happens next is read from the
+ * list's own settings, so nothing here promises what the list does not do.
+ * Focus moves to the heading; the Follow along band (placement `after_tip`)
+ * sits under it.
  */
 function Sent({
   erasureMailed,
@@ -370,59 +391,58 @@ function Sent({
 }) {
   const heading = useFocusOnMount<HTMLHeadingElement>();
   const onDoor = useGateMode() === 'door';
+  const items = [
+    {
+      title: 'A moderator reads it.',
+      body: `Your message to “${title}” goes to the team.`,
+    },
+    { title: 'Nothing here is published.', body: 'Nothing you sent is published.' },
+    {
+      title:
+        days === null
+          ? 'It is kept until it is erased.'
+          : `It is deleted after ${String(days)} days.`,
+      body: erasureMailed
+        ? 'We emailed you a link that deletes what you wrote and your email address. Keep that email if you might want to use it.'
+        : erasable
+          ? 'We could not email you the link that deletes what you wrote. Ask whoever runs this site if you want it deleted.'
+          : 'You gave no name or email, so there is nothing else to erase.',
+    },
+  ];
   return (
-    <div data-bleed className="flex flex-col">
-      <Wrap className="pt-8 pb-12">
-        <div className="flex max-w-[40rem] flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <Eyebrow>Sent</Eyebrow>
-            <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
-              Sent. Thank you.
-            </h1>
-          </div>
-          <Steps
-            items={[
-              {
-                title: 'A moderator reads it.',
-                body: `Your message to “${title}” goes to the team.`,
-              },
-              { title: 'Nothing here is published.', body: 'Nothing you sent is published.' },
-              {
-                title:
-                  days === null
-                    ? 'It is kept until it is erased.'
-                    : `It is deleted after ${String(days)} days.`,
-                body: erasureMailed
-                  ? 'We emailed you a link that deletes what you wrote and your email address. Keep that email if you might want to use it.'
-                  : erasable
-                    ? 'We could not email you the link that deletes what you wrote. Ask whoever runs this site if you want it deleted.'
-                    : 'You gave no name or email, so there is nothing else to erase.',
-              },
-            ]}
-          />
-          <div className="flex flex-wrap items-center gap-3.5">
-            <Button asChild variant="secondary">
-              <a href={typeof window === 'undefined' ? '.' : window.location.pathname}>
-                Send another
-              </a>
-            </Button>
-            {onDoor ? null : (
-              <Button asChild variant="quiet">
-                <a href="/">Back to the front page</a>
-              </Button>
-            )}
-          </div>
+    <>
+      <FormGround />
+      <Narrow top={30} max={640} gap={20} inner>
+        <span className="eyebrow">Sent</span>
+        <h1 ref={heading} tabIndex={-1} className="h-page" id="h1" style={{ outline: 'none' }}>
+          Sent. Thank you.
+        </h1>
+        <ol className="steps">
+          {items.map((i) => (
+            <li key={i.title}>
+              <span>
+                <b>{i.title}</b>
+                {i.body}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <div className="btn-row">
+          <a className="btn" href={typeof window === 'undefined' ? '.' : window.location.pathname}>
+            Send another
+          </a>
+          {onDoor ? null : (
+            <a className="btn ghost" href="/">
+              Back to the front page
+            </a>
+          )}
         </div>
-      </Wrap>
+      </Narrow>
       <FollowBand placement="after_tip" bleed />
-    </div>
+    </>
   );
 }
 
-/**
- * The first card: the shared cover (decision 78). What happens to an entry is
- * said on the email card, where it matters.
- */
 /**
  * What this list does with what is sent, said before the first question
  * (mock-up tips.html): published or not, what it asks about you, how long it
@@ -453,39 +473,72 @@ function coverFacts(form: Form): { term: string; detail: string }[] {
   ];
 }
 
-function Intro({ form }: { form: Form }) {
+/** The first card (mock-up tips.html): the cover, with its Start button in the body. */
+function Intro({ form, onStart }: { form: Form; onStart: () => void }) {
   const site = useSite().data?.copy;
+  const heading = useFocusOnMount<HTMLHeadingElement>();
+  const cover = form.cover;
+  const eyebrow = cover?.eyebrow?.trim() ? cover.eyebrow.trim() : `List · ${form.title}`;
+  const intro = cover?.intro?.trim();
+  const label = cover?.button_label?.trim() ? cover.button_label.trim() : 'Start';
+  // On a door the site cannot be asked, so a cover that follows it draws nothing.
+  const cta = resolveCta(
+    'list',
+    cover,
+    site
+      ? {
+          text: site.help_now,
+          heading: site.cta_heading,
+          buttonLabel: site.cta_button_text,
+          buttonUrl: site.cta_button_url,
+        }
+      : null,
+  );
   return (
-    <Cover
-      kind="list"
-      title={form.title}
-      blurb={form.blurb}
-      cover={form.cover}
-      facts={coverFacts(form)}
-      // On a door the site cannot be asked, so a cover that follows it draws nothing.
-      site={
-        site
-          ? {
-              text: site.help_now,
-              heading: site.cta_heading,
-              buttonLabel: site.cta_button_text,
-              buttonUrl: site.cta_button_url,
-            }
-          : null
-      }
-    />
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 26 }}>
+        <div className="cover">
+          <div className="cover-top motif-host">
+            <div className="ov" data-slot="cover" />
+            <div className="in">
+              <span className="eyebrow">{eyebrow}</span>
+              <h1 ref={heading} tabIndex={-1} className="h-page" style={{ outline: 'none' }}>
+                {form.title}
+              </h1>
+            </div>
+          </div>
+          <div className="body">
+            {form.blurb ? <p className="whitespace-pre-wrap">{form.blurb}</p> : null}
+            {intro ? <p className="whitespace-pre-wrap">{intro}</p> : null}
+            {cta ? <HelpNow {...cta} mini /> : null}
+            <dl className="kv-list">
+              {coverFacts(form).map((f) => (
+                <div key={f.term}>
+                  <dt>{f.term}</dt>
+                  <dd>{f.detail}</dd>
+                </div>
+              ))}
+            </dl>
+            <button className="btn go lg" type="button" onClick={onStart}>
+              {label}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
+/** Words for the first links, as the mock-up has them. */
+const ORDINAL = ['First', 'Second', 'Third'];
+
 function Question({
-  eyebrow,
   q,
   days,
   value,
   problem,
   onChange,
 }: {
-  eyebrow: string;
   q: ListFormQuestion;
   days: number | null;
   value: Value;
@@ -496,41 +549,76 @@ function Question({
   const helpId = `${headingId}-help`;
   const errorId = `${headingId}-error`;
   const extra = kindHelp({ kind: q.kind, settings: {} }, `${q.label} ${q.help ?? ''}`);
+  // A long answer carries its help beside the counter, as the mock-up's does.
+  const inField = q.kind === 'long_text';
   const help = Boolean(q.help) || q.erased || extra !== null;
-  return (
-    <CardFrame
-      eyebrow={eyebrow}
-      heading={q.label}
-      headingId={headingId}
-      focusKey={q.key}
-      optional={!q.required}
-      help={
-        help ? (
-          <div id={helpId} className="flex max-w-prose flex-col gap-1 text-ink-alt">
-            {q.help ? <p className="whitespace-pre-wrap">{q.help}</p> : null}
-            {extra ? <p>{extra}</p> : null}
-            {q.erased ? (
-              <p className="text-sm">
-                Deleted {days === null ? 'when you ask' : `after ${keptFor(days)}`}, with your email
-                address.
-              </p>
-            ) : null}
-          </div>
-        ) : null
-      }
-      error={problem}
-      errorId={errorId}
-    >
-      <Control
-        q={q}
-        value={value}
-        labelledBy={headingId}
-        describedBy={[help ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ')}
-        invalid={Boolean(problem)}
-        onChange={onChange}
-      />
-    </CardFrame>
+  const helpBody = (
+    <>
+      {q.help ? <span className="whitespace-pre-wrap">{q.help} </span> : null}
+      {extra ? <span>{extra} </span> : null}
+      {q.erased ? (
+        <span>
+          Deleted {days === null ? 'when you ask' : `after ${keptFor(days)}`}, with your email
+          address.
+        </span>
+      ) : null}
+    </>
   );
+  const describedBy = [help ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ');
+  const asGroup = isChoiceQuestion(q);
+  const common = {
+    q,
+    value,
+    labelledBy: headingId,
+    describedBy,
+    invalid: Boolean(problem),
+    onChange,
+    inFieldHelp: inField && help ? { id: helpId, body: helpBody } : null,
+  };
+  const error = problem ? <QError id={errorId}>{problem}</QError> : null;
+  if (asGroup) {
+    return (
+      <>
+        <fieldset
+          style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 14 }}
+          aria-describedby={describedBy || undefined}
+        >
+          <legend>
+            <QHeading id={headingId} focusKey={q.key}>
+              {q.label}
+            </QHeading>
+          </legend>
+          {help ? (
+            <p className="muted" id={helpId}>
+              {helpBody}
+            </p>
+          ) : null}
+          <Control {...common} />
+        </fieldset>
+        {error}
+      </>
+    );
+  }
+  return (
+    <>
+      <QHeading id={headingId} focusKey={q.key}>
+        {q.label}
+      </QHeading>
+      {help && !inField ? (
+        <p className="muted" id={helpId}>
+          {helpBody}
+        </p>
+      ) : null}
+      <Control {...common} optional={!q.required} />
+      {error}
+    </>
+  );
+}
+
+/** Questions answered by ticking, which the mock-up sets in a fieldset under a legend. */
+function isChoiceQuestion(q: ListFormQuestion): boolean {
+  if (q.kind === 'yes_no' || q.kind === 'choice_many') return true;
+  return (q.kind === 'choice_one' || q.kind === 'place') && q.options.length > 0 && !q.allow_other;
 }
 
 function Control({
@@ -540,6 +628,8 @@ function Control({
   describedBy,
   invalid,
   onChange,
+  optional = false,
+  inFieldHelp,
 }: {
   q: ListFormQuestion;
   value: Value;
@@ -547,11 +637,13 @@ function Control({
   describedBy: string;
   invalid: boolean;
   onChange: (v: Value) => void;
+  optional?: boolean;
+  inFieldHelp: { id: string; body: ReactNode } | null;
 }): ReactNode {
   const text = typeof value === 'string' ? value : '';
   const list = Array.isArray(value) ? value : [];
-  const named = {
-    'aria-labelledby': labelledBy,
+  const id = `${labelledBy}-in`;
+  const aria = {
     'aria-describedby': describedBy || undefined,
     'aria-invalid': invalid || undefined,
   };
@@ -567,86 +659,117 @@ function Control({
       onChange(q.max_values > 1 ? all : all[0]);
     };
     return (
-      <div className="flex flex-col gap-2">
+      <>
         {/* K2: part of the field type, so every form asking for a link says it. */}
-        <p className="max-w-prose text-sm text-ink-alt" data-testid="link-wording">
+        <p className="muted" data-testid="link-wording">
           {LINK_FIELD_WORDING}
         </p>
         {boxes.map((b, i) => (
-          <Input
+          <Field
             // Boxes only ever grow at the end, so a position is a stable key.
             key={`link-${String(i)}`}
-            type="url"
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            placeholder="https://"
-            value={b}
-            {...(i === 0 ? named : { 'aria-label': `Another link (${String(i + 1)})` })}
-            onChange={(e) => {
-              put(i, e.target.value);
-            }}
-          />
+            label={q.max_values > 1 ? `${ORDINAL[i] ?? `Link ${String(i + 1)}`} link` : q.label}
+            htmlFor={`${id}-${String(i)}`}
+            optional={i > 0 || optional}
+          >
+            <input
+              className="input"
+              id={`${id}-${String(i)}`}
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="https://"
+              value={b}
+              {...(i === 0 ? aria : {})}
+              onChange={(e) => {
+                put(i, e.target.value);
+              }}
+            />
+          </Field>
         ))}
         {q.max_values > 1 && boxes.length < q.max_values ? (
           <div>
-            <Button
+            <button
+              className="btn sm flat ghost"
               type="button"
-              variant="quiet"
               onClick={() => {
                 onChange([...boxes, '']);
               }}
             >
               Add another link
-            </Button>
+            </button>
           </div>
         ) : null}
-      </div>
+      </>
     );
   }
   if (q.kind === 'yes_no') {
     return (
-      <RadioGroup value={text} onValueChange={onChange} {...named}>
-        <RadioOption value="yes" label="Yes" />
-        <RadioOption value="no" label="No" />
-      </RadioGroup>
+      <div className="choices" role="radiogroup" aria-labelledby={labelledBy}>
+        <Choice
+          name={labelledBy}
+          checked={text === 'yes'}
+          onChange={() => {
+            onChange('yes');
+          }}
+        >
+          Yes
+        </Choice>
+        <Choice
+          name={labelledBy}
+          checked={text === 'no'}
+          onChange={() => {
+            onChange('no');
+          }}
+        >
+          No
+        </Choice>
+      </div>
     );
   }
   // The CODE is sent; the label, where there is one, is what is read.
   const words = (o: string, i: number) => q.option_labels?.[i] ?? o;
   if ((q.kind === 'choice_one' || q.kind === 'place') && q.options.length && !q.allow_other) {
     return (
-      <RadioGroup value={text} onValueChange={onChange} {...named}>
+      <div className="choices" role="radiogroup" aria-labelledby={labelledBy}>
         {q.options.map((o, i) => (
-          <RadioOption key={o} value={o} label={words(o, i)} />
+          <Choice
+            key={o}
+            name={labelledBy}
+            checked={text === o}
+            onChange={() => {
+              onChange(o);
+            }}
+          >
+            {words(o, i)}
+          </Choice>
         ))}
-      </RadioGroup>
+      </div>
     );
   }
   if (q.kind === 'choice_many') {
+    const ticked = list as string[];
     return (
-      <div role="group" className="flex flex-col gap-3" {...named}>
-        {q.options.map((o, i) => {
-          const id = `${labelledBy}-${o}`;
-          const ticked = list as string[];
-          return (
-            <CheckOption
-              key={o}
-              id={id}
-              checked={ticked.includes(o)}
-              onCheckedChange={(on) => {
-                onChange(on === true ? [...ticked, o] : ticked.filter((x) => x !== o));
-              }}
-              label={words(o, i)}
-            />
-          );
-        })}
+      <div className="choices" role="group" aria-labelledby={labelledBy}>
+        {q.options.map((o, i) => (
+          <Choice
+            key={o}
+            type="checkbox"
+            checked={ticked.includes(o)}
+            onChange={(on) => {
+              onChange(on ? [...ticked, o] : ticked.filter((x) => x !== o));
+            }}
+          >
+            {words(o, i)}
+          </Choice>
+        ))}
       </div>
     );
   }
   if (q.kind === 'location' && q.depth === 'county') {
     return (
-      <CountyPicker
+      <ListCounty
         states={q.places ?? []}
         value={text}
         onChange={onChange}
@@ -658,37 +781,50 @@ function Control({
   }
   if (q.kind === 'location') {
     return (
-      <Select
-        value={text}
-        onChange={(e) => {
-          onChange(e.target.value);
-        }}
-        {...named}
-      >
-        <option value="">Choose a place</option>
-        {(q.places ?? []).map((p) => (
-          <option key={p.code} value={p.code}>
-            {p.name}
-          </option>
-        ))}
-      </Select>
+      <Field label={q.label} htmlFor={id} optional={optional}>
+        <select
+          className="sel"
+          id={id}
+          value={text}
+          onChange={(e) => {
+            onChange(e.target.value);
+          }}
+          {...aria}
+        >
+          <option value="">Choose a place</option>
+          {(q.places ?? []).map((p) => (
+            <option key={p.code} value={p.code}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </Field>
     );
   }
   if (q.kind === 'long_text') {
     return (
-      <div className="flex flex-col gap-1">
-        <Textarea
+      <Field
+        label={q.label}
+        htmlFor={id}
+        optional={optional}
+        help={
+          <span id={inFieldHelp?.id}>
+            {inFieldHelp?.body}
+            <span className="mono">{`${String(text.length)} / 1000`}</span>
+          </span>
+        }
+      >
+        <textarea
+          className="textarea"
+          id={id}
           value={text}
-          rows={6}
           maxLength={1000}
-          className="min-h-40 [field-sizing:content]"
           onChange={(e) => {
             onChange(e.target.value);
           }}
-          {...named}
+          {...aria}
         />
-        <CharacterCount length={text.length} max={1000} />
-      </div>
+      </Field>
     );
   }
   const types: Record<string, string> = {
@@ -700,8 +836,10 @@ function Control({
   };
   const max = q.kind === 'short_text' || q.kind === 'place' ? 200 : null;
   return (
-    <div className="flex flex-col gap-1">
-      <Input
+    <Field label={q.label} htmlFor={id} optional={optional}>
+      <input
+        className="input"
+        id={id}
         type={types[q.kind] ?? 'text'}
         value={q.kind === 'datetime' && text ? toLocal(text) : text}
         {...(max === null ? {} : { maxLength: max })}
@@ -712,10 +850,9 @@ function Control({
           const v = e.target.value;
           onChange(q.kind === 'datetime' && v ? new Date(v).toISOString() : v);
         }}
-        {...named}
+        {...aria}
       />
-      {max === null ? null : <CharacterCount length={text.length} max={max} />}
-    </div>
+    </Field>
   );
 }
 
@@ -723,9 +860,7 @@ function Control({
  * ROWS OF A LINK AND WHAT KIND OF THING IT IS (voting questionnaires
  * §04). With `fixed_rows` every row is on the card from the start and none
  * is added or removed, so nothing on the card moves. Row 1 is the one a
- * required question needs. The fixed wording (K2) sits above the rows. Each
- * row is a plain panel: the link and its kind stacked on a phone, side by
- * side on a desktop.
+ * required question needs. The fixed wording (K2) sits above the rows.
  */
 function LinkRows({
   q,
@@ -745,69 +880,55 @@ function LinkRows({
     onChange(rows.map((r, j) => (j === i ? row : r)));
   };
   return (
-    <div className="flex flex-col gap-4" role="group" aria-labelledby={labelledBy}>
-      <p className="max-w-prose text-sm text-ink-alt" data-testid="link-wording">
+    <div style={{ display: 'grid', gap: 14 }} role="group" aria-labelledby={labelledBy}>
+      <p className="muted" data-testid="link-wording">
         {LINK_FIELD_WORDING}
       </p>
-      {/* Each row's two controls carry their own labels, not the card's one id. */}
-      <FieldReset>
-        {rows.map((row, i) => {
-          const n = String(i + 1);
-          const optional = !(q.required && i === 0);
-          return (
-            // The rule is on a box around the fieldset, so the legend sits
-            // under it rather than breaking it.
-            <div key={`row-${n}`} className="border-t border-ink-alt pt-3">
-              <fieldset className="flex flex-col gap-2">
-                <legend className="label-face mb-2 text-[0.8125rem]">
-                  Link {n}
-                  {optional ? (
-                    <span className="font-sans font-normal tracking-normal normal-case text-ink-alt">
-                      {' '}
-                      (optional)
-                    </span>
-                  ) : null}
-                </legend>
-                <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[2fr_1fr] sm:gap-x-4">
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor={`${labelledBy}-url-${n}`}>Link</Label>
-                    <Input
-                      id={`${labelledBy}-url-${n}`}
-                      type="url"
-                      inputMode="url"
-                      autoComplete="off"
-                      spellCheck={false}
-                      placeholder="https://"
-                      maxLength={2000}
-                      value={row.url}
-                      onChange={(e) => {
-                        put(i, { ...row, url: e.target.value });
-                      }}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Label htmlFor={`${labelledBy}-type-${n}`}>What kind of thing is it?</Label>
-                    <Select
-                      id={`${labelledBy}-type-${n}`}
-                      value={row.type}
-                      onChange={(e) => {
-                        put(i, { ...row, type: e.target.value });
-                      }}
-                    >
-                      <option value="">Choose one</option>
-                      {(q.link_types ?? []).map((t) => (
-                        <option key={t.code} value={t.code}>
-                          {t.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                </div>
-              </fieldset>
-            </div>
-          );
-        })}
-      </FieldReset>
+      {rows.map((row, i) => {
+        const n = String(i + 1);
+        const optional = !(q.required && i === 0);
+        return (
+          <fieldset key={`row-${n}`} className="panel" style={{ margin: 0 }}>
+            <legend className="step">
+              Link {n}
+              {optional ? ' (optional)' : ''}
+            </legend>
+            <Field label="Link" htmlFor={`${labelledBy}-url-${n}`}>
+              <input
+                className="input"
+                id={`${labelledBy}-url-${n}`}
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="https://"
+                maxLength={2000}
+                value={row.url}
+                onChange={(e) => {
+                  put(i, { ...row, url: e.target.value });
+                }}
+              />
+            </Field>
+            <Field label="What kind of thing is it?" htmlFor={`${labelledBy}-type-${n}`}>
+              <select
+                className="sel"
+                id={`${labelledBy}-type-${n}`}
+                value={row.type}
+                onChange={(e) => {
+                  put(i, { ...row, type: e.target.value });
+                }}
+              >
+                <option value="">Choose one</option>
+                {(q.link_types ?? []).map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </fieldset>
+        );
+      })}
     </div>
   );
 }
@@ -821,7 +942,6 @@ function toLocal(iso: string): string {
 }
 
 function EmailCard({
-  eyebrow,
   form,
   wrote,
   email,
@@ -830,7 +950,6 @@ function EmailCard({
   onEmail,
   onConsent,
 }: {
-  eyebrow: string;
   form: Form;
   wrote: boolean;
   email: string;
@@ -852,47 +971,51 @@ function EmailCard({
   // where somebody decides whether to give an address.
   const writeBack = 'The team will use this address to write back to you.';
   return (
-    <CardFrame
-      eyebrow={eyebrow}
-      heading="Your email address"
-      headingId="list-email-heading"
-      focusKey="email"
-      optional={!always && !wrote}
-      help={
-        <p id="list-email-help" className="max-w-prose text-ink-alt">
-          {form.write_back ? `${writeBack} ` : ''}
-          {why}
-        </p>
-      }
-      error={problem}
-      errorId="list-email-error"
-    >
-      <Input
-        type="email"
-        inputMode="email"
-        autoComplete="email"
-        value={email}
-        aria-labelledby="list-email-heading"
-        aria-describedby={['list-email-help', problem ? 'list-email-error' : '']
-          .filter(Boolean)
-          .join(' ')}
-        aria-invalid={problem ? true : undefined}
-        onChange={(e) => {
-          onEmail(e.target.value);
-        }}
-      />
-      {/* On a form for reaching the site, sending it IS asking for a reply. */}
-      {reply ? null : (
-        <CheckOption
-          id="list-consent"
-          label="You may write back to me about this"
-          hint="Only about what you sent. Not a newsletter, and not passed to anybody."
-          checked={consent}
-          onCheckedChange={(on) => {
-            onConsent(on === true);
+    <>
+      <QHeading id="list-email-heading" focusKey="email">
+        Your email address
+      </QHeading>
+      <p className="muted" id="list-email-help">
+        {form.write_back ? `${writeBack} ` : ''}
+        {why}
+      </p>
+      <Field label="Email" htmlFor="list-email" optional={!always && !wrote}>
+        <input
+          className="input"
+          id="list-email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          value={email}
+          aria-describedby={['list-email-help', problem ? 'list-email-error' : '']
+            .filter(Boolean)
+            .join(' ')}
+          aria-invalid={problem ? true : undefined}
+          onChange={(e) => {
+            onEmail(e.target.value);
           }}
         />
+      </Field>
+      {/* On a form for reaching the site, sending it IS asking for a reply. */}
+      {reply ? null : (
+        <label className="check">
+          <input
+            id="list-consent"
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => {
+              onConsent(e.target.checked);
+            }}
+          />
+          <span>
+            You may write back to me about this
+            <span className="help muted" style={{ display: 'block' }}>
+              Only about what you sent. Not a newsletter, and not passed to anybody.
+            </span>
+          </span>
+        </label>
       )}
-    </CardFrame>
+      {problem ? <QError id="list-email-error">{problem}</QError> : null}
+    </>
   );
 }

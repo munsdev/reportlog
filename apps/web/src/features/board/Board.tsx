@@ -1,50 +1,32 @@
 /**
- * The public board: published reports, newest first (public.md §03).
+ * The public board: published reports, newest first (public.md §03; the
+ * mock-up's board.html).
  *
- * NOTHING IS FILTERABLE UNLESS AN OPERATOR SAID SO. "Filter" offers which
- * logbook and, once a logbook is chosen, only the questions its maker marked
- * as filters. There is no built-in date or place filter: when and where are
- * questions a logbook asks or does not.
+ * NOTHING IS FILTERABLE UNLESS AN OPERATOR SAID SO. The filter row offers
+ * which logbook and, once a logbook is chosen, only the questions its maker
+ * marked as filters. There is no built-in date or place filter: when and where
+ * are questions a logbook asks or does not.
  *
  * NOTHING CHANGES UNDERNEATH THE READER. Search applies on Enter or with its
- * own Search button, never as somebody types (decision 59); filters apply
- * when "Show reports" is pressed. Both live in the address, so a narrowed
- * board can be shared. The count line above the list says what it holds and
- * is announced politely when it changes.
+ * own Search button, never as somebody types (decision 59). A choice in a
+ * select applies when the reader makes it. Both live in the address, so a
+ * narrowed board can be shared. The count line above the list says what it
+ * holds and is announced politely when it changes.
  *
  * SORT is newest first, fixed, as the API serves it: there is no sort button.
  */
 import type { BoardLogbook, FormQuestion, PublicReport } from '@reportlog/contracts';
 import { BOARD_CSV_PATH } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { FilingButtons } from '@/features/home/buttons.tsx';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Chip, chipVariants } from '../../components/ui/chip.tsx';
 import { CopyText } from '../../components/ui/copy-text.tsx';
-import { Count } from '../../components/ui/count.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '../../components/ui/dialog.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Field } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { Pagination } from '../../components/ui/pagination.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { CountLine } from '../../components/ui/type.tsx';
-import { cn } from '../../lib/utils.ts';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { PagerLinks } from '../../mockup/PagerLinks.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
+import { useMainAction } from '../nav/Menu.tsx';
 import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 import { boardMetaQuery, boardReportsQuery } from './queries.ts';
@@ -90,29 +72,15 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       ? csvHref(search)
       : null;
   return (
-    <BoardFrame
-      title="Reports"
-      actions={
-        <>
-          {/* The front page's filing buttons, in its order: straight to a form. */}
-          <FilingButtons />
-          {/* Beside Submit on a desktop; under the list on a phone. */}
-          {csv ? (
-            <Button asChild variant="secondary" size="lg" className="hidden lg:inline-flex">
-              <a href={csv} download>
-                Download these (CSV)
-              </a>
-            </Button>
-          ) : null}
-        </>
-      }
-    >
+    <BoardFrame title="Reports" list>
       <CopyText slot="board_intro" />
       {meta.isPending ? <p role="status">Reading the reports…</p> : null}
       {meta.isError ? (
-        <Alert tone="serious" title="The board could not be loaded">
-          {meta.error.message}
-        </Alert>
+        <Note warn>
+          <span role="alert">
+            <b>The board could not be loaded.</b> {meta.error.message}
+          </span>
+        </Note>
       ) : null}
       {meta.data && !meta.data.published ? <PublishingPaused /> : null}
       {meta.data?.published ? (
@@ -131,11 +99,11 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             <Results search={search} logbooks={meta.data.logbooks} />
           )}
           {csv ? (
-            <Button asChild variant="secondary" size="lg" block className="lg:hidden">
-              <a href={csv} download>
+            <div className="btn-row" style={{ paddingBlock: 12 }}>
+              <a className="btn sm flat" href={csv} download>
                 Download these (CSV)
               </a>
-            </Button>
+            </div>
           ) : null}
           {chosen ? null : <CountedNotShown logbooks={meta.data.logbooks} />}
         </>
@@ -144,14 +112,16 @@ export function BoardPage({ search }: { search: BoardSearch }) {
   );
 }
 
-/** Publication switched off by the operator: said in a deep panel, in place of the list. */
+/** Publication switched off by the operator: said in place of the list. */
 function PublishingPaused() {
   return (
-    <Card variant="deep">
-      <p className="font-semibold">
-        Publishing is paused. Reports still arrive and are being read.
-      </p>
-    </Card>
+    <div style={{ paddingBlock: 18 }}>
+      <Note>
+        <span>
+          <b>Publishing is paused.</b> Reports still arrive and are being read.
+        </span>
+      </Note>
+    </div>
   );
 }
 
@@ -163,11 +133,9 @@ function CountedNotShown({ logbooks }: { logbooks: BoardLogbook[] }) {
   const counted = logbooks.filter((l) => l.counts_only);
   if (!counted.length) return null;
   return (
-    <Card variant="quiet">
-      <p className="max-w-prose">
-        {`Counted, not shown: ${counted.map((l) => l.title).join(', ')}. Choose one in Filter to see its counts.`}
-      </p>
-    </Card>
+    <p className="muted" style={{ paddingBlock: 12, fontSize: '.9rem' }}>
+      {`Counted, not shown: ${counted.map((l) => l.title).join(', ')}. Choose one in the logbook list to see its counts.`}
+    </p>
   );
 }
 
@@ -201,167 +169,60 @@ function activeFilters(
   return out;
 }
 
+/**
+ * The mock-up's filter row (`.filters`): the search field with its own
+ * button, then a select for the logbook and, once one is chosen, one for each
+ * question its maker allowed. A question of free kind (a date, a number) is
+ * a small field that applies on Enter.
+ */
 function Narrowing({ logbooks, search }: { logbooks: BoardLogbook[]; search: BoardSearch }) {
   const navigate = useNavigate();
   const [q, setQ] = useState(search.q ?? '');
-  const [open, setOpen] = useState(false);
   const on = activeFilters(search, logbooks);
+  const chosen = logbooks.find((l) => l.slug === search.logbook);
   const go = (next: BoardSearch) => {
     void navigate({ to: '/board', search: next });
   };
+  const setAnswer = (key: string, value: string) => {
+    go(searchWith(search, { f: { ...search.f, [key]: value } }));
+  };
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        {/* Applies on Enter or with its own button, never per keystroke. */}
-        <form
-          role="search"
-          aria-label="Search the board"
-          className="flex min-w-0 grow items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            go(searchWith(search, { q: q.trim() || undefined }));
-          }}
-        >
-          <Field className="min-w-0 grow">
-            <Label className="sr-only">Search the words</Label>
-            <Input
-              type="search"
-              value={q}
-              placeholder="Search, then press Enter"
-              enterKeyHint="search"
-              onChange={(e) => {
-                setQ(e.target.value);
-              }}
-            />
-          </Field>
-          <Button type="submit" variant="secondary">
-            Search
-          </Button>
-        </form>
-        <Button
-          type="button"
-          variant="secondary"
-          className="w-full sm:w-auto"
-          aria-haspopup="dialog"
-          onClick={() => {
-            setOpen(true);
-          }}
-        >
-          Filter
-          {on.length ? (
-            <Count
-              value={on.length}
-              label={`${String(on.length)} filter${on.length === 1 ? '' : 's'} on`}
-            />
-          ) : null}
-        </Button>
-      </div>
-      {on.length ? (
-        <ul aria-label="Filters on" className="flex flex-wrap items-center gap-x-1 gap-y-0">
-          {on.map((f) => (
-            <li key={f.key}>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center rounded-control focus-visible:outline-2"
-                aria-label={`Remove the filter ${f.words}`}
-                onClick={() => {
-                  go(f.without);
-                }}
-              >
-                <span className={cn(chipVariants({ tone: 'tag' }), 'gap-1.5')}>
-                  {f.words}
-                  <span aria-hidden="true">✕</span>
-                </span>
-              </button>
-            </li>
-          ))}
-          <li>
-            <Button
-              type="button"
-              variant="quiet"
-              onClick={() => {
-                go(searchWith({}, { q: search.q }));
-              }}
-            >
-              Clear all
-            </Button>
-          </li>
-        </ul>
-      ) : null}
-      <FilterDialog
-        open={open}
-        onOpenChange={setOpen}
-        logbooks={logbooks}
-        search={search}
-        onShow={(next) => {
-          setOpen(false);
-          go(next);
+    <>
+      <form
+        className="filters"
+        role="search"
+        aria-label="Search reports"
+        onSubmit={(e) => {
+          e.preventDefault();
+          go(searchWith(search, { q: q.trim() || undefined }));
         }}
-      />
-    </div>
-  );
-}
-
-/**
- * The filter, in a dialog (a sheet from the bottom on a phone). It holds
- * what the operator allowed and nothing more, and changes nothing until
- * "Show reports".
- */
-function FilterDialog({
-  open,
-  onOpenChange,
-  logbooks,
-  search,
-  onShow,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  logbooks: BoardLogbook[];
-  search: BoardSearch;
-  onShow: (next: BoardSearch) => void;
-}) {
-  const [logbook, setLogbook] = useState(search.logbook ?? '');
-  const [answers, setAnswers] = useState<Record<string, string>>(search.f ?? {});
-  const chosen = logbooks.find((l) => l.slug === logbook);
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        // Opening again starts from what the board shows, not a half-made choice.
-        if (next) {
-          setLogbook(search.logbook ?? '');
-          setAnswers(search.f ?? {});
-        }
-        onOpenChange(next);
-      }}
-    >
-      <DialogContent className="max-sm:top-auto max-sm:bottom-0 max-sm:w-full max-sm:max-w-none max-sm:translate-y-0 max-sm:rounded-b-none">
-        <form
-          aria-label="Narrow the board"
-          className="flex flex-col gap-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const f = Object.fromEntries(
-              Object.entries(answers).filter(
-                ([k, v]) => v && chosen?.filters.some((x) => x.key === k),
-              ),
-            );
-            onShow(searchWith(search, { logbook: logbook || undefined, f }));
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Filter</DialogTitle>
-            <DialogDescription>
-              Choose a logbook to narrow by the questions its maker allows.
-            </DialogDescription>
-          </DialogHeader>
-          <Field>
-            <Label>Logbook</Label>
-            <Select
-              value={logbook}
+      >
+        {/* Applies on Enter or with its own button, never per keystroke. */}
+        <div className="search">
+          <label className="vh" htmlFor="q">
+            Search reports
+          </label>
+          <input
+            id="q"
+            type="search"
+            value={q}
+            placeholder="Search, then press Enter"
+            enterKeyHint="search"
+            onChange={(e) => {
+              setQ(e.target.value);
+            }}
+          />
+          <button className="btn sm flat" type="submit">
+            Search
+          </button>
+        </div>
+        {logbooks.length > 1 || chosen ? (
+          <label className="select">
+            <span className="vh">Logbook</span>
+            <select
+              value={search.logbook ?? ''}
               onChange={(e) => {
-                setLogbook(e.target.value);
-                setAnswers({});
+                go(searchWith(search, { logbook: e.target.value || undefined, f: undefined }));
               }}
             >
               <option value="">Every logbook</option>
@@ -370,51 +231,55 @@ function FilterDialog({
                   {l.title}
                 </option>
               ))}
-            </Select>
-          </Field>
-          {chosen?.filters.map((question) => (
-            <FilterControl
-              key={question.key}
-              question={question}
-              value={answers[question.key] ?? ''}
-              onChange={(v) => {
-                setAnswers((a) => ({ ...a, [question.key]: v }));
-              }}
-            />
-          ))}
-          <DialogFooter className="sm:justify-between">
-            <Button
+            </select>
+          </label>
+        ) : null}
+        {chosen?.filters.map((question) => (
+          <FilterControl
+            key={question.key}
+            question={question}
+            value={search.f?.[question.key] ?? ''}
+            onChange={(v) => {
+              setAnswer(question.key, v);
+            }}
+          />
+        ))}
+      </form>
+      {on.length ? (
+        <p className="muted" style={{ fontSize: '.9rem' }} aria-label="Filters on">
+          {on.map((f) => (
+            <button
+              key={f.key}
               type="button"
-              variant="quiet"
+              className="chip"
+              style={{ marginRight: 6, cursor: 'pointer' }}
+              aria-label={`Remove the filter ${f.words}`}
               onClick={() => {
-                setLogbook('');
-                setAnswers({});
+                go(f.without);
               }}
             >
-              Clear all
-            </Button>
-            <div className="flex flex-col-reverse gap-2 sm:flex-row">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  onOpenChange(false);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="submit">Show reports</Button>
-            </div>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+              {f.words} <span aria-hidden="true">✕</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            className="btn sm flat ghost"
+            onClick={() => {
+              go(searchWith({}, { q: search.q }));
+            }}
+          >
+            Clear all
+          </button>
+        </p>
+      ) : null}
+    </>
   );
 }
 
 /**
- * One operator-chosen filter: choice cards for a short list or a yes-no
- * question, a select for a long list. Only the logbook's own wording.
+ * One operator-chosen filter, as the mock-up's `.select`: a short list or a
+ * long one is a select; a question without options is a small field that
+ * applies on Enter. Only the logbook's own wording.
  */
 function FilterControl({
   question,
@@ -426,46 +291,49 @@ function FilterControl({
   onChange: (v: string) => void;
 }) {
   const options = optionsOf(question);
-  if (options && options.length <= 6) {
+  const [draft, setDraft] = useState(value);
+  if (!options) {
     return (
-      <Field>
-        <Label>{question.label}</Label>
-        <RadioGroup value={value} onValueChange={onChange}>
-          <RadioOption value="" label="Any answer" />
-          {options.map((o) => (
-            <RadioOption key={o.value} value={o.value} label={o.label} />
-          ))}
-        </RadioGroup>
-      </Field>
+      <label className="select">
+        <span className="vh">{question.label}</span>
+        <input
+          type={question.kind === 'date' ? 'date' : question.kind === 'number' ? 'number' : 'text'}
+          value={draft}
+          placeholder={question.label}
+          style={{ border: 0, background: 'transparent', font: 'inherit', color: 'inherit' }}
+          onChange={(e) => {
+            setDraft(e.target.value);
+          }}
+          onBlur={() => {
+            if (draft !== value) onChange(draft);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              onChange(draft);
+            }
+          }}
+        />
+      </label>
     );
   }
   return (
-    <Field>
-      <Label>{question.label}</Label>
-      {options ? (
-        <Select
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        >
-          <option value="">Any answer</option>
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </Select>
-      ) : (
-        <Input
-          type={question.kind === 'date' ? 'date' : question.kind === 'number' ? 'number' : 'text'}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-        />
-      )}
-    </Field>
+    <label className="select">
+      <span className="vh">{question.label}</span>
+      <select
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+        }}
+      >
+        <option value="">{`Any: ${question.label}`}</option>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -497,95 +365,123 @@ function optionsOf(q: FormQuestion | undefined): { value: string; label: string 
 
 function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLogbook[] }) {
   const navigate = useNavigate();
+  const main = useMainAction();
   const query = useQuery(boardReportsQuery(search));
   if (query.isPending) return <p role="status">Reading the reports…</p>;
   if (query.isError) {
     return (
-      <Alert tone="serious" title="The reports could not be loaded">
-        {query.error.message}
-      </Alert>
+      <Note warn>
+        <span role="alert">
+          <b>The reports could not be loaded.</b> {query.error.message}
+        </span>
+      </Note>
     );
   }
   if (!query.data.published) return <PublishingPaused />;
   // A thin place: the server sent no reports and no count, so there is
   // nothing to draw but its sentence.
-  if ('withheld' in query.data) return <Alert>{query.data.reason}</Alert>;
+  if ('withheld' in query.data)
+    return (
+      <Note>
+        <span>{query.data.reason}</span>
+      </Note>
+    );
   const { reports, total, page, page_size: size } = query.data;
   const filters = activeFilters(search, logbooks).length;
   const narrowed = Boolean(search.q) || filters > 0;
   const pages = Math.max(1, Math.ceil(total / size));
   const titles = new Map(logbooks.map((l) => [l.slug, l.title]));
+  const count = [
+    `${String(total)} report${total === 1 ? '' : 's'}`,
+    filters ? `${String(filters)} filter${filters === 1 ? '' : 's'}` : null,
+    search.q ? `“${search.q}”` : null,
+    pages > 1 ? `page ${String(page)} of ${String(pages)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <section aria-label="Reports" className="flex flex-col gap-5">
-      <CountLine
-        role="status"
-        parts={[
-          `${String(total)} report${total === 1 ? '' : 's'}`,
-          filters ? `${String(filters)} filter${filters === 1 ? '' : 's'}` : null,
-          search.q ? `“${search.q}”` : null,
-          pages > 1 ? `page ${String(page)} of ${String(pages)}` : null,
-        ]}
-      />
+    <section aria-label="Reports">
+      <p className="muted" role="status" style={{ fontSize: '.9rem', paddingTop: 6 }}>
+        {count}
+      </p>
       {total === 0 ? (
         narrowed ? (
           <Empty title="No published report matches that">
-            <span className="flex flex-col items-center gap-2">
-              Try fewer words, or fewer filters.
-              <Button
-                type="button"
-                variant="quiet"
-                onClick={() => {
-                  void navigate({ to: '/board', search: {} });
-                }}
-              >
-                Clear all
-              </Button>
-            </span>
+            Try fewer words, or fewer filters.
+            <br />
+            <button
+              type="button"
+              className="btn go"
+              style={{ marginTop: 10 }}
+              onClick={() => {
+                void navigate({ to: '/board', search: {} });
+              }}
+            >
+              Clear all
+            </button>
           </Empty>
         ) : (
-          <Empty title="Nothing published yet">
+          <Empty title="No published reports yet">
             Reports appear here once a moderator has approved them.
+            <br />
+            {main.href === '/submit' ? (
+              <Link className="btn go" style={{ marginTop: 10 }} to="/submit">
+                {main.label}
+              </Link>
+            ) : (
+              <a className="btn go" style={{ marginTop: 10 }} href={main.href}>
+                {main.label}
+              </a>
+            )}
           </Empty>
         )
       ) : (
-        <ul className="layout-split grid gap-3.5 min-[820px]:grid-cols-2">
+        <div className="rlist">
           {reports.map((r) => (
-            <li key={r.public_ref} className="flex">
-              <ReportCard r={r} logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title} />
-            </li>
+            <ReportCard
+              key={r.public_ref}
+              r={r}
+              logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title}
+            />
           ))}
-        </ul>
+        </div>
       )}
-      <Pagination
-        className="justify-center"
+      <PagerLinks
         label="Pages of reports"
         page={page}
         pages={pages}
-        onPage={(p) => {
-          void navigate({ to: '/board', search: { ...search, ...(p > 1 ? { page: p } : {}) } });
-          if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
-        }}
+        link={(p, children, ariaLabel) => (
+          <Link
+            to="/board"
+            search={{ ...search, ...(p > 1 ? { page: p } : { page: undefined }) }}
+            {...(ariaLabel ? { 'aria-label': ariaLabel } : {})}
+            onClick={() => {
+              if (typeof window.scrollTo === 'function') window.scrollTo(0, 0);
+            }}
+          >
+            {children}
+          </Link>
+        )}
       />
     </section>
   );
 }
 
 /**
- * Where it came from, in the operator's words (Plan E), as a tag: "Unverified
- * public report", or the organization's label. The words are the operator's
- * (site copy), sent with the report.
+ * Where it came from, in the operator's words (Plan E): "Unverified public
+ * report", or the organization's label. The words are the operator's (site
+ * copy), sent with the report. The mock-up's quiet small-caps line.
  */
 export function OriginLabel({ r }: { r: Pick<PublicReport, 'origin' | 'label'> }) {
-  const long = 'h-auto min-h-6 py-1 whitespace-normal';
   return r.origin === 'organization' ? (
-    <Chip tone="tag" className={long} data-copy="origin_organization">
+    <span className="quiet" data-copy="origin_organization">
       {r.label}
-    </Chip>
+    </span>
   ) : (
-    <Chip tone="tag" className={long} data-copy="origin_open_form">
+    <span className="quiet" data-copy="origin_open_form">
       {r.label}
-    </Chip>
+    </span>
   );
 }
 
@@ -599,19 +495,13 @@ export function OriginLabel({ r }: { r: Pick<PublicReport, 'origin' | 'label'> }
 function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string }) {
   const { where, what } = useReportParts(r.logbook_slug, r.answers);
   return (
-    <Link
-      to="/board/$ref"
-      params={{ ref: r.public_ref }}
-      className="grid w-full content-start gap-2 rounded-card border-2 border-line bg-surface p-4 pb-3 text-ink no-underline hover:border-ink"
-    >
-      <span className="flex min-h-6 flex-wrap items-center justify-between gap-2">
+    <Link to="/board/$ref" params={{ ref: r.public_ref }} className="report">
+      <span className="top">
         <ReportTags r={r} />
       </span>
-      <span className="font-display text-xl leading-tight">{what ?? where ?? logbookTitle}</span>
-      <span className="text-[0.95rem] text-ink-alt">
-        {what ? (where ?? logbookTitle) : logbookTitle}
-      </span>
-      <span className="flex flex-wrap justify-between gap-1.5 border-t border-line pt-2.5 font-mono text-xs text-muted">
+      <span className="outcome">{what ?? where ?? logbookTitle}</span>
+      <span className="where">{what ? (where ?? logbookTitle) : logbookTitle}</span>
+      <span className="meta">
         <span>{r.public_ref}</span>
         <span>{filed(r.received_at)}</span>
       </span>
@@ -619,30 +509,14 @@ function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string
   );
 }
 
-/** The facts public data supports, as tags. */
+/** The facts public data supports, as the mock-up's quiet line and chips. */
 export function ReportTags({ r }: { r: PublicReport }): ReactNode {
   return (
-    <ul aria-label="About this report" className="flex flex-wrap gap-1.5">
-      <li>
-        <OriginLabel r={r} />
-      </li>
-      {r.third_party ? (
-        <li>
-          <Chip tone="tag" className="h-auto min-h-6 py-1 whitespace-normal">
-            Via {r.third_party.filed_via}
-          </Chip>
-        </li>
-      ) : null}
-      {r.corrected ? (
-        <li>
-          <Chip tone="tag">Corrected</Chip>
-        </li>
-      ) : null}
-      {r.editorial_note ? (
-        <li>
-          <Chip tone="tag">Archive note</Chip>
-        </li>
-      ) : null}
-    </ul>
+    <>
+      <OriginLabel r={r} />
+      {r.third_party ? <span className="chip">Via {r.third_party.filed_via}</span> : null}
+      {r.corrected ? <span className="chip">Corrected</span> : null}
+      {r.editorial_note ? <span className="chip">Archive note</span> : null}
+    </>
   );
 }

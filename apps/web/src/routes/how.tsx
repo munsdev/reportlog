@@ -1,8 +1,8 @@
 /**
- * How to use this: one page with four tabs, so nothing here needs a page of
- * its own. Filing, what happens after a report is filed, how the record can
- * be checked, and the figures API for developers. The selected tab is in
- * the address (`?tab=`) so a link can point at one; the old addresses
+ * How to use this (mock-up how.html): a band with four tabs, then the text
+ * and a side column. Filing, what happens after a report is filed, how the
+ * record can be checked, and the figures API for developers. The selected tab
+ * is in the address (`?tab=`) so a link can point at one; the old addresses
  * /public-api and /docs/checking redirect here.
  *
  * The operator's own words go above (`how_intro`, optional, so an unwritten
@@ -10,19 +10,18 @@
  * this code does; keep them true when the filing form changes.
  */
 import { SOFTWARE_LICENCE, SOFTWARE_NAME, SOFTWARE_SOURCE } from '@reportlog/contracts';
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
-import { AsideCard } from '../components/ui/band.tsx';
-import { Button } from '../components/ui/button.tsx';
+import { Link, createFileRoute } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { ProseSection } from '../components/ui/prose-section.tsx';
 import { DeveloperTab } from '../features/site-pages/DeveloperTab.tsx';
-import { PublicPage } from '../features/site-pages/PublicPage.tsx';
-import { cn } from '../lib/utils.ts';
+import { Band, MockPage } from '../mockup/Band.tsx';
+import { Card, TwoCol } from '../mockup/TwoCol.tsx';
+import { useBodyClass } from '../mockup/useBodyClass.ts';
 
 const TABS = [
   { id: 'filing', label: 'Filing' },
   { id: 'next', label: 'What happens next' },
-  { id: 'record', label: 'The record and checking' },
+  { id: 'record', label: 'The record & checking' },
   { id: 'developers', label: 'For developers' },
 ] as const;
 type TabId = (typeof TABS)[number]['id'];
@@ -35,139 +34,105 @@ export const Route = createFileRoute('/how')({
   component: HowPage,
 });
 
-const link = 'underline underline-offset-2';
-
 function HowPage() {
   const tab = Route.useSearch().tab ?? 'filing';
-  const navigate = useNavigate();
-  const go = (id: TabId) => {
-    void navigate({ to: '/how', search: id === 'filing' ? {} : { tab: id }, replace: true });
-  };
+  useBodyClass('light');
   return (
-    <PublicPage
-      variant="band"
-      title="How to use this"
-      eyebrow="How it works"
-      band={
-        // The band's tabs (mock-up .tabs): a row of buttons that scrolls
-        // inside itself, so the page never does.
-        <div
-          role="tablist"
-          aria-label="How to use this"
-          className="-mx-1 mt-1.5 flex overflow-x-auto border-b border-line [scrollbar-width:none]"
-        >
+    <MockPage>
+      <Band eyebrow="How it works" title="How it works" tabTitle="How to use this">
+        <nav className="tabs" aria-label="Sections">
           {TABS.map((t) => (
-            <button
+            <Link
               key={t.id}
-              type="button"
-              role="tab"
-              id={`how-tab-${t.id}`}
-              aria-selected={tab === t.id}
-              aria-controls={`how-panel-${t.id}`}
-              tabIndex={tab === t.id ? 0 : -1}
-              onClick={() => {
-                go(t.id);
-              }}
-              onKeyDown={(e) => {
-                const i = TABS.findIndex((x) => x.id === tab);
-                const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-                const next = TABS[(i + step + TABS.length) % TABS.length];
-                if (step && next) {
-                  e.preventDefault();
-                  go(next.id);
-                  document.getElementById(`how-tab-${next.id}`)?.focus();
-                }
-              }}
-              className={cn(
-                'label-face -mb-px inline-flex min-h-12 shrink-0 items-center border-b-[3px] px-4 text-[0.8125rem] whitespace-nowrap',
-                tab === t.id
-                  ? 'border-ink text-ink'
-                  : 'border-transparent text-muted hover:text-ink',
-              )}
+              to="/how"
+              search={t.id === 'filing' ? {} : { tab: t.id }}
+              replace
+              activeProps={{}}
+              aria-current={tab === t.id ? 'page' : undefined}
             >
               {t.label}
-            </button>
+            </Link>
           ))}
-        </div>
-      }
-      aside={
-        <>
-          <AsideCard title="On this page" plain>
-            <ol className="grid list-none gap-1 p-0">
-              {TABS.map((t, i) => (
-                <li key={t.id} className="grid grid-cols-[34px_1fr] items-center">
-                  <span aria-hidden="true" className="font-display text-xl text-ink">
-                    {i + 1}
-                  </span>
-                  <Link
-                    to="/how"
-                    search={t.id === 'filing' ? {} : { tab: t.id }}
-                    aria-current={tab === t.id ? 'page' : undefined}
-                    className="inline-flex min-h-11 items-center underline underline-offset-4 aria-[current=page]:font-bold"
-                  >
-                    {t.label}
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          </AsideCard>
-          <AsideCard title="Check a report">
-            <p>Confirm a report has not been changed since it was filed.</p>
-            <Button asChild variant="secondary" className="justify-self-start">
-              <Link to="/verify">Check</Link>
-            </Button>
-          </AsideCard>
-        </>
-      }
-      asideLabel="On this page"
-    >
-      <CopyText slot="how_intro" />
-      <div
-        role="tabpanel"
-        id={`how-panel-${tab}`}
-        aria-labelledby={`how-tab-${tab}`}
-        className="flex max-w-[66ch] flex-col gap-8"
+        </nav>
+      </Band>
+      <TwoCol
+        pad={30}
+        asideLabel="On this page"
+        aside={
+          <>
+            <Card title="On this page" plain>
+              <ol className="steps" style={{ gap: 6 }}>
+                {TABS.map((t) => (
+                  <li key={t.id}>
+                    <Link
+                      to="/how"
+                      search={t.id === 'filing' ? {} : { tab: t.id }}
+                      replace
+                      activeProps={{}}
+                      aria-current={tab === t.id ? 'page' : undefined}
+                    >
+                      {t.label}
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            </Card>
+            <Card title="Check a report">
+              <p>Confirm a report has not been changed since it was filed.</p>
+              <Link className="btn sm flat" to="/verify">
+                Check
+              </Link>
+            </Card>
+          </>
+        }
       >
-        {tab === 'filing' ? <Filing /> : null}
-        {tab === 'next' ? <Next /> : null}
-        {tab === 'record' ? <Record /> : null}
-        {tab === 'developers' ? <DeveloperTab /> : null}
-      </div>
-    </PublicPage>
+        <div className="prose" id={`how-panel-${tab}`}>
+          <CopyText slot="how_intro" />
+          {tab === 'filing' ? <Filing /> : null}
+          {tab === 'next' ? <Next /> : null}
+          {tab === 'record' ? <Record /> : null}
+          {tab === 'developers' ? <DeveloperTab /> : null}
+        </div>
+      </TwoCol>
+    </MockPage>
+  );
+}
+
+/** A section of the text: the mock-up's h2 with an id, then its paragraphs. */
+function Sec({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <>
+      <h2 id={id}>{title}</h2>
+      {children}
+    </>
   );
 }
 
 function Filing() {
   return (
     <>
-      <ProseSection id="filing" label="01" title="Filing a report, one question at a time">
+      <Sec id="filing" title="Filing a report, one question at a time">
         <p>
           Every report is filed into a logbook: a set of questions about one kind of event. Choose{' '}
-          <Link to="/submit" className={link}>
-            what you are reporting
-          </Link>
-          , and the form asks its questions one card at a time. You press Next when you are ready.
+          <Link to="/submit">what you are reporting</Link>, and the form asks its questions one card
+          at a time. You press Next when you are ready.
         </p>
         <p>
           Your browser’s Back button goes back one question. Before anything is sent you see every
           answer together, and can change any of them.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection id="publishing" label="02" title="Whether it may be published">
+      <Sec id="publishing" title="Whether it may be published">
         <p>
           You are asked whether your report may be published, and the exact wording of that question
           is kept with your answer. If you say no, it is kept in the archive and never shown on the
           public board. Some logbooks exist to be public: there, the last card tells you that filing
           means your report may be published once a moderator approves it.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection
-        id="confirming"
-        label="03"
-        title="Confirming by email, when you are asked for an address"
-      >
+      <Sec id="confirming" title="Confirming by email, when you are asked for an address">
         <p>
           A form that lets you type, takes files, or asks whether you have evidence asks for your
           email address, and we send a link to it. Nothing is filed until you open that link and
@@ -179,7 +144,7 @@ function Filing() {
           send it, with no confirmation, and nothing ties it to you, so you cannot come back to
           correct or withdraw it.
         </p>
-      </ProseSection>
+      </Sec>
     </>
   );
 }
@@ -187,39 +152,29 @@ function Filing() {
 function Next() {
   return (
     <>
-      <ProseSection id="afterwards" label="04" title="A moderator reads it before anybody else">
+      <Sec id="afterwards" title="A moderator reads it before anybody else">
         <p>
           Once filed, your report is given a reference and can no longer be changed by anybody. A
           moderator reads it before it appears anywhere. There is no automatic publishing, and no
           path that skips the moderator. What a moderator approves or refuses is a judgement, and it
           belongs to whoever runs this archive, who publishes the{' '}
-          <Link to="/standards" className={link}>
-            moderation standard
-          </Link>
-          .
+          <Link to="/standards">moderation standard</Link>.
         </p>
         <p>
           How many reports arrived and when, how many were declined and why, and every time intake
-          was paused are on the{' '}
-          <Link to="/board/activity" className={link}>
-            arrivals and declines
-          </Link>{' '}
-          page.
+          was paused are on the <Link to="/board/activity">arrivals and declines</Link> page.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection id="yours" label="05" title="Your reports afterwards">
+      <Sec id="yours" title="Your reports afterwards">
         <p>
-          If you gave an address, sign in with it and open{' '}
-          <Link to="/mine" className={link}>
-            your reports
-          </Link>
-          . From there you can file a correction (a new version; the original is kept beside it),
+          If you gave an address, sign in with it and open <Link to="/mine">your reports</Link>.
+          From there you can file a correction (a new version; the original is kept beside it),
           change the permissions you give, withdraw a report from the public board, or erase your
           address for good. A withdrawn report stays in the archive, and the fact that it was
           withdrawn is part of the record.
         </p>
-      </ProseSection>
+      </Sec>
     </>
   );
 }
@@ -227,13 +182,10 @@ function Next() {
 function Record() {
   return (
     <>
-      <ProseSection id="checking" label="06" title="Checking a report">
+      <Sec id="checking" title="Checking a report">
         <p>
-          Every report has a reference. Enter it on the{' '}
-          <Link to="/verify" className={link}>
-            check page
-          </Link>{' '}
-          to check, in your own browser, that it has not been changed since it was filed. You do not
+          Every report has a reference. Enter it on the <Link to="/verify">check page</Link> to
+          check, in your own browser, that it has not been changed since it was filed. You do not
           have to take anybody’s word for it: the check uses the same code that sealed the report,
           and needs nothing from this server to be honest.
         </p>
@@ -254,9 +206,9 @@ function Record() {
           To try it on a new deployment: file a test report, confirm it from the email link if the
           form asks for an address, have a moderator approve it, and check it on the check page.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection id="who-sees" label="07" title="What is published, and what is kept apart">
+      <Sec id="who-sees" title="What is published, and what is kept apart">
         <p>
           The answers to the logbook’s questions are published once a moderator approves the report
           and the person who filed it has allowed that. Who filed it is kept apart and encrypted. A
@@ -267,15 +219,11 @@ function Record() {
         <p>
           The page loads no fonts, scripts, maps or trackers from anywhere else, so reading this
           archive does not tell any third party that you did. Where this deployment is hosted is in
-          the{' '}
-          <Link to="/legal" className={link}>
-            imprint and privacy policy
-          </Link>
-          .
+          the <Link to="/legal">imprint and privacy policy</Link>.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection id="limits" label="08" title="What this deliberately cannot do">
+      <Sec id="limits" title="What this deliberately cannot do">
         <p>
           <strong>It cannot tell you a report is true.</strong> It can tell you that a report was
           filed, has not been changed since, and was reviewed by a moderator.
@@ -288,24 +236,24 @@ function Record() {
           <strong>It cannot protect somebody who names themselves in the text.</strong> An answer
           that names its own author is published as written.
         </p>
-      </ProseSection>
+      </Sec>
 
-      <ProseSection id="source" label="09" title="Free software, and you can read all of it">
+      <Sec id="source" title="Free software, and you can read all of it">
         <p>
           {SOFTWARE_NAME} is licensed {SOFTWARE_LICENCE}. Whoever runs this archive did not write
           the software, and cannot change what it does for the people using it without publishing
           that change too.
         </p>
         <p>
-          <a href={SOFTWARE_SOURCE} rel="noopener" className={link}>
+          <a href={SOFTWARE_SOURCE} rel="noopener">
             {SOFTWARE_SOURCE.replace(/^https:\/\//, '')}
           </a>{' '}
           ·{' '}
-          <a href={`${SOFTWARE_SOURCE}/blob/main/CHANGELOG.md`} rel="noopener" className={link}>
+          <a href={`${SOFTWARE_SOURCE}/blob/main/CHANGELOG.md`} rel="noopener">
             changelog
           </a>
         </p>
-      </ProseSection>
+      </Sec>
     </>
   );
 }

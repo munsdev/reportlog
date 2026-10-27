@@ -17,21 +17,23 @@ import { claimOwnership, requestSetupCode, requestSignInCode, signIn } from '@re
 import type { Me } from '@reportlog/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
 import { call } from '../../lib/api.ts';
 import { SecondFactorGate, pendingSecondFactor } from './secondFactor.tsx';
 import { meQuery, useMe } from './session.ts';
-import { ErrorText, TextField, codeInputClass } from './ui.tsx';
+import { Field } from '../../mockup/Qcard.tsx';
+import { messageOf } from './ui.tsx';
 
 export function SignInForm({
   purpose = 'sign-in',
   intro,
   onSignedIn,
+  onStep,
 }: {
   purpose?: 'sign-in' | 'setup';
   intro?: string;
   onSignedIn: (me: Me) => void | Promise<void>;
+  /** Which of the two steps is showing, so the page can head it (mock-up sign-in.html). */
+  onStep?: (step: 'email' | 'code') => void;
 }) {
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -75,6 +77,11 @@ export function SignInForm({
   const me = useMe();
   const startedAgain = secondStep && me.data?.signedIn === false;
 
+  const step = !sentTo || startedAgain ? 'email' : 'code';
+  useEffect(() => {
+    onStep?.(step);
+  }, [step, onStep]);
+
   if (secondStep && !startedAgain) {
     return (
       <SecondFactorGate>
@@ -85,19 +92,21 @@ export function SignInForm({
 
   if (!sentTo || startedAgain) {
     return (
-      <Card>
-        <form
-          className="flex flex-col gap-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            ask.mutate();
-          }}
-        >
-          {intro && <p className="text-ink-alt">{intro}</p>}
-          <TextField
-            label="Your email address"
+      <form
+        noValidate={false}
+        onSubmit={(e) => {
+          e.preventDefault();
+          ask.mutate();
+        }}
+      >
+        {intro && <p className="muted">{intro}</p>}
+        <Field label="Email" htmlFor="si">
+          <input
+            className="input"
+            id="si"
             type="email"
             autoComplete="email"
+            inputMode="email"
             required
             value={email}
             onChange={(e) => {
@@ -105,49 +114,65 @@ export function SignInForm({
             }}
             {...refused(ask.error)}
           />
-          <ErrorText error={ask.error} id={errorId} />
-          <Button type="submit" size="lg" block busy={ask.isPending} busyLabel="Sending…">
-            Send me a code
-          </Button>
-        </form>
-      </Card>
+        </Field>
+        {ask.error ? (
+          <p id={errorId} role="alert" className="error">
+            {messageOf(ask.error)}
+          </p>
+        ) : null}
+        <div className="btn-row" style={{ paddingTop: 14 }}>
+          <button className="btn go" type="submit" disabled={ask.isPending}>
+            {ask.isPending ? 'Sending…' : 'Send code'}
+          </button>
+        </div>
+      </form>
     );
   }
 
   return (
-    <Card>
-      <form
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          verify.mutate();
-        }}
-      >
-        <p>
-          We sent a six-digit code to <strong>{sentTo}</strong>. It works for ten minutes.
-        </p>
-        <TextField
-          label="The code from the email"
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        verify.mutate();
+      }}
+    >
+      <p>
+        We sent a six-digit code to <strong>{sentTo}</strong>. It works for ten minutes.
+      </p>
+      <div className="field" style={{ paddingTop: 20 }}>
+        <label htmlFor="si-code" className="lbl">
+          The code from the email
+        </label>
+        <input
+          className="input mono"
+          id="si-code"
+          type="text"
           inputMode="numeric"
           autoComplete="one-time-code"
+          placeholder="123456"
           pattern="[0-9]{6}"
           maxLength={6}
           required
-          inputClassName={codeInputClass}
+          style={{ letterSpacing: '.2em', fontSize: '1.3rem', maxWidth: 220 }}
           value={code}
           onChange={(e) => {
             setCode(e.target.value.replace(/\D/g, ''));
           }}
           {...refused(verify.error)}
         />
-        <ErrorText error={verify.error} id={errorId} />
-        <Button type="submit" size="lg" block busy={verify.isPending} busyLabel="Checking…">
-          {purpose === 'setup' ? 'Become the owner' : 'Sign in'}
-        </Button>
-        <Button
+      </div>
+      {verify.error ? (
+        <p id={errorId} role="alert" className="error">
+          {messageOf(verify.error)}
+        </p>
+      ) : null}
+      <div className="btn-row" style={{ paddingTop: 14 }}>
+        <button className="btn go" type="submit" disabled={verify.isPending}>
+          {verify.isPending ? 'Checking…' : purpose === 'setup' ? 'Become the owner' : 'Sign in'}
+        </button>
+        <button
+          className="btn sm flat ghost"
           type="button"
-          variant="quiet"
-          className="self-center"
           onClick={() => {
             // The address is kept in the box, to correct rather than retype.
             setSentTo(null);
@@ -155,9 +180,9 @@ export function SignInForm({
           }}
         >
           Use a different address
-        </Button>
-      </form>
-    </Card>
+        </button>
+      </div>
+    </form>
   );
 }
 
@@ -170,5 +195,9 @@ function WhenSignedIn({ onSignedIn }: { onSignedIn: (me: Me) => void | Promise<v
     done.current = true;
     void onSignedIn(me.data);
   }, [me.data, onSignedIn]);
-  return <p role="status">Signed in.</p>;
+  return (
+    <p role="status" className="muted">
+      Signed in.
+    </p>
+  );
 }

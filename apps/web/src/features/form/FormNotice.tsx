@@ -10,13 +10,38 @@
  */
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
 import { useGateMode } from '@/features/identity/gateMode.ts';
+import { BtnLink } from '@/mockup/Btn.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 
+/**
+ * The page ground of every filing page: the mock-up's `body.light.form`,
+ * and its `.wrap` column. The cards go in a `.qcard` form inside it.
+ */
 export function FormColumn({ children }: { children: ReactNode }) {
-  return <section className="flex w-full max-w-[40rem] flex-col gap-6">{children}</section>;
+  useBodyClass('light', 'form');
+  return (
+    <div data-bleed>
+      <div className="wrap">{children}</div>
+    </div>
+  );
+}
+
+/**
+ * The mock-up's page for a state with no card: the eyebrow, a big title,
+ * then what there is to say (file-limit.html, file-check-email.html). It
+ * focuses nothing and has no bar.
+ */
+export function NoticeColumn({ children }: { children: ReactNode }) {
+  useBodyClass('light', 'form');
+  return (
+    <div data-bleed>
+      <div className="wrap" style={{ paddingTop: 30 }}>
+        <div style={{ display: 'grid', gap: 18, maxWidth: 640 }}>{children}</div>
+      </div>
+    </div>
+  );
 }
 
 export function FormNotice({
@@ -34,26 +59,18 @@ export function FormNotice({
     document.title = `${title} · ${site}`;
   }, [title, site]);
   return (
-    <FormColumn>
-      <div className="flex flex-col gap-2">
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 className="font-display text-title">{title}</h1>
-      </div>
+    <NoticeColumn>
+      <span className="eyebrow">{eyebrow}</span>
+      <h1 className="h-page" id="h1">
+        {title}
+      </h1>
       {children}
       {onDoor ? null : (
-        <ul className="flex flex-wrap gap-3" aria-label="Where to go instead">
-          <li>
-            <Button asChild variant="secondary">
-              <a href="/">The front page</a>
-            </Button>
-          </li>
-          <li>
-            <Button asChild variant="secondary">
-              <a href="/board">The board</a>
-            </Button>
-          </li>
-        </ul>
+        <div className="btn-row" aria-label="Where to go instead" role="group">
+          <BtnLink href="/">The front page</BtnLink>
+          <BtnLink href="/board">The board</BtnLink>
+        </div>
       )}
-    </FormColumn>
+    </NoticeColumn>
   );
 }

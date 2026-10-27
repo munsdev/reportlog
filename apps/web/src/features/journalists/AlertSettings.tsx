@@ -29,26 +29,11 @@ import type { AccessRequestBody, AlertSettings, AlertSettingsBody } from '@repor
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
-import { PublicPage } from '../site-pages/PublicPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '../../lib/api.ts';
-import { CardError } from '../form/CardFrame.tsx';
-import { ErrorText } from '../identity/ui.tsx';
+import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
+import { ErrorNote, Note, Waiting } from '../../mockup/Panel.tsx';
+import { Choice, QError } from '../../mockup/Qcard.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 import { StatesPicker } from './StatesPicker.tsx';
 
@@ -59,11 +44,13 @@ function SettingsForm({
   saving,
   error,
   onSave,
+  title = 'Alerts',
 }: {
   initial: Open;
   saving: boolean;
   error: unknown;
   onSave: (body: AlertSettingsBody) => Promise<unknown>;
+  title?: string;
 }) {
   const [alerts, setAlerts] = useState<'on' | 'off'>(initial.alerts);
   const [states, setStates] = useState<string[]>(initial.states);
@@ -71,7 +58,7 @@ function SettingsForm({
   const [noStates, setNoStates] = useState(false);
   return (
     <form
-      className="flex flex-col gap-6"
+      className="panel"
       onSubmit={(e) => {
         e.preventDefault();
         setSaved(false);
@@ -88,20 +75,30 @@ function SettingsForm({
         );
       }}
     >
-      <Field>
-        <Label>Alerts</Label>
-        <RadioGroup
-          value={alerts}
-          onValueChange={(v) => {
-            setAlerts(v === 'off' ? 'off' : 'on');
+      <h2>{title}</h2>
+      <div className="choices" role="radiogroup" aria-label={title}>
+        <Choice
+          name="ja"
+          checked={alerts === 'on'}
+          onChange={() => {
+            setAlerts('on');
             setSaved(false);
           }}
         >
-          <RadioOption value="on" label="Send me alerts" />
-          <RadioOption value="off" label="Turn alerts off for now (you stay on the list)" />
-        </RadioGroup>
-      </Field>
-      <div className="flex flex-col gap-2">
+          Send me alerts
+        </Choice>
+        <Choice
+          name="ja"
+          checked={alerts === 'off'}
+          onChange={() => {
+            setAlerts('off');
+            setSaved(false);
+          }}
+        >
+          Turn alerts off for now (you stay on the list)
+        </Choice>
+      </div>
+      <div style={{ display: 'grid', gap: 8 }}>
         <StatesPicker
           value={states}
           invalid={noStates}
@@ -111,21 +108,21 @@ function SettingsForm({
             setStates(next);
           }}
         />
-        {noStates ? <CardError>Choose at least one state.</CardError> : null}
+        {noStates ? <QError>Choose at least one state.</QError> : null}
       </div>
-      <ErrorText error={error} />
+      <ErrorNote error={error} />
       {saved ? (
-        <Alert tone="done">
+        <Note>
           Your alert settings are saved.
           {alerts === 'on' && initial.alerts === 'off'
             ? ' Alerts start again from now. Nothing you missed is sent.'
             : ''}
-        </Alert>
+        </Note>
       ) : null}
       <div>
-        <Button type="submit" busy={saving} busyLabel="Saving…">
-          Save
-        </Button>
+        <button className="btn sm flat ink" type="submit" disabled={saving}>
+          {saving ? 'Saving…' : 'Save'}
+        </button>
       </div>
     </form>
   );
@@ -138,8 +135,9 @@ const linkQuery = (token: string) =>
     retry: false,
   });
 
-/** The page behind "Change your alerts" in an alert email. */
+/** The page behind "Change your alerts" in an alert email (mock-up t-j-settings.html). */
 export function AlertSettingsPage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const client = useQueryClient();
   const state = useQuery(linkQuery(token));
   const keep = (data: AlertSettings) => {
@@ -159,40 +157,44 @@ export function AlertSettingsPage({ token }: { token: string }) {
     onSuccess: keep,
   });
 
-  if (state.isPending) return <p role="status">Checking this link…</p>;
+  if (state.isPending) {
+    return (
+      <Narrow>
+        <Waiting>Checking this link…</Waiting>
+      </Narrow>
+    );
+  }
   if (state.isError) {
     return (
-      <PublicPage title="This link could not be checked" width="prose">
-        <ErrorText error={state.error} />
-      </PublicPage>
+      <TokenPage title="This link could not be checked">
+        <ErrorNote error={state.error} />
+      </TokenPage>
     );
   }
   const s = state.data;
   if (s.state === 'gone') {
     return (
-      <PublicPage title="This link does not work any more" width="prose">
+      <TokenPage title="This link does not work any more">
         <p>
           It may have expired or not been copied whole. Every alert carries its own link. If you
           removed yourself from the list, there is nothing more to do.
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   if (s.state === 'removed') {
     return (
-      <PublicPage title="You are off the alert list" width="prose">
+      <TokenPage title="You are off the alert list">
         <p role="status">
           No more alerts will be emailed, your details are deleted, and any journalist desk access
           has ended.
         </p>
-      </PublicPage>
+      </TokenPage>
     );
   }
   return (
-    <PublicPage title="Change your alerts" width="prose">
-      <p>
-        Alerts for <strong>{s.address}</strong>. Nothing changes until you press a button.
-      </p>
+    <TokenPage title="Change your alerts">
+      <p>Alerts for {s.address}. Nothing changes until you press a button.</p>
       <SettingsForm
         initial={s}
         saving={save.isPending}
@@ -207,7 +209,8 @@ export function AlertSettingsPage({ token }: { token: string }) {
           ask.mutate(body);
         }}
       />
-      <Card variant="plain" heading="Remove me from the list entirely" className="mt-6">
+      <section className="panel danger">
+        <h2>Remove me from the list entirely</h2>
         <p>
           This deletes your name, outlet and address from the journalist alert list. If you have
           access to the journalist desk, it ends that too, and getting it back means joining the
@@ -222,9 +225,9 @@ export function AlertSettingsPage({ token }: { token: string }) {
             remove.mutate();
           }}
         />
-        <ErrorText error={remove.error} />
-      </Card>
-    </PublicPage>
+        <ErrorNote error={remove.error} />
+      </section>
+    </TokenPage>
   );
 }
 
@@ -247,11 +250,12 @@ function DeskSection({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(EMPTY_ACCESS);
   return (
-    <Card variant="plain" heading="The journalist desk" className="mt-6">
+    <section className="panel">
+      <h2>The journalist desk</h2>
       {desk === 'approved' ? (
         <p role="status">
           You have access to the journalist desk.{' '}
-          <Link to="/access/sign-in" search={{ next: '/desk' }} className="underline">
+          <Link to="/access/sign-in" search={{ next: '/desk' }}>
             Sign in with this address
           </Link>{' '}
           (we email you a code, then you accept the agreement and the desk opens). Turning alerts
@@ -263,7 +267,7 @@ function DeskSection({
         </p>
       ) : open ? (
         <form
-          className="flex flex-col gap-6"
+          style={{ display: 'grid', gap: 18 }}
           onSubmit={(e) => {
             e.preventDefault();
             onSend(accessBody(draft));
@@ -274,11 +278,11 @@ function DeskSection({
             and nothing is sent until you press the button.
           </p>
           <AccessFields value={draft} onChange={setDraft} />
-          <ErrorText error={error} />
+          <ErrorNote error={error} />
           <div>
-            <Button type="submit" busy={sending} busyLabel="Sending…">
-              Send my request to the owner
-            </Button>
+            <button className="btn sm flat go" type="submit" disabled={sending}>
+              {sending ? 'Sending…' : 'Send my request to the owner'}
+            </button>
           </div>
         </form>
       ) : (
@@ -288,63 +292,65 @@ function DeskSection({
             with alerts on or off.
           </p>
           <div>
-            <Button
+            <button
+              className="btn sm flat ink"
               type="button"
-              variant="secondary"
               onClick={() => {
                 setOpen(true);
               }}
             >
               Ask for access to the journalist desk
-            </Button>
+            </button>
           </div>
         </>
       )}
-    </Card>
+    </section>
   );
 }
 
 /**
  * Leaving asks again first (decision 46): it deletes the person's details and
- * ends any desk access, and cannot be undone from here. Secondary, never the
- * action colour: a destructive act is not the thing anybody came to do.
+ * ends any desk access, and cannot be undone from here. Never the action
+ * colour: a destructive act is not the thing anybody came to do.
  */
 function ConfirmRemove({ pending, onConfirm }: { pending: boolean; onConfirm: () => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
+  const [asking, setAsking] = useState(false);
+  if (!asking) {
+    return (
       <div>
-        <DialogTrigger asChild>
-          <Button type="button" variant="secondary">
-            Remove me from the list entirely
-          </Button>
-        </DialogTrigger>
+        <button
+          className="btn sm flat"
+          type="button"
+          onClick={() => {
+            setAsking(true);
+          }}
+        >
+          Remove me
+        </button>
       </div>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Remove yourself from the list?</DialogTitle>
-          <DialogDescription>
-            Your name, outlet and address are deleted, and any journalist desk access ends.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button type="button" variant="quiet">
-              Keep me on the list
-            </Button>
-          </DialogClose>
-          <Button
+    );
+  }
+  return (
+    <div role="alertdialog" aria-label="Remove yourself from the list?" className="note warn">
+      <span>
+        <b>Remove yourself from the list?</b> Your name, outlet and address are deleted, and any
+        journalist desk access ends.
+        <span className="btn-row" style={{ paddingTop: 10 }}>
+          <button
+            className="btn sm flat ghost"
             type="button"
-            variant="secondary"
-            busy={pending}
-            busyLabel="Removing…"
-            onClick={onConfirm}
+            onClick={() => {
+              setAsking(false);
+            }}
           >
-            Remove me
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            Keep me on the list
+          </button>
+          <button className="btn sm flat bad" type="button" disabled={pending} onClick={onConfirm}>
+            {pending ? 'Removing…' : 'Remove me'}
+          </button>
+        </span>
+      </span>
+    </div>
   );
 }
 
@@ -364,20 +370,18 @@ export function DeskAlerts() {
     },
   });
   return (
-    <section aria-labelledby="desk-alerts" className="flex flex-col gap-4">
-      <h2 id="desk-alerts" className="font-display text-xl font-bold">
-        Your alerts
-      </h2>
-      {state.isPending ? <p role="status">Loading your alert settings…</p> : null}
-      {state.isError ? <ErrorText error={state.error} /> : null}
+    <>
+      {state.isPending ? <Waiting>Loading your alert settings…</Waiting> : null}
+      {state.isError ? <ErrorNote error={state.error} /> : null}
       {state.data?.state === 'open' ? (
         <SettingsForm
+          title="Your alerts"
           initial={state.data}
           saving={save.isPending}
           error={save.error}
           onSave={(body) => save.mutateAsync(body)}
         />
       ) : null}
-    </section>
+    </>
   );
 }

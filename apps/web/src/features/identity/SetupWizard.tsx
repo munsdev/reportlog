@@ -47,10 +47,8 @@ import {
 } from '@reportlog/contracts';
 import type { Look } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { createContext, useContext, useId, useState } from 'react';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { applyLook } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
 import { LookChooser } from '../settings/LookChooser.tsx';
@@ -60,7 +58,9 @@ import { lookName } from '../settings/looks.ts';
 import { meQuery } from './session.ts';
 import { SecondFactorGate } from './secondFactor.tsx';
 import { SignInForm } from './SignInForm.tsx';
-import { ErrorText, TextField } from './ui.tsx';
+import { Field } from '../../mockup/Qcard.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { messageOf } from './ui.tsx';
 
 /** The screens, in order. The first cannot be gone back to: the server refuses it once it is done. */
 export const SETUP_STEPS = [
@@ -122,53 +122,62 @@ export function SetupWizard({
         }
       : undefined;
 
+  useBodyClass('light', 'form');
+  // The Look screen shows two preview frames side by side, so it runs wider.
   return (
-    <main
-      id="main"
-      className={`mx-auto w-full space-y-8 px-4 py-12 ${step === 'look' ? 'max-w-page' : 'max-w-xl'}`}
-    >
-      <header className="space-y-3">
-        <p className="label-face text-xs text-muted">
+    <main id="main">
+      <div
+        className="wrap"
+        style={{
+          paddingTop: 30,
+          maxWidth: step === 'look' ? undefined : 640,
+          display: 'grid',
+          gap: 18,
+        }}
+      >
+        <span className="step">
           Setting up · step {n + 1} of {SETUP_STEPS.length}
-        </p>
+        </span>
         <Progress at={n + 1} of={SETUP_STEPS.length} />
-        <h1 className="font-display text-title font-bold">{TITLES[step]}</h1>
-      </header>
-      {/* The owner, once seated, sets up a second factor before the rest
+        <h1 className="h-page" id="h1">
+          {TITLES[step]}
+        </h1>
+        {/* The owner, once seated, sets up a second factor before the rest
           (plan E, E3): the server lets the seat do nothing until then. */}
-      <SecondFactorGate>
-        {step === 'owner' &&
-          (status.hasOwner ? (
-            <section className="space-y-4">
-              <p>
-                This deployment already has an owner, who has not finished setting it up. Sign in as
-                the owner to finish.
-              </p>
+        <SecondFactorGate>
+          {step === 'owner' &&
+            (status.hasOwner ? (
+              <section style={formStyle}>
+                <p>
+                  This deployment already has an owner, who has not finished setting it up. Sign in
+                  as the owner to finish.
+                </p>
+                <SignInForm
+                  onSignedIn={async () => {
+                    await me.refetch();
+                  }}
+                />
+              </section>
+            ) : (
               <SignInForm
+                purpose="setup"
+                intro="The owner is the one person who appoints administrators and can hand the deployment on. We will email a code to prove the address is yours, and that email works here."
                 onSignedIn={async () => {
+                  setSeated(true);
                   await me.refetch();
                 }}
               />
-            </section>
-          ) : (
-            <SignInForm
-              purpose="setup"
-              intro="The owner is the one person who appoints administrators and can hand the deployment on. We will email a code to prove the address is yours, and that email works here."
-              onSignedIn={async () => {
-                setSeated(true);
-                await me.refetch();
-              }}
-            />
-          ))}
-        {step === 'name' && <NameStep onDone={next} back={back} />}
-        {step === 'start' && <StartStep onDone={next} back={back} />}
-        {step === 'publication' && <PublicationStep onDone={next} back={back} />}
-        {step === 'files' && <FilesStep onDone={next} back={back} />}
-        {step === 'look' && <LookStep onDone={next} back={back} />}
-        {step === 'password' && (
-          <CurtainDecision minPassword={status.minPassword} onFinished={onFinished} back={back} />
-        )}
-      </SecondFactorGate>
+            ))}
+          {step === 'name' && <NameStep onDone={next} back={back} />}
+          {step === 'start' && <StartStep onDone={next} back={back} />}
+          {step === 'publication' && <PublicationStep onDone={next} back={back} />}
+          {step === 'files' && <FilesStep onDone={next} back={back} />}
+          {step === 'look' && <LookStep onDone={next} back={back} />}
+          {step === 'password' && (
+            <CurtainDecision minPassword={status.minPassword} onFinished={onFinished} back={back} />
+          )}
+        </SecondFactorGate>
+      </div>
     </main>
   );
 }
@@ -180,18 +189,21 @@ export function SetupWizard({
  */
 function Progress({ at, of }: { at: number; of: number }) {
   return (
-    <div aria-hidden="true" className="h-1.5 w-full overflow-hidden rounded-control bg-paper-alt">
-      <div className="h-full bg-ink" style={{ width: `${String((at / of) * 100)}%` }} />
+    <div className="progress" aria-hidden="true">
+      <span style={{ width: `${String(Math.round((at / of) * 100))}%` }} />
     </div>
   );
 }
+
+/** What a step's form is laid out with: the mock-up's grid, one gap a row. */
+const formStyle: CSSProperties = { display: 'grid', gap: 18 };
 
 interface StepProps {
   onDone: () => void;
   back: (() => void) | undefined;
 }
 
-/** A screen's buttons: Back (if there is one), and the one that saves and moves on. */
+/** A screen's buttons: the one that saves and moves on, then Back (if there is one). */
 function Actions({
   back,
   pending,
@@ -206,32 +218,48 @@ function Actions({
   children?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-      <Button
-        type="submit"
-        size="lg"
-        className="w-full sm:w-auto"
-        disabled={disabled}
-        busy={pending}
-        busyLabel="Saving…"
-      >
-        {label}
-      </Button>
+    <div className="btn-row">
+      <button className="btn sm flat go" type="submit" disabled={disabled || pending}>
+        {pending ? 'Saving…' : label}
+      </button>
       {children}
       {back && (
-        <Button type="button" variant="quiet" onClick={back} disabled={pending}>
+        <button className="btn sm flat ghost" type="button" onClick={back} disabled={pending}>
           Back
-        </Button>
+        </button>
       )}
     </div>
   );
 }
 
-/**
- * A choice shown as a card (RadioOption): the whole card is the click
- * target, and choosing moves nothing. It sits inside a RadioGroup, which
- * holds the value.
- */
+/** A group of choice cards (mock-up .choices); choosing highlights and moves nothing. */
+const GroupContext = createContext<{
+  name: string;
+  value: string;
+  set: (v: string) => void;
+} | null>(null);
+
+function Choices({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  children: ReactNode;
+}) {
+  const name = useId();
+  return (
+    <GroupContext.Provider value={{ name, value, set: onChange }}>
+      <div className="choices" role="radiogroup" aria-label={label}>
+        {children}
+      </div>
+    </GroupContext.Provider>
+  );
+}
+
 function Choice({
   value,
   title,
@@ -241,13 +269,58 @@ function Choice({
   title: string;
   children?: ReactNode;
 }) {
-  return <RadioOption value={value} label={title} hint={children} />;
+  const group = useContext(GroupContext);
+  return (
+    <label className="choice">
+      <input
+        type="radio"
+        name={group?.name ?? ''}
+        checked={group?.value === value}
+        onChange={() => {
+          group?.set(value);
+        }}
+      />
+      <span className="dot" aria-hidden="true" />
+      <span>
+        {title}
+        {children ? (
+          <span className="muted" style={{ display: 'block', fontWeight: 400, fontSize: '.9rem' }}>
+            {children}
+          </span>
+        ) : null}
+      </span>
+    </label>
+  );
 }
 
 function Loading() {
   return (
-    <p role="status" className="text-muted">
+    <p role="status" className="muted">
       Loading
+    </p>
+  );
+}
+
+/** A labelled text box (mock-up .field). */
+function Text({
+  label,
+  hint,
+  ...input
+}: { label: string; hint?: string } & ComponentProps<'input'>) {
+  const id = useId();
+  return (
+    <Field label={label} htmlFor={id} help={hint}>
+      <input className="input" id={id} {...input} />
+    </Field>
+  );
+}
+
+/** A sentence saying what is wrong. */
+function Problem({ error, children }: { error?: unknown; children?: ReactNode }) {
+  if (!error && !children) return null;
+  return (
+    <p role="alert" className="error">
+      {children ?? messageOf(error)}
     </p>
   );
 }
@@ -297,7 +370,7 @@ function NameForm({ stored, onDone, back }: StepProps & { stored: string }) {
   });
   return (
     <form
-      className="space-y-6"
+      style={formStyle}
       onSubmit={(e) => {
         e.preventDefault();
         setTried(true);
@@ -308,7 +381,7 @@ function NameForm({ stored, onDone, back }: StepProps & { stored: string }) {
         Shown on every page, in the browser tab and in the emails this deployment sends. The
         software is called ReportLog either way, and the footer keeps saying so.
       </p>
-      <TextField
+      <Text
         label="Its name"
         hint="Put part of it in double quotes to draw it in the accent colour, or in single quotes for a quieter second accent. The quotes themselves are never shown."
         value={name}
@@ -318,12 +391,8 @@ function NameForm({ stored, onDone, back }: StepProps & { stored: string }) {
         }}
       />
       <NamePreview name={name.trim() || 'ReportLog'} page={false} />
-      {tried && problem && (
-        <p role="alert" className="font-semibold text-serious">
-          {problem}
-        </p>
-      )}
-      <ErrorText error={save.error} />
+      {tried && problem ? <Problem>{problem}</Problem> : null}
+      <Problem error={save.error} />
       <Actions back={back} pending={save.isPending} />
     </form>
   );
@@ -354,7 +423,7 @@ function StartStep({ onDone, back }: StepProps) {
 
   return (
     <form
-      className="space-y-6"
+      style={formStyle}
       onSubmit={(e) => {
         e.preventDefault();
         setTried(true);
@@ -368,7 +437,7 @@ function StartStep({ onDone, back }: StepProps) {
         Nobody can file anything until you have read it and launched it yourself, under Logbooks.
       </p>
       {appliedLabel && (
-        <p className="text-sm text-muted">
+        <p className="muted">
           You already started from “{appliedLabel}”. Choosing again adds another draft logbook and
           does not touch the first.
         </p>
@@ -379,7 +448,7 @@ function StartStep({ onDone, back }: StepProps) {
           screens ask the same questions either way.
         </p>
       ) : (
-        <RadioGroup aria-label="Starting points" value={picked ?? ''} onValueChange={setPicked}>
+        <Choices label="Starting points" value={picked ?? ''} onChange={setPicked}>
           {templates.map((t) => (
             <Choice key={t.id} value={t.id} title={t.label}>
               <span className="block">{t.description}</span>
@@ -392,24 +461,14 @@ function StartStep({ onDone, back }: StepProps) {
               </span>
             </Choice>
           ))}
-        </RadioGroup>
+        </Choices>
       )}
-      {tried && !picked && (
-        <p role="alert" className="font-semibold text-serious">
-          Choose one, or skip this.
-        </p>
-      )}
-      <ErrorText error={apply.error} />
+      {tried && !picked ? <Problem>Choose one, or skip this.</Problem> : null}
+      <Problem error={apply.error} />
       <Actions back={back} pending={apply.isPending}>
-        <Button
-          type="button"
-          variant="secondary"
-          className="w-full sm:w-auto"
-          onClick={onDone}
-          disabled={apply.isPending}
-        >
+        <button className="btn sm flat" type="button" onClick={onDone} disabled={apply.isPending}>
           Skip: I will set it up myself
-        </Button>
+        </button>
       </Actions>
     </form>
   );
@@ -476,7 +535,7 @@ function YesNo({
   });
   return (
     <form
-      className="space-y-6"
+      style={formStyle}
       onSubmit={(e) => {
         e.preventDefault();
         if (chosen) save.mutate(chosen === 'yes');
@@ -505,8 +564,12 @@ function YesNo({
           </p>
         </>
       )}
-      {note && <p className="rounded-card border border-line bg-surface p-4 text-sm">{note}</p>}
-      <RadioGroup aria-label={TITLES[kind]} value={chosen ?? ''} onValueChange={setChosen}>
+      {note ? (
+        <div className="note">
+          <span>{note}</span>
+        </div>
+      ) : null}
+      <Choices label={TITLES[kind]} value={chosen ?? ''} onChange={setChosen}>
         {kind === 'publication' ? (
           <>
             <Choice value="yes" title="Yes, publish approved reports">
@@ -528,8 +591,8 @@ function YesNo({
             </Choice>
           </>
         )}
-      </RadioGroup>
-      <ErrorText error={save.error} />
+      </Choices>
+      <Problem error={save.error} />
       <Actions back={back} pending={save.isPending} disabled={chosen === null} />
     </form>
   );
@@ -581,7 +644,7 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
   });
   return (
     <form
-      className="space-y-8"
+      style={formStyle}
       onSubmit={(e) => {
         e.preventDefault();
         save.mutate();
@@ -606,7 +669,7 @@ function LookForm({ start, name, onDone, back }: StepProps & { start: Look; name
           <LookChooser value={look} onChange={setLookState} />
         </div>
       </div>
-      <ErrorText error={save.error} />
+      <Problem error={save.error} />
       <Actions back={back} pending={save.isPending} />
     </form>
   );
@@ -639,7 +702,7 @@ function CurtainDecision({
 
   return (
     <form
-      className="space-y-6"
+      style={formStyle}
       onSubmit={(e) => {
         e.preventDefault();
         finish.mutate();
@@ -649,10 +712,10 @@ function CurtainDecision({
         Whoever installed this deployment chose its site password. Decide whether to keep it. There
         is no default: keeping somebody else’s password should be a choice, not an accident.
       </p>
-      <RadioGroup
-        aria-label="Keep or change the site password"
+      <Choices
+        label="Keep or change the site password"
         value={decision ?? ''}
-        onValueChange={(v) => {
+        onChange={(v) => {
           setDecision(v === 'keep' ? 'keep' : 'change');
         }}
       >
@@ -662,10 +725,10 @@ function CurtainDecision({
         <Choice value="keep" title="Keep it">
           Everybody who has it now keeps getting in.
         </Choice>
-      </RadioGroup>
+      </Choices>
       {decision === 'change' && (
-        <div className="space-y-4">
-          <TextField
+        <div style={formStyle}>
+          <Text
             label="New site password"
             hint={`At least ${String(minPassword)} characters.`}
             type="password"
@@ -675,7 +738,7 @@ function CurtainDecision({
               setPassword(e.target.value);
             }}
           />
-          <TextField
+          <Text
             label="The same password again"
             type="password"
             autoComplete="new-password"
@@ -686,7 +749,7 @@ function CurtainDecision({
           />
         </div>
       )}
-      <ErrorText error={finish.error} />
+      <Problem error={finish.error} />
       <Actions
         back={back}
         pending={finish.isPending}

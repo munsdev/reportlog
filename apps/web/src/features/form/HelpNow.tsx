@@ -7,7 +7,7 @@
  * the words from the logbook's own form call, so a door has them; the front
  * page from the site's wording.
  */
-import { Button } from '@/components/ui/button.tsx';
+import { BtnLink } from '@/mockup/Btn.tsx';
 
 export const DEFAULT_CTA_HEADING = 'If someone needs help right now';
 
@@ -34,20 +34,18 @@ export function HelpNow({
   // A path on this site stays in the tab; anything with a scheme leaves it.
   const external = url ? /^[a-z][a-z0-9+.-]*:/i.test(url) : false;
   if (mini) {
+    // The mock-up's small notice (site.css .mini): a rule at the left, the
+    // heading in bold, the words, and a button only when one is set.
     return (
-      <div className="border-l-[5px] border-ink py-1 pl-3 text-[0.95rem] text-ink-alt">
-        <h2 className="font-display font-bold text-ink">
-          {heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}
-        </h2>
-        <p data-copy="help_now" className="max-w-prose whitespace-pre-wrap">
+      <div className="mini">
+        <b>{heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}</b>
+        <span data-copy="help_now" className="whitespace-pre-wrap">
           {text}
-        </p>
+        </span>
         {label && url ? (
-          <Button asChild variant="quiet" className="-ml-2">
-            <a href={url} {...(external ? { rel: 'noopener' } : {})}>
-              {label}
-            </a>
-          </Button>
+          <BtnLink sm flat href={url} {...(external ? { rel: 'noopener' } : {})}>
+            {label}
+          </BtnLink>
         ) : null}
       </div>
     );
@@ -67,9 +65,9 @@ export function HelpNow({
         <h3>{heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}</h3>
         <p data-copy="help_now">{text}</p>
         {label && url ? (
-          <a className="btn sm flat" href={url} {...(external ? { rel: 'noopener' } : {})}>
+          <BtnLink sm flat href={url} {...(external ? { rel: 'noopener' } : {})}>
             {label}
-          </a>
+          </BtnLink>
         ) : null}
       </div>
     </div>

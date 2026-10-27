@@ -7,14 +7,15 @@
 import type { PublicNote, PublicReport } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Meta } from '../../components/ui/type.tsx';
-import { AsideCard, BandPage, TwoCol, Wrap } from '../../components/ui/band.tsx';
-import { CopyBox } from '../site-pages/CopyBox.tsx';
-import { CopyButton } from '../site-pages/CopyButton.tsx';
+import type { ReactNode } from 'react';
 import { ApiRequestError } from '../../lib/api.ts';
+import { MockPage } from '../../mockup/Band.tsx';
+import { CopyBox } from '../../mockup/CopyBox.tsx';
+import { CopyButton } from '../../mockup/CopyButton.tsx';
+import { Note as NoteStrip } from '../../mockup/Note.tsx';
+import { Card, TwoCol } from '../../mockup/TwoCol.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { usePageTitle } from '../../mockup/usePageTitle.ts';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
 import { ReportAnswers, useReportParts } from './ReportAnswers.tsx';
@@ -30,36 +31,74 @@ const INTAKE: Record<string, string> = {
 
 export function BoardReportPage({ publicRef }: { publicRef: string }) {
   const query = useQuery(boardReportQuery(publicRef));
+  useBodyClass('light');
   if (query.isPending) return <p role="status">Loading…</p>;
   if (query.isError) {
     // Not public, counts only, or never filed: the same page, on purpose.
     const missing = query.error instanceof ApiRequestError && query.error.status === 404;
     return (
-      <BandPage title="No published report" eyebrow="Published report">
+      <Shell eyebrow="Published report" title="No published report">
         <BackToBoard />
         {missing ? (
-          <p className="max-w-prose">There is no published report with that reference.</p>
+          <p>There is no published report with that reference.</p>
         ) : (
-          <Alert tone="serious" title="This report could not be loaded">
-            {query.error.message}
-          </Alert>
+          <NoteStrip warn>
+            <span role="alert">
+              <b>This report could not be loaded.</b> {query.error.message}
+            </span>
+          </NoteStrip>
         )}
-      </BandPage>
+      </Shell>
     );
   }
   if (!query.data.published) {
     return (
-      <BandPage title="No published report" eyebrow="Published report">
+      <Shell eyebrow="Published report" title="No published report">
         <BackToBoard />
-        <Card variant="deep">
-          <p className="font-semibold">
-            Publishing is paused. Reports still arrive and are being read.
-          </p>
-        </Card>
-      </BandPage>
+        <NoteStrip>
+          <span>
+            <b>Publishing is paused.</b> Reports still arrive and are being read.
+          </span>
+        </NoteStrip>
+      </Shell>
     );
   }
   return <PublishedReport r={query.data.report} />;
+}
+
+/** The mock-up's report band, and a plain wrap under it for a page with no report. */
+function Shell({
+  eyebrow,
+  title,
+  meta,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: ReactNode;
+  children: ReactNode;
+}) {
+  usePageTitle(title);
+  return (
+    <MockPage>
+      <section className="band" aria-labelledby="h1">
+        <div className="wrap">
+          <span className="eyebrow">{eyebrow}</span>
+          <h1 className="h-page" id="h1">
+            {title}
+          </h1>
+          {meta}
+        </div>
+      </section>
+      {meta ? (
+        children
+      ) : (
+        <div className="wrap" style={{ paddingTop: 26, display: 'grid', gap: 22 }}>
+          {children}
+        </div>
+      )}
+    </MockPage>
+  );
 }
 
 /** The mock-up's report page: a band, the answers, a note, and share and cite beside. */
@@ -73,83 +112,72 @@ function PublishedReport({ r }: { r: PublicReport }) {
   });
   const citation = `Report ${r.public_ref}, filed ${filedAt}. ${address}`;
   return (
-    <BandPage
-      title={r.public_ref}
-      heading={what ?? where ?? r.logbook_title}
+    <Shell
       eyebrow={`Published report · ${where ?? r.logbook_title}`}
-      band={
-        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
+      title={what ?? where ?? r.logbook_title}
+      meta={
+        <div className="btn-row">
           <ReportTags r={r} />
-          <span className="font-mono text-sm break-all text-muted">
+          <span className="mono muted" style={{ fontSize: '.8rem', overflowWrap: 'anywhere' }}>
             {r.public_ref} · Filed {filedAt}
           </span>
         </div>
       }
-      bare
     >
-      <Wrap className="pt-8 pb-16">
-        <BackToBoard />
-        <TwoCol
-          className="mt-3"
-          asideLabel="Share and cite"
-          aside={
-            <>
-              <AsideCard title="Share" plain>
-                <CopyBox text={address} what="the link" code={address} />
-              </AsideCard>
-              <AsideCard title="Cite this report" plain>
-                <p className="rounded-control border-[1.5px] border-line bg-surface p-3 font-mono text-sm break-words text-ink">
-                  {citation}
-                </p>
-                <CopyButton text={citation} what="the citation" />
-              </AsideCard>
-              <AsideCard title="Filed this report?" plain>
-                <p>
-                  If you left an email, the link we sent lets you correct or withdraw it. Without
-                  one, a report cannot be changed; file a new one.
-                </p>
-              </AsideCard>
-            </>
-          }
-        >
-          <ReportBody r={r} />
-        </TwoCol>
-      </Wrap>
-    </BandPage>
+      <TwoCol
+        pad={26}
+        asideLabel="Share and cite"
+        aside={
+          <>
+            <Card title="Share" plain>
+              <CopyBox text={address} what="the link" code={address} label="Copy link" />
+            </Card>
+            <Card title="Cite this report" plain>
+              <div className="cite">{citation}</div>
+              <span style={{ justifySelf: 'start' }}>
+                <CopyButton text={citation} what="the citation" label="Copy citation" />
+              </span>
+            </Card>
+            <Card title="Filed this report?" plain>
+              <p>
+                If you left an email, the link we sent lets you correct or withdraw it. Without one,
+                a report cannot be changed; file a new one.
+              </p>
+            </Card>
+          </>
+        }
+      >
+        <ReportBody r={r} />
+      </TwoCol>
+    </Shell>
   );
 }
 
 function ReportBody({ r }: { r: PublicReport }) {
   return (
-    <>
-      <h2 className="sr-only">What the reporter said</h2>
+    <div style={{ display: 'grid', gap: 22 }}>
+      <h2 className="vh">What the reporter said</h2>
       <ReportAnswers slug={r.logbook_slug} answers={r.answers} />
       {r.corrected ? (
-        <p className="max-w-prose text-sm text-ink-alt">
+        <p className="muted">
           This is a corrected version. Its reporter corrected an earlier one, which is kept.
         </p>
       ) : null}
       <PublishedFiles publicRef={r.public_ref} />
       {r.editorial_note ? <Note note={r.editorial_note} /> : null}
-      <details className="rounded-card border-[1.5px] border-line bg-surface p-4">
-        <summary className="flex min-h-11 cursor-pointer items-center font-semibold">
-          Technical details
-        </summary>
-        <div className="mt-3 grid gap-2 text-sm">
-          <span className="label-face text-xs text-muted">Chain value</span>
-          <span className="font-mono break-all">{r.chain_hash}</span>
-          <Link
-            to="/verify/$ref"
-            params={{ ref: r.public_ref }}
-            className="inline-flex min-h-11 items-center underline underline-offset-4"
-          >
-            Check this report
+      <details className="tech">
+        <summary>Technical details</summary>
+        <div className="in">
+          <span>Chain value</span>
+          <span>{r.chain_hash}</span>
+          <Link to="/verify/$ref" params={{ ref: r.public_ref }}>
+            Check this report yourself
           </Link>
         </div>
       </details>
       {r.third_party ? (
         // Which organization, never who typed it.
-        <p className="max-w-prose text-sm text-ink-alt">
+        <p className="muted">
           Filed through {r.third_party.filed_via}
           {r.third_party.collected_on ? `, collected ${r.third_party.collected_on}` : ''}
           {INTAKE[r.third_party.intake_method]
@@ -158,7 +186,7 @@ function ReportBody({ r }: { r: PublicReport }) {
           .
         </p>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -177,41 +205,42 @@ export function UnpublishedNote({ text, links }: { text: boolean; links: number 
     .filter(Boolean)
     .join(' and ');
   return (
-    <p className="rounded-control border-[1.5px] border-dashed border-ink bg-surface p-3 text-[0.92rem]">
-      <b className="font-display">This report also has {what}.</b> They are not published.
-    </p>
+    <div className="note lock">
+      <span>
+        <b>This report also has {what}.</b> They are not published.
+      </span>
+    </div>
   );
 }
 
 function BackToBoard() {
   return (
     <p className="print:hidden">
-      <Button asChild variant="quiet" className="-ml-2">
-        <Link to="/board">← Back to the board</Link>
-      </Button>
+      <Link to="/board">← Back to the board</Link>
     </p>
   );
 }
 
 function Note({ note }: { note: PublicNote }) {
   return (
-    <Card variant="quiet" heading="A note from the archive">
+    <div className="cta">
+      <span className="mark">A note from the archive</span>
       {note.state === 'published' ? (
         <>
           {/* Plain text: blank lines are paragraphs, and nothing is rendered as HTML. */}
           {note.body.split(/\n\s*\n/).map((p, i) => (
-            <p key={i} className="max-w-prose whitespace-pre-wrap">
+            <p key={i} style={{ whiteSpace: 'pre-wrap' }}>
               {p}
             </p>
           ))}
-          <p className="text-sm text-ink-alt">
-            Written <Meta>{new Date(note.written_at).toLocaleDateString()}</Meta> by the editors
+          <p className="muted" style={{ fontSize: '.9rem' }}>
+            Written {new Date(note.written_at).toLocaleDateString()} by the editors
             {note.revised ? `, revised (this is version ${String(note.versions)})` : ''}.
           </p>
         </>
       ) : (
-        <p className="max-w-prose">{note.notice}</p>
+        <p>{note.notice}</p>
       )}
-    </Card>
+    </div>
   );
 }
