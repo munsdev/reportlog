@@ -46,7 +46,13 @@ const CLEAR = Object.fromEntries([
 beforeAll(async () => {
   db = testDatabase();
   lb = await launchedLogbook(db, [
-    { key: 'what', kind: 'long_text', label: 'What happened', required: true },
+    {
+      key: 'what',
+      kind: 'choice_one',
+      label: 'What happened',
+      required: true,
+      settings: { options: ['a', 'b'] },
+    },
     { key: 'photos', kind: 'file', label: 'Photos' },
   ]);
 });
@@ -247,7 +253,13 @@ describe('the logbook file carries its caps, and only when set (evidence-caps)',
     const f = await toFile(db, lb.id);
     expect(f).toMatchObject({ max_files: 1, max_total_bytes: 300 * 1024 * 1024 });
     const other = await launchedLogbook(db, [
-      { key: 'what', kind: 'long_text', label: 'What', required: true },
+      {
+        key: 'what',
+        kind: 'choice_one',
+        label: 'What',
+        required: true,
+        settings: { options: ['a', 'b'] },
+      },
     ]);
     const plain = await toFile(db, other.id);
     expect(plain && 'max_files' in plain).toBe(false);

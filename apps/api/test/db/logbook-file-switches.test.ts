@@ -18,7 +18,7 @@ import { createFromStartingPoint } from '../../src/logbooks/templates.ts';
 import * as N from '../../src/moderation/notes.ts';
 import { launchedLogbook, testDatabase, uniqueSlug } from './helpers.ts';
 
-const Q = [{ key: 'what_happened', kind: 'long_text', label: 'What happened', required: true }];
+const Q = [{ key: 'what_happened', kind: 'private_text', label: 'What happened', required: true }];
 const EDITOR = 'editor@example.org';
 
 let db: Database;

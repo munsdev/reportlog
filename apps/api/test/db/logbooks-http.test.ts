@@ -94,9 +94,12 @@ describe('building and launching over HTTP', () => {
     });
     expect(q1.status).toBe(200);
     await api('POST', `/api/admin/logbooks/${String(lb.id)}/fields`, {
-      kind: 'short_text',
+      // A choice, not a note: a held note is left off the public form unless the
+      // logbook takes notes, and this one is about a condition travelling.
+      kind: 'choice_one',
       label: 'How?',
       key: 'how',
+      settings: { options: ['A fall', 'Something else'] },
       shown_when: { field: 'hurt', in: ['yes'] },
     });
     await api('POST', `/api/admin/logbooks/${String(lb.id)}/fields`, {
@@ -114,7 +117,7 @@ describe('building and launching over HTTP', () => {
 
   it('refuses a bad question with a sentence, in the one error shape', async () => {
     const bad = await api<ErrorBody>('POST', `/api/admin/logbooks/${String(lb.id)}/fields`, {
-      kind: 'short_text',
+      kind: 'private_text',
       label: 'Never asked',
       shown_when: { field: 'hurt', in: ['maybe'] },
     });
@@ -178,7 +181,7 @@ describe('building and launching over HTTP', () => {
     expect(del.body.error.code).toBe('launched-not-deletable');
 
     const optional = await api('POST', `/api/admin/logbooks/${String(lb.id)}/fields`, {
-      kind: 'long_text',
+      kind: 'private_text',
       label: 'Anything else?',
     });
     expect(optional.status).toBe(200);
@@ -240,7 +243,7 @@ describe('drafts', () => {
     });
     const id = String(made.body.id);
     for (const label of ['One', 'Two', 'Three']) {
-      await api('POST', `/api/admin/logbooks/${id}/fields`, { kind: 'short_text', label });
+      await api('POST', `/api/admin/logbooks/${id}/fields`, { kind: 'private_text', label });
     }
     const before = (await api<Detail>('GET', `/api/admin/logbooks/${id}`)).body.fields;
     const reversed = before.map((f) => f.id).reverse();

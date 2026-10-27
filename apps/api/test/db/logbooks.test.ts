@@ -15,6 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as L from '../../src/logbooks/logbooks.ts';
 import { recordCardTexts } from '../../src/consent/cards.ts';
 import { fileReport, testDatabase, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 
 const db = testDatabase();
 // A report seals an answer to card wording the server recorded.
@@ -51,7 +52,7 @@ describe('deleting one', () => {
   // logbook is its own hash chain and is named on every anchor since.
   it('deletes a draft and its questions, and says so when there is nothing to delete', async () => {
     const draft = await L.createLogbook(db, { slug: uniqueSlug('doomed'), title: 'Doomed' });
-    await L.addField(db, draft.id, { key: 'q', kind: 'short_text', label: 'Q' });
+    await addStoredQuestion(db, draft.id, { key: 'q', kind: 'short_text', label: 'Q' });
     expect(await questionCount(draft.id)).toBe(1);
     expect(await L.deleteDraft(db, draft.id)).toBe(draft.slug);
     expect(await questionCount(draft.id)).toBe(0);
@@ -60,7 +61,7 @@ describe('deleting one', () => {
 
   it('never deletes a launched logbook, at any level', async () => {
     const live = await L.createLogbook(db, { slug: uniqueSlug('live'), title: 'Live' });
-    await L.addField(db, live.id, { key: 'q', kind: 'short_text', label: 'Q' });
+    await addStoredQuestion(db, live.id, { key: 'q', kind: 'short_text', label: 'Q' });
     await L.launch(db, live.id);
     await refused(L.deleteDraft(db, live.id), 'launched-not-deletable');
     expect(await L.logbookById(db, live.id)).not.toBeNull();
@@ -87,31 +88,31 @@ describe('making one', () => {
 describe('questions are made, not built in', () => {
   it('adds them in order, with keys from their labels, and only marked ones filter', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('qs'), title: 'Questions' });
-    const when = await L.addField(db, lb.id, {
+    const when = await addStoredQuestion(db, lb.id, {
       kind: 'date',
       label: 'When did it happen?',
       required: true,
     });
     expect(when.key).toBe('when_did_it_happen');
     expect(
-      (await L.addField(db, lb.id, { kind: 'place', label: 'Where it started', filterable: true }))
+      (await addStoredQuestion(db, lb.id, { kind: 'place', label: 'Where it started', filterable: true }))
         .filterable,
     ).toBe(true);
     // A SECOND PLACE FIELD: the thing a fixed column could never do.
-    await L.addField(db, lb.id, { kind: 'place', label: 'Where it ended', filterable: true });
-    const notes = await L.addField(db, lb.id, {
+    await addStoredQuestion(db, lb.id, { kind: 'place', label: 'Where it ended', filterable: true });
+    const notes = await addStoredQuestion(db, lb.id, {
       kind: 'long_text',
       label: 'Notes',
       filterable: true,
     });
     expect(notes.filterable, 'a filter flag on a type with no filter control').toBe(false);
-    await refused(L.addField(db, lb.id, { kind: 'not_a_type', label: 'X' }), 'kind');
+    await refused(addStoredQuestion(db, lb.id, { kind: 'not_a_type', label: 'X' }), 'kind');
     await refused(
-      L.addField(db, lb.id, { kind: 'date', label: 'When did it happen?' }),
+      addStoredQuestion(db, lb.id, { kind: 'date', label: 'When did it happen?' }),
       'key-taken',
     );
-    await refused(L.addField(db, lb.id, { kind: 'date', label: '' }), 'label');
-    await refused(L.addField(db, lb.id, { kind: 'date', label: 'X', key: 'Bad Key' }), 'key');
+    await refused(addStoredQuestion(db, lb.id, { kind: 'date', label: '' }), 'label');
+    await refused(addStoredQuestion(db, lb.id, { kind: 'date', label: 'X', key: 'Bad Key' }), 'key');
 
     const fields = await L.fieldsFor(db, lb.id);
     expect(fields.map((f) => f.key)).toEqual([
@@ -138,14 +139,14 @@ describe('questions are made, not built in', () => {
 
   it('gives each type its default settings, and refuses settings that cannot work', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('set'), title: 'Settings' });
-    const text = await L.addField(db, lb.id, { kind: 'short_text', label: 'Name' });
+    const text = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Name' });
     expect(text.settings).toEqual({ maxLength: 200 });
     await refused(
-      L.addField(db, lb.id, { kind: 'location', label: 'Where', settings: { scope: 'mars' } }),
+      addStoredQuestion(db, lb.id, { kind: 'location', label: 'Where', settings: { scope: 'mars' } }),
       'location-scope',
     );
     await refused(
-      L.addField(db, lb.id, {
+      addStoredQuestion(db, lb.id, {
         kind: 'location',
         label: 'Where',
         settings: { scope: 'world', depth: 'county' },
@@ -153,22 +154,22 @@ describe('questions are made, not built in', () => {
       'location-depth',
     );
     // `state` is what an absent depth means, so it is not stored (or sealed).
-    const state = await L.addField(db, lb.id, {
+    const state = await addStoredQuestion(db, lb.id, {
       kind: 'location',
       label: 'Where',
       settings: { scope: 'us', depth: 'state' },
     });
     expect(state.settings).toEqual({ scope: 'us' });
-    await refused(L.addField(db, lb.id, { kind: 'choice_one', label: 'Pick' }), 'choice-options');
+    await refused(addStoredQuestion(db, lb.id, { kind: 'choice_one', label: 'Pick' }), 'choice-options');
     await refused(
-      L.addField(db, lb.id, {
+      addStoredQuestion(db, lb.id, {
         kind: 'choice_one',
         label: 'Pick',
         settings: { options: ['A', ' '] },
       }),
       'choice-options',
     );
-    const pick = await L.addField(db, lb.id, {
+    const pick = await addStoredQuestion(db, lb.id, {
       kind: 'choice_one',
       label: 'Pick',
       settings: { options: [' A ', 'B'] },
@@ -179,12 +180,12 @@ describe('questions are made, not built in', () => {
   it('allows one upload question, never required and never conditional', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('files'), title: 'Files' });
     await refused(
-      L.addField(db, lb.id, { kind: 'file', label: 'A photo', required: true }),
+      addStoredQuestion(db, lb.id, { kind: 'file', label: 'A photo', required: true }),
       'file-required',
     );
-    await L.addField(db, lb.id, { kind: 'file', label: 'Photos' });
+    await addStoredQuestion(db, lb.id, { kind: 'file', label: 'Photos' });
     expect((await L.logbookById(db, lb.id))?.asks_for_files).toBe(true);
-    await refused(L.addField(db, lb.id, { kind: 'file', label: 'More files' }), 'file-exists');
+    await refused(addStoredQuestion(db, lb.id, { kind: 'file', label: 'More files' }), 'file-exists');
   });
 });
 
@@ -197,7 +198,7 @@ describe('the lifecycle', () => {
   it('launches once, and then the clock decides whether it is open', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('life'), title: 'Lifecycle' });
     expect(L.isAccepting(lb)).toBe(false);
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What?' });
     const launched = await L.launch(db, lb.id);
     expect(launched.state).toBe('open');
     expect(launched.launched_at).not.toBeNull();
@@ -247,7 +248,7 @@ describe('the lifecycle', () => {
   it('lists a draft nowhere public, and a closed logbook only for the board', async () => {
     const draft = await L.createLogbook(db, { slug: uniqueSlug('hid'), title: 'Hidden' });
     const done = await L.createLogbook(db, { slug: uniqueSlug('done'), title: 'Done' });
-    await L.addField(db, done.id, { kind: 'short_text', label: 'What?' });
+    await addStoredQuestion(db, done.id, { kind: 'short_text', label: 'What?' });
     await L.launch(db, done.id);
     await L.setClosed(db, done.id, true);
     const open = (await L.openLogbooks(db)).map((l) => l.slug);
@@ -262,8 +263,8 @@ describe('the lifecycle', () => {
 describe('the one-way door', () => {
   it('refuses, in the module and with a reason, everything but an optional question', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('door'), title: 'Door' });
-    await L.addField(db, lb.id, { kind: 'yes_no', label: 'Hurt?', key: 'hurt' });
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'Who?', key: 'who' });
+    await addStoredQuestion(db, lb.id, { kind: 'yes_no', label: 'Hurt?', key: 'hurt' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Who?', key: 'who' });
     await L.launch(db, lb.id);
     const fields = await L.fieldsFor(db, lb.id);
     const [first] = fields;
@@ -282,10 +283,10 @@ describe('the one-way door', () => {
     // when it applies, so a question added now leaves every report already
     // filed hashing exactly as it did.
     await refused(
-      L.addField(db, lb.id, { kind: 'short_text', label: 'Anything else?', required: true }),
+      addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Anything else?', required: true }),
       'launched-required',
     );
-    const added = await L.addField(db, lb.id, { kind: 'short_text', label: 'Anything else?' });
+    const added = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'Anything else?' });
     expect(added.required).toBe(false);
 
     const after = await L.fieldsFor(db, lb.id);
@@ -307,7 +308,7 @@ describe('the one-way door', () => {
 
   it('is held by the database too, if a path forgets to ask the module', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('dbdoor'), title: 'DB door' });
-    const f = await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
+    const f = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What?' });
     await L.launch(db, lb.id);
     // Wording may change after launch (ruling 48); what it is may not.
     await expect(
@@ -320,20 +321,20 @@ describe('the one-way door', () => {
 
   it('records the form version a launched logbook was launched with, and each one after', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('ver'), title: 'Versions' });
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What?' });
     const count = async () =>
       (await db.selectFrom('logbook_forms').select('id').where('logbook_id', '=', lb.id).execute())
         .length;
     expect(await count()).toBe(0);
     await L.launch(db, lb.id);
     expect(await count()).toBe(1);
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'And then?' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'And then?' });
     expect(await count()).toBe(2);
   });
 
   it('serializes a launch against a change to the draft, so one of them wins whole', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('race'), title: 'Race' });
-    const f = await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
+    const f = await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What?' });
     const results = await Promise.allSettled([
       L.launch(db, lb.id),
       L.updateField(db, lb.id, f.id, { required: true }),
@@ -354,7 +355,7 @@ describe('the one-way door', () => {
 describe('the title is not the form', () => {
   it('stays editable after launch, and the slug never is', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('title'), title: 'Old title' });
-    await L.addField(db, lb.id, { kind: 'short_text', label: 'What?' });
+    await addStoredQuestion(db, lb.id, { kind: 'short_text', label: 'What?' });
     await L.launch(db, lb.id);
     const renamed = await L.updateDetails(db, lb.id, {
       title: 'New title',
@@ -420,7 +421,7 @@ describe('the schema holds the line', () => {
 describe('a report filed against a logbook built here', () => {
   it('verifies', async () => {
     const lb = await L.createLogbook(db, { slug: uniqueSlug('filed'), title: 'Filed' });
-    await L.addField(db, lb.id, {
+    await addStoredQuestion(db, lb.id, {
       kind: 'long_text',
       label: 'What happened',
       key: 'what',

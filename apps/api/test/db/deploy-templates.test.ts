@@ -28,6 +28,7 @@ import {
   templateById,
 } from '../../src/site/templates.ts';
 import { fileReport, uniqueSlug } from './helpers.ts';
+import { addStoredQuestion } from '../support/stored-questions.ts';
 import { address, as, harness, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
 
@@ -77,7 +78,7 @@ beforeAll(async () => {
   await h.db.deleteFrom('site_copy').execute();
 
   const lb = await L.createLogbook(h.db, { title: 'Ours, first', slug: uniqueSlug('tpl-own') });
-  await L.addField(h.db, lb.id, { kind: 'long_text', label: 'What happened', key: 'what' });
+  await addStoredQuestion(h.db, lb.id, { kind: 'long_text', label: 'What happened', key: 'what' });
   await L.launch(h.db, lb.id);
   own = lb;
   const questions = L.toDefinitions(await L.fieldsFor(h.db, lb.id));
@@ -163,7 +164,7 @@ describe('applying the general template', () => {
 
   it('leaves an ordinary logbook behind: it gains a written question like any other', async () => {
     const id = made.logbook?.id ?? 0;
-    await L.addField(h.db, id, { kind: 'long_text', label: 'Anything else, in your own words?' });
+    await addStoredQuestion(h.db, id, { kind: 'long_text', label: 'Anything else, in your own words?' });
     expect((await L.fieldsFor(h.db, id)).at(-1)?.kind).toBe('long_text');
   });
 });
