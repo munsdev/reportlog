@@ -28,12 +28,15 @@ import {
   getDoorChallenge,
   getDoorSettings,
   getDoorStart,
+  getFilingLimits,
   setDoorSettings,
+  setFilingLimits,
 } from '@reportlog/contracts';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { createHmac, randomBytes } from 'node:crypto';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import { filingLimits, setFilingLimits as writeFilingLimits } from '../filing/limits.ts';
 import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { roleGuard } from '../identity/guards.ts';
@@ -247,6 +250,43 @@ export function doorRoutes(
           : { minFormMs: Math.round(b.min_form_seconds * 1000) }),
       });
       return present();
+    });
+    // What a report's email is held to (E1): changing these needs no deploy.
+    route(staff, getFilingLimits, () => filingLimits(db));
+    route(staff, setFilingLimits, async ({ request }) => {
+      const b = request.body as {
+        link_days?: number;
+        contacts_delete_on?: string;
+        address_daily_cap?: number;
+      };
+      if (b.link_days !== undefined && !(b.link_days >= 1 && b.link_days <= 365)) {
+        throw new HttpError(400, 'link_days', 'A link can work for 1 to 365 days.');
+      }
+      if (
+        b.address_daily_cap !== undefined &&
+        !(b.address_daily_cap >= 1 && b.address_daily_cap <= 1000)
+      ) {
+        throw new HttpError(400, 'address_cap', 'One address can file 1 to 1000 reports a day.');
+      }
+      if (
+        b.contacts_delete_on !== undefined &&
+        (!/^\d{4}-\d{2}-\d{2}$/.test(b.contacts_delete_on) ||
+          Number.isNaN(Date.parse(`${b.contacts_delete_on}T00:00:00Z`)))
+      ) {
+        throw new HttpError(400, 'delete_on', 'Write the date as year-month-day, like 2027-01-31.');
+      }
+      await writeFilingLimits(
+        db,
+        {
+          ...(b.link_days === undefined ? {} : { link_days: b.link_days }),
+          ...(b.address_daily_cap === undefined ? {} : { address_daily_cap: b.address_daily_cap }),
+          ...(b.contacts_delete_on === undefined
+            ? {}
+            : { contacts_delete_on: b.contacts_delete_on }),
+        },
+        request.user?.email ?? 'admin',
+      );
+      return filingLimits(db);
     });
     done();
   });

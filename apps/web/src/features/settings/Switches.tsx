@@ -5,6 +5,13 @@
  * button that does what the chosen card says; the result is a toast, and
  * an error stays on the page as an alert (settings-and-admin.md §02).
  *
+ * DELIBERATE DIFFERENCE FROM THE MOCK-UP. The mock-up draws Accepting reports
+ * and the development notice as an instant switch. Here closing intake keeps
+ * its two acts (choose the card, press the button) because it refuses
+ * somebody part-way through a form; the development notice keeps the same
+ * pair so the two read alike. Their summaries ("Accepting: Yes") are the
+ * mock-up's.
+ *
  * ASKED BEFORE, NEVER AFTER. Closing the site to reports stops somebody
  * part-way through a form, so it takes two acts: choosing the card that says
  * what will happen, then pressing the button. Nothing is sent by choosing.
