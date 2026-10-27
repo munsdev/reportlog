@@ -779,3 +779,5 @@ body.light .follow,.scope-light .follow{background:var(--p-chrome);color:#fff}
 body.form .site-head .head-right > .btn{display:none}
 /* A page the app draws inside its padded column (data-bleed) rather than directly in <main>. */
 body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
+/* A heading the app focuses when a card or page changes is not a control: the mock-up draws no ring round it. */
+[tabindex="-1"]:focus-visible{outline:none}
