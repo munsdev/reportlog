@@ -101,51 +101,66 @@ describe('write side and read side agree', () => {
     const attachments = [
       { ordinal: 1, sha256: 'c'.repeat(64), byte_size: 5, media_type: 'image/jpeg' },
     ];
+    const TEXT = { what: 'd'.repeat(64) };
+    const LINKS = { links: ['e'.repeat(64), 'f'.repeat(64)] };
+    const HELD = {
+      none: {},
+      text: { text_fingerprints: TEXT },
+      link: { link_fingerprints: LINKS },
+      both: { text_fingerprints: TEXT, link_fingerprints: LINKS },
+    } as const;
     for (const answers of [undefined, { q: 'yes' }]) {
-      for (const third of [false, true]) {
-        for (const form of [null, 'b'.repeat(64)]) {
-          for (const files of [null, attachments]) {
-            const fields = normalizeReportFields({
-              logbook: 'lb',
-              may_publish: true,
-              may_publish_digest: DIGEST,
-              answers,
-              ...(third
-                ? {
-                    third_party: true,
-                    filed_via: 'Org',
-                    intake_method: 'paper',
-                    attested_at: '2026-10-17T09:00:00.000Z',
-                    collected_on: '2026-10-01',
-                  }
-                : {}),
-            });
-            if (form) fields.logbook_form = form;
-            const sealed = buildSealedObject({
-              ...base,
-              correctsId: 3,
-              fields,
-              attachments: files,
-            });
-            const stored: StoredReportRecord = {
-              public_ref: base.publicRef,
-              received_at: base.receivedAt,
-              thread_id: base.threadId,
-              corrects_id: '3',
-              recipe: 1,
-              logbook_slug: 'lb',
-              form_id: form ? '9' : null,
-              logbook_form: form,
-              answers: answers ?? null,
-              third_party: third ? true : null,
-              filed_via: third ? 'Org' : null,
-              intake_method: third ? 'paper' : null,
-              attested_at: third ? '2026-10-17T09:00:00.000Z' : null,
-              collected_on: third ? '2026-10-01' : null,
-              may_publish: true,
-              may_publish_digest: DIGEST,
-            };
-            expect(canonicalJson(rebuildSealedObject(stored, files))).toBe(canonicalJson(sealed));
+      for (const [heldName, held] of Object.entries(HELD)) {
+        for (const third of [false, true]) {
+          for (const form of [null, 'b'.repeat(64)]) {
+            for (const files of [null, attachments]) {
+              const fields = normalizeReportFields({
+                logbook: 'lb',
+                may_publish: true,
+                may_publish_digest: DIGEST,
+                answers,
+                ...held,
+                ...(third
+                  ? {
+                      third_party: true,
+                      filed_via: 'Org',
+                      intake_method: 'paper',
+                      attested_at: '2026-10-17T09:00:00.000Z',
+                      collected_on: '2026-10-01',
+                    }
+                  : {}),
+              });
+              if (form) fields.logbook_form = form;
+              const sealed = buildSealedObject({
+                ...base,
+                correctsId: 3,
+                fields,
+                attachments: files,
+              });
+              const stored: StoredReportRecord = {
+                public_ref: base.publicRef,
+                received_at: base.receivedAt,
+                thread_id: base.threadId,
+                corrects_id: '3',
+                recipe: heldName === 'none' ? 1 : 2,
+                logbook_slug: 'lb',
+                form_id: form ? '9' : null,
+                logbook_form: form,
+                answers: answers ?? null,
+                text_fingerprints: 'text_fingerprints' in held ? held.text_fingerprints : null,
+                link_fingerprints: 'link_fingerprints' in held ? held.link_fingerprints : null,
+                third_party: third ? true : null,
+                filed_via: third ? 'Org' : null,
+                intake_method: third ? 'paper' : null,
+                attested_at: third ? '2026-10-17T09:00:00.000Z' : null,
+                collected_on: third ? '2026-10-01' : null,
+                may_publish: true,
+                may_publish_digest: DIGEST,
+              };
+              expect(canonicalJson(rebuildSealedObject(stored, files))).toBe(canonicalJson(sealed));
+              // Recipe 2 exactly when a fingerprint key is written.
+              expect(sealed.recipe).toBe(heldName === 'none' ? undefined : 2);
+            }
           }
         }
       }

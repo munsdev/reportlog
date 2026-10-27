@@ -14,7 +14,9 @@ export type FieldKind =
   | 'number'
   | 'email'
   | 'url'
-  | 'file';
+  | 'file'
+  | 'private_text'
+  | 'private_link';
 
 export type LocationScope = 'us' | 'world' | 'both';
 export type LocationDepth = 'state' | 'county';
@@ -92,6 +94,11 @@ export interface FieldSettings {
   latest?: string;
   /** Every row of a repeated question shown from the start; none added or removed. */
   fixed_rows?: boolean;
+  /**
+   * On a `private_link` question: how many links it takes, 1 to
+   * MAX_PRIVATE_LINKS (held.ts). Absent means one.
+   */
+  maxValues?: number;
   [key: string]: unknown;
 }
 

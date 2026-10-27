@@ -12,7 +12,9 @@
  *   third_party, filed_via, intake_method,
  *     attested_at, collected_on                        when a coordinator filed it
  *   attachments                                        when files were sealed
- *   recipe                                             only above recipe 1
+ *   text_fingerprints, link_fingerprints               when an erasable value was held (held.ts)
+ *   recipe                                             only above recipe 1: 2 when
+ *                                                        a fingerprint key is written
  *
  * ── THE RULE THAT BREAKS EVERYTHING IF YOU GET IT WRONG ──────────────────
  * A key is written ONLY WHEN IT APPLIES. An absent key and a null one
@@ -31,12 +33,27 @@
  */
 import type { Answers } from '@reportlog/fields';
 import { HEX64 } from './hash.ts';
+import { HELD_RECIPE } from './held.ts';
+import type { LinkFingerprints, TextFingerprints } from './held.ts';
 
 /**
  * The recipe new reports are written under. Recipe 1 writes no `recipe` key
  * at all, so its absence identifies it.
+ *
+ * RECIPE 2 IS RECIPE 1 PLUS THE FINGERPRINT KEYS (held.ts), and a report is
+ * written under it only when it carries one of them: `recipeFor` decides,
+ * from the fields. Why a number at all, when the keys describe themselves:
+ * a verifier written for recipe 1 that meets an unknown key should be told
+ * it is reading a newer recipe, not left to conclude the report was changed.
+ * Why not every new report: a report with no held value must seal exactly as
+ * it did before, byte for byte.
  */
 export const RECIPE = 1;
+
+/** The recipe these fields are sealed under: 2 with a fingerprint key, 1 without. */
+export function recipeFor(fields: Pick<ReportFields, 'text_fingerprints' | 'link_fingerprints'>) {
+  return fields.text_fingerprints || fields.link_fingerprints ? HELD_RECIPE : RECIPE;
+}
 
 export const INTAKE_METHODS = ['paper', 'phone', 'in_person', 'email', 'other'] as const;
 export type IntakeMethod = (typeof INTAKE_METHODS)[number];
@@ -70,6 +87,10 @@ export interface ReportFields extends Partial<Provenance> {
   logbook: string;
   logbook_form?: string;
   answers?: Answers;
+  /** Fingerprints of held text, by question. Absent when none was held (held.ts). */
+  text_fingerprints?: TextFingerprints;
+  /** Fingerprints of held links, by question, in the order sent. Absent when none. */
+  link_fingerprints?: LinkFingerprints;
   may_publish: boolean;
   may_publish_digest: string;
 }
@@ -96,7 +117,7 @@ export interface SealInput {
 
 /** Assemble the object that gets canonicalized and hashed. */
 export function buildSealedObject(input: SealInput): SealedReport {
-  const recipe = input.recipe ?? RECIPE;
+  const recipe = input.recipe ?? recipeFor(input.fields);
   const sealed: SealedReport = {
     public_ref: input.publicRef,
     received_at: input.receivedAt,
@@ -118,6 +139,9 @@ export class ReportFieldsError extends Error {
 export interface ReportSubmission {
   logbook?: unknown;
   answers?: Answers | undefined;
+  /** Made by the server from the values it is about to hold (chain/held.ts). */
+  text_fingerprints?: unknown;
+  link_fingerprints?: unknown;
   may_publish?: unknown;
   may_publish_digest?: unknown;
   third_party?: unknown;
@@ -158,9 +182,54 @@ export function normalizeReportFields(b: ReportSubmission): ReportFields {
   return {
     logbook,
     ...(b.answers && Object.keys(b.answers).length ? { answers: b.answers } : {}),
+    ...fingerprintsOf(b),
     ...provenanceOf(b),
     may_publish: mayPublish,
     may_publish_digest: digest,
+  };
+}
+
+const QUESTION_KEY = /^[A-Za-z0-9_]{1,64}$/;
+
+/**
+ * The fingerprint keys, each written ONLY WHEN IT HOLDS SOMETHING: an empty
+ * map is no key, never `{}`. Anything malformed is refused, loudly: a
+ * fingerprint that is not one would seal a report nobody could ever check.
+ */
+function fingerprintsOf(
+  b: ReportSubmission,
+): Pick<ReportFields, 'text_fingerprints' | 'link_fingerprints'> {
+  const isMap = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
+  const text: TextFingerprints = {};
+  const links: LinkFingerprints = {};
+  if (b.text_fingerprints !== undefined) {
+    if (!isMap(b.text_fingerprints)) throw new ReportFieldsError('text_fingerprints is not a map');
+    for (const [k, v] of Object.entries(b.text_fingerprints)) {
+      if (!QUESTION_KEY.test(k) || typeof v !== 'string' || !HEX64.test(v)) {
+        throw new ReportFieldsError(`text_fingerprints.${k} is not a fingerprint`);
+      }
+      text[k] = v;
+    }
+  }
+  if (b.link_fingerprints !== undefined) {
+    if (!isMap(b.link_fingerprints)) throw new ReportFieldsError('link_fingerprints is not a map');
+    for (const [k, v] of Object.entries(b.link_fingerprints)) {
+      if (
+        !QUESTION_KEY.test(k) ||
+        !Array.isArray(v) ||
+        !v.length ||
+        !v.every((x): x is string => typeof x === 'string' && HEX64.test(x)) ||
+        new Set(v).size !== v.length
+      ) {
+        throw new ReportFieldsError(`link_fingerprints.${k} is not a list of fingerprints`);
+      }
+      links[k] = [...v];
+    }
+  }
+  return {
+    ...(Object.keys(text).length ? { text_fingerprints: text } : {}),
+    ...(Object.keys(links).length ? { link_fingerprints: links } : {}),
   };
 }
 
@@ -233,6 +302,9 @@ export interface StoredReportRecord {
   form_id: number | string | null;
   logbook_form: string | null;
   answers: Answers | null;
+  /** The columns of the same names: null when the report held no such value. */
+  text_fingerprints: TextFingerprints | null;
+  link_fingerprints: LinkFingerprints | null;
   third_party: boolean | null;
   filed_via: string | null;
   intake_method: string | null;
@@ -261,6 +333,15 @@ export function rebuildSealedObject(
     logbook: r.logbook_slug,
     ...(r.form_id !== null && r.logbook_form ? { logbook_form: r.logbook_form } : {}),
     ...(r.answers && Object.keys(r.answers).length ? { answers: r.answers } : {}),
+    // As `normalizeReportFields` writes them: present only when non-empty.
+    // An ERASED value leaves its fingerprint here, which is why the report
+    // still verifies: nothing is rebuilt from the values themselves.
+    ...(r.text_fingerprints && Object.keys(r.text_fingerprints).length
+      ? { text_fingerprints: r.text_fingerprints }
+      : {}),
+    ...(r.link_fingerprints && Object.keys(r.link_fingerprints).length
+      ? { link_fingerprints: r.link_fingerprints }
+      : {}),
     ...(r.third_party
       ? {
           third_party: true as const,
