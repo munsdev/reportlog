@@ -20,10 +20,12 @@
 import { OPEN_FEEDBACK_STATUSES } from '@reportlog/contracts';
 import type { MenuWaiting } from '@reportlog/contracts';
 import { roleSatisfies } from '@reportlog/access';
+import { sql } from 'kysely';
 import type { Database } from '../db/database.ts';
 import { mayUseTracker } from '../feedback/routes.ts';
 import type { SignedIn } from '../identity/sessions.ts';
 import { hasAccepted } from '../moderation/agreement.ts';
+import { waitingCount } from '../moderation/texts/items.ts';
 
 const moderates = (user: SignedIn) =>
   roleSatisfies(user.roles, 'moderator') || roleSatisfies(user.roles, 'admin');
@@ -52,9 +54,17 @@ export async function listEntriesWaiting(db: Database): Promise<number> {
 /** Tip links nobody has checked: the link check's default filter ("unchecked"). */
 export async function tipLinksWaiting(db: Database): Promise<number> {
   const r = await db
-    .selectFrom('link_groups')
+    .selectFrom('link_groups as g')
     .select((eb) => eb.fn.countAll<string>().as('n'))
-    .where('outcome', 'is', null)
+    .where('g.outcome', 'is', null)
+    // Only a link somebody still carries: a tip's copy, or the newest version
+    // of a report (links/reads.ts counts the same way).
+    .where(
+      sql<boolean>`(EXISTS (SELECT 1 FROM links l WHERE l.group_id = g.id)
+        OR EXISTS (SELECT 1 FROM report_values rv
+             JOIN report_heads h ON h.current_report_id = rv.report_id
+            WHERE rv.group_id = g.id))`,
+    )
     .executeTakeFirstOrThrow();
   return Number(r.n);
 }
@@ -78,6 +88,7 @@ export async function waitingFor(db: Database, user: SignedIn): Promise<MenuWait
     ...(agreed ? { reports: await reportsWaiting(db) } : {}),
     ...(agreed ? { list_entries: await listEntriesWaiting(db) } : {}),
     ...(mod ? { tip_links: await tipLinksWaiting(db) } : {}),
+    ...(agreed ? { texts: await waitingCount(db) } : {}),
     ...(mayUseTracker(user) ? { feedback: await feedbackOpen(db) } : {}),
   };
 }
