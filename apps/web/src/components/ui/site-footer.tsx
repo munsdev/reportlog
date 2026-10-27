@@ -27,8 +27,8 @@ import {
 } from '@reportlog/contracts';
 import type { SiteVersion } from '@reportlog/contracts';
 import { Link } from '@tanstack/react-router';
+import { useFollow } from '@/features/follow/useFollow.ts';
 import { EasierReadingSlot } from '@/features/nav/EasierReadingSlot.tsx';
-import { plainSiteName, useSite } from './site.tsx';
 import { SocialLinks } from './social-links.tsx';
 
 export function versionLine(version: SiteVersion | undefined): string | null {
@@ -54,7 +54,7 @@ const LINKS = [
 ] as const;
 
 export function SiteFooter() {
-  const site = useSite().data;
+  const follow = useFollow('footer');
   return (
     <footer className="border-t border-line px-4 py-6 text-center text-sm text-muted print:hidden">
       <nav aria-label="About this site">
@@ -68,9 +68,9 @@ export function SiteFooter() {
           ))}
         </ul>
       </nav>
-      {site?.social_links?.length ? (
+      {follow.links.length ? (
         <nav aria-label="Follow us elsewhere" className="mt-2">
-          <SocialLinks links={site.social_links} siteName={plainSiteName(site)} variant="icons" />
+          <SocialLinks links={follow.links} siteName={follow.name} variant="icons" />
         </nav>
       ) : null}
       <p className="mt-2" data-attribution>

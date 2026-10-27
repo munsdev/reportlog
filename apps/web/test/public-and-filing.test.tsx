@@ -245,7 +245,7 @@ describe('a send pressed before the door is ready', () => {
 });
 
 describe('the page for a wrong address', () => {
-  it('says so, offers home and the board, and the reference field', async () => {
+  it('says so, offers filing and the front page, and says to check the reference', async () => {
     const root = createRootRoute({ component: NotFoundPage });
     const router = createRouter({
       routeTree: root,
@@ -253,10 +253,15 @@ describe('the page for a wrong address', () => {
     });
     render(withQueries(<RouterProvider router={router} />));
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Nothing here' }),
+      await screen.findByRole('heading', { level: 1, name: "That page isn't here" }),
     ).toBeInTheDocument();
-    expect(screen.getByText('There is no page at this address.')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Board' })).toHaveAttribute('href', '/board');
+    expect(
+      screen.getByText(/Check the reference, or start from the front page/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Front page' })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Submit a report' })).toHaveAttribute(
+      'href',
+      '/submit',
+    );
   });
 });

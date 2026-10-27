@@ -12,6 +12,8 @@
 import {
   SOCIAL_FLOAT_PAGES,
   SOCIAL_FLOAT_PAGE_NAMES,
+  SOCIAL_PLACEMENTS,
+  SOCIAL_PLACEMENT_NAMES,
   SOCIAL_RULES,
   setSocialLinks,
   socialAddress,
@@ -21,6 +23,7 @@ import type {
   SocialFloat,
   SocialFloatPage,
   SocialLink,
+  SocialPlacement,
   SocialPlatform,
 } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
@@ -46,7 +49,7 @@ export const Route = createFileRoute('/(staff)/settings/social')({
       <StaffPage
         title="Social media"
         width="prose"
-        lede="This site’s accounts elsewhere. Each one you switch on is shown as a link, with its platform’s mark, at the foot of every page and on the front page."
+        lede="This site’s accounts elsewhere, and where the site shows them. Each account you switch on is shown as a link, with its platform’s mark, in the places you pick below."
       >
         <WithEditor>{(state) => <SocialForm state={state} />}</WithEditor>
       </StaffPage>
@@ -73,8 +76,9 @@ function changed(row: Row, stored: SocialLink | undefined): boolean {
 export function SocialForm({ state }: { state: SiteEditor }) {
   const [rows, setRows] = useState(() => rowsFrom(state.social_links));
   const [float, setFloat] = useState<SocialFloat>(state.social_float);
+  const [placements, setPlacements] = useState<SocialPlacement[]>(state.social_placements);
   const toast = useToast();
-  const save = useSave((body: { links: Row[]; float: SocialFloat }) =>
+  const save = useSave((body: { links: Row[]; float: SocialFloat; placements: string[] }) =>
     call(setSocialLinks, { body }),
   );
   const stored = new Map(state.social_links.map((l) => [l.id, l]));
@@ -83,7 +87,10 @@ export function SocialForm({ state }: { state: SiteEditor }) {
     SOCIAL_FLOAT_PAGES.some(
       (p) => float.pages.includes(p) !== state.social_float.pages.includes(p),
     );
-  const dirty = floatChanged || rows.some((r) => changed(r, stored.get(r.id)));
+  const placementsChanged = SOCIAL_PLACEMENTS.some(
+    (p) => placements.includes(p) !== state.social_placements.includes(p),
+  );
+  const dirty = floatChanged || placementsChanged || rows.some((r) => changed(r, stored.get(r.id)));
   const problems = rows.filter((r) => !socialAddress(r.id, r.address).ok);
   useUnsavedChanges('the social media accounts', dirty);
 
@@ -95,11 +102,12 @@ export function SocialForm({ state }: { state: SiteEditor }) {
   const submit = () => {
     if (problems.length) return;
     save.mutate(
-      { links: rows, float },
+      { links: rows, float, placements },
       {
         onSuccess: (next) => {
           setRows(rowsFrom(next.social_links));
           setFloat(next.social_float);
+          setPlacements(next.social_placements);
           const on = next.social_links.filter((l) => l.shown).length;
           toast.show(
             on === 0
@@ -124,6 +132,13 @@ export function SocialForm({ state }: { state: SiteEditor }) {
         them. Visitors leave this site when they follow one, and the platform is not told which page
         they came from.
       </p>
+      <Placements
+        on={placements}
+        onChange={(next) => {
+          save.reset();
+          setPlacements(next);
+        }}
+      />
       <FloatingButton
         float={float}
         onChange={(next) => {
@@ -153,6 +168,7 @@ export function SocialForm({ state }: { state: SiteEditor }) {
           onCancel={() => {
             setRows(rowsFrom(state.social_links));
             setFloat(state.social_float);
+            setPlacements(state.social_placements);
             save.reset();
           }}
         />
@@ -199,6 +215,43 @@ function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<R
           />
           <Label>Show on the site</Label>
         </Field>
+      </fieldset>
+    </Card>
+  );
+}
+
+/**
+ * Where the accounts show. Each place is its own switch, so the site can
+ * carry them loudly on the front page and not at all in the footer, or the
+ * other way round. A form or a door is not on the list.
+ */
+function Placements({
+  on,
+  onChange,
+}: {
+  on: readonly SocialPlacement[];
+  onChange: (next: SocialPlacement[]) => void;
+}) {
+  return (
+    <Card variant="quiet">
+      <fieldset className="flex flex-col gap-3" data-placements>
+        <legend className="font-semibold">Where the accounts show</legend>
+        {SOCIAL_PLACEMENTS.map((p) => (
+          <Field key={p} className="flex-row items-start gap-3" data-placement={p}>
+            <Checkbox
+              checked={on.includes(p)}
+              onCheckedChange={(next) => {
+                onChange(
+                  SOCIAL_PLACEMENTS.filter((q) => (q === p ? next === true : on.includes(q))),
+                );
+              }}
+            />
+            <div className="flex flex-col">
+              <Label>{SOCIAL_PLACEMENT_NAMES[p].name}</Label>
+              <FieldDescription>{SOCIAL_PLACEMENT_NAMES[p].where}</FieldDescription>
+            </div>
+          </Field>
+        ))}
       </fieldset>
     </Card>
   );

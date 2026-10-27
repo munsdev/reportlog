@@ -300,6 +300,44 @@ describe('the migration that brought in the look library', () => {
     await db.updateTable('site_settings').set({ home_sections: null }).execute();
   });
 
+  it('sends the placements that are on, all of them until somebody chooses, keeps them when a save leaves them out, and refuses a place it does not know', async () => {
+    const placements = () => get<{ social_placements?: string[] }>('/api/site');
+    const links = [{ id: 'instagram', address: '@our.archive', shown: true }];
+    const first = await admin('PUT', '/api/admin/site/social', { links });
+    expect(first.json<{ social_placements: string[] }>().social_placements).toHaveLength(8);
+    expect((await placements()).social_placements).toHaveLength(8);
+
+    const some = await admin('PUT', '/api/admin/site/social', {
+      links,
+      placements: ['footer', 'front'],
+    });
+    expect(some.json<{ social_placements: string[] }>().social_placements).toEqual([
+      'front',
+      'footer',
+    ]);
+    expect((await placements()).social_placements).toEqual(['front', 'footer']);
+
+    // Left out of a save, they are kept.
+    await admin('PUT', '/api/admin/site/social', { links });
+    expect((await placements()).social_placements).toEqual(['front', 'footer']);
+
+    // A form is not a place the accounts can be shown, and nothing changed by asking.
+    const refused = await admin('PUT', '/api/admin/site/social', {
+      links,
+      placements: ['front', 'file_form'],
+    });
+    expect(refused.statusCode).toBe(400);
+    expect((await placements()).social_placements).toEqual(['front', 'footer']);
+
+    // All off is a choice, and it is kept.
+    await admin('PUT', '/api/admin/site/social', { links, placements: [] });
+    expect((await placements()).social_placements).toEqual([]);
+    await db
+      .updateTable('site_settings')
+      .set({ social_links: null, social_placements: null })
+      .execute();
+  });
+
   it('keeps the floating Follow us button off until asked, sends its pages only while it is on and something is shown, and refuses an unknown page', async () => {
     interface Float {
       on: boolean;

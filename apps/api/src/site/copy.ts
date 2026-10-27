@@ -274,6 +274,24 @@ export const COPY_SLOTS: readonly SlotDefinition[] = [
     optional: true,
     fallback: '',
   },
+  {
+    key: 'home_slogan',
+    kind: 'line',
+    figures: false,
+    label: 'Front page slogan',
+    help: 'Optional. A short line in a solid bar under the headline. Left empty, no bar is shown.',
+    optional: true,
+    fallback: '',
+  },
+  {
+    key: 'ticker_text',
+    kind: 'line',
+    figures: false,
+    label: 'Ticker',
+    help: 'Optional. A short line in the strip under the header, such as a date. Left empty, the strip shows only the link to follow the site, when it has accounts to show.',
+    optional: true,
+    fallback: '',
+  },
 ];
 
 const BY_KEY = new Map<string, SlotDefinition>(COPY_SLOTS.map((s) => [s.key, s]));

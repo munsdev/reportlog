@@ -10,13 +10,20 @@
  */
 import {
   SOCIAL_FLOAT_PAGES,
+  SOCIAL_PLACEMENTS,
   SOCIAL_PLATFORMS,
   SOCIAL_RULES,
   resolveSocialFloat,
   resolveSocialLinks,
+  resolveSocialPlacements,
   socialAddress,
 } from '@reportlog/contracts';
-import type { SocialFloat, SocialLink, SocialPlatform } from '@reportlog/contracts';
+import type {
+  SocialFloat,
+  SocialLink,
+  SocialPlacement,
+  SocialPlatform,
+} from '@reportlog/contracts';
 import type { Checked } from './result.ts';
 
 const KNOWN = new Set<string>(SOCIAL_PLATFORMS);
@@ -65,4 +72,14 @@ export function validateSocialFloat(raw: {
     return { ok: false, error: `“${bad}” is not a page the Follow us button can be on.` };
   }
   return { ok: true, value: resolveSocialFloat({ on: raw.on, pages: raw.pages }) };
+}
+
+/** The placements that are on. One the screen cannot offer is refused in words, not dropped. */
+export function validateSocialPlacements(raw: readonly string[]): Checked<SocialPlacement[]> {
+  const known = new Set<string>(SOCIAL_PLACEMENTS);
+  const bad = raw.find((p) => !known.has(p));
+  if (bad !== undefined) {
+    return { ok: false, error: `“${bad}” is not a place the accounts can be shown.` };
+  }
+  return { ok: true, value: resolveSocialPlacements({ on: raw }) };
 }

@@ -71,6 +71,7 @@ import {
 /** The wording slots that are on the front page. */
 const KEYS = [
   'home_headline',
+  'home_slogan',
   'home_lede',
   'home_intro',
   'help_now',
@@ -355,6 +356,15 @@ function Editing({
               <EmptyHint value={copy.home_headline} />
             </Field>
           </Editable>
+        }
+        slogan={
+          <Wording
+            label={labelOf(editor, 'home_slogan')}
+            value={copy.home_slogan}
+            onChange={word('home_slogan')}
+            rows={1}
+            hint="Shown in a solid bar under the headline. Leave it empty for no bar."
+          />
         }
         lede={
           <Wording

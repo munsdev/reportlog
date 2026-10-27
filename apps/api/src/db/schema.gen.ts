@@ -969,6 +969,7 @@ export interface SiteSettings {
   site_name: string | null;
   social_float: Json | null;
   social_links: Json | null;
+  social_placements: Json | null;
   template_applied: string | null;
   template_applied_at: Timestamp | null;
   theme: Generated<string>;

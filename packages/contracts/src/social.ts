@@ -276,3 +276,67 @@ export function socialFloatPageOf(pathname: string): SocialFloatPage | null {
 export function shownSocialLinks(links: readonly SocialLink[]): PublicSocialLink[] {
   return links.flatMap((l) => (l.shown && l.url ? [{ id: l.id, url: l.url }] : []));
 }
+
+// ── where the accounts are shown ────────────────────────────────────────
+
+/**
+ * The places that can carry the accounts, each its own switch on Site →
+ * Social media. The "Follow along" band is drawn at five of them (`FollowBand`
+ * takes the placement by name); the other three are the menu's icons, the
+ * ticker's link and the footer's marks. A form or a door is not among them
+ * and no stored value can add one: one card asks one question.
+ */
+export const SOCIAL_PLACEMENTS = [
+  'front',
+  'get_involved',
+  'after_filing',
+  'after_tip',
+  'journalists',
+  'menu',
+  'ticker',
+  'footer',
+] as const;
+export type SocialPlacement = (typeof SOCIAL_PLACEMENTS)[number];
+export const SocialPlacementSchema = z.enum(SOCIAL_PLACEMENTS);
+
+export const SOCIAL_PLACEMENT_NAMES: Record<SocialPlacement, { name: string; where: string }> = {
+  front: {
+    name: '“Follow along” band on the front page',
+    where: 'Under the header, before anything else.',
+  },
+  get_involved: { name: '“Follow along” band on Get involved', where: 'At the top of the page.' },
+  after_filing: {
+    name: 'After someone files a report',
+    where: 'On the page that says it was sent.',
+  },
+  after_tip: {
+    name: 'After a tip or a sign-up',
+    where: 'On the thank-you pages of the tip line and the sign-ups.',
+  },
+  journalists: { name: '“Follow along” band for journalists', where: 'On the journalists page.' },
+  menu: { name: 'In the menu', where: 'Icons at the top of the menu.' },
+  ticker: { name: 'In the ticker', where: 'A link to follow, in the strip under the header.' },
+  footer: { name: 'In the footer', where: 'Icons at the foot of every page.' },
+};
+
+/**
+ * The stored switches, made whole: the placements that are on, in the shipped
+ * order. Never chosen (null) means every one, so a site that has accounts and
+ * has not looked at this screen shows them where most sites want them. A
+ * name this release does not know is dropped.
+ */
+export function resolveSocialPlacements(stored: unknown): SocialPlacement[] {
+  const raw =
+    typeof stored === 'object' && stored !== null ? (stored as Record<string, unknown>) : null;
+  const named = raw && Array.isArray(raw.on) ? (raw.on as unknown[]) : null;
+  return named ? SOCIAL_PLACEMENTS.filter((p) => named.includes(p)) : [...SOCIAL_PLACEMENTS];
+}
+
+/** Whether a placement is on, for a page holding the public answer (`Site.social_placements`). */
+export function placementOn(
+  placements: readonly SocialPlacement[] | undefined,
+  placement: SocialPlacement,
+): boolean {
+  // An older answer without the list draws every placement, as null does.
+  return placements === undefined || placements.includes(placement);
+}

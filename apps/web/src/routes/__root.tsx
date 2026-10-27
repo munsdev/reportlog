@@ -4,6 +4,7 @@ import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { FollowButton } from '../components/ui/follow-button.tsx';
 import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { SiteLook } from '../components/ui/site.tsx';
+import { FollowBand } from '../features/follow/FollowBand.tsx';
 import { StepUpHost } from '../features/identity/StepUp.tsx';
 import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
@@ -11,6 +12,7 @@ import { PauseBanner } from '../features/flood/IntakePaused.tsx';
 import { NotFoundPage } from '../features/site-pages/NotFound.tsx';
 import { HeaderProgressProvider } from '../features/nav/progress.tsx';
 import { SiteHeader } from '../features/nav/SiteHeader.tsx';
+import { Ticker } from '../features/nav/Ticker.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
 import { inFrame } from '../features/staff-nav/entries.ts';
 
@@ -71,6 +73,7 @@ function StaffFrame() {
 }
 
 function PublicFrame() {
+  const front = useLocation().pathname === '/';
   return (
     <div className="flex min-h-dvh flex-col">
       <a
@@ -82,6 +85,10 @@ function PublicFrame() {
       {/* The header and its menu (features/nav): the only way around the
           public site, and the way into the staff area. */}
       <SiteHeader />
+      <Ticker />
+      {/* D11: the Follow along band, full width directly under the front
+          page's header. Other pages drop their own in (FollowBand). */}
+      {front ? <FollowBand placement="front" bleed /> : null}
       <PauseBanner />
       <main
         id="main"

@@ -7,6 +7,7 @@ import {
   resolveHomeSections,
   resolveSocialFloat,
   resolveSocialLinks,
+  resolveSocialPlacements,
   shownSocialLinks,
 } from '@reportlog/contracts';
 import type { CopyKey, Legal, Site, SiteEditor, SiteVersion } from '@reportlog/contracts';
@@ -73,6 +74,7 @@ export async function publicSite(db: Database, version: SiteVersion = NO_VERSION
     // Only while it is on AND there is something to follow, so a site that
     // never turned it on sends nothing about it.
     ...(float.on && shown.length ? { social_float_pages: float.pages } : {}),
+    social_placements: resolveSocialPlacements(settings.social_placements),
   };
 }
 
@@ -101,5 +103,6 @@ export async function editorState(db: Database): Promise<SiteEditor> {
     home_sections: resolveHomeSections(settings.home_sections),
     social_links: resolveSocialLinks(settings.social_links),
     social_float: resolveSocialFloat(settings.social_float),
+    social_placements: resolveSocialPlacements(settings.social_placements),
   };
 }

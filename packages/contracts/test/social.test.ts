@@ -8,7 +8,10 @@ import {
   SOCIAL_PLATFORMS,
   SOCIAL_RULES,
   resolveSocialFloat,
+  placementOn,
   resolveSocialLinks,
+  resolveSocialPlacements,
+  SOCIAL_PLACEMENTS,
   shownSocialLinks,
   socialFloatPageOf,
   socialAddress,
@@ -152,5 +155,37 @@ describe('the floating Follow us button', () => {
     ]) {
       expect(socialFloatPageOf(path), path).toBeNull();
     }
+  });
+});
+
+describe('where the accounts show', () => {
+  it('is every placement until somebody chooses, and then only the ones named, in the shipped order', () => {
+    expect(resolveSocialPlacements(null)).toEqual([...SOCIAL_PLACEMENTS]);
+    expect(resolveSocialPlacements('nonsense')).toEqual([...SOCIAL_PLACEMENTS]);
+    expect(resolveSocialPlacements({ on: ['footer', 'front', 'footer', 'a form'] })).toEqual([
+      'front',
+      'footer',
+    ]);
+    expect(resolveSocialPlacements({ on: [] })).toEqual([]);
+  });
+
+  it('is exactly these eight, none of them a form or a door: a new one is a decision', () => {
+    expect([...SOCIAL_PLACEMENTS]).toEqual([
+      'front',
+      'get_involved',
+      'after_filing',
+      'after_tip',
+      'journalists',
+      'menu',
+      'ticker',
+      'footer',
+    ]);
+  });
+
+  it('reads an answer with no list as every placement on, and an empty one as none', () => {
+    expect(placementOn(undefined, 'menu')).toBe(true);
+    expect(placementOn([], 'menu')).toBe(false);
+    expect(placementOn(['menu'], 'menu')).toBe(true);
+    expect(placementOn(['menu'], 'footer')).toBe(false);
   });
 });
