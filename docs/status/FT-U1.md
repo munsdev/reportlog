@@ -69,11 +69,7 @@ the current state in words). The preview frames draw the draft header
 background (a hero sample was added to `PreviewPage`). The look switcher
 exists only here; nothing on a public page.
 
-**Civic pack**: `/home/user/reportlog-ops/docs/build/packs/civic/` (`look.json`,
-`build.sh`, `civic-poster-1.0.0.zip`, `README.md`), left uncommitted. Pack id
-`civic-poster`, look id `civic-poster`, palettes `civic-night`, `civic-navy`,
-`civic-old-glory`, theme `poster`, elements `stars`, `stripes`, `liberty`,
-`usa`. README says how to install and which settings match the mock-up.
+**Instance look pack**: kept outside this repository (it carries an instance's brand); installed from the Look screen or imported with the site bundle. README there says how.
 
 ## Tokens and components (for U2, U3, U4)
 
@@ -107,7 +103,7 @@ onChange kit onPickImage onRemoveImage imageMessage busy>`.
   untouched. Gap: a new site that skips the wizard's look step stays Newsdesk.
 - **Existing themes keep their buttons.** The mock-up's Signal has pill
   buttons and Desk uppercase; core themes here keep what the app already
-  drew. The Poster theme in the Civic pack has the mock-up's values.
+  drew. An installed pack's poster-style theme carries the mock-up's values.
 - **Per-element depth** is in the engine and the stored options, not in the
   editor (the mock-up's editor has no control for it).
 - **Zones on dark palettes**: a "page" zone on a dark palette is the palette's
@@ -131,4 +127,4 @@ the real list and upload are the existing `LookPacks` panel.
   not restyled.
 - The header image editor on the front page block ("Edit header background")
   is the same component; wiring it into the block editor is U2's.
-- The Civic pack is not committed (the integrator commits it).
+- The instance's look pack is not committed here.

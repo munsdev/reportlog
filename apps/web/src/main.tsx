@@ -26,6 +26,7 @@ declare module '@tanstack/react-router' {
 declare global {
   interface Window {
     elRefresh?: () => void;
+    elSetLook?: (look: unknown, packs: unknown[]) => void;
     elLookSwitcher?: (on: boolean) => void;
     elOpenLook?: (toBackground?: boolean) => void;
     elSay?: (message: string) => void;

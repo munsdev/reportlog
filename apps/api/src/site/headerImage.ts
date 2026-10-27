@@ -87,6 +87,34 @@ export const headerKey = (file: string): string | null =>
 
 /** Re-encode an image and keep it as the header image. Returns the options now stored. */
 export async function saveHeaderImage(files: Files, body: Buffer): Promise<LookOptions> {
+  const file = await storeHeaderImage(files, body);
+  try {
+    const next = await files.db.transaction().execute(async (trx) => {
+      const before = await lockedOptions(trx);
+      const old = before.header.image;
+      // Replacing keeps how the owner had set the picture up; a first image
+      // starts where the mock-up's does.
+      const image = old ? { ...old, file } : newHeaderImage(file);
+      const options = { ...before, header: { ...before.header, image } };
+      await writeOptions(trx, options);
+      if (old) await queueDeletion(trx, 'renditions', `headers/${old.file}`);
+      return options;
+    });
+    await afterCommit(files);
+    return next;
+  } catch (e) {
+    // Nothing points at it: do not leave it in the bucket.
+    await files.storage.delete('renditions', `headers/${file}`).catch(() => undefined);
+    throw e;
+  }
+}
+
+/**
+ * Check, re-encode and store an image under a new random name, pointing
+ * nothing at it yet. Returns the name. The caller either points the settings
+ * at it in its own transaction (the site bundle's import does) or deletes it.
+ */
+export async function storeHeaderImage(files: Files, body: Buffer): Promise<string> {
   if (body.length === 0) throw refused('Choose an image first.');
   if (body.length > HEADER_IMAGE_MAX_BYTES) {
     throw refused(
@@ -126,25 +154,7 @@ export async function saveHeaderImage(files: Files, body: Buffer): Promise<LookO
     await rm(dir, { recursive: true, force: true });
   }
 
-  try {
-    const next = await files.db.transaction().execute(async (trx) => {
-      const before = await lockedOptions(trx);
-      const old = before.header.image;
-      // Replacing keeps how the owner had set the picture up; a first image
-      // starts where the mock-up's does.
-      const image = old ? { ...old, file } : newHeaderImage(file);
-      const options = { ...before, header: { ...before.header, image } };
-      await writeOptions(trx, options);
-      if (old) await queueDeletion(trx, 'renditions', `headers/${old.file}`);
-      return options;
-    });
-    await afterCommit(files);
-    return next;
-  } catch (e) {
-    // Nothing points at it: do not leave it in the bucket.
-    await files.storage.delete('renditions', `headers/${file}`).catch(() => undefined);
-    throw e;
-  }
+  return file;
 }
 
 /**
