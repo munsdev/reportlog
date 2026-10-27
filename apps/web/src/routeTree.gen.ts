@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as GetInvolvedRouteImport } from './routes/get-involved'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as HowRouteImport } from './routes/how'
 import { Route as JournalistsRouteImport } from './routes/journalists'
@@ -130,6 +131,11 @@ const SlugRoute = SlugRouteImport.update({
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GetInvolvedRoute = GetInvolvedRouteImport.update({
+  id: '/get-involved',
+  path: '/get-involved',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -665,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/about': typeof AboutRoute
+  '/get-involved': typeof GetInvolvedRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/journalists': typeof JournalistsRoute
@@ -774,6 +781,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/about': typeof AboutRoute
+  '/get-involved': typeof GetInvolvedRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/journalists': typeof JournalistsRoute
@@ -878,6 +886,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/about': typeof AboutRoute
+  '/get-involved': typeof GetInvolvedRoute
   '/home': typeof HomeRoute
   '/how': typeof HowRoute
   '/journalists': typeof JournalistsRoute
@@ -989,6 +998,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/about'
+    | '/get-involved'
     | '/home'
     | '/how'
     | '/journalists'
@@ -1098,6 +1108,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/about'
+    | '/get-involved'
     | '/home'
     | '/how'
     | '/journalists'
@@ -1201,6 +1212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/about'
+    | '/get-involved'
     | '/home'
     | '/how'
     | '/journalists'
@@ -1311,6 +1323,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SlugRoute: typeof SlugRoute
   AboutRoute: typeof AboutRoute
+  GetInvolvedRoute: typeof GetInvolvedRoute
   HomeRoute: typeof HomeRoute
   HowRoute: typeof HowRoute
   JournalistsRoute: typeof JournalistsRoute
@@ -1403,6 +1416,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about'
       preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/get-involved': {
+      id: '/get-involved'
+      path: '/get-involved'
+      fullPath: '/get-involved'
+      preLoaderRoute: typeof GetInvolvedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -2266,6 +2286,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRoute,
   AboutRoute: AboutRoute,
+  GetInvolvedRoute: GetInvolvedRoute,
   HomeRoute: HomeRoute,
   HowRoute: HowRoute,
   JournalistsRoute: JournalistsRoute,

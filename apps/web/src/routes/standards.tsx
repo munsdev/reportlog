@@ -22,6 +22,7 @@ function StandardsPage() {
   return (
     <PublicPage
       title="Moderation standard"
+      eyebrow="Legal"
       width="prose"
       lede="What gets published here, what is held back, and who decides."
     >

@@ -442,3 +442,28 @@ html[data-surface='ruled'][data-panel-head='double-rule'] .panel[data-variant='r
     inset: 0 auto auto 0;
   }
 }
+
+/* ---- public pages: the band and the wrap -----------------------------------
+   A public page draws its own full-width band (components/ui/band.tsx), so the
+   frame's padded column steps aside for any page whose root carries
+   `data-bleed`. :has() because the frame is shared and cannot know which page
+   it holds; a browser without it just keeps the padded column, which is
+   readable, only not edge to edge. */
+.rl-pad:has(> [data-bleed]) {
+  max-width: none;
+  padding: 0;
+}
+/* The band's headline: fluid between the theme's band range. These are the
+   look system's names (--rl-band-min/max); until a stylesheet sets them the
+   fallbacks give the mock-up's 34 to 64 px. */
+.rl-band-title {
+  font-family: var(--rl-font-display);
+  font-weight: var(--rl-h1-weight);
+  font-stretch: var(--rl-display-stretch);
+  text-transform: var(--rl-display-transform);
+  letter-spacing: var(--rl-h1-tracking);
+  line-height: calc(var(--rl-display-lh, 1) + 0.04);
+  font-size: clamp(calc(var(--rl-band-min, 34) * 1px), 8vw, calc(var(--rl-band-max, 64) * 1px));
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
