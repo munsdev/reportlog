@@ -27,12 +27,12 @@ import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn, btnClass } from '@/mockup/StaffBtn.tsx';
-import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel as MPanel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { St } from '@/mockup/St.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
@@ -117,7 +117,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
       <Panel title="Questions">
         {launched && (
-          <MPanel variant="quiet">
+          <MPanel kind="quiet">
             <p>
               {lb.launched_at ? `Launched on ${day(lb.launched_at)}. ` : ''}The questions’ keys,
               kinds, order, conditions and codes are frozen, so every sealed report still checks.
@@ -127,7 +127,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
           </MPanel>
         )}
         <QuestionList lb={lb} refresh={refresh} />
-        <MPanel variant="quiet" heading="Add a question" headingLevel={3}>
+        <MPanel kind="quiet" title="Add a question" headingLevel={3}>
           <QuestionForm
             earlier={lb.fields}
             launched={launched}
@@ -164,7 +164,7 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
           href={`/file/${lb.slug}`}
           target="_blank"
           rel="noopener"
-          className={btnClass('secondary')}
+          className={btnClass({ sm: true, flat: true })}
         >
           Open the reporter’s form
         </a>
@@ -172,14 +172,14 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
       <a
         href={`/api/admin/logbooks/${String(lb.id)}/file`}
         download={`logbook-${lb.slug}.json`}
-        className={btnClass('secondary')}
+        className={btnClass({ sm: true, flat: true })}
       >
         The logbook file
       </a>
       {launched ? (
         <StepUpDownload
           href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
-          className={btnClass('secondary')}
+          className={btnClass({ sm: true, flat: true })}
         >
           Its chain
         </StepUpDownload>
@@ -618,7 +618,10 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                 {!launched && (
                   <>
                     <Btn
-                      variant="quiet"
+                      look="ghost"
+                      sm
+                      flat
+
                       disabled={i === 0}
                       aria-label={`Move up: “${q.label}”`}
                       onClick={() => void move(i, -1)}
@@ -626,7 +629,10 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                       ↑
                     </Btn>
                     <Btn
-                      variant="quiet"
+                      look="ghost"
+                      sm
+                      flat
+
                       disabled={i === lb.fields.length - 1}
                       aria-label={`Move down: “${q.label}”`}
                       onClick={() => void move(i, 1)}
@@ -634,7 +640,9 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                       ↓
                     </Btn>
                     <Btn
-                      variant="secondary"
+                      sm
+                      flat
+
                       aria-label={`Change “${q.label}”`}
                       onClick={() => {
                         setEditing(q.id);
@@ -643,7 +651,10 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                       Change
                     </Btn>
                     <Btn
-                      variant="quiet"
+                      look="ghost"
+                      sm
+                      flat
+
                       aria-label={`Remove “${q.label}”`}
                       onClick={() =>
                         void run(() =>
@@ -657,7 +668,9 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                 )}
                 {launched && (
                   <Btn
-                    variant="secondary"
+                    sm
+                    flat
+
                     aria-label={`Reword “${q.label}”`}
                     onClick={() => {
                       setEditing(q.id);
@@ -748,7 +761,9 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
       </p>
       <Problem error={closed.error} />
       <Btn
-        variant="secondary"
+        sm
+        flat
+
         disabled={closed.isPending}
         onClick={() => {
           closed.mutate(!isClosed);
@@ -790,7 +805,7 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           )}
         </Field>
         <Problem error={schedule.error} />
-        <Btn type="submit" variant="secondary" disabled={schedule.isPending}>
+        <Btn sm flat type="submit" disabled={schedule.isPending}>
           Save the opening times
         </Btn>
       </form>

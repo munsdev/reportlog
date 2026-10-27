@@ -17,13 +17,11 @@ import {
 } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { call } from '../../lib/api.ts';
 
 const countsOnlyQuery = queryOptions({
@@ -44,7 +42,7 @@ export function CountsOnlySettings() {
   });
   if (!query.data) return null;
   return (
-    <Panel heading="Publish as counts only">
+    <Panel title="Publish as counts only">
       <p className="muted">
         A logbook published as counts only shows its accepted reports as counts by place and time,
         and never one by one: not on the board, a report’s page, the spreadsheet, the chain file,
@@ -124,7 +122,7 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
         <FieldError>{save.error ? save.error.message : null}</FieldError>
       </Field>
       <div>
-        <Btn type="submit" variant="secondary" disabled={save.isPending}>
+        <Btn sm flat type="submit" disabled={save.isPending}>
           {save.isPending ? 'Saving…' : 'Save the threshold'}
         </Btn>
       </div>

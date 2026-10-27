@@ -22,16 +22,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { TabRow } from '@/features/nav/AreaTabs.tsx';
+import { PTabs } from '@/mockup/PTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 
 const KEY = ['owner', 'journalists'] as const;
@@ -41,7 +41,7 @@ export function JournalistTabs() {
   const { pathname } = useLocation();
   const agreement = pathname.replace(/\/+$/, '').endsWith('/agreement');
   return (
-    <TabRow
+    <PTabs
       label="Journalists"
       tabs={[
         { to: '/access/journalists', label: 'Requests', current: !agreement },
@@ -131,7 +131,9 @@ function RevokeButton({ r }: { r: AccessRequestView }) {
   return (
     <>
       <Btn
-        kind="ghost"
+        sm
+        flat
+        look="ghost"
         disabled={act.isPending}
         title="Takes effect on their next request to the desk. They stay on the alert list."
         onClick={() => {
@@ -197,7 +199,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         {r.status === 'pending' ? (
           <div className="acts">
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               disabled={act.isPending}
               onClick={() => {
                 act.mutate('approve');
@@ -206,7 +210,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
               Approve
             </Btn>
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(true);
@@ -227,7 +233,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         buttons={
           <>
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               onClick={() => {
                 setAsking(false);
               }}
@@ -235,7 +243,9 @@ function RequestCard({ r }: { r: AccessRequestView }) {
               Keep the request
             </Btn>
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(false);

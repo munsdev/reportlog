@@ -14,8 +14,9 @@ import type { TemplateSummary } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import {
   Dialog,
   DialogClose,
@@ -24,10 +25,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/mockup/Dialog.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+} from '@/mockup/Modal.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { call } from '@/lib/api.ts';
 
 const templatesQuery = queryOptions({
@@ -118,7 +118,7 @@ export function StartingPointsPage() {
 
       {/* Choosing shows what it would change; only the dialog's "Apply it" sends. */}
       {chosen ? (
-        <Panel heading="What it changes">
+        <Panel title="What it changes">
           <ul>
             {chosen.sets.map((line) => (
               <li key={line}>{line}</li>
@@ -126,8 +126,11 @@ export function StartingPointsPage() {
           </ul>
           <div className="acts">
             <Btn
+              look="ink"
+              sm
+              flat
               type="button"
-              variant="primary"
+
               onClick={() => {
                 apply.reset();
                 setAsking(chosen);
@@ -165,13 +168,16 @@ export function StartingPointsPage() {
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Btn type="button" variant="secondary" disabled={apply.isPending}>
+                <Btn sm flat type="button" disabled={apply.isPending}>
                   Cancel
                 </Btn>
               </DialogClose>
               <Btn
+                look="ink"
+                sm
+                flat
                 type="button"
-                variant="primary"
+
                 disabled={apply.isPending}
                 onClick={() => {
                   apply.mutate(asking.id);

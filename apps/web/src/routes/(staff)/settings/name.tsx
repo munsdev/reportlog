@@ -13,13 +13,11 @@ import { MAX_SITE_NAME, accentMarksClose, plainName, setSiteName } from '@report
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
+import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';
@@ -73,7 +71,7 @@ export function NameForm({ state }: { state: SiteEditor }) {
         submit();
       }}
     >
-      <Panel heading="The site’s name">
+      <Panel title="The site’s name">
         <Field>
           <Label>The site’s name</Label>
           <FieldDescription>

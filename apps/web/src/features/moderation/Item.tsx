@@ -38,13 +38,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
-import { SettingPanels, useSettingPanels } from '../../components/ui/setting-panel.tsx';
+import { SettingPanels, useSettingPanels } from '../../mockup/SettingPanel.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { Back } from '../../mockup/Back.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
-import { Dl } from '../../mockup/Dl.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
 import {
   Field,
   FieldDescription,
@@ -53,11 +52,12 @@ import {
   Label,
   Select,
   Textarea,
-} from '../../mockup/Form.tsx';
+} from '@/mockup/Field.tsx';
+import { Dl } from '../../mockup/Dl.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem as ProblemNote } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { EvidenceRequests, evidenceSummary } from '../files/staff/EvidenceRequests.tsx';

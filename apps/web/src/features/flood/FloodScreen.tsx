@@ -26,10 +26,10 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Bars } from '../../mockup/Bars.tsx';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Field, Input, Label } from '../../mockup/Form.tsx';
+import { Field, Input, Label } from '@/mockup/Field.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -219,26 +219,26 @@ function Switches() {
   return (
     <Panel kind="deep" title="Switches">
       <Switch
-        title="Intake"
-        sub={
+        label="Intake"
+        help={
           s.pause.paused
             ? `Intake is paused${s.pause.since ? ` since ${when(s.pause.since)}` : ''}. The report and tip forms say so, and a notice is on every page. Organizations still file.`
             : 'Intake is open.'
         }
-        on={!s.pause.paused}
+        checked={!s.pause.paused}
         disabled={pause.isPending}
         onChange={() => {
           pause.mutate(!s.pause.paused);
         }}
       />
       <Switch
-        title="The puzzle"
-        sub={
+        label="The puzzle"
+        help={
           s.puzzle === 'harder'
             ? 'The puzzle is harder: every report and tip takes longer to send.'
             : 'Normal difficulty.'
         }
-        on={s.puzzle === 'harder'}
+        checked={s.puzzle === 'harder'}
         disabled={puzzle.isPending}
         onChange={() => {
           puzzle.mutate(s.puzzle === 'harder' ? 'normal' : 'harder');

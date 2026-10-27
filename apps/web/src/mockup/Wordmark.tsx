@@ -25,13 +25,13 @@ export function BrandRuns({ parts }: { parts: readonly BrandPart[] }) {
   );
 }
 
-export function Wordmark({ onClick }: { onClick?: () => void }) {
+export function Wordmark({ to = '/', onClick }: { to?: '/' | '/home'; onClick?: () => void }) {
   const site = useSite().data;
   return (
     <Link
-      to="/"
+      to={to}
       className="wm"
-      aria-label={`${plainSiteName(site)}, home`}
+      aria-label={`${plainSiteName(site)}, ${to === '/home' ? 'your dashboard' : 'home'}`}
       {...(onClick ? { onClick } : {})}
     >
       {site ? <BrandRuns parts={site.name_parts} /> : 'ReportLog'}

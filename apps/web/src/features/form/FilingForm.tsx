@@ -58,8 +58,8 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
 import {
   DoorPuzzle,
@@ -74,7 +74,6 @@ import { ApiRequestError, call } from '@/lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { CheckBox, Field } from '@/mockup/Field.tsx';
-import { Note } from '@/mockup/Note.tsx';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import { CardBar, CardError, CardFrame, FilingProgress, useCardTitle } from './CardFrame.tsx';
 import { useCardHistory } from './cardHistory.ts';
@@ -152,9 +151,9 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
             Check the address you were given. It may have a typing mistake in it.
           </p>
         ) : (
-          <Alert tone="serious" title="The form did not load">
+          <Note tone="serious" title="The form did not load">
             {logbook.error.message}
-          </Alert>
+          </Note>
         )}
       </FormNotice>
     );
@@ -163,7 +162,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   if (!lb.accepting) {
     return (
       <FormNotice title={lb.title}>
-        <Card variant="quiet">
+        <Panel kind="quiet">
           <p className="max-w-prose">
             {lb.state !== 'scheduled'
               ? 'This logbook is closed. It is not taking reports.'
@@ -171,7 +170,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
                 ? `This logbook has not opened yet. It opens on ${new Date(lb.opens_at).toLocaleString()}.`
                 : 'This logbook has not opened yet.'}
           </p>
-        </Card>
+        </Panel>
       </FormNotice>
     );
   }
@@ -180,12 +179,12 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   if (intake.data?.open === false) {
     return (
       <FormNotice title={lb.title}>
-        <Card variant="quiet">
+        <Panel kind="quiet">
           <p className="max-w-prose">
             This site is not taking reports at the moment. Nothing you type here could be sent.
             Please come back later.
           </p>
-        </Card>
+        </Panel>
       </FormNotice>
     );
   }
@@ -809,7 +808,7 @@ function Cards({
                 {STATEMENT}
               </CheckBox>
               {/* The operator's own line about sending, when they wrote one. */}
-              <CopyText slot="send_note" className="font-semibold" />
+              <CopyText slot="send_note" className="lbl" />
               {/* G7, D2: said only when no address was given. With one, the
                   report can be corrected or withdrawn from My reports, and says so. */}
               {givesAddress ? (

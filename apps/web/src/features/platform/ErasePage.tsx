@@ -12,7 +12,8 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
-import { Note, Panel } from '@/mockup/Panel.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { useBodyClass } from '@/mockup/useBodyClass.ts';
 
 const lookQuery = (token: string) =>
@@ -80,7 +81,7 @@ export function ErasePage({ token }: { token: string }) {
         including the people who run this site, can read your address or write to you about this
         report. This cannot be undone.
       </p>
-      <Panel variant="deep" title="What this does not do">
+      <Panel kind="deep" title="What this does not do">
         <p>
           Your report is not withdrawn. It stays exactly as it is, sealed, and is published or not
           as before. If you want it taken down, withdraw it from “My reports” first.

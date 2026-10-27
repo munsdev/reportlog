@@ -13,13 +13,10 @@
 import { FILE_KINDS } from '@reportlog/contracts';
 import type { FileKind, FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption, RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { KIND_LABEL, LIMITS, boxProblem, fromBox, toBox } from './words.ts';
 import type { NumberKey } from './words.ts';
 
@@ -193,12 +190,13 @@ export function LimitsForm({
 
       {outcome ? <Note tone={outcome.ok ? 'done' : 'serious'}>{outcome.text}</Note> : null}
       <div className="acts">
-        <Btn type="submit" disabled={busy}>
+        <Btn look="ink" sm flat type="submit" disabled={busy}>
           Save the limits
         </Btn>
         <Btn
+          sm
+          flat
           type="button"
-          variant="secondary"
           disabled={busy || (setHere === 0 && ownKinds === null)}
           onClick={() => {
             // Clears the layer rather than writing today's numbers into it:
@@ -217,7 +215,7 @@ export function LimitsForm({
             : 'Clear every limit set here'}
         </Btn>
         {onCancel ? (
-          <Btn type="button" variant="quiet" disabled={busy} onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button" disabled={busy} onClick={onCancel}>
             Cancel
           </Btn>
         ) : null}

@@ -22,7 +22,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { Link } from '@tanstack/react-router';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { ErrorNote, Waiting } from '../../mockup/Panel.tsx';
+import { ErrorNote, Waiting } from '@/mockup/Note.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 
 type Kind = 'confirm' | 'stop';

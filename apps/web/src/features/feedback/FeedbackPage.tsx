@@ -25,10 +25,10 @@ import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { AreaField, TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { AreaField, TextField } from '@/mockup/Field.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { feedbackListQuery, feedbackQuery } from './queries.ts';
 import { IssueLine, StatusChip, pageNameFor, when } from './words.tsx';
@@ -91,7 +91,9 @@ function FileForm({ from }: { from?: string | undefined }) {
           <p>
             <Chip>About: {pageNameFor(about) ?? about}</Chip>{' '}
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               onClick={() => {
                 setAbout(undefined);
               }}
@@ -163,7 +165,7 @@ function FileForm({ from }: { from?: string | undefined }) {
             changes its status.
           </Saved>
         ) : null}
-        <Btn kind="ink" type="submit" disabled={file.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={file.isPending}>
           File it
         </Btn>
       </form>
@@ -194,7 +196,9 @@ function Issues() {
                 {issue.title}
                 <IssueLine issue={issue} />
                 <Btn
-                  kind="ghost"
+                  sm
+                  flat
+                  look="ghost"
                   aria-expanded={openId === issue.id}
                   onClick={() => {
                     setOpenId(openId === issue.id ? null : issue.id);
@@ -277,7 +281,7 @@ function IssueDetail({ id }: { id: number }) {
           }}
         />
         <ErrorLine error={add.error} />
-        <Btn type="submit" disabled={add.isPending}>
+        <Btn sm flat type="submit" disabled={add.isPending}>
           Add the comment
         </Btn>
       </form>

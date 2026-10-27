@@ -22,7 +22,7 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Chip } from '../../mockup/Chip.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 

@@ -15,18 +15,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { call } from '../../lib/api.ts';
@@ -60,6 +58,9 @@ export function ListAdmin() {
   const [making, setMaking] = useState(false);
   const make = (
     <Btn
+      look="ink"
+      sm
+      flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -123,10 +124,10 @@ export function ListAdmin() {
               ))}
             </Rows>
             <div className="acts">
-              <Btn asChild variant="secondary">
+              <Btn sm flat asChild>
                 <Link to="/lists/review">Review entries</Link>
               </Btn>
-              <Btn asChild variant="secondary">
+              <Btn sm flat asChild>
                 <Link to="/lists/search">Find somebody&apos;s entries</Link>
               </Btn>
             </div>
@@ -183,7 +184,7 @@ function NewList({ onCancel }: { onCancel: () => void }) {
   });
 
   return (
-    <Panel heading="Make a list">
+    <Panel title="Make a list">
       <div>
         <form
           className="form-stack"
@@ -269,13 +270,13 @@ function NewList({ onCancel }: { onCancel: () => void }) {
               <p className="muted">
                 A new list starts hidden. Nobody outside sees it until you make it listed.
               </p>
-              <Btn type="submit" disabled={!template || make.isPending}>
+              <Btn look="ink" sm flat type="submit" disabled={!template || make.isPending}>
                 Make the list
               </Btn>
             </>
           ) : null}
           <div>
-            <Btn type="button" variant="quiet" onClick={onCancel}>
+            <Btn look="ghost" sm flat type="button" onClick={onCancel}>
               Cancel
             </Btn>
           </div>

@@ -48,18 +48,22 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/mockup/FieldWired.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { adminMapsQuery, mapCandidatesQuery } from './queries.ts';
 
@@ -85,6 +89,9 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
   const none = maps.data?.maps.length === 0;
   const make = (
     <Btn
+      look="ink"
+      sm
+      flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -245,7 +252,7 @@ function PlaceQuestions({
     },
   });
   return (
-    <Panel heading="Which question places a report">
+    <Panel title="Which question places a report">
       <div className="form-stack">
         <p className="muted">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
@@ -345,7 +352,7 @@ function NewMap({ onDone }: { onDone: () => void }) {
     },
   });
   return (
-    <Panel heading="Make a map">
+    <Panel title="Make a map">
       <div>
         <form
           className="form-stack"
@@ -378,10 +385,10 @@ function NewMap({ onDone }: { onDone: () => void }) {
             />
           </Field>
           <div className="acts">
-            <Btn type="submit" variant="primary" disabled={make.isPending}>
+            <Btn look="ink" sm flat type="submit" disabled={make.isPending}>
               Make the map
             </Btn>
-            <Btn type="button" variant="quiet" onClick={onDone}>
+            <Btn look="ghost" sm flat type="button" onClick={onDone}>
               Cancel
             </Btn>
           </div>
@@ -431,7 +438,7 @@ function MapCard({
   const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
     ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Panel heading={map.title} closed={!open}>
+    <Panel title={map.title} kind={open ? undefined : 'closed'}>
       <div className="form-stack" style={{ maxWidth: 'none' }}>
         <Dl
           items={[
@@ -467,9 +474,10 @@ function MapCard({
         />
         <div className="acts">
           <Btn
+            sm
+            flat
             type="button"
 
-            variant="secondary"
             aria-expanded={open}
             onClick={() => {
               if (open && guard?.has(map.id) && !guard.ask(unsavedMapsQuestion([map.title]))) {
@@ -481,9 +489,11 @@ function MapCard({
             {open ? 'Close' : 'Change'}
           </Btn>
           <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
 
-            variant="quiet"
             aria-label="Move up"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
@@ -493,9 +503,11 @@ function MapCard({
             ↑
           </Btn>
           <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
 
-            variant="quiet"
             aria-label="Move down"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
@@ -505,7 +517,7 @@ function MapCard({
             ↓
           </Btn>
           {map.enabled ? (
-            <Btn asChild variant="quiet">
+            <Btn look="ghost" sm flat asChild>
               <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
@@ -948,18 +960,20 @@ function MapEditor({
       {save.isError ? (
         <FieldError>{save.error.message}</FieldError>
       ) : save.isSuccess ? (
-        <p role="status" className="text-sm">
+        <p role="status" className="m">
           Saved.
         </p>
       ) : null}
 
       <div className="acts">
-        <Btn type="submit" disabled={save.isPending}>
+        <Btn look="ink" sm flat type="submit" disabled={save.isPending}>
           Save the map
         </Btn>
         <Btn
+          sm
+          flat
           type="button"
-          variant="secondary"
+
           onClick={() => {
             preview.mutate();
           }}
@@ -968,8 +982,10 @@ function MapEditor({
         </Btn>
         {confirmDelete ? (
           <Btn
+            sm
+            flat
             type="button"
-            variant="secondary"
+
             onClick={() => {
               remove.mutate();
             }}
@@ -978,8 +994,11 @@ function MapEditor({
           </Btn>
         ) : (
           <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
-            variant="quiet"
+
             onClick={() => {
               setConfirmDelete(true);
             }}

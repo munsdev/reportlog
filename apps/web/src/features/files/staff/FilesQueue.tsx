@@ -14,7 +14,7 @@ import { Btn } from '../../../mockup/Btn.tsx';
 import { Empty } from '../../../mockup/Empty.tsx';
 import { Note } from '../../../mockup/Note.tsx';
 import { Err, Problem } from '../../../mockup/Notice.tsx';
-import { Panel } from '../../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { EvidenceRequests } from './EvidenceRequests.tsx';
 import { ReportFiles } from './ReportFiles.tsx';

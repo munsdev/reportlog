@@ -16,7 +16,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { ErrorNote, Note, Waiting } from '../../mockup/Panel.tsx';
+import { ErrorNote, Note, Waiting } from '@/mockup/Note.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useIdentityChanged, useMe, useSignOut } from './session.ts';
 import { messageOf } from './ui.tsx';

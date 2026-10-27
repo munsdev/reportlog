@@ -9,7 +9,7 @@ import { getMyReportAccesses } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { call } from '../../lib/api.ts';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 
 const WHAT: Record<string, string> = {
   contact: 'Your contact details were opened',

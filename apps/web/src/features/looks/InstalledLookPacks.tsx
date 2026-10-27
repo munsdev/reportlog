@@ -10,8 +10,8 @@ import { removeLookPack } from '@reportlog/contracts';
 import type { InstalledLookPack } from '@reportlog/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { lookPacksQuery } from './queries.ts';
@@ -76,7 +76,10 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
         ) : null}
       </div>
       <Btn
-        variant="quiet"
+        look="ghost"
+        sm
+        flat
+
         busy={busy}
         busyLabel="Removing…"
         aria-label={`Remove ${pack.label}`}

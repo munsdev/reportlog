@@ -14,13 +14,11 @@ import { setLegalText } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Field, FieldDescription, FieldError, Label, Textarea } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -108,8 +106,11 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
       {entry.published ? (
         <div className="acts">
           <Btn
+            look="ghost"
+            sm
+            flat
             type="button"
-            variant="quiet"
+
             onClick={() => {
               // The box then holds the outline the server starts from
               // again, so nothing reads as unsaved afterwards.

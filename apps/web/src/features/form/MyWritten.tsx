@@ -16,11 +16,11 @@ import type { FormQuestion, MyWritten } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { call } from '@/lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import type { RawAnswers } from './walk.ts';
 
@@ -117,10 +117,10 @@ export function WrittenPanel({
       ) : null}
       {anything ? (
         <Switch
-          title="Vetted journalists may read it"
-          sub="Only after a moderator has checked it. You can turn this off any time."
+          label="Vetted journalists may read it"
+          help="Only after a moderator has checked it. You can turn this off any time."
           // Read back from the server, never trusted from the click.
-          on={written.shared}
+          checked={written.shared}
           disabled={share.isPending}
           onChange={(on) => {
             share.mutate(on);
@@ -141,17 +141,19 @@ export function WrittenPanel({
             The words and links are deleted. The record keeps a marker that something was erased,
             and when.
           </p>
-          <Check
+          <CheckBox
             checked={sure}
             onChange={(e) => {
               setSure(e.target.checked);
             }}
           >
             I understand this cannot be undone.
-          </Check>
+          </CheckBox>
           <ErrorLine error={erase.error} />
           <Btn
-            kind="bad"
+            sm
+            flat
+            look="bad"
             disabled={!sure || erase.isPending}
             onClick={() => {
               erase.mutate();

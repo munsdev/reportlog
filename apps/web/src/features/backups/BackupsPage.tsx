@@ -19,10 +19,10 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 
@@ -41,7 +41,9 @@ function RestoreCommand({ command }: { command: string }) {
     <>
       <div className="code">{command}</div>
       <Btn
-        kind="ghost"
+        sm
+        flat
+        look="ghost"
         onClick={() => {
           navigator.clipboard.writeText(command).then(
             () => {
@@ -165,7 +167,9 @@ export function BackupsPage() {
               </Note>
             ) : null}
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
               }
@@ -189,6 +193,8 @@ export function BackupsPage() {
           </Panel>
           <Panel title="Archive exports">
             <Btn
+              sm
+              flat
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
               }

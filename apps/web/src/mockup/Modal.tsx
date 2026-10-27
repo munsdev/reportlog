@@ -1,5 +1,6 @@
-import { Dialog } from 'radix-ui';
-import type { ReactNode } from 'react';
+import { Dialog as DialogPrimitive } from 'radix-ui';
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '@/lib/utils.ts';
 
 /**
  * The mock-up's `.dlg`, made a real dialog: the same box (title, body,
@@ -31,30 +32,30 @@ export function Modal({
   const said = description ?? text;
   const inner = (
     <>
-      <Dialog.Title asChild>
+      <DialogPrimitive.Title asChild>
         <h3>{title}</h3>
-      </Dialog.Title>
+      </DialogPrimitive.Title>
       {said ? (
-        <Dialog.Description asChild>
+        <DialogPrimitive.Description asChild>
           <p className="muted">{said}</p>
-        </Dialog.Description>
+        </DialogPrimitive.Description>
       ) : (
-        <Dialog.Description className="vh">{title}</Dialog.Description>
+        <DialogPrimitive.Description className="vh">{title}</DialogPrimitive.Description>
       )}
       {children}
       <div className="acts">{buttons}</div>
     </>
   );
   return (
-    <Dialog.Root
+    <DialogPrimitive.Root
       open={open}
       onOpenChange={(on) => {
         if (!on) onClose();
       }}
     >
-      <Dialog.Portal>
-        <Dialog.Overlay className="dlg-scrim" />
-        <Dialog.Content className="dlg modal" aria-label={title}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="dlg-scrim" />
+        <DialogPrimitive.Content className="dlg modal" aria-label={title}>
           {onSubmit ? (
             <form
               noValidate
@@ -69,8 +70,71 @@ export function Modal({
           ) : (
             inner
           )}
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   );
+}
+
+/** The mock-up's `.dlg` box drawn in the page, not over it (a step, not a modal). */
+export function Dlg({
+  title,
+  buttons,
+  children,
+}: {
+  title: string;
+  buttons: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="dlg" role="dialog" aria-label={title}>
+      <h3>{title}</h3>
+      {children}
+      <div className="acts">{buttons}</div>
+    </div>
+  );
+}
+
+/*
+ * The same modal box in pieces, for a dialog whose trigger, body and buttons
+ * are written out by the screen: Radix's behaviour (focus trap, Escape,
+ * return of focus) under the mock-up's `dlg` and its scrim.
+ */
+export const Dialog = DialogPrimitive.Root;
+export const DialogTrigger = DialogPrimitive.Trigger;
+export const DialogClose = DialogPrimitive.Close;
+
+export function DialogContent({
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof DialogPrimitive.Content>) {
+  return (
+    <DialogPrimitive.Portal>
+      <DialogPrimitive.Overlay className="dlg-scrim" />
+      <DialogPrimitive.Content className={cn('dlg modal', className)} {...props}>
+        {children}
+      </DialogPrimitive.Content>
+    </DialogPrimitive.Portal>
+  );
+}
+
+export function DialogHeader({ className, ...props }: ComponentProps<'div'>) {
+  return <div className={className} style={{ display: 'grid', gap: 6 }} {...props} />;
+}
+
+export function DialogFooter({ className, ...props }: ComponentProps<'div'>) {
+  return <div className={cn('acts', className)} {...props} />;
+}
+
+export function DialogTitle(props: ComponentProps<typeof DialogPrimitive.Title>) {
+  return (
+    <DialogPrimitive.Title asChild {...props}>
+      <h3>{props.children}</h3>
+    </DialogPrimitive.Title>
+  );
+}
+
+export function DialogDescription(props: ComponentProps<typeof DialogPrimitive.Description>) {
+  return <DialogPrimitive.Description {...props} />;
 }

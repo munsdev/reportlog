@@ -22,17 +22,17 @@ export function PublishedFiles({ publicRef }: { publicRef: string }) {
   if (!files.data?.attached) return null;
   const { attached, published } = files.data;
   return (
-    <section className="flex flex-col gap-3" aria-label="Files">
-      <p className="text-sm text-ink-alt">
+    <section style={{ display: 'grid', gap: 12 }} aria-label="Files">
+      <p className="m">
         {attached === 1 ? '1 file attached' : `${String(attached)} files attached`},{' '}
         {published.length ? `${String(published.length)} published` : 'none published'}.
       </p>
       {published.map((f) => (
-        <figure key={f.ordinal} className="flex flex-col gap-1">
+        <figure key={f.ordinal} style={{ display: 'grid', gap: 6, margin: 0 }}>
           <Shown file={f} />
-          <figcaption className="text-sm">
+          <figcaption>
             {f.alt_text}
-            <span className="block break-all font-mono text-xs text-ink-alt">
+            <span className="m mono" style={{ display: 'block', overflowWrap: 'anywhere' }}>
               Original’s SHA-256: {f.sha256}
             </span>
           </figcaption>
@@ -51,7 +51,7 @@ function Shown({ file }: { file: PublishedFile }) {
       <video
         controls
         preload="none"
-        className="w-full rounded-card"
+        style={{ width: '100%', borderRadius: 'var(--rl-radius)' }}
         src={FILE_PATHS.publicFile(file.key)}
         aria-label={file.alt_text}
         {...(file.has_poster ? { poster: FILE_PATHS.publicPoster(file.key) } : {})}
@@ -71,14 +71,18 @@ function Shown({ file }: { file: PublishedFile }) {
   }
   // Photos, and a document's pages (drawn as pictures; the PDF is never shown).
   return (
-    <div className="flex flex-col gap-2">
+    <div style={{ display: 'grid', gap: 8 }}>
       {Array.from({ length: file.pages }, (_, i) => (
         <img
           key={i}
           src={i === 0 ? FILE_PATHS.publicFile(file.key) : FILE_PATHS.publicPage(file.key, i + 1)}
           alt={file.pages > 1 ? `${file.alt_text} (page ${String(i + 1)})` : file.alt_text}
           loading="lazy"
-          className="max-w-full rounded-card border border-line"
+          style={{
+            maxWidth: '100%',
+            borderRadius: 'var(--rl-radius)',
+            border: '1.5px solid var(--rl-border)',
+          }}
         />
       ))}
     </div>

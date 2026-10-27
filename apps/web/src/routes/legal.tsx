@@ -10,7 +10,7 @@
 import { getLegal } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { Alert } from '../components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { call } from '../lib/api.ts';
 import { Band, MockPage } from '../mockup/Band.tsx';
 import { Card, TwoCol } from '../mockup/TwoCol.tsx';
@@ -88,9 +88,9 @@ function LegalPage() {
       >
         <div className="prose">
           {legal.isError ? (
-            <Alert tone="serious" title="The legal notices could not be loaded.">
+            <Note tone="serious" title="The legal notices could not be loaded.">
               {legal.error.message}
-            </Alert>
+            </Note>
           ) : null}
           {legal.isPending ? <p role="status">Loading…</p> : null}
           {legal.isSuccess ? (

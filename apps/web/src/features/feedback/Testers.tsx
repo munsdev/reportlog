@@ -12,11 +12,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { TextField } from '@/mockup/Field.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { ROLE_LABELS } from '../identity/session.ts';
 import { testersQuery } from './queries.ts';
@@ -57,7 +57,7 @@ export function Testers() {
             }}
           />
           <ErrorLine error={change.error} />
-          <Btn kind="ink" type="submit" disabled={change.isPending}>
+          <Btn sm flat look="ink" type="submit" disabled={change.isPending}>
             Give the flag
           </Btn>
         </form>
@@ -83,7 +83,9 @@ export function Testers() {
                     : ''}
                 </>,
                 <Btn
-                  kind="ghost"
+                  sm
+                  flat
+                  look="ghost"
                   disabled={change.isPending}
                   onClick={() => {
                     change.mutate({ email: t.email, tester: false });

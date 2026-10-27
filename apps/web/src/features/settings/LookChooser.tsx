@@ -10,11 +10,9 @@
  * linked on every page, and its card says which pack it came with.
  */
 import type { Look } from '@reportlog/contracts';
+import { useId } from 'react';
 import { St } from '@/mockup/St.tsx';
-import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
-import { Select } from '@/mockup/FieldWired.tsx';
+import { Field, FieldDescription, Label, Select } from '@/mockup/Field.tsx';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
 
@@ -33,6 +31,7 @@ export function LookChooser({
   current,
   catalogue = BUILT_IN_CATALOGUE,
 }: LookChooserProps) {
+  const group = useId();
   const chosen = namedLookFor(value, catalogue);
   const { looks: LOOKS, palettes: PALETTES, themes: THEMES } = catalogue;
   const palettes = PALETTES.length;
@@ -85,23 +84,37 @@ export function LookChooser({
           </FieldDescription>
         </Field>
       </div>
-      <RadioGroup aria-label="Named looks" value={chosen?.id ?? ''} onValueChange={choose}>
+      <div className="lookcards" role="radiogroup" aria-label="Named looks">
         {LOOKS.map((l) => {
           const onSite = current ? sameLook(current, l) : false;
           return (
-            <RadioOption
-              key={l.id}
-              value={l.id}
-              label={
-                <>
-                  {l.label} {onSite ? <St tone="tag">On the site</St> : null}
-                </>
-              }
-              hint={l.pack ? `From ${l.pack}` : undefined}
-            />
+            <label className="lookcard" key={l.id}>
+              <input
+                className="vh"
+                type="radio"
+                name={group}
+                value={l.id}
+                checked={chosen?.id === l.id}
+                onChange={() => {
+                  choose(l.id);
+                }}
+              />
+              <span className="strip" data-palette={l.palette} aria-hidden="true">
+                <span style={{ background: 'var(--rl-background-deep)' }} />
+                <span style={{ background: 'var(--rl-background)' }} />
+                <span style={{ background: 'var(--rl-surface)' }} />
+                <span style={{ background: 'var(--rl-action)' }} />
+                <span style={{ background: 'var(--rl-brand-on-deep)' }} />
+                <span style={{ background: 'var(--rl-serious)' }} />
+              </span>
+              <b>
+                {l.label} {onSite ? <St tone="tag">On the site</St> : null}
+              </b>
+              {l.pack ? <small>From {l.pack}</small> : null}
+            </label>
           );
         })}
-      </RadioGroup>
+      </div>
     </>
   );
 }

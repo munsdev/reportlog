@@ -19,7 +19,7 @@ export function MapSlot({ slot }: { slot: MapSlotId }) {
     .sort((a, b) => a.position - b.position);
   if (!maps.length) return null;
   return (
-    <section aria-label="Maps" className="flex flex-col gap-6">
+    <section aria-label="Maps" style={{ display: 'grid', gap: 24 }}>
       {maps.map((m) => (
         <HeatMap key={m.slug} slug={m.slug} />
       ))}

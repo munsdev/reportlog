@@ -11,10 +11,10 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { AreaField } from '../../mockup/Fields.tsx';
+import { AreaField } from '@/mockup/Field.tsx';
 import { Filters } from '../../mockup/Filters.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { adminIssueQuery, queueQuery } from './queries.ts';
 import { IssueLine, StatusChip, when } from './words.tsx';
 
@@ -64,6 +64,8 @@ export function FeedbackQueue() {
           <IssueLine issue={issue} author={issue.submitter_email} />
           <div className="acts">
             <Btn
+              sm
+              flat
               aria-expanded={openId === issue.id}
               onClick={() => {
                 setOpenId(openId === issue.id ? null : issue.id);
@@ -173,7 +175,7 @@ function AdminIssue({ id }: { id: number }) {
           }}
         />
         <ErrorLine error={move.error} />
-        <Btn kind="ink" type="submit" disabled={!status || move.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={!status || move.isPending}>
           Move it and send the note
         </Btn>
       </form>

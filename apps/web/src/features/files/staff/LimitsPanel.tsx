@@ -12,10 +12,9 @@
 import type { FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
-import type { DlItem } from '@/mockup/DlList.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl, type DlItem } from '@/mockup/Dl.tsx';
 import { useToast } from '../../../components/ui/toast.tsx';
 import { LimitsForm } from './LimitsForm.tsx';
 import type { Layer, LimitsBody } from './LimitsForm.tsx';
@@ -70,7 +69,7 @@ export function LimitsPanel({
   const [open, setOpen] = useState(false);
   const toast = useToast();
   return (
-    <Panel heading={LIMITS_TITLE} closed={!open}>
+    <Panel title={LIMITS_TITLE} kind={open ? undefined : 'closed'}>
       {open ? (
         <LimitsForm
           layers={layers}
@@ -89,7 +88,9 @@ export function LimitsPanel({
           <Dl items={limitsSummary(layers, mine)} />
           <div className="acts">
             <Btn
-              variant="secondary"
+              sm
+              flat
+
               aria-label={`Edit ${LIMITS_TITLE}`}
               onClick={() => {
                 setOpen(true);

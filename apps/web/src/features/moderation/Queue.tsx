@@ -29,13 +29,13 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
@@ -530,14 +530,14 @@ function FilterPanel({
           </div>
         </div>
       ) : null}
-      <Check
+      <CheckBox
         checked={flagged}
         onChange={(e) => {
           setFlagged(e.target.checked);
         }}
       >
         Only reports waiting for a second read
-      </Check>
+      </CheckBox>
     </>
   );
 

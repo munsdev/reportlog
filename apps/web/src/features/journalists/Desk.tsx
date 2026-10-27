@@ -24,14 +24,14 @@ import type { ReactNode } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckBox } from '@/mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
 import { DeskAlerts, deskQuery } from './AlertSettings.tsx';
@@ -170,10 +170,12 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
             setDraft({ ...draft, q: e.target.value });
           }}
         />
-        <Btn type="submit">Search</Btn>
+        <Btn sm flat type="submit">
+          Search
+        </Btn>
       </div>
       {hasStates ? (
-        <Check
+        <CheckBox
           checked={draft.mine}
           title={`Only what is in the states you chose for alerts: ${settings.data?.state === 'open' ? settings.data.states.join(', ') : ''}.`}
           onChange={(e) => {
@@ -181,7 +183,7 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
           }}
         >
           My states
-        </Check>
+        </CheckBox>
       ) : null}
     </form>
   );
@@ -201,6 +203,8 @@ function CopyableLink({ url }: { url: string }) {
       <div className="row">
         <code>{url}</code>
         <Btn
+          sm
+          flat
           onClick={() => {
             void navigator.clipboard.writeText(url).then(
               () => {

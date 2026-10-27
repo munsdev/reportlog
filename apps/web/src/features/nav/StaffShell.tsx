@@ -43,11 +43,11 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import type { CSSProperties, ReactNode } from 'react';
 import { SiteFooter } from '@/components/ui/site-footer.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
-import { Wm } from '../../mockup/Wm.tsx';
+import { Wordmark } from '@/mockup/Wordmark.tsx';
 import { PauseBanner } from '../flood/IntakePaused.tsx';
 import type { SignedInMe } from '../identity/session.ts';
 import { useSignOut } from '../identity/session.ts';
-import { areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
+import { entryAt, sectionsFor } from '../staff-nav/entries.ts';
 import type { StaffEntry } from '../staff-nav/entries.ts';
 import { BugLink } from './Menu.tsx';
 import { usePopup, useNoScroll } from './popup.ts';
@@ -119,7 +119,7 @@ export function StaffShell({
       <header className="site-head staff-head print:hidden">
         <div className="wrap">
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Wm to="/home" />
+            <Wordmark to="/home" />
             <span className="badge-staff">{me?.heldRoles.length === 0 ? 'Account' : 'Staff'}</span>
           </div>
           <div className="head-right">
@@ -195,7 +195,7 @@ export function StaffSidebar({
   tone?: 'side' | 'drawer';
 }) {
   const here = entryAt(pathname);
-  const sections = me ? [...groupsFor(me), ...areasFor(me)] : [];
+  const sections = me ? sectionsFor(me) : [];
   return (
     <nav className={tone === 'drawer' ? 'sb sb-drawer' : undefined} aria-label="Staff areas">
       {me ? null : <p className="muted">Loading…</p>}
@@ -307,7 +307,7 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
       <div className="wrap">
         {/* Close comes first in the page, so it is where focus lands. */}
         <div className="menu-top">
-          <Wm to="/home" onClick={onClose} />
+          <Wordmark to="/home" onClick={onClose} />
           <button className="menu-btn" type="button" onClick={onClose}>
             CLOSE
           </button>

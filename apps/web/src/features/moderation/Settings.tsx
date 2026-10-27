@@ -15,14 +15,12 @@ import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, Label, Textarea } from '@/mockup/Field.tsx';
 import { SettingPanel, SettingPanels } from '@/mockup/SettingPanel.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
@@ -184,8 +182,11 @@ function Keywords() {
       {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
       <div className="acts">
         <Btn
+          look="ghost"
+          sm
+          flat
           type="button"
-          variant="quiet"
+
           busy={save.isPending}
           busyLabel="Going back…"
           onClick={() => {
@@ -279,7 +280,7 @@ function NotesSwitches() {
  */
 function AccessLog() {
   return (
-    <Panel variant="quiet" heading="Who opened what" id="who-opened-what">
+    <Panel kind="quiet" title="Who opened what" id="who-opened-what">
       <p>
         Every opening of a reporter’s contact details or of a file’s original, with who and why, is
         now its own page under Records: <Link to="/who-opened-what">Who opened protected data</Link>

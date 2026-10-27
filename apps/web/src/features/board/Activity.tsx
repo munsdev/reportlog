@@ -12,7 +12,7 @@ import type { LogbookCounts } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { call } from '../../lib/api.ts';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 

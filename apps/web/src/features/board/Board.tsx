@@ -24,7 +24,7 @@ import type { ReactNode } from 'react';
 import { CopyText } from '../../components/ui/copy-text.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { PagerLinks } from '../../mockup/PagerLinks.tsx';
+import { Pager } from '@/mockup/Pager.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
 import { useMainAction } from '../nav/Menu.tsx';
 import { CountsOnlyPanel } from './Activity.tsx';
@@ -447,7 +447,7 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
           ))}
         </div>
       )}
-      <PagerLinks
+      <Pager
         label="Pages of reports"
         page={page}
         pages={pages}

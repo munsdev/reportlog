@@ -34,14 +34,12 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import qrcode from 'qrcode-generator';
 import { useEffect, useId, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
-import { Lede } from '@/components/ui/type.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { call } from '../../lib/api.ts';
 import { meQuery, useMe, useSignOut } from './session.ts';
-import { Field } from '../../mockup/Qcard.tsx';
+import { Field } from '../../mockup/Field.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { ErrorText, messageOf } from './ui.tsx';
 
@@ -106,12 +104,12 @@ export function RecoveryCodes({ codes, onKept }: { codes: string[]; onKept: () =
   const siteName = site.data?.plain_name ?? 'ReportLog';
   const asText = `Recovery codes for ${siteName}. Each signs you in once.\n\n${codes.join('\n')}\n`;
   return (
-    <section className="flex max-w-2xl flex-col gap-4" aria-labelledby="recovery-heading">
-      <div data-print-only className="flex flex-col gap-4">
-        <p className="label-face hidden text-xs print:block">
+    <section className="form-stack" style={{ maxWidth: 640 }} aria-labelledby="recovery-heading">
+      <div data-print-only style={{ display: 'grid', gap: 18 }}>
+        <p className="eyebrow">
           {site.data ? <BrandName parts={site.data.name_parts} /> : siteName}
         </p>
-        <h1 id="recovery-heading" className="font-display text-title font-bold">
+        <h1 id="recovery-heading" className="h-page">
           Your recovery codes
         </h1>
         <p className="print:hidden">
@@ -120,18 +118,30 @@ export function RecoveryCodes({ codes, onKept }: { codes: string[]; onKept: () =
           paper.
           <strong> They are not shown again.</strong>
         </p>
-        <ol className="grid grid-cols-1 gap-2 font-mono text-lg sm:grid-cols-2">
-          {codes.map((c) => (
-            <li key={c} className="rounded-control border border-line bg-surface px-3 py-2">
-              {c}
-            </li>
-          ))}
-        </ol>
+        <div className="panel">
+          <ol
+            className="mono"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))',
+              gap: 10,
+              listStyle: 'none',
+              padding: 0,
+              margin: 0,
+              fontSize: '1.1rem',
+              letterSpacing: '.12em',
+            }}
+          >
+            {codes.map((c) => (
+              <li key={c}>{c}</li>
+            ))}
+          </ol>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-3">
-        <Button
-          type="button"
-          variant="secondary"
+      <div className="acts">
+        <Btn
+          sm
+          flat
           onClick={() => {
             void copied(codes.join('\n')).then((ok) => {
               setSaid(
@@ -143,34 +153,34 @@ export function RecoveryCodes({ codes, onKept }: { codes: string[]; onKept: () =
           }}
         >
           Copy them
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
+        </Btn>
+        <Btn
+          sm
+          flat
           onClick={() => {
             download('recovery-codes.txt', asText);
             setSaid('Saved as recovery-codes.txt, made in this browser.');
           }}
         >
           Download as a text file
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
+        </Btn>
+        <Btn
+          sm
+          flat
           onClick={() => {
             window.print();
           }}
         >
           Print them
-        </Button>
+        </Btn>
       </div>
-      <p role="status" className="text-sm text-ink-alt">
+      <p role="status" className="m">
         {said}
       </p>
-      <div>
-        <Button type="button" size="lg" onClick={onKept}>
+      <div className="btn-row">
+        <Btn look="ink" onClick={onKept}>
           I have kept them
-        </Button>
+        </Btn>
       </div>
     </section>
   );
@@ -195,7 +205,14 @@ export function QrCode({ text, label }: { text: string; label: string }) {
       role="img"
       aria-label={label}
       viewBox={`0 0 ${String(n + 8)} ${String(n + 8)}`}
-      className="h-56 w-56 rounded-card border border-line"
+      className="qr"
+      style={{
+        width: 224,
+        height: 224,
+        background: 'none',
+        border: 0,
+        outline: '1px solid var(--rl-border)',
+      }}
       shapeRendering="crispEdges"
     >
       <rect width="100%" height="100%" fill="white" />
@@ -346,7 +363,7 @@ export function AddAuthenticatorApp({
   const secret = begin.data.secret;
   return (
     <form
-      className="flex flex-col gap-4"
+      style={{ display: 'grid', gap: 14 }}
       onSubmit={(e) => {
         e.preventDefault();
         confirm.mutate();
@@ -421,7 +438,7 @@ export function AddPasskey({
   });
   return (
     <form
-      className="flex flex-col gap-4"
+      style={{ display: 'grid', gap: 14 }}
       onSubmit={(e) => {
         e.preventDefault();
         add.mutate();
@@ -462,19 +479,19 @@ function SetUpFirst() {
     await client.invalidateQueries({ queryKey: ['identity'] });
   };
   return (
-    <section className="flex max-w-xl flex-col gap-4" aria-labelledby="set-up-heading">
-      <h1 id="set-up-heading" className="font-display text-title font-bold">
+    <section className="form-stack" style={{ maxWidth: 560 }} aria-labelledby="set-up-heading">
+      <h1 id="set-up-heading" className="h-page">
         Set up a second way to sign in
       </h1>
-      <Lede>
+      <p className="muted">
         Your account has a role on this site, so signing in takes the emailed code and then a second
         step: a code from an authenticator app on your phone, or a passkey. Nothing behind your role
         opens until you set one up.
-      </Lede>
-      <Card>
+      </p>
+      <div className="panel">
         {way === null && (
           <form
-            className="flex flex-col gap-4"
+            style={{ display: 'grid', gap: 14 }}
             onSubmit={(e) => {
               e.preventDefault();
               const chosen = choice ?? (appOffered ? null : 'passkey');
@@ -487,49 +504,60 @@ function SetUpFirst() {
                 sign in here.
               </p>
             )}
-            <RadioGroup
-              aria-label="Which second way"
-              value={choice ?? (appOffered ? '' : 'passkey')}
-              onValueChange={(v) => {
-                setChoice(v === 'app' ? 'app' : 'passkey');
-              }}
-            >
+            <Choices role="radiogroup" aria-label="Which second way">
               {appOffered ? (
-                <RadioOption
+                <Choice
+                  name="second-way"
                   value="app"
-                  label="An authenticator app"
-                  hint="A six-digit code from an app on your phone"
-                />
+                  checked={choice === 'app'}
+                  onChange={() => {
+                    setChoice('app');
+                  }}
+                >
+                  An authenticator app
+                  <br />
+                  <span className="help">A six-digit code from an app on your phone</span>
+                </Choice>
               ) : null}
-              <RadioOption
+              <Choice
+                name="second-way"
                 value="passkey"
-                label="A passkey"
-                hint="Your phone’s or computer’s own lock, a fingerprint or face"
-              />
-            </RadioGroup>
-            <div>
-              <Button type="submit" disabled={appOffered && choice === null}>
+                checked={(choice ?? (appOffered ? '' : 'passkey')) === 'passkey'}
+                onChange={() => {
+                  setChoice('passkey');
+                }}
+              >
+                A passkey
+                <br />
+                <span className="help">
+                  Your phone’s or computer’s own lock, a fingerprint or face
+                </span>
+              </Choice>
+            </Choices>
+            <div className="acts">
+              <Btn look="ink" sm flat type="submit" disabled={appOffered && choice === null}>
                 Next
-              </Button>
+              </Btn>
             </div>
           </form>
         )}
         {way === 'app' && <AddAuthenticatorApp onAdded={added} />}
         {way === 'passkey' && <AddPasskey onAdded={added} />}
         {way !== null && (
-          <div>
-            <Button
-              type="button"
-              variant="quiet"
+          <div className="acts">
+            <Btn
+              look="ghost"
+              sm
+              flat
               onClick={() => {
                 setWay(null);
               }}
             >
               Choose another way
-            </Button>
+            </Btn>
           </div>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

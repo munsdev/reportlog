@@ -25,15 +25,15 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
+import { TextField } from '@/mockup/Field.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { DeleteAccount } from './DeleteAccount.tsx';
 import { desksFor } from './desks.ts';
@@ -246,7 +246,7 @@ function GrantRole({ me }: { me: SignedInMe }) {
               : `${typed} now holds no role.`}
           </Saved>
         )}
-        <Btn kind="ink" type="submit" disabled={!changes.length || save.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={!changes.length || save.isPending}>
           {save.isPending ? 'Saving…' : 'Give the role'}
         </Btn>
       </form>
@@ -332,7 +332,9 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
           <Saved>You are now the owner.</Saved>
         ) : (
           <Btn
-            kind="ink"
+            sm
+            flat
+            look="ink"
             disabled={accept.isPending}
             onClick={() => {
               accept.mutate();
@@ -365,6 +367,8 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
           </p>
           {o.iAmOwner && (
             <Btn
+              sm
+              flat
               onClick={() => {
                 cancel.mutate();
               }}
@@ -415,7 +419,7 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
             }}
           />
           <ErrorLine error={askCode.error} />
-          <Btn type="submit" disabled={askCode.isPending}>
+          <Btn sm flat type="submit" disabled={askCode.isPending}>
             Start the hand-over
           </Btn>
         </form>
@@ -444,11 +448,13 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
           />
           <ErrorLine error={offer.error} />
           <div className="acts">
-            <Btn kind="ink" type="submit" disabled={offer.isPending}>
+            <Btn sm flat look="ink" type="submit" disabled={offer.isPending}>
               Offer the deployment
             </Btn>
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               onClick={() => {
                 setCodeSent(false);
               }}
@@ -487,13 +493,13 @@ function SitePassword() {
     <Panel title="The site password" id="site-password">
       {s.hasPassword && (
         <Switch
-          title="Password on"
-          sub={
+          label="Password on"
+          help={
             on
               ? 'Everyone but the open forms needs the password.'
               : 'The site is open: there is no password in front of it.'
           }
-          on={on}
+          checked={on}
           disabled={save.isPending}
           onChange={(next) => {
             save.mutate({ enabled: next });
@@ -526,7 +532,7 @@ function SitePassword() {
           }}
         />
         <ErrorLine error={save.error} />
-        <Btn kind="ink" type="submit" disabled={save.isPending || !password}>
+        <Btn sm flat look="ink" type="submit" disabled={save.isPending || !password}>
           Set the password
         </Btn>
       </form>
@@ -579,7 +585,7 @@ function ResetSecondFactor() {
         {doneFor && (
           <Saved>Reset. {doneFor} sets a new second factor up when they next sign in.</Saved>
         )}
-        <Btn type="submit" disabled={reset.isPending}>
+        <Btn sm flat type="submit" disabled={reset.isPending}>
           Reset their second factor
         </Btn>
       </form>

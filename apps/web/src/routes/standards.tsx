@@ -8,7 +8,7 @@
  * reads like one.
  */
 import { createFileRoute } from '@tanstack/react-router';
-import { Alert } from '../components/ui/alert.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { PublicPage } from '../features/site-pages/PublicPage.tsx';
 import { useSite } from '../components/ui/site.tsx';
@@ -29,12 +29,12 @@ function StandardsPage() {
     >
       {site.isPending ? <p role="status">Loading…</p> : null}
       {site.isError ? (
-        <Alert tone="serious" title="The standard could not be loaded">
+        <Note tone="serious" title="The standard could not be loaded">
           {site.error.message}
-        </Alert>
+        </Note>
       ) : null}
       <CopyText slot="standards" />
-      <p className="text-sm text-ink-alt">
+      <p className="m">
         Holding a report back is not a finding that it is false, and publishing one is not a finding
         that it is true. A moderator judges whether an account may be published, nothing more.
       </p>

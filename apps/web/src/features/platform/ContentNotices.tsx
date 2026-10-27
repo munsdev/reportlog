@@ -9,9 +9,9 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, Label, Textarea } from '@/mockup/Field.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
-import { Field, FieldDescription, Label, Textarea } from '../../mockup/Form.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';

@@ -17,20 +17,18 @@ import type { BodyOf, FileSettings, ResponseOf } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { PTabs } from '@/mockup/PTabs.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
 import { ToastProvider, useToast } from '../../../components/ui/toast.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { LimitsPanel } from './LimitsPanel.tsx';
@@ -121,7 +119,7 @@ function Switch({
     );
   }
   return (
-    <Panel heading="Taking files">
+    <Panel title="Taking files">
       <Dl
         items={[
           {
@@ -164,6 +162,9 @@ function Switch({
       {chosen !== now ? (
         <div className="acts">
           <Btn
+            look="ink"
+            sm
+            flat
             busy={save.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -279,7 +280,7 @@ export function EraseFilePage() {
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
     <StaffPage title="Erasing a file" tabs={<FileAdminSections />}>
-      <Panel variant="deep" heading="What erasing does">
+      <Panel kind="deep" title="What erasing does">
         <p>
           Erasing destroys the key the file was locked with, so nobody can ever open it again, this
           site included. Its fingerprint stays in the report, which still checks out. It cannot be
@@ -309,7 +310,7 @@ export function EraseFilePage() {
           <FieldError>{tried ? problem : null}</FieldError>
         </Field>
         <div className="acts">
-          <Btn type="submit" variant="secondary">
+          <Btn sm flat type="submit">
             Show its files
           </Btn>
         </div>
@@ -335,7 +336,7 @@ function ErasingList({ data }: { data: ErasingData }) {
         return (
           <Panel
             key={f.id}
-            heading={name}
+            title={name}
             sub={`${describeFile(f)} · ${f.erased ? 'Erased' : PUBLICATION[f.publication]}`}
           >
             <p className="m">
@@ -347,7 +348,7 @@ function ErasingList({ data }: { data: ErasingData }) {
               <div className="acts">
                 <AskDialog
                   trigger={(open) => (
-                    <Btn variant="danger" onClick={open}>
+                    <Btn look="bad" sm flat onClick={open}>
                       Erase this file…
                     </Btn>
                   )}

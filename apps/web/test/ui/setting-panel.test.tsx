@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { describe, expect, it } from 'vitest';
 import { Input } from '../../src/components/ui/input.tsx';
 import { KeyValueList } from '../../src/components/ui/key-value-list.tsx';
-import { SettingPanel, SettingPanels } from '../../src/components/ui/setting-panel.tsx';
+import { SettingPanel, SettingPanels } from '../../src/mockup/SettingPanel.tsx';
 
 /** A panel with one text box, saving into its own state, as a page would. */
 function Setting({ id, title, fails = false }: { id: string; title: string; fails?: boolean }) {

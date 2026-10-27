@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './StaffBtn.tsx';
+import { Btn } from './Btn.tsx';
 import {
   Dialog,
   DialogContent,
@@ -22,11 +22,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './Dialog.tsx';
-import { Dl } from './DlList.tsx';
-import type { DlItem } from './DlList.tsx';
-import { Panel } from './PanelBox.tsx';
-import { SaveBar } from './SaveBarStrip.tsx';
+} from './Modal.tsx';
+import { Dl } from './Dl.tsx';
+import type { DlItem } from './Dl.tsx';
+import { Panel } from './Panel.tsx';
+import { SaveBar } from './SaveBar.tsx';
 
 interface OpenPanel {
   id: string;
@@ -111,11 +111,14 @@ export function SettingPanels({ children }: { children: ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Btn variant="secondary" onClick={discard}>
+            <Btn sm flat onClick={discard}>
               Leave them
             </Btn>
             <Btn
-              variant="quiet"
+              look="ghost"
+              sm
+              flat
+
               onClick={() => {
                 setAsking(null);
               }}
@@ -174,7 +177,7 @@ export function SettingPanel({
   if (isOpen) {
     return (
       <>
-        <Panel heading={title} className={className}>
+        <Panel title={title} className={className}>
           {children}
         </Panel>
         <SaveBar name={title} busy={saving} onSave={() => void save()} onCancel={panels.close} />
@@ -182,11 +185,13 @@ export function SettingPanel({
     );
   }
   return (
-    <Panel heading={title} closed {...(className ? { className } : {})}>
+    <Panel title={title} kind="closed" {...(className ? { className } : {})}>
       <Dl items={summary} />
       <div className="acts">
         <Btn
-          variant="secondary"
+          sm
+          flat
+
           aria-label={`Edit ${title}`}
           onClick={() => {
             panels.open(id);

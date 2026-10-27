@@ -10,7 +10,7 @@
  */
 import { placeOptions } from '@reportlog/fields';
 import { useId, useState } from 'react';
-import { SmBtn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 
 export const US_STATES = placeOptions({ scope: 'us' }).subdivisions;
@@ -60,7 +60,9 @@ export function StatesPicker({
               }
             }}
           />
-          <SmBtn onClick={apply}>Find</SmBtn>
+          <Btn sm flat onClick={apply}>
+            Find
+          </Btn>
         </div>
       </div>
       <div role="group" aria-label="States">

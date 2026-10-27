@@ -21,10 +21,9 @@ import type { AreaCount, MapPlane, MapView, PublishedMap } from '@reportlog/cont
 import { placeLabel } from '@reportlog/fields';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
-import { cn } from '../../lib/utils.ts';
 import type { OutlinePlane, Outlines } from './outlines.ts';
 import { pathOf } from './outlines.ts';
 import type { CountyOutlines } from './counties.ts';
@@ -60,8 +59,8 @@ export function HeatMap({
   const data = useQuery(mapQuery(slug));
   const outlines = useQuery(outlinesQuery());
   if (data.isPending) return <p role="status">Loading the map…</p>;
-  if (data.isError) return <Alert tone="serious">{data.error.message}</Alert>;
-  if (!data.data.published) return <Alert>{data.data.reason}</Alert>;
+  if (data.isError) return <Note tone="serious">{data.error.message}</Note>;
+  if (!data.data.published) return <Note>{data.data.reason}</Note>;
   return (
     <HeatMapView
       map={data.data}
@@ -164,19 +163,16 @@ export function HeatMapView({
   };
 
   return (
-    <figure
-      className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4"
-      data-map-root={map.slug}
-    >
+    <figure className="panel" style={{ margin: 0 }} data-map-root={map.slug}>
       {showTitle ? (
-        <div className="flex flex-col gap-1">
-          <h2 className="font-display text-xl font-bold">{map.title}</h2>
-          {map.blurb ? <p className="max-w-prose text-ink-alt">{map.blurb}</p> : null}
+        <div style={{ display: 'grid', gap: 4 }}>
+          <h2>{map.title}</h2>
+          {map.blurb ? <p className="muted">{map.blurb}</p> : null}
         </div>
       ) : null}
 
       {map.planes.length > 1 || map.views.length > 1 ? (
-        <div className="flex flex-wrap gap-4">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
           {map.planes.length > 1 ? (
             <Switch
               label="Which map"
@@ -215,21 +211,22 @@ export function HeatMapView({
           }
         />
       ) : outlinesFailed ? (
-        <Alert tone="serious">
+        <Note tone="serious">
           The map’s outlines could not be loaded. The counts are listed below.
-        </Alert>
+        </Note>
       ) : (
         <p role="status">Drawing the map…</p>
       )}
 
       {outlines && plane === 'us' ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-sm text-muted">
+        <div style={{ display: 'grid', gap: 8 }}>
+          <p className="m">
             Alaska, Hawaii and the territories. Three tiles show the main island; their counts are
             for the whole territory.
           </p>
           <ul
-            className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+            className="tiles"
+            style={{ listStyle: 'none', margin: 0, padding: 0 }}
             aria-label="Alaska, Hawaii and the territories"
           >
             {outlines.tiles.map((t) => {
@@ -246,7 +243,7 @@ export function HeatMapView({
               const full = placeLabel(t.code);
               const name = `${said}${full === t.short ? '' : `, ${full}`}: ${detail(t.code)}`;
               return (
-                <li key={t.code}>
+                <li key={t.code} style={{ display: 'contents' }}>
                   <button
                     type="button"
                     aria-pressed={selected === t.code}
@@ -255,22 +252,30 @@ export function HeatMapView({
                     onClick={() => {
                       setSelected(s.kind === 'shown' || s.kind === 'below' ? t.code : null);
                     }}
-                    className={cn(
-                      'flex w-full flex-col items-center gap-1 rounded-control border border-line bg-paper p-2 hover:border-ink',
-                      selected === t.code && 'border-ink ring-1 ring-ink',
-                    )}
+                    className="tile"
+                    style={
+                      selected === t.code
+                        ? {
+                            borderColor: 'var(--rl-border-main)',
+                            boxShadow: '0 0 0 1px var(--rl-border-main)',
+                          }
+                        : undefined
+                    }
                   >
-                    <svg viewBox={t.vb.join(' ')} className="h-12 w-full" aria-hidden="true">
+                    <svg
+                      viewBox={t.vb.join(' ')}
+                      style={{ height: 48, width: '100%' }}
+                      aria-hidden="true"
+                    >
                       <path
                         d={t.d}
                         fill={fill(t.code)}
-                        className="stroke-surface"
+                        stroke="var(--rl-surface)"
                         strokeWidth={1.2}
                         vectorEffect="non-scaling-stroke"
                       />
                     </svg>
-                    <span className="text-xs font-semibold">{t.short}</span>{' '}
-                    <span className="font-mono text-sm">{count}</span>
+                    <b>{t.short}</b> <span>{count}</span>
                   </button>
                 </li>
               );
@@ -290,7 +295,7 @@ export function HeatMapView({
 
       <AreaList map={map} plane={plane} units={units} />
 
-      <figcaption className="flex max-w-prose flex-col gap-1 text-sm text-muted">
+      <figcaption className="m" style={{ display: 'grid', gap: 4 }}>
         <NotASample line={map.not_a_sample} />
         <span>
           {map.note} Counted {new Date(map.as_of).toLocaleString()}.
@@ -313,24 +318,21 @@ function Switch<T extends string>({
   onChange: (v: T) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="flex flex-col gap-1">
-      <span className="text-sm text-muted">{label}</span>
-      <span className="flex gap-1">
+    <div role="group" aria-label={label} style={{ display: 'grid', gap: 4 }}>
+      <span className="m">{label}</span>
+      <span className="seg">
         {options.map(([v, name]) => (
-          <Button
+          <button
             key={v}
             type="button"
-
-            variant="secondary"
+            // Pressed in the dark fill, unmistakably: a near-miss shade read as the wrong one.
             aria-pressed={v === value}
-            // Pressed in ink, unmistakably: a near-miss shade read as the wrong one.
-            className={cn(v === value && 'border-ink bg-ink text-surface hover:bg-ink')}
             onClick={() => {
               onChange(v);
             }}
           >
             {name}
-          </Button>
+          </button>
         ))}
       </span>
     </div>
@@ -444,18 +446,22 @@ function Stage({
   return (
     // Its own stacking context, so nothing inside can ever rise above the
     // site's header.
-    <div className="relative z-0 flex flex-col gap-2">
+    <div style={{ position: 'relative', zIndex: 0, display: 'grid', gap: 8 }}>
       <svg
         ref={svgRef}
         viewBox={`${String(vx)} ${String(vy)} ${String(w)} ${String(h)}`}
         role="img"
         aria-label={title}
-        className={cn(
-          'block h-auto w-full rounded-control bg-paper',
+        style={{
+          display: 'block',
+          height: 'auto',
+          width: '100%',
+          borderRadius: 'var(--rl-radius-sm)',
+          background: 'var(--rl-background)',
           // Dragging pans only once zoomed in. At full size a finger on the
           // map scrolls the page, as it would anywhere else.
-          zoom.k > 1 ? 'cursor-grab touch-none' : 'cursor-pointer',
-        )}
+          ...(zoom.k > 1 ? { cursor: 'grab', touchAction: 'none' } : { cursor: 'pointer' }),
+        }}
       >
         {paths.map((p) =>
           p.code === selected ? null : (
@@ -465,7 +471,7 @@ function Stage({
               data-code={p.code}
               fill={fill(p.code)}
               fillRule="evenodd"
-              className="stroke-surface"
+              stroke="var(--rl-surface)"
               strokeWidth={0.8}
               vectorEffect="non-scaling-stroke"
             >
@@ -482,7 +488,7 @@ function Stage({
             data-code={o.code}
             {...(o.code === selected ? { 'data-selected': 'true' } : {})}
             fill={fill(o.code)}
-            className={o.code === selected ? 'stroke-ink' : 'stroke-surface'}
+            stroke={o.code === selected ? 'var(--rl-text)' : 'var(--rl-surface)'}
             strokeWidth={o.code === selected ? 2.5 : 0.4}
             vectorEffect="non-scaling-stroke"
           >
@@ -501,7 +507,7 @@ function Stage({
               data-selected="true"
               fill={fill(p.code)}
               fillRule="evenodd"
-              className="stroke-ink"
+              stroke="var(--rl-text)"
               strokeWidth={2.5}
               vectorEffect="non-scaling-stroke"
             >
@@ -509,40 +515,41 @@ function Stage({
             </path>
           ))}
       </svg>
-      <div className="flex flex-wrap gap-2">
-        <Button
+      <div className="acts">
+        <Btn
+          sm
+          flat
           type="button"
-
-          variant="secondary"
           disabled={zoom.k >= MAX_ZOOM}
           onClick={() => {
             zoomTo(Math.min(MAX_ZOOM, zoom.k * 2));
           }}
         >
           Zoom in
-        </Button>
-        <Button
+        </Btn>
+        <Btn
+          sm
+          flat
           type="button"
-
-          variant="secondary"
           disabled={zoom.k <= 1}
           onClick={() => {
             zoomTo(Math.max(1, zoom.k / 2));
           }}
         >
           Zoom out
-        </Button>
-        <Button
+        </Btn>
+        <Btn
+          sm
+          flat
           type="button"
-
-          variant="quiet"
+          look="ghost"
           disabled={zoom.k === 1}
           onClick={() => {
             setZoom({ k: 1, cx: x0 + W / 2, cy: y0 + H / 2 });
           }}
         >
           Whole map
-        </Button>
+        </Btn>
       </div>
     </div>
   );
@@ -551,32 +558,30 @@ function Stage({
 function Legend({ view, k, unit }: { view: MapView; k: number; unit: string }) {
   const [lo, mid, hi] = ENDS[view];
   return (
-    <div className="flex flex-col gap-2 border-t border-line pt-3 text-sm">
-      <div className="flex max-w-sm" aria-hidden="true">
+    <div style={{ display: 'grid', gap: 4 }}>
+      <div style={{ display: 'flex', maxWidth: 384 }} aria-hidden="true">
         {SCALES[view].map((c) => (
-          <i key={c} className="h-4 flex-1 border border-line" style={{ background: c }} />
+          <i
+            key={c}
+            style={{ background: c, flex: 1, height: 16, border: '1.5px solid var(--rl-border)' }}
+          />
         ))}
       </div>
-      <p className="flex max-w-sm justify-between text-muted">
+      <p
+        className="legend"
+        style={{ justifyContent: 'space-between', maxWidth: 384, paddingTop: 0 }}
+      >
         <span>{lo}</span>
         <span>{mid}</span>
         <span>{hi}</span>
       </p>
-      <p className="flex flex-wrap gap-x-5 gap-y-1 text-muted">
-        <span className="flex items-center gap-2">
-          <b
-            className="block size-3.5 border border-line"
-            style={{ background: NO_DATA }}
-            aria-hidden="true"
-          />
+      <p className="legend" style={{ paddingTop: 4 }}>
+        <span>
+          <i style={{ background: NO_DATA }} aria-hidden="true" />
           None counted
         </span>
-        <span className="flex items-center gap-2">
-          <b
-            className="block size-3.5 border border-line"
-            style={{ background: BELOW }}
-            aria-hidden="true"
-          />
+        <span>
+          <i style={{ background: BELOW }} aria-hidden="true" />
           Fewer than {k} {unit}: not shaded, and the number is not published
         </span>
       </p>
@@ -596,23 +601,25 @@ function Readout({
   plane: MapPlane;
 }) {
   return (
-    <div className="flex flex-col gap-1 border-t border-line pt-3" aria-live="polite">
+    <div style={{ display: 'grid', gap: 4 }} aria-live="polite">
       {!code || !status ? (
-        <p className="text-sm text-muted">
+        <p className="m">
           {plane === 'us' ? 'Tap a state' : 'Tap a country'} to see what is behind its colour. Every
           area is also listed under the map.
         </p>
       ) : (
         <>
-          <h3 className="font-display text-lg font-bold">{placeLabel(code)}</h3>
+          <h3>{placeLabel(code)}</h3>
           {status.kind === 'shown' ? (
             <>
               <p>
-                <span className="font-mono text-2xl font-bold">{status.a.n}</span>{' '}
+                <b className="mono" style={{ fontSize: '1.6rem' }}>
+                  {status.a.n}
+                </b>{' '}
                 {status.a.n === 1 ? map.unit.one : map.unit.many}
               </p>
               {status.a.assessed > 0 ? (
-                <p className="text-sm">
+                <p className="m">
                   Of the {status.a.assessed} that answered “
                   {map.outcome_question ?? 'the outcome question'}”: {status.a.pos} positive,{' '}
                   {status.a.neu} neither, {status.a.neg} negative.
@@ -620,13 +627,13 @@ function Readout({
               ) : null}
             </>
           ) : status.kind === 'below' ? (
-            <p className="max-w-prose text-sm">
+            <p className="m">
               Fewer than {map.threshold} {map.unit.many}, so this area is not shaded and its number
               is not published. A single one in a thinly covered place can identify the person who
               filed it. The threshold is applied before the map is sent, not by this page.
             </p>
           ) : (
-            <p className="text-sm">None counted.</p>
+            <p className="m">None counted.</p>
           )}
         </>
       )}
@@ -652,61 +659,65 @@ function AreaList({
     .sort((a, b) => placeLabel(a).localeCompare(placeLabel(b)));
   const total = shown.reduce((sum, [, a]) => sum + a.n, 0);
   return (
-    <details className="text-sm">
-      <summary className="cursor-pointer font-semibold">
-        Every area as a list ({shown.length + below.length})
-      </summary>
-      <table className="mt-2 w-full max-w-md">
-        <caption className="sr-only">{map.title}: counts by area</caption>
+    <details className="tech">
+      <summary>Every area as a list ({shown.length + below.length})</summary>
+      <table style={{ width: '100%', maxWidth: 448, marginTop: 8, borderCollapse: 'collapse' }}>
+        <caption className="vh">{map.title}: counts by area</caption>
         <thead>
-          <tr className="text-left text-muted">
-            <th scope="col" className="py-1 font-normal">
+          <tr className="m" style={{ textAlign: 'left' }}>
+            <th scope="col" style={{ padding: '4px 0', fontWeight: 400 }}>
               Area
             </th>
-            <th scope="col" className="py-1 text-right font-normal">
+            <th scope="col" style={{ padding: '4px 0', fontWeight: 400, textAlign: 'right' }}>
               Count
             </th>
           </tr>
         </thead>
         <tbody>
           {shown.map(([code, a]) => (
-            <tr key={code} className="border-t border-line">
-              <th scope="row" className="py-1 text-left font-normal">
+            <tr key={code} style={{ borderTop: '1.5px solid var(--rl-border)' }}>
+              <th scope="row" style={{ padding: '4px 0', textAlign: 'left', fontWeight: 400 }}>
                 {placeLabel(code)}
               </th>
-              <td className="py-1 text-right font-mono">{a.n}</td>
+              <td className="mono" style={{ padding: '4px 0', textAlign: 'right' }}>
+                {a.n}
+              </td>
             </tr>
           ))}
           {below.map((code) => (
-            <tr key={code} className="border-t border-line">
-              <th scope="row" className="py-1 text-left font-normal">
+            <tr key={code} style={{ borderTop: '1.5px solid var(--rl-border)' }}>
+              <th scope="row" style={{ padding: '4px 0', textAlign: 'left', fontWeight: 400 }}>
                 {placeLabel(code)}
               </th>
-              <td className="py-1 text-right text-muted">fewer than {map.threshold}</td>
+              <td className="m" style={{ padding: '4px 0', textAlign: 'right' }}>
+                fewer than {map.threshold}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
       {plane === 'us' && Object.keys(map.counties).length ? (
-        <table className="mt-3 w-full max-w-md">
-          <caption className="text-left font-semibold">
+        <table style={{ width: '100%', maxWidth: 448, marginTop: 12, borderCollapse: 'collapse' }}>
+          <caption style={{ textAlign: 'left', fontWeight: 700 }}>
             Counties with {map.county_threshold ?? map.threshold} or more, shown on their own
           </caption>
           <tbody>
             {Object.entries(map.counties)
               .sort(([a, x], [b, y]) => y.n - x.n || placeLabel(a).localeCompare(placeLabel(b)))
               .map(([code, a]) => (
-                <tr key={code} className="border-t border-line">
-                  <th scope="row" className="py-1 text-left font-normal">
+                <tr key={code} style={{ borderTop: '1.5px solid var(--rl-border)' }}>
+                  <th scope="row" style={{ padding: '4px 0', textAlign: 'left', fontWeight: 400 }}>
                     {placeLabel(code)}
                   </th>
-                  <td className="py-1 text-right font-mono">{a.n}</td>
+                  <td className="mono" style={{ padding: '4px 0', textAlign: 'right' }}>
+                    {a.n}
+                  </td>
                 </tr>
               ))}
           </tbody>
         </table>
       ) : null}
-      <p className="mt-2 text-muted">
+      <p className="m" style={{ marginTop: 8 }}>
         {units(total)} in shaded areas
         {below.length
           ? map.suppressed.reports !== null && map.planes.length === 1

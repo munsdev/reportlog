@@ -11,14 +11,11 @@ import { getContentNoticeStatus, submitContentNotice } from '@reportlog/contract
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption } from '@/mockup/Choice.tsx';
+import { Field, FieldDescription, Input, Label, Textarea } from '@/mockup/Field.tsx';
 import { PublicPage } from '../site-pages/PublicPage.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
@@ -47,11 +44,11 @@ export function IllegalContentPage() {
   if (send.isSuccess) {
     return (
       <PublicPage title="We have your notice" width="prose">
-        <Alert tone="done" title={`Your reference is ${send.data.receipt}`}>
+        <Note tone="done" title={`Your reference is ${send.data.receipt}`}>
           {send.data.emailed
             ? 'We emailed you a receipt with a link to see where it stands. A person will look at it and tell you what was decided and why.'
             : 'Keep this reference. You gave no email address, so we cannot tell you the decision; the people who run this site still read the notice.'}
-        </Alert>
+        </Note>
       </PublicPage>
     );
   }
@@ -63,13 +60,10 @@ export function IllegalContentPage() {
     >
       <p>
         What we do with a notice, and how a decision can be challenged, is in the{' '}
-        <Link to="/terms" className="underline">
-          terms of use
-        </Link>
-        .
+        <Link to="/terms">terms of use</Link>.
       </p>
       <form
-        className="flex flex-col gap-5"
+        className="form-stack"
         onSubmit={(e) => {
           e.preventDefault();
           send.mutate();
@@ -134,21 +128,14 @@ export function IllegalContentPage() {
           label="I believe that what I am telling you is accurate and complete."
         />
         {send.isError ? (
-          <Alert tone="serious" title="Your notice was not sent">
+          <Note tone="serious" title="Your notice was not sent">
             {send.error.message}
-          </Alert>
+          </Note>
         ) : null}
-        <div className="flex flex-col sm:items-start">
-          <Button
-            type="submit"
-            size="lg"
-            block
-            className="sm:w-auto"
-            busy={send.isPending}
-            busyLabel="Sending…"
-          >
+        <div className="btn-row">
+          <Btn type="submit" lg busy={send.isPending} busyLabel="Sending…">
             Send the notice
-          </Button>
+          </Btn>
         </div>
       </form>
     </PublicPage>
@@ -197,14 +184,14 @@ export function NoticeStatusPage({ token }: { token: string }) {
       {/* Quiet either way, never teal: teal is a moderator confirming a
           report, and this is a decision about a notice. */}
       {n.status === 'open' || !n.decision ? (
-        <Panel variant="quiet" title="Not decided yet">
+        <Panel kind="quiet" title="Not decided yet">
           <p>
             A person will look at it and tell you what was decided and why. This page shows the
             decision when it is made.
           </p>
         </Panel>
       ) : (
-        <Panel variant="quiet" title="What we decided">
+        <Panel kind="quiet" title="What we decided">
           <p>
             {DECISION_WORDS[n.decision]}
             {n.decision_reason ? ' ' : ''}

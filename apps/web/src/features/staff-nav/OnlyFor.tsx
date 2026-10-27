@@ -33,8 +33,8 @@ export function OnlyFor({
   if (pendingSecondFactor(me.data)) return <SecondFactorGate>{null}</SecondFactorGate>;
   if (!mayOpen({ for: audience }, me.data)) {
     return (
-      <section className="space-y-3">
-        <h1 className="font-display text-2xl font-bold">Not for this account</h1>
+      <section className="form-stack">
+        <h1 className="h-page">Not for this account</h1>
         <p>This page is for {who}. Ask an administrator if you need it.</p>
       </section>
     );

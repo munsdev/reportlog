@@ -26,6 +26,9 @@ import type { RouterHistory } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { applyLook } from '@/components/ui/site.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Narrow } from '@/mockup/Narrow.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
 import { GateContext, siteStatusQuery } from './gateMode.ts';
 import { LockScreen } from './LockScreen.tsx';
@@ -154,7 +157,7 @@ export function SiteGate({
 
   if (status.isPending)
     return (
-      <p className="sr-only" role="status">
+      <p className="vh" role="status">
         Loading
       </p>
     );
@@ -162,12 +165,18 @@ export function SiteGate({
     // Closed, not open: when the server cannot say whether there is a gate,
     // the safe answer is to show nothing behind it.
     return (
-      <main className="mx-auto max-w-xl space-y-4 px-4 py-16">
-        <h1 className="font-display text-2xl font-bold">This site cannot be reached right now</h1>
-        <p role="alert">The server did not answer. Check your connection and try again.</p>
-        <button type="button" className="underline" onClick={() => void status.refetch()}>
-          Try again
-        </button>
+      <main>
+        <Narrow top={64} max={560}>
+          <h1 className="h-page">This site cannot be reached right now</h1>
+          <Note tone="serious">
+            The server did not answer. Check your connection and try again.
+          </Note>
+          <div className="btn-row">
+            <Btn look="ink" onClick={() => void status.refetch()}>
+              Try again
+            </Btn>
+          </div>
+        </Narrow>
       </main>
     );
   }
@@ -184,7 +193,7 @@ export function SiteGate({
   }
   if (open && setup.isPending)
     return (
-      <p className="sr-only" role="status">
+      <p className="vh" role="status">
         Loading
       </p>
     );

@@ -31,7 +31,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { ErrorNote, Note, Waiting } from '../../mockup/Panel.tsx';
+import { ErrorNote, Note, Waiting } from '@/mockup/Note.tsx';
 import { Choice, QError } from '../../mockup/Qcard.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';

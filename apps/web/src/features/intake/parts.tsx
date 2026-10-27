@@ -7,7 +7,7 @@ import type { FormQuestion, PublicationCard } from '@reportlog/contracts';
 import { QuestionControl } from '@/features/form/QuestionControl.tsx';
 import { askedQuestions, cardProblem, sealedAnswers } from '@/features/form/walk.ts';
 import type { RawAnswers, RawValue } from '@/features/form/walk.ts';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '@/mockup/Choice.tsx';
 
 /**
  * The statement, in the words the coordinator ticks. The server refuses to

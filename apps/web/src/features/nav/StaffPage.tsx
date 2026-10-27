@@ -3,7 +3,7 @@
  * Staff"), the title, the lede, the page's actions at the right, then any
  * tabs and the page. The area's other pages are in the staff sidebar
  * (StaffShell.tsx), so a staff page draws no row of area tabs; a page with
- * sections of its own passes a `TabRow` (AreaTabs.tsx) as `tabs`.
+ * sections of its own passes `PTabs` (mockup/PTabs.tsx) as `tabs`.
  *
  * The markup is the mock-up's `spage`: `.phead` with `.phead-txt` (the
  * `.eyebrow`, the `h1#h1`, the `.lead`) and `.phead-act`, styled by

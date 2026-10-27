@@ -1,9 +1,7 @@
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Field, FieldDescription, Input, Label } from '@/mockup/Field.tsx';
 
 /**
  * A reference, checked. Shared by the front page, /verify, a verify page's
@@ -35,13 +33,13 @@ export function CheckAReport({
         const trimmed = ref.trim();
         if (trimmed) void navigate({ to: '/verify/$ref', params: { ref: trimmed } });
       }}
-      className="flex flex-col gap-3"
+      style={{ display: 'grid', gap: 12 }}
     >
       <Field>
         <Label>{label}</Label>
         {help ? <FieldDescription>{help}</FieldDescription> : null}
         {inline ? (
-          <div className="flex items-center gap-2">
+          <div className="search">
             <Input
               value={ref}
               onChange={(e) => {
@@ -50,11 +48,11 @@ export function CheckAReport({
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="characters"
-              className="min-w-0 flex-1 font-mono"
+              className="mono"
             />
-            <Button type="submit" variant="primary" className="shrink-0">
+            <Btn type="submit" look="go" sm flat>
               {button}
-            </Button>
+            </Btn>
           </div>
         ) : (
           <Input
@@ -65,14 +63,14 @@ export function CheckAReport({
             autoComplete="off"
             spellCheck={false}
             autoCapitalize="characters"
-            className="font-mono"
+            className="mono"
           />
         )}
       </Field>
       {inline ? null : (
-        <Button type="submit" variant="secondary" block>
+        <Btn type="submit" style={{ width: '100%' }}>
           {button}
-        </Button>
+        </Btn>
       )}
     </form>
   );

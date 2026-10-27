@@ -24,21 +24,19 @@ import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Page } from '@/components/ui/page.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
 import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
-import { SmBtnLink as BtnLink, SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
+import { CheckBox, AreaField } from '@/mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { AreaField } from '../../mockup/Fields.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { PERMISSION_WORDS } from './permissionWords.ts';
@@ -171,10 +169,10 @@ function MyReportView({ threadId }: { threadId: string }) {
   if (report.isPending) return <p role="status">Loading…</p>;
   if (report.isError) {
     return (
-      <Page title="Not one of your reports" width="prose">
+      <StaffPage title="Not one of your reports" width="prose">
         <p>{report.error.message}</p>
         <Link to="/mine">Back to your reports</Link>
-      </Page>
+      </StaffPage>
     );
   }
   const r = report.data;
@@ -210,7 +208,13 @@ function MyReportView({ threadId }: { threadId: string }) {
           )}
           {r.withdrawn ? null : <Withdraw r={r} />}
           <Erase r={r} />
-          <BtnLink to={`/mine/declaration/${r.thread_id}`}>Print a signed declaration</BtnLink>
+          <Link
+            to="/mine/declaration/$threadId"
+            params={{ threadId: r.thread_id }}
+            className={btnClass({ sm: true, flat: true })}
+          >
+            Print a signed declaration
+          </Link>
         </div>
       </div>
     </StaffPage>
@@ -277,11 +281,11 @@ function Permissions({ r }: { r: MyReportDetail }) {
         .map((p) => (
           <Switch
             key={p}
-            title={PERMISSION_WORDS[p].label}
-            sub={PERMISSION_WORDS[p].hint}
+            label={PERMISSION_WORDS[p].label}
+            help={PERMISSION_WORDS[p].hint}
             // Read back from the server, never trusted from the click: the
             // server is where the current value lives.
-            on={r.permissions[p]}
+            checked={r.permissions[p]}
             disabled={set.isPending}
             onChange={(on) => {
               if (p === 'attachment_publication' && !on && r.published_files > 0) {
@@ -308,7 +312,9 @@ function Permissions({ r }: { r: MyReportDetail }) {
         buttons={
           <>
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               onClick={() => {
                 setAskTakeDown(false);
               }}
@@ -316,7 +322,9 @@ function Permissions({ r }: { r: MyReportDetail }) {
               Leave it on
             </Btn>
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               onClick={() => {
                 setAskTakeDown(false);
                 setStatus('Saving…');
@@ -412,7 +420,7 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
         }}
       />
       {r.may_publish ? (
-        <Check
+        <CheckBox
           checked={keepOut}
           onChange={(e) => {
             setKeepOut(e.target.checked);
@@ -420,13 +428,15 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
         >
           Keep it out of the public archive from now on. (This cannot be undone: a correction can
           take permission to publish back, never give it.)
-        </Check>
+        </CheckBox>
       ) : null}
       {problem ? <p className="error">{problem}</p> : null}
       {send.isError ? <ErrorLine error={send.error} /> : null}
       {done ? <Saved>{done}</Saved> : null}
       <Btn
-        kind="ink"
+        sm
+        flat
+        look="ink"
         disabled={send.isPending}
         onClick={() => {
           setDone(null);
@@ -475,6 +485,8 @@ function Withdraw({ r }: { r: MyReportDetail }) {
       />
       <ErrorLine error={go.error} />
       <Btn
+        sm
+        flat
         disabled={!comment.trim() || go.isPending}
         onClick={() => {
           go.mutate();
@@ -505,17 +517,19 @@ function Erase({ r }: { r: MyReportDetail }) {
         held your address), and is published or not exactly as before. Afterwards it no longer
         appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
-      <Check
+      <CheckBox
         checked={sure}
         onChange={(e) => {
           setSure(e.target.checked);
         }}
       >
         I understand this cannot be undone.
-      </Check>
+      </CheckBox>
       <ErrorLine error={go.error} />
       <Btn
-        kind="bad"
+        sm
+        flat
+        look="bad"
         disabled={!sure || go.isPending}
         onClick={() => {
           go.mutate();

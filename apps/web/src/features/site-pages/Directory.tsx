@@ -14,16 +14,14 @@
 import { getDirectory, getListing, setListing } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Card } from '../../components/ui/card.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { CopyText } from '../../components/ui/copy-text.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
-import { Meta } from '../../components/ui/type.tsx';
 import { PublicPage } from './PublicPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { Note, Panel } from '../../mockup/Panel.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
@@ -40,9 +38,9 @@ export function DirectoryPage() {
   if (dir.isError) {
     return (
       <PublicPage title="Organizations" width="prose">
-        <Alert tone="serious" title="The directory could not be loaded.">
+        <Note tone="serious" title="The directory could not be loaded.">
           {dir.error.message}
-        </Alert>
+        </Note>
       </PublicPage>
     );
   }
@@ -51,13 +49,16 @@ export function DirectoryPage() {
       <CopyText slot="alliance_intro" />
       {/* Always above the rows: the list without it would make the claim
           the site refuses to make. */}
-      <Card variant="quiet" heading="What this list is">
-        <p className="whitespace-pre-wrap">{dir.data.disclaimer}</p>
-      </Card>
+      <Panel kind="quiet" title="What this list is">
+        <p style={{ whiteSpace: 'pre-wrap' }}>{dir.data.disclaimer}</p>
+      </Panel>
       {dir.data.organizations.length === 0 ? (
         <Empty title="Nobody listed yet">No organization has asked to be listed yet.</Empty>
       ) : (
-        <ol className="flex flex-col gap-5" aria-label="Organizations, by members">
+        <ol
+          style={{ display: 'grid', gap: 18, listStyle: 'none', padding: 0 }}
+          aria-label="Organizations, by members"
+        >
           {dir.data.organizations.map((o) => (
             <li key={o.name}>
               <OrganizationRow
@@ -87,20 +88,27 @@ function OrganizationRow({
   line: string;
 }) {
   return (
-    <Card>
-      <div className="flex items-center gap-3">
+    <Panel>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         {logo ? (
           <img
             src={logo}
             alt=""
-            className="size-12 shrink-0 rounded-control border border-line object-contain"
+            style={{
+              width: 48,
+              height: 48,
+              flex: 'none',
+              objectFit: 'contain',
+              borderRadius: 'var(--rl-radius-sm)',
+              border: '1.5px solid var(--rl-border)',
+            }}
           />
         ) : null}
-        <h2 className="font-display text-xl">{name}</h2>
+        <h2>{name}</h2>
       </div>
-      {details ? <p className="max-w-prose whitespace-pre-wrap">{details}</p> : null}
-      <Meta>{line}</Meta>
-    </Card>
+      {details ? <p style={{ whiteSpace: 'pre-wrap' }}>{details}</p> : null}
+      <p className="m">{line}</p>
+    </Panel>
   );
 }
 
@@ -196,7 +204,7 @@ function Listing({ id }: { id: number }) {
             }}
           />
         </div>
-        <Panel variant="quiet" title="What this list is">
+        <Panel kind="quiet" title="What this list is">
           <p className="whitespace-pre-wrap">{s.disclaimer}</p>
         </Panel>
         <section aria-labelledby="appears" style={{ display: 'grid', gap: 10 }}>

@@ -22,7 +22,7 @@ function ModerateLayout() {
   const gated = !NOT_GATED.some((p) => pathname.startsWith(p));
   return (
     <StaffOnly needs={['moderator', 'admin']}>
-      <div className="flex flex-col gap-6">
+      <div style={{ display: 'grid', gap: 24 }}>
         {gated ? (
           <AgreementGate audience="moderator">
             <Outlet />

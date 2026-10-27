@@ -26,16 +26,13 @@ import type { BrandPart, Look } from '@reportlog/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { BrandRuns } from '@/mockup/Wordmark.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { St } from '@/mockup/St.tsx';
-import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
-import { FitHeadline } from '@/components/ui/fit-headline.tsx';
-import { Eyebrow, Lede, Meta } from '@/components/ui/type.tsx';
-import { Zone } from '@/components/ui/zone.tsx';
+import { setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
 import { MotifHost } from '../looks/header-background/HeaderBackground.tsx';
 import { usePreviewOptions } from '../looks/previewOptions.tsx';
-import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, layoutIn } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
 
@@ -66,49 +63,40 @@ function copyStyles(into: Document): void {
 }
 
 /**
- * The two frames' sizes: the page inside (a 1280px desktop, a 390px phone)
- * and the box it is drawn small in (0.55 and 0.5 of it). Written out as
- * classes, not computed, so Tailwind finds them and no inline style is
- * needed.
+ * The two frames: the page inside (a 1280px desktop, a 390px phone) and the
+ * scale it is drawn at. Written as numbers, so the box is the page times the
+ * scale. `fit` draws them smaller for a column kept in view beside the
+ * chooser, from a wide window up (`true`) or at every width (`'always'`).
  */
-const SIZES = {
-  desktop: { box: 'h-[440px] w-[704px]', page: 'h-[800px] w-[1280px] scale-[0.55]' },
-  phone: { box: 'h-[320px] w-[195px] rounded-[18px]', page: 'h-[640px] w-[390px] scale-50' },
+const PAGE = { desktop: [1280, 800], phone: [390, 640] } as const;
+const SCALE = {
+  normal: { desktop: 0.55, phone: 0.5 },
+  fit: { desktop: 0.3, phone: 0.3 },
+  always: { desktop: 0.3, phone: 0.3 },
 } as const;
 
-/**
- * The same two frames drawn smaller, from lg up, for a column that stays in
- * view beside the chooser (`fit`). Three steps, because the column grows with
- * the window: 0.25 of the page's size where it is narrowest (the frames then
- * stack), 0.3 at xl (side by side, short enough to leave room for the status
- * card in a 720px window), and 0.4 desktop / 0.35 phone at 2xl. Below lg the
- * frames keep SIZES, so a phone is not shown a thumbnail.
- */
-const FIT_SIZES = {
-  desktop: {
-    box: 'lg:h-[200px] lg:w-[320px] xl:h-[240px] xl:w-[384px] 2xl:h-[320px] 2xl:w-[512px]',
-    page: 'lg:scale-[0.25] xl:scale-[0.3] 2xl:scale-[0.4]',
-  },
-  phone: {
-    box: 'lg:h-[160px] lg:w-[98px] xl:h-[192px] xl:w-[117px] 2xl:h-[224px] 2xl:w-[137px]',
-    page: 'lg:scale-[0.25] xl:scale-[0.3] 2xl:scale-[0.35]',
-  },
-} as const;
-
-/**
- * For a column that is narrow whatever the window is (the Look screen beside
- * the staff sidebar): the small frames at every width, chosen by the caller
- * from the column's own width, not the window's.
- */
-const ALWAYS_SIZES = {
-  desktop: { box: 'h-[240px] w-[384px] max-w-full', page: 'scale-[0.3]' },
-  phone: { box: 'h-[192px] w-[117px]', page: 'scale-[0.3]' },
-} as const;
+/** Whether the window is at least 1024px wide (the old `lg`). */
+function useWindowWide() {
+  const [wide, setWide] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+  useEffect(() => {
+    const q = window.matchMedia('(min-width: 1024px)');
+    const read = () => {
+      setWide(q.matches);
+    };
+    q.addEventListener('change', read);
+    return () => {
+      q.removeEventListener('change', read);
+    };
+  }, []);
+  return wide;
+}
 
 interface FrameProps {
   look: Look;
   catalogue: LookCatalogue;
-  size: keyof typeof SIZES;
+  size: keyof typeof PAGE;
   label: string;
   fit: FitMode;
   children: ReactNode;
@@ -130,6 +118,8 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
     copyStyles(doc);
     doc.body.setAttribute('inert', '');
     doc.body.style.margin = '0';
+    // The public pages are drawn on the dark ground, as the mock-up's front page is.
+    doc.body.className = 'dark';
     let node = doc.getElementById('rl-preview');
     if (!node) {
       node = doc.createElement('div');
@@ -148,15 +138,23 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
     if (root) paintFrame(root, look, catalogue);
   }, [root, look, catalogue]);
 
+  const wide = useWindowWide();
+  const mode = fit === 'always' ? 'always' : fit && wide ? 'fit' : 'normal';
+  const scale = SCALE[mode][size];
+  const [pw, ph] = PAGE[size];
   return (
-    <figure className="m-0 flex flex-col gap-2">
-      <figcaption className="label-face text-xs text-ink-alt">{label}</figcaption>
+    <figure style={{ margin: 0, display: 'grid', gap: 8 }}>
+      <figcaption className="eyebrow">{label}</figcaption>
       <div
-        className={cn(
-          'overflow-hidden rounded-control border-2 border-ink bg-paper',
-          fit === 'always' ? ALWAYS_SIZES[size].box : SIZES[size].box,
-          fit === true && FIT_SIZES[size].box,
-        )}
+        style={{
+          overflow: 'hidden',
+          width: pw * scale,
+          height: ph * scale,
+          maxWidth: '100%',
+          border: '2px solid var(--rl-border-main)',
+          borderRadius: size === 'phone' ? 18 : 'var(--rl-radius-sm)',
+          background: 'var(--rl-background)',
+        }}
       >
         <iframe
           ref={frame}
@@ -166,12 +164,15 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
           onLoad={prepare}
           data-palette={look.palette}
           data-theme={look.theme}
-          className={cn(
-            'pointer-events-none block origin-top-left border-0',
-            fit === 'always' ? SIZES[size].page.replace(/scale-\S+/, '') : SIZES[size].page,
-            fit === 'always' && ALWAYS_SIZES[size].page,
-            fit === true && FIT_SIZES[size].page,
-          )}
+          style={{
+            display: 'block',
+            border: 0,
+            pointerEvents: 'none',
+            transformOrigin: 'top left',
+            width: pw,
+            height: ph,
+            transform: `scale(${String(scale)})`,
+          }}
         />
       </div>
       {mount ? createPortal(children, mount) : null}
@@ -179,65 +180,69 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
   );
 }
 
-/** The site, drawn small: what every frame shows. */
+/** The site, drawn small: what every frame shows, in the public pages' own markup. */
 export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
   // The header background being edited, if the Look screen is editing one.
   const draft = usePreviewOptions();
   return (
-    <div className="min-h-screen bg-paper font-sans text-ink">
-      <div className="border-b-[6px] border-brand-on-deep bg-deep text-on-deep">
-        <div className="mx-auto flex max-w-page items-center justify-between gap-4 px-4 py-3">
-          <span className="font-display text-xl font-bold">
-            <BrandName parts={parts} onDeep />
+    <>
+      <header className="site-head">
+        <div className="wrap">
+          <span className="wm">
+            <BrandRuns parts={parts} />
           </span>
-          <span className="label-face rounded-control border-2 border-on-deep px-3 py-2 text-xs">
-            Menu
-          </span>
-        </div>
-      </div>
-      <Zone tone="deep" {...(draft ? { zones: draft.options.zones } : {})}>
-        <MotifHost
-          slot="hero"
-          className="py-10"
-          {...(draft ? { options: draft.options, kit: draft.kit } : {})}
-        >
-          <div className="mx-auto flex max-w-page flex-col gap-3 px-4">
-            <FitHeadline as="p" lines={['Report what', { text: 'you saw', two: true }]} />
-            <p className="rl-tagline">Keep a record.</p>
+          <div className="head-right">
+            <span className="menu-btn">MENU</span>
           </div>
-        </MotifHost>
-      </Zone>
-      <div className="mx-auto flex max-w-page flex-col gap-4 px-4 py-6">
-        <Eyebrow>
-          <BrandName parts={parts} />
-        </Eyebrow>
-        <h1 className="font-display text-title font-bold">A record of what happened</h1>
-        <Lede>
-          Once a report is filed, nobody can alter or remove it without that being visible.
-        </Lede>
-        <div className="flex flex-wrap gap-3">
-          <Btn tabIndex={-1}>Submit a report</Btn>
-          <Btn tabIndex={-1} variant="secondary">
-            Board
-          </Btn>
         </div>
-        <Panel heading="RL-7K2M-4QXD" headingLevel={3} className="max-w-xl">
-          <div className="flex flex-wrap gap-1.5">
-            <St tone="confirmed">Confirmed</St>
-            <St tone="serious">Serious</St>
-            <St tone="open">Open</St>
-          </div>
-          <p>Polling place opened 40 minutes late.</p>
-          <Meta>RL-7K2M-4QXD · 3 Nov 14:02</Meta>
-        </Panel>
-        <div className="flex max-w-md flex-col gap-1.5">
-          <span className="label-face text-xs">Check a report</span>
-          <span className="block rounded-control border-[1.5px] border-ink-alt bg-surface px-3 py-2.5 font-mono text-muted">
-            RL-
+      </header>
+      <MotifHost
+        slot="hero"
+        className="hero motif-host"
+        {...(draft ? { options: draft.options, kit: draft.kit } : {})}
+      >
+        <div className="wrap">
+          <span className="eyebrow">
+            <BrandRuns parts={parts} />
           </span>
+          <h1 className="display">
+            Report what
+            <br />
+            <span className="two">you saw</span>
+          </h1>
+          <p className="tagline">Keep a record.</p>
+          <p className="lede">
+            Once a report is filed, nobody can alter or remove it without that being visible.
+          </p>
+          <div className="btn-row">
+            <Btn look="go" lg tabIndex={-1}>
+              Submit a report
+            </Btn>
+            <Btn look="ghost" lg tabIndex={-1}>
+              Board
+            </Btn>
+          </div>
         </div>
-      </div>
-    </div>
+      </MotifHost>
+      <section className="zone" data-zone={draft?.options.zones === 'single' ? 'a' : 'b'}>
+        <div className="wrap" style={{ display: 'grid', gap: 16 }}>
+          <h2 className="h-page">A record of what happened</h2>
+          <Panel title="RL-7K2M-4QXD" headingLevel={3}>
+            <div className="chips">
+              <St tone="confirmed">Confirmed</St>
+              <St tone="serious">Serious</St>
+              <St tone="open">Open</St>
+            </div>
+            <p>Polling place opened 40 minutes late.</p>
+            <p className="m">RL-7K2M-4QXD · 3 Nov 14:02</p>
+          </Panel>
+          <div className="field">
+            <span className="lbl">Check a report</span>
+            <span className="input mono">RL-</span>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -261,35 +266,42 @@ export function LookFrames({
   const site = useSite();
   const parts = name ?? site.data?.name_parts ?? DEFAULT_PARTS;
   const [showDesktop, setShowDesktop] = useState(false);
+  const wide = useWindowWide();
   const always = fit === 'always';
+  const desktopShown = always || showDesktop || wide;
   return (
-    <div className="flex flex-col gap-3">
+    <div style={{ display: 'grid', gap: 12 }}>
       <div
-        className={cn(
-          'flex flex-wrap items-start',
-          always ? 'gap-4' : fit ? 'gap-7 lg:gap-4' : 'gap-7',
-        )}
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'flex-start',
+          gap: always || (fit && wide) ? 16 : 28,
+        }}
       >
-        <div className={cn(always || showDesktop ? 'block' : 'hidden', 'lg:block')}>
+        {desktopShown ? (
           <PreviewFrame look={look} catalogue={catalogue} size="desktop" label="Desktop" fit={fit}>
             <PreviewPage parts={parts} />
           </PreviewFrame>
-        </div>
+        ) : null}
         <PreviewFrame look={look} catalogue={catalogue} size="phone" label="Phone" fit={fit}>
           <PreviewPage parts={parts} />
         </PreviewFrame>
       </div>
-      <div className={cn(always ? 'hidden' : 'lg:hidden')}>
-        <Btn
-          variant="secondary"
-          aria-expanded={showDesktop}
-          onClick={() => {
-            setShowDesktop(!showDesktop);
-          }}
-        >
-          {showDesktop ? 'Hide the desktop preview' : 'Show the desktop preview'}
-        </Btn>
-      </div>
+      {always || wide ? null : (
+        <div>
+          <Btn
+            sm
+            flat
+            aria-expanded={showDesktop}
+            onClick={() => {
+              setShowDesktop(!showDesktop);
+            }}
+          >
+            {showDesktop ? 'Hide the desktop preview' : 'Show the desktop preview'}
+          </Btn>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,10 +12,10 @@ import type { DigestFrequency, Notifications } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
@@ -141,7 +141,7 @@ export function NotificationsForm({ current }: { current: Notifications }) {
 
       <ErrorLine error={save.error} />
       <div className="acts">
-        <Btn kind="go" type="submit" disabled={save.isPending || nothingPicked}>
+        <Btn sm flat look="go" type="submit" disabled={save.isPending || nothingPicked}>
           Save
         </Btn>
       </div>

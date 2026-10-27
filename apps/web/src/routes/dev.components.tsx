@@ -26,7 +26,7 @@ import { Page } from '../components/ui/page.tsx';
 import { Pagination } from '../components/ui/pagination.tsx';
 import { RadioGroup, RadioOption } from '../components/ui/radio-group.tsx';
 import { Select } from '../components/ui/select.tsx';
-import { SettingPanel, SettingPanels } from '../components/ui/setting-panel.tsx';
+import { SettingPanel, SettingPanels } from '../mockup/SettingPanel.tsx';
 import { setLayoutAttributes } from '../components/ui/site.tsx';
 import { Textarea } from '../components/ui/textarea.tsx';
 import { ToastProvider, useToast } from '../components/ui/toast.tsx';
@@ -185,8 +185,8 @@ function ComponentsPage() {
           <Chip>Counts only</Chip>
           <Count value={7} label="7 reports waiting" />
           <span className="rounded-control bg-deep p-2">
-            <Count tone="action" value={7} label="7 reports waiting for you" />{' '}
-            <Count tone="onDeep" value={3} label="3 tips waiting" />
+            <Count value={7} label="7 reports waiting for you" />{' '}
+            <Count value={3} label="3 tips waiting" />
           </span>
         </div>
       </Section>

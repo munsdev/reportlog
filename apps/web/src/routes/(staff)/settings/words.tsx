@@ -22,14 +22,18 @@ import type { CopySlot } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
-import { Input } from '@/mockup/FieldWired.tsx';
-import { Label } from '@/mockup/FieldWired.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  Input,
+  Label,
+  Select,
+  Textarea,
+} from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/mockup/FieldWired.tsx';
 import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
-import { Textarea } from '@/mockup/FieldWired.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -95,8 +99,10 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
       </Field>
       <div className="acts">
         <Btn
+          sm
+          flat
           type="button"
-          variant="secondary"
+
           disabled={!current}
           onClick={() => {
             if (current) onInsert(`{{ [${current.id}] }}`);
@@ -253,8 +259,11 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
             <div className="form-stack" style={{ maxWidth: 'none' }}>
               <div className="acts">
                 <Btn
+                  look="ghost"
+                  sm
+                  flat
                   type="button"
-                  variant="quiet"
+
                   aria-expanded={picking}
                   onClick={() => {
                     setPicking(!picking);
@@ -269,8 +278,11 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           {slot.written ? (
             <div className="acts">
               <Btn
+                look="ghost"
+                sm
+                flat
                 type="button"
-                variant="quiet"
+
                 onClick={() => {
                   write('').then(
                     () => {

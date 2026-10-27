@@ -11,7 +11,7 @@ import type { DigestStop } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { ErrorNote, Waiting } from '../../mockup/Panel.tsx';
+import { ErrorNote, Waiting } from '@/mockup/Note.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 
 const stopQuery = (token: string) =>

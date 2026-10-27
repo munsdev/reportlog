@@ -29,16 +29,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { TextField } from '@/mockup/Field.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -128,7 +128,7 @@ export function OrganizationsPage() {
             />
             <ErrorLine error={create.error} />
             {create.isSuccess && <Saved>Made {create.data.organization.name}.</Saved>}
-            <Btn kind="ink" type="submit" disabled={create.isPending}>
+            <Btn sm flat look="ink" type="submit" disabled={create.isPending}>
               Make it
             </Btn>
           </form>
@@ -186,7 +186,9 @@ export function OrganizationPage({ id }: { id: number }) {
                   {m.pending ? <Chip kind="off">Not joined yet</Chip> : null}
                 </>,
                 <Btn
-                  kind="ghost"
+                  sm
+                  flat
+                  look="ghost"
                   aria-label={`Remove ${m.email}`}
                   onClick={() => {
                     remove.mutate(m.email);
@@ -309,12 +311,14 @@ function LogoPanel({
         />
         {file ? <p className="m">Chosen: {file.name}</p> : null}
         <div className="acts">
-          <Btn type="submit" disabled={!file || save.isPending}>
+          <Btn sm flat type="submit" disabled={!file || save.isPending}>
             {save.isPending ? 'Saving…' : 'Use this image'}
           </Btn>
           {logo && (
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               disabled={remove.isPending}
               onClick={() => {
                 remove.mutate();
@@ -412,7 +416,7 @@ function InvitePanel({
         </Choices>
         <ErrorLine error={invite.error} />
         {invite.isSuccess && <Saved>{invite.data.message}</Saved>}
-        <Btn kind="ink" type="submit" disabled={invite.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={invite.isPending}>
           Send the invitation
         </Btn>
       </form>
@@ -465,6 +469,8 @@ function InvitationRow({
       <div className="acts">
         {i.status === 'pending' && (
           <Btn
+            sm
+            flat
             onClick={() => {
               resend.mutate();
             }}
@@ -474,6 +480,8 @@ function InvitationRow({
         )}
         {i.status === 'awaiting_approval' && youGrantAccess && (
           <Btn
+            sm
+            flat
             onClick={() => {
               approve.mutate();
             }}
@@ -482,7 +490,9 @@ function InvitationRow({
           </Btn>
         )}
         <Btn
-          kind="ghost"
+          sm
+          flat
+          look="ghost"
           onClick={() => {
             withdraw.mutate();
           }}
@@ -523,7 +533,7 @@ function AddDirectly({ id, onChange }: { id: number; onChange: () => Promise<voi
           }}
         />
         <ErrorLine error={add.error} />
-        <Btn type="submit" disabled={add.isPending}>
+        <Btn sm flat type="submit" disabled={add.isPending}>
           Add as manager
         </Btn>
       </form>

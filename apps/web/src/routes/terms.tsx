@@ -12,7 +12,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { PublicPage } from '../features/site-pages/PublicPage.tsx';
-import { AsideCard } from '../components/ui/band.tsx';
+import { Panel } from '../mockup/Panel.tsx';
 import { useSite } from '../components/ui/site.tsx';
 
 export const Route = createFileRoute('/terms')({
@@ -27,34 +27,19 @@ function TermsPage() {
       title="Terms of use and contact"
       eyebrow="Legal"
       aside={
-        <AsideCard title="Related" plain>
-          <ul className="grid list-none gap-1 p-0">
+        <Panel title="Related">
+          <ul style={{ display: 'grid', gap: 6, listStyle: 'none', padding: 0, margin: 0 }}>
             <li>
-              <Link
-                to="/legal"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Imprint and privacy
-              </Link>
+              <Link to="/legal">Imprint and privacy</Link>
             </li>
             <li>
-              <Link
-                to="/standards"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Moderation standard
-              </Link>
+              <Link to="/standards">Moderation standard</Link>
             </li>
             <li>
-              <Link
-                to="/illegal-content"
-                className="inline-flex min-h-11 items-center underline underline-offset-4"
-              >
-                Report illegal content
-              </Link>
+              <Link to="/illegal-content">Report illegal content</Link>
             </li>
           </ul>
-        </AsideCard>
+        </Panel>
       }
       asideLabel="Related"
       lede="What this site does with what you send it, and who to write to."
@@ -62,10 +47,8 @@ function TermsPage() {
       {site.isPending ? <p role="status">Loading…</p> : null}
       {site.isError ? <p role="alert">{site.error.message}</p> : null}
 
-      <section aria-labelledby="t-reports" className="flex flex-col gap-2">
-        <h2 id="t-reports" className="font-display text-xl font-bold">
-          Reports
-        </h2>
+      <section aria-labelledby="t-reports">
+        <h2 id="t-reports">Reports</h2>
         <p>
           A report is published only after a moderator approves it, and only if you said it may be
           published. Approving a report is a judgement that it may be published, not a finding that
@@ -79,10 +62,8 @@ function TermsPage() {
         </p>
       </section>
 
-      <section aria-labelledby="t-tips" className="flex flex-col gap-2">
-        <h2 id="t-tips" className="font-display text-xl font-bold">
-          Tips and links
-        </h2>
+      <section aria-labelledby="t-tips">
+        <h2 id="t-tips">Tips and links</h2>
         <p>
           A tip is a message to the people who run this site. It is never published. Links in a tip
           may be checked, withheld, removed, and reported to a hotline or the authorities. A link
@@ -92,46 +73,32 @@ function TermsPage() {
         </p>
       </section>
 
-      <section aria-labelledby="t-illegal" className="flex flex-col gap-2">
-        <h2 id="t-illegal" className="font-display text-xl font-bold">
-          Illegal content
-        </h2>
+      <section aria-labelledby="t-illegal">
+        <h2 id="t-illegal">Illegal content</h2>
         <p>
           If you think something here is illegal, use the{' '}
-          <Link to="/illegal-content" className="underline">
-            form to report illegal content
-          </Link>
-          . You get a receipt, and if you give an address, the decision with its reason.
+          <Link to="/illegal-content">form to report illegal content</Link>. You get a receipt, and
+          if you give an address, the decision with its reason.
         </p>
       </section>
 
-      <section aria-labelledby="t-own" className="flex flex-col gap-2">
-        <h2 id="t-own" className="font-display text-xl font-bold">
-          The operator’s own terms
-        </h2>
+      <section aria-labelledby="t-own">
+        <h2 id="t-own">The operator’s own terms</h2>
         <CopyText slot="terms_of_use" />
       </section>
 
-      <section aria-labelledby="t-users" className="flex flex-col gap-2">
-        <h2 id="t-users" className="font-display text-xl font-bold">
-          Contact for people who use this site
-        </h2>
+      <section aria-labelledby="t-users">
+        <h2 id="t-users">Contact for people who use this site</h2>
         <CopyText slot="contact_users" />
       </section>
 
-      <section aria-labelledby="t-auth" className="flex flex-col gap-2">
-        <h2 id="t-auth" className="font-display text-xl font-bold">
-          Contact for authorities
-        </h2>
+      <section aria-labelledby="t-auth">
+        <h2 id="t-auth">Contact for authorities</h2>
         <CopyText slot="contact_authorities" />
       </section>
 
-      <p className="text-sm text-ink-alt">
-        The imprint and privacy policy are on the{' '}
-        <Link to="/legal" className="underline">
-          imprint and privacy
-        </Link>{' '}
-        page.
+      <p className="m">
+        The imprint and privacy policy are on the <Link to="/legal">imprint and privacy</Link> page.
       </p>
     </PublicPage>
   );

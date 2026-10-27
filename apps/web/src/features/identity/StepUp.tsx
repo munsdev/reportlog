@@ -18,7 +18,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog.tsx';
+} from '@/mockup/Modal.tsx';
 import { call, setStepUpHandler } from '../../lib/api.ts';
 import { ProveIt } from './secondFactor.tsx';
 

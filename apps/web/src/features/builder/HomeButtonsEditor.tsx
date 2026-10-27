@@ -29,8 +29,8 @@ import { clearHomeButtons, setHomeButtons } from '@reportlog/contracts';
 import type { ArrangementEntry, ButtonTarget, HomeButtonsAdmin } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
+import { Panel as MPanel } from '@/mockup/Panel.tsx';
 import { FrontPageTabs } from './FrontPageTabs.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -168,7 +168,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
   return (
     <div className="grid2">
       <div className="col">
-        <MPanel heading="The big buttons, in this order">
+        <MPanel title="The big buttons, in this order">
           {rows.length === 0 && <p>No buttons. Open logbooks are still added to the page.</p>}
           <div className="qlist" role="list" aria-label="Buttons, in order">
             {rows.map((r, i) => {
@@ -194,7 +194,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     </div>
                     <div className="acts">
                       <Btn
-                        variant="quiet"
+                        look="ghost"
+                        sm
+                        flat
+
                         disabled={i === 0}
                         aria-label={`Move up: “${name}”`}
                         onClick={() => {
@@ -204,7 +207,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                         ↑
                       </Btn>
                       <Btn
-                        variant="quiet"
+                        look="ghost"
+                        sm
+                        flat
+
                         disabled={i === rows.length - 1}
                         aria-label={`Move down: “${name}”`}
                         onClick={() => {
@@ -214,7 +220,9 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                         ↓
                       </Btn>
                       <Btn
-                        variant="secondary"
+                        sm
+                        flat
+
                         aria-label={`Change: “${name}”`}
                         aria-expanded={open}
                         onClick={() => {
@@ -224,7 +232,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                         Change
                       </Btn>
                       <Btn
-                        variant="quiet"
+                        look="ghost"
+                        sm
+                        flat
+
                         aria-label={`Remove: “${name}”`}
                         onClick={() => {
                           setRows((now) => now.filter((_, j) => j !== i));
@@ -235,7 +246,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     </div>
                   </div>
                   {open && (
-                    <MPanel variant="quiet">
+                    <MPanel kind="quiet">
                       <Field label="Target" help={t?.help ?? undefined}>
                         {(p) => (
                           <Select
@@ -312,7 +323,9 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
           <Problem error={save.error ?? reset.error} />
           <div className="acts">
             <Btn
-              variant="secondary"
+              sm
+              flat
+
               onClick={() => {
                 setRows((now) => [...now, { id: next, target: '', label: '', sub: '' }]);
                 setNext((n) => n + 1);
@@ -321,7 +334,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
               Add a button
             </Btn>
             <Btn
-              variant="primary"
+              look="ink"
+              sm
+              flat
+
               disabled={save.isPending || unfinished}
               onClick={() => {
                 save.mutate();
@@ -330,7 +346,10 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
               Save this order
             </Btn>
             <Btn
-              variant="quiet"
+              look="ghost"
+              sm
+              flat
+
               disabled={reset.isPending}
               onClick={() => {
                 reset.mutate();
