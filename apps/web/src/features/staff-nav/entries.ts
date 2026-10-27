@@ -120,16 +120,23 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       { to: '/logbooks', label: 'Logbooks', for: ADMIN, under: ['/logbooks/'] },
       { to: '/lists', label: 'Lists', for: ADMIN, under: ['/lists/'] },
       { to: '/maps', label: 'Maps', for: ADMIN, under: ['/maps/'] },
+      // The front page's own tab is this page too (the longer prefix wins).
+      {
+        to: '/logbooks/pages',
+        label: 'Front page and pages',
+        for: ADMIN,
+        under: ['/logbooks/front-page'],
+      },
       { to: '/lists/search', label: 'Find somebody’s entries', for: ADMIN },
       { to: '/settings/forms', label: 'Report and tip forms', for: ADMIN },
       { to: '/settings/starting-points', label: 'Starting points', for: ADMIN },
-      { to: '/logbooks/front-page', label: 'Front page', for: ADMIN },
     ],
   },
   {
     id: 'site',
     label: 'Site',
     pages: [
+      { to: '/settings', label: 'Site settings', for: ADMIN },
       { to: '/settings/name', label: 'Name', for: ADMIN },
       { to: '/settings/look', label: 'Look', for: ADMIN },
       { to: '/settings/words', label: 'Wording', for: ADMIN },
@@ -211,11 +218,8 @@ export const STAFF_AREAS: readonly StaffArea[] = [
   },
 ];
 
-/**
- * Pages in the frame that no entry names: the old settings overview keeps
- * its route, and the dashboard replaced it as the menu's first entry.
- */
-const FRAMED_ALSO: readonly string[] = ['/settings'];
+/** Pages in the frame that no entry names. */
+const FRAMED_ALSO: readonly string[] = [];
 
 export type GroupId = 'you' | 'desk' | 'organization';
 
@@ -363,4 +367,22 @@ export function areaAt(pathname: string): StaffArea | null {
   const entry = entryAt(pathname);
   if (!entry) return null;
   return STAFF_AREAS.find((a) => a.pages.includes(entry)) ?? null;
+}
+
+/**
+ * The menu's sections in the mock-up's order (staff.py GROUPS): You, then
+ * Review to Logs and system, then the desk and the organization, then Help;
+ * each with only what this person may open.
+ */
+export function sectionsFor(viewer: Viewer): (StaffGroup | StaffArea)[] {
+  const groups = groupsFor(viewer);
+  const areas = areasFor(viewer);
+  const group = (id: GroupId) => groups.filter((g) => g.id === id);
+  return [
+    ...group('you'),
+    ...areas.filter((a) => a.id !== 'help'),
+    ...group('desk'),
+    ...group('organization'),
+    ...areas.filter((a) => a.id === 'help'),
+  ];
 }

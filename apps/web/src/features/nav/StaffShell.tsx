@@ -47,7 +47,7 @@ import { Wordmark } from '@/mockup/Wordmark.tsx';
 import { PauseBanner } from '../flood/IntakePaused.tsx';
 import type { SignedInMe } from '../identity/session.ts';
 import { useSignOut } from '../identity/session.ts';
-import { areasFor, entryAt, groupsFor } from '../staff-nav/entries.ts';
+import { entryAt, sectionsFor } from '../staff-nav/entries.ts';
 import type { StaffEntry } from '../staff-nav/entries.ts';
 import { BugLink } from './Menu.tsx';
 import { usePopup, useNoScroll } from './popup.ts';
@@ -195,7 +195,7 @@ export function StaffSidebar({
   tone?: 'side' | 'drawer';
 }) {
   const here = entryAt(pathname);
-  const sections = me ? [...groupsFor(me), ...areasFor(me)] : [];
+  const sections = me ? sectionsFor(me) : [];
   return (
     <nav className={tone === 'drawer' ? 'sb sb-drawer' : undefined} aria-label="Staff areas">
       {me ? null : <p className="muted">Loading…</p>}
