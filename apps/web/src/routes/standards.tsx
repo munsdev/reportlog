@@ -21,6 +21,7 @@ function StandardsPage() {
   const site = useSite();
   return (
     <PublicPage
+      variant="band"
       title="Moderation standard"
       eyebrow="Legal"
       width="prose"

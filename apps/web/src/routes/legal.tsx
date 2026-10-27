@@ -61,6 +61,7 @@ function LegalPage() {
   const legal = useQuery(legalQuery);
   return (
     <PublicPage
+      variant="band"
       title="Imprint and privacy"
       eyebrow="Legal"
       aside={

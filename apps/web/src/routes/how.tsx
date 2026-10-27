@@ -45,6 +45,7 @@ function HowPage() {
   };
   return (
     <PublicPage
+      variant="band"
       title="How to use this"
       eyebrow="How it works"
       band={

@@ -8,7 +8,7 @@
 import { listOpenLists } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { BandPage, SecHead, Wrap } from '../components/ui/band.tsx';
+import { BandPage, SecHead } from '../components/ui/band.tsx';
 import { Button } from '../components/ui/button.tsx';
 import { CopyBox } from '../features/site-pages/CopyBox.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';

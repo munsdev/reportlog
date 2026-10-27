@@ -86,7 +86,7 @@ async function send(page: Page) {
   // Send waits for the puzzle, solved in the background in this page.
   await page.getByRole('button', { name: 'Send report' }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
-  await expect(page.getByRole('heading', { level: 1, name: /was received/ })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeVisible();
   await expect(page.getByText(/A moderator reads it before anything is public/)).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link\?/)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Send a link' })).toHaveAttribute(

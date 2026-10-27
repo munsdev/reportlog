@@ -51,7 +51,6 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
@@ -61,7 +60,6 @@ import { Field, FieldDescription } from '@/components/ui/field.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
 import {
   DoorPuzzle,
   Honeypot,
@@ -71,7 +69,6 @@ import {
 } from '@/features/door/useDoor.tsx';
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
-import { useGateMode } from '@/features/identity/gateMode.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import { CardBar, CardFrame, FilingProgress, useCardTitle, useFocusOnMount } from './CardFrame.tsx';
@@ -81,7 +78,8 @@ import { FormColumn, FormNotice } from './FormNotice.tsx';
 import { Cover } from './Cover.tsx';
 import type { CtaProps } from './HelpNow.tsx';
 import { QuestionControl, kindHelp } from './QuestionControl.tsx';
-import { TipOffer, rememberForTip } from './tipOffer.tsx';
+import { rememberForTip } from './tipOffer.tsx';
+import { FiledReceipt, SentReceipt } from './Receipts.tsx';
 import {
   askedCards,
   askedQuestions,
@@ -94,7 +92,6 @@ import {
   withChange,
 } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
-import { HeaderProgress } from '../nav/progress.tsx';
 
 export const publicLogbookQuery = (slug: string) =>
   queryOptions({
@@ -389,14 +386,10 @@ function Cards({
   );
 
   if (send.isSuccess) {
-    return (
-      <FormColumn>
-        {'filed' in send.data ? (
-          <FiledReceipt title={title} reference={send.data.public_ref} />
-        ) : (
-          <SentReceipt email={email.trim()} title={title} />
-        )}
-      </FormColumn>
+    return 'filed' in send.data ? (
+      <FiledReceipt title={title} reference={send.data.public_ref} />
+    ) : (
+      <SentReceipt email={email.trim()} title={title} />
     );
   }
 
@@ -476,9 +469,10 @@ function Cards({
     <FormColumn>
       <Honeypot door={door} />
       <DoorPuzzle door={door} />
-      {/* The header rule takes a percentage; progress here is a fraction. */}
-      <HeaderProgress percent={progress === null ? null : Math.round(progress * 100)} />
-      <FilingProgress value={progress} />
+      <FilingProgress
+        value={progress}
+        question={step === 'intro' || step === 'review' ? null : at}
+      />
 
       {step === 'intro' ? (
         <Cover
@@ -579,7 +573,7 @@ function Cards({
       ) : null}
 
       {step === 'review' ? (
-        <CardFrame eyebrow={title} heading="Check your answers" focusKey={step}>
+        <CardFrame eyebrow={title} stepLabel="Review" heading="Check your answers" focusKey={step}>
           <p className="max-w-prose">
             {asksEmail
               ? 'Nothing is filed until you confirm it from your email. Check it over first.'
@@ -950,66 +944,6 @@ function ReviewRow({
           Change
         </Button>
       </dd>
-    </div>
-  );
-}
-
-/**
- * Sealed on arrival (E1): nothing to confirm and nothing to come back to. The
- * reference is shown here and only here (owner, 2026-10-24), beside the line
- * that says nobody has accepted it yet, so it is never read as approval.
- * Quiet, not teal: teal says a moderator confirmed something.
- */
-function FiledReceipt({ title, reference }: { title: string; reference: string }) {
-  return (
-    <Receipt heading={`Your report to “${title}” was received`}>
-      <Alert tone="done">
-        Your report’s reference is <span className="font-mono">{reference}</span>. A moderator reads
-        it before anything is public.
-      </Alert>
-    </Receipt>
-  );
-}
-
-function SentReceipt({ email, title }: { email: string; title: string }) {
-  return (
-    <Receipt heading="Check your email">
-      <p className="max-w-prose">
-        We have sent a link to <strong className="break-all">{email}</strong>. Nothing is filed in “
-        {title}” until you press the button on that page. The link works for 24 hours.
-      </p>
-      <p className="max-w-prose text-ink-alt">
-        If nothing arrives in a few minutes, look in your spam folder.
-      </p>
-    </Receipt>
-  );
-}
-
-/** The receipt replaces the form; focus moves to its heading. */
-function Receipt({ heading, children }: { heading: string; children: ReactNode }) {
-  const onDoor = useGateMode() === 'door';
-  const focused = useFocusOnMount<HTMLHeadingElement>();
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>File a report</Eyebrow>
-        <h1 ref={focused} tabIndex={-1} className="font-display text-title outline-none">
-          {heading}
-        </h1>
-      </div>
-      {children}
-      <TipOffer />
-      {/* Behind the password on a door, so not offered there. */}
-      {onDoor ? null : (
-        <p className="flex flex-wrap gap-x-2">
-          <Button asChild variant="quiet">
-            <a href="/">Back to the front page</a>
-          </Button>
-          <Button asChild variant="quiet">
-            <a href="/board">See the live board</a>
-          </Button>
-        </p>
-      )}
     </div>
   );
 }

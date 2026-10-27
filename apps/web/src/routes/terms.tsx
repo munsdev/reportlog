@@ -23,6 +23,7 @@ function TermsPage() {
   const site = useSite();
   return (
     <PublicPage
+      variant="band"
       title="Terms of use and contact"
       eyebrow="Legal"
       aside={

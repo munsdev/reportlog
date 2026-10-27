@@ -19,6 +19,7 @@ function AboutPage() {
   const name = plainSiteName(useSite().data);
   return (
     <PublicPage
+      variant="band"
       title={`About ${name}`}
       eyebrow="About"
       aside={

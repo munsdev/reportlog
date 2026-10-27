@@ -278,7 +278,7 @@ function Cards({ form }: { form: Form }) {
         {/* A box nobody can see. Filled in means a script. */}
         <Honeypot door={door} />
         <DoorPuzzle door={door} />
-        <FilingProgress value={progress} />
+        <FilingProgress value={progress} question={at === 0 ? null : at} />
         {step.kind === 'intro' ? (
           <Intro form={form} />
         ) : step.kind === 'question' ? (
@@ -376,6 +376,34 @@ function Sent({ erasureMailed, erasable }: { erasureMailed: boolean; erasable: b
  * The first card: the shared cover (decision 78). What happens to an entry is
  * said on the email card, where it matters.
  */
+/**
+ * What this list does with what is sent, said before the first question
+ * (mock-up tips.html): published or not, what it asks about you, how long it
+ * is kept. Each line is read from the list's own settings, so none of it can
+ * promise what the list does not do.
+ */
+function coverFacts(form: Form): { term: string; detail: string }[] {
+  const parts: string[] = [];
+  if (form.asks_email && form.email_when !== 'never') {
+    parts.push(
+      `Your email address${form.email_when === 'if-written' ? ', only if you write something' : ''}${
+        form.email_reason === 'reply' ? ', so we can write back' : ', so you can have it erased'
+      }.`,
+    );
+  }
+  if (form.personal_keys.length) parts.push('Some answers are about you and are kept apart.');
+  const asks = parts.length ? parts.join(' ') : 'Nothing. No name, no email.';
+  const kept =
+    form.personal_days === null
+      ? 'Until you erase it from the link in your email.'
+      : `${String(form.personal_days)} days, then deleted.`;
+  return [
+    { term: 'Published?', detail: 'No. Nothing sent here is published.' },
+    { term: 'What we ask about you', detail: asks },
+    { term: 'How long it is kept', detail: kept },
+  ];
+}
+
 function Intro({ form }: { form: Form }) {
   const site = useSite().data?.copy;
   return (
@@ -384,6 +412,7 @@ function Intro({ form }: { form: Form }) {
       title={form.title}
       blurb={form.blurb}
       cover={form.cover}
+      facts={coverFacts(form)}
       // On a door the site cannot be asked, so a cover that follows it draws nothing.
       site={
         site

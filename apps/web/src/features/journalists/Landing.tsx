@@ -16,6 +16,7 @@ export function JournalistsLanding() {
   return (
     <>
       <PublicPage
+      variant="band"
         title="For journalists"
         eyebrow="For journalists and researchers"
         lede="Get an email when new approved reports appear in the states you cover, or ask to read the links moderators have checked."

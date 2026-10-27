@@ -42,8 +42,7 @@ import { Label } from '../../components/ui/label.tsx';
 import { Pagination } from '../../components/ui/pagination.tsx';
 import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
 import { Select } from '../../components/ui/select.tsx';
-import { plainSiteName, useSite } from '../../components/ui/site.tsx';
-import { CountLine, Meta } from '../../components/ui/type.tsx';
+import { CountLine } from '../../components/ui/type.tsx';
 import { cn } from '../../lib/utils.ts';
 import { MapSlot } from '../maps/MapSlot.tsx';
 import { CountsOnlyPanel } from './Activity.tsx';
@@ -76,7 +75,6 @@ function csvHref(search: BoardSearch): string {
 export function BoardPage({ search }: { search: BoardSearch }) {
   const meta = useQuery(boardMetaQuery);
   const reports = useQuery(boardReportsQuery(search));
-  const site = plainSiteName(useSite().data);
   const chosen = meta.data?.published
     ? meta.data.logbooks.find((l) => l.slug === search.logbook)
     : undefined;

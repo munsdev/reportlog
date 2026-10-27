@@ -34,7 +34,26 @@ import { cn } from '@/lib/utils.ts';
 // ── the progress rule ───────────────────────────────────────────────────
 
 let progress: number | null = null;
+let question: number | null = null;
 const listeners = new Set<() => void>();
+
+/** Which question is on screen (1 for the first), or null; read by the card's step label. */
+export function setFilingQuestion(n: number | null): void {
+  if (n === question) return;
+  question = n;
+  for (const l of listeners) l();
+}
+
+function useFilingQuestion(): number | null {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => question,
+    () => null,
+  );
+}
 
 /**
  * How far through the form the person is, from 0 to 1, or null when no
@@ -73,15 +92,28 @@ export function useFilingProgress(): number | null {
 
 /**
  * Publishes the progress while a card is on screen and takes it away when
- * the form goes, and draws the hidden progressbar a screen reader reads.
+ * the form goes, and draws the progress bar at the top of the card (mock-up
+ * .progress). The bar is the page's `role="progressbar"`; it shows no
+ * numbers, and the card's step label says "Question 3", never "3 of 8".
  */
-export function FilingProgress({ value }: { value: number | null }) {
+export function FilingProgress({
+  value,
+  question: n = null,
+}: {
+  value: number | null;
+  /** Which question this is, for the card's step label. */
+  question?: number | null;
+}) {
   useEffect(() => {
     setFilingProgress(value);
   }, [value]);
+  useEffect(() => {
+    setFilingQuestion(n);
+  }, [n]);
   useEffect(
     () => () => {
       setFilingProgress(null);
+      setFilingQuestion(null);
     },
     [],
   );
@@ -94,21 +126,24 @@ export function FilingProgress({ value }: { value: number | null }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percent}
-      className="sr-only"
-    />
+      className="h-1.5 overflow-hidden rounded-[3px] bg-line"
+    >
+      <span className="block h-full bg-ink" style={{ width: `${String(percent)}%` }} />
+    </div>
   );
 }
 
 // ── the tab title ───────────────────────────────────────────────────────
 
 /**
- * "How did you vote, or try to vote? (2 of 8) · Our Town Votes": the question,
- * where it is among the cards still possible, and the site. On a door the
- * site's name is not asked for, and the software's stands in.
+ * "How did you vote, or try to vote? (question 2) · Our Town Votes": the
+ * question, which one it is, and the site. No total: it falls as you answer
+ * and reads as a trap. On a door the site's name is not asked for, and the
+ * software's stands in.
  */
 export function useCardTitle(title: string, place?: { n: number; of: number } | null) {
   const site = plainSiteName(useSite().data);
-  const where = place ? ` (${String(place.n)} of ${String(Math.max(place.n, place.of))})` : '';
+  const where = place ? ` (question ${String(place.n)})` : '';
   useEffect(() => {
     document.title = `${title}${where} · ${site}`;
   }, [title, where, site]);
@@ -130,8 +165,10 @@ export function useFocusOnMount<T extends HTMLElement>() {
 // ── the card ────────────────────────────────────────────────────────────
 
 export interface CardFrameProps {
-  /** The logbook's or list's title. */
+  /** The logbook's or list's title: shown where no step label applies. */
   eyebrow: ReactNode;
+  /** The card's step label ("Review", "Optional"), instead of "Question n". */
+  stepLabel?: ReactNode;
   heading: ReactNode;
   /** Changes when the card does: the heading takes focus again. */
   focusKey: string;
@@ -148,6 +185,7 @@ export interface CardFrameProps {
 
 export function CardFrame({
   eyebrow,
+  stepLabel,
   heading,
   focusKey,
   headingId,
@@ -158,6 +196,8 @@ export function CardFrame({
   children,
 }: CardFrameProps) {
   const ref = useRef<HTMLHeadingElement>(null);
+  const n = useFilingQuestion();
+  const step = stepLabel ?? (n === null ? eyebrow : `Question ${String(n)}`);
   useEffect(() => {
     ref.current?.focus();
     // jsdom has no layout to scroll; a browser goes back to the top.
@@ -166,7 +206,7 @@ export function CardFrame({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <Eyebrow>{eyebrow}</Eyebrow>
+        <Eyebrow>{step}</Eyebrow>
         <h1
           ref={ref}
           id={headingId}
