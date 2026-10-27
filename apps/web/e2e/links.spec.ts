@@ -23,9 +23,13 @@ async function makeTipList(page: Page, project: string): Promise<string> {
   await page.getByLabel('Title (optional)').fill(`Links ${slug}`);
   await page.getByLabel('Web address (optional)').fill(slug);
   await page.getByRole('button', { name: 'Make the list' }).click();
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page.getByRole('button', { name: 'Save the settings' }).click();
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
   return slug;
 }
 

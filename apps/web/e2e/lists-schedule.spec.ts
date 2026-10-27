@@ -28,8 +28,17 @@ async function visitorSees(browser: Browser, slug: string, text: RegExp | string
   await context.close();
 }
 
+async function edit(page: Page) {
+  // The settings are a closed panel until Edit; an error leaves it open.
+  const open = page.getByRole('button', { name: 'Edit Settings' });
+  if (await open.isVisible()) await open.click();
+}
+
 async function save(page: Page) {
-  await page.getByRole('button', { name: 'Save the settings' }).click();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
 }
 
 test('opening times on the editor screen decide when the form takes entries', async ({
@@ -52,9 +61,9 @@ test('opening times on the editor screen decide when the form takes entries', as
 
   // Opens tomorrow: not yet, and the visitor is told when.
   const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await edit(page);
   await page.getByLabel('Opens').fill(box(tomorrow));
   await save(page);
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await expect(page.getByText(/It is not taking entries yet\. It opens on/)).toBeVisible();
   const stored = (await (await page.request.get(`/api/admin/lists/${String(id)}`)).json()) as {
     opens_at: string | null;
@@ -64,24 +73,26 @@ test('opening times on the editor screen decide when the form takes entries', as
   await visitorSees(browser, slug, /This form opens on/);
 
   // A list has to open before it closes: the server says so, and nothing moves.
+  await edit(page);
   await page.getByLabel('Closes').fill(box(new Date(Date.now() + 60 * 60 * 1000)));
   await save(page);
   await expect(page.getByText(/A list has to open before it closes/)).toBeVisible();
 
   // No opening time, closed an hour ago.
   await page.reload();
+  await edit(page);
   await page.getByLabel('Opens').fill('');
+  await edit(page);
   await page.getByLabel('Closes').fill(box(new Date(Date.now() - 60 * 60 * 1000)));
   await save(page);
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   await expect(page.getByText(/It is not taking entries\. It closed on/)).toBeVisible();
   await visitorSees(browser, slug, 'This form is not taking anything at the moment.');
 
   // Saving another setting leaves the times as they are.
   await page.reload();
+  await edit(page);
   await page.getByLabel('Description').fill('Times stay put.');
   await save(page);
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
   const after = (await (await page.request.get(`/api/admin/lists/${String(id)}`)).json()) as {
     opens_at: string | null;
     closes_at: string | null;
@@ -90,6 +101,7 @@ test('opening times on the editor screen decide when the form takes entries', as
   expect(after.closes_at).not.toBeNull();
 
   // Cleared, it takes entries again.
+  await edit(page);
   await page.getByLabel('Closes').fill('');
   await save(page);
   await expect(page.getByText('It is taking entries.')).toBeVisible();

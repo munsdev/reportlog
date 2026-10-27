@@ -26,11 +26,14 @@ import { canFilter, describeCondition, fieldType } from '@reportlog/fields';
 import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Button, buttonVariants } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { Chip } from '../../components/ui/chip.tsx';
 import { KeyValueList } from '../../components/ui/key-value-list.tsx';
+import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
+import { SettingPanels } from '../../components/ui/setting-panel.tsx';
+import { GuardedPanel } from '../settings/panels.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -94,23 +97,25 @@ function Editor({ lb }: { lb: LogbookDetail }) {
         <Downloads lb={lb} launched={launched} />
       </div>
 
-      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
-        <Details lb={lb} refresh={refresh} />
-        <CoverPanel
-          kind="logbook"
-          cover={lb.cover}
-          save={async (cover) => {
-            await call(updateLogbook, { params: { id: lb.id }, body: { cover } });
-            await refresh();
-          }}
-        />
-        <EmailRule lb={lb} refresh={refresh} />
-        <PublicationRule lb={lb} refresh={refresh} />
-        <FrontPageSwitch lb={lb} refresh={refresh} />
-        {launched && <Lifecycle lb={lb} refresh={refresh} />}
-        <OutsidePanel lb={lb} refresh={refresh} />
-        <FreezePanel lb={lb} refresh={refresh} />
-      </div>
+      <SettingPanels>
+        <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+          <Details lb={lb} refresh={refresh} />
+          <CoverPanel
+            kind="logbook"
+            cover={lb.cover}
+            save={async (cover) => {
+              await call(updateLogbook, { params: { id: lb.id }, body: { cover } });
+              await refresh();
+            }}
+          />
+          <EmailRule lb={lb} refresh={refresh} />
+          <PublicationRule lb={lb} refresh={refresh} />
+          <FrontPageSwitch lb={lb} refresh={refresh} />
+          {launched && <Lifecycle lb={lb} refresh={refresh} />}
+          <OutsidePanel lb={lb} refresh={refresh} />
+          <FreezePanel lb={lb} refresh={refresh} />
+        </div>
+      </SettingPanels>
 
       <Panel title="Questions">
         {launched && (
@@ -185,6 +190,14 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
   );
 }
 
+/**
+ * The five settings below are the mock-up's closed panels: a summary and a
+ * Change button; open, a form with Save and Cancel inside it, one open at a
+ * time (SettingPanels). Each keeps the save call it had before; only the
+ * presentation moved. `GuardedPanel` also names unsaved changes if somebody
+ * leaves the page.
+ */
+
 function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
   const [title, setTitle] = useState(lb.title);
   const [blurb, setBlurb] = useState(lb.blurb ?? '');
@@ -201,19 +214,32 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
       }),
     onSuccess: refresh,
   });
+  const dirty = title !== lb.title || blurb !== (lb.blurb ?? '') || short !== (lb.short_slug ?? '');
+  const resetSave = save.reset;
+  const reset = useCallback(() => {
+    setTitle(lb.title);
+    setBlurb(lb.blurb ?? '');
+    setShort(lb.short_slug ?? '');
+    resetSave();
+  }, [lb.title, lb.blurb, lb.short_slug, resetSave]);
   return (
-    <Panel title="Title and description">
+    <GuardedPanel
+      id="details"
+      title="Title and description"
+      summary={[
+        { key: 'Title', value: lb.title },
+        { key: 'Description', value: lb.blurb ?? 'None' },
+        { key: 'Short address', value: lb.short_slug ? `/${lb.short_slug}` : 'None' },
+      ]}
+      dirty={dirty}
+      onSave={() => save.mutateAsync()}
+      onCancel={reset}
+    >
       <p className="text-sm text-muted">
         Neither is part of the questions, so both can change at any time. The web address /file/
         {lb.slug} cannot, but the short address below can.
       </p>
-      <form
-        className="space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save.mutate();
-        }}
-      >
+      <div className="space-y-3">
         <Field label="Title">
           {(p) => (
             <TextInput
@@ -253,30 +279,57 @@ function Details({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<vo
           )}
         </Field>
         <Problem error={save.error} />
-        <Button type="submit" variant="secondary" disabled={save.isPending}>
-          Save
-        </Button>
-        {save.isSuccess && <p role="status">Saved.</p>}
-      </form>
-    </Panel>
+      </div>
+    </GuardedPanel>
   );
 }
 
+type EmailChoice = 'never' | 'optional' | 'always';
+
 /**
- * WHETHER THE FORM ASKS FOR AN EMAIL (owner decision E1). Derived from the
- * questions: one somebody types into, or files, and it asks. The operator can
- * only add the address to a form that would not ask; never take it away from
- * one that must. Not part of the questions, so it can change after launch.
+ * WHETHER THE FORM ASKS FOR AN EMAIL (owner decision E1, D8/D20). Derived from
+ * the questions: one somebody types into, or files, and it asks. The operator
+ * can only add the address to a form that would not ask (required, or an
+ * optional card that can be skipped); never take it away from one that must.
+ * Not part of the questions, so it can change after launch.
  */
 function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const fromQuestions = lb.asks_email && !lb.email_required;
+  const saved: EmailChoice = lb.email_required
+    ? 'always'
+    : lb.email_optional
+      ? 'optional'
+      : 'never';
+  const [choice, setChoice] = useState<EmailChoice>(saved);
   const save = useMutation({
-    mutationFn: (on: boolean) =>
-      call(updateLogbook, { params: { id: lb.id }, body: { email_required: on } }),
+    mutationFn: () =>
+      call(updateLogbook, {
+        params: { id: lb.id },
+        body: { email_required: choice === 'always', email_optional: choice === 'optional' },
+      }),
     onSuccess: refresh,
   });
-  const fromQuestions = lb.asks_email && !lb.email_required;
+  const resetSave = save.reset;
+  const reset = useCallback(() => {
+    setChoice(saved);
+    resetSave();
+  }, [saved, resetSave]);
+  const words: Record<EmailChoice, string> = {
+    never: 'Never',
+    optional: 'Optional, can be skipped',
+    always: 'Always',
+  };
   return (
-    <Panel title="Asking for an email address">
+    <GuardedPanel
+      id="email"
+      title="Asking for an email address"
+      summary={[
+        { key: 'Asks', value: fromQuestions ? 'Always (its questions need it)' : words[saved] },
+      ]}
+      dirty={choice !== saved}
+      onSave={() => save.mutateAsync()}
+      onCancel={reset}
+    >
       <p className="text-sm text-muted">
         {lb.asks_email
           ? 'This form asks every reporter for an email address. Nothing is filed until they confirm it from the link we send, and they can sign in later to correct or withdraw their report.'
@@ -287,18 +340,32 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           It asks because a question lets people type, or takes files. That cannot be switched off.
         </p>
       ) : (
-        <Check
-          label="Ask for an email address anyway"
-          checked={lb.email_required}
-          disabled={save.isPending}
-          help="For a form of choices only, where you still want to reach reporters."
-          onCheckedChange={(on) => {
-            save.mutate(on);
+        <RadioGroup
+          aria-label="Asking for an email address"
+          value={choice}
+          onValueChange={(v) => {
+            setChoice(v as EmailChoice);
           }}
-        />
+        >
+          <RadioOption
+            value="never"
+            label="Never"
+            hint="For a form of choices only. Reports are filed on arrival."
+          />
+          <RadioOption
+            value="optional"
+            label="Optional, can be skipped"
+            hint="An email card at the end. Left blank, the report is filed on arrival; with an address, it is held until the reporter follows the link."
+          />
+          <RadioOption
+            value="always"
+            label="Always"
+            hint="Every reporter gives an address and confirms it from the link we send."
+          />
+        </RadioGroup>
       )}
       <Problem error={save.error} />
-    </Panel>
+    </GuardedPanel>
   );
 }
 
@@ -309,13 +376,33 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
  * after launch.
  */
 function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const [on, setOn] = useState(lb.publish_by_terms);
   const save = useMutation({
-    mutationFn: (on: boolean) =>
+    mutationFn: () =>
       call(updateLogbook, { params: { id: lb.id }, body: { publish_by_terms: on } }),
     onSuccess: refresh,
   });
+  const resetSave = save.reset;
+  const reset = useCallback(() => {
+    setOn(lb.publish_by_terms);
+    resetSave();
+  }, [lb.publish_by_terms, resetSave]);
   return (
-    <Panel title="Publishing">
+    <GuardedPanel
+      id="publishing"
+      title="Publishing"
+      summary={[
+        {
+          key: 'Rule',
+          value: lb.publish_by_terms
+            ? 'Publishing is a condition of filing'
+            : 'Reporters are asked',
+        },
+      ]}
+      dirty={on !== lb.publish_by_terms}
+      onSave={() => save.mutateAsync()}
+      onCancel={reset}
+    >
       <p className="text-sm text-muted">
         {lb.publish_by_terms
           ? 'Reporters are not asked whether their report may be published. The last card tells them that filing here means it may be, once a moderator approves it.'
@@ -323,15 +410,12 @@ function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
       </p>
       <Check
         label="Publishing is a condition of filing"
-        checked={lb.publish_by_terms}
-        disabled={save.isPending}
+        checked={on}
         help="For a logbook that exists to be public and asks for nothing personal. Each report records which of the two it was filed under."
-        onCheckedChange={(on) => {
-          save.mutate(on);
-        }}
+        onCheckedChange={setOn}
       />
       <Problem error={save.error} />
-    </Panel>
+    </GuardedPanel>
   );
 }
 
@@ -342,24 +426,33 @@ function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
  * if the page's buttons name it (Logbooks, The front page's buttons).
  */
 function FrontPageSwitch({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
+  const [on, setOn] = useState(lb.show_on_front);
   const save = useMutation({
-    mutationFn: (on: boolean) =>
-      call(updateLogbook, { params: { id: lb.id }, body: { show_on_front: on } }),
+    mutationFn: () => call(updateLogbook, { params: { id: lb.id }, body: { show_on_front: on } }),
     onSuccess: refresh,
   });
+  const resetSave = save.reset;
+  const reset = useCallback(() => {
+    setOn(lb.show_on_front);
+    resetSave();
+  }, [lb.show_on_front, resetSave]);
   return (
-    <Panel title="On the front page">
+    <GuardedPanel
+      id="front"
+      title="On the front page"
+      summary={[{ key: 'Button', value: lb.show_on_front ? 'Shown while open' : 'Not shown' }]}
+      dirty={on !== lb.show_on_front}
+      onSave={() => save.mutateAsync()}
+      onCancel={reset}
+    >
       <Check
         label="Show on the front page"
-        checked={lb.show_on_front}
-        disabled={save.isPending}
+        checked={on}
         help="While it is open, it is a button on the front page, added at the end if the page’s buttons do not place it. Off, it is not shown there, whatever the buttons say."
-        onCheckedChange={(on) => {
-          save.mutate(on);
-        }}
+        onCheckedChange={setOn}
       />
       <Problem error={save.error} />
-    </Panel>
+    </GuardedPanel>
   );
 }
 

@@ -74,3 +74,35 @@ export const setDoorSettings = defineRoute({
   body: z.object({ min_form_seconds: z.number().optional() }),
   response: DoorSettings,
 });
+
+// ── what a report's email is held to (decisions D4, D5, D15) ─────────────
+
+export const FilingLimits = z.object({
+  /** How many days a confirmation link works. */
+  link_days: z.number().int(),
+  /** The calendar day every report email is deleted, YYYY-MM-DD. */
+  contacts_delete_on: z.string(),
+  /** Reports one email address can file in a day. */
+  address_daily_cap: z.number().int(),
+});
+export type FilingLimits = z.infer<typeof FilingLimits>;
+
+export const getFilingLimits = defineRoute({
+  method: 'GET',
+  path: '/api/admin/filing-limits',
+  summary:
+    'How long a confirmation link works, the day report emails are deleted, and the daily cap per address.',
+  response: FilingLimits,
+});
+
+export const setFilingLimits = defineRoute({
+  method: 'PUT',
+  path: '/api/admin/filing-limits',
+  summary: 'Change any of the three; one left out is left alone.',
+  body: z.object({
+    link_days: z.number().int().optional(),
+    contacts_delete_on: z.string().optional(),
+    address_daily_cap: z.number().int().optional(),
+  }),
+  response: FilingLimits,
+});

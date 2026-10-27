@@ -12,10 +12,16 @@
  * One setting on its own page: the field is open from the start, and the
  * Save bar appears once there is a change to save.
  */
-import { getDoorSettings, setDoorSettings } from '@reportlog/contracts';
+import {
+  getDoorSettings,
+  getFilingLimits,
+  setDoorSettings,
+  setFilingLimits,
+} from '@reportlog/contracts';
+import type { FilingLimits } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
@@ -25,12 +31,17 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SaveBar } from '@/components/ui/save-bar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
-import { SettingsFrame } from '../../../features/settings/panels.tsx';
+import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
 import { useUnsavedChanges } from './-editor.tsx';
 
 const doorQuery = queryOptions({
   queryKey: ['admin', 'door'],
   queryFn: ({ signal }) => call(getDoorSettings, { signal }),
+});
+
+const limitsQuery = queryOptions({
+  queryKey: ['admin', 'filing-limits'],
+  queryFn: ({ signal }) => call(getFilingLimits, { signal }),
 });
 
 export const Route = createFileRoute('/(staff)/settings/forms')({
@@ -113,7 +124,139 @@ export function MinFormTime({ seconds }: { seconds: number }) {
   );
 }
 
+/** A whole number from 1 to `max`, or the sentence saying what it must be. */
+export function wholeProblem(text: string, max: number, what: string): string | null {
+  const t = text.trim();
+  if (!/^\d{1,4}$/.test(t) || Number(t) < 1 || Number(t) > max) {
+    return `${what} must be a whole number from 1 to ${String(max)}.`;
+  }
+  return null;
+}
+
+const DATE_WORDS = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+/**
+ * Email on reports: how long a confirmation link works, the day every report
+ * email is deleted, and how many reports one address may file in a day. A
+ * closed panel until Change, like the other settings; never sealed.
+ */
+export function EmailOnReports({ limits }: { limits: FilingLimits }) {
+  const client = useQueryClient();
+  const toast = useToast();
+  const [days, setDays] = useState(String(limits.link_days));
+  const [on, setOn] = useState(limits.contacts_delete_on);
+  const [cap, setCap] = useState(String(limits.address_daily_cap));
+  const problems = [
+    wholeProblem(days, 365, 'Days a link works'),
+    /^\d{4}-\d{2}-\d{2}$/.test(on.trim())
+      ? null
+      : 'Write the date as year-month-day, like 2027-01-31.',
+    wholeProblem(cap, 1000, 'Reports one address can file a day'),
+  ];
+  const dirty =
+    days.trim() !== String(limits.link_days) ||
+    on.trim() !== limits.contacts_delete_on ||
+    cap.trim() !== String(limits.address_daily_cap);
+  const save = useMutation({
+    mutationFn: () =>
+      call(setFilingLimits, {
+        body: {
+          link_days: Number(days.trim()),
+          contacts_delete_on: on.trim(),
+          address_daily_cap: Number(cap.trim()),
+        },
+      }),
+    onSuccess: (next) => {
+      client.setQueryData(limitsQuery.queryKey, next);
+      toast.show('Saved. New reports use these from now.');
+    },
+  });
+  const resetSave = save.reset;
+  const cancel = useCallback(() => {
+    setDays(String(limits.link_days));
+    setOn(limits.contacts_delete_on);
+    setCap(String(limits.address_daily_cap));
+    resetSave();
+  }, [limits, resetSave]);
+  const firstProblem = problems.find((p) => p !== null) ?? null;
+  return (
+    <GuardedPanel
+      id="email-on-reports"
+      title="Email on reports"
+      summary={[
+        { key: 'A confirmation link works for', value: `${String(limits.link_days)} days` },
+        { key: 'Every report email is deleted on', value: DATE_WORDS(limits.contacts_delete_on) },
+        { key: 'Reports one address can file a day', value: String(limits.address_daily_cap) },
+      ]}
+      dirty={dirty}
+      onSave={() => {
+        if (firstProblem) return false;
+        return save.mutateAsync();
+      }}
+      onCancel={cancel}
+    >
+      <p className="text-sm text-muted">
+        Asked only when somebody writes something or adds a link; optional otherwise. A report with
+        an email is filed when its link is pressed.
+      </p>
+      <Field>
+        <Label>Days a confirmation link works</Label>
+        <FieldDescription>
+          A report waiting on its link is deleted whole when the link lapses.
+        </FieldDescription>
+        <Input
+          inputMode="numeric"
+          value={days}
+          onChange={(e) => {
+            setDays(e.target.value);
+            save.reset();
+          }}
+        />
+        <FieldError>{problems[0]}</FieldError>
+      </Field>
+      <Field>
+        <Label>Delete every report email on</Label>
+        <FieldDescription>
+          Shown to reporters and in the privacy notice. Year-month-day, like 2027-01-31.
+        </FieldDescription>
+        <Input
+          value={on}
+          onChange={(e) => {
+            setOn(e.target.value);
+            save.reset();
+          }}
+        />
+        <FieldError>{problems[1]}</FieldError>
+      </Field>
+      <Field>
+        <Label>Reports one address can file a day</Label>
+        <Input
+          inputMode="numeric"
+          value={cap}
+          onChange={(e) => {
+            setCap(e.target.value);
+            save.reset();
+          }}
+        />
+        <FieldError>{problems[2]}</FieldError>
+      </Field>
+      {save.isError ? (
+        <Alert tone="serious" title="That was not saved.">
+          {save.error.message}
+        </Alert>
+      ) : null}
+    </GuardedPanel>
+  );
+}
+
 function FormsPage() {
+  const limits = useQuery(limitsQuery);
   const state = useQuery(doorQuery);
   return (
     <StaffPage
@@ -132,6 +275,7 @@ function FormsPage() {
           {state.error.message}
         </Alert>
       ) : null}
+      {limits.data ? <EmailOnReports limits={limits.data} /> : null}
       {state.data ? (
         <Card heading="The minimum time on a form">
           <MinFormTime seconds={state.data.min_form_seconds} />

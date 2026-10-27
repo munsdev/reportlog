@@ -31,9 +31,13 @@ async function makeTipList(page: Page, project: string): Promise<{ slug: string;
   await page.getByLabel('Web address (optional)').fill(slug);
   await page.getByRole('button', { name: 'Make the list' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page.getByRole('button', { name: 'Save the settings' }).click();
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
   return { slug, title };
 }
 
@@ -124,9 +128,13 @@ test('an address named to receive entries agrees by its emailed link, and not by
   const { title } = await makeTipList(page, info.project.name);
   const to = `${unique('desk', info.project.name)}@example.org`;
   const before = countTo(to);
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByRole('checkbox', { name: 'Email each new entry' }).click();
   await page.getByLabel('Send them to (optional)').fill(to);
-  await page.getByRole('button', { name: 'Save the settings' }).click();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
   await expect(page.getByText(/A link was emailed to the new address/)).toBeVisible();
 
   const mail = await lastMessageTo(to, before);
@@ -153,9 +161,13 @@ test('a moderator approves the entries ticked on screen, and a published count m
   browser,
 }, info) => {
   const { slug } = await makeTipList(page, info.project.name);
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByRole('checkbox', { name: 'Publish the counts' }).click();
-  await page.getByRole('button', { name: 'Save the settings' }).click();
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
 
   // Two entries with nothing personal in them: a link and two choices need
   // no address, so none is asked for.
@@ -215,10 +227,15 @@ test('a contact list that writes back says so on the form, and a reviewer can sh
   await page.getByRole('button', { name: 'Make the list' }).click();
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
   // The contact starting point comes with the switch on.
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await expect(page.getByRole('checkbox', { name: 'We’ll write back' })).toBeChecked();
+  await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page.getByRole('button', { name: 'Save the settings' }).click();
-  await expect(page.getByText('Saved.', { exact: true })).toBeVisible();
+  await page
+    .getByRole('region', { name: 'Save changes' })
+    .getByRole('button', { name: 'Save', exact: true })
+    .click();
+  await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
 
   const email = `${unique('writer', info.project.name)}@example.org`;
   const v = await visitor(browser);
