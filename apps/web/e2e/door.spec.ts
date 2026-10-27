@@ -95,7 +95,7 @@ test('the puzzle is solved in the page; a refusal is one plain sentence, and sen
   await hidden.fill('', { force: true });
   await expect(send).toBeEnabled({ timeout: 30_000 });
   await send.click();
-  await expect(v.getByRole('heading', { level: 1, name: /was received/ })).toBeVisible();
+  await expect(v.getByRole('heading', { level: 1, name: /on the record/ })).toBeVisible();
   await expectAccessible(v, 'filed on arrival');
 
   // The worker that solved it is this site's own file, and nothing went elsewhere.
