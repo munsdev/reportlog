@@ -15,11 +15,13 @@ import { eraseMyWritten, getMyWritten, setMyPermission } from '@reportlog/contra
 import type { FormQuestion, MyWritten } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
 import { call } from '@/lib/api.ts';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Check } from '../../mockup/Choices.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Switch } from '../../mockup/Switch.tsx';
 import type { RawAnswers } from './walk.ts';
 
 export const myWrittenQuery = (threadId: string) =>
@@ -87,86 +89,78 @@ export function WrittenPanel({
   const anything = written.texts.length > 0 || written.links.length > 0;
   if (!anything && !written.erased.length) return null;
   return (
-    <Card heading="What you wrote · not published">
+    <Panel title="What you wrote · not published">
       {written.texts.map((t) => (
-        <div key={t.field_key} className="flex flex-col gap-1">
-          <p className="max-w-prose whitespace-pre-wrap">{t.text}</p>
-          <p className="text-sm text-ink-alt">{checkLine(t.outcome, t.checked_at)}</p>
+        <div key={t.field_key}>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{t.text}</p>
+          <p className="m">{checkLine(t.outcome, t.checked_at)}</p>
         </div>
       ))}
       {written.links.length ? (
-        <div className="flex flex-col gap-1">
-          <p className="text-sm text-ink-alt">
-            {written.links.length === 1 ? '1 link' : `${String(written.links.length)} links`}:
-          </p>
-          <ul className="flex flex-col gap-1">
-            {written.links.map((l) => (
-              <li key={`${l.field_key}-${l.url}`}>
+        <>
+          <p className="m">
+            {written.links.length === 1 ? '1 link' : `${String(written.links.length)} links`}:{' '}
+            {written.links.map((l, i) => (
+              <span key={`${l.field_key}-${l.url}`}>
+                {i > 0 ? ', ' : ''}
                 {/* Text, not an anchor: this site never opens a link. */}
-                <span className="font-mono break-all">{l.url}</span>
-                <span className="block text-sm text-ink-alt">
-                  {checkLine(l.outcome, l.checked_at)}
-                </span>
-              </li>
+                <span className="mono">{l.url}</span>
+              </span>
             ))}
-          </ul>
-        </div>
+          </p>
+          {written.links.map((l) => (
+            <p className="m" key={`c-${l.field_key}-${l.url}`}>
+              {checkLine(l.outcome, l.checked_at)}
+            </p>
+          ))}
+        </>
       ) : null}
       {anything ? (
-        <CheckOption
-          id="mine-share"
-          label="Vetted journalists may read it"
-          hint="Only after a moderator has checked it. You can turn this off any time."
+        <Switch
+          title="Vetted journalists may read it"
+          sub="Only after a moderator has checked it. You can turn this off any time."
           // Read back from the server, never trusted from the click.
-          checked={written.shared}
+          on={written.shared}
           disabled={share.isPending}
-          onCheckedChange={(on) => {
-            share.mutate(on === true);
+          onChange={(on) => {
+            share.mutate(on);
           }}
         />
       ) : null}
-      {share.isError ? <Alert tone="serious">{share.error.message}</Alert> : null}
+      <ErrorLine error={share.error} />
       {written.erased.map((e) => (
-        <Alert
-          key={`${e.kind}-${e.field_key}-${e.erased_at}`}
-          tone="note"
-          title={e.kind === 'private_text' ? 'Written account erased' : 'Link erased'}
-        >
+        <Note key={`${e.kind}-${e.field_key}-${e.erased_at}`}>
+          <b>{e.kind === 'private_text' ? 'Written account erased' : 'Link erased'}</b>{' '}
           {new Date(e.erased_at).toLocaleString()}. It is gone; this marker stays.
-        </Alert>
+        </Note>
       ))}
       {anything ? (
-        <section aria-labelledby="erase-written" className="flex flex-col gap-3">
-          <h3 id="erase-written" className="font-semibold">
-            Erase what you wrote
-          </h3>
-          <p className="text-ink-alt">
+        <>
+          <h3>Erase what you wrote</h3>
+          <p className="muted">
             The words and links are deleted. The record keeps a marker that something was erased,
             and when.
           </p>
-          <CheckOption
-            id="erase-written-sure"
-            label="I understand this cannot be undone."
+          <Check
             checked={sure}
-            onCheckedChange={(on) => {
-              setSure(on === true);
+            onChange={(e) => {
+              setSure(e.target.checked);
             }}
-          />
-          {erase.isError ? <Alert tone="serious">{erase.error.message}</Alert> : null}
-          <div>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!sure || erase.isPending}
-              onClick={() => {
-                erase.mutate();
-              }}
-            >
-              Erase what I wrote
-            </Button>
-          </div>
-        </section>
+          >
+            I understand this cannot be undone.
+          </Check>
+          <ErrorLine error={erase.error} />
+          <Btn
+            kind="bad"
+            disabled={!sure || erase.isPending}
+            onClick={() => {
+              erase.mutate();
+            }}
+          >
+            Erase what I wrote
+          </Btn>
+        </>
       ) : null}
-    </Card>
+    </Panel>
   );
 }

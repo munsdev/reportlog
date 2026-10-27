@@ -317,6 +317,7 @@ export function AddAuthenticatorApp({
   const [code, setCode] = useState('');
   const [keySaid, setKeySaid] = useState<string | null>(null);
   const errorId = useId();
+  const codeId = useId();
   const begin = useMutation({ mutationFn: () => call(beginTotp) });
   const confirm = useMutation({
     mutationFn: () => call(confirmTotp, { body: { code } }),
@@ -339,62 +340,51 @@ export function AddAuthenticatorApp({
         confirm.mutate();
       }}
     >
-      <ol className="list-decimal space-y-4 pl-6">
-        <li className="space-y-3">
-          <p>Open your authenticator app and scan this code.</p>
-          <QrCode
-            text={begin.data.uri}
-            label="QR code to add this site to your authenticator app"
-          />
-          <p>
-            Or type this key into the app:{' '}
-            <code className="font-mono break-all" data-testid="totp-secret">
-              {grouped(secret)}
-            </code>
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => {
-                void copied(secret).then((ok) => {
-                  setKeySaid(
-                    ok ? 'Copied.' : 'This browser would not copy it. Select the key instead.',
-                  );
-                });
-              }}
-            >
-              Copy the key
-            </Button>
-            <span role="status" className="text-sm text-ink-alt">
-              {keySaid}
-            </span>
-          </div>
-        </li>
-        <li>
-          <TextField
-            label="The six-digit code the app shows now"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            maxLength={6}
-            required
-            inputClassName={codeInputClass}
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value.replace(/\D/g, ''));
+      <p className="muted">Open your authenticator app and scan this code.</p>
+      <QrCode text={begin.data.uri} label="QR code to add this site to your authenticator app" />
+      <div className="copybox">
+        <div className="row">
+          <code data-testid="totp-secret">{grouped(secret)}</code>
+          <button
+            className="btn sm flat"
+            type="button"
+            onClick={() => {
+              void copied(secret).then((ok) => {
+                setKeySaid(
+                  ok ? 'Copied.' : 'This browser would not copy it. Select the key instead.',
+                );
+              });
             }}
-            {...(confirm.error
-              ? { 'aria-invalid': true as const, 'aria-describedby': errorId }
-              : {})}
-          />
-        </li>
-      </ol>
+          >
+            Copy the key
+          </button>
+        </div>
+      </div>
+      <span role="status" className="m">
+        {keySaid}
+      </span>
+      <div className="field">
+        <label htmlFor={codeId}>The six-digit code the app shows now</label>
+        <input
+          id={codeId}
+          className="input"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          required
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value.replace(/\D/g, ''));
+          }}
+          {...(confirm.error ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {})}
+        />
+      </div>
       <ErrorText error={confirm.error} id={errorId} />
-      <div>
-        <Button type="submit" busy={confirm.isPending} busyLabel="Checking…">
-          Turn it on
-        </Button>
+      <div className="acts">
+        <button className="btn sm flat ink" type="submit" disabled={confirm.isPending}>
+          {confirm.isPending ? 'Checking…' : 'Turn it on'}
+        </button>
       </div>
     </form>
   );
@@ -406,6 +396,7 @@ export function AddPasskey({
   onAdded: (codes: string[] | null) => void | Promise<void>;
 }) {
   const [name, setName] = useState('');
+  const nameId = useId();
   const add = useMutation({
     mutationFn: async () => {
       const options = await call(passkeyRegistration);
@@ -424,21 +415,25 @@ export function AddPasskey({
         add.mutate();
       }}
     >
-      <TextField
-        label="A name for this passkey"
-        hint="So you can tell your passkeys apart later, like “Work laptop”."
-        maxLength={60}
-        required
-        value={name}
-        onChange={(e) => {
-          setName(e.target.value);
-        }}
-      />
+      <div className="field">
+        <label htmlFor={nameId}>A name for this passkey</label>
+        <input
+          id={nameId}
+          className="input"
+          maxLength={60}
+          required
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+          }}
+        />
+        <span className="help">So you can tell your passkeys apart later, like “Work laptop”.</span>
+      </div>
       <ErrorText error={add.error} />
-      <div>
-        <Button type="submit" busy={add.isPending} busyLabel="Waiting for the browser…">
-          Add the passkey
-        </Button>
+      <div className="acts">
+        <button className="btn sm flat ink" type="submit" disabled={add.isPending}>
+          {add.isPending ? 'Waiting for the browser…' : 'Add the passkey'}
+        </button>
       </div>
     </form>
   );

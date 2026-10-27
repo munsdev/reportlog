@@ -1,0 +1,6 @@
+/* A form inside a panel is not a box of its own: its fields are laid out by
+   the panel's own grid, exactly as the mock-up's fields are (they sit directly
+   in the panel there; a real form needs the element around them). */
+.panel > form {
+  display: contents;
+}

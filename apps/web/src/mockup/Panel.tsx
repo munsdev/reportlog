@@ -1,3 +1,5 @@
+import './panel.css';
+
 import type { ReactNode } from 'react';
 
 /** The mock-up's `.panel` (staff.py `panel`): a titled box. `kind` is deep, quiet, danger or closed. */
