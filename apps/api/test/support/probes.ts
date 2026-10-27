@@ -136,7 +136,10 @@ export async function collectFacts(
   }
   const responses: Facts['responses'] = {};
   for (const url of urls) {
-    const { text: _text, ...kept } = await ask(app, url);
+    const asked = await ask(app, url);
+    // The body is compared through its hash, not kept whole.
+    const kept: Omit<typeof asked, 'text'> & { text?: string } = { ...asked };
+    delete kept.text;
     responses[url] = kept;
   }
   return {

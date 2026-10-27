@@ -86,4 +86,4 @@ only shows nothing, and passes.
 
 ## Suite totals
 
-See the final report.
+Lean checks only (owner order): api tsc clean, eslint and prettier clean on changed files, migration-guard unit test 10 green. The db suite (upgrade, sweep, fixture tests) was NOT run by this worker; the integrator runs it.
