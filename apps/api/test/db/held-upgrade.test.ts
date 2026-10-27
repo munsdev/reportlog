@@ -203,7 +203,13 @@ describe('the held-values migration on a database that already has reports', () 
     }
 
     const applied = await migrate(old.url);
-    expect(applied.applied).toEqual([HELD_MIGRATION]);
+    // The held-values migration and every later one: other workers' migrations
+    // land after it, and the point is that the whole tail changes nothing
+    // sealed. Read from the folder so a new migration does not rot this list.
+    const newer = (await readdir(MIGRATIONS_DIR))
+      .filter((f) => f.endsWith('.sql') && f >= HELD_MIGRATION)
+      .sort();
+    expect(applied.applied).toEqual(newer);
 
     const after = await snapshot(db);
     expect(after).toEqual(before);

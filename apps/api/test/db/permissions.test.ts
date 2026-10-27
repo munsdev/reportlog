@@ -60,6 +60,7 @@ describe('nothing granted until somebody grants it', () => {
       contact_passing: false,
       attachment_publication: false,
       evidence_request: false,
+      journalist_sharing: false,
     });
     expect(Object.keys(now).sort()).toEqual([...PERMISSIONS].sort());
   });
@@ -113,6 +114,7 @@ describe('the permissions are independent', () => {
       contact_passing: false,
       attachment_publication: false,
       evidence_request: false,
+      journalist_sharing: false,
     });
   });
 });
@@ -211,7 +213,12 @@ describe('ONLY THE REPORTER CHANGES A REPORTER’S PERMISSION', () => {
       }
     };
     walk(src);
-    expect(callers.sort()).toEqual(['filing/routes.ts', 'permissions/log.ts']);
+    // filing/filing.ts is the reporter's own scope too: it records the
+    // sharing answer the reporter gave on their own filing (recordSharing,
+    // E1), onto the brand-new thread they are filing, and only a yes. Its
+    // callers are the reporter's confirm and public filing paths; no staff
+    // route calls it.
+    expect(callers.sort()).toEqual(['filing/filing.ts', 'filing/routes.ts', 'permissions/log.ts']);
   });
 });
 

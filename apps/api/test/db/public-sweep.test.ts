@@ -242,7 +242,18 @@ describe('no public page repeats what a person typed', () => {
     const found = await valuesInNewSchema(inject('databaseUrl'), without);
     const all = found.map((f) => f.value).join('\n');
     expect(all).toContain(MARKERS.volunteerNote.value);
-    expect(found.every((f) => f.where.startsWith('list_entries.'))).toBe(true);
+    // Everything else it finds must be a column that is new since the real
+    // baseline (a later migration's table, such as filing_address_days): the
+    // finder always reports those, whatever baseline it is handed. Anything
+    // from a baseline column other than list_entries would be a leak in the
+    // finder itself.
+    expect(
+      found.every((f) => {
+        if (f.where.startsWith('list_entries.')) return true;
+        const [table = '', column = ''] = f.where.split('.');
+        return !BASELINE_SCHEMA[table]?.includes(column);
+      }),
+    ).toBe(true);
     // The encrypted address is found too, in the two ways bytes are written.
     expect(found.some((f) => f.where === 'list_entries.email_enc')).toBe(true);
   });

@@ -579,7 +579,9 @@ describe('only the reporter changes a reporter’s permission', () => {
   it('nothing in moderation/ or board/ writes the permissions log', () => {
     for (const dir of ['moderation', 'board']) {
       const root = new URL(`../../src/${dir}/`, import.meta.url);
-      for (const f of readdirSync(root)) {
+      // Recursive: moderation/ has subfolders now (texts/).
+      for (const f of readdirSync(root, { recursive: true, encoding: 'utf8' })) {
+        if (!f.endsWith('.ts')) continue;
         const src = readFileSync(new URL(f, root), 'utf8');
         expect({
           f,
