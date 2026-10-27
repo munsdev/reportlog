@@ -98,6 +98,12 @@ needed no change: it selects every report column, so the new ones come with it.
 
 ## Rollback safety
 
+How to roll back matters: `sudo reportlog rollback` (switches `current`, never migrates)
+works. `sudo reportlog deploy <previous tag>`, which the build plan's section 4a names, is
+REFUSED by the migration runner once this migration is applied ("This database has
+migrations this code does not"), by design (deploy/README.md, "Why rolling back is safe").
+After a rollback the doctor warns, as expected.
+
 - **An older release on a database with these tables and no report using them** runs
   unchanged. It never names the new columns (both nullable, default NULL) or the new tables;
   its INSERT into `reports` leaves the columns NULL; its `selectAll` reads two extra columns

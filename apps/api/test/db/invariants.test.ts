@@ -180,6 +180,19 @@ async function plantOneRowEach(): Promise<void> {
     .values({ thread_id: thread, current_report_id: report.id })
     .execute();
   const hex = (c: string) => c.repeat(64);
+  // W1: the tombstone of an erased held value (reportValues/erase.ts).
+  await db
+    .insertInto('report_value_erasures')
+    .values({
+      report_id: report.id,
+      field_key: 'what',
+      kind: 'private_text',
+      position: 0,
+      fingerprint: hex('9'),
+      reason_category: 'personal-data',
+      actor: 'system',
+    })
+    .execute();
 
   const att = await db
     .insertInto('attachments')
@@ -490,6 +503,8 @@ describe('I4 · APPEND-ONLY MEANS APPEND-ONLY, for every table that says so', ()
       'link_comments',
       'link_erasures',
       'link_block_log',
+      // W1: erasing a report's held text or link.
+      'report_value_erasures',
     ]) {
       expect(tables).toContain(t);
     }

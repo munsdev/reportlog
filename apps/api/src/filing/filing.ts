@@ -569,7 +569,9 @@ export async function confirmSubmission(
   if (!found) throw linkNotFound();
   if (!deps.ring) throw notConfigured();
   const ring = deps.ring;
-  const keys = deps.linkKeys ? await deps.linkKeys() : null;
+  // Opened only for a report that holds a value: loading the keys makes the
+  // link secret on first use, under whatever CONTACT_KEY is current.
+  const linkKeys = deps.linkKeys ?? null;
 
   // Files still being prepared: this is not the moment to seal, because
   // confirming is the last moment the manifest can change. Nothing is
@@ -604,7 +606,7 @@ export async function confirmSubmission(
       .executeTakeFirstOrThrow();
     if (row.confirmed_at || !row.email) return null;
     if (row.expires_at < new Date()) return null;
-    return fileFromSubmission(trx, deps.publicRefPrefix, ring, keys, {
+    return fileFromSubmission(trx, deps.publicRefPrefix, ring, linkKeys, {
       ...row,
       email: row.email,
     });
@@ -618,7 +620,7 @@ async function fileFromSubmission(
   trx: Transaction<DB>,
   publicRefPrefix: string,
   ring: ContactKeyring,
-  keys: LinkKeys | null,
+  linkKeys: (() => Promise<LinkKeys>) | null,
   row: {
     id: number;
     logbook_id: number;
@@ -634,8 +636,10 @@ async function fileFromSubmission(
   const files = await sealFiles(trx, { submissionId: row.id }, threadId);
   // Its held text and links, removed from where they waited as they are
   // read, sealed as fingerprints and stored under fresh keys (W1).
+  const waiting = await hasStagedHeld(trx, row.id);
+  if (waiting && !linkKeys) throw notConfigured();
+  const keys = waiting && linkKeys ? await linkKeys() : null;
   const staged = keys ? await takeStagedHeld(trx, keys, row.id) : undefined;
-  if (!keys && (await hasStagedHeld(trx, row.id))) throw notConfigured();
   const { row: report } = await appendReportVersion(trx, {
     logbookId: row.logbook_id,
     threadId,
