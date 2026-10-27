@@ -29,7 +29,7 @@ function GetInvolvedPage() {
   });
   const address = typeof window === 'undefined' ? '' : window.location.origin;
   const rows = lists.data?.lists ?? [];
-  useBodyClass('light');
+  useBodyClass('dark');
   usePageTitle('Get involved');
   return (
     <MockPage>

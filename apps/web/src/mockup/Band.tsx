@@ -16,6 +16,7 @@ export function Band({
   tabTitle,
   lead,
   motif = false,
+  leadSize,
   children,
 }: {
   eyebrow: ReactNode;
@@ -24,6 +25,8 @@ export function Band({
   tabTitle?: string;
   lead?: ReactNode;
   motif?: boolean;
+  /** The mock-up's board pages set the lead smaller (`.95rem`). */
+  leadSize?: string;
   children?: ReactNode;
 }) {
   usePageTitle(tabTitle ?? title.replace(/\n/g, ' '));
@@ -35,7 +38,11 @@ export function Band({
         <h1 className="h-band" id="h1">
           <Lines text={title} />
         </h1>
-        {lead ? <p className="lead">{lead}</p> : null}
+        {lead ? (
+          <p className="lead" {...(leadSize ? { style: { fontSize: leadSize } } : {})}>
+            {lead}
+          </p>
+        ) : null}
         {children}
       </div>
     </section>

@@ -18,7 +18,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { DevBadge } from '@/components/ui/dev-badge.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
-import { Wordmark } from '../../mockup/Wordmark.tsx';
+import { BrandRuns } from '../../mockup/Wordmark.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
 
 /** The refusal, in the words the design gives it; anything else as the server said it. */
@@ -36,7 +36,7 @@ export function LockScreen({
   onUnlocked: () => Promise<void>;
 }) {
   const [password, setPassword] = useState('');
-  useBodyClass('door');
+  useBodyClass('dark', 'door');
   const field = useRef<HTMLInputElement>(null);
   const doors = useQuery({
     queryKey: ['site-access', 'doors'],
@@ -64,7 +64,11 @@ export function LockScreen({
           if (password) unlock.mutate();
         }}
       >
-        {site ? <Wordmark parts={site.name_parts} label={site.plain_name} /> : null}
+        {site ? (
+          <span className="wm" aria-label={site.plain_name}>
+            <BrandRuns parts={site.name_parts} />
+          </span>
+        ) : null}
         <h1 className="eyebrow" style={{ color: '#DCE3E9' }}>
           This site needs a password
         </h1>

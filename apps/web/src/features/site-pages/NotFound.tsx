@@ -17,7 +17,7 @@ import { useMainAction } from '../nav/Menu.tsx';
 
 export function NotFoundPage() {
   const { label, href } = useMainAction();
-  useBodyClass('light');
+  useBodyClass('dark');
   usePageTitle('Page not found');
   return (
     <MockPage>
