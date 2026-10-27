@@ -350,10 +350,9 @@ export const DeskReport = z.object({
 export type DeskReport = z.infer<typeof DeskReport>;
 
 /**
- * A written account on the desk (W5, D7): what a reporter wrote, or a tip's
- * description, ONLY if a moderator checked it and, for a report, only while
- * the reporter allows journalists to read it. A redacted account is the
- * moderators' copy, never the original. No email, no entry id, no thread id,
+ * A written account on the desk (W5, D7): the NOTE a moderator wrote from a
+ * reporter's account or a tip's description, and, for a report, only while
+ * the reporter allows journalists to read it. Never the original. No email, no entry id, no thread id,
  * no moderator's address, and nothing to say what was removed.
  */
 export const DeskText = z.object({
@@ -362,8 +361,8 @@ export const DeskText = z.object({
   reference: z.string().nullable(),
   /** Where it said, as the board would: "Fulton County, Georgia". */
   place: z.string().nullable(),
-  /** "checked" as written, or "redacted": a moderator's edited copy. */
-  outcome: z.enum(['checked', 'redacted']),
+  /** Always a note a moderator wrote. The reporter's own words appear only where quoted. */
+  outcome: z.literal('redacted'),
   /** Whether it came from a report or the tip line. */
   source: z.enum(['report', 'tip']),
   checked_at: z.string(),

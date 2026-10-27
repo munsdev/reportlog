@@ -15,10 +15,10 @@ import type { Outcome } from './items.ts';
 
 type Db = Kysely<DB>;
 
-type TextState = 'waiting' | 'checked' | 'redacted' | 'withheld';
+type TextState = 'waiting' | 'redacted' | 'withheld';
 type LinkState = 'waiting' | 'checked' | 'withheld';
 const textState = (o: string | null | undefined): TextState =>
-  o === 'checked' || o === 'redacted' || o === 'withheld' ? o : 'waiting';
+  o === 'redacted' || o === 'withheld' ? o : 'waiting';
 const linkState = (o: string | null | undefined): LinkState =>
   o === 'checked' || o === 'withheld' ? o : 'waiting';
 

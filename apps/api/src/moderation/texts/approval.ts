@@ -20,7 +20,7 @@ import { HttpError } from '../../http/errors.ts';
 import { checkGroup } from '../../links/checks.ts';
 import { isReasonCategory } from '../../links/blocklist.ts';
 import type { LinkKeys } from '../../links/keys.ts';
-import { checkText, whyOf } from './items.ts';
+import { checkText, redactText, whyOf } from './items.ts';
 
 type Db = Kysely<DB>;
 
@@ -65,6 +65,8 @@ export interface WrittenDecision {
   why: string;
   /** "Illegal" only: the category, as everywhere else. */
   reason?: string | undefined;
+  /** A text decided "redacted" (write a note): the moderator's note. Never the original. */
+  note?: string | undefined;
 }
 
 const needed = () =>
@@ -96,8 +98,15 @@ export async function settleWritten(
   // Everything is checked before the first decision is written.
   for (const { d } of wanted) {
     whyOf(d.why);
-    if (d.outcome !== 'checked' && d.outcome !== 'withheld' && d.outcome !== 'illegal') {
-      throw needed();
+    // A text is kept internal, given a note, or illegal. A link keeps its own
+    // three (a link is not prose): checked, withheld, illegal.
+    const isLink = wanted.find((w) => w.d === d)?.target.groupId != null;
+    const allowed = isLink
+      ? ['checked', 'withheld', 'illegal']
+      : ['redacted', 'withheld', 'illegal'];
+    if (!allowed.includes(d.outcome)) throw needed();
+    if (d.outcome === 'redacted' && !(typeof d.note === 'string' && d.note.trim())) {
+      throw new HttpError(400, 'copy_needed', 'Write the note journalists will read.');
     }
     if (d.outcome === 'illegal' && !isReasonCategory(d.reason)) {
       throw new HttpError(
@@ -127,6 +136,8 @@ export async function settleWritten(
         reason: d.outcome === 'illegal' && isReasonCategory(d.reason) ? d.reason : undefined,
         why: whyOf(d.why),
       });
+    } else if (d.outcome === 'redacted') {
+      await redactText(db, k, target.ref, { body: d.note, why: d.why, actor });
     } else {
       await checkText(db, k, target.ref, {
         outcome: d.outcome,

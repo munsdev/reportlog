@@ -97,11 +97,11 @@ export function DeskTextsPage() {
   return (
     <DeskSection
       title="Written accounts"
-      lede="What reporters wrote, checked by a moderator and shared with their permission."
+      lede="Notes a moderator wrote from reporters' accounts, shared with the reporters' permission."
       warn={false}
       notice={{
         title: 'Before you use one',
-        body: 'A moderator checked that it is on topic and safe to show, not that it is true. Reporters can take it back.',
+        body: "Written by a moderator from a reporter's account. The reporter's own words are shown only where quoted. A note is not a verified fact, and reporters can take it back.",
       }}
       footer="Every page you open here is recorded in the access log. If a reporter erases or stops sharing an account, it disappears from here."
     >
@@ -341,7 +341,7 @@ function Texts() {
         <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No written accounts yet'}>
           {applied.q || applied.mine
             ? 'No written account matches that search. Try other words, or clear the My states tick.'
-            : 'When a moderator checks an account and its reporter allows it, it appears here.'}
+            : 'When a moderator writes a note from an account and its reporter allows it, it appears here.'}
         </Empty>
       ) : null}
       <ul className="flex flex-col gap-4">
@@ -353,7 +353,7 @@ function Texts() {
               <p className="flex flex-wrap items-center gap-2 text-sm text-ink-alt">
                 {t.reference ? <span className="font-mono">{t.reference}</span> : <span>Tip</span>}
                 {t.place ? <span>· {t.place}</span> : null}
-                <span>· {t.outcome === 'redacted' ? 'Checked with redaction' : 'Checked'}</span>
+                <span>· Note by a moderator</span>
               </p>
             </Card>
           </li>

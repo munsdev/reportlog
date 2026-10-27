@@ -242,6 +242,8 @@ export const decideReport = defineRoute({
           why: z.string(),
           /** "illegal" only. */
           reason: z.string().optional(),
+          /** A text decided "redacted": the note for journalists, written by the moderator. */
+          note: z.string().optional(),
         }),
       )
       .optional(),

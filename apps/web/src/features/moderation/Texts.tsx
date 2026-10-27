@@ -2,14 +2,15 @@
  * Written accounts (W4): what reporters wrote in their own words, and the
  * tip line's descriptions, before a vetted journalist can read them.
  *
- *   TextsPage      the queue: Waiting, Checked, Redacted, Withheld
- *   RedactPage     the original beside the copy journalists read
+ *   TextsPage      the queue: Waiting, Notes, Kept internal
+ *   RedactPage     the original beside the note journalists read
  *   ReportWritten  the same check on a report's own page, with its links
  *
- * NOTHING HERE IS PUBLISHED, and a link is text, never an anchor. Checked and
- * Checked with redaction need the reporter's permission to share; without it
- * the only choices are Withheld and Illegal, and the server refuses the rest
- * as well. Illegal erases the words now, and cannot be undone, so it asks for
+ * NOTHING HERE IS PUBLISHED, and a link is text, never an anchor. A moderator
+ * never passes a reporter's words to a journalist: they write a note, quoting
+ * what they choose. A note needs the reporter's permission to share; without
+ * it the only choices are Keep internal and Illegal, and the server refuses
+ * the rest as well. Illegal erases the words now, and cannot be undone, so it asks for
  * a reason (a category, never a description) and a tick.
  */
 import {
@@ -25,7 +26,7 @@ import {
 import type { TextFilter, TextItem, TextOutcome } from '@reportlog/contracts';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
@@ -54,23 +55,20 @@ const REASON_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
 
 /** The short words of the queue, and the longer ones of a report's page. */
 const SHORT: Record<TextOutcome, string> = {
-  checked: 'Checked',
-  redacted: 'Checked with redaction',
-  withheld: 'Withheld',
+  redacted: 'Note for journalists',
+  withheld: 'Kept internal',
   illegal: 'Illegal',
 };
 const LONG: Record<TextOutcome, string> = {
-  checked: 'Checked: journalists may read it as written',
-  redacted: 'Checked with redaction: journalists read your edited copy',
-  withheld: 'Withheld: nobody outside moderation reads it',
+  redacted: 'Write a note for journalists',
+  withheld: 'Keep internal: nobody outside moderation reads it',
   illegal: 'Illegal: erase it now',
 };
 
 const TABS: { value: TextFilter; label: string }[] = [
   { value: 'waiting', label: 'Waiting' },
-  { value: 'checked', label: 'Checked' },
-  { value: 'redacted', label: 'Redacted' },
-  { value: 'withheld', label: 'Withheld' },
+  { value: 'redacted', label: 'Notes' },
+  { value: 'withheld', label: 'Kept internal' },
 ];
 
 const textsKey = ['texts'] as const;
@@ -144,7 +142,7 @@ export function TextsPage() {
     <div className="flex flex-col gap-6">
       <StaffHead
         title="Written accounts"
-        lede="What reporters wrote in their own words, and what tips described. Never published. Checked accounts reach vetted journalists only if the reporter allowed it."
+        lede="What reporters wrote in their own words, and what tips described. Never published. Journalists see only a note a moderator writes, and only if the reporter allowed it."
       />
       <div role="group" aria-label="Show" className="flex flex-wrap gap-2">
         {TABS.map((t) => (
@@ -164,8 +162,8 @@ export function TextsPage() {
           </Button>
         ))}
       </div>
-      <Alert tone="note" title="Only accounts the reporter shared can be Checked.">
-        If they did not allow journalists, the choices are Withheld or Illegal.
+      <Alert tone="note" title="Only accounts the reporter shared can get a note.">
+        If they did not allow journalists, the choices are Keep internal or Illegal.
       </Alert>
       <CountLine
         parts={[
@@ -179,7 +177,7 @@ export function TextsPage() {
       {q.data?.items.length === 0 ? (
         <Empty title={filter === 'waiting' ? 'No written account waiting' : 'Nothing here'}>
           {filter === 'waiting'
-            ? 'What reporters write, and what tips describe, appears here until somebody checks it.'
+            ? 'What reporters write, and what tips describe, appears here until a moderator decides what to do with it.'
             : 'No written account has been given this outcome.'}
         </Empty>
       ) : null}
@@ -237,7 +235,7 @@ function TextCard({ item }: { item: TextItem }) {
         )}
         {item.place ? ` · ${item.place}` : ''} · {characters(item.length)}
         {item.checked_by && item.checked_at
-          ? ` · checked by ${item.checked_by}, ${when(item.checked_at)}`
+          ? ` · decided by ${item.checked_by}, ${when(item.checked_at)}`
           : ''}
       </Meta>
       <CheckForm item={item} withRedactLink />
@@ -248,9 +246,9 @@ function TextCard({ item }: { item: TextItem }) {
 // ── the check ───────────────────────────────────────────────────────────
 
 /**
- * The four choices and the button that records one. "Checked with redaction"
- * is written on the Redact page (saving a copy IS that outcome), so choosing
- * it and pressing the button goes there.
+ * The three choices and the button that records one. A note is written on
+ * the note page (saving it IS that outcome), so choosing it and pressing the
+ * button goes there.
  */
 function CheckForm({
   item,
@@ -270,7 +268,7 @@ function CheckForm({
   const [why, setWhy] = useState('');
   const words = long ? LONG : SHORT;
   const choices: TextOutcome[] = item.shared
-    ? ['checked', 'redacted', 'withheld', 'illegal']
+    ? ['redacted', 'withheld', 'illegal']
     : ['withheld', 'illegal'];
   const save = useMutation({
     mutationFn: () =>
@@ -294,9 +292,9 @@ function CheckForm({
   const redactPath = { to: '/moderate/texts/$ref' as const, params: { ref: item.ref } };
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="label-face text-xs text-ink-alt">Check it</legend>
+      <legend className="label-face text-xs text-ink-alt">Decide</legend>
       <RadioGroup
-        aria-label="Check it"
+        aria-label="Decide"
         name={id}
         value={outcome}
         onValueChange={(v) => {
@@ -365,11 +363,11 @@ function CheckForm({
             save.mutate();
           }}
         >
-          {outcome === 'redacted' ? 'Write the copy' : 'Record the check'}
+          {outcome === 'redacted' ? 'Write the note' : 'Record the decision'}
         </Button>
         {withRedactLink && item.shared ? (
           <Button asChild variant="secondary">
-            <Link {...redactPath}>Redact a copy</Link>
+            <Link {...redactPath}>Write a note</Link>
           </Button>
         ) : null}
       </div>
@@ -387,8 +385,11 @@ export function RedactPage({ textRef }: { textRef: string }) {
   });
   const [body, setBody] = useState<string | null>(null);
   const [why, setWhy] = useState('');
-  // The original, once this person has pressed Show (and it was logged).
-  const [original, setOriginal] = useState<string | null>(null);
+  // The original is shown only after this person presses Show (which is
+  // logged). The note never starts from it: it starts blank.
+  const originalBox = useRef<HTMLDivElement>(null);
+  const noteBox = useRef<HTMLTextAreaElement>(null);
+  const [shown, setShown] = useState(false);
   const done = () => {
     void qc.invalidateQueries({ queryKey: textsKey });
     void qc.invalidateQueries({ queryKey: ['written'] });
@@ -404,9 +405,28 @@ export function RedactPage({ textRef }: { textRef: string }) {
     onSuccess: done,
   });
   const item = q.data?.item;
-  const title = item ? `Redact ${item.reference ?? 'tip text'}` : 'Redact';
-  const copy = body ?? q.data?.redacted ?? original ?? '';
+  const title = item ? `Note for ${item.reference ?? 'tip text'}` : 'Note for journalists';
+  const copy = body ?? q.data?.redacted ?? '';
   const red = item?.redaction;
+  // Insert what is selected in the original, inside quotation marks, at the
+  // cursor (or the end). Only a selection inside the original counts.
+  const [quoteError, setQuoteError] = useState('');
+  const quote = () => {
+    const sel = window.getSelection();
+    const picked = sel?.toString().trim() ?? '';
+    const inside =
+      sel !== null &&
+      sel.rangeCount > 0 &&
+      originalBox.current?.contains(sel.getRangeAt(0).commonAncestorContainer) === true;
+    if (!picked || !inside) {
+      setQuoteError('Select some of the original text first.');
+      return;
+    }
+    setQuoteError('');
+    const at = noteBox.current?.selectionStart ?? copy.length;
+    const end = noteBox.current?.selectionEnd ?? at;
+    setBody(`${copy.slice(0, at)}"${picked}"${copy.slice(end)}`);
+  };
   return (
     <div className="flex flex-col gap-6">
       <StaffHead title={title} mono />
@@ -418,26 +438,54 @@ export function RedactPage({ textRef }: { textRef: string }) {
       {item ? (
         <div className="grid items-start gap-6 md:grid-cols-2">
           <Card variant="quiet" heading="The original · kept, never changed">
-            <Reveal textRef={textRef} onOpened={setOriginal} />
+            <div ref={originalBox}>
+              <Reveal
+                textRef={textRef}
+                onOpened={() => {
+                  setShown(true);
+                }}
+              />
+            </div>
+            {shown ? (
+              <>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="self-start"
+                  onMouseDown={(e) => {
+                    // Keep the selection while the button is pressed.
+                    e.preventDefault();
+                  }}
+                  onClick={quote}
+                >
+                  Quote selection
+                </Button>
+                {quoteError ? <Alert tone="serious">{quoteError}</Alert> : null}
+              </>
+            ) : null}
           </Card>
           <div className="flex flex-col gap-6">
-            <Card heading="The copy journalists read">
+            <Card heading="The note journalists read">
               <Field>
-                <Label>Edit the copy</Label>
+                <Label>Your note</Label>
                 <Textarea
+                  ref={noteBox}
                   rows={7}
                   value={copy}
                   onChange={(e) => {
                     setBody(e.target.value);
                   }}
                 />
-                <FieldDescription>Mark what you removed in square brackets.</FieldDescription>
+                <FieldDescription>
+                  Write it in your own words. Journalists never see the original; they see only what
+                  you quote here.
+                </FieldDescription>
               </Field>
               <Field>
                 <Label>Why (for the record)</Label>
                 <FieldDescription>
-                  10 to 500 characters. Only staff can read it. Describe the kind of thing removed,
-                  not the words.
+                  10 to 500 characters. Only staff can read it. Describe the kind of thing, not the
+                  words.
                 </FieldDescription>
                 <Input
                   value={why}
@@ -449,7 +497,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
               </Field>
               {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
               {save.isSuccess ? (
-                <p role="status">Saved. It is now Checked with redaction.</p>
+                <p role="status">Saved. Journalists can now read this note.</p>
               ) : null}
               <Button
                 type="button"
@@ -459,12 +507,14 @@ export function RedactPage({ textRef }: { textRef: string }) {
                   save.mutate(copy);
                 }}
               >
-                Save the redacted copy
+                Save the note
               </Button>
-              <p className="text-sm text-ink-alt">Saving marks it Checked with redaction.</p>
+              <p className="text-sm text-ink-alt">
+                Saving gives journalists this note, and never the original.
+              </p>
             </Card>
             {red ? (
-              <Card variant="quiet" heading="Review of the copy">
+              <Card variant="quiet" heading="Review of the note">
                 <p className="text-sm">
                   Written by {red.redacted_by}, {when(red.redacted_at)}. Reason: {red.reason}
                 </p>
@@ -477,7 +527,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
                 ) : (
                   <>
                     <p className="text-sm text-ink-alt">
-                      Another moderator, or the owner, reviews it. Returning it deletes the copy and
+                      Another moderator, or the owner, reviews it. Returning it deletes the note and
                       the account waits again.
                     </p>
                     {review.isError ? <Alert tone="serious">{review.error.message}</Alert> : null}
@@ -489,7 +539,7 @@ export function RedactPage({ textRef }: { textRef: string }) {
                           review.mutate('approved');
                         }}
                       >
-                        Approve the copy
+                        Approve the note
                       </Button>
                       <Button
                         type="button"
@@ -551,13 +601,13 @@ export function ReportWritten({ threadId }: { threadId: string }) {
             {t.shared
               ? 'the reporter allows vetted journalists to read it'
               : 'the reporter does not allow journalists to read it'}
-            {t.outcome ? ` · ${SHORT[t.outcome]}` : ' · not checked yet'}
+            {t.outcome ? ` · ${SHORT[t.outcome]}` : ' · no decision yet'}
           </p>
           <CheckForm item={t} long />
           {t.shared ? (
             <Button asChild variant="quiet" className="self-start">
               <Link to="/moderate/texts/$ref" params={{ ref: t.ref }}>
-                Redact a copy
+                Write a note
               </Link>
             </Button>
           ) : null}

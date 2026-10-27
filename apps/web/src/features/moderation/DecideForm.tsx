@@ -37,8 +37,10 @@ interface WrittenChoice {
   outcome: string;
   why: string;
   reason: string;
+  /** The note for journalists, when the choice is to write one. */
+  note: string;
 }
-const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '' };
+const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '', note: '' };
 const ERASE_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
   'child-sexual-abuse': 'Child sexual abuse material',
   'terrorist-content': 'Terrorist content',
@@ -145,6 +147,7 @@ export function DecideForm({
       c.outcome !== '' &&
       c.why.trim().length >= WHY_MIN &&
       c.why.trim().length <= WHY_MAX &&
+      (c.outcome !== 'redacted' || c.note.trim() !== '') &&
       (c.outcome !== 'illegal' || c.reason !== '')
     );
   });
@@ -166,6 +169,7 @@ export function DecideForm({
                     outcome: c.outcome,
                     why: c.why.trim(),
                     ...(c.outcome === 'illegal' ? { reason: c.reason } : {}),
+                    ...(c.outcome === 'redacted' ? { note: c.note.trim() } : {}),
                   };
                 }),
               }
@@ -290,16 +294,24 @@ export function DecideForm({
           {panel.isError ? <Alert tone="serious">{panel.error.message}</Alert> : null}
           {undecided.map((u) => {
             const c = choiceOf(u.ref);
-            const options = u.shared
-              ? [
-                  ['checked', 'Checked: journalists may read it'],
-                  ['withheld', 'Withheld: nobody outside moderation reads it'],
-                  ['illegal', 'Illegal: erase it now'],
-                ]
-              : [
-                  ['withheld', 'Withheld: nobody outside moderation reads it'],
-                  ['illegal', 'Illegal: erase it now'],
-                ];
+            // A link keeps its own three (a link is not prose). A written
+            // account is kept internal, given a note a moderator writes, or
+            // erased: its words are never passed on as they were written.
+            const isLink = u.name === 'Link';
+            const options = [
+              ...(u.shared
+                ? [
+                    isLink
+                      ? ['checked', 'Checked: journalists may read it']
+                      : ['redacted', 'Write a note for journalists'],
+                  ]
+                : []),
+              [
+                'withheld',
+                isLink ? 'Withheld: nobody outside moderation reads it' : 'Keep internal',
+              ],
+              ['illegal', 'Illegal: erase it now'],
+            ];
             return (
               <div key={u.ref} className="flex flex-col gap-3">
                 <Field>
@@ -336,6 +348,21 @@ export function DecideForm({
                         </option>
                       ))}
                     </Select>
+                  </Field>
+                ) : null}
+                {c.outcome === 'redacted' ? (
+                  <Field>
+                    <Label>{`${u.name}: note for journalists`}</Label>
+                    <FieldDescription>
+                      Write it in your own words. Put anything you quote in quotation marks.
+                    </FieldDescription>
+                    <Textarea
+                      rows={4}
+                      value={c.note}
+                      onChange={(e) => {
+                        setChoiceOf(u.ref, { note: e.target.value });
+                      }}
+                    />
                   </Field>
                 ) : null}
                 <Field>

@@ -48,6 +48,9 @@ const day = (iso: string) => new Date(iso).toLocaleDateString();
 function checkLine(outcome: 'waiting' | 'checked' | 'redacted' | 'withheld', at: string | null) {
   if (outcome === 'waiting') return 'A moderator has not checked it yet.';
   if (outcome === 'withheld') return 'A moderator checked it. It will not be shown to journalists.';
+  if (outcome === 'redacted') {
+    return `A moderator wrote a note for journalists${at ? ` on ${day(at)}` : ''}. Your own words are not passed on, only parts the note quotes.`;
+  }
   return `Checked by a moderator${at ? ` on ${day(at)}` : ''}.`;
 }
 

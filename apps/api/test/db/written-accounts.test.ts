@@ -37,7 +37,8 @@ const run = `${String(process.pid)}${String(Date.now() % 1e6)}`;
 const MOD = address('texts-mod');
 const OTHER = address('texts-mod-2');
 const TEXT = `The two scanners stopped at about 4 (${run}). A poll worker named Mary told us to use the slot.`;
-const COPY = `The two scanners stopped at about 4 (${run}). A poll worker [name removed] told us to use the slot.`;
+// A note a moderator wrote, quoting only what they chose.
+const COPY = `Note (${run}): scanners failed at one site. A reporter says staff told voters to "use the slot".`;
 
 let h: FilingHarness;
 let keys: LinkKeys;
@@ -167,7 +168,7 @@ describe('W3 · report links in the link store', () => {
 });
 
 describe('W4 · the written accounts queue', () => {
-  it('only checks what the reporter shared as checked; withheld and illegal need no permission', async () => {
+  it('a note needs the reporter\'s permission; keeping internal and illegal need none; "checked" is gone', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: false });
     const ref = await textRef(h.db, t.reportId);
     await expect(
@@ -177,7 +178,7 @@ describe('W4 · the written accounts queue', () => {
         why: 'Checked for the record.',
         actor: MOD,
       }),
-    ).rejects.toMatchObject({ code: 'not_shared', status: 409 });
+    ).rejects.toMatchObject({ code: 'not_an_outcome' });
     await expect(
       redactText(h.db, keys, ref, { body: COPY, why: 'Names a private person.', actor: MOD }),
     ).rejects.toMatchObject({ code: 'not_shared' });
@@ -195,13 +196,8 @@ describe('W4 · the written accounts queue', () => {
       granted: true,
     });
     expect(
-      await checkText(h.db, keys, ref, {
-        outcome: 'checked',
-        reason: undefined,
-        why: 'Checked for the record.',
-        actor: MOD,
-      }),
-    ).toEqual({ outcome: 'checked', erased: false });
+      await redactText(h.db, keys, ref, { body: COPY, why: 'Names a private person.', actor: MOD }),
+    ).toEqual({ outcome: 'redacted' });
   });
 
   it('refuses an outcome that is not one, and illegal without a category', async () => {
@@ -229,8 +225,11 @@ describe('W4 · the written accounts queue', () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: true });
     const ref = await textRef(h.db, t.reportId);
     await expect(
-      redactText(h.db, keys, ref, { body: TEXT.replace('Mary', ''), why: 'x', actor: MOD }),
-    ).rejects.toMatchObject({ code: 'redaction_unmarked' });
+      redactText(h.db, keys, ref, { body: TEXT, why: 'Names a private person.', actor: MOD }),
+    ).rejects.toMatchObject({ code: 'note_is_original' });
+    await expect(
+      redactText(h.db, keys, ref, { body: '   ', why: 'Names a private person.', actor: MOD }),
+    ).rejects.toMatchObject({ code: 'copy_needed' });
     await redactText(h.db, keys, ref, { body: COPY, why: 'Names a private person.', actor: MOD });
     const item = await h.db
       .selectFrom('text_items as ti')
@@ -316,9 +315,8 @@ describe('W4 · the written accounts queue', () => {
 
   it('a correction that re-sends the words starts again unchecked (D2)', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: TEXT } }, { share: true });
-    await checkText(h.db, keys, await textRef(h.db, t.reportId), {
-      outcome: 'checked',
-      reason: undefined,
+    await redactText(h.db, keys, await textRef(h.db, t.reportId), {
+      body: COPY,
       why: 'Checked for the record.',
       actor: MOD,
     });
@@ -375,15 +373,15 @@ describe('W4 · over HTTP', () => {
     expect(mine).toMatchObject({ text: null, shared: true });
     const checked = await mod.call({
       method: 'POST',
-      url: `/api/moderation/texts/${mine?.ref ?? ''}/check`,
-      payload: { outcome: 'checked', why: 'Reads as a plain account.' },
+      url: `/api/moderation/texts/${mine?.ref ?? ''}/redact`,
+      payload: { body: COPY, why: 'Reads as a plain account.' },
     });
     expect(checked.statusCode, checked.body).toBe(200);
     const panel = await mod.call({
       method: 'GET',
       url: `/api/moderation/reports/${t.threadId}/written`,
     });
-    expect(panel.json<{ texts: { outcome: string }[] }>().texts[0]?.outcome).toBe('checked');
+    expect(panel.json<{ texts: { outcome: string }[] }>().texts[0]?.outcome).toBe('redacted');
     const anon = await h.app.inject({ method: 'GET', url: '/api/moderation/texts' });
     expect(anon.statusCode).toBe(401);
     const user = await staff(h, 'texts-user', 'user');
@@ -408,7 +406,7 @@ describe('N2 · reasons, readings and approval', () => {
     const ref = await textRef(h.db, t.reportId);
     for (const why of [undefined, '', 'short', 'x'.repeat(501)]) {
       await expect(
-        checkText(h.db, keys, ref, { outcome: 'checked', reason: undefined, why, actor: MOD }),
+        checkText(h.db, keys, ref, { outcome: 'withheld', reason: undefined, why, actor: MOD }),
       ).rejects.toMatchObject({ code: 'why_needed' });
     }
     await expect(
@@ -440,19 +438,14 @@ describe('N2 · reasons, readings and approval', () => {
     expect(rows.map((r) => r.staff_email).sort()).toEqual([MOD, OTHER, OTHER].sort());
     expect(rows.every((r) => r.reason === null && r.thread_id === t.threadId)).toBe(true);
     await expect(openText(h.db, keys, 'report-999999999', MOD)).rejects.toMatchObject({
-      statusCode: 404,
+      status: 404,
     });
   });
 
   it('the reporter and the desk never get a reason', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} c` } }, { share: true });
     const ref = await textRef(h.db, t.reportId);
-    await checkText(h.db, keys, ref, {
-      outcome: 'checked',
-      reason: undefined,
-      why: WHY,
-      actor: MOD,
-    });
+    await redactText(h.db, keys, ref, { body: COPY, why: WHY, actor: MOD });
     expect(JSON.stringify(await myWritten(h.db, keys, t.threadId))).not.toContain(WHY);
     const desk = await clearedTexts(h.db);
     const mine = desk.filter((c) => c.reportId === t.reportId);
@@ -478,13 +471,13 @@ describe('N2 · reasons, readings and approval', () => {
     const noReason = await mod.call({
       method: 'POST',
       url,
-      payload: { status: 'valid', written: [{ ref, outcome: 'checked', why: 'no' }] },
+      payload: { status: 'valid', written: [{ ref, outcome: 'redacted', note: COPY, why: 'no' }] },
     });
     expect(noReason.statusCode).toBe(400);
     const ok = await mod.call({
       method: 'POST',
       url,
-      payload: { status: 'valid', written: [{ ref, outcome: 'checked', why: WHY }] },
+      payload: { status: 'valid', written: [{ ref, outcome: 'redacted', note: COPY, why: WHY }] },
     });
     expect(ok.statusCode, ok.body).toBe(200);
     const head = await h.db

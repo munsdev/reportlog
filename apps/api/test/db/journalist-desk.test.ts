@@ -592,9 +592,14 @@ describe('J9 to J12 · the desk', () => {
   });
 });
 
-describe('W5 · the desk reads checked text and report links, while the reporter allows it (D7)', () => {
+describe("W5 · the desk reads a moderator's note and report links, while the reporter allows it (N3)", () => {
   // Words and addresses that must, or must never, come out of the desk.
   const CLEARED_TEXT = `Cleared-as-written account ${run}: the doors opened late.`;
+  const CLEARED_NOTE = `Note ${run}: a reporter says doors opened late.`;
+  const REVOKED_NOTE = `REVOKED-NOTE ${run}`;
+  const CORRECTED_NOTE = `CORRECTED-OLD-NOTE ${run}`;
+  const TIP_NOTE = `Tip note ${run}`;
+  const LEGACY_TEXT = `LEGACY-CHECKED-TEXT ${run}`;
   const ORIGINAL = `ORIGINAL-WITH-NAME ${run}: a poll worker named Mary told us to leave.`;
   const COPY = `Redacted copy ${run}: a poll worker [name removed] told us to leave.`;
   const WITHHELD_TEXT = `WITHHELD-TEXT ${run}`;
@@ -615,13 +620,16 @@ describe('W5 · the desk reads checked text and report links, while the reporter
   let corrected: Awaited<ReturnType<typeof fileHeld>>;
   let cleared: Awaited<ReturnType<typeof fileHeld>>;
 
-  const ok = async (outcome: 'checked' | 'withheld', ref: string) =>
+  const ok = async (outcome: 'withheld', ref: string) =>
     checkText(h.db, keys, ref, {
       outcome,
       reason: undefined,
       why: 'Checked for the record.',
       actor: MOD,
     });
+  // The only way words reach the desk: a note the moderator wrote.
+  const note = async (ref: string, body: string) =>
+    redactText(h.db, keys, ref, { body, why: 'Written for the record.', actor: MOD });
   const desk = async (path: string) => {
     const r = await call({ method: 'GET', url: path });
     expect(r.statusCode, r.body).toBe(200);
@@ -643,7 +651,7 @@ describe('W5 · the desk reads checked text and report links, while the reporter
       { text: { what: CLEARED_TEXT }, links: { links: [REPORT_LINK, UNCHECKED_REPORT_LINK] } },
       { share: true },
     );
-    await ok('checked', await textRef(h.db, cleared.reportId));
+    await note(await textRef(h.db, cleared.reportId), CLEARED_NOTE);
     await checkGroup(h.db, keys, await groupOf(REPORT_LINK), { outcome: 'checked', actor: MOD });
     // Shared, checked with redaction: the desk shows only the copy.
     const redacted = await fileHeld(h.db, keys, lb, { text: { what: ORIGINAL } }, { share: true });
@@ -675,7 +683,7 @@ describe('W5 · the desk reads checked text and report links, while the reporter
     });
     // Checked, then the reporter takes it back / withdraws / corrects.
     revoked = await fileHeld(h.db, keys, lb, { text: { what: REVOKED_TEXT } }, { share: true });
-    await ok('checked', await textRef(h.db, revoked.reportId));
+    await note(await textRef(h.db, revoked.reportId), REVOKED_NOTE);
     withdrawn = await fileHeld(
       h.db,
       keys,
@@ -683,9 +691,9 @@ describe('W5 · the desk reads checked text and report links, while the reporter
       { text: { what: `WITHDRAWN ${run}` } },
       { share: true },
     );
-    await ok('checked', await textRef(h.db, withdrawn.reportId));
+    await note(await textRef(h.db, withdrawn.reportId), `WITHDRAWN-NOTE ${run}`);
     corrected = await fileHeld(h.db, keys, lb, { text: { what: CORRECTED_TEXT } }, { share: true });
-    await ok('checked', await textRef(h.db, corrected.reportId));
+    await note(await textRef(h.db, corrected.reportId), CORRECTED_NOTE);
     // A tip's description, checked; another not.
     await tip(url('tip-text'));
     await h.db
@@ -693,12 +701,24 @@ describe('W5 · the desk reads checked text and report links, while the reporter
       .set({ erasable_answers: { description: TIP_TEXT } })
       .where('id', '=', await tipEntryId())
       .execute();
-    await checkText(h.db, keys, `tip-${String(await tipEntryId())}-description`, {
-      outcome: 'checked',
-      reason: undefined,
-      why: 'Checked for the record.',
-      actor: MOD,
-    });
+    await note(`tip-${String(await tipEntryId())}-description`, TIP_NOTE);
+    // The retired "checked as written" outcome, as an old row might still hold it.
+    const legacy = await fileHeld(h.db, keys, lb, { text: { what: LEGACY_TEXT } }, { share: true });
+    const fp = await h.db
+      .selectFrom('report_values')
+      .select('fingerprint')
+      .where('report_id', '=', legacy.reportId)
+      .executeTakeFirstOrThrow();
+    await h.db
+      .insertInto('text_items')
+      .values({
+        source: 'report',
+        fingerprint: fp.fingerprint,
+        outcome: 'checked',
+        checked_at: new Date(),
+        checked_by: MOD,
+      })
+      .execute();
   });
 
   async function tipEntryId(): Promise<number> {
@@ -713,23 +733,25 @@ describe('W5 · the desk reads checked text and report links, while the reporter
     ).id;
   }
 
-  it('shows checked text, the redacted copy only for a redacted one, and a checked tip text', async () => {
+  it('shows only notes a moderator wrote, labelled as such, and a tip note', async () => {
     const got = await texts();
     const words = got.map((t) => t.text);
-    expect(words).toContain(CLEARED_TEXT);
+    expect(words).toContain(CLEARED_NOTE);
     expect(words).toContain(COPY);
-    expect(words).toContain(TIP_TEXT);
-    const mine = got.find((t) => t.text === CLEARED_TEXT);
-    expect(mine).toMatchObject({
+    expect(words).toContain(TIP_NOTE);
+    expect(got.find((t) => t.text === CLEARED_NOTE)).toMatchObject({
       reference: cleared.publicRef,
-      outcome: 'checked',
+      outcome: 'redacted',
       source: 'report',
     });
-    expect(got.find((t) => t.text === COPY)?.outcome).toBe('redacted');
-    expect(got.find((t) => t.text === TIP_TEXT)).toMatchObject({ reference: null, source: 'tip' });
+    expect(got.find((t) => t.text === TIP_NOTE)).toMatchObject({ reference: null, source: 'tip' });
+    // The reporter's own words never come through, nor an old "checked as written" row.
+    for (const never of [CLEARED_TEXT, ORIGINAL, TIP_TEXT, LEGACY_TEXT]) {
+      expect(words.join('\n')).not.toContain(never);
+    }
   });
 
-  it('J10 · never the original of a redacted account, withheld or unchecked text, or an unshared report', async () => {
+  it('J10 · never an original, withheld or unchecked text, an old checked-as-written row, or an unshared report', async () => {
     const body = [
       (await desk('/api/desk/texts')).body,
       (await desk('/api/desk/links')).body,
@@ -737,6 +759,9 @@ describe('W5 · the desk reads checked text and report links, while the reporter
     ].join('\n');
     for (const never of [
       ORIGINAL,
+      CLEARED_TEXT,
+      TIP_TEXT,
+      LEGACY_TEXT,
       'Mary',
       WITHHELD_TEXT,
       WAITING_TEXT,
@@ -787,20 +812,20 @@ describe('W5 · the desk reads checked text and report links, while the reporter
   });
 
   it('revoking the permission takes the text and the link off at once', async () => {
-    expect((await texts()).map((t) => t.text)).toContain(REVOKED_TEXT);
+    expect((await texts()).map((t) => t.text)).toContain(REVOKED_NOTE);
     await setPermission(h.db, {
       threadId: revoked.threadId,
       permission: 'journalist_sharing',
       granted: false,
     });
-    expect((await texts()).map((t) => t.text)).not.toContain(REVOKED_TEXT);
+    expect((await texts()).map((t) => t.text)).not.toContain(REVOKED_NOTE);
     // And granting it again brings it back: the check was never lost.
     await setPermission(h.db, {
       threadId: revoked.threadId,
       permission: 'journalist_sharing',
       granted: true,
     });
-    expect((await texts()).map((t) => t.text)).toContain(REVOKED_TEXT);
+    expect((await texts()).map((t) => t.text)).toContain(REVOKED_NOTE);
     await setPermission(h.db, {
       threadId: cleared.threadId,
       permission: 'journalist_sharing',
@@ -816,17 +841,21 @@ describe('W5 · the desk reads checked text and report links, while the reporter
   });
 
   it('a withdrawal takes the report’s text off the desk (D2)', async () => {
-    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN'))).toBe(true);
+    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN-NOTE'))).toBe(
+      true,
+    );
     await h.db
       .updateTable('report_heads')
       .set({ withdrawn: true })
       .where('thread_id', '=', withdrawn.threadId)
       .execute();
-    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN'))).toBe(false);
+    expect((await texts()).map((t) => t.text).some((t) => t.startsWith('WITHDRAWN-NOTE'))).toBe(
+      false,
+    );
   });
 
-  it('a correction that changes the words drops the old clearance until the new words are checked (D2)', async () => {
-    expect((await texts()).map((t) => t.text)).toContain(CORRECTED_TEXT);
+  it('a correction that changes the words drops the old clearance until a new note is written (D2)', async () => {
+    expect((await texts()).map((t) => t.text)).toContain(CORRECTED_NOTE);
     const next = await fileHeld(
       h.db,
       keys,
@@ -835,10 +864,10 @@ describe('W5 · the desk reads checked text and report links, while the reporter
       { threadId: corrected.threadId, correctsId: corrected.reportId },
     );
     const after = (await texts()).map((t) => t.text);
+    expect(after).not.toContain(CORRECTED_NOTE);
     expect(after).not.toContain(CORRECTED_TEXT);
-    expect(after).not.toContain(`CORRECTED-NEW-TEXT ${run}`);
-    await ok('checked', await textRef(h.db, next.reportId));
-    expect((await texts()).map((t) => t.text)).toContain(`CORRECTED-NEW-TEXT ${run}`);
+    await note(await textRef(h.db, next.reportId), `CORRECTED-NEW-NOTE ${run}`);
+    expect((await texts()).map((t) => t.text)).toContain(`CORRECTED-NEW-NOTE ${run}`);
   });
 
   it('erasing the words (illegal) removes them from the desk, and no other route lists them', async () => {
@@ -850,15 +879,15 @@ describe('W5 · the desk reads checked text and report links, while the reporter
       { share: true },
     );
     const ref = await textRef(h.db, victim.reportId);
-    await ok('checked', ref);
-    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(true);
+    await note(ref, `ILLEGAL-NOTE ${run}`);
+    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-NOTE'))).toBe(true);
     await checkText(h.db, keys, ref, {
       outcome: 'illegal',
       reason: 'other-illegal',
       why: 'Checked for the record.',
       actor: MOD,
     });
-    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-TEXT'))).toBe(false);
+    expect((await texts()).some((t) => t.text.startsWith('ILLEGAL-NOTE'))).toBe(false);
     for (const u of ['/api/desk/texts.csv', '/api/desk/texts/all']) {
       expect((await call({ method: 'GET', url: u })).statusCode, u).toBe(404);
     }

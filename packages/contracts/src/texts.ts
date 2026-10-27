@@ -23,12 +23,15 @@ const Timestamp = z.string();
 const ThreadParams = z.object({ threadId: z.uuid() });
 const RefParams = z.object({ ref: z.string().min(3).max(120) });
 
-/** `redacted` is "checked with redaction": journalists read the separate copy. */
-export const TextOutcome = z.enum(['checked', 'redacted', 'withheld', 'illegal']);
+/**
+ * `redacted` is "a note for journalists": they read a note a moderator wrote,
+ * never the reporter's words. `withheld` is "keep internal".
+ */
+export const TextOutcome = z.enum(['redacted', 'withheld', 'illegal']);
 export type TextOutcome = z.infer<typeof TextOutcome>;
 
 /** The tabs of the queue. `illegal` is erased, so it has no tab, only a count of what was. */
-export const TextFilter = z.enum(['waiting', 'checked', 'redacted', 'withheld']);
+export const TextFilter = z.enum(['waiting', 'redacted', 'withheld']);
 export type TextFilter = z.infer<typeof TextFilter>;
 
 export const TextSource = z.enum(['report', 'tip']);
@@ -80,7 +83,6 @@ export type TextItem = z.infer<typeof TextItem>;
 
 export const TextCounts = z.object({
   waiting: z.number().int(),
-  checked: z.number().int(),
   redacted: z.number().int(),
   withheld: z.number().int(),
 });
@@ -107,7 +109,7 @@ export const TextHistoryItem = z.object({
   at: Timestamp,
   by: z.string(),
   kind: z.enum([
-    'checked',
+    'checked', // old decisions only
     'redacted',
     'withheld',
     'illegal',
@@ -146,7 +148,7 @@ export const checkText = defineRoute({
   method: 'POST',
   path: '/api/moderation/texts/:ref/check',
   summary:
-    'Record a check: checked, withheld, or illegal (which erases the words now). Checked needs the reporter’s permission.',
+    'Record a decision: withheld (keep internal) or illegal (which erases the words now). A note for journalists goes through the redact route.',
   params: RefParams,
   body: z.object({
     outcome: z.string(),
@@ -171,10 +173,10 @@ export const redactText = defineRoute({
   method: 'POST',
   path: '/api/moderation/texts/:ref/redact',
   summary:
-    'Save the copy journalists read, with what was removed marked in square brackets. Marks the item checked with redaction. The original is never changed.',
+    'Save the note journalists read, written by the moderator and quoting what they choose. The original is never changed and never shown to a journalist.',
   params: RefParams,
   body: z.object({
-    /** The copy. Parts removed are marked in square brackets, e.g. [name removed]. */
+    /** The note, in the moderator's words. Quoted parts are in quotation marks. */
     body: z.string(),
     /** Why, for the record (10 to 500 characters). Never shown to a journalist. */
     why: z.string(),
@@ -234,7 +236,7 @@ export const MyWritten = z.object({
       field_key: z.string(),
       text: z.string(),
       /** Where the check stands, in words a reporter can read: no check yet, or one. */
-      outcome: z.enum(['waiting', 'checked', 'redacted', 'withheld']),
+      outcome: z.enum(['waiting', 'redacted', 'withheld']),
       checked_at: Timestamp.nullable(),
     }),
   ),
