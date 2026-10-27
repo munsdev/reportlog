@@ -95,14 +95,27 @@ const FIT_SIZES = {
   },
 } as const;
 
+/**
+ * For a column that is narrow whatever the window is (the Look screen beside
+ * the staff sidebar): the small frames at every width, chosen by the caller
+ * from the column's own width, not the window's.
+ */
+const ALWAYS_SIZES = {
+  desktop: { box: 'h-[240px] w-[384px] max-w-full', page: 'scale-[0.3]' },
+  phone: { box: 'h-[192px] w-[117px]', page: 'scale-[0.3]' },
+} as const;
+
 interface FrameProps {
   look: Look;
   catalogue: LookCatalogue;
   size: keyof typeof SIZES;
   label: string;
-  fit: boolean;
+  fit: FitMode;
   children: ReactNode;
 }
+
+/** `true` shrinks from lg up (the window's width); `'always'` shrinks at every width. */
+type FitMode = boolean | 'always';
 
 function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProps) {
   const frame = useRef<HTMLIFrameElement>(null);
@@ -141,8 +154,8 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
       <div
         className={cn(
           'overflow-hidden rounded-control border-2 border-ink bg-paper',
-          SIZES[size].box,
-          fit && FIT_SIZES[size].box,
+          fit === 'always' ? ALWAYS_SIZES[size].box : SIZES[size].box,
+          fit === true && FIT_SIZES[size].box,
         )}
       >
         <iframe
@@ -155,8 +168,9 @@ function PreviewFrame({ look, catalogue, size, label, fit, children }: FrameProp
           data-theme={look.theme}
           className={cn(
             'pointer-events-none block origin-top-left border-0',
-            SIZES[size].page,
-            fit && FIT_SIZES[size].page,
+            fit === 'always' ? SIZES[size].page.replace(/scale-\S+/, '') : SIZES[size].page,
+            fit === 'always' && ALWAYS_SIZES[size].page,
+            fit === true && FIT_SIZES[size].page,
           )}
         />
       </div>
@@ -240,17 +254,23 @@ export function LookFrames({
   look: Look;
   name?: readonly BrandPart[];
   /** Drawn smaller from lg up, for a column kept in view beside the chooser. */
-  fit?: boolean;
+  fit?: FitMode;
   /** Where a pack's theme finds its panel heading and texture. */
   catalogue?: LookCatalogue;
 }) {
   const site = useSite();
   const parts = name ?? site.data?.name_parts ?? DEFAULT_PARTS;
   const [showDesktop, setShowDesktop] = useState(false);
+  const always = fit === 'always';
   return (
     <div className="flex flex-col gap-3">
-      <div className={cn('flex flex-wrap items-start', fit ? 'gap-7 lg:gap-4' : 'gap-7')}>
-        <div className={cn(showDesktop ? 'block' : 'hidden', 'lg:block')}>
+      <div
+        className={cn(
+          'flex flex-wrap items-start',
+          always ? 'gap-4' : fit ? 'gap-7 lg:gap-4' : 'gap-7',
+        )}
+      >
+        <div className={cn(always || showDesktop ? 'block' : 'hidden', 'lg:block')}>
           <PreviewFrame look={look} catalogue={catalogue} size="desktop" label="Desktop" fit={fit}>
             <PreviewPage parts={parts} />
           </PreviewFrame>
@@ -259,7 +279,7 @@ export function LookFrames({
           <PreviewPage parts={parts} />
         </PreviewFrame>
       </div>
-      <div className="lg:hidden">
+      <div className={cn(always ? 'hidden' : 'lg:hidden')}>
         <Button
           variant="secondary"
           aria-expanded={showDesktop}
