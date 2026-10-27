@@ -101,4 +101,21 @@ repository.
 
 ## Suites
 
-See the end of this file once the last run has finished.
+- `pnpm check`: green (web unit 547 tests; lint needed
+  `NODE_OPTIONS=--max-old-space-size=8192` here).
+- `pnpm test:db`: green, 96 files, 1477 tests (includes the new placements test).
+- Browser suite, last full run on this branch: 1224 passed, 1 failed, 32 not
+  run because that failure stops the chain. The 18 new tests in
+  `e2e/public-shell/shell.spec.ts` pass at 390 and 1280. The 32 skipped ones
+  (11 later projects) I ran project by project: all pass except three that
+  **fail identically on the integration branch (`d34ba03` plus only my
+  additive migration file), so are not from this branch**:
+  - `identity/access.spec.ts:442` expects a Moderator radio; the screen has
+    checkboxes (multi-role, decision 70).
+  - `doors/doors.spec.ts:103` expects `/list/<slug>`, the lock screen links
+    `/<slug>` (short address).
+  - `flood/flood.spec.ts:142` expects the text "Paused since" in the notice.
+  - `board-locked/board.spec.ts:86` fails the same way on the base when the
+    project is run alone (its queue call fails); not investigated further.
+- One fix after the first full run: the header's button is hidden below
+  380px (the 320px header checks failed with a sideways scroll).
