@@ -5,7 +5,6 @@ import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { FollowButton } from '../components/ui/follow-button.tsx';
 import { SiteFooter } from '../components/ui/site-footer.tsx';
 import { SiteLook } from '../components/ui/site.tsx';
-import { FollowBand } from '../features/follow/FollowBand.tsx';
 import { StepUpHost } from '../features/identity/StepUp.tsx';
 import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
@@ -16,6 +15,7 @@ import { SiteHeader } from '../features/nav/SiteHeader.tsx';
 import { Ticker } from '../features/nav/Ticker.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
 import { inFrame } from '../features/staff-nav/entries.ts';
+import { EasyClass } from '../mockup/EasierReading.tsx';
 
 export interface RouterContext {
   queryClient: QueryClient;
@@ -35,6 +35,9 @@ function RootLayout() {
       <FollowButton />
       <StepUpHost />
       <LookSwitcher />
+      <EasyClass />
+      {/* Where the mock-up's page script says things ("Copied", "Saved"). */}
+      <div className="toast" id="toast" role="status" aria-live="polite" />
     </HeaderProgressProvider>
   );
 }
@@ -94,26 +97,21 @@ function StaffFrame() {
 }
 
 function PublicFrame() {
-  const front = useLocation().pathname === '/';
   return (
     <div className="flex min-h-dvh flex-col">
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-card focus:bg-surface focus:p-2"
-      >
-        Skip to the content
+      <a className="skip" href="#main">
+        Skip to content
       </a>
       {/* The header and its menu (features/nav): the only way around the
           public site, and the way into the staff area. */}
       <SiteHeader />
       <Ticker />
-      {/* D11: the Follow along band, full width directly under the front
-          page's header. Other pages drop their own in (FollowBand). */}
-      {front ? <FollowBand placement="front" bleed /> : null}
       <PauseBanner />
-      <main id="main" className="w-full flex-1">
+      <main id="main" tabIndex={-1} className="w-full flex-1">
         {/* The padded column. A page that draws its own bands marks its root
-            `data-bleed` and this steps aside (styles.css, .rl-pad). */}
+            `data-bleed` and this steps aside (styles.css, .rl-pad). The front
+            page does, and draws its Follow along band itself, under its
+            headline (D11). */}
         <div className="rl-pad mx-auto w-full max-w-page pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]">
           <Outlet />
         </div>

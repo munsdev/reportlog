@@ -1,22 +1,17 @@
+/**
+ * The wide one-line wordmark (`.wm`): the site's name from its settings, the
+ * first accent run in <b> and the second in <i>, as the mock-up draws
+ * "Election<b>Log</b><i>.org</i>". While the settings load, and on a door
+ * (which may not ask for them), it is the software's own name.
+ */
+import { Link } from '@tanstack/react-router';
 import { Fragment } from 'react';
 import type { BrandPart } from '@reportlog/contracts';
+import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 
-/**
- * The mock-up's wordmark: `<span class="wm">Election<b>Log</b><i>.org</i></span>`.
- * The site's name arrives split into parts by the operator's own marks
- * (`"…"` is the accent, `'…'` the muted ending); the name is never typed here.
- */
-export function Wordmark({
-  parts,
-  label,
-  as: Tag = 'span',
-}: {
-  parts: readonly BrandPart[];
-  label: string;
-  as?: 'span' | 'p';
-}) {
+export function BrandRuns({ parts }: { parts: readonly BrandPart[] }) {
   return (
-    <Tag className="wm" aria-label={label}>
+    <>
       {parts.map((p, i) =>
         p.mark === 'a' ? (
           <b key={i}>{p.text}</b>
@@ -26,6 +21,20 @@ export function Wordmark({
           <Fragment key={i}>{p.text}</Fragment>
         ),
       )}
-    </Tag>
+    </>
+  );
+}
+
+export function Wordmark({ onClick }: { onClick?: () => void }) {
+  const site = useSite().data;
+  return (
+    <Link
+      to="/"
+      className="wm"
+      aria-label={`${plainSiteName(site)}, home`}
+      {...(onClick ? { onClick } : {})}
+    >
+      {site ? <BrandRuns parts={site.name_parts} /> : 'ReportLog'}
+    </Link>
   );
 }
