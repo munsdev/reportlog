@@ -13,7 +13,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { call } from '../../lib/api.ts';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Panel } from '../../mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';

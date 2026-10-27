@@ -25,7 +25,7 @@ import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';

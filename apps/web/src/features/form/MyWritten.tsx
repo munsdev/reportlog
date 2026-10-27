@@ -17,7 +17,7 @@ import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query
 import { useState } from 'react';
 import { call } from '@/lib/api.ts';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '../../mockup/Panel.tsx';

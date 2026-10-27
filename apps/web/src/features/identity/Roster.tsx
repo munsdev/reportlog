@@ -16,7 +16,7 @@ import { useId, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { call } from '../../lib/api.ts';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { TextField } from '../../mockup/Fields.tsx';

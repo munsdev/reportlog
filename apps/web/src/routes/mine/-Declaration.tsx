@@ -27,7 +27,7 @@ import { useMe } from '@/features/identity/session.ts';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '../../mockup/Panel.tsx';

@@ -33,7 +33,7 @@ import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';

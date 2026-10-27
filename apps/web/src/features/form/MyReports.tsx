@@ -32,7 +32,7 @@ import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
 import { SmBtnLink as BtnLink, SmBtn as Btn } from '../../mockup/SmBtn.tsx';
-import { Check } from '../../mockup/Choices.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
