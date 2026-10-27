@@ -37,6 +37,7 @@ export function FrontPageLayout({
   name,
   above,
   headline,
+  slogan,
   lede,
   ways,
   helpNow,
@@ -46,6 +47,8 @@ export function FrontPageLayout({
   /** Above everything: the Edit button, for somebody who may use it. */
   above?: ReactNode;
   headline: ReactNode;
+  /** The slogan bar, under the headline; nothing when the operator wrote none. */
+  slogan?: ReactNode;
   lede: ReactNode;
   ways: ReactNode;
   helpNow: ReactNode;
@@ -66,6 +69,7 @@ export function FrontPageLayout({
             <div className="flex flex-col gap-3">
               <Eyebrow>{name}</Eyebrow>
               {headline}
+              {slogan}
               {lede}
             </div>
             <p className="flex flex-col gap-1">
@@ -98,6 +102,23 @@ export function FrontPageLayout({
 
 /** The headline, larger on a desktop so the page reads big and bold rather than a strip. */
 export const HEADLINE_CLASS = 'font-display text-title lg:text-[calc(var(--rl-h1-size)*1.15)]';
+/**
+ * The slogan in a solid bar under the headline: the text colour as ground,
+ * the page's own ground as text, so it holds in every palette. As wide as its
+ * words and no wider, and wrapping rather than overflowing at 390px.
+ */
+export function Slogan({ text }: { text: string }) {
+  if (!text) return null;
+  return (
+    <p
+      data-slogan
+      className="w-fit max-w-full rounded-control bg-ink px-4 py-2.5 font-display text-lg leading-tight text-paper sm:text-xl"
+    >
+      {text}
+    </p>
+  );
+}
+
 export const LEDE_CLASS = 'max-w-[65ch] text-lede text-ink-alt whitespace-pre-wrap';
 
 // ── the quieter sections, as a visitor sees them ─────────────────────────

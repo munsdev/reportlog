@@ -66,6 +66,8 @@ function site(overrides: Partial<Site> = {}): Site {
       how_intro: '',
       alliance_intro: '',
       standards: 's',
+      home_slogan: '',
+      ticker_text: '',
     },
     dev_mode_until: null,
     version: { release: null, build: null },

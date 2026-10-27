@@ -16,12 +16,13 @@
  * (the menu and the Close button) while open, and goes back to the Menu
  * button on close. The page behind does not scroll while it is open.
  */
-import { useLocation } from '@tanstack/react-router';
+import { Link, useLocation } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 import { useGateMode } from '../identity/gateMode.ts';
 import { useMe } from '../identity/session.ts';
-import { SiteMenu } from './Menu.tsx';
+import { SiteMenu, useMainAction } from './Menu.tsx';
 import { MENU_ID, MenuButton } from './MenuButton.tsx';
 import { ProgressRule, useProgressPercent } from './progress.tsx';
 import { usePhone, useWaiting } from './waiting.ts';
@@ -52,16 +53,19 @@ export function SiteHeader() {
         <div className="mx-auto flex h-14 max-w-[76rem] items-center justify-between gap-4 px-[max(1rem,env(safe-area-inset-left))] md:h-16 md:px-8">
           <Wordmark />
           {door ? null : (
-            <MenuControl
-              open={open}
-              onOpen={() => {
-                setOpenAt(pathname);
-              }}
-              onClose={() => {
-                setOpenAt(null);
-              }}
-              pathname={pathname}
-            />
+            <div className="flex shrink-0 items-center gap-2 md:gap-3">
+              <FileAction />
+              <MenuControl
+                open={open}
+                onOpen={() => {
+                  setOpenAt(pathname);
+                }}
+                onClose={() => {
+                  setOpenAt(null);
+                }}
+                pathname={pathname}
+              />
+            </div>
           )}
         </div>
         {/* While the menu is open, its own rule is the one at the bottom. */}
@@ -77,6 +81,20 @@ export function SiteHeader() {
         <div aria-hidden="true" className="fixed inset-0 z-30 bg-deeper/55 print:hidden" />
       ) : null}
     </>
+  );
+}
+
+/**
+ * The header's one button: straight to the front page's first button's
+ * target (the logbook, as the operator arranged it), not to the chooser,
+ * which is in the menu. Not mounted on a door, so it asks nothing there.
+ */
+function FileAction() {
+  const { label, href } = useMainAction();
+  return (
+    <Button asChild size="md" className="focus-visible:outline-on-deep" data-file-action>
+      {href === '/submit' ? <Link to="/submit">{label}</Link> : <a href={href}>{label}</a>}
+    </Button>
   );
 }
 

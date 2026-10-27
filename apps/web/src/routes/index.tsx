@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { Button } from '../components/ui/button.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { ToastProvider, useToast } from '../components/ui/toast.tsx';
 import { Lede } from '../components/ui/type.tsx';
@@ -32,6 +33,7 @@ import {
   LEDE_CLASS,
   LinksSection,
   MapSection,
+  Slogan,
   SocialSection,
 } from '../features/home/FrontPage.tsx';
 import { FrontPageEditor } from '../features/home/FrontPageEditor.tsx';
@@ -56,11 +58,15 @@ export const Route = createFileRoute('/')({
   ),
 });
 
-/** Whoever may change the site's settings: the people `/settings` lets in. */
+/**
+ * The owner, and nobody below: the page is the site's face, so changing it
+ * on the page is the owner's. (An administrator still edits the same wording
+ * from Site settings.) Never on a door, which may not ask who is signed in.
+ */
 function useCanEdit(): boolean {
   const onDoor = useGateMode() === 'door';
   const me = useMe().data;
-  return !onDoor && Boolean(me?.signedIn) && roleSatisfies(me?.signedIn ? me.roles : null, 'admin');
+  return !onDoor && Boolean(me?.signedIn) && roleSatisfies(me?.signedIn ? me.roles : null, 'owner');
 }
 
 function Home() {
@@ -130,32 +136,40 @@ function Home() {
                 }}
               />
             ) : null}
-            {/* Bubbles in the corner, tools for the administrator that take no room
-              in the page's own flow. Above any bar fixed to the bottom of the screen. */}
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(true);
-              }}
-              className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+1rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
+            {/* The owner's edit bar: sticky under the header, its buttons always
+              at the left of it (the block editor's rule), so they are found in
+              the same place on every page that can be edited. */}
+            <div
+              role="region"
+              aria-label="Page editor"
+              data-edit-bar
+              className="sticky top-[4.5rem] z-30 flex flex-wrap items-center gap-2 rounded-card border-b-2 border-brand-on-deep bg-deeper px-3 py-2 text-on-deep md:top-20 print:hidden"
             >
-              <span aria-hidden="true">✎</span>
-              Edit this page
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setHeroEditing((v) => !v);
-              }}
-              className="fixed bottom-[calc(max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px))+4.5rem)] left-4 z-30 flex cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-3 py-2 text-sm font-semibold text-ink shadow-raised print:hidden"
-            >
-              <span aria-hidden="true">✎</span>
-              Edit headline
-            </button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setEditing(true);
+                }}
+              >
+                <span aria-hidden="true">✎</span>
+                Edit this page
+              </Button>
+              <Button
+                variant="secondary"
+                aria-pressed={heroEditing}
+                onClick={() => {
+                  setHeroEditing((v) => !v);
+                }}
+              >
+                <span aria-hidden="true">✎</span>
+                Edit headline
+              </Button>
+            </div>
           </>
         ) : null
       }
       headline={<h1 className={HEADLINE_CLASS}>{headline}</h1>}
+      slogan={<Slogan text={site?.copy.home_slogan ?? ''} />}
       lede={
         lede ? (
           info ? (

@@ -50,7 +50,7 @@ describe('the development notice', () => {
 
 describe('the slots', () => {
   it('are legacy’s nine, the lock screen’s paragraph, the three terms slots, the two on the filing cards Plan E’s three, the door’s refusal and the emergency notice, and the optional ones resolve to nothing', () => {
-    expect(COPY_SLOTS).toHaveLength(23);
+    expect(COPY_SLOTS).toHaveLength(25);
     // Decision 62: never optional, so it can be reworded and never blanked.
     expect(COPY_SLOTS.find((s) => s.key === 'help_now')?.optional).toBeUndefined();
     // The choosing card always asks something; the line beside Send is the operator's or nothing.

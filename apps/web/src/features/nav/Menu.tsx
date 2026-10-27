@@ -22,10 +22,12 @@ import type { LinkProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Count } from '@/components/ui/count.tsx';
+import { SocialLinks } from '@/components/ui/social-links.tsx';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 import type { SignedInMe } from '../identity/session.ts';
 import { useSignOut } from '../identity/session.ts';
+import { useFollow } from '../follow/useFollow.ts';
 import { entriesFor } from '../staff-nav/entries.ts';
 import { EasierReadingSlot } from './EasierReadingSlot.tsx';
 import { waitingWords } from './waiting.ts';
@@ -53,6 +55,11 @@ export function mainAction(buttons: readonly HomeButton[] | undefined): {
   if (first.kind === 'builtin' && first.ref === 'submit' && first.label === first.title)
     return { label: 'Submit a report', href: first.href };
   return { label: first.label || first.title, href: first.href };
+}
+
+/** The main action as the page should draw it, asking for the front page's buttons itself. */
+export function useMainAction(): { label: string; href: string } {
+  return mainAction(useQuery(homeButtonsQuery).data?.buttons);
 }
 
 interface MenuProps {
@@ -96,8 +103,22 @@ function MainAction({ onChoose, block }: { onChoose: () => void; block: boolean 
   );
 }
 
+/** The site's accounts as icons, at the top of the menu, when that placement is on. */
+function MenuFollow() {
+  const { links, name } = useFollow('menu');
+  if (!links.length) return null;
+  return (
+    <nav aria-label={`Follow ${name}`} data-menu-follow>
+      <SocialLinks links={links} siteName={name} variant="icons" onDeep />
+    </nav>
+  );
+}
+
 const PUBLIC_LINKS: readonly { to: NonNullable<LinkProps['to']>; label: string; hash?: string }[] =
   [
+    // The chooser lives here, not behind the main button: the main button
+    // goes straight to the logbook.
+    { to: '/submit', label: 'What do you want to send?' },
     { to: '/board', label: 'Board' },
     { to: '/how', label: 'How to use' },
     { to: '/about', label: 'About' },
@@ -289,6 +310,9 @@ export function MenuPanel({ me, waiting, pathname, onChoose }: MenuProps) {
         <h2 id="menu-this-site" className="sr-only">
           This site
         </h2>
+        <div className="mb-3 empty:hidden">
+          <MenuFollow />
+        </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <div className="mr-2.5">
             <MainAction onChoose={onChoose} block={false} />
@@ -362,6 +386,9 @@ export function MenuSheet({ me, waiting, pathname, onChoose }: MenuProps) {
         <h2 id="menu-this-site" className="sr-only">
           This site
         </h2>
+        <div className="mb-3 empty:hidden">
+          <MenuFollow />
+        </div>
         <MainAction onChoose={onChoose} block />
         <div className="pt-5">
           <PublicTiles onChoose={onChoose} phone />

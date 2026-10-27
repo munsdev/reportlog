@@ -23,6 +23,7 @@ import {
   SOCIAL_FLOAT_PAGES,
   SocialFloat,
   SocialLink,
+  SocialPlacementSchema,
 } from './social.ts';
 
 export * from './social.ts';
@@ -250,6 +251,10 @@ export const COPY_KEYS = [
   'cta_heading',
   'cta_button_text',
   'cta_button_url',
+  // The public shell: the slogan bar under the front page headline, and the
+  // strip under the header. Both are the operator's words, so both ship empty.
+  'home_slogan',
+  'ticker_text',
 ] as const;
 export type CopyKey = (typeof COPY_KEYS)[number];
 export const CopyKeySchema = z.enum(COPY_KEYS);
@@ -351,6 +356,12 @@ export const Site = z.object({
    * and an account is shown; absent otherwise, so most pages never see it.
    */
   social_float_pages: z.array(z.enum(SOCIAL_FLOAT_PAGES)).optional(),
+  /**
+   * The placements switched on (menu, ticker, footer, the Follow along
+   * bands). Optional so a page holding an older answer still draws, as
+   * every placement; the server always sends it.
+   */
+  social_placements: z.array(SocialPlacementSchema).optional(),
 });
 export type Site = z.infer<typeof Site>;
 
@@ -451,6 +462,8 @@ export const SiteEditor = z.object({
   social_links: z.array(SocialLink),
   /** The floating "Follow us" button's switch and pages. */
   social_float: SocialFloat,
+  /** The placements that are on. */
+  social_placements: z.array(SocialPlacementSchema),
 });
 export type SiteEditor = z.infer<typeof SiteEditor>;
 
@@ -527,6 +540,8 @@ export const setSocialLinks = defineRoute({
       .max(40),
     /** The floating button. Left out, it is kept as it was. */
     float: z.object({ on: z.boolean(), pages: z.array(z.string()).max(20) }).optional(),
+    /** The placements that are on. Left out, they are kept as they were. */
+    placements: z.array(z.string()).max(40).optional(),
   }),
   response: SiteEditor,
 });

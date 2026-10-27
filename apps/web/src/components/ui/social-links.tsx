@@ -21,17 +21,20 @@ export function SocialLinks({
   links,
   siteName,
   variant,
+  onDeep = false,
   className,
 }: {
   links: readonly PublicSocialLink[] | undefined;
   siteName: string;
   variant: 'icons' | 'list';
+  /** On the header's dark ground (the menu): the light mark and focus ring. */
+  onDeep?: boolean;
   className?: string;
 }) {
   if (!links?.length) return null;
   if (variant === 'icons') {
     return (
-      <ul className={cn('flex flex-wrap justify-center gap-1', className)}>
+      <ul className={cn('flex flex-wrap gap-1', !onDeep && 'justify-center', className)}>
         {links.map((l) => {
           const label = `${siteName} on ${SOCIAL_RULES[l.id].name}`;
           return (
@@ -43,7 +46,12 @@ export function SocialLinks({
                 aria-label={label}
                 title={label}
                 data-social={l.id}
-                className="inline-flex size-11 items-center justify-center rounded-control text-ink-alt hover:text-ink"
+                className={cn(
+                  'inline-flex size-11 items-center justify-center rounded-control',
+                  onDeep
+                    ? 'text-on-deep hover:bg-deep focus-visible:outline-on-deep'
+                    : 'text-ink-alt hover:text-ink',
+                )}
               >
                 <SocialIcon platform={l.id} />
               </a>

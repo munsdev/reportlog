@@ -44,7 +44,7 @@ export default defineConfig({
     {
       name: 'chromium',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|public-shell|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Desktop Chrome'],
@@ -54,10 +54,22 @@ export default defineConfig({
     {
       name: 'phone',
       testIgnore:
-        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
+        /(identity|behind-password|files-door|doors|board-locked|board-maps|owner|public-shell|journalist-desk|in-front|a11y-locked|flood|door-settings)\//,
       dependencies: ['staff-setup'],
       use: {
         ...devices['Pixel 7'],
+        ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
+      },
+    },
+    {
+      // U2: the public shell. It sets the site's social accounts and takes
+      // the owner's seat, both the whole site's, so it runs alone, right
+      // after the first two projects and before anything turns the password on.
+      name: 'public-shell',
+      testMatch: /public-shell\/.*\.spec\.ts$/,
+      dependencies: ['chromium', 'phone'],
+      use: {
+        ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
       },
     },
@@ -66,7 +78,7 @@ export default defineConfig({
       // shares. So it runs alone, after the others, and puts it back after.
       name: 'identity',
       testMatch: /identity\/.*\.spec\.ts$/,
-      dependencies: ['chromium', 'phone'],
+      dependencies: ['public-shell'],
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),
