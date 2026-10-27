@@ -94,13 +94,34 @@ export const BUILT_IN_CATALOGUE: LookCatalogue = {
  * labels, numbers and path data.
  */
 export function kitOf(pack: LookPack): LookKit | null {
-  if (!pack.elements?.length) return null;
+  if (!pack.elements?.length && !pack.palettes?.length && !pack.themes?.length) return null;
   return {
     pack: pack.id,
     label: pack.label,
     ...(pack.credit ? { credit: pack.credit } : {}),
-    elements: pack.elements,
+    elements: pack.elements ?? [],
     shapes: pack.shapes ?? {},
+    // The page script paints from these (apps/web/src/mockup/siteLook.tsx).
+    ...(pack.palettes?.length
+      ? {
+          palettes: pack.palettes.map((p) => ({
+            id: p.id,
+            label: p.label,
+            colors: p.colors,
+          })),
+        }
+      : {}),
+    ...(pack.themes?.length
+      ? {
+          themes: pack.themes.map((t) => ({
+            id: t.id,
+            label: t.label,
+            type: t.type,
+            shape: t.shape,
+            ...(t.display ? { display: t.display } : {}),
+          })),
+        }
+      : {}),
   };
 }
 const kitHash = (kit: LookKit) => sha256(JSON.stringify(kit));

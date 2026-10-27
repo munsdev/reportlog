@@ -62,11 +62,29 @@
     "trailhead":   { label: "Trailhead",   display: '"Bitter",Georgia,serif', weight: 800, stretch: "100%", "case": "none", lh: ".98", track: "-.02em", hStretch: "100%", hWeight: 800, fitMax: 100, fitMin: 36, bandMax: 72, bandMin: 30, pageMax: "2.75rem", two: "action", tag: "rule", radius: "8px", radiusBtn: "10px", line: "3px", shadow: "4px", btnCase: "none" },
     "compact-poster": { label: "Poster, tempered", display: '"Archivo","Arial Narrow",Arial,sans-serif', weight: 800, stretch: "112%", "case": "uppercase", lh: ".9", track: "-.01em", hStretch: "105%", hWeight: 800, fitMax: 84, fitMin: 36, bandMax: 60, bandMin: 30, pageMax: "2.5rem", two: "outline", tag: "bar", radius: "10px", radiusBtn: "12px", line: "3px", shadow: "4px", btnCase: "uppercase" }
   };
-  var PACKS = window.RL_LOOK_PACKS || [];
-  var PALETTES = {}, THEMES = {}, DEFAULTS = { palette: "platinum", theme: "desk", bg: { on: { ruled: false } } };
+  /* The catalogue is rebuilt IN PLACE by setPacks(), so everything that holds one
+     of these objects (the look switcher, window.elLook.palettes) keeps seeing
+     the current one. */
+  var PACKS = [];
+  var PALETTES = {}, THEMES = {}, ELEMENTS = [], SHAPES = {};
+  var CORE_DEFAULTS = { palette: "platinum", theme: "desk", bg: { on: { ruled: false } } };
+  var DEFAULTS = CORE_DEFAULTS;
   function addAll(dst, src, from) { for (var k in src) dst[k] = Object.assign({ from: from }, src[k]); }
-  PACKS.forEach(function (p) { addAll(PALETTES, p.palettes || {}, p.label); addAll(THEMES, p.themes || {}, p.label); if (p.defaults) DEFAULTS = p.defaults; });
-  addAll(PALETTES, CORE_PALETTES, "ReportLog"); addAll(THEMES, CORE_THEMES, "ReportLog");
+  function clear(o) { if (Array.isArray(o)) o.length = 0; else for (var k in o) delete o[k]; }
+  function setPacks(packs) {
+    clear(PACKS); clear(PALETTES); clear(THEMES); clear(ELEMENTS); clear(SHAPES);
+    DEFAULTS = CORE_DEFAULTS;
+    (packs || []).forEach(function (p) { PACKS.push(p); });
+    ELEMENTS.push({ id: "ruled", label: "Ruled lines", kind: "ruled", from: "ReportLog" });
+    PACKS.forEach(function (p) {
+      addAll(PALETTES, p.palettes || {}, p.label); addAll(THEMES, p.themes || {}, p.label);
+      if (p.defaults) DEFAULTS = p.defaults;
+      for (var s in p.shapes || {}) SHAPES[s] = p.shapes[s];
+      (p.elements || []).forEach(function (e) { ELEMENTS.push(Object.assign({ from: p.label }, e)); });
+    });
+    addAll(PALETTES, CORE_PALETTES, "ReportLog"); addAll(THEMES, CORE_THEMES, "ReportLog");
+  }
+  setPacks(window.RL_LOOK_PACKS || []);
 
   function applyPalette(id) {
     var P = PALETTES[id]; if (!P) return;
@@ -88,7 +106,9 @@
     root.setAttribute("data-two", T.two); root.setAttribute("data-tag", T.tag);
   }
 
-  /* ---------- Look settings (mock: per browser; real: Settings > Look) ---------- */
+  /* ---------- Look settings ----------
+     The app hands the site's saved look to window.elSetLook(look, packs). With
+     nothing handed over, the core defaults apply. */
   var LOOK_KEY = "el-look";
   function freshBg() {
     var on = {}; var d = (DEFAULTS.bg && DEFAULTS.bg.on) || {};
@@ -96,16 +116,20 @@
     return { on: on, patOp: 0.14, shapeOp: 0.2, style: {}, img: null, imgPlace: "behind", imgShape: "liberty", imgMode: "under", imgTone: "mono", imgOp: 0.4, imgFocus: 60, fade: "side", fadeAmt: 0.5 };
   }
   function freshLook() { return { palette: DEFAULTS.palette, theme: DEFAULTS.theme, bg: freshBg(), motion: "on", zones: "alternate" }; }
-  var look = freshLook();
+  var look = freshLook(), serverLook = null;
   var IMG_KEY = "el-look-img", imgVolatile = false;
-  try {
-    var saved = window.RL_SITE_LOOK || {};
-    for (var k in saved) if (k !== "bg" && k !== "decor") look[k] = saved[k];
-    if (saved.bg) { for (var b in saved.bg) look.bg[b] = saved.bg[b]; }
-    look.bg.img = (window.RL_SITE_LOOK && window.RL_SITE_LOOK.img) || null;
-  } catch (e) {}
-  if (!PALETTES[look.palette]) look.palette = DEFAULTS.palette;
-  if (!THEMES[look.theme]) look.theme = DEFAULTS.theme;
+  function adopt(saved) {
+    look = freshLook();
+    try {
+      saved = saved || {};
+      for (var k in saved) if (k !== "bg" && k !== "decor") look[k] = saved[k];
+      if (saved.bg) { for (var b in saved.bg) look.bg[b] = saved.bg[b]; }
+      look.bg.img = saved.img || (saved.bg && saved.bg.img) || null;
+    } catch (e) {}
+    if (!PALETTES[look.palette]) look.palette = DEFAULTS.palette;
+    if (!THEMES[look.theme]) look.theme = DEFAULTS.theme;
+  }
+  adopt(window.RL_SITE_LOOK);
   function applyLook() {
     applyPalette(look.palette); applyTheme(look.theme);
     root.setAttribute("data-motion", look.motion);
@@ -120,10 +144,21 @@
     set: function (k, v) { look[k] = v; save(); applyLook(); redrawAll(); fitAll(); },
     setBg: function (k, v) { look.bg[k] = v; save(); redrawAll(); },
     setImage: function (dataUrl) { look.bg.img = dataUrl; imgVolatile = false; try { if (dataUrl) localStorage.setItem(IMG_KEY, dataUrl); else localStorage.removeItem(IMG_KEY); } catch (e) { imgVolatile = true; } save(); redrawAll(); return !imgVolatile; },
-    reset: function () { look = freshLook(); try { localStorage.removeItem(LOOK_KEY); localStorage.removeItem(IMG_KEY); } catch (e) {} applyLook(); redrawAll(); fitAll(); },
+    reset: function () { adopt(serverLook); try { localStorage.removeItem(LOOK_KEY); localStorage.removeItem(IMG_KEY); } catch (e) {} applyLook(); redrawAll(); fitAll(); },
     palettes: PALETTES, themes: THEMES
   };
   applyLook();
+  /* Sets the site's look and the look packs' parts (palettes, themes, header
+     elements and shapes, in the shape this script uses), then redraws and
+     refits. The app calls it whenever the saved look or the installed packs
+     change. */
+  window.elSetLook = function (saved, packs) {
+    setPacks(packs);
+    serverLook = saved ? JSON.parse(JSON.stringify(saved)) : null;
+    adopt(serverLook);
+    applyLook(); redrawAll(); fitAll();
+    if (document.getElementById("lookfab")) { window.elLookSwitcher(false); window.elLookSwitcher(true); }
+  };
 
   /* ---------- Headline fitting ----------
      Each headline line keeps to one line at the largest size that fits,
@@ -189,12 +224,6 @@
   var NS = "http://www.w3.org/2000/svg";
   function el(t, a, p) { var e = document.createElementNS(NS, t); for (var k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; }
   function rng(seed) { return function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
-  var ELEMENTS = [{ id: "ruled", label: "Ruled lines", kind: "ruled", from: "ReportLog" }];
-  var SHAPES = {};
-  PACKS.forEach(function (p) {
-    for (var s in p.shapes || {}) SHAPES[s] = p.shapes[s];
-    (p.elements || []).forEach(function (e) { ELEMENTS.push(Object.assign({ from: p.label }, e)); });
-  });
   window.elDecor = { elements: ELEMENTS, shapes: SHAPES, packs: PACKS };
 
   function svgLayer(cls, depth) {
@@ -430,14 +459,14 @@
     });
     Object.keys(THEMES).forEach(function (id) {
       var T = THEMES[id];
-      var aa = h("span", { "class": "lp-aa", text: T["case"] === "uppercase" ? "LOG IT!" : "Log it!", "aria-hidden": "true" });
+      var aa = h("span", { "class": "lp-aa", text: T["case"] === "uppercase" ? "AA" : "Aa", "aria-hidden": "true" });
       aa.style.fontFamily = T.display; aa.style.fontWeight = T.weight; aa.style.fontStretch = T.stretch;
       var b = h("button", { type: "button", "class": "lp-opt", "data-k": "theme", "data-v": id }, [aa, h("span", { "class": "nm", text: T.label }), h("span", { "class": "src", text: T.from })]);
       thmGrid.appendChild(b);
     });
     [["on", "Parallax"], ["off", "Still"]].forEach(function (m) { motRow.appendChild(h("button", { type: "button", "class": "lp-chip", "data-k": "motion", "data-v": m[0], text: m[1] })); });
     section("Palette", palGrid); section("Theme", thmGrid); var bgSec = section("Header background", bgEditor()); bgSec.id = "lp-bg"; section("Motion", motRow);
-    var reset = h("button", { type: "button", "class": "lp-chip", text: "Back to the Civic look" });
+    var reset = h("button", { type: "button", "class": "lp-chip", text: "Back to the saved look" });
     panel.appendChild(h("section", {}, [reset]));
     panel.appendChild(h("p", { "class": "lp-note", text: "A mock-up tool for trying combinations. In the product these are the owner's choices in Settings › Look, and visitors don't see this button." }));
 
