@@ -28,3 +28,4 @@ export * from './look/header.ts';
 export * from './updates.ts';
 export * from './slugs.ts';
 export * from './pages.ts';
+export * from './texts.ts';

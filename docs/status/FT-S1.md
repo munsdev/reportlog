@@ -159,4 +159,4 @@ links that are never published cannot be filed for somebody else yet. Leave them
 
 ## Suite totals
 
-Lean checks only (owner order): seal 52 and fields 123 unit tests green, legacy vectors green; tsc seal, fields, api, web clean; eslint and prettier clean on changed files. db suite, e2e and pnpm check NOT run by this worker (integrator runs them).
+See the final report to the integrator (filled in after the full runs).
