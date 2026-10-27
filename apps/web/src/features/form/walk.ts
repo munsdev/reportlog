@@ -21,10 +21,13 @@ import {
   conditionMet,
   describeAnswer,
   isAsked,
+  maxLinksOf,
   normalizeAnswer,
+  normalizePrivateLink,
+  normalizePrivateText,
   placeLabel,
 } from '@reportlog/fields';
-import type { Answers, FieldDefinition, FieldSettings } from '@reportlog/fields';
+import type { Answers, FieldDefinition } from '@reportlog/fields';
 
 /** What a control holds, before the server normalizes it. */
 export type RawValue = string | string[];
@@ -40,6 +43,36 @@ export function definitionsOf(questions: readonly FormQuestion[]): FieldDefiniti
     ...(q.shown_when ? { shown_when: q.shown_when } : {}),
     settings: q.settings,
   }));
+}
+
+/** Text and links kept apart from the report (W1): erasable, never published. */
+export const isHeldKind = (kind: string) => kind === 'private_text' || kind === 'private_link';
+
+/** The links a link question holds right now: blanks and repeats are not links. */
+export function linksOf(v: RawValue | undefined): string[] {
+  const list = Array.isArray(v) ? v : typeof v === 'string' ? [v] : [];
+  return list.map((x) => x.trim()).filter(Boolean);
+}
+
+/** What the reporter wrote or pasted into one text or link question, or null. */
+function heldOf(q: FormQuestion, raw: RawAnswers): string | string[] | null {
+  const v = raw[q.key];
+  if (q.kind === 'private_text') {
+    const t = typeof v === 'string' ? v.trim() : '';
+    return t ? t : null;
+  }
+  const links = linksOf(v);
+  return links.length ? links : null;
+}
+
+/**
+ * Whether the reporter has written or pasted anything into a question that
+ * is kept apart from the report. Only the questions being asked count (the
+ * same rule as the server's): going back to clear a box makes the address
+ * optional again, with nothing else to undo (D8).
+ */
+export function wroteSomething(questions: readonly FormQuestion[], raw: RawAnswers): boolean {
+  return askedQuestions(questions, raw).some((q) => isHeldKind(q.kind) && heldOf(q, raw) !== null);
 }
 
 /**
@@ -74,6 +107,12 @@ function toRawSubmission(questions: readonly FormQuestion[], raw: RawAnswers) {
   for (const q of questions) {
     const v = raw[q.key];
     if (v === undefined) continue;
+    if (isHeldKind(q.kind)) {
+      // Blank boxes are not sent; the server refuses what it cannot keep.
+      const held = heldOf(q, raw);
+      if (held !== null) out[q.key] = held;
+      continue;
+    }
     out[q.key] =
       q.kind === 'datetime' && typeof v === 'string' && v && !Number.isNaN(new Date(v).getTime())
         ? new Date(v).toISOString()
@@ -164,6 +203,7 @@ export function cardProblem(
   /** The whole form, so an answer that depends on an earlier one (a county in its state, a list chosen by method) is checked against it. */
   questions?: readonly FormQuestion[],
 ): string | null {
+  if (isHeldKind(q.kind)) return heldProblem(q, raw);
   const v = raw[q.key];
   if (isEmpty(v)) return q.required ? 'An answer is needed here.' : null;
   const answers = questions ? sealedAnswers(questions, raw) : undefined;
@@ -187,12 +227,34 @@ export function cardProblem(
   return null;
 }
 
+function heldProblem(q: FormQuestion, raw: RawAnswers): string | null {
+  const held = heldOf(q, raw);
+  if (held === null) return q.required ? 'An answer is needed here.' : null;
+  if (q.kind === 'private_text') {
+    return normalizePrivateText(held, q.settings) === null
+      ? 'That is not something this question takes. Check it, or clear it.'
+      : null;
+  }
+  const links = held as string[];
+  if (links.length > maxLinksOf(q.settings))
+    return `This question takes at most ${String(maxLinksOf(q.settings))} links.`;
+  const bad = links.find((l) => normalizePrivateLink(l) === null);
+  return bad === undefined
+    ? null
+    : 'A link has to be a web address starting with http:// or https://.';
+}
+
 /** An answer in the words the reporter read: the review card's rows. */
 export function shownAnswer(
   q: FormQuestion,
   raw: RawAnswers,
   questions?: readonly FormQuestion[],
 ): string | null {
+  if (isHeldKind(q.kind)) {
+    const held = heldOf(q, raw);
+    if (held === null) return null;
+    return Array.isArray(held) ? held.join(', ') : held;
+  }
   const v = raw[q.key];
   if (isEmpty(v) || v === undefined) return null;
   // A CHOICE BY ITS LABEL, never its code; from the list this reporter was
@@ -203,7 +265,7 @@ export function shownAnswer(
   }
   if (Array.isArray(v)) return v.join(', ');
   if (q.kind === 'yes_no') return v === 'yes' ? 'Yes' : 'No';
-  if (q.kind === 'number' && (q.settings as FieldSettings).picker === 'hour') {
+  if (q.kind === 'number' && q.settings.picker === 'hour') {
     return describeAnswer(asDefinition(q), Number(v));
   }
   // A state or county written by code alone (AZ, 04013) names itself.

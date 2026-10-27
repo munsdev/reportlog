@@ -435,6 +435,8 @@ export const getPublicLogbook = defineRoute({
      * none files it at once (D8, D20).
      */
     email_optional: z.literal(true).optional(),
+    /** The day report addresses are deleted (YYYY-MM-DD), where an address can be given (D4). */
+    contacts_delete_on: z.string().optional(),
     /**
      * Present only where publication is a condition of filing: the terms the
      * form shows instead of asking, and the digest to send back with them.

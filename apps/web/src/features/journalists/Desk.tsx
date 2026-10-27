@@ -16,7 +16,7 @@
  * journalist copies it into a browser on purpose. Every page shown is in the
  * access log (J12).
  */
-import { DESK_PAGE_SIZE, deskLinks, deskSources } from '@reportlog/contracts';
+import { DESK_PAGE_SIZE, deskLinks, deskSources, deskTexts } from '@reportlog/contracts';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -46,11 +46,16 @@ function DeskSection({
   title,
   lede,
   warn = true,
+  notice,
+  footer = 'Every page you open here is recorded in the access log.',
   children,
 }: {
   title: string;
   lede: string;
   warn?: boolean;
+  /** A different "before you use it" note, for a page that is not about links. */
+  notice?: { title: string; body: string };
+  footer?: string;
   children: ReactNode;
 }) {
   const siteName = plainSiteName(useSite().data);
@@ -64,10 +69,13 @@ function DeskSection({
               not as a fact. Copying one is your choice: this site never opens it.
             </Alert>
           ) : null}
+          {notice ? (
+            <Alert tone="warning" title={notice.title}>
+              {notice.body}
+            </Alert>
+          ) : null}
           {children}
-          <p className="text-sm text-ink-alt">
-            Every page you open here is recorded in the access log.
-          </p>
+          <p className="text-sm text-ink-alt">{footer}</p>
         </Page>
       </AgreementGate>
     </StaffOnly>
@@ -78,9 +86,26 @@ export function DeskLinksPage() {
   return (
     <DeskSection
       title="Checked links"
-      lede="Links moderators have checked, with how many tips sent each. Read only; nothing here is public."
+      lede="Links from the tip line and from reports that a moderator has checked. Read only; nothing here is public."
     >
       <CheckedLinks />
+    </DeskSection>
+  );
+}
+
+export function DeskTextsPage() {
+  return (
+    <DeskSection
+      title="Written accounts"
+      lede="What reporters wrote, checked by a moderator and shared with their permission."
+      warn={false}
+      notice={{
+        title: 'Before you use one',
+        body: 'A moderator checked that it is on topic and safe to show, not that it is true. Reporters can take it back.',
+      }}
+      footer="Every page you open here is recorded in the access log. If a reporter erases or stops sharing an account, it disappears from here."
+    >
+      <Texts />
     </DeskSection>
   );
 }
@@ -243,6 +268,11 @@ function CheckedLinks() {
                   label={l.tips === 1 ? 'Sent in 1 tip' : `Sent in ${String(l.tips)} tips`}
                 />
                 <span aria-hidden="true">{l.tips === 1 ? 'tip' : 'tips'}</span>
+                {l.reports ? (
+                  <span>
+                    · shared in {String(l.reports)} {l.reports === 1 ? 'report' : 'reports'}
+                  </span>
+                ) : null}
                 <span>· checked {new Date(l.checked_at).toLocaleDateString()}</span>
               </p>
               {l.comment ? (
@@ -283,6 +313,60 @@ function CheckedLinks() {
         />
       ) : null}
       <p className="text-sm text-muted">{DESK_PAGE_SIZE} to a page.</p>
+    </section>
+  );
+}
+
+function Texts() {
+  const [page, setPage] = useState(1);
+  const { applied, box } = useDeskFilter(() => {
+    setPage(1);
+  });
+  const query = {
+    page,
+    ...(applied.q ? { q: applied.q } : {}),
+    ...(applied.mine ? { mine: 'true' as const } : {}),
+  };
+  const q = useQuery({
+    queryKey: ['desk', 'texts', query],
+    queryFn: ({ signal }) => call(deskTexts, { query, signal }),
+    placeholderData: keepPreviousData,
+    retry: false,
+  });
+  return (
+    <section aria-label="Written accounts" className="flex flex-col gap-4">
+      {box}
+      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      {q.data && !q.data.texts.length ? (
+        <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No written accounts yet'}>
+          {applied.q || applied.mine
+            ? 'No written account matches that search. Try other words, or clear the My states tick.'
+            : 'When a moderator checks an account and its reporter allows it, it appears here.'}
+        </Empty>
+      ) : null}
+      <ul className="flex flex-col gap-4">
+        {q.data?.texts.map((t) => (
+          <li key={`${t.reference ?? 'tip'}-${t.checked_at}-${t.text.slice(0, 24)}`} data-desk-text>
+            <Card>
+              {/* Text, never a link out: nothing here fetches anything. */}
+              <p className="max-w-prose whitespace-pre-wrap">{t.text}</p>
+              <p className="flex flex-wrap items-center gap-2 text-sm text-ink-alt">
+                {t.reference ? <span className="font-mono">{t.reference}</span> : <span>Tip</span>}
+                {t.place ? <span>· {t.place}</span> : null}
+                <span>· {t.outcome === 'redacted' ? 'Checked with redaction' : 'Checked'}</span>
+              </p>
+            </Card>
+          </li>
+        ))}
+      </ul>
+      {q.data ? (
+        <Pagination
+          page={q.data.page}
+          pages={q.data.pages}
+          label="Written accounts pages"
+          onPage={setPage}
+        />
+      ) : null}
     </section>
   );
 }

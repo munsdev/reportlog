@@ -59,6 +59,7 @@ import { ReportFiles } from '../files/staff/ReportFiles.tsx';
 import { evidenceQuery } from '../files/staff/queries.ts';
 import { useMe } from '../identity/session.ts';
 import { ClosedRow } from './ClosedRow.tsx';
+import { ReportWritten } from './Texts.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
 import { Meta } from '../../components/ui/type.tsx';
 import type { Decided, Decision } from './DecideForm.tsx';
@@ -161,7 +162,12 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
     </StaffHead>
   );
 
-  const said = <Said r={r} />;
+  const said = (
+    <>
+      <Said r={r} />
+      <ReportWritten threadId={r.thread_id} />
+    </>
+  );
   const files =
     r.file_count > 0 ? (
       <ReportFiles

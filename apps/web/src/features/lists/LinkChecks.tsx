@@ -38,6 +38,7 @@ import { useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card, CardContent } from '../../components/ui/card.tsx';
+import { Chip } from '../../components/ui/chip.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
 import { Empty } from '../../components/ui/empty.tsx';
 import { Input } from '../../components/ui/input.tsx';
@@ -91,7 +92,7 @@ export function LinkChecksPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <StaffHead
           title="Links"
-          lede="Links from the tip line, one entry per address however many tips sent it. A checked link may be shared with vetted journalists; nothing here is published. A check covers every copy, and later ones too."
+          lede="Links from the tip line and from reports, one entry per address however many people sent it. Checked links reach vetted journalists; nothing here is published. A check covers every copy, and later ones too."
         />
         <Button asChild variant="secondary" className="self-start sm:self-end">
           <Link to="/lists/review">List entries</Link>
@@ -131,7 +132,7 @@ export function LinkChecksPage() {
         query.data.groups.length === 0 ? (
           <Empty title={filter === 'unchecked' ? 'No link waiting' : 'Nothing here'}>
             {filter === 'unchecked'
-              ? 'Links sent with tips appear here until somebody checks them.'
+              ? 'Links sent with tips and reports appear here until somebody checks them.'
               : 'No link has been given this outcome.'}
           </Empty>
         ) : (
@@ -228,10 +229,26 @@ function GroupCard({ group }: { group: LinkGroup }) {
           <Meta>
             {group.host ? <span className="font-bold text-ink">{group.host}</span> : null}
             {group.host ? ' · ' : ''}
-            {String(group.copies)} {group.copies === 1 ? 'copy' : 'copies'}
-            {group.lists.length ? ` · from ${group.lists.map((l) => l.title).join(', ')}` : ''}
-            {group.last_seen ? ` · last sent ${when(group.last_seen)}` : ''}
+            {group.first_seen ? `first ${when(group.first_seen)}` : ''}
+            {group.last_seen ? ` · last ${when(group.last_seen)}` : ''}
           </Meta>
+          {/* Tip and report copies of one address are ONE entry, and say so. */}
+          <p className="flex flex-wrap gap-1.5" data-testid="link-sources">
+            {group.from_tips ? (
+              <Chip tone="tag">
+                {String(group.from_tips)} from {group.from_tips === 1 ? 'a tip' : 'tips'}
+              </Chip>
+            ) : null}
+            {group.from_reports ? (
+              <Chip tone="open">
+                {String(group.from_reports)} from{' '}
+                {group.from_reports === 1 ? 'a report' : 'reports'}
+              </Chip>
+            ) : null}
+          </p>
+          {group.lists.length || group.logbooks.length ? (
+            <Meta>from {[...group.lists, ...group.logbooks].map((l) => l.title).join(', ')}</Meta>
+          ) : null}
           <p className="text-sm">
             {LINK_OUTCOME[group.outcome ?? 'unchecked']}
             {group.checked_by ? `, by ${group.checked_by} on ${when(group.checked_at)}` : ''}

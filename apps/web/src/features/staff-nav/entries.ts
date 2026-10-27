@@ -88,6 +88,13 @@ export const STAFF_AREAS: readonly StaffArea[] = [
         under: ['/moderate/'],
         waiting: 'reports',
       },
+      {
+        to: '/moderate/texts',
+        label: 'Written accounts',
+        for: MOD,
+        under: ['/moderate/texts/'],
+        waiting: 'texts',
+      },
       { to: '/lists/links', label: 'Links', for: MOD, waiting: 'tip_links' },
       {
         to: '/lists/review',
@@ -237,6 +244,7 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
     // Account is the "You" group's own entry, so it is not named twice here.
     pages: [
       { to: '/desk', label: 'Checked links', for: ['journalist'] },
+      { to: '/desk/texts', label: 'Written accounts', for: ['journalist'] },
       { to: '/desk/sources', label: 'Sources', for: ['journalist'] },
       { to: '/desk/alerts', label: 'Your alerts', for: ['journalist'] },
     ],

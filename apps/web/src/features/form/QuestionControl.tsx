@@ -24,6 +24,7 @@ import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Select } from '@/components/ui/select.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { CountyPicker } from './CountyPicker.tsx';
+import { PrivateLinksControl, PrivateTextControl } from './HeldControls.tsx';
 import type { RawValue } from './walk.ts';
 
 const INPUT_TYPES: Record<string, string> = {
@@ -105,6 +106,8 @@ export function CharacterCount({ length, max }: { length: number; max: number })
 export function QuestionControl(props: ControlProps) {
   const { question: q, value, onChange, labelledBy, describedBy, invalid } = props;
   const text = typeof value === 'string' ? value : '';
+  if (q.kind === 'private_text') return <PrivateTextControl {...props} />;
+  if (q.kind === 'private_link') return <PrivateLinksControl {...props} />;
   const common = {
     'aria-labelledby': labelledBy,
     'aria-describedby': describedBy,

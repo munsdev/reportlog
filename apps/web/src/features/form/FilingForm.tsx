@@ -14,11 +14,18 @@
  *                          happens next, and Start
  *   the logbook's own      one per question being asked
  *   the publication card   its wording and digest come from the server
+ *   sharing                only when the reporter wrote something or gave a
+ *                          link: may vetted journalists read it (G5)
  *   where to reach you     the address the confirmation link goes to. ONLY
  *                          where the logbook asks for one (owner decision
  *                          E1: a question somebody types into, files, or
- *                          the operator's switch). Without it the report is
- *                          sealed on arrival and there is no link to follow
+ *                          the operator's switch), or where the reporter
+ *                          wrote something or gave a link (D8: required
+ *                          then, and the card says why). Where the operator
+ *                          turned the optional card on and nothing was
+ *                          written, the card is optional (D8, D20). Without
+ *                          an address the report is sealed on arrival and
+ *                          there is no link to follow
  *   files                  only when the logbook asks for files (files
  *                          workstream). AFTER the address wherever the
  *                          operator put the question, because the server's
@@ -57,9 +64,6 @@ import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { Eyebrow } from '@/components/ui/type.tsx';
 import {
@@ -79,6 +83,7 @@ import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { FormColumn, FormNotice } from './FormNotice.tsx';
 import { Cover } from './Cover.tsx';
+import { ContactCard, ManageCard, ShareCard, shortened } from './WrittenCards.tsx';
 import type { CtaProps } from './HelpNow.tsx';
 import { QuestionControl, kindHelp } from './QuestionControl.tsx';
 import { TipOffer, rememberForTip } from './tipOffer.tsx';
@@ -87,10 +92,12 @@ import {
   askedQuestions,
   cardProblem,
   everyCardId,
+  isHeldKind,
   sealedAnswers,
   shownAnswer,
   stillPossible,
   toSubmission,
+  wroteSomething,
   withChange,
 } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
@@ -120,7 +127,8 @@ export const STATEMENT =
 
 const looksLikeEmail = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 
-type Step = 'intro' | 'publish' | 'contact' | 'files' | 'review' | `q:${string}`;
+type Step =
+  'intro' | 'publish' | 'share' | 'contact' | 'manage' | 'files' | 'review' | `q:${string}`;
 
 export function FilingForm({ slug, history }: { slug: string; history?: RouterHistory }) {
   const logbook = useQuery(publicLogbookQuery(slug));
@@ -198,6 +206,8 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
       questions={lb.fields}
       form={lb.form}
       asksEmail={lb.asks_email}
+      emailOptional={lb.email_optional === true}
+      deleteOn={lb.contacts_delete_on}
       terms={lb.publication_terms}
       card={card.data}
       cardError={card.isError}
@@ -218,6 +228,8 @@ function Cards({
   questions,
   form,
   asksEmail,
+  emailOptional,
+  deleteOn,
   terms,
   card,
   cardError,
@@ -234,6 +246,10 @@ function Cards({
   questions: FormQuestion[];
   /** Whether this logbook asks for an address at all (E1). */
   asksEmail: boolean;
+  /** The operator's optional card is on: an address may be given or skipped (D8, D20). */
+  emailOptional: boolean;
+  /** The day addresses are deleted, YYYY-MM-DD, where one can be given (D4). */
+  deleteOn: string | undefined;
   /** The version these questions are; sealed if only wording changes before Send. */
   form?: string | undefined;
   /**
@@ -249,6 +265,8 @@ function Cards({
   const [raw, setRaw] = useState<RawAnswers>({});
   const [publish, setPublish] = useState('');
   const [email, setEmail] = useState('');
+  // Whether journalists may read what was written: '' until the reporter chooses.
+  const [share, setShare] = useState<'' | 'yes' | 'no'>('');
   const [consent, setConsent] = useState(false);
   const [step, setStep] = useState<Step>('intro');
   const [backToReview, setBackToReview] = useState(false);
@@ -262,6 +280,13 @@ function Cards({
     enabled: Boolean(fileQuestion),
   });
   const takesFiles = Boolean(fileQuestion && uploadConfig.data?.enabled);
+  // D8. What the reporter wrote or pasted decides whether an address is
+  // needed; going back to clear it makes the card optional again.
+  const hasHeldQuestion = questions.some((q) => isHeldKind(q.kind));
+  const wrote = wroteSomething(questions, raw);
+  const needsAddress = asksEmail || wrote;
+  const manageCard = !needsAddress && emailOptional;
+  const givesAddress = needsAddress || (manageCard && email.trim() !== '');
   const target = useFilingTarget(slug, email);
   const uploader = useUploader(takesFiles ? target : null);
   const draft = target.draft();
@@ -278,12 +303,13 @@ function Cards({
       call(submitReport, {
         body: {
           logbook: slug,
-          ...(asksEmail ? { email: email.trim() } : {}),
+          ...(givesAddress ? { email: email.trim() } : {}),
           ...door.fields(),
           consent,
           answers: toSubmission(questions, raw),
           // Not answering is "no", and the card said so before anybody acted.
           // Under terms nobody was asked: filing is the agreement.
+          ...(wrote ? { journalist_sharing: share === 'yes' } : {}),
           may_publish: terms ? true : publish === 'yes',
           may_publish_digest: terms ? terms.digest : (card?.digest ?? ''),
           ...(draft && uploader.kept.length ? { draft_token: draft } : {}),
@@ -302,14 +328,22 @@ function Cards({
     for (const c of cardsOf(questions)) for (const q of c) m.set(q.key, c[0]?.key ?? q.key);
     return m;
   }, [questions]);
-  const steps: Step[] = [
-    'intro',
-    ...askedCards(questions, raw).map((c): Step => `q:${c.id}`),
-    ...(terms ? [] : (['publish'] as Step[])),
-    ...(asksEmail ? (['contact'] as Step[]) : []),
-    ...(takesFiles ? (['files'] as Step[]) : []),
-    'review',
-  ];
+  // The cards from the opening one to the review, for these answers. Worked
+  // out for any set of answers so Skip, which clears one, can ask what comes
+  // next without waiting for the page to draw again.
+  const stepsFor = (r: RawAnswers): Step[] => {
+    const w = wroteSomething(questions, r);
+    return [
+      'intro',
+      ...askedCards(questions, r).map((c): Step => `q:${c.id}`),
+      ...(terms ? [] : (['publish'] as Step[])),
+      ...(w ? (['share'] as Step[]) : []),
+      ...(asksEmail || w ? (['contact'] as Step[]) : emailOptional ? (['manage'] as Step[]) : []),
+      ...(takesFiles ? (['files'] as Step[]) : []),
+      'review',
+    ];
+  };
+  const steps = stepsFor(raw);
   const dirty = Object.keys(raw).length > 0 || email !== '' || publish !== '';
 
   // Leaving the page loses everything typed. Ask first, until it is sent.
@@ -330,7 +364,9 @@ function Cards({
     'intro',
     ...everyCardId(questions).map((id): Step => `q:${id}`),
     'publish',
+    'share',
     'contact',
+    'manage',
     'files',
     'review',
   ];
@@ -369,8 +405,11 @@ function Cards({
   const possible =
     cardsOf(questions).filter((c) => c.some((q) => stillPossible(q, questions, raw, sealed)))
       .length +
-    (mayTakeFiles ? 4 : 3) -
-    (asksEmail ? 0 : 1) -
+    (mayTakeFiles ? 4 : 3) +
+    // The sharing card could still come, if anything is written (it is
+    // counted from the start so the rule never moves back).
+    (hasHeldQuestion ? 1 : 0) -
+    (asksEmail || hasHeldQuestion || emailOptional ? 0 : 1) -
     (terms ? 1 : 0);
   const progress = send.isSuccess || step === 'intro' ? null : Math.min(1, at / possible);
 
@@ -380,7 +419,9 @@ function Cards({
     intro: title,
     review: 'Check your answers',
     publish: card?.question ?? 'Should this report be published?',
-    contact: 'Where can we reach you?',
+    share: 'Can vetted journalists read what you wrote?',
+    manage: 'Want to be able to correct or withdraw it later?',
+    contact: wrote ? 'Your email address' : 'Where can we reach you?',
     files: fileQuestion?.label ?? 'Files',
   };
   useCardTitle(
@@ -392,10 +433,31 @@ function Cards({
     return (
       <FormColumn>
         {'filed' in send.data ? (
-          <FiledReceipt title={title} reference={send.data.public_ref} />
+          <FiledReceipt reference={send.data.public_ref} />
         ) : (
-          <SentReceipt email={email.trim()} title={title} />
+          <SentReceipt
+            email={email.trim()}
+            onChangeAddress={() => {
+              send.reset();
+              setStep('contact');
+              cards.push({ card: 'contact', toReview: false });
+            }}
+          />
         )}
+      </FormColumn>
+    );
+  }
+
+  // D5: the sixth report from one address in a day. Said as the mock-up says
+  // it, and the answers are still here behind it.
+  if (send.isError && send.error instanceof ApiRequestError && send.error.code === 'try_later') {
+    return (
+      <FormColumn>
+        <LimitPage
+          onBack={() => {
+            send.reset();
+          }}
+        />
       </FormColumn>
     );
   }
@@ -412,8 +474,11 @@ function Cards({
       return cardError
         ? 'The wording of this question did not load. Press Try again.'
         : 'The wording of this question has not loaded yet. Wait a moment, then press Next again.';
+    if (step === 'share' && share === '') return 'Choose yes or no.';
     if (step === 'contact' && !looksLikeEmail(email))
       return 'Enter an email address we can reach you at.';
+    if (step === 'manage' && email.trim() !== '' && !looksLikeEmail(email))
+      return 'That does not look like an email address. Check it, or clear the box to skip this.';
     if (step === 'files' && fileQuestion?.required && !uploader.kept.length)
       return 'Attach at least one file.';
     return null;
@@ -436,18 +501,24 @@ function Cards({
     }
     // Worked out NOW, from the answers given so far: a question this answer
     // turned on is the next card.
-    const now = [
-      'intro',
-      ...askedCards(questions, raw).map((c) => `q:${c.id}`),
-      ...(terms ? [] : ['publish']),
-      ...(asksEmail ? ['contact'] : []),
-      ...(takesFiles ? ['files'] : []),
-      'review',
-    ] as Step[];
+    const now = stepsFor(raw);
     go(now[now.indexOf(step) + 1] ?? 'review');
   };
   // Where the browser's Back would go: after "Change", that is the review.
   // On the first question it is the opening card.
+  // "Skip this" on a card for words or a link: the box is cleared, never left
+  // half-typed behind a skip, and the next card is worked out without it.
+  const skip = (key: string) => {
+    const cleared = withChange(questions, raw, key, undefined);
+    setRaw(cleared);
+    setProblem(null);
+    if (backToReview) {
+      go('review');
+      return;
+    }
+    const now = stepsFor(cleared);
+    go(now[now.indexOf(step) + 1] ?? 'review');
+  };
   const back = () => {
     if (cards.back) cards.back();
     else go(steps[at - 1] ?? 'intro');
@@ -455,6 +526,14 @@ function Cards({
   const sendNow = () => {
     if (!consent) {
       setProblem('Tick the statement above to send the report.');
+      return;
+    }
+    if (wrote && share === '') {
+      setProblem('Choose whether journalists may read what you wrote. Press Change beside it.');
+      return;
+    }
+    if (needsAddress && !looksLikeEmail(email)) {
+      setProblem('Enter an email address we can reach you at. Press Change beside it.');
       return;
     }
     const missing = asked.find((q) => cardProblem(q, raw, questions));
@@ -508,6 +587,7 @@ function Cards({
             setRaw((r) => withChange(questions, r, key, v));
           }}
           problem={problem}
+          onSkip={skip}
         />
       ) : null}
 
@@ -526,34 +606,43 @@ function Cards({
         />
       ) : null}
 
-      {step === 'contact' ? (
-        <CardFrame
+      {step === 'share' ? (
+        <ShareCard
           eyebrow={title}
-          heading="Where can we reach you?"
-          focusKey={step}
-          error={problem}
-          errorId="contact-error"
-        >
-          <Field>
-            <Label>Your email address</Label>
-            <FieldDescription>
-              We send a link there to confirm the report is really from you. Nothing is filed until
-              you open it. Your address is never published and is not part of the report.
-            </FieldDescription>
-            <Input
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              aria-describedby={problem ? 'contact-error' : undefined}
-              aria-invalid={problem ? true : undefined}
-              onChange={(e) => {
-                setProblem(null);
-                setEmail(e.target.value);
-              }}
-            />
-          </Field>
-        </CardFrame>
+          value={share}
+          onChange={(v) => {
+            setProblem(null);
+            setShare(v);
+          }}
+          problem={problem}
+        />
+      ) : null}
+
+      {step === 'contact' ? (
+        <ContactCard
+          eyebrow={title}
+          wrote={wrote}
+          deleteOn={deleteOn}
+          value={email}
+          onChange={(v) => {
+            setProblem(null);
+            setEmail(v);
+          }}
+          problem={problem}
+        />
+      ) : null}
+
+      {step === 'manage' ? (
+        <ManageCard
+          eyebrow={title}
+          deleteOn={deleteOn}
+          value={email}
+          onChange={(v) => {
+            setProblem(null);
+            setEmail(v);
+          }}
+          problem={problem}
+        />
       ) : null}
 
       {step === 'files' && fileQuestion && uploadConfig.data ? (
@@ -581,7 +670,7 @@ function Cards({
       {step === 'review' ? (
         <CardFrame eyebrow={title} heading="Check your answers" focusKey={step}>
           <p className="max-w-prose">
-            {asksEmail
+            {givesAddress
               ? 'Nothing is filed until you confirm it from your email. Check it over first.'
               : 'Your report is filed the moment you send it, and you cannot come back to it. Check it over first.'}
           </p>
@@ -589,8 +678,8 @@ function Cards({
             {asked.map((q) => (
               <ReviewRow
                 key={q.key}
-                label={q.label}
-                value={shownAnswer(q, raw, questions)}
+                label={isHeldKind(q.kind) ? `${q.label} · not published` : q.label}
+                value={shortened(shownAnswer(q, raw, questions), q.kind)}
                 required={q.required}
                 onChange={() => {
                   go(`q:${cardOf.get(q.key) ?? q.key}`, true);
@@ -619,17 +708,52 @@ function Cards({
                 }}
               />
             ) : null}
-            {asksEmail ? (
+            {wrote ? (
               <ReviewRow
-                label="Your email address"
+                label="Vetted journalists"
+                value={
+                  share === 'yes'
+                    ? 'May read it after a moderator checks it'
+                    : share === 'no'
+                      ? 'Moderators only'
+                      : null
+                }
+                required
+                onChange={() => {
+                  go('share', true);
+                }}
+              />
+            ) : null}
+            {needsAddress ? (
+              <ReviewRow
+                label={wrote ? 'Email' : 'Your email address'}
                 value={email.trim() || null}
                 required
                 onChange={() => {
                   go('contact', true);
                 }}
               />
+            ) : manageCard ? (
+              <ReviewRow
+                label="Manage link sent to"
+                value={email.trim() || 'Nobody (skipped)'}
+                required={false}
+                onChange={() => {
+                  go('manage', true);
+                }}
+              />
             ) : null}
           </dl>
+          {wrote ? (
+            <Card variant="quiet" className="gap-1">
+              <p className="font-semibold">What is published</p>
+              <p className="max-w-prose text-sm">
+                After a moderator approves it, your answers are published on the board. What you
+                wrote and any links are never published. The original always stays in the record,
+                even if you correct or withdraw it later.
+              </p>
+            </Card>
+          ) : null}
           {terms ? (
             <div className="flex max-w-prose flex-col gap-2">
               <p className="font-semibold">{terms.heading}</p>
@@ -651,7 +775,16 @@ function Cards({
           />
           {/* The operator's own line about sending, when they wrote one. */}
           <CopyText slot="send_note" className="font-semibold" />
-          {asksEmail ? null : (
+          {/* G7, D2: said only when no address was given. With one, the
+              report can be corrected or withdrawn from My reports, and says so. */}
+          {givesAddress ? (
+            <Card variant="quiet" className="gap-1">
+              <p className="font-semibold">
+                You can correct or withdraw this report from My reports. The original stays in the
+                record.
+              </p>
+            </Card>
+          ) : (
             <Card variant="deep" className="gap-1">
               <p className="font-semibold">
                 This report can’t be changed or withdrawn after you send it.
@@ -737,6 +870,7 @@ function QuestionCard({
   answers,
   onChange,
   problem,
+  onSkip,
 }: {
   eyebrow: string;
   parts: FormQuestion[];
@@ -746,6 +880,8 @@ function QuestionCard({
   answers: Record<string, unknown>;
   onChange: (key: string, v: RawValue | undefined) => void;
   problem: string | null;
+  /** Skip a card of words or a link: clears it and goes on. */
+  onSkip: (key: string) => void;
 }) {
   const id = useId();
   const headingId = `${id}-q`;
@@ -763,6 +899,7 @@ function QuestionCard({
       focusKey={parts[0]?.key ?? ''}
       headingId={headingId}
       optional={Boolean(single && !single.required)}
+      step={single && isHeldKind(single.kind) && !single.required ? 'Optional' : undefined}
       help={
         help || extra ? (
           <div id={helpId} className="flex max-w-prose flex-col gap-1 text-ink-alt">
@@ -775,21 +912,35 @@ function QuestionCard({
       errorId={errorId}
     >
       {single ? (
-        <QuestionControl
-          question={single}
-          value={raw[single.key]}
-          onChange={(v) => {
-            onChange(single.key, v);
-          }}
-          labelledBy={headingId}
-          describedBy={
-            [help || extra ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ') ||
-            undefined
-          }
-          invalid={Boolean(problem)}
-          answers={sealedSoFar}
-          raw={raw}
-        />
+        <>
+          <QuestionControl
+            question={single}
+            value={raw[single.key]}
+            onChange={(v) => {
+              onChange(single.key, v);
+            }}
+            labelledBy={headingId}
+            describedBy={
+              [help || extra ? helpId : '', problem ? errorId : ''].filter(Boolean).join(' ') ||
+              undefined
+            }
+            invalid={Boolean(problem)}
+            answers={sealedSoFar}
+            raw={raw}
+          />
+          {isHeldKind(single.kind) && !single.required ? (
+            <Button
+              type="button"
+              variant="quiet"
+              className="self-start"
+              onClick={() => {
+                onSkip(single.key);
+              }}
+            >
+              Skip this
+            </Button>
+          ) : null}
+        </>
       ) : (
         <div className="flex flex-col gap-5" role="group" aria-labelledby={headingId}>
           {parts.map((part, i) => {
@@ -958,47 +1109,135 @@ function ReviewRow({
  * Sealed on arrival (E1): nothing to confirm and nothing to come back to. The
  * reference is shown here and only here (owner, 2026-10-24), beside the line
  * that says nobody has accepted it yet, so it is never read as approval.
- * Quiet, not teal: teal says a moderator confirmed something.
+ * "It's on the record" (file-sent): the reference, what a moderator does
+ * next, and that nothing can quietly change.
  */
-function FiledReceipt({ title, reference }: { title: string; reference: string }) {
+function FiledReceipt({ reference }: { reference: string }) {
   return (
-    <Receipt heading={`Your report to “${title}” was received`}>
-      <Alert tone="done">
-        Your report’s reference is <span className="font-mono">{reference}</span>. A moderator reads
-        it before anything is public.
+    <Receipt eyebrow="Sent" heading="It’s on the record">
+      <Card className="gap-2">
+        <p className="label-face text-xs text-ink-alt">Your reference</p>
+        <p
+          className="font-mono text-2xl font-bold"
+          aria-label={`Reference ${reference.split('').join(' ')}`}
+        >
+          {reference}
+        </p>
+        <p className="max-w-prose">
+          Save this. It is how you find your report on the board once it is published. You skipped
+          the manage link, so the report can’t be changed now. If something was wrong, file a new
+          one.
+        </p>
+        <CopyReference reference={reference} />
+      </Card>
+      <ol className="flex max-w-prose list-decimal flex-col gap-3 pl-5">
+        <li>
+          <b>A moderator reads it next.</b> Nothing is public until they approve it.
+        </li>
+        <li>
+          <b>If it meets the standard, it is published.</b> Look it up with your reference on the
+          board.
+        </li>
+        <li>
+          <b>It stays on the record.</b> Nobody can quietly change it or take it down.
+        </li>
+      </ol>
+    </Receipt>
+  );
+}
+
+/** A button that copies the reference. The text stays selectable when the browser refuses. */
+function CopyReference({ reference }: { reference: string }) {
+  const [said, setSaid] = useState<string | null>(null);
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={() => {
+          void navigator.clipboard.writeText(reference).then(
+            () => {
+              setSaid('Copied.');
+            },
+            () => {
+              setSaid('This browser would not copy it. Select the text instead.');
+            },
+          );
+        }}
+      >
+        Copy reference
+      </Button>
+      {said ? (
+        <p role="status" className="text-sm text-ink-alt">
+          {said}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** "Check your email to finish" (file-check-email). Nothing is kept but the waiting copy. */
+function SentReceipt({ email, onChangeAddress }: { email: string; onChangeAddress: () => void }) {
+  return (
+    <Receipt eyebrow="One more step" heading="Check your email to finish">
+      <p className="max-w-prose text-lede">
+        We sent a link to <strong className="break-all">{email}</strong>.{' '}
+        <b>Your report is filed when you press it.</b> Until then nothing is kept but the waiting
+        copy, and it is deleted if the link expires.
+      </p>
+      <Alert tone="note">
+        <span>
+          Nothing in your inbox? Check spam, or{' '}
+          <button type="button" className="min-h-11 underline" onClick={onChangeAddress}>
+            change the address
+          </button>
+          . One address can file up to five reports a day.
+        </span>
       </Alert>
     </Receipt>
   );
 }
 
-function SentReceipt({ email, title }: { email: string; title: string }) {
+/** "This address can't file more today" (file-limit): nothing was filed, the answers are kept. */
+function LimitPage({ onBack }: { onBack: () => void }) {
   return (
-    <Receipt heading="Check your email">
-      <p className="max-w-prose">
-        We have sent a link to <strong className="break-all">{email}</strong>. Nothing is filed in “
-        {title}” until you press the button on that page. The link works for 90 days.
+    <Receipt eyebrow="Not sent" heading="This address can’t file more today" tip={false}>
+      <p className="max-w-prose text-lede">
+        Nothing was filed. Try again tomorrow. Your answers are kept on this page until you leave
+        it.
       </p>
-      <p className="max-w-prose text-ink-alt">
-        If nothing arrives in a few minutes, look in your spam folder.
-      </p>
+      <Button type="button" className="self-start" onClick={onBack}>
+        Back to your answers
+      </Button>
     </Receipt>
   );
 }
 
 /** The receipt replaces the form; focus moves to its heading. */
-function Receipt({ heading, children }: { heading: string; children: ReactNode }) {
+function Receipt({
+  eyebrow = 'File a report',
+  heading,
+  tip = true,
+  children,
+}: {
+  eyebrow?: string;
+  heading: string;
+  /** The tip offer, only after a report was sent. */
+  tip?: boolean;
+  children: ReactNode;
+}) {
   const onDoor = useGateMode() === 'door';
   const focused = useFocusOnMount<HTMLHeadingElement>();
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Eyebrow>File a report</Eyebrow>
+        <Eyebrow>{eyebrow}</Eyebrow>
         <h1 ref={focused} tabIndex={-1} className="font-display text-title outline-none">
           {heading}
         </h1>
       </div>
       {children}
-      <TipOffer />
+      {tip ? <TipOffer /> : null}
       {/* Behind the password on a door, so not offered there. */}
       {onDoor ? null : (
         <p className="flex flex-wrap gap-x-2">

@@ -38,6 +38,7 @@ import type { Cover, FormQuestion, Question } from '@reportlog/contracts';
 import { FILE_TYPE, LOCATION_TYPE, canFilter, placeOptions } from '@reportlog/fields';
 import { formText, termsFor } from '@reportlog/seal';
 import { questionsFor } from '../chain/questions.ts';
+import { filingLimits } from '../filing/limits.ts';
 import type { FastifyInstance } from 'fastify';
 import type { Database } from '../db/database.ts';
 import { notFound } from '../http/errors.ts';
@@ -158,6 +159,13 @@ export function logbookRoutes(
       asks_email: lb.asks_email,
       // Only where it applies, so a form that does not offer it is told nothing.
       ...(lb.email_optional && !lb.asks_email ? { email_optional: true as const } : {}),
+      // The day addresses are deleted (D4), said on the card that asks for
+      // one. Only where an address can be given.
+      ...(lb.asks_email ||
+      lb.email_optional ||
+      fields.some((f) => f.kind === 'private_text' || f.kind === 'private_link')
+        ? { contacts_delete_on: (await filingLimits(db)).contacts_delete_on }
+        : {}),
       // Only where it applies, so a form that asks is told nothing new.
       ...(lb.publish_by_terms ? { publication_terms: termsFor() } : {}),
       fields: fields.map(forForm),

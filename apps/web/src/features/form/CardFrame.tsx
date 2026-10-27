@@ -138,6 +138,11 @@ export interface CardFrameProps {
   headingId?: string | undefined;
   /** "Optional." after the question. */
   optional?: boolean | undefined;
+  /**
+   * What kind of card this is, said above the question when it is not an
+   * ordinary one: "Optional", "Asked because you wrote something".
+   */
+  step?: string | undefined;
   /** Help under the question. Give it an id if the control points at it. */
   help?: ReactNode;
   /** The sentence that says what is wrong, or nothing. */
@@ -152,6 +157,7 @@ export function CardFrame({
   focusKey,
   headingId,
   optional = false,
+  step,
   help,
   error,
   errorId,
@@ -167,6 +173,7 @@ export function CardFrame({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <Eyebrow>{eyebrow}</Eyebrow>
+        {step ? <p className="label-face text-xs text-ink-alt">{step}</p> : null}
         <h1
           ref={ref}
           id={headingId}
@@ -175,7 +182,7 @@ export function CardFrame({
         >
           {heading}
         </h1>
-        {optional ? <p className="text-sm text-ink-alt">Optional.</p> : null}
+        {optional && !step ? <p className="text-sm text-ink-alt">Optional.</p> : null}
         {help}
       </div>
       {children}
