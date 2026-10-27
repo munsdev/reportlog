@@ -55,17 +55,18 @@ export function LockScreen({
   }, [site]);
 
   return (
-    <div className="min-h-dvh bg-deep text-on-deep">
+    <div className="grid min-h-dvh place-items-center bg-deep px-[max(0.5rem,env(safe-area-inset-left))] py-8 text-on-deep">
+      {/* The mock-up's box: a light edge round a darker panel on the deep ground. */}
       <main
         id="main"
-        className="mx-auto flex w-full max-w-[26rem] flex-col gap-5 px-[max(1.5rem,env(safe-area-inset-left))] pt-18 pb-8 sm:justify-center sm:pt-12 sm:min-h-dvh"
+        className="grid w-[min(420px,92vw)] gap-[18px] rounded-card border-[3px] border-on-deep bg-deeper p-7"
       >
         {site ? (
           <p className="font-display text-[1.625rem] leading-tight font-bold" data-site-name>
             <BrandName parts={site.name_parts} onDeep />
           </p>
         ) : null}
-        <h1 className="label-face text-sm text-on-deep-muted">This site needs a password</h1>
+        <h1 className="label-face text-xs text-on-deep-muted">This site needs a password</h1>
         {site?.intro ? (
           // The operator's own words: plain text with their line breaks, never HTML.
           <p data-copy="lock_intro" className="whitespace-pre-wrap text-on-deep-muted">
@@ -73,7 +74,7 @@ export function LockScreen({
           </p>
         ) : null}
         <form
-          className="mt-3 flex flex-col gap-4"
+          className="flex flex-col gap-[18px]"
           onSubmit={(e) => {
             e.preventDefault();
             if (password) unlock.mutate();
@@ -102,12 +103,22 @@ export function LockScreen({
               {refusal(unlock.error)}
             </Alert>
           ) : null}
-          <Button type="submit" size="lg" block busy={unlock.isPending} busyLabel="Checking…">
+          <Button
+            type="submit"
+            size="lg"
+            block
+            className="border-on-deep shadow-[4px_4px_0_var(--rl-text-on-deep)]"
+            busy={unlock.isPending}
+            busyLabel="Checking…"
+          >
             Continue
           </Button>
         </form>
         {doors.data && doors.data.doors.length > 0 ? (
-          <nav aria-labelledby="doors-heading" className="mt-5 border-t border-line-on-deep pt-4">
+          <nav
+            aria-labelledby="doors-heading"
+            className="grid gap-1.5 border-t border-line-on-deep pt-3.5"
+          >
             <h2 id="doors-heading" className="label-face mb-2 text-xs text-on-deep-muted">
               Open without the password
             </h2>

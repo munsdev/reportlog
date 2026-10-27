@@ -50,7 +50,7 @@ import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 import { boardMetaQuery, boardReportsQuery } from './queries.ts';
 import type { BoardSearch } from './queries.ts';
-import { ReportAnswers, useReportHeadline } from './ReportAnswers.tsx';
+import { useReportParts } from './ReportAnswers.tsx';
 
 const filed = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -93,9 +93,7 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       : null;
   return (
     <BoardFrame
-      eyebrow={site}
-      title="Live report board"
-      lede="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
+      title="Reports"
       actions={
         <>
           {/* The front page's filing buttons, in its order: straight to a form. */}
@@ -227,10 +225,11 @@ function Narrowing({ logbooks, search }: { logbooks: BoardLogbook[]; search: Boa
           }}
         >
           <Field className="min-w-0 grow">
-            <Label>Search the words</Label>
+            <Label className="sr-only">Search the words</Label>
             <Input
               type="search"
               value={q}
+              placeholder="Search, then press Enter"
               enterKeyHint="search"
               onChange={(e) => {
                 setQ(e.target.value);
@@ -552,7 +551,7 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
           </Empty>
         )
       ) : (
-        <ul className="layout-split grid gap-5 lg:grid-cols-2">
+        <ul className="layout-split grid gap-3.5 min-[820px]:grid-cols-2">
           {reports.map((r) => (
             <li key={r.public_ref} className="flex">
               <ReportCard r={r} logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title} />
@@ -593,44 +592,32 @@ export function OriginLabel({ r }: { r: Pick<PublicReport, 'origin' | 'label'> }
 }
 
 /**
- * A published report on the board. No "Confirmed" chip and no count of
- * accounts: the public report carries neither (PublicReport), and severity
- * is staff-only (decision 16).
+ * A published report on the board (mock-up .report): the whole card is the
+ * link. What it was, where, and the reference with the time. No "Confirmed"
+ * chip and no count of accounts: the public report carries neither
+ * (PublicReport), and severity is staff-only (decision 16). Nothing the
+ * reporter typed appears on a card.
  */
 function ReportCard({ r, logbookTitle }: { r: PublicReport; logbookTitle: string }) {
-  // Where and what, so a list reads as reports rather than as numbers; the
-  // number is right under it, small.
-  const headline = useReportHeadline(r.logbook_slug, r.answers);
+  const { where, what } = useReportParts(r.logbook_slug, r.answers);
   return (
-    <Card
-      heading={
-        <span className="flex flex-col gap-0.5">
-          <span>{headline ?? logbookTitle}</span>
-          <span className="font-mono text-xs font-normal text-ink-alt">{r.public_ref}</span>
-        </span>
-      }
-      className="w-full"
+    <Link
+      to="/board/$ref"
+      params={{ ref: r.public_ref }}
+      className="grid w-full content-start gap-2 rounded-card border-2 border-line bg-surface p-4 pb-3 text-ink no-underline hover:border-ink"
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <p className="label-face text-xs text-ink-alt">{logbookTitle}</p>
+      <span className="flex min-h-6 flex-wrap items-center justify-between gap-2">
         <ReportTags r={r} />
-      </div>
-      <ReportAnswers slug={r.logbook_slug} answers={r.answers} only={4} pills />
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
-        <Meta>{filed(r.received_at)}</Meta>
-        <Button asChild variant="quiet" className="-mr-2">
-          <Link
-            to="/board/$ref"
-            params={{ ref: r.public_ref }}
-            // The visible words first, then which report: an accessible name
-            // must start with what is on screen (WCAG 2.5.3).
-            aria-label={`Read in full: ${r.public_ref}`}
-          >
-            Read in full
-          </Link>
-        </Button>
-      </div>
-    </Card>
+      </span>
+      <span className="font-display text-xl leading-tight">{what ?? where ?? logbookTitle}</span>
+      <span className="text-[0.95rem] text-ink-alt">
+        {what ? (where ?? logbookTitle) : logbookTitle}
+      </span>
+      <span className="flex flex-wrap justify-between gap-1.5 border-t border-line pt-2.5 font-mono text-xs text-muted">
+        <span>{r.public_ref}</span>
+        <span>{filed(r.received_at)}</span>
+      </span>
+    </Link>
   );
 }
 

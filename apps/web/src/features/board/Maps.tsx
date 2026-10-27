@@ -26,6 +26,7 @@ export function BoardMapsPage() {
   return (
     <BoardFrame
       title="Maps"
+      heading="Maps"
       lede="Where published reports say things happened. An area with too few reports to count safely is not shaded and its number is not shown."
     >
       {placed.isPending ? <p role="status">Loading the maps…</p> : null}

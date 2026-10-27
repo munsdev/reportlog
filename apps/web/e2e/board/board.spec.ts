@@ -61,13 +61,13 @@ test.describe('the board', () => {
     await page.goto('/');
     await page.getByRole('link', { name: 'View Live Report Board' }).click();
     await expect(page).toHaveURL(/\/board$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
     await page.getByLabel('Search the words').fill(word);
     // Nothing changes until the reader asks (decision 59).
     await expect(page.getByRole('status').filter({ hasText: word })).toHaveCount(0);
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: /^1 report\b/ })).toBeVisible();
-    await page.getByRole('link', { name: `Read in full: ${ref}` }).click();
+    await page.getByRole('link', { name: new RegExp(ref) }).click();
     await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
     await page.getByRole('link', { name: 'Check this report' }).click();
@@ -86,7 +86,7 @@ test.describe('the board', () => {
     page,
   }) => {
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
     await expect(
       page.getByText(/They are not a sample and cannot be read as a rate\./),
     ).toBeVisible();
@@ -103,11 +103,11 @@ test.describe('the board', () => {
       if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
     });
     await page.goto('/board');
-    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
     await page.goto(`/board/${ref}`);
     await expect(page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
     expect(outside).toEqual([]);
   });
 });

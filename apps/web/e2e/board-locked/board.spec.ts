@@ -161,7 +161,7 @@ test('locked: every board page is the password screen, and every board read is r
   ]) {
     await v.page.goto(path);
     await expect(lockHeading(v.page)).toBeVisible();
-    await expect(v.page.getByRole('heading', { name: 'Live report board' })).toHaveCount(0);
+    await expect(v.page.getByRole('heading', { name: 'Reports', level: 1 })).toHaveCount(0);
     await expect(v.page.getByText(ref)).toHaveCount(0);
   }
   // Whatever the page asked for while locked, it was refused.
@@ -208,21 +208,21 @@ test('with the password, a reader walks the board, a report, the numbers and the
   await expect(lockHeading(v.page)).toBeVisible();
   await v.page.getByLabel('Site password').fill(PASSWORD);
   await v.page.getByRole('button', { name: 'Continue' }).click();
-  await expect(v.page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
+  await expect(v.page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
 
   await v.page.getByLabel('Search the words').fill(ref);
   await v.page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(v.page.getByRole('status').filter({ hasText: /^1 report\b/ })).toBeVisible();
-  await v.page.getByRole('link', { name: `Read in full: ${ref}` }).click();
+  await v.page.getByRole('link', { name: new RegExp(ref) }).click();
   await expect(v.page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
   await expect(v.page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
 
   await v.page.goto('/board');
-  await v.page.getByRole('link', { name: 'By the numbers' }).click();
-  await expect(v.page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
+  await v.page.getByRole('link', { name: 'Numbers' }).click();
+  await expect(v.page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
   await v.page.goto('/board');
   await v.page.getByRole('link', { name: 'Press pack' }).click();
-  await expect(v.page.getByRole('heading', { level: 1, name: 'Press pack' })).toBeVisible();
+  await expect(v.page.getByRole('heading', { level: 2, name: 'Press pack' })).toBeVisible();
   await expect(v.page.getByText('Nothing has been published here yet.')).toBeVisible();
 
   await expect(lockHeading(v.page)).toHaveCount(0);
