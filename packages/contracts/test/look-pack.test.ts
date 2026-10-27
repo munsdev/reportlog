@@ -81,10 +81,10 @@ describe('the built-in pack', () => {
     expect(check(CORE_PACK, emptyInstalled(), null, { builtIn: true })).toEqual([]);
   });
 
-  it('holds the library decision 63 approved, plus Newsdesk, Workstation and Poster tempered: 19 palettes, 13 themes, 18 looks', () => {
-    expect(PALETTES).toHaveLength(19);
-    expect(THEMES).toHaveLength(13);
-    expect(LOOKS).toHaveLength(18);
+  it('holds the library decision 63 approved, plus Newsdesk, Workstation, Poster tempered and the Civic poster set: 22 palettes, 14 themes, 19 looks', () => {
+    expect(PALETTES).toHaveLength(22);
+    expect(THEMES).toHaveLength(14);
+    expect(LOOKS).toHaveLength(19);
   });
 
   it('has exactly one default, Workstation, and Civic is Flint with Signal', () => {

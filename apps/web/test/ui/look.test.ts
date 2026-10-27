@@ -53,6 +53,8 @@ describe('the generated stylesheet', () => {
     };
     v1.format = 1;
     delete v1.elements;
+    delete v1.shapes;
+    delete v1.credit;
     for (const t of v1.themes) delete t.display;
     expect(reference.check(v1, undefined, null, { builtIn: true })).toEqual(
       check(v1, emptyInstalled(), null, { builtIn: true }),

@@ -385,6 +385,63 @@
   --rl-confirmed: #7fdbc9;
   --rl-on-confirmed: #000000;
 }
+[data-palette='civic-night'] {
+  --rl-background: #e7ecef;
+  --rl-background-alt: #d1d6d9;
+  --rl-background-deep: #0a0f15;
+  --rl-surface: #fafbfb;
+  --rl-border: #9ca1a5;
+  --rl-text: #0a0f15;
+  --rl-text-alt: #2d3238;
+  --rl-text-muted: #4c5156;
+  --rl-text-on-deep: #f7f8f9;
+  --rl-action: #e9a81c;
+  --rl-on-action: #0a0f15;
+  --rl-brand: #856319;
+  --rl-brand-on-deep: #e9a81c;
+  --rl-serious: #a81d33;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='civic-navy'] {
+  --rl-background: #e7ecef;
+  --rl-background-alt: #d1d6da;
+  --rl-background-deep: #121a24;
+  --rl-surface: #fafbfb;
+  --rl-border: #9da3a7;
+  --rl-text: #0e151c;
+  --rl-text-alt: #31373e;
+  --rl-text-muted: #4f565b;
+  --rl-text-on-deep: #f7f8f9;
+  --rl-action: #e9a81c;
+  --rl-on-action: #0e151c;
+  --rl-brand: #84641c;
+  --rl-brand-on-deep: #e9a81c;
+  --rl-serious: #a81d33;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
+[data-palette='civic-old-glory'] {
+  --rl-background: #eef0f3;
+  --rl-background-alt: #d8dbe1;
+  --rl-background-deep: #14213d;
+  --rl-surface: #fbfcfc;
+  --rl-border: #a4aab5;
+  --rl-text: #14213d;
+  --rl-text-alt: #37425a;
+  --rl-text-muted: #555f74;
+  --rl-text-on-deep: #f9fafb;
+  --rl-action: #f2c14e;
+  --rl-on-action: #14213d;
+  --rl-brand: #786945;
+  --rl-brand-on-deep: #f2c14e;
+  --rl-serious: #a81d33;
+  --rl-on-serious: #ffffff;
+  --rl-confirmed: #296b60;
+  --rl-on-confirmed: #ffffff;
+}
 :root,
 [data-theme='workstation'] {
   --rl-page-max: 1000px;
@@ -786,6 +843,37 @@
   --rl-fit-max: 84;
   --rl-band-min: 30;
   --rl-band-max: 60;
+  --rl-radius-btn: 12px;
+  --rl-btn-transform: uppercase;
+}
+[data-theme='poster'] {
+  --rl-page-max: 1200px;
+  --rl-radius: 10px;
+  --rl-radius-sm: 6px;
+  --rl-radius-pill: 6px;
+  --rl-border-main: 3px;
+  --rl-shadow-offset: 5px;
+  --rl-press: 4px;
+  --rl-font-display: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --rl-display-stretch: 125%;
+  --rl-font-sans: 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --rl-body-size: 16px;
+  --rl-font-label: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+  --rl-label-stretch: 112%;
+  --rl-label-transform: uppercase;
+  --rl-label-tracking: 0.07em;
+  --rl-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --rl-h1-weight: 900;
+  --rl-h1-tracking: -0.01em;
+  --rl-h1-size: clamp(2.25rem, 1.812rem + 1.798vw, 3.25rem);
+  --rl-display-transform: uppercase;
+  --rl-display-lh: 0.86;
+  --rl-headline-stretch: 112%;
+  --rl-headline-weight: 800;
+  --rl-fit-min: 44;
+  --rl-fit-max: 150;
+  --rl-band-min: 34;
+  --rl-band-max: 92;
   --rl-radius-btn: 12px;
   --rl-btn-transform: uppercase;
 }
