@@ -90,6 +90,7 @@ import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderat
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
+import { Route as staffSettingsBundleRouteImport } from './routes/(staff)/settings/bundle'
 import { Route as staffSettingsDevelopmentRouteImport } from './routes/(staff)/settings/development'
 import { Route as staffSettingsFeedbackRouteImport } from './routes/(staff)/settings/feedback'
 import { Route as staffSettingsFormsRouteImport } from './routes/(staff)/settings/forms'
@@ -528,6 +529,11 @@ const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
+const staffSettingsBundleRoute = staffSettingsBundleRouteImport.update({
+  id: '/bundle',
+  path: '/bundle',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
 const staffSettingsDevelopmentRoute =
   staffSettingsDevelopmentRouteImport.update({
     id: '/development',
@@ -765,6 +771,7 @@ export interface FileRoutesByFullPath {
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/settings/bundle': typeof staffSettingsBundleRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
   '/settings/forms': typeof staffSettingsFormsRoute
@@ -873,6 +880,7 @@ export interface FileRoutesByTo {
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/settings/bundle': typeof staffSettingsBundleRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
   '/settings/forms': typeof staffSettingsFormsRoute
@@ -988,6 +996,7 @@ export interface FileRoutesById {
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
+  '/(staff)/settings/bundle': typeof staffSettingsBundleRoute
   '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
   '/(staff)/settings/feedback': typeof staffSettingsFeedbackRoute
   '/(staff)/settings/forms': typeof staffSettingsFormsRoute
@@ -1104,6 +1113,7 @@ export interface FileRouteTypes {
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
+    | '/settings/bundle'
     | '/settings/development'
     | '/settings/feedback'
     | '/settings/forms'
@@ -1212,6 +1222,7 @@ export interface FileRouteTypes {
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
+    | '/settings/bundle'
     | '/settings/development'
     | '/settings/feedback'
     | '/settings/forms'
@@ -1326,6 +1337,7 @@ export interface FileRouteTypes {
     | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
+    | '/(staff)/settings/bundle'
     | '/(staff)/settings/development'
     | '/(staff)/settings/feedback'
     | '/(staff)/settings/forms'
@@ -2013,6 +2025,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsIndexRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
+    '/(staff)/settings/bundle': {
+      id: '/(staff)/settings/bundle'
+      path: '/bundle'
+      fullPath: '/settings/bundle'
+      preLoaderRoute: typeof staffSettingsBundleRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
     '/(staff)/settings/development': {
       id: '/(staff)/settings/development'
       path: '/development'
@@ -2337,6 +2356,7 @@ const staffModerateRouteRouteWithChildren =
   staffModerateRouteRoute._addFileChildren(staffModerateRouteRouteChildren)
 
 interface staffSettingsRouteRouteChildren {
+  staffSettingsBundleRoute: typeof staffSettingsBundleRoute
   staffSettingsDevelopmentRoute: typeof staffSettingsDevelopmentRoute
   staffSettingsFeedbackRoute: typeof staffSettingsFeedbackRoute
   staffSettingsFormsRoute: typeof staffSettingsFormsRoute
@@ -2350,6 +2370,7 @@ interface staffSettingsRouteRouteChildren {
 }
 
 const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
+  staffSettingsBundleRoute: staffSettingsBundleRoute,
   staffSettingsDevelopmentRoute: staffSettingsDevelopmentRoute,
   staffSettingsFeedbackRoute: staffSettingsFeedbackRoute,
   staffSettingsFormsRoute: staffSettingsFormsRoute,

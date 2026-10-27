@@ -708,6 +708,19 @@ describe('step-up before each listed action', () => {
       payload: () => ({ reason: 'checking' }),
     },
     {
+      what: 'importing a site bundle',
+      who: () => owner,
+      method: 'POST',
+      url: () => '/api/owner/site-bundle',
+      payload: () => ({ format: 1, exported_at: '2026-01-01T00:00:00.000Z', site: {} }),
+    },
+    {
+      what: 'restoring the settings from before the last import',
+      who: () => owner,
+      method: 'POST',
+      url: () => '/api/owner/site-bundle/restore',
+    },
+    {
       what: 'approving a journalist',
       who: () => owner,
       method: 'POST',

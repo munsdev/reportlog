@@ -138,6 +138,8 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       { to: '/settings/social', label: 'Social media', for: ADMIN },
       { to: '/settings/legal', label: 'Legal notices', for: ADMIN },
       { to: '/settings/development', label: 'Development notice', for: ADMIN },
+      // The owner's: it replaces the wording, pages, accounts and look in one go.
+      { to: '/settings/bundle', label: 'Import and export', for: ['owner'] },
     ],
   },
   {
