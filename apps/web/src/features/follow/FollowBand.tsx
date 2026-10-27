@@ -38,7 +38,7 @@ export function FollowBand({
   className?: string;
 }) {
   const { links, name } = useFollow(placement);
-  const copy = useSite().data?.copy;
+  const site = useSite().data;
   if (!links.length) return null;
   return (
     <section
@@ -49,8 +49,8 @@ export function FollowBand({
       <div className="wrap">
         <div className="follow-txt">
           <span className="eyebrow">Follow {name}</span>
-          <h2 id="follow-h">{title ?? copy?.follow_heading ?? 'Follow along'}</h2>
-          <p>{line ?? copy?.follow_line ?? ''}</p>
+          <h2 id="follow-h">{title ?? site?.copy.follow_heading ?? 'Follow along'}</h2>
+          <p>{line ?? site?.copy.follow_line ?? ''}</p>
         </div>
         <div className="follow-btns">
           {links.map((l) => {

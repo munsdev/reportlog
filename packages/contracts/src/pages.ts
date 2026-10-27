@@ -59,16 +59,16 @@ export const LIVE_MODULE_NAMES: Record<LiveModule, string> = {
   buttons: 'The big buttons',
   check: 'Check a report',
   map: 'The map',
-  figures: 'The figures',
+  figures: 'The figures and latest reports',
   links: 'More you can do',
   social: 'Follow us elsewhere',
 };
 
 export const VARIANTS: Record<BlockType, readonly string[]> = {
-  hero: ['action', 'info'],
-  text: ['plain', 'callout'],
+  hero: ['poster', 'action', 'info'],
+  text: ['plain', 'callout', 'statement'],
   steps: ['steps'],
-  cards: ['cards'],
+  cards: ['cards', 'links'],
   cta: ['cta'],
   live: ['live'],
 };
@@ -83,10 +83,14 @@ export const BLOCK_NAMES: Record<BlockType, { name: string; blurb: string }> = {
 };
 
 export const VARIANT_NAMES: Record<string, string> = {
+  poster: 'Poster: huge headline, slogan bar',
   action: 'Action: headline and big buttons',
   info: 'Info: headline, longer introduction',
   plain: 'Plain',
   callout: 'Callout box',
+  statement: 'Statement: a big sentence beside the words',
+  cards: 'Cards with a button',
+  links: 'Cards that are links',
 };
 
 // ── the shapes ──────────────────────────────────────────────────────────
@@ -100,11 +104,17 @@ export const Block = z.object({
 });
 export type Block = z.infer<typeof Block>;
 
-/** One entry of Steps or Cards, or one button of an info Headline. */
+/**
+ * One entry of Steps or Cards, or one button of an info Headline. `tag` is the
+ * small line above a card, or the stamp on a step; `label` is a card's
+ * button wording. Both are empty when unused.
+ */
 export interface Item {
   title: string;
   line: string;
   link: string;
+  tag: string;
+  label: string;
 }
 
 // ── text helpers ────────────────────────────────────────────────────────
@@ -134,6 +144,8 @@ function items(v: unknown): Item[] {
       title: str(o.title, MAX_LINE),
       line: str(o.line, MAX_LINE),
       link: str(o.link, MAX_URL),
+      tag: str(o.tag, MAX_LABEL),
+      label: str(o.label, MAX_LABEL),
     };
   });
 }
@@ -147,14 +159,20 @@ function isType(t: string): t is BlockType {
 /** The fields a type keeps, trimmed and bounded. Anything else is dropped. */
 function cleanFields(type: BlockType, variant: string, f: Record<string, unknown>) {
   switch (type) {
-    case 'hero':
+    case 'hero': {
+      // Every layout keeps the same small words around the headline, so
+      // switching layout back and forth loses nothing.
+      const lead = {
+        eyebrow: str(f.eyebrow, MAX_LINE),
+        headline: str(f.headline, MAX_LINE),
+        headline2: str(f.headline2, MAX_LINE),
+        slogan: str(f.slogan, MAX_LINE),
+        who: str(f.who, MAX_LINE),
+      };
       return variant === 'info'
-        ? {
-            headline: str(f.headline, MAX_LINE),
-            body: str(f.body, MAX_BODY),
-            buttons: items(f.buttons).slice(0, 4),
-          }
-        : { headline: str(f.headline, MAX_LINE), line: str(f.line, 600) };
+        ? { ...lead, body: str(f.body, MAX_BODY), buttons: items(f.buttons).slice(0, 4) }
+        : { ...lead, line: str(f.line, 600) };
+    }
     case 'text':
       return { heading: str(f.heading, MAX_LINE), body: str(f.body, MAX_BODY) };
     case 'steps':
@@ -163,13 +181,20 @@ function cleanFields(type: BlockType, variant: string, f: Record<string, unknown
       return { heading: str(f.heading, MAX_LINE), items: items(f.items) };
     case 'cta':
       return {
+        mark: str(f.mark, MAX_LINE),
         heading: str(f.heading, MAX_LINE),
         text: str(f.text, MAX_BODY),
         label: str(f.label, MAX_LABEL),
         url: str(f.url, MAX_URL),
       };
     case 'live':
-      return { module: str(f.module, 20) };
+      // `heading` and `line` rename the part's own heading and the sentence
+      // under it where it has them; empty is the part's own words.
+      return {
+        module: str(f.module, 20),
+        heading: str(f.heading, MAX_LINE),
+        line: str(f.line, 600),
+      };
   }
 }
 
@@ -254,7 +279,10 @@ export function newBlock(type: BlockType, id: string): Block {
   const base = { id, type, variant: VARIANTS[type][0] ?? '', shown: true };
   switch (type) {
     case 'hero':
-      return { ...base, fields: { headline: '', line: '' } };
+      return {
+        ...base,
+        fields: { eyebrow: '', headline: '', headline2: '', slogan: '', line: '', who: '' },
+      };
     case 'text':
       return { ...base, fields: { heading: '', body: '' } };
     case 'steps':
@@ -262,13 +290,13 @@ export function newBlock(type: BlockType, id: string): Block {
     case 'cards':
       return { ...base, fields: { heading: '', items: [blankItem()] } };
     case 'cta':
-      return { ...base, fields: { heading: '', text: '', label: '', url: '' } };
+      return { ...base, fields: { mark: '', heading: '', text: '', label: '', url: '' } };
     case 'live':
-      return { ...base, fields: { module: 'figures' } };
+      return { ...base, fields: { module: 'figures', heading: '', line: '' } };
   }
 }
 
-export const blankItem = (): Item => ({ title: '', line: '', link: '' });
+export const blankItem = (): Item => ({ title: '', line: '', link: '', tag: '', label: '' });
 
 // ── the Markdown subset ─────────────────────────────────────────────────
 
