@@ -7,7 +7,8 @@
  * and theme together, with no step-up (as before), and only then does the
  * site change. "Back to what the site shows" puts the chooser back.
  *
- * LAYOUT. From lg up the chooser (and the packs under it) scroll in a left
+ * LAYOUT. When the page's own column is 56rem wide (not the window: the
+ * sidebar takes a share of it) the chooser (and the packs under it) scroll in a left
  * column while the status line, its buttons and the previews stay in view on
  * the right, so choosing never means scrolling away from what it does. Below
  * lg the previews come first and a bar of the named looks is pinned to the
@@ -22,7 +23,7 @@ import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
@@ -39,7 +40,6 @@ import {
 } from '../../../features/looks/LookOptionsPanel.tsx';
 import { lookName, sameLook, useLookCatalogue } from '../../../features/settings/looks.ts';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
-import { useWide } from '../../../features/moderation/parts.tsx';
 import { WithEditor, editorQuery, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/look')({
@@ -54,6 +54,32 @@ export const Route = createFileRoute('/(staff)/settings/look')({
     </SettingsFrame>
   ),
 });
+
+/**
+ * Whether the page's own column is at least `min` px wide. The window's width
+ * says nothing here: the staff sidebar takes 240px of it, and the page stops
+ * growing at the shell's maximum, so a viewport breakpoint put two columns
+ * (and four cards across) into a space that held neither.
+ */
+function useColumnWide(min: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [wide, setWide] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const read = () => {
+      setWide(el.clientWidth >= min);
+    };
+    read();
+    if (typeof ResizeObserver === 'undefined') return;
+    const watch = new ResizeObserver(read);
+    watch.observe(el);
+    return () => {
+      watch.disconnect();
+    };
+  }, [min]);
+  return [ref, wide] as const;
+}
 
 export function LookScreen({ state }: { state: SiteEditor }) {
   const client = useQueryClient();
@@ -79,15 +105,18 @@ function LookChoice({ state }: { state: SiteEditor }) {
   const apply = useSave((value: Look) => call(setLook, { body: value }));
   const previewing = !sameLook(chosen, current);
   useUnsavedChanges('the look', previewing);
-  // An element, not a style: the bar below is not rendered at lg and up, so
-  // the looks are never two radio groups on a desktop.
-  const wide = useWide(1024);
+  // An element, not a style: the bar below is not rendered when the page has
+  // two columns, so the looks are never two radio groups on a desktop. 56rem
+  // is the least that holds the chooser (about 30rem) beside the previews
+  // (24rem).
+  const [column, wide] = useColumnWide(896);
 
   return (
     <div
+      ref={column}
       className={cn(
-        'grid gap-8 lg:items-start lg:gap-8',
-        'lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] xl:grid-cols-[minmax(0,1fr)_minmax(0,34rem)] 2xl:grid-cols-[minmax(0,1fr)_minmax(0,46rem)]',
+        'grid min-w-0 gap-8',
+        wide && 'grid-cols-[minmax(0,1fr)_24rem] items-start',
         // Room under the last thing on the page for the pinned bar.
         !wide && 'pb-40',
       )}
@@ -95,11 +124,16 @@ function LookChoice({ state }: { state: SiteEditor }) {
       {/* The previews and what applies them: first on a phone, and from lg up
           in view beside the chooser. It scrolls inside itself when the window
           is too short for all of it. */}
-      <div className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-[4.5rem] lg:max-h-[calc(100dvh-5.5rem)] lg:overflow-y-auto lg:p-1 lg:order-2">
+      <div
+        className={cn(
+          'flex min-w-0 flex-col gap-4',
+          wide && 'sticky top-[5rem] order-2 max-h-[calc(100dvh-6rem)] overflow-y-auto p-1',
+        )}
+      >
         {/* The sentence is the status, not the panel: its buttons are not news. */}
         <Card
           variant="deep"
-          className="sm:flex-row sm:items-center sm:justify-between lg:flex-col lg:items-stretch"
+          className={cn(!wide && 'sm:flex-row sm:items-center sm:justify-between')}
         >
           <p role="status">
             {previewing ? (
@@ -147,10 +181,10 @@ function LookChoice({ state }: { state: SiteEditor }) {
           </Alert>
         ) : null}
 
-        <LookFrames look={chosen} catalogue={catalogue} fit />
+        <LookFrames look={chosen} catalogue={catalogue} fit={wide ? 'always' : false} />
       </div>
 
-      <div className="flex min-w-0 flex-col gap-8 lg:order-1">
+      <div className="flex min-w-0 flex-col gap-8">
         <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
 
         <LookPacks />

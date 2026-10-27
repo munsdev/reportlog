@@ -114,7 +114,7 @@ export function LookChooser({
           aria-labelledby={headingId}
           value={chosen?.id ?? ''}
           onValueChange={choose}
-          className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-4"
+          className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] gap-3"
         >
           {cards}
         </RadioGroup>
@@ -122,7 +122,7 @@ export function LookChooser({
 
       <section className="flex flex-col gap-3 border-t border-ink-alt pt-4">
         <h2 className="font-display text-xl font-bold">Or choose the two parts yourself</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 2xl:grid-cols-2">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4">
           <Field>
             <Label>Palette, the colours</Label>
             <Select

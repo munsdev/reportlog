@@ -23,7 +23,10 @@ export function KeyValueList({ items, className, ...props }: KeyValueListProps) 
   return (
     <dl
       className={cn(
-        'm-0 grid grid-cols-1 border-t border-line sm:grid-cols-[minmax(0,12.5rem)_minmax(0,1fr)] sm:gap-x-3.5',
+        // A container, not the window: the list sits in panels of every width (a
+        // card beside the staff sidebar is far narrower than the window), and a
+        // two-column list in a narrow panel gave its value one word a line.
+        '@container m-0 border-t border-line',
         className,
       )}
       {...props}
@@ -31,13 +34,16 @@ export function KeyValueList({ items, className, ...props }: KeyValueListProps) 
       {items.map((item, i) => (
         // A <div> around each pair is allowed inside <dl>, and keeps a name
         // and its value together for anybody reading the source order.
-        <div key={i} className="contents">
-          <dt className="pt-2.5 font-mono text-[0.74rem] tracking-[0.06em] text-muted uppercase sm:border-b sm:border-line sm:pb-2.5">
+        <div
+          key={i}
+          className="grid grid-cols-1 @md:grid-cols-[minmax(0,12.5rem)_minmax(0,1fr)] @md:gap-x-3.5"
+        >
+          <dt className="pt-2.5 font-mono text-[0.74rem] tracking-[0.06em] text-muted uppercase @md:border-b @md:border-line @md:pb-2.5">
             {item.key}
           </dt>
           <dd
             className={cn(
-              'm-0 border-b border-line pb-2.5 font-medium text-ink sm:pt-2.5',
+              'm-0 border-b border-line pb-2.5 font-medium text-ink @md:pt-2.5',
               item.mono && 'font-mono text-sm',
             )}
           >
