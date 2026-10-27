@@ -156,6 +156,8 @@ export function logbookRoutes(
       // workstream's to add beside this, resolved on the server.
       asks_for_files: fields.some((f) => f.kind === FILE_TYPE),
       asks_email: lb.asks_email,
+      // Only where it applies, so a form that does not offer it is told nothing.
+      ...(lb.email_optional && !lb.asks_email ? { email_optional: true as const } : {}),
       // Only where it applies, so a form that asks is told nothing new.
       ...(lb.publish_by_terms ? { publication_terms: termsFor() } : {}),
       fields: fields.map(forForm),
@@ -218,6 +220,7 @@ export function logbookRoutes(
           title?: string;
           blurb?: string | null;
           email_required?: boolean;
+          email_optional?: boolean;
           publish_by_terms?: boolean;
           show_on_front?: boolean;
           short_slug?: string | null;

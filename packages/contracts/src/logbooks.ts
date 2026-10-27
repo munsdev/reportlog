@@ -117,6 +117,11 @@ export const LogbookSummary = z.object({
   /** Whether the form asks for an email: derived from the questions, or the override (E1). */
   asks_email: z.boolean(),
   /**
+   * The operator's setting: for a form with no typed question, show the email
+   * card and let it be skipped (D8, D20). Off for every logbook until turned on.
+   */
+  email_optional: z.boolean(),
+  /**
    * Publication is a condition of filing: the reporter is told, not asked,
    * and the report seals may_publish = true beside the terms' digest.
    * Changeable after launch; never sealed itself.
@@ -250,6 +255,8 @@ export const updateLogbook = defineRoute({
     blurb: z.string().nullable().optional(),
     /** Ask for an email even where the questions do not need one (E1). Changeable after launch. */
     email_required: z.boolean().optional(),
+    /** Show the email card on a form that needs none, and let it be skipped (D8, D20). Changeable after launch. */
+    email_optional: z.boolean().optional(),
     /** Publication as a condition of filing rather than a question. Changeable after launch. */
     publish_by_terms: z.boolean().optional(),
     /** Show it on the front page while it is open. Changeable after launch. */
@@ -422,6 +429,12 @@ export const getPublicLogbook = defineRoute({
      * on arrival and the reporter cannot come back to correct or withdraw it.
      */
     asks_email: z.boolean(),
+    /**
+     * Present only where the form needs no address but offers the card: it may
+     * be skipped. An address given holds the report until its link is followed;
+     * none files it at once (D8, D20).
+     */
+    email_optional: z.literal(true).optional(),
     /**
      * Present only where publication is a condition of filing: the terms the
      * form shows instead of asking, and the digest to send back with them.

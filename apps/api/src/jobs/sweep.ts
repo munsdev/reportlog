@@ -114,6 +114,15 @@ export const SWEPT: readonly SweptTable[] = [
     expired: 'confirmed_at IS NULL AND expires_at < now()',
   },
   {
+    // D5's count of reports per address per day. A digest under a key of ITS
+    // day, so yesterday's rows match nothing and are only weight. The
+    // current day's rows are never touched.
+    table: 'filing_address_days',
+    what: 'per-address daily counts of earlier days',
+    owner: 'E1',
+    expired: "day < (now() AT TIME ZONE 'UTC')::date",
+  },
+  {
     // Spent puzzle solutions (door/puzzle.ts): the hash of a challenge we
     // issued, kept only until that challenge would have expired anyway. The
     // door deletes them as it goes; this is the net for a quiet site.
@@ -172,6 +181,17 @@ export async function sweepExpired(
       if (!exists) {
         result[table] = 'absent';
         continue;
+      }
+      // A staged file keeps a foreign key to its submission, and the files
+      // job expires the file but leaves the row. Without this, one expired
+      // report with a file would make the whole table undeletable. The file
+      // is the files job's: it is expired by its own `expires_at`, which is
+      // the link's, so only the pointer is cleared here.
+      if (table === 'report_submissions') {
+        await sql`UPDATE upload_slots SET submission_id = NULL
+          WHERE submission_id IN (SELECT id FROM report_submissions WHERE ${sql.raw(expired)})`.execute(
+          db,
+        );
       }
       const deleted = await sql`DELETE FROM ${sql.table(table)} WHERE ${sql.raw(expired)}`.execute(
         db,

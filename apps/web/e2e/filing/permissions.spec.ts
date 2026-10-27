@@ -116,6 +116,7 @@ async function myReportWithPublishedFiles(
             contact_passing: body.permission === 'contact_passing' && body.granted,
             attachment_publication: state.files,
             evidence_request: false,
+            journalist_sharing: false,
           },
         },
       });

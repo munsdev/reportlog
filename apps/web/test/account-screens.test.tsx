@@ -248,7 +248,12 @@ describe('my reports', () => {
     may_publish: true,
     withdrawn: false,
     moderation_status: 'pending',
-    permissions: { contact_passing: false, attachment_publication: false, evidence_request: false },
+    permissions: {
+      contact_passing: false,
+      attachment_publication: false,
+      evidence_request: false,
+      journalist_sharing: false,
+    },
   };
 
   it('a chip per state, never teal, and a declined report is not marked serious', () => {

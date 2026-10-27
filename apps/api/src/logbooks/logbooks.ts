@@ -110,6 +110,7 @@ function summaries(db: Db) {
     'logbooks.files_frozen_at',
     'logbooks.outside_access',
     'logbooks.email_required',
+    'logbooks.email_optional',
     'logbooks.publish_by_terms',
     'logbooks.show_on_front',
     'logbooks.short_slug',
@@ -156,6 +157,8 @@ function present(row: SummaryRow): LogbookSummary {
     files_frozen_at: iso(row.files_frozen_at),
     outside_access: outsideAccess(row.outside_access),
     email_required: row.email_required,
+    // NULL (every logbook that existed) is off (D21).
+    email_optional: row.email_optional === true,
     // DERIVED, like asks_for_files: a question somebody types into or files
     // ask for an address; the operator's switch can only add one (E1).
     asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
@@ -409,6 +412,7 @@ export async function updateDetails(
     title?: string | undefined;
     blurb?: string | null | undefined;
     email_required?: boolean | undefined;
+    email_optional?: boolean | undefined;
     publish_by_terms?: boolean | undefined;
     show_on_front?: boolean | undefined;
     short_slug?: string | null | undefined;
@@ -419,6 +423,7 @@ export async function updateDetails(
     title?: string;
     blurb?: string | null;
     email_required?: boolean;
+    email_optional?: boolean;
     publish_by_terms?: boolean;
     show_on_front?: boolean;
     short_slug?: string | null;
@@ -432,6 +437,9 @@ export async function updateDetails(
   // Not part of the form and never sealed, so it stays changeable after
   // launch: it decides what the next report is asked (E1).
   if (spec.email_required !== undefined) set.email_required = spec.email_required;
+  // The optional card, likewise: never sealed, changes only what the next
+  // reporter is shown.
+  if (spec.email_optional !== undefined) set.email_optional = spec.email_optional;
   // The same, for publication: it changes what the next reporter is shown,
   // and every report already filed sealed the wording its reporter saw.
   if (spec.publish_by_terms !== undefined) set.publish_by_terms = spec.publish_by_terms;

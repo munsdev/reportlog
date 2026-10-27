@@ -205,7 +205,7 @@ function Shown({
     return (
       <Column eyebrow={c.logbook_title} title="This link has expired">
         <p className="max-w-prose">
-          Nothing was filed. Links work for 24 hours. If you still want to file it, send the report
+          Nothing was filed. Links work for 90 days. If you still want to file it, send the report
           to “{c.logbook_title}” again.
         </p>
         <p>
