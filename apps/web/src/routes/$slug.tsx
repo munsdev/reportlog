@@ -1,5 +1,5 @@
 /**
- * A logbook's or a list's form at the root of the site (electionlog.org/volunteer).
+ * A logbook's or a list's form at the root of the site (example.org/volunteer).
  * Every page the site has wins over this route, and the server refuses a
  * slug that names one (RESERVED_SLUGS), so the two cannot collide.
  *

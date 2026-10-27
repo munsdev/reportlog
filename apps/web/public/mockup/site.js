@@ -113,7 +113,7 @@
   function freshBg() {
     var on = {}; var d = (DEFAULTS.bg && DEFAULTS.bg.on) || {};
     for (var k in d) on[k] = d[k];
-    return { on: on, patOp: 0.14, shapeOp: 0.2, style: {}, img: null, imgPlace: "behind", imgShape: "liberty", imgMode: "under", imgTone: "mono", imgOp: 0.4, imgFocus: 60, fade: "side", fadeAmt: 0.5 };
+    return { on: on, patOp: 0.14, shapeOp: 0.2, style: {}, img: null, imgPlace: "behind", imgShape: "", imgMode: "under", imgTone: "mono", imgOp: 0.4, imgFocus: 60, fade: "side", fadeAmt: 0.5 };
   }
   function freshLook() { return { palette: DEFAULTS.palette, theme: DEFAULTS.theme, bg: freshBg(), motion: "on", zones: "alternate" }; }
   var look = freshLook(), serverLook = null;

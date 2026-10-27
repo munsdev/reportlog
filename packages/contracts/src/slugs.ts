@@ -1,6 +1,6 @@
 /**
  * Web addresses a logbook or a list may not take. Both are served from the
- * root of the site (electionlog.org/volunteer), so a slug equal to a page that
+ * root of the site (example.org/volunteer), so a slug equal to a page that
  * already lives there would be unreachable, or worse, would shadow it.
  *
  * Keep this in step with the folders under apps/web/src/routes, the API
