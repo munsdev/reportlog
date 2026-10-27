@@ -29,6 +29,7 @@
  */
 import {
   DEFAULT_LOOK,
+  PREVIOUS_DEFAULT_LOOK,
   MAX_SITE_NAME,
   accentMarksClose,
   applyTemplate,
@@ -536,6 +537,9 @@ function YesNo({
 
 /* ---- the look ------------------------------------------------------- */
 
+const isPreviousDefault = (look: Look) =>
+  look.palette === PREVIOUS_DEFAULT_LOOK.palette && look.theme === PREVIOUS_DEFAULT_LOOK.theme;
+
 /**
  * Late on purpose: by now the site has a name, so the previews show theirs.
  * The Look screen's chooser and its two frames (features/settings): choosing
@@ -551,8 +555,10 @@ function LookStep({ onDone, back }: StepProps) {
   if (editor.isPending) return <Loading />;
   return (
     <LookForm
-      // Desk to start with on a fresh site, which is what a fresh site wears.
-      start={editor.data?.look ?? DEFAULT_LOOK}
+      // A fresh site starts from the default look. The settings row it was
+      // born with still holds the previous default (a migration may not
+      // change a column default), so that pair reads as "not chosen yet".
+      start={editor.data && !isPreviousDefault(editor.data.look) ? editor.data.look : DEFAULT_LOOK}
       name={editor.data?.name ?? 'ReportLog'}
       onDone={onDone}
       back={back}

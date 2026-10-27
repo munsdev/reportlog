@@ -39,27 +39,60 @@ describe('the generated stylesheet', () => {
     expect(generated).toBe(expected);
   });
 
-  it('agrees with the reference implementation in docs/design, check and stylesheet alike', async () => {
+  it('agrees with the reference implementation in docs/design on everything format 1 had', async () => {
     // Plain JavaScript with no types, so it is held to the port's signatures.
+    // The reference is the format 1 code. The built-in pack is now format 2,
+    // so the comparison is made on its format 1 reading: the same pack with
+    // what only format 2 has taken away. That is the backward-compatibility
+    // promise in one assertion: a pack written before format 2 is checked
+    // and painted exactly as it always was.
     const path = `${import.meta.dirname}/../../../../docs/design/looks/look-pack.mjs`;
     const reference = (await import(path)) as { check: typeof check; toCss: typeof toCss };
-    expect(reference.check(CORE_PACK, undefined, null, { builtIn: true })).toEqual(
-      check(CORE_PACK, emptyInstalled(), null, { builtIn: true }),
+    const v1 = structuredClone(CORE_PACK) as unknown as Record<string, unknown> & {
+      themes: Record<string, unknown>[];
+    };
+    v1.format = 1;
+    delete v1.elements;
+    for (const t of v1.themes) delete t.display;
+    expect(reference.check(v1, undefined, null, { builtIn: true })).toEqual(
+      check(v1, emptyInstalled(), null, { builtIn: true }),
     );
     const at = (_id: string, f: string) => `./${f}`;
-    expect(reference.toCss(CORE_PACK, at, { root: true })).toBe(
-      toCss(CORE_PACK, at, { root: true }),
+    expect(reference.toCss(v1 as never, at, { root: true })).toBe(
+      toCss(v1 as never, at, { root: true }),
     );
   });
 
-  it('is built from the same data the design specifies', () => {
-    // docs/design/looks holds the reference copy; the app's copy is the one
-    // that ships. Changing one without the other is a change nobody reviewed.
-    for (const f of ['reportlog-core.look.json', 'migration.json']) {
-      const shipped = readFileSync(`${src}/../../../packages/contracts/src/look/${f}`, 'utf8');
-      const designed = readFileSync(`${src}/../../../docs/design/looks/${f}`, 'utf8');
-      expect(JSON.parse(shipped), f).toEqual(JSON.parse(designed));
+  it('holds everything the design specifies, and may add to it', () => {
+    // docs/design/looks holds the reference copy of format 1; the app's copy
+    // is the one that ships and has since added format 2 (the display block,
+    // header elements) and looks of its own. A palette, theme or look the
+    // design names must still be there, unchanged apart from what format 2
+    // added; the migration table must be identical.
+    const dir = `${src}/../../../`;
+    const read = (path: string) =>
+      JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+    type Item = Record<string, unknown>;
+    const keyOf = (x: Item): string => String(x.id ?? x.family);
+    const shipped = read(`${dir}packages/contracts/src/look/reportlog-core.look.json`);
+    const designed = read(`${dir}docs/design/looks/reportlog-core.look.json`);
+    for (const kind of ['palettes', 'themes', 'looks', 'fonts'] as const) {
+      const have = new Map((shipped[kind] as Item[]).map((x) => [keyOf(x), x]));
+      for (const want of designed[kind] as Item[]) {
+        const key = keyOf(want);
+        const got = { ...have.get(key) } as Record<string, unknown>;
+        expect(got, `${kind} ${key}`).not.toEqual({});
+        delete got.display;
+        // Only the default moved: Workstation is the default look now.
+        delete got.default;
+        const wanted = { ...want } as Record<string, unknown>;
+        delete wanted.default;
+        expect(got, `${kind} ${key}`).toEqual(wanted);
+      }
     }
+    expect(read(`${dir}packages/contracts/src/look/migration.json`)).toEqual(
+      read(`${dir}docs/design/looks/migration.json`),
+    );
   });
 
   it('is imported by styles.css', () => {

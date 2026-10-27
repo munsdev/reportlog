@@ -21,6 +21,7 @@ import { Card } from '@/components/ui/card.tsx';
 import { SocialLinks } from '@/components/ui/social-links.tsx';
 import { Eyebrow } from '@/components/ui/type.tsx';
 import { CheckAReport } from '@/features/board/CheckAReport.tsx';
+import { MotifHost } from '@/features/looks/header-background/HeaderBackground.tsx';
 import { MapSlot } from '@/features/maps/MapSlot.tsx';
 import { cn } from '@/lib/utils.ts';
 
@@ -64,22 +65,28 @@ export function FrontPageLayout({
           on the left, the ways in on the right. Stacked on anything
           narrower, the buttons under the words. */}
       <div className="flex w-full flex-col gap-6 lg:gap-8">
-        <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3">
-              <Eyebrow>{name}</Eyebrow>
-              {headline}
-              {slogan}
-              {lede}
+        {/* The header background (U1): drawn behind the headline and the ways
+            in, only when the owner switched an element on. The negative margin
+            and matching padding keep a button's hard shadow and focus ring
+            inside the host, which clips what overflows it. */}
+        <MotifHost slot="hero" className="-m-3 p-3">
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center lg:gap-12">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3">
+                <Eyebrow>{name}</Eyebrow>
+                {headline}
+                {slogan}
+                {lede}
+              </div>
+              <p className="flex flex-col gap-1">
+                <Link to="/about" className="text-base font-semibold underline underline-offset-4">
+                  What is this? About this site
+                </Link>
+              </p>
             </div>
-            <p className="flex flex-col gap-1">
-              <Link to="/about" className="text-base font-semibold underline underline-offset-4">
-                What is this? About this site
-              </Link>
-            </p>
+            {ways}
           </div>
-          {ways}
-        </div>
+        </MotifHost>
         {helpNow}
       </div>
       {sections.length ? (

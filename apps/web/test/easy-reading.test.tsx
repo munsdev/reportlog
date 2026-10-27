@@ -71,6 +71,8 @@ describe('the choice', () => {
       columns: 'single',
       scale: 'large',
       surface: 'filled',
+      second: 'solid',
+      tag: 'plain',
       dark: false,
     });
   });

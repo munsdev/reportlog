@@ -20,7 +20,7 @@ import { LookStylesheet } from './site.ts';
 export const LOOK_PACK_MAX_ZIP_BYTES = 11_000_000;
 const MAX_BASE64 = Math.ceil(LOOK_PACK_MAX_ZIP_BYTES / 3) * 4;
 
-/** Where a pack's stylesheet and fonts are served: `<sha256>.css` or `<sha256>.woff2`. */
+/** Where a pack's stylesheet, fonts and header kit are served: `<sha256>.css`, `.woff2` or `.json`. */
 export const LOOK_FILES_PATH = '/api/looks/:pack/:file';
 
 const Iso = z.string();
@@ -52,6 +52,8 @@ export const PackTheme = z.object({
   columns: z.enum(ENUMS.columns).optional(),
   scale: z.enum(ENUMS.scale).optional(),
   surface: z.enum(ENUMS.surface).optional(),
+  second: z.enum(ENUMS.second).optional(),
+  tag: z.enum(ENUMS.tag).optional(),
 });
 export type PackTheme = z.infer<typeof PackTheme>;
 
@@ -74,6 +76,10 @@ export const LookPackSummary = z.object({
   looks: z.array(PackLook),
   /** The font families it ships. */
   fonts: z.array(z.string()),
+  /** Format 2: credit for a shape or font, shown beside the pack. */
+  credit: z.string().optional(),
+  /** Format 2: what it adds to the header background. */
+  elements: z.array(z.object({ id: z.string(), label: z.string() })).optional(),
 });
 export type LookPackSummary = z.infer<typeof LookPackSummary>;
 

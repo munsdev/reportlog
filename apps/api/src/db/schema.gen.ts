@@ -964,6 +964,7 @@ export interface SiteSettings {
   id: Generated<boolean>;
   impressum_text: string | null;
   last_seen_build: string | null;
+  look_options: Json | null;
   palette: Generated<string>;
   privacy_text: string | null;
   site_name: string | null;

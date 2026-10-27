@@ -5,7 +5,7 @@
  * settings routes.
  */
 import { readFileSync } from 'node:fs';
-import { DEFAULT_LOOK, THEMES } from '@reportlog/contracts';
+import { DEFAULT_LOOK, DEFAULT_LOOK_OPTIONS, THEMES } from '@reportlog/contracts';
 import { sql } from 'kysely';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { SKELETONS } from '../../src/site/legal.ts';
@@ -135,9 +135,14 @@ describe('the settings routes', () => {
       columns: 'split',
       scale: 'standard',
       surface: 'outlined',
+      second: 'muted',
+      tag: 'plain',
       // Stage 6: Easier reading's dark flag, and no look packs installed.
       dark: true,
       stylesheets: [],
+      // U1: zones, motion and the header background, and the packs' kits.
+      options: DEFAULT_LOOK_OPTIONS,
+      kits: [],
     });
     const refused = await admin('PUT', '/api/admin/site/look', { palette: 'retired' });
     expect(refused.statusCode).toBe(400);

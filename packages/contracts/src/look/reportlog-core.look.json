@@ -1,5 +1,5 @@
 {
-  "format": 1,
+  "format": 2,
   "id": "reportlog-core",
   "label": "ReportLog",
   "version": "1.0.0",
@@ -182,6 +182,31 @@
     }
   ],
   "palettes": [
+    {
+      "id": "workstation",
+      "label": "Workstation",
+      "description": "Warm platinum grey with charcoal bars and a workstation blue. Looks like office software from the nineties, with the paper still in the room.",
+      "dark": false,
+      "colors": {
+        "background": "#e4e1d8",
+        "background-alt": "#d6d2c6",
+        "background-deep": "#1d2127",
+        "surface": "#f8f6f0",
+        "border": "#8c877a",
+        "text": "#14161a",
+        "text-alt": "#2b2f36",
+        "text-muted": "#4a4f58",
+        "text-on-deep": "#e9ecef",
+        "action": "#1f4fbf",
+        "on-action": "#ffffff",
+        "brand": "#80500a",
+        "brand-on-deep": "#f0b63a",
+        "serious": "#a81d33",
+        "on-serious": "#ffffff",
+        "confirmed": "#1f6f63",
+        "on-confirmed": "#ffffff"
+      }
+    },
     {
       "id": "newsdesk",
       "label": "Newsdesk",
@@ -635,6 +660,65 @@
   ],
   "themes": [
     {
+      "id": "workstation",
+      "label": "Workstation",
+      "description": "A typewriter's headings over a plain workstation: hard edges, title bars on panels, a small hard shadow. Quiet and sturdy.",
+      "type": {
+        "heading": {
+          "family": "Courier Prime",
+          "weight": 700,
+          "case": "none",
+          "tracking": 0
+        },
+        "body": {
+          "family": "IBM Plex Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "IBM Plex Mono",
+          "case": "upper",
+          "tracking": 0.06
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.0,
+          "max": 3.0
+        }
+      },
+      "shape": {
+        "radius": 4,
+        "radiusSmall": 2,
+        "border": 2,
+        "shadow": 3,
+        "press": 2
+      },
+      "panelHead": "title-bar",
+      "texture": "none",
+      "width": "regular",
+      "columns": "split",
+      "scale": "standard",
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 1.04,
+        "headlineStretch": 100,
+        "headlineWeight": 700,
+        "fit": {
+          "min": 30,
+          "max": 76
+        },
+        "band": {
+          "min": 28,
+          "max": 56
+        },
+        "second": "solid",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 2
+      }
+    },
+    {
       "id": "newsdesk",
       "label": "Newsdesk",
       "description": "A newspaper desk with a terminal on it: big serif headlines, typed labels, rules between sections instead of boxes.",
@@ -674,7 +758,23 @@
       "width": "wide",
       "columns": "single",
       "scale": "large",
-      "surface": "ruled"
+      "surface": "ruled",
+      "display": {
+        "lineHeight": 1.0,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 36,
+          "max": 88
+        },
+        "band": {
+          "min": 30,
+          "max": 64
+        },
+        "second": "solid",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 3
+      }
     },
     {
       "id": "desk",
@@ -716,7 +816,23 @@
       "width": "regular",
       "columns": "split",
       "scale": "standard",
-      "surface": "outlined"
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 1.02,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 72
+        },
+        "band": {
+          "min": 28,
+          "max": 56
+        },
+        "second": "solid",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 2
+      }
     },
     {
       "id": "signal",
@@ -758,7 +874,23 @@
       "width": "wide",
       "columns": "single",
       "scale": "large",
-      "surface": "filled"
+      "surface": "filled",
+      "display": {
+        "lineHeight": 0.98,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 38,
+          "max": 96
+        },
+        "band": {
+          "min": 32,
+          "max": 72
+        },
+        "second": "muted",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 10
+      }
     },
     {
       "id": "broadsheet",
@@ -801,7 +933,23 @@
       "width": "wide",
       "columns": "single",
       "scale": "large",
-      "surface": "outlined"
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 1.0,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 38,
+          "max": 104
+        },
+        "band": {
+          "min": 32,
+          "max": 76
+        },
+        "second": "muted",
+        "tag": "plain",
+        "buttonCase": "upper",
+        "radiusButton": 0
+      }
     },
     {
       "id": "broadcast",
@@ -845,7 +993,23 @@
       "width": "wide",
       "columns": "split",
       "scale": "standard",
-      "surface": "filled"
+      "surface": "filled",
+      "display": {
+        "lineHeight": 0.92,
+        "headlineStretch": 72,
+        "fit": {
+          "min": 40,
+          "max": 100
+        },
+        "band": {
+          "min": 32,
+          "max": 72
+        },
+        "second": "outline",
+        "tag": "bar",
+        "buttonCase": "upper",
+        "radiusButton": 0
+      }
     },
     {
       "id": "docket",
@@ -887,7 +1051,23 @@
       "width": "narrow",
       "columns": "split",
       "scale": "standard",
-      "surface": "outlined"
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 1.02,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 68
+        },
+        "band": {
+          "min": 28,
+          "max": 52
+        },
+        "second": "muted",
+        "tag": "plain",
+        "buttonCase": "upper",
+        "radiusButton": 0
+      }
     },
     {
       "id": "notebook",
@@ -929,7 +1109,23 @@
       "width": "regular",
       "columns": "split",
       "scale": "standard",
-      "surface": "outlined"
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 1.02,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 72
+        },
+        "band": {
+          "min": 28,
+          "max": 52
+        },
+        "second": "solid",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 3
+      }
     },
     {
       "id": "trailhead",
@@ -972,7 +1168,23 @@
       "width": "wide",
       "columns": "split",
       "scale": "large",
-      "surface": "filled"
+      "surface": "filled",
+      "display": {
+        "lineHeight": 0.98,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 36,
+          "max": 100
+        },
+        "band": {
+          "min": 30,
+          "max": 72
+        },
+        "second": "action",
+        "tag": "rule",
+        "buttonCase": "upper",
+        "radiusButton": 10
+      }
     },
     {
       "id": "firm",
@@ -1014,7 +1226,23 @@
       "width": "full",
       "columns": "split",
       "scale": "standard",
-      "surface": "filled"
+      "surface": "filled",
+      "display": {
+        "lineHeight": 1.05,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 68
+        },
+        "band": {
+          "min": 28,
+          "max": 50
+        },
+        "second": "muted",
+        "tag": "plain",
+        "buttonCase": "none",
+        "radiusButton": 6
+      }
     },
     {
       "id": "console",
@@ -1056,7 +1284,23 @@
       "width": "narrow",
       "columns": "split",
       "scale": "standard",
-      "surface": "outlined"
+      "surface": "outlined",
+      "display": {
+        "lineHeight": 0.95,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 84
+        },
+        "band": {
+          "min": 28,
+          "max": 60
+        },
+        "second": "action",
+        "tag": "bar",
+        "buttonCase": "upper",
+        "radiusButton": 0
+      }
     },
     {
       "id": "commons",
@@ -1098,16 +1342,99 @@
       "width": "regular",
       "columns": "single",
       "scale": "large",
-      "surface": "filled"
+      "surface": "filled",
+      "display": {
+        "lineHeight": 1.05,
+        "headlineStretch": 100,
+        "fit": {
+          "min": 30,
+          "max": 64
+        },
+        "band": {
+          "min": 28,
+          "max": 50
+        },
+        "second": "solid",
+        "tag": "plain",
+        "buttonCase": "none",
+        "radiusButton": 12
+      }
+    },
+    {
+      "id": "compact-poster",
+      "label": "Poster, tempered",
+      "description": "Wide, heavy capitals with an outlined second line, kept to a size that never crowds a phone. For campaigns and events.",
+      "type": {
+        "heading": {
+          "family": "Archivo",
+          "stretch": 112,
+          "weight": 800,
+          "case": "upper",
+          "tracking": -0.01
+        },
+        "body": {
+          "family": "Public Sans",
+          "size": 16
+        },
+        "label": {
+          "family": "Archivo",
+          "stretch": 100,
+          "case": "upper",
+          "tracking": 0.09
+        },
+        "mono": {
+          "family": "IBM Plex Mono"
+        },
+        "h1": {
+          "min": 2.25,
+          "max": 3.5
+        }
+      },
+      "shape": {
+        "radius": 10,
+        "radiusSmall": 6,
+        "border": 3,
+        "shadow": 4,
+        "press": 3
+      },
+      "panelHead": "bar",
+      "texture": "none",
+      "width": "wide",
+      "columns": "split",
+      "scale": "large",
+      "surface": "filled",
+      "display": {
+        "lineHeight": 0.9,
+        "headlineStretch": 105,
+        "headlineWeight": 800,
+        "fit": {
+          "min": 36,
+          "max": 84
+        },
+        "band": {
+          "min": 30,
+          "max": 60
+        },
+        "second": "outline",
+        "tag": "bar",
+        "buttonCase": "upper",
+        "radiusButton": 12
+      }
     }
   ],
   "looks": [
     {
+      "id": "workstation",
+      "label": "Workstation",
+      "palette": "workstation",
+      "theme": "workstation",
+      "default": true
+    },
+    {
       "id": "newsdesk",
       "label": "Newsdesk",
       "palette": "newsdesk",
-      "theme": "newsdesk",
-      "default": true
+      "theme": "newsdesk"
     },
     {
       "id": "desk",
@@ -1204,6 +1531,13 @@
       "label": "High contrast",
       "palette": "contrast",
       "theme": "commons"
+    }
+  ],
+  "elements": [
+    {
+      "id": "ruled",
+      "label": "Ruled lines",
+      "kind": "ruled"
     }
   ]
 }

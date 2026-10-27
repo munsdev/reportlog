@@ -21,7 +21,7 @@
  * site's own look, never the Easier reading one.
  */
 import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf, paintedLayout } from '@reportlog/contracts';
-import type { BrandPart, Look, Site, ThemeLayout } from '@reportlog/contracts';
+import type { BrandPart, Look, LookOptions, Site, ThemeLayout } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { easyLook, onEasyReadingChange } from '@/features/easy-reading/easyReading.ts';
@@ -97,7 +97,10 @@ function paint(site: PaintedLook, root: HTMLElement): void {
     columns: worn.columns ?? fallback.columns,
     scale: worn.scale ?? fallback.scale,
     surface: worn.surface ?? fallback.surface,
+    second: worn.second ?? fallback.second,
+    tag: worn.tag ?? fallback.tag,
   });
+  setOptionAttributes(root, site.options);
   if (site.stylesheets) linkStylesheets(site.stylesheets, root.ownerDocument);
 }
 
@@ -124,6 +127,18 @@ export function setLayoutAttributes(root: HTMLElement, layout: ThemeLayout): voi
   root.setAttribute('data-columns', layout.columns);
   root.setAttribute('data-scale', layout.scale);
   root.setAttribute('data-surface', layout.surface);
+  root.setAttribute('data-second', layout.second);
+  root.setAttribute('data-tag', layout.tag);
+}
+
+/**
+ * Zones and motion, set on <html> beside the layout choices. Absent (a look
+ * remembered before they existed) is the mock-up's defaults: sections
+ * alternate and decoration moves.
+ */
+export function setOptionAttributes(root: HTMLElement, options: LookOptions | undefined): void {
+  root.setAttribute('data-zones', options?.zones ?? 'alternate');
+  root.setAttribute('data-motion', options?.motion ?? 'on');
 }
 
 /** The look remembered from last time, if it is still one the site could send. */

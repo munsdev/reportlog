@@ -47,8 +47,17 @@ export const THEME_IDS: readonly string[] = THEMES.map((t) => t.id);
 const defaultLook = looks.find((l) => l.default);
 if (!defaultLook) throw new Error('The built-in look pack names no default look.');
 
-/** What a fresh installation wears: Newsdesk (the Newsdesk palette with the Newsdesk theme). */
+/** What a fresh installation wears: Workstation (the Workstation palette with the Workstation theme). */
 export const DEFAULT_LOOK = { palette: defaultLook.palette, theme: defaultLook.theme };
+
+/**
+ * The default before Workstation. A database column default still writes it
+ * into a new installation's settings row (a migration may not change it), so
+ * the setup wizard reads this pair, on a site nobody has chosen a look for,
+ * as "not chosen yet" and starts from DEFAULT_LOOK. A site that chose Newsdesk
+ * on purpose saves a look at the wizard's step like any other.
+ */
+export const PREVIOUS_DEFAULT_LOOK = { palette: 'newsdesk', theme: 'newsdesk' };
 
 /**
  * What every installation wore before the look library: Flint with Signal.
