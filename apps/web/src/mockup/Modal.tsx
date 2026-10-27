@@ -10,6 +10,7 @@ import type { ReactNode } from 'react';
 export function Modal({
   title,
   description,
+  text,
   open,
   onClose,
   buttons,
@@ -18,6 +19,8 @@ export function Modal({
 }: {
   title: string;
   description?: ReactNode;
+  /** The older name for `description`, still used by pages ported before the two merged. */
+  text?: ReactNode;
   open: boolean;
   onClose: () => void;
   buttons: ReactNode;
@@ -25,14 +28,15 @@ export function Modal({
   onSubmit?: () => void;
   children?: ReactNode;
 }) {
+  const said = description ?? text;
   const inner = (
     <>
       <Dialog.Title asChild>
         <h3>{title}</h3>
       </Dialog.Title>
-      {description ? (
+      {said ? (
         <Dialog.Description asChild>
-          <p className="muted">{description}</p>
+          <p className="muted">{said}</p>
         </Dialog.Description>
       ) : (
         <Dialog.Description className="vh">{title}</Dialog.Description>

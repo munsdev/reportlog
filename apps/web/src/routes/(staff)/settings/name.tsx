@@ -13,12 +13,13 @@ import { MAX_SITE_NAME, accentMarksClose, plainName, setSiteName } from '@report
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/components/ui/save-bar.tsx';
+import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';
@@ -28,11 +29,7 @@ import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
     <SettingsFrame>
-      <StaffPage
-        title="Name"
-        width="prose"
-        lede="How the name is drawn in the header and the footer."
-      >
+      <StaffPage title="Name" lede="How the name is drawn in the header and the footer.">
         <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
       </StaffPage>
     </SettingsFrame>
@@ -71,35 +68,36 @@ export function NameForm({ state }: { state: SiteEditor }) {
 
   return (
     <form
-      className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <Field>
-        <Label>The site’s name</Label>
-        <FieldDescription>
-          Put part of it in "double quotes" to draw it in the accent colour, or in 'single quotes'
-          for a quieter second accent. Leave it empty to use “ReportLog”.
-        </FieldDescription>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            save.reset();
-          }}
-          autoComplete="off"
-        />
-        <FieldError>{problem}</FieldError>
-      </Field>
+      <Panel heading="The site’s name">
+        <Field>
+          <Label>The site’s name</Label>
+          <FieldDescription>
+            Put part of it in "double quotes" to draw it in the accent colour, or in 'single quotes'
+            for a quieter second accent. Leave it empty to use “ReportLog”.
+          </FieldDescription>
+          <Input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              save.reset();
+            }}
+            autoComplete="off"
+          />
+          <FieldError>{problem}</FieldError>
+        </Field>
 
-      <NamePreview name={preview} />
+        <NamePreview name={preview} />
+      </Panel>
 
       {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
+        <Note tone="serious" title="That was not saved.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {dirty ? (
         <SaveBar

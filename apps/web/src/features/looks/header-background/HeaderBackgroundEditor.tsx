@@ -19,8 +19,6 @@ import {
 } from '@reportlog/contracts';
 import { useId, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { cn } from '@/lib/utils.ts';
 import type { Kit } from './scene.ts';
 
 const FADE_LABEL: Record<(typeof FADES)[number], string> = {
@@ -61,12 +59,10 @@ export function ToggleChip({
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={cn(
-        'inline-flex min-h-11 items-center gap-1.5 rounded-pill border-[1.5px] px-3 text-sm',
-        pressed ? 'border-ink bg-ink text-paper' : 'border-ink-alt bg-surface text-ink',
-      )}
+      className="bge-chip"
+      // The stylesheet draws the tick on a pressed element chip (data-tog).
+      {...(tick ? { 'data-tog': '' } : {})}
     >
-      {tick && pressed ? <span aria-hidden="true">{'✓'}</span> : null}
       {children}
     </button>
   );
@@ -91,11 +87,9 @@ function Slider({
 }) {
   const id = useId();
   return (
-    <div className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5 text-sm">
+    <div className="bge-slider">
       <label htmlFor={id}>{label}</label>
-      <output htmlFor={id} className="font-mono text-xs text-muted">
-        {format(value)}
-      </output>
+      <output htmlFor={id}>{format(value)}</output>
       <input
         id={id}
         type="range"
@@ -106,7 +100,6 @@ function Slider({
         onChange={(e) => {
           onChange(Number(e.target.value));
         }}
-        className="col-span-2 min-h-11 w-full accent-ink"
       />
     </div>
   );
@@ -114,10 +107,10 @@ function Slider({
 
 function Group({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <section className="grid gap-2" aria-label={title}>
-      <h3 className="text-sm font-bold">{title}</h3>
+    <section className="bge-g" aria-label={title}>
+      <h4>{title}</h4>
       {children}
-      {note ? <p className="text-xs text-muted">{note}</p> : null}
+      {note ? <p className="bge-note">{note}</p> : null}
     </section>
   );
 }
@@ -156,9 +149,9 @@ export function HeaderBackgroundEditor({
   };
 
   return (
-    <div className="grid gap-5">
+    <div className="bge">
       <Group title="Elements" note="Each one is on or off. With none on, the header is plain.">
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Elements">
+        <div className="bge-row" role="group" aria-label="Elements">
           {kit.elements.map((e) => (
             <ToggleChip
               key={e.id}
@@ -187,18 +180,15 @@ export function HeaderBackgroundEditor({
 
       {shapes.length ? (
         <Group title="Big shapes">
-          <div className="grid gap-2">
+          <div className="bge-shapes">
             {shapes
               .filter((e) => B.on[e.id])
               .map((e) => {
                 const current: ShapeStyle = B.style[e.id] ?? e.style ?? 'filled';
                 return (
-                  <div
-                    key={e.id}
-                    className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 text-sm"
-                  >
+                  <div key={e.id} className="bge-shape">
                     <span>{e.label}</span>
-                    <div className="flex gap-1.5" role="group" aria-label={`${e.label} style`}>
+                    <div className="bge-row" role="group" aria-label={`${e.label} style`}>
                       {(['filled', 'outline'] as const).map((style) => (
                         <ToggleChip
                           key={style}
@@ -233,49 +223,51 @@ export function HeaderBackgroundEditor({
         title="Image"
         note="Only the front-page header uses the image. No stock photos are loaded from anywhere; the file stays on this site."
       >
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="bge-row">
           <input
             ref={input}
             id={fileId}
             type="file"
             accept="image/*"
-            className="sr-only"
+            className="vh"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) onPickImage(file);
               e.target.value = '';
             }}
           />
-          <Button
-            variant="secondary"
-            busy={busy}
-            busyLabel="Sending…"
+          <button
+            type="button"
+            className="bge-btn"
+            aria-busy={busy || undefined}
+            disabled={busy}
             onClick={() => {
               input.current?.click();
             }}
           >
-            {img ? 'Replace image' : 'Add an image'}
-          </Button>
+            {busy ? 'Sending…' : img ? 'Replace image' : 'Add an image'}
+          </button>
           {img ? (
-            <Button variant="quiet" onClick={onRemoveImage} disabled={busy}>
+            <button type="button" className="bge-btn ghost" onClick={onRemoveImage} disabled={busy}>
               Remove image
-            </Button>
+            </button>
           ) : null}
         </div>
         {img ? (
-          <img
-            src={headerImagePath(img.file)}
-            alt="Current header"
-            className="h-21 w-full rounded-control border-[1.5px] border-ink-alt object-cover"
+          <div
+            className="bge-thumb"
+            role="img"
+            aria-label="Current header"
+            style={{ backgroundImage: `url("${headerImagePath(img.file)}")` }}
           />
         ) : null}
-        <p role="status" className="text-xs text-muted">
+        <p role="status" className="bge-note">
           {imageMessage}
         </p>
         {img ? (
-          <div className="grid gap-2">
-            <span className="text-xs text-muted">Place</span>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Place">
+          <div className="bge-imgopts">
+            <span className="bge-sub">Place</span>
+            <div className="bge-row" role="group" aria-label="Place">
               {IMAGE_PLACES.map((place) => (
                 <ToggleChip
                   key={place}
@@ -289,7 +281,7 @@ export function HeaderBackgroundEditor({
               ))}
             </div>
             {img.place === 'shape' ? (
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Which shape">
+              <div className="bge-row" role="group" aria-label="Which shape">
                 {shapes.map((e) => (
                   <ToggleChip
                     key={e.id}
@@ -303,8 +295,8 @@ export function HeaderBackgroundEditor({
                 ))}
               </div>
             ) : null}
-            <span className="text-xs text-muted">With the elements</span>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="With the elements">
+            <span className="bge-sub">With the elements</span>
+            <div className="bge-row" role="group" aria-label="With the elements">
               {IMAGE_MODES.map((mode) => (
                 <ToggleChip
                   key={mode}
@@ -317,8 +309,8 @@ export function HeaderBackgroundEditor({
                 </ToggleChip>
               ))}
             </div>
-            <span className="text-xs text-muted">Color</span>
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Color">
+            <span className="bge-sub">Color</span>
+            <div className="bge-row" role="group" aria-label="Color">
               {IMAGE_TONES.map((tone) => (
                 <ToggleChip
                   key={tone}
@@ -361,7 +353,7 @@ export function HeaderBackgroundEditor({
         title="Fade"
         note="Keeps the headline side clear. On a phone a side fade becomes a fade toward the bottom."
       >
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Fade">
+        <div className="bge-row" role="group" aria-label="Fade">
           {FADES.map((kind) => (
             <ToggleChip
               key={kind}

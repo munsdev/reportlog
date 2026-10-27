@@ -17,7 +17,7 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, Select } from './controls.tsx';
 import { outsideWords, when } from './words.ts';
@@ -34,7 +34,7 @@ export function OutsidePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refr
   });
   return (
     <Panel title="Without the site password">
-      <p className="text-ink-alt">
+      <p className="muted">
         When the site has a password, this decides whether people who do not know it can still file
         to this logbook. It opens the form and nothing else: the board, the other logbooks and the
         rest of the site stay behind the password.
@@ -83,20 +83,20 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
   return (
     <Panel title="Files">
       {frozen ? (
-        <p className="rounded-card border-l-4 border-brand bg-paper p-3">
+        <p className="note">
           <strong>Uploads are frozen</strong> since {when(lb.files_frozen_at ?? '')}. This logbook
           is refusing new files. Reports are still taken without them, and nothing already filed or
           published is hidden.
         </p>
       ) : (
-        <p className="text-ink-alt">
+        <p className="muted">
           This logbook takes files, because one of its questions asks for them, and only while the
           site has somewhere to put them.
         </p>
       )}
       <Problem error={freeze.error} />
       {frozen ? (
-        <Button
+        <Btn
           variant="secondary"
           disabled={freeze.isPending}
           onClick={() => {
@@ -104,46 +104,46 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
           }}
         >
           Take the freeze off
-        </Button>
+        </Btn>
       ) : asking ? (
-        <div className="space-y-3 rounded-card border border-line p-3">
-          <p className="font-semibold">Freeze uploads on this logbook?</p>
+        <div className="panel quiet">
+          <p>Freeze uploads on this logbook?</p>
           <p>
             It goes on asking for files and refuses new ones, so somebody part-way through attaching
             something will be stopped. Their report can still be sent without them. Nothing already
             filed or published is hidden, and you can take the freeze off at any time.
           </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
+          <div className="acts">
+            <Btn
               disabled={freeze.isPending}
               onClick={() => {
                 freeze.mutate(true);
               }}
             >
               Freeze uploads
-            </Button>
-            <Button
+            </Btn>
+            <Btn
               variant="secondary"
               onClick={() => {
                 setAsking(false);
               }}
             >
               Keep taking files
-            </Button>
+            </Btn>
           </div>
         </div>
       ) : (
-        <Button
+        <Btn
           variant="secondary"
           onClick={() => {
             setAsking(true);
           }}
         >
           Freeze uploads…
-        </Button>
+        </Btn>
       )}
       <p>
-        <Link to="/files/logbooks/$id" params={{ id: String(lb.id) }} className="underline">
+        <Link to="/files/logbooks/$id" params={{ id: String(lb.id) }}>
           This logbook’s upload limits
         </Link>
       </p>

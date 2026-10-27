@@ -16,9 +16,9 @@ import { LOOK_PACK_MAX_ZIP_BYTES, checkLookPack, installLookPack } from '@report
 import type { InstalledLookPack, LookPackSummary } from '@reportlog/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { FileDrop } from '@/components/ui/file-drop.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { addsWhat, fileToBase64, groupProblems, lookPacksQuery } from './queries.ts';
@@ -103,10 +103,8 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
   };
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h3 id={headingId} className="font-display text-lg font-bold">
-        Add looks from a file
-      </h3>
+    <section aria-labelledby={headingId} className="form-stack" style={{ maxWidth: 'none' }}>
+      <h3 id={headingId}>Add looks from a file</h3>
       <FileDrop
         accept=".zip,application/zip"
         buttonLabel={state.at === 'choosing' ? 'Choose a .zip' : 'Choose another .zip'}
@@ -117,31 +115,33 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
       />
 
       {state.at === 'checking' ? (
-        <p role="status" className="text-ink-alt">
+        <p role="status" className="muted">
           Checking {state.name}…
         </p>
       ) : null}
 
       {state.at === 'refused' ? (
-        <Alert tone="serious" title={`${state.name} cannot be installed`}>
+        <Note tone="serious" title={`${state.name} cannot be installed`}>
           <p>Nothing was installed. The check found:</p>
           {groupProblems(state.problems).map((g) => (
-            <div key={g.title} className="mt-2">
-              <p className="font-semibold text-ink">{g.title}</p>
-              <ul className="list-disc pl-5">
+            <div key={g.title}>
+              <p>
+                <b>{g.title}</b>
+              </p>
+              <ul>
                 {g.items.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
               </ul>
             </div>
           ))}
-        </Alert>
+        </Note>
       ) : null}
 
-      {state.at === 'failed' ? <Alert tone="serious" title={state.message} /> : null}
+      {state.at === 'failed' ? <Note tone="serious" title={state.message} /> : null}
 
       {state.at === 'ready' || state.at === 'installing' ? (
-        <div className="flex flex-col gap-4">
+        <div className="form-stack" style={{ maxWidth: 'none' }}>
           <p role="status">
             <strong>
               {state.pack.label} {state.pack.version}
@@ -155,25 +155,25 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
             .{state.replaces ? ` It replaces version ${state.replaces}.` : ''}
           </p>
           <PackContents pack={state.pack} />
-          {state.error ? <Alert tone="serious" title={state.error} /> : null}
-          <div>
-            <Button
+          {state.error ? <Note tone="serious" title={state.error} /> : null}
+          <div className="acts">
+            <Btn
               busy={state.at === 'installing'}
               busyLabel="Installing…"
               onClick={() => void install()}
             >
               {state.replaces ? `Replace version ${state.replaces}` : 'Install'}
-            </Button>
+            </Btn>
           </div>
         </div>
       ) : null}
 
       {state.at === 'installed' ? (
-        <Alert tone="done" title={`${state.pack.label} ${state.pack.version} is installed.`}>
+        <Note tone="done" title={`${state.pack.label} ${state.pack.version} is installed.`}>
           {state.replaced ? `It replaced version ${state.replaced}. ` : ''}
           Its looks are offered on this screen now. The site is not wearing them until you choose
           one and apply it.
-        </Alert>
+        </Note>
       ) : null}
     </section>
   );
@@ -190,48 +190,45 @@ export function PackContents({ pack }: { pack: LookPackSummary }) {
   const palette = (id: string) => pack.palettes.find((p) => p.id === id);
   const theme = (id: string) => pack.themes.find((t) => t.id === id);
   return (
-    <div className="flex flex-col gap-3">
+    <div className="form-stack" style={{ maxWidth: 'none' }}>
       {pack.looks.length ? (
-        <ul aria-label="Looks" className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="packrow" aria-label="Looks" role="list">
           {pack.looks.map((l) => (
-            <li
-              key={l.id}
-              className="flex flex-col gap-2 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-3"
-            >
-              <span className="font-semibold">{l.label}</span>
-              <span className="text-sm text-ink-alt">
+            <div key={l.id} role="listitem">
+              <b>{l.label}</b>
+              <p>
                 {palette(l.palette)?.label ?? l.palette} with {theme(l.theme)?.label ?? l.theme}
-              </span>
-            </li>
+              </p>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : null}
-      <dl className="grid gap-1 text-sm sm:grid-cols-[max-content_1fr] sm:gap-x-4">
+      <dl className="dl">
         {pack.palettes.length ? (
-          <>
-            <dt className="label-face">Palettes</dt>
+          <div>
+            <dt>Palettes</dt>
             <dd>
               {pack.palettes.map((p) => `${p.label} (${p.dark ? 'dark' : 'light'})`).join(', ')}
             </dd>
-          </>
+          </div>
         ) : null}
         {pack.themes.length ? (
-          <>
-            <dt className="label-face">Themes</dt>
+          <div>
+            <dt>Themes</dt>
             <dd>{pack.themes.map((t) => t.label).join(', ')}</dd>
-          </>
+          </div>
         ) : null}
         {pack.fonts.length ? (
-          <>
-            <dt className="label-face">Fonts</dt>
+          <div>
+            <dt>Fonts</dt>
             <dd>{pack.fonts.join(', ')}</dd>
-          </>
+          </div>
         ) : null}
         {pack.author ? (
-          <>
-            <dt className="label-face">By</dt>
+          <div>
+            <dt>By</dt>
             <dd>{pack.author}</dd>
-          </>
+          </div>
         ) : null}
       </dl>
     </div>

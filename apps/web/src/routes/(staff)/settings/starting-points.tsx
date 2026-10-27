@@ -14,8 +14,8 @@ import type { TemplateSummary } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import {
   Dialog,
   DialogClose,
@@ -24,12 +24,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+} from '@/mockup/Dialog.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { call } from '@/lib/api.ts';
 
 const templatesQuery = queryOptions({
@@ -65,31 +63,26 @@ export function StartingPointsPage() {
   return (
     <StaffPage
       title="Starting points"
-      width="prose"
       lede="A starting point fills in a logbook, lists and wording you can then change."
     >
       {applied ? (
-        <p className="text-sm text-ink-alt">
+        <p className="muted">
           This site was last started from “{appliedLabel ?? applied.id}”, on {when(applied.at)}.
         </p>
       ) : null}
 
-      <p>
+      <p className="muted">
         Each one lists what it changes: page wording, whether reports are published, whether files
         are taken, and most also make a <strong>draft</strong> logbook. None touches the legal
         notices, and a draft takes no reports until you launch it yourself, under Logbooks.
         Everything one sets stays yours to change afterwards.
       </p>
       {apply.data ? (
-        <Alert tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
+        <Note tone="done" title={`Applied “${done?.label ?? apply.data.applied}”.`}>
           {apply.data.logbook ? (
             <p>
               It made a draft logbook,{' '}
-              <Link
-                to="/logbooks/$id"
-                params={{ id: apply.data.logbook.id }}
-                className="underline underline-offset-4"
-              >
+              <Link to="/logbooks/$id" params={{ id: apply.data.logbook.id }}>
                 {apply.data.logbook.title}
               </Link>
               . Read its questions before you launch it.
@@ -97,19 +90,18 @@ export function StartingPointsPage() {
           ) : (
             <p>It made no logbook.</p>
           )}
-        </Alert>
+        </Note>
       ) : null}
 
       {catalogue.isPending ? <p role="status">Loading the starting points…</p> : null}
       {catalogue.isError ? (
-        <Alert tone="serious" title="The starting points could not be loaded.">
+        <Note tone="serious" title="The starting points could not be loaded.">
           {catalogue.error.message}
-        </Alert>
+        </Note>
       ) : null}
 
       {templates.length > 0 ? (
-        <Field>
-          <Label>Starting points</Label>
+        <>
           <RadioGroup
             value={chosen?.id ?? ''}
             onValueChange={(id) => {
@@ -121,31 +113,30 @@ export function StartingPointsPage() {
               <RadioOption key={t.id} value={t.id} label={t.label} hint={t.description} />
             ))}
           </RadioGroup>
-        </Field>
+        </>
       ) : null}
 
       {/* Choosing shows what it would change; only the dialog's "Apply it" sends. */}
       {chosen ? (
-        <Card heading={chosen.label}>
-          <p>What it changes:</p>
-          <ul className="list-disc pl-5 text-ink-alt">
+        <Panel heading="What it changes">
+          <ul>
             {chosen.sets.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
-          <div>
-            <Button
+          <div className="acts">
+            <Btn
               type="button"
-              variant="secondary"
+              variant="primary"
               onClick={() => {
                 apply.reset();
                 setAsking(chosen);
               }}
             >
               Apply it…
-            </Button>
+            </Btn>
           </div>
-        </Card>
+        </Panel>
       ) : null}
 
       <Dialog
@@ -162,23 +153,23 @@ export function StartingPointsPage() {
                 It writes over what is set now. This is what it will change:
               </DialogDescription>
             </DialogHeader>
-            <ul className="list-disc pl-5">
+            <ul>
               {asking.sets.map((line) => (
                 <li key={line}>{line}</li>
               ))}
             </ul>
             {apply.isError ? (
-              <Alert tone="serious" title="It was not applied.">
+              <Note tone="serious" title="It was not applied.">
                 {apply.error.message} Nothing was changed.
-              </Alert>
+              </Note>
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Button type="button" variant="secondary" disabled={apply.isPending}>
+                <Btn type="button" variant="secondary" disabled={apply.isPending}>
                   Cancel
-                </Button>
+                </Btn>
               </DialogClose>
-              <Button
+              <Btn
                 type="button"
                 variant="primary"
                 disabled={apply.isPending}
@@ -187,7 +178,7 @@ export function StartingPointsPage() {
                 }}
               >
                 Apply it
-              </Button>
+              </Btn>
             </DialogFooter>
           </DialogContent>
         ) : null}

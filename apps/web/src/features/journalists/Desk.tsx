@@ -21,19 +21,17 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Count } from '@/components/ui/count.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Pagination } from '@/components/ui/pagination.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Pager } from '../../mockup/Pager.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
 import { DeskAlerts, deskQuery } from './AlertSettings.tsx';
@@ -64,18 +62,19 @@ function DeskSection({
       <AgreementGate audience="journalist">
         <StaffPage eyebrow={`${siteName} · Journalist desk`} title={title} lede={lede}>
           {warn ? (
-            <Alert tone="warning" title="Before you use a link">
-              A moderator checked each link, but did not verify what it shows. Treat it as a lead,
-              not as a fact. Copying one is your choice: this site never opens it.
-            </Alert>
+            <Note warn>
+              <b>Before you use a link</b> A moderator checked each link, but did not verify what it
+              shows. Treat it as a lead, not as a fact. Copying one is your choice: this site never
+              opens it.
+            </Note>
           ) : null}
           {notice ? (
-            <Alert tone="warning" title={notice.title}>
-              {notice.body}
-            </Alert>
+            <Note warn>
+              <b>{notice.title}</b> {notice.body}
+            </Note>
           ) : null}
           {children}
-          <p className="text-sm text-ink-alt">{footer}</p>
+          <p className="m">{footer}</p>
         </StaffPage>
       </AgreementGate>
     </StaffOnly>
@@ -150,9 +149,9 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
   const [applied, setApplied] = useState<Applied>({ q: '', mine: false });
   const box = (
     <form
+      className="toolbar"
       role="search"
       aria-label="Search this list"
-      className="flex flex-col gap-3"
       onSubmit={(e) => {
         e.preventDefault();
         setApplied({ q: draft.q.trim(), mine: hasStates && draft.mine });
@@ -160,31 +159,29 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
         onApply();
       }}
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-        <Field className="sm:flex-1">
-          <Label>Search</Label>
-          <Input
-            type="search"
-            maxLength={100}
-            value={draft.q}
-            onChange={(e) => {
-              setDraft({ ...draft, q: e.target.value });
-            }}
-          />
-        </Field>
-        <Button type="submit" variant="secondary">
-          Search
-        </Button>
-      </div>
-      {hasStates ? (
-        <CheckOption
-          label="My states"
-          hint={`Only what is in the states you chose for alerts: ${settings.data?.state === 'open' ? settings.data.states.join(', ') : ''}.`}
-          checked={draft.mine}
-          onCheckedChange={(on) => {
-            setDraft({ ...draft, mine: on === true });
+      <div className="search grow">
+        <input
+          type="search"
+          aria-label="Search"
+          placeholder="Search"
+          maxLength={100}
+          value={draft.q}
+          onChange={(e) => {
+            setDraft({ ...draft, q: e.target.value });
           }}
         />
+        <Btn type="submit">Search</Btn>
+      </div>
+      {hasStates ? (
+        <Check
+          checked={draft.mine}
+          title={`Only what is in the states you chose for alerts: ${settings.data?.state === 'open' ? settings.data.states.join(', ') : ''}.`}
+          onChange={(e) => {
+            setDraft({ ...draft, mine: e.target.checked });
+          }}
+        >
+          My states
+        </Check>
       ) : null}
     </form>
   );
@@ -200,12 +197,10 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
 function CopyableLink({ url }: { url: string }) {
   const [said, setSaid] = useState<string | null>(null);
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-      <p className="font-mono break-all select-all">{url}</p>
-      <div className="flex shrink-0 flex-col items-start gap-1">
-        <Button
-          type="button"
-          variant="secondary"
+    <div className="copybox">
+      <div className="row">
+        <code>{url}</code>
+        <Btn
           onClick={() => {
             void navigator.clipboard.writeText(url).then(
               () => {
@@ -218,11 +213,11 @@ function CopyableLink({ url }: { url: string }) {
           }}
         >
           Copy the link
-        </Button>
+        </Btn>
         {said ? (
-          <p role="status" className="text-sm text-ink-alt">
+          <span role="status" className="m">
             {said}
-          </p>
+          </span>
         ) : null}
       </div>
     </div>
@@ -246,10 +241,10 @@ function CheckedLinks() {
     retry: false,
   });
   return (
-    <section aria-label="Checked links" className="flex flex-col gap-4">
+    <>
       {box}
       {q.isPending ? <p role="status">Loading…</p> : null}
-      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      <ErrorLine error={q.error} />
       {q.data && !q.data.links.length ? (
         <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No checked links yet'}>
           {applied.q || applied.mine
@@ -257,63 +252,50 @@ function CheckedLinks() {
             : 'When a moderator checks a link sent in a tip, it appears here.'}
         </Empty>
       ) : null}
-      <ul className="flex flex-col gap-4">
-        {q.data?.links.map((l) => (
-          <li key={l.url} data-desk-link>
-            <Card>
-              <CopyableLink url={l.url} />
-              <p className="flex flex-wrap items-center gap-2 text-sm text-ink-alt">
-                <Count
-                  value={l.tips}
-                  label={l.tips === 1 ? 'Sent in 1 tip' : `Sent in ${String(l.tips)} tips`}
-                />
-                <span aria-hidden="true">{l.tips === 1 ? 'tip' : 'tips'}</span>
-                {l.reports ? (
-                  <span>
-                    · shared in {String(l.reports)} {l.reports === 1 ? 'report' : 'reports'}
-                  </span>
-                ) : null}
-                <span>· checked {new Date(l.checked_at).toLocaleDateString()}</span>
-              </p>
-              {l.comment ? (
-                <p>
-                  <span className="font-semibold">Moderator’s comment: </span>
-                  {l.comment}
-                </p>
-              ) : null}
-              {l.context.length ? (
-                <dl className="flex flex-col gap-2 text-sm">
-                  {l.context.map((c) => (
-                    <div key={c.question} className="flex flex-col gap-1">
-                      <dt className="text-ink-alt">{c.question}</dt>
-                      <dd className="flex flex-wrap gap-2">
-                        {c.answers.map((a) => (
-                          <span
-                            key={a.answer}
-                            className="inline-flex min-h-6 items-center rounded-full border border-ink-alt px-2.5 text-sm"
-                          >
-                            {l.tips > 1 ? `${a.answer} (${String(a.tips)})` : a.answer}
-                          </span>
-                        ))}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              ) : null}
-            </Card>
-          </li>
-        ))}
-      </ul>
+      {q.data?.links.map((l) => (
+        <Panel as="article" key={l.url} data-desk-link>
+          <CopyableLink url={l.url} />
+          <p className="m">
+            <Chip>{l.tips === 1 ? 'Sent in 1 tip' : `Sent in ${String(l.tips)} tips`}</Chip>
+            {l.reports ? (
+              <>
+                {' '}
+                · shared in {String(l.reports)} {l.reports === 1 ? 'report' : 'reports'}
+              </>
+            ) : null}{' '}
+            · checked {new Date(l.checked_at).toLocaleDateString()}
+          </p>
+          {l.comment ? (
+            <p>
+              <b>Moderator’s comment:</b> {l.comment}
+            </p>
+          ) : null}
+          {l.context.length ? (
+            <dl className="dl">
+              {l.context.map((c) => (
+                <div key={c.question}>
+                  <dt>{c.question}</dt>
+                  <dd>
+                    {c.answers
+                      .map((a) => (l.tips > 1 ? `${a.answer} (${String(a.tips)})` : a.answer))
+                      .join(', ')}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </Panel>
+      ))}
       {q.data ? (
-        <Pagination
+        <Pager
           page={q.data.page}
           pages={q.data.pages}
           label="Checked links pages"
           onPage={setPage}
         />
       ) : null}
-      <p className="text-sm text-muted">{DESK_PAGE_SIZE} to a page.</p>
-    </section>
+      <p className="m">{DESK_PAGE_SIZE} to a page.</p>
+    </>
   );
 }
 
@@ -334,9 +316,9 @@ function Texts() {
     retry: false,
   });
   return (
-    <section aria-label="Written accounts" className="flex flex-col gap-4">
+    <>
       {box}
-      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      <ErrorLine error={q.error} />
       {q.data && !q.data.texts.length ? (
         <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No written accounts yet'}>
           {applied.q || applied.mine
@@ -344,30 +326,29 @@ function Texts() {
             : 'When a moderator writes a note from an account and its reporter allows it, it appears here.'}
         </Empty>
       ) : null}
-      <ul className="flex flex-col gap-4">
-        {q.data?.texts.map((t) => (
-          <li key={`${t.reference ?? 'tip'}-${t.checked_at}-${t.text.slice(0, 24)}`} data-desk-text>
-            <Card>
-              {/* Text, never a link out: nothing here fetches anything. */}
-              <p className="max-w-prose whitespace-pre-wrap">{t.text}</p>
-              <p className="flex flex-wrap items-center gap-2 text-sm text-ink-alt">
-                {t.reference ? <span className="font-mono">{t.reference}</span> : <span>Tip</span>}
-                {t.place ? <span>· {t.place}</span> : null}
-                <span>· Note by a moderator</span>
-              </p>
-            </Card>
-          </li>
-        ))}
-      </ul>
+      {q.data?.texts.map((t) => (
+        <Panel
+          as="article"
+          key={`${t.reference ?? 'tip'}-${t.checked_at}-${t.text.slice(0, 24)}`}
+          data-desk-text
+        >
+          {/* Text, never a link out: nothing here fetches anything. */}
+          <p style={{ whiteSpace: 'pre-wrap' }}>{t.text}</p>
+          <p className="m">
+            {t.reference ? <span className="mono">{t.reference}</span> : <span>Tip</span>}
+            {t.place ? <> · {t.place}</> : null} · Note by a moderator
+          </p>
+        </Panel>
+      ))}
       {q.data ? (
-        <Pagination
+        <Pager
           page={q.data.page}
           pages={q.data.pages}
           label="Written accounts pages"
           onPage={setPage}
         />
       ) : null}
-    </section>
+    </>
   );
 }
 
@@ -388,9 +369,9 @@ function Sources() {
     retry: false,
   });
   return (
-    <section aria-label="Sources on published reports" className="flex flex-col gap-4">
+    <>
       {box}
-      {q.isError ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      <ErrorLine error={q.error} />
       {q.data && !q.data.reports.length ? (
         <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No sources yet'}>
           {applied.q || applied.mine
@@ -398,40 +379,27 @@ function Sources() {
             : 'When a moderator cites a source on a published report, it appears here.'}
         </Empty>
       ) : null}
-      <ul className="flex flex-col gap-4">
-        {q.data?.reports.map((r) => (
-          <li key={r.reference}>
-            <Card>
-              <h3 className="font-display text-lg font-bold">
-                <Link to="/board/$ref" params={{ ref: r.reference }} className="underline">
-                  Report <span className="font-mono">{r.reference}</span>
-                </Link>
-              </h3>
-              {r.note ? <p className="whitespace-pre-wrap">{r.note}</p> : null}
-              <ul className="flex flex-col gap-3 text-sm">
-                {r.sources.map((s) => (
-                  <li key={s.url} className="flex flex-col gap-1">
-                    <span>
-                      {s.title}
-                      {s.publisher ? `, ${s.publisher}` : ''}
-                      {s.published_on ? `, ${s.published_on}` : ''}
-                    </span>
-                    <CopyableLink url={s.url} />
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </li>
-        ))}
-      </ul>
+      {q.data?.reports.map((r) => (
+        <Panel as="article" key={r.reference}>
+          <Link className="mono" to="/board/$ref" params={{ ref: r.reference }}>
+            {r.reference}
+          </Link>
+          {r.note ? <p style={{ whiteSpace: 'pre-wrap' }}>{r.note}</p> : null}
+          {r.sources.map((s) => (
+            <div key={s.url}>
+              <p className="m">
+                {s.title}
+                {s.publisher ? `, ${s.publisher}` : ''}
+                {s.published_on ? `, ${s.published_on}` : ''}
+              </p>
+              <CopyableLink url={s.url} />
+            </div>
+          ))}
+        </Panel>
+      ))}
       {q.data ? (
-        <Pagination
-          page={q.data.page}
-          pages={q.data.pages}
-          label="Sources pages"
-          onPage={setPage}
-        />
+        <Pager page={q.data.page} pages={q.data.pages} label="Sources pages" onPage={setPage} />
       ) : null}
-    </section>
+    </>
   );
 }

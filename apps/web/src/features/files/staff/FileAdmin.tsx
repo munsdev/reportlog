@@ -16,20 +16,21 @@ import {
 import type { BodyOf, FileSettings, ResponseOf } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
-import { useId, useState } from 'react';
-import { Alert } from '../../../components/ui/alert.tsx';
-import { Button } from '../../../components/ui/button.tsx';
-import { Card } from '../../../components/ui/card.tsx';
-import { Chip } from '../../../components/ui/chip.tsx';
-import { Empty } from '../../../components/ui/empty.tsx';
-import { KeyValueList } from '../../../components/ui/key-value-list.tsx';
+import { useState } from 'react';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { PTabs } from '@/mockup/PTabs.tsx';
+import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { St } from '@/mockup/St.tsx';
+import { Empty } from '@/mockup/EmptyBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
 import { ToastProvider, useToast } from '../../../components/ui/toast.tsx';
-import { Ptabs } from '../../../mockup/Ptabs.tsx';
-import { Btn } from '../../../mockup/Btn.tsx';
-import { Err, Problem } from '../../../mockup/Notice.tsx';
-import { Panel } from '../../../mockup/Panel.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '../../../components/ui/radio-group.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { LimitsPanel } from './LimitsPanel.tsx';
@@ -44,8 +45,8 @@ export function FileAdminSections() {
   const { pathname } = useLocation();
   const here = pathname.replace(/\/+$/, '');
   return (
-    <Ptabs
-      label="File settings"
+    <PTabs
+      label="Sections"
       tabs={[
         { to: '/files/settings', label: 'The site', current: here === '/files/settings' },
         {
@@ -70,13 +71,12 @@ export function FileSettingsPage() {
   return (
     <ToastProvider>
       <StaffPage
-        title="Files: the site"
-        lede="Whether this site takes files with reports, which kinds, and how large. A logbook can narrow these, never widen them."
-        width="prose"
+        title="File limits"
+        lede="Whether reports can carry files, and how big. A logbook can narrow these, never widen them."
+        tabs={<FileAdminSections />}
       >
-        <FileAdminSections />
         {query.isPending ? <p role="status">Reading the settings…</p> : null}
-        {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+        {query.isError ? <Note tone="serious">{query.error.message}</Note> : null}
         {query.data ? (
           <>
             <Switch settings={query.data} put={put} />
@@ -113,16 +113,16 @@ function Switch({
   });
   if (!settings.configured) {
     return (
-      <Alert title="This site cannot take files yet">
+      <Note title="This site cannot take files yet">
         {settings.why_not ??
           'File storage is not set up on the server, so no files are taken whatever is chosen here.'}{' '}
         Whoever runs the server sets this up; nothing on this page can.
-      </Alert>
+      </Note>
     );
   }
   return (
-    <Card heading="Taking files">
-      <KeyValueList
+    <Panel heading="Taking files">
+      <Dl
         items={[
           {
             key: 'Takes files',
@@ -157,13 +157,13 @@ function Switch({
         />
       </RadioGroup>
       {save.isError ? (
-        <Alert tone="serious" title="That did not change.">
+        <Note tone="serious" title="That did not change.">
           {save.error.message}
-        </Alert>
+        </Note>
       ) : null}
       {chosen !== now ? (
-        <div>
-          <Button
+        <div className="acts">
+          <Btn
             busy={save.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -171,10 +171,10 @@ function Switch({
             }}
           >
             {chosen === 'on' ? 'Turn it on' : 'Turn it off'}
-          </Button>
+          </Btn>
         </div>
       ) : null}
-    </Card>
+    </Panel>
   );
 }
 
@@ -188,34 +188,35 @@ export function LogbookLimitsList() {
   });
   return (
     <StaffPage
-      title="Files: each logbook"
+      title="File limits: each logbook"
       lede="A logbook takes files only if it has a question asking for them. Its limits can be tighter than the site’s, and can be changed after it is launched."
-      width="prose"
+      tabs={<FileAdminSections />}
     >
-      <FileAdminSections />
       {query.isPending ? <p role="status">Reading the logbooks…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Note tone="serious">{query.error.message}</Note> : null}
       {query.data ? (
         query.data.logbooks.length === 0 ? (
           <Empty title="No logbooks yet">
             Each logbook’s own limits are set here once it has been made.
           </Empty>
         ) : (
-          <ul className="flex flex-col gap-3" aria-label="Logbooks">
+          <Rows label="Logbooks">
             {query.data.logbooks.map((lb) => (
-              <li key={lb.id}>
-                <Link
-                  to="/files/logbooks/$id"
-                  params={{ id: String(lb.id) }}
-                  className="flex min-h-11 flex-wrap items-center gap-3 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-4 shadow-raised hover:bg-paper-alt"
-                >
-                  <span className="flex-1 font-display text-lg font-bold">{lb.title}</span>
-                  <Chip tone="tag">{lb.asks_for_files ? 'Asks for files' : 'No files'}</Chip>
-                  {lb.files_frozen_at ? <Chip tone="tag">Uploads frozen</Chip> : null}
-                </Link>
-              </li>
+              <Link
+                key={lb.id}
+                to="/files/logbooks/$id"
+                params={{ id: String(lb.id) }}
+                className="row"
+                style={rowCols('1fr auto')}
+              >
+                <span className="t">{lb.title}</span>
+                <span className="chips">
+                  <St tone="off">{lb.asks_for_files ? 'Asks for files' : 'No files'}</St>
+                  {lb.files_frozen_at ? <St tone="off">Uploads frozen</St> : null}
+                </span>
+              </Link>
             ))}
-          </ul>
+          </Rows>
         )
       ) : null}
     </StaffPage>
@@ -233,16 +234,18 @@ export function LogbookLimitsPage({ id }: { id: number }) {
   const lb = books.data?.logbooks.find((l) => l.id === id);
   return (
     <ToastProvider>
-      <StaffPage title={lb ? `Files: ${lb.title}` : 'Files: one logbook'} width="prose">
-        <FileAdminSections />
+      <StaffPage
+        title={lb ? `File limits: ${lb.title}` : 'File limits: one logbook'}
+        tabs={<FileAdminSections />}
+      >
         {lb && !lb.asks_for_files ? (
-          <Alert>
+          <Note>
             This logbook has no question asking for files, so it takes none whatever its limits say.
             Add one in the logbook’s questions.
-          </Alert>
+          </Note>
         ) : null}
         {query.isPending ? <p role="status">Reading the limits…</p> : null}
-        {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+        {query.isError ? <Note tone="serious">{query.error.message}</Note> : null}
         {query.data ? (
           <LimitsPanel
             layers={query.data}
@@ -264,7 +267,6 @@ export function LogbookLimitsPage({ id }: { id: number }) {
 type ErasingData = ResponseOf<typeof getReportFilesForErasing>;
 
 export function EraseFilePage() {
-  const id = useId();
   const [ref, setRef] = useState('');
   const [tried, setTried] = useState(false);
   const [looked, setLooked] = useState<string | null>(null);
@@ -276,9 +278,8 @@ export function EraseFilePage() {
   });
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <StaffPage title="Erasing a file" width="prose">
-      <FileAdminSections />
-      <Panel kind="deep" title="What erasing does">
+    <StaffPage title="Erasing a file" tabs={<FileAdminSections />}>
+      <Panel variant="deep" heading="What erasing does">
         <p>
           Erasing destroys the key the file was locked with, so nobody can ever open it again, this
           site included. Its fingerprint stays in the report, which still checks out. It cannot be
@@ -286,37 +287,35 @@ export function EraseFilePage() {
         </p>
         <p>Every erasure is recorded on the file’s record, with your name and your reason.</p>
       </Panel>
-      <Panel title="Which report is the file on?">
-        <p className="muted" id={`${id}-help`}>
-          Its reference, as on the report.
-        </p>
-        <form
-          className="search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            setTried(true);
-            if (!problem) setLooked(ref.trim().toUpperCase());
-          }}
-        >
-          <input
-            type="text"
-            aria-label="Reference"
-            aria-describedby={`${id}-help`}
+      <form
+        className="panel"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setTried(true);
+          if (!problem) setLooked(ref.trim().toUpperCase());
+        }}
+      >
+        <Field>
+          <Label>Which report is the file on?</Label>
+          <FieldDescription>Its reference, as on the report.</FieldDescription>
+          <Input
             value={ref}
-            placeholder="RL-XXXX-XX"
+            placeholder="RL-…"
             autoComplete="off"
             onChange={(e) => {
               setRef(e.target.value);
             }}
           />
-          <Btn sm flat type="submit">
+          <FieldError>{tried ? problem : null}</FieldError>
+        </Field>
+        <div className="acts">
+          <Btn type="submit" variant="secondary">
             Show its files
           </Btn>
-        </form>
-        <Err>{tried ? problem : null}</Err>
-      </Panel>
+        </div>
+      </form>
       {query.isFetching ? <p role="status">Finding the report…</p> : null}
-      {query.isError ? <Problem>{query.error.message}</Problem> : null}
+      {query.isError ? <Note tone="serious">{query.error.message}</Note> : null}
       {query.data ? <ErasingList data={query.data} /> : null}
     </StaffPage>
   );
@@ -326,17 +325,21 @@ function ErasingList({ data }: { data: ErasingData }) {
   const qc = useQueryClient();
   if (!data.files.length) return <p>{data.public_ref} has no files.</p>;
   return (
-    <>
+    <div
+      aria-label={`Files on ${data.public_ref}`}
+      className="form-stack"
+      style={{ maxWidth: 'none' }}
+    >
       {data.files.map((f) => {
         const name = f.original_name ?? `File ${String(f.ordinal)}`;
         return (
-          <article className="panel" key={f.id}>
-            <h2>{name}</h2>
+          <Panel
+            key={f.id}
+            heading={name}
+            sub={`${describeFile(f)} · ${f.erased ? 'Erased' : PUBLICATION[f.publication]}`}
+          >
             <p className="m">
-              {describeFile(f)} · {f.erased ? 'Erased' : PUBLICATION[f.publication]}
-            </p>
-            <p className="m" style={{ wordBreak: 'break-all' }}>
-              Fingerprint (SHA-256): {f.sha256}
+              Fingerprint (SHA-256): <span className="mono">{f.sha256}</span>
             </p>
             {f.erased ? (
               <p>This file has been erased.</p>
@@ -344,7 +347,7 @@ function ErasingList({ data }: { data: ErasingData }) {
               <div className="acts">
                 <AskDialog
                   trigger={(open) => (
-                    <Btn sm flat onClick={open}>
+                    <Btn variant="danger" onClick={open}>
                       Erase this file…
                     </Btn>
                   )}
@@ -371,9 +374,9 @@ function ErasingList({ data }: { data: ErasingData }) {
                 />
               </div>
             )}
-          </article>
+          </Panel>
         );
       })}
-    </>
+    </div>
   );
 }

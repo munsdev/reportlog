@@ -20,19 +20,19 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button, buttonVariants } from '../../components/ui/button.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn, btnClass } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { CoverPanel } from '../builder/CoverPanel.tsx';
-import { SettingPanels } from '../../components/ui/setting-panel.tsx';
+import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import { Select } from '@/mockup/FieldWired.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { optionArray } from '@reportlog/fields';
 import { call } from '../../lib/api.ts';
 import { listQuery, listsQuery } from './queries.ts';
@@ -89,9 +89,9 @@ export function ListEditor({ id }: { id: number }) {
   if (query.isPending) return <p role="status">Opening the list…</p>;
   if (query.isError) {
     return (
-      <div className="space-y-2">
-        <Alert tone="serious">{query.error.message}</Alert>
-        <Link to="/lists" className="underline">
+      <div className="panel">
+        <Note tone="serious">{query.error.message}</Note>
+        <Link to="/lists" className="back">
           Back to the lists
         </Link>
       </div>
@@ -119,25 +119,20 @@ function Editor({ list }: { list: ListAdminDetail }) {
         <a
           href={`/api/admin/lists/${String(list.id)}/file`}
           download={`list-${list.slug}.json`}
-          className={buttonVariants({ variant: 'secondary' })}
+          className={btnClass('secondary')}
         >
           Download as file
         </a>
       }
     >
-      <p>
-        <Link to="/lists" className="text-sm font-semibold underline">
-          ← All lists
-        </Link>
-      </p>
-      <p className="font-mono text-sm break-all text-muted">
-        The form is at{' '}
-        <a href={`/list/${list.slug}`} className="underline">
-          /list/{list.slug}
-        </a>
+      <Link to="/lists" className="back">
+        ← All lists
+      </Link>
+      <p className="mono">
+        The form is at <a href={`/list/${list.slug}`}>/list/{list.slug}</a>
       </p>
       <SettingPanels>
-        <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+        <div className="grid2 even">
           <Settings list={list} onSaved={refresh} />
           <CoverPanel
             kind="list"
@@ -255,7 +250,7 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
         onSave={() => save.mutateAsync()}
         onCancel={cancel}
       >
-        <div className="space-y-5">
+        <div className="form-stack">
           <Field>
             <Label>Title</Label>
             <Input
@@ -328,9 +323,9 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
             checked={taking}
             onChange={setTaking}
           />
-          <fieldset className="space-y-3">
-            <legend className="text-sm font-semibold">Opening times</legend>
-            <p className="text-sm text-ink-alt">
+          <fieldset className="form-stack" style={{ border: 0, padding: 0, margin: 0 }}>
+            <legend className="lbl">Opening times</legend>
+            <p className="muted">
               Both optional. Before it opens and after it closes, the form says so and takes
               nothing. Times are in your own clock. “Taking entries” above still closes it at any
               time.
@@ -393,15 +388,15 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
               />
             </Field>
           ) : null}
-          {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
+          {save.isError ? <Note tone="serious">{save.error.message}</Note> : null}
         </div>
       </GuardedPanel>
       {save.isSuccess && save.data.confirm_sent !== null ? (
-        <Alert tone="done">
+        <Note tone="done">
           {save.data.confirm_sent
             ? 'Saved. A link was emailed to the new address; it receives nothing until it is used.'
             : 'Saved, but the link to the new address could not be emailed.'}
-        </Alert>
+        </Note>
       ) : null}
     </>
   );
@@ -551,215 +546,250 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
     });
   };
 
+  const [open, setOpen] = useState<number | null>(null);
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Questions</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="max-w-prose text-ink-alt">
-          Change the questions here and save them together. The server checks the whole form: a
-          question somebody can type into makes the form ask for an email address, and only a
-          question with fixed answers can be counted.
-        </p>
-        <ol className="space-y-4" aria-label="The questions, in order">
-          {drafts.map((d, i) => (
-            <li
+    <Panel heading="Questions">
+      <p className="muted">
+        Change the questions here and save them together. The server checks the whole form: a
+        question somebody can type into makes the form ask for an email address, and only a question
+        with fixed answers can be counted.
+      </p>
+      <div className="qlist" role="list" aria-label="The questions, in order">
+        {drafts.map((d, i) => {
+          const editing = open === i || d.id === null;
+          const kindLabel = kinds.find((k) => k.id === d.kind)?.label ?? d.kind;
+          return (
+            <div
               key={d.id ?? `new-${d.key}-${String(i)}`}
-              className="space-y-3 rounded-card border border-line p-4"
+              role="listitem"
+              style={{ display: 'contents' }}
             >
-              <p className="font-mono text-sm text-muted">
-                {d.key || 'new question'} · {d.kind}
-              </p>
-              {d.id === null ? (
-                <Field>
-                  <Label>Key</Label>
-                  <FieldDescription>
-                    What its answers are filed under. Fixed once saved: lowercase letters, numbers
-                    and underscores.
-                  </FieldDescription>
-                  <Input
-                    className="font-mono"
-                    value={d.key}
-                    onChange={(e) => {
-                      put(i, { key: e.target.value });
+              <div className="qitem">
+                <span className="h" aria-hidden="true">
+                  {i + 1}
+                </span>
+                <div>
+                  <b>{d.label || 'New question'}</b>
+                  <small>
+                    {[
+                      kindLabel,
+                      d.required ? 'Needed' : null,
+                      `kept ${RETENTION[d.retention].label.toLowerCase()}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </small>
+                  <small className="mono">{d.key || 'new question'}</small>
+                </div>
+                <div className="acts">
+                  <Btn
+                    type="button"
+                    variant="quiet"
+                    disabled={i === 0}
+                    aria-label={`Move “${d.label || d.key}” up`}
+                    onClick={() => {
+                      move(i, -1);
                     }}
-                  />
-                </Field>
-              ) : null}
-              <Field>
-                <Label>The question</Label>
-                <Input
-                  value={d.label}
-                  onChange={(e) => {
-                    put(i, { label: e.target.value });
-                  }}
-                />
-              </Field>
-              <Field>
-                <Label optional>Help under it</Label>
-                <Input
-                  value={d.help}
-                  onChange={(e) => {
-                    put(i, { help: e.target.value });
-                  }}
-                />
-              </Field>
-              {WITH_OPTIONS.has(d.kind) ? (
-                <Field>
-                  <Label>Choices, one per line</Label>
-                  <Textarea
-                    rows={4}
-                    value={d.options}
-                    onChange={(e) => {
-                      put(i, { options: e.target.value });
+                  >
+                    ↑
+                  </Btn>
+                  <Btn
+                    type="button"
+                    variant="quiet"
+                    disabled={i === drafts.length - 1}
+                    aria-label={`Move “${d.label || d.key}” down`}
+                    onClick={() => {
+                      move(i, 1);
                     }}
-                  />
-                </Field>
-              ) : null}
-              {d.kind === 'url' ? (
-                <Field>
-                  <Label>How many links it takes</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={d.max_values}
-                    onChange={(e) => {
-                      put(i, { max_values: Number(e.target.value) || 1 });
+                  >
+                    ↓
+                  </Btn>
+                  <Btn
+                    type="button"
+                    variant="secondary"
+                    aria-label={`Change “${d.label || d.key}”`}
+                    aria-expanded={editing}
+                    onClick={() => {
+                      setOpen(open === i ? null : i);
                     }}
-                  />
-                </Field>
-              ) : null}
-              <Field>
-                <Label>How long its answers are kept</Label>
-                <FieldDescription>{RETENTION[d.retention].help}</FieldDescription>
-                <Select
-                  value={d.retention}
-                  onChange={(e) => {
-                    put(i, { retention: e.target.value as Retention });
-                  }}
-                >
-                  {(Object.keys(RETENTION) as Retention[]).map((r) => (
-                    <option key={r} value={r}>
-                      {RETENTION[r].label}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-              <Tick
-                id={`q-${String(i)}-required`}
-                label="An answer is needed"
-                help="The form will not send without one."
-                checked={d.required}
-                onChange={(v) => {
-                  put(i, { required: v });
-                }}
-              />
-              {AGGREGATABLE.has(d.kind) ? (
-                <Tick
-                  id={`q-${String(i)}-countable`}
-                  label="Countable"
-                  help="Its answers may be counted, and the counts published if the list publishes them."
-                  checked={d.aggregatable}
-                  onChange={(v) => {
-                    put(i, { aggregatable: v });
-                  }}
-                />
-              ) : null}
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-
-                  variant="secondary"
-                  disabled={i === 0}
-                  aria-label={`Move “${d.label || d.key}” up`}
-                  onClick={() => {
-                    move(i, -1);
-                  }}
-                >
-                  Up
-                </Button>
-                <Button
-                  type="button"
-
-                  variant="secondary"
-                  disabled={i === drafts.length - 1}
-                  aria-label={`Move “${d.label || d.key}” down`}
-                  onClick={() => {
-                    move(i, 1);
-                  }}
-                >
-                  Down
-                </Button>
-                <Button
-                  type="button"
-
-                  variant="secondary"
-                  aria-label={`Remove “${d.label || d.key}”`}
-                  onClick={() => {
-                    setDrafts((all) => all.filter((_, j) => j !== i));
-                  }}
-                >
-                  Remove
-                </Button>
+                  >
+                    Change
+                  </Btn>
+                  <Btn
+                    type="button"
+                    variant="quiet"
+                    aria-label={`Remove “${d.label || d.key}”`}
+                    onClick={() => {
+                      setOpen(null);
+                      setDrafts((all) => all.filter((_, j) => j !== i));
+                    }}
+                  >
+                    Remove
+                  </Btn>
+                </div>
               </div>
-            </li>
-          ))}
-        </ol>
-        <div className="flex flex-wrap items-end gap-3">
-          <Field className="min-w-48">
-            <Label>Kind of question to add</Label>
-            <Select
-              value={newKind}
-              onChange={(e) => {
-                setNewKind(e.target.value);
-              }}
-            >
-              {kinds.map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.label}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setDrafts((all) => [
-                ...all,
-                {
-                  id: null,
-                  key: '',
-                  kind: newKind,
-                  label: '',
-                  help: '',
-                  required: false,
-                  options: '',
-                  max_values: 1,
-                  aggregatable: false,
-                  retention: PERSONAL.has(newKind) ? 'transient' : 'durable',
-                },
-              ]);
+              {editing ? (
+                <Panel variant="quiet">
+                  <div className="form-stack">
+                    {d.id === null ? (
+                      <Field>
+                        <Label>Key</Label>
+                        <FieldDescription>
+                          What its answers are filed under. Fixed once saved: lowercase letters,
+                          numbers and underscores.
+                        </FieldDescription>
+                        <Input
+                          className="mono"
+                          value={d.key}
+                          onChange={(e) => {
+                            put(i, { key: e.target.value });
+                          }}
+                        />
+                      </Field>
+                    ) : null}
+                    <Field>
+                      <Label>The question</Label>
+                      <Input
+                        value={d.label}
+                        onChange={(e) => {
+                          put(i, { label: e.target.value });
+                        }}
+                      />
+                    </Field>
+                    <Field>
+                      <Label optional>Help under it</Label>
+                      <Input
+                        value={d.help}
+                        onChange={(e) => {
+                          put(i, { help: e.target.value });
+                        }}
+                      />
+                    </Field>
+                    {WITH_OPTIONS.has(d.kind) ? (
+                      <Field>
+                        <Label>Choices, one per line</Label>
+                        <Textarea
+                          rows={4}
+                          value={d.options}
+                          onChange={(e) => {
+                            put(i, { options: e.target.value });
+                          }}
+                        />
+                      </Field>
+                    ) : null}
+                    {d.kind === 'url' ? (
+                      <Field>
+                        <Label>How many links it takes</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={d.max_values}
+                          onChange={(e) => {
+                            put(i, { max_values: Number(e.target.value) || 1 });
+                          }}
+                        />
+                      </Field>
+                    ) : null}
+                    <Field>
+                      <Label>How long its answers are kept</Label>
+                      <FieldDescription>{RETENTION[d.retention].help}</FieldDescription>
+                      <Select
+                        value={d.retention}
+                        onChange={(e) => {
+                          put(i, { retention: e.target.value as Retention });
+                        }}
+                      >
+                        {(Object.keys(RETENTION) as Retention[]).map((r) => (
+                          <option key={r} value={r}>
+                            {RETENTION[r].label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Tick
+                      id={`q-${String(i)}-required`}
+                      label="An answer is needed"
+                      help="The form will not send without one."
+                      checked={d.required}
+                      onChange={(v) => {
+                        put(i, { required: v });
+                      }}
+                    />
+                    {AGGREGATABLE.has(d.kind) ? (
+                      <Tick
+                        id={`q-${String(i)}-countable`}
+                        label="Countable"
+                        help="Its answers may be counted, and the counts published if the list publishes them."
+                        checked={d.aggregatable}
+                        onChange={(v) => {
+                          put(i, { aggregatable: v });
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                </Panel>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      <div className="acts">
+        <Field>
+          <Label>Kind of question to add</Label>
+          <Select
+            value={newKind}
+            onChange={(e) => {
+              setNewKind(e.target.value);
             }}
           >
-            Add a question
-          </Button>
-        </div>
-        {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-        {save.isSuccess ? <Alert tone="done">The questions are saved.</Alert> : null}
-        <Button
+            {kinds.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Btn
           type="button"
+          variant="secondary"
+          onClick={() => {
+            setOpen(drafts.length);
+            setDrafts((all) => [
+              ...all,
+              {
+                id: null,
+                key: '',
+                kind: newKind,
+                label: '',
+                help: '',
+                required: false,
+                options: '',
+                max_values: 1,
+                aggregatable: false,
+                retention: PERSONAL.has(newKind) ? 'transient' : 'durable',
+              },
+            ]);
+          }}
+        >
+          Add a question
+        </Btn>
+      </div>
+      {save.isError ? <Note tone="serious">{save.error.message}</Note> : null}
+      {save.isSuccess ? <Note tone="done">The questions are saved.</Note> : null}
+      <div className="acts">
+        <Btn
+          type="button"
+          variant="primary"
           disabled={save.isPending}
           onClick={() => {
             save.mutate();
           }}
         >
           Save the questions
-        </Button>
-      </CardContent>
-    </Card>
+        </Btn>
+      </div>
+    </Panel>
   );
 }
 
@@ -769,37 +799,32 @@ const PERSONAL = new Set(['short_text', 'long_text', 'email', 'place']);
 function Counts({ list }: { list: ListAdminDetail }) {
   const { totals, fields } = list.summary;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Counts so far</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p>
-          {String(totals.received)} {totals.received === 1 ? 'entry' : 'entries'} ·{' '}
-          {String(totals.approved)} approved · {String(totals.rejected)} rejected.
-          {totals.last_entry
-            ? ` The last arrived ${new Date(totals.last_entry).toLocaleString()}.`
-            : ''}
-        </p>
-        <p className="text-sm text-ink-alt">
-          {list.aggregates_published && list.visibility === 'listed'
-            ? 'These counts are published.'
-            : 'These counts are for you only: nothing is published.'}
-        </p>
-        {fields.map((f) => (
-          <div key={f.key}>
-            <h3 className="font-semibold">{f.label}</h3>
-            <ul className="text-sm">
-              {f.values.map((v) => (
-                <li key={v.value}>
-                  {v.value}: {String(v.received)} received, {String(v.approved)} approved
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <Panel heading="Counts so far">
+      <p>
+        {String(totals.received)} {totals.received === 1 ? 'entry' : 'entries'} ·{' '}
+        {String(totals.approved)} approved · {String(totals.rejected)} rejected.
+        {totals.last_entry
+          ? ` The last arrived ${new Date(totals.last_entry).toLocaleString()}.`
+          : ''}
+      </p>
+      <p className="muted">
+        {list.aggregates_published && list.visibility === 'listed'
+          ? 'These counts are published.'
+          : 'These counts are for you only: nothing is published.'}
+      </p>
+      {fields.map((f) => (
+        <div key={f.key}>
+          <h3>{f.label}</h3>
+          <ul>
+            {f.values.map((v) => (
+              <li key={v.value}>
+                {v.value}: {String(v.received)} received, {String(v.approved)} approved
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </Panel>
   );
 }
 
@@ -815,30 +840,30 @@ function Remove({ list }: { list: ListAdminDetail }) {
   });
   if (list.summary.totals.received > 0) {
     return (
-      <Card variant="danger" heading="Delete this list">
-        <p className="text-sm text-ink-alt">
+      <Panel variant="danger" heading="Delete this list">
+        <p className="muted">
           This list has taken entries, so it cannot be deleted: that would destroy the links it
           keeps and break every deletion link already emailed. Untick “Taking entries” to close it
           instead.
         </p>
-      </Card>
+      </Panel>
     );
   }
   return (
-    <Card variant="danger" heading="Delete this list">
-      <div className="space-y-2">
-        <Button
+    <Panel variant="danger" heading="Delete this list">
+      <div className="acts">
+        <Btn
           type="button"
-          variant="secondary"
+          variant="danger"
           disabled={remove.isPending}
           onClick={() => {
             remove.mutate();
           }}
         >
           Delete this list
-        </Button>
+        </Btn>
         <FieldError>{remove.error?.message}</FieldError>
       </div>
-    </Card>
+    </Panel>
   );
 }

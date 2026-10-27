@@ -9,18 +9,18 @@ import { createIntakeBatch } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { RowItem, Rows, rowLink } from '@/components/ui/rows.tsx';
-import { Chip } from '@/components/ui/chip.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { Field } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import type { CSSProperties } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
 import { call } from '@/lib/api.ts';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { SelectField } from '../../mockup/Fields.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
 import { batchesQuery, organizationsQuery, useIntakeRefresh } from './queries.ts';
+
+const ROW_COLS = { '--cols': '1fr auto' } as CSSProperties;
 
 export function IntakeHome() {
   const orgs = useQuery(organizationsQuery);
@@ -44,87 +44,72 @@ export function IntakeHome() {
       title="Filing for an organization"
       lede="Type up accounts your observers collected, then file them together. Nothing is filed until you have checked the whole batch and said so."
     >
-      <Card heading="A new batch">
+      <Panel title="A new batch">
         {list.length > 1 ? (
-          <Field>
-            <Label>Which organization are these accounts for?</Label>
-            <RadioGroup
-              value={orgId === undefined ? '' : String(orgId)}
-              onValueChange={(v) => {
-                setChosen(Number(v));
-              }}
-            >
-              {list.map((o) => (
-                <RadioOption
-                  key={o.organization_id}
-                  value={String(o.organization_id)}
-                  label={o.name}
-                />
-              ))}
-            </RadioGroup>
-          </Field>
+          <SelectField
+            label="Which organization are these accounts for?"
+            value={orgId === undefined ? '' : String(orgId)}
+            onChange={(e) => {
+              setChosen(Number(e.target.value));
+            }}
+          >
+            {list.map((o) => (
+              <option key={o.organization_id} value={String(o.organization_id)}>
+                {o.name}
+              </option>
+            ))}
+          </SelectField>
         ) : list[0] ? (
           <p>The accounts will be filed for {list[0].name}.</p>
         ) : null}
-        {start.isError ? <Alert tone="serious" title={start.error.message} /> : null}
-        <div>
-          <Button
-            type="button"
-            disabled={orgId === undefined}
-            busy={start.isPending}
-            busyLabel="Starting…"
-            onClick={() => {
-              start.mutate();
-            }}
-          >
-            Start a new batch
-          </Button>
-        </div>
-      </Card>
+        <ErrorLine error={start.error} />
+        <Btn
+          kind="ink"
+          disabled={orgId === undefined || start.isPending}
+          onClick={() => {
+            start.mutate();
+          }}
+        >
+          {start.isPending ? 'Starting…' : 'Start a new batch'}
+        </Btn>
+      </Panel>
 
-      <section aria-labelledby="your-batches" className="flex flex-col gap-3">
-        <h2 id="your-batches" className="font-display text-xl font-bold">
-          Your batches
-        </h2>
-        {batches.isPending ? <p role="status">Loading…</p> : null}
-        {batches.isError ? <Alert tone="serious" title={batches.error.message} /> : null}
-        {batches.data?.batches.length === 0 ? (
-          <Empty title="You have not started a batch yet">
-            A batch holds the accounts you type up until you file them together.
-          </Empty>
-        ) : null}
-        {batches.data?.batches.length ? (
-          <Rows label="Your batches">
-            {batches.data.batches.map((b) => {
-              const started = new Date(b.created_at).toLocaleString();
-              const filed = b.status === 'submitted';
-              return (
-                <RowItem key={b.id}>
-                  <Link
-                    to="/intake/$id"
-                    params={{ id: String(b.id) }}
-                    aria-label={`Open the batch started ${started}`}
-                    className={rowLink('end')}
-                  >
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="font-display font-bold">
-                        Batch of <time dateTime={b.created_at}>{started}</time>
-                      </span>
-                      <span className="text-sm text-ink-alt">{b.organization}</span>
-                      <span className="font-mono text-[0.78rem] text-muted">
-                        {filed
-                          ? `${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'} filed`
-                          : `${String(b.entries)} ${b.entries === 1 ? 'account' : 'accounts'} · ${String(b.entries - b.filed)} waiting · ${String(b.filed)} filed`}
-                      </span>
-                    </span>
-                    <Chip tone={filed ? 'confirmed' : 'open'}>{filed ? 'Filed' : 'Open'}</Chip>
-                  </Link>
-                </RowItem>
-              );
-            })}
-          </Rows>
-        ) : null}
-      </section>
+      <h2 className="h-sec">Your batches</h2>
+      {batches.isPending ? <p role="status">Loading…</p> : null}
+      <ErrorLine error={batches.error} />
+      {batches.data?.batches.length === 0 ? (
+        <Empty title="You have not started a batch yet">
+          A batch holds the accounts you type up until you file them together.
+        </Empty>
+      ) : null}
+      {batches.data?.batches.length ? (
+        <div className="rows">
+          {batches.data.batches.map((b) => {
+            const started = new Date(b.created_at).toLocaleString();
+            const filed = b.status === 'submitted';
+            return (
+              <Link
+                key={b.id}
+                className="row"
+                to="/intake/$id"
+                params={{ id: String(b.id) }}
+                aria-label={`Open the batch started ${started}`}
+                style={ROW_COLS}
+              >
+                <span className="t">
+                  Batch of <time dateTime={b.created_at}>{started}</time> · {b.organization} ·{' '}
+                  {filed
+                    ? `${String(b.filed)} ${b.filed === 1 ? 'account' : 'accounts'} filed`
+                    : `${String(b.entries)} ${b.entries === 1 ? 'account' : 'accounts'} · ${String(b.entries - b.filed)} waiting · ${String(b.filed)} filed`}
+                </span>
+                <span>
+                  <Chip kind={filed ? 'ok' : ''}>{filed ? 'Filed' : 'Open'}</Chip>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </StaffPage>
   );
 }

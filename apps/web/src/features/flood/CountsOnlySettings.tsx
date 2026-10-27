@@ -17,13 +17,13 @@ import {
 } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 
 const countsOnlyQuery = queryOptions({
@@ -44,17 +44,17 @@ export function CountsOnlySettings() {
   });
   if (!query.data) return null;
   return (
-    <Card heading="Publish as counts only">
-      <p className="text-sm text-ink-alt">
+    <Panel heading="Publish as counts only">
+      <p className="muted">
         A logbook published as counts only shows its accepted reports as counts by place and time,
         and never one by one: not on the board, a report’s page, the spreadsheet, the chain file,
         the daily snapshot or a digest. Every change, the threshold included, is recorded as a
         public switch use and shown publicly with its time.
       </p>
       {query.data.logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
-      <ul className="flex flex-col gap-4">
+      <div className="choices">
         {query.data.logbooks.map((l) => (
-          <li key={l.slug} className="flex flex-col gap-2">
+          <div key={l.slug} className="form-stack">
             <CheckOption
               id={`counts-${l.slug}`}
               label={`${l.title} is published as counts only`}
@@ -65,11 +65,11 @@ export function CountsOnlySettings() {
               }}
             />
             <SmallArea slug={l.slug} title={l.title} saved={l.small_area} />
-          </li>
+          </div>
         ))}
-      </ul>
-      {set.error ? <Alert tone="serious">{set.error.message}</Alert> : null}
-    </Card>
+      </div>
+      {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
+    </Panel>
   );
 }
 
@@ -93,7 +93,7 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
       aria-label={`The small-area threshold for ${title}`}
       // The server's sentence, beside the field, not the browser's bubble.
       noValidate
-      className="flex flex-col gap-2 pl-7"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         setDone(null);
@@ -124,9 +124,9 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
         <FieldError>{save.error ? save.error.message : null}</FieldError>
       </Field>
       <div>
-        <Button type="submit" variant="secondary" disabled={save.isPending}>
+        <Btn type="submit" variant="secondary" disabled={save.isPending}>
           {save.isPending ? 'Saving…' : 'Save the threshold'}
-        </Button>
+        </Btn>
       </div>
       {done ? <p role="status">{done}</p> : null}
     </form>

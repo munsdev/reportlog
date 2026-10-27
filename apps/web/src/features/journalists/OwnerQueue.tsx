@@ -21,25 +21,18 @@ import type { AccessRequestView } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Chip } from '@/components/ui/chip.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { KeyValueList } from '@/components/ui/key-value-list.tsx';
-import type { KeyValue } from '@/components/ui/key-value-list.tsx';
-import { CountLine } from '@/components/ui/type.tsx';
+import type { ReactNode } from 'react';
 import { TabRow } from '@/features/nav/AreaTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Dl } from '../../mockup/Dl.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 
 const KEY = ['owner', 'journalists'] as const;
 
@@ -73,41 +66,47 @@ export function OwnerQueuePage() {
     >
       <JournalistTabs />
       {requests.isPending ? <p role="status">Loading…</p> : null}
-      {requests.isError ? <Alert tone="serious">{requests.error.message}</Alert> : null}
+      <ErrorLine error={requests.error} />
       {requests.data ? (
         <>
-          <CountLine
-            parts={[
-              `${String(waiting.length)} waiting`,
-              `${String(decided.filter((r) => r.status === 'approved').length)} approved`,
-              `${String(decided.filter((r) => r.status === 'revoked').length)} revoked`,
-            ]}
-          />
-          <section aria-labelledby="waiting" className="flex flex-col gap-4">
-            <h2 id="waiting" className="font-display text-xl font-bold">
-              Waiting ({waiting.length})
-            </h2>
-            {waiting.length ? (
-              waiting.map((r) => <RequestCard key={r.id} r={r} />)
-            ) : (
-              <Empty title="No requests are waiting">
-                A journalist on the alert list asks from the link they are emailed; their request
-                appears here.
-              </Empty>
-            )}
-          </section>
-          <section aria-labelledby="decided" className="flex flex-col gap-4">
-            <h2 id="decided" className="font-display text-xl font-bold">
-              Approved and revoked
-            </h2>
-            {decided.length ? (
-              decided.map((r) => <RequestCard key={r.id} r={r} />)
-            ) : (
-              <Empty title="Nobody approved yet">
-                Approved journalists are listed here, with a way to take their access back.
-              </Empty>
-            )}
-          </section>
+          <h2 className="h-sec">Waiting ({waiting.length})</h2>
+          {waiting.length ? (
+            waiting.map((r) => <RequestCard key={r.id} r={r} />)
+          ) : (
+            <Empty title="No requests are waiting">
+              A journalist on the alert list asks from the link they are emailed; their request
+              appears here.
+            </Empty>
+          )}
+          <h2 className="h-sec">Approved and revoked</h2>
+          {decided.length ? (
+            <Tbl
+              cols={['Who', 'Since', '']}
+              widths="1fr 1fr auto"
+              rows={decided.map((r) => ({
+                key: r.id,
+                cells: [
+                  <>
+                    {r.name} <span className="mono">{r.address}</span>
+                  </>,
+                  r.status === 'revoked' && r.revoked_at
+                    ? `Revoked ${when(r.revoked_at)}`
+                    : r.decided_at
+                      ? when(r.decided_at)
+                      : '',
+                  r.status === 'approved' ? (
+                    <RevokeButton r={r} />
+                  ) : (
+                    <Chip kind="off">Access revoked</Chip>
+                  ),
+                ],
+              }))}
+            />
+          ) : (
+            <Empty title="Nobody approved yet">
+              Approved journalists are listed here, with a way to take their access back.
+            </Empty>
+          )}
         </>
       ) : null}
     </StaffPage>
@@ -116,11 +115,35 @@ export function OwnerQueuePage() {
 
 const when = (iso: string) => new Date(iso).toLocaleString();
 
-const STATUS: Record<AccessRequestView['status'], { tone: 'open' | 'tag'; words: string }> = {
-  pending: { tone: 'open', words: 'Waiting' },
-  approved: { tone: 'tag', words: 'Approved' },
-  revoked: { tone: 'tag', words: 'Access revoked' },
-};
+const STATUS: Record<AccessRequestView['status'], { kind: 'wait' | 'ok' | 'off'; words: string }> =
+  {
+    pending: { kind: 'wait', words: 'Waiting' },
+    approved: { kind: 'ok', words: 'Approved' },
+    revoked: { kind: 'off', words: 'Access revoked' },
+  };
+
+function RevokeButton({ r }: { r: AccessRequestView }) {
+  const client = useQueryClient();
+  const act = useMutation({
+    mutationFn: () => call(revokeJournalist, { params: { id: r.id } }),
+    onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
+  });
+  return (
+    <>
+      <Btn
+        kind="ghost"
+        disabled={act.isPending}
+        title="Takes effect on their next request to the desk. They stay on the alert list."
+        onClick={() => {
+          act.mutate();
+        }}
+      >
+        Revoke access
+      </Btn>
+      <ErrorLine error={act.error} />
+    </>
+  );
+}
 
 function RequestCard({ r }: { r: AccessRequestView }) {
   const client = useQueryClient();
@@ -137,122 +160,82 @@ function RequestCard({ r }: { r: AccessRequestView }) {
       ),
     onSuccess: () => client.invalidateQueries({ queryKey: KEY }),
   });
-  const facts: KeyValue[] = [
-    { key: 'Address', value: r.address, mono: true },
-    { key: 'Covers', value: r.states.join(', ') },
-    ...(r.about
-      ? [
-          {
-            key: 'Who they are',
-            // Text, never a link: any address in it is copied on purpose.
-            value: <p className="break-words whitespace-pre-wrap">{r.about}</p>,
-          },
-        ]
-      : []),
-    ...(r.links.length
-      ? [
-          {
-            key: 'Published work',
-            value: (
-              <ul>
-                {r.links.map((l) => (
-                  <li key={l} className="font-mono text-sm break-all select-all">
-                    {l}
-                  </li>
-                ))}
-              </ul>
-            ),
-          },
-        ]
-      : []),
-    {
-      key: 'Press card',
-      value:
-        r.press_card_number || r.press_card_issuer
-          ? [r.press_card_number, r.press_card_issuer].filter(Boolean).join(', issued by ')
-          : 'None given',
-    },
-    { key: 'Asked', value: when(r.requested_at) },
+  const facts: [ReactNode, ReactNode][] = [
+    ['Address', r.address],
+    ['Covers', r.states.join(', ')],
+    ['Who they are', `${r.role}, ${r.outlet}`],
+    ...(r.about ? [['In their words', r.about] as [ReactNode, ReactNode]] : []),
   ];
-  if (r.decided_at) {
-    facts.push({ key: 'Approved', value: `${when(r.decided_at)} by ${r.decided_by ?? ''}` });
+  // Text, never a link: any address in it is copied on purpose.
+  if (r.links.length) {
+    facts.push([
+      'Published work',
+      <ul key="links">
+        {r.links.map((l) => (
+          <li key={l} className="mono">
+            {l}
+          </li>
+        ))}
+      </ul>,
+    ]);
   }
-  if (r.revoked_at) facts.push({ key: 'Revoked', value: when(r.revoked_at) });
+  facts.push([
+    'Press card',
+    r.press_card_number || r.press_card_issuer
+      ? [r.press_card_number, r.press_card_issuer].filter(Boolean).join(', issued by ')
+      : 'None given',
+  ]);
+  facts.push(['Asked', when(r.requested_at)]);
+  if (r.decided_at) facts.push(['Approved', `${when(r.decided_at)} by ${r.decided_by ?? ''}`]);
+  if (r.revoked_at) facts.push(['Revoked', when(r.revoked_at)]);
   const status = STATUS[r.status];
   return (
-    <article aria-label={`Request from ${r.name}`}>
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <h3 className="font-display text-xl font-bold">
-            {r.name}, {r.role} at {r.outlet}
-          </h3>
-          <Chip tone={status.tone}>{status.words}</Chip>
-        </div>
-        <KeyValueList items={facts} className="text-sm" />
-        {act.isError ? <Alert tone="serious">{act.error.message}</Alert> : null}
+    <>
+      <Panel as="article" title={r.name} head={<Chip kind={status.kind}>{status.words}</Chip>}>
+        <Dl items={facts} />
+        <ErrorLine error={act.error} />
         {r.status === 'pending' ? (
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
+          <div className="acts">
+            <Btn
+              kind="ink"
               disabled={act.isPending}
               onClick={() => {
                 act.mutate('approve');
               }}
             >
               Approve
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
+            </Btn>
+            <Btn
+              kind="ghost"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(true);
               }}
             >
               Reject and delete
-            </Button>
+            </Btn>
           </div>
         ) : null}
-        {r.status === 'approved' ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-sm text-ink-alt">
-              Revoking takes effect on their next request to the desk. They stay on the alert list.
-            </p>
-            <div>
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={act.isPending}
-                onClick={() => {
-                  act.mutate('revoke');
-                }}
-              >
-                Revoke access
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </Card>
-      <Dialog open={asking} onOpenChange={setAsking}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject the request from {r.name}?</DialogTitle>
-            <DialogDescription>
-              This deletes what they sent: their outlet, role, what they said about themselves and
-              press card. It cannot be undone. They stay on the alert list and can ask again.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="secondary"
+      </Panel>
+      <Modal
+        open={asking}
+        onClose={() => {
+          setAsking(false);
+        }}
+        title={`Reject the request from ${r.name}?`}
+        text="This deletes what they sent: their outlet, role, what they said about themselves and press card. It cannot be undone. They stay on the alert list and can ask again."
+        buttons={
+          <>
+            <Btn
+              kind="ghost"
               onClick={() => {
                 setAsking(false);
               }}
             >
               Keep the request
-            </Button>
-            <Button
-              variant="secondary"
+            </Btn>
+            <Btn
+              kind="ink"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(false);
@@ -260,10 +243,10 @@ function RequestCard({ r }: { r: AccessRequestView }) {
               }}
             >
               Reject and delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </article>
+            </Btn>
+          </>
+        }
+      />
+    </>
   );
 }

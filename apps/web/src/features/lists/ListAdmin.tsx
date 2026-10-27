@@ -15,18 +15,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { RowItem, Rows, rowLink } from '../../components/ui/rows.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { FileDrop } from '../../components/ui/file-drop.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { St } from '@/mockup/St.tsx';
+import { Empty } from '@/mockup/EmptyBox.tsx';
+import { FileDrop } from '@/mockup/FileDrop.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
 import { call } from '../../lib/api.ts';
@@ -46,8 +46,8 @@ export function ReviewersOnly({ children }: { children: ReactNode }) {
   const roles = me.data.roles;
   if (!roleSatisfies(roles, 'moderator') && !roleSatisfies(roles, 'admin')) {
     return (
-      <section className="space-y-3">
-        <h1 className="font-display text-2xl font-bold">Not for this account</h1>
+      <section className="panel">
+        <h1 className="h-sec">Not for this account</h1>
         <p>Only a moderator or an administrator can open this page. Ask one if you need to.</p>
       </section>
     );
@@ -59,14 +59,14 @@ export function ListAdmin() {
   const query = useQuery(listsQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Button
+    <Btn
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
       }}
     >
       Make a list
-    </Button>
+    </Btn>
   );
   return (
     <StaffPage
@@ -84,50 +84,51 @@ export function ListAdmin() {
       ) : null}
 
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Note tone="serious">{query.error.message}</Note> : null}
       {query.isSuccess ? (
         query.data.lists.length === 0 ? (
           making ? null : (
             <Empty title="No lists yet">
               Make one for links, check-ins or messages.
-              <span className="mt-3 flex justify-center">{make}</span>
+              <span className="acts">{make}</span>
             </Empty>
           )
         ) : (
           <>
             <Rows label="Lists">
               {query.data.lists.map((l) => (
-                <RowItem key={l.id}>
-                  <Link
-                    to="/lists/$id"
-                    params={{ id: l.id }}
-                    aria-label={`Open ${l.title}`}
-                    className={rowLink('end')}
-                  >
-                    <span className="flex min-w-0 flex-col gap-0.5">
-                      <span className="font-display font-bold">{l.title}</span>
-                      <span className="font-mono text-[0.78rem] break-all text-muted">
-                        /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
-                        for review
-                      </span>
+                <Link
+                  key={l.id}
+                  to="/lists/$id"
+                  params={{ id: l.id }}
+                  aria-label={`Open ${l.title}`}
+                  className="row"
+                  style={rowCols('1fr auto')}
+                >
+                  <span>
+                    <span className="t">{l.title}</span>
+                    <br />
+                    <span className="m">
+                      /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
+                      for review
                     </span>
-                    <span className="flex flex-wrap gap-1.5">
-                      <Chip tone="tag">{VISIBILITY[l.visibility].label}</Chip>
-                      <Chip tone={l.accepting ? 'confirmed' : 'off'}>
-                        {l.accepting ? 'Taking entries' : 'Not taking entries'}
-                      </Chip>
-                    </span>
-                  </Link>
-                </RowItem>
+                  </span>
+                  <span className="chips">
+                    <St tone="tag">{VISIBILITY[l.visibility].label}</St>
+                    <St tone={l.accepting ? 'confirmed' : 'off'}>
+                      {l.accepting ? 'Taking entries' : 'Not taking entries'}
+                    </St>
+                  </span>
+                </Link>
               ))}
             </Rows>
-            <div className="flex flex-wrap gap-2">
-              <Button asChild variant="secondary">
+            <div className="acts">
+              <Btn asChild variant="secondary">
                 <Link to="/lists/review">Review entries</Link>
-              </Button>
-              <Button asChild variant="secondary">
+              </Btn>
+              <Btn asChild variant="secondary">
                 <Link to="/lists/search">Find somebody&apos;s entries</Link>
-              </Button>
+              </Btn>
             </div>
           </>
         )
@@ -182,10 +183,10 @@ function NewList({ onCancel }: { onCancel: () => void }) {
   });
 
   return (
-    <Card heading="Make a list">
+    <Panel heading="Make a list">
       <div>
         <form
-          className="space-y-5"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             make.mutate();
@@ -212,13 +213,10 @@ function NewList({ onCancel }: { onCancel: () => void }) {
           </Field>
 
           {permanent === 'yes' ? (
-            <Alert title="Make a logbook instead">
-              <Link to="/logbooks" className="underline">
-                Go to the logbooks
-              </Link>
-              . A logbook seals every report and keeps it for good, which is what a record of
-              something that happened needs.
-            </Alert>
+            <Note title="Make a logbook instead">
+              <Link to="/logbooks">Go to the logbooks</Link>. A logbook seals every report and keeps
+              it for good, which is what a record of something that happened needs.
+            </Note>
           ) : null}
 
           {permanent === 'no' ? (
@@ -264,26 +262,26 @@ function NewList({ onCancel }: { onCancel: () => void }) {
                   onChange={(e) => {
                     setSlug(e.target.value);
                   }}
-                  className="font-mono"
+                  className="mono"
                 />
                 <FieldError>{make.error?.message}</FieldError>
               </Field>
-              <p className="text-sm text-ink-alt">
+              <p className="muted">
                 A new list starts hidden. Nobody outside sees it until you make it listed.
               </p>
-              <Button type="submit" disabled={!template || make.isPending}>
+              <Btn type="submit" disabled={!template || make.isPending}>
                 Make the list
-              </Button>
+              </Btn>
             </>
           ) : null}
           <div>
-            <Button type="button" variant="quiet" onClick={onCancel}>
+            <Btn type="button" variant="quiet" onClick={onCancel}>
               Cancel
-            </Button>
+            </Btn>
           </div>
         </form>
-        <div className="mt-5 flex flex-col gap-1">
-          <p id="upload-list-label" className="font-semibold">
+        <div className="field">
+          <p id="upload-list-label" className="lbl">
             Or upload a list file
           </p>
           <FileDrop
@@ -298,6 +296,6 @@ function NewList({ onCancel }: { onCancel: () => void }) {
           <FieldError>{upload.error?.message}</FieldError>
         </div>
       </div>
-    </Card>
+    </Panel>
   );
 }
