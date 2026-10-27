@@ -22,14 +22,14 @@ import type { CopySlot } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Input } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Select } from '@/components/ui/select.tsx';
-import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { Select } from '@/mockup/FieldWired.tsx';
+import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -64,7 +64,7 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
   const current = list.find((f) => f.id === chosen);
   const groups = [...new Set(list.map((f) => f.group))];
   return (
-    <div className="flex flex-col gap-2 rounded-card border border-line p-3">
+    <div className="panel quiet">
       <Field>
         <Label>Which number</Label>
         <Select
@@ -93,8 +93,8 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
           </FieldDescription>
         ) : null}
       </Field>
-      <div>
-        <Button
+      <div className="acts">
+        <Btn
           type="button"
           variant="secondary"
           disabled={!current}
@@ -103,14 +103,14 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
           }}
         >
           Insert it
-        </Button>
+        </Btn>
       </div>
-      <p className="text-sm text-ink-alt">
-        It goes in as <code className="font-mono">{'{{ [name] }}'}</code>. Inside the braces you can
-        calculate: <code className="font-mono">+ - * /</code>, brackets,{' '}
-        <code className="font-mono">round(x, 1)</code> and{' '}
-        <code className="font-mono">percent(part, whole)</code>. A number on its own can mislead:
-        say what it counts in the words around it.
+      <p className="muted">
+        It goes in as <code className="mono">{'{{ [name] }}'}</code>. Inside the braces you can
+        calculate: <code className="mono">+ - * /</code>, brackets,{' '}
+        <code className="mono">round(x, 1)</code> and{' '}
+        <code className="mono">percent(part, whole)</code>. A number on its own can mislead: say
+        what it counts in the words around it.
       </p>
     </div>
   );
@@ -131,16 +131,16 @@ export const Route = createFileRoute('/(staff)/settings/words')({
 
 export function WordingList({ slots }: { slots: readonly CopySlot[] }) {
   return (
-    <div className="flex flex-col gap-10">
+    <>
       {groupSlots(slots).map((group) => (
-        <section key={group.page} className="flex flex-col gap-4">
-          <h2 className="font-display text-section font-bold">{group.page}</h2>
+        <section key={group.page} aria-label={group.page} className="col" style={{ gap: 14 }}>
+          <h2 className="h-sec">{group.page}</h2>
           {group.slots.map((slot) => (
             <SlotEditor key={slot.key} slot={slot} />
           ))}
         </section>
       ))}
-    </div>
+    </>
   );
 }
 
@@ -225,11 +225,8 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
       onCancel={cancel}
       onSave={() => write(body)}
     >
-      <div className="layout-split grid items-start gap-6 lg:grid-cols-2">
-        <div className="lg:order-2">
-          <SlotInContext slot={slot} text={body} figures={figures} />
-        </div>
-        <div className="flex min-w-0 flex-col gap-3">
+      <div className="grid2 even">
+        <div className="form-stack" style={{ maxWidth: 'none' }}>
           <Field>
             <Label>{slot.label}</Label>
             <FieldDescription>
@@ -253,9 +250,9 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           {/* The password screen's paragraph takes no numbers (site/copy.ts). */}
           {/* Figures are refused in front of the password and in the emergency notice. */}
           {slot.kind === 'block' && slot.key !== 'lock_intro' && slot.key !== 'help_now' ? (
-            <div className="flex flex-col gap-2">
-              <div>
-                <Button
+            <div className="form-stack" style={{ maxWidth: 'none' }}>
+              <div className="acts">
+                <Btn
                   type="button"
                   variant="quiet"
                   aria-expanded={picking}
@@ -264,14 +261,14 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
                   }}
                 >
                   {picking ? 'Hide the numbers' : 'Insert a number'}
-                </Button>
+                </Btn>
               </div>
               {picking ? <FigurePicker onInsert={insert} /> : null}
             </div>
           ) : null}
           {slot.written ? (
-            <div>
-              <Button
+            <div className="acts">
+              <Btn
                 type="button"
                 variant="quiet"
                 onClick={() => {
@@ -285,10 +282,11 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
                 }}
               >
                 Go back to the shipped wording
-              </Button>
+              </Btn>
             </div>
           ) : null}
         </div>
+        <SlotInContext slot={slot} text={body} figures={figures} />
       </div>
     </GuardedPanel>
   );

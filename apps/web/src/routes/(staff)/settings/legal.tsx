@@ -14,13 +14,13 @@ import { setLegalText } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Field, FieldDescription, FieldError } from '@/components/ui/field.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Note } from '@/mockup/NoteBox.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
+import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { useSettingPanels } from '@/components/ui/setting-panel.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
+import { useSettingPanels } from '@/mockup/SettingPanel.tsx';
+import { Textarea } from '@/mockup/FieldWired.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -32,16 +32,15 @@ export const Route = createFileRoute('/(staff)/settings/legal')({
     <SettingsFrame>
       <StaffPage
         title="Legal notices"
-        width="prose"
         lede="The imprint and privacy policy the law asks for. The responsible person’s name appears only here."
       >
         <WithEditor>
           {(state) => (
-            <div className="flex flex-col gap-6">
+            <>
               {state.legal.map((l) => (
                 <LegalEditor key={l.kind} entry={l} />
               ))}
-            </div>
+            </>
           )}
         </WithEditor>
       </StaffPage>
@@ -88,17 +87,17 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
       onSave={() => write(text)}
     >
       {entry.published ? null : (
-        <Alert title={`No ${title.toLowerCase()} is published.`}>
+        <Note title={`No ${title.toLowerCase()} is published.`}>
           The box holds an outline to start from, not a notice. Saving it as it stands would publish
           the outline. Replace every bracketed line first.
-        </Alert>
+        </Note>
       )}
       <Field>
         <Label>{title}</Label>
         <FieldDescription>Saving publishes it, exactly as written here.</FieldDescription>
         <Textarea
           rows={18}
-          className="font-mono text-sm"
+          className="mono"
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -107,8 +106,8 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
         <FieldError>{save.isError ? save.error.message : null}</FieldError>
       </Field>
       {entry.published ? (
-        <div>
-          <Button
+        <div className="acts">
+          <Btn
             type="button"
             variant="quiet"
             onClick={() => {
@@ -123,7 +122,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
             }}
           >
             Take it down
-          </Button>
+          </Btn>
         </div>
       ) : null}
     </GuardedPanel>

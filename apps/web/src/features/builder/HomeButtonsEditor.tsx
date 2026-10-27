@@ -28,14 +28,14 @@
 import { clearHomeButtons, setHomeButtons } from '@reportlog/contracts';
 import type { ArrangementEntry, ButtonTarget, HomeButtonsAdmin } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button, buttonVariants } from '../../components/ui/button.tsx';
-import { cn } from '../../lib/utils.ts';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
+import { FrontPageTabs } from './FrontPageTabs.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { UnsavedChangesGuard, useUnsavedChanges } from '../../routes/(staff)/settings/-editor.tsx';
-import { Panel, Problem, Select, TextInput } from './controls.tsx';
+import { Field, Problem, Select, TextInput } from './controls.tsx';
 import { homeButtonsAdminQuery } from './queries.ts';
 
 export function HomeButtonsEditor() {
@@ -46,14 +46,10 @@ export function HomeButtonsEditor() {
     // The same leave-without-saving question the settings screens ask.
     <UnsavedChangesGuard>
       <StaffPage
-        title="Front page"
+        title="Front page and pages"
+        tabs={<FrontPageTabs current="buttons" />}
         lede="What the front page’s buttons lead to, and their order. The first is the main one. Logbooks and lists that are open and set to show on the front page are added at the end by themselves."
       >
-        <p>
-          <Link to="/logbooks" className="text-sm underline">
-            ← All logbooks
-          </Link>
-        </p>
         {query.isPending && <p role="status">Reading the front page…</p>}
         {query.isError && <Problem error={query.error} />}
         {/* Keyed on what is stored, so a save or a reset starts the editor
@@ -74,6 +70,10 @@ interface Row {
   label: string;
   sub: string;
 }
+
+/** What kind of thing a button points at, for its line. */
+const kindWords = (kind: string) =>
+  kind === 'builtin' ? 'Built in' : kind.charAt(0).toUpperCase() + kind.slice(1);
 
 const keyOf = (t: { kind: string; ref: string }) => `${t.kind}:${t.ref}`;
 
@@ -164,143 +164,154 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
   const drawn = rows.filter((r) => targets.get(r.target)?.showing);
   const firstReal = drawn.find((r) => targets.get(r.target)?.kind !== 'social');
 
+  const [editing, setEditing] = useState<number | null>(null);
   return (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      {/* Above the list on a phone, beside it on a desktop. */}
-      <FrontPagePreview
-        className="lg:order-2 lg:sticky lg:top-24"
-        buttons={drawn.map((r) => ({
-          key: String(r.id),
-          label: read(r).main,
-          icons: targets.get(r.target)?.kind === 'social',
-          accent: r === firstReal,
-        }))}
-      />
-      <div className="flex flex-col gap-6 lg:order-1">
-        <Panel title="In this order">
+    <div className="grid2">
+      <div className="col">
+        <MPanel heading="The big buttons, in this order">
           {rows.length === 0 && <p>No buttons. Open logbooks are still added to the page.</p>}
-          <ol className="space-y-3" aria-label="Buttons, in order">
+          <div className="qlist" role="list" aria-label="Buttons, in order">
             {rows.map((r, i) => {
               const { t, main, second } = read(r);
               const name = main || 'New button';
               const taken = new Set(rows.filter((x) => x !== r).map((x) => x.target));
+              const open = editing === r.id || !r.target;
               return (
-                <li key={r.id} className="space-y-3 rounded-card border border-line p-3">
-                  <p className="font-semibold">
-                    {name}
-                    {r === firstReal && (
-                      <span className="ml-2 text-sm font-normal">(the main button)</span>
-                    )}
-                  </p>
-                  {t && !t.showing && (
-                    <p className="text-sm font-semibold">
-                      Not showing{t.why_not ? `: ${t.why_not}` : '.'}
-                    </p>
+                <div key={r.id} role="listitem" style={{ display: 'contents' }}>
+                  <div className="qitem">
+                    <span className="h" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <b>{name}</b>
+                      <small>
+                        {t ? `${kindWords(t.kind)} · ${t.label}` : 'Not yet pointed anywhere'}
+                        {r === firstReal ? ' · highlighted' : ''}
+                      </small>
+                      {t && !t.showing && (
+                        <small>Not showing{t.why_not ? `: ${t.why_not}` : '.'}</small>
+                      )}
+                    </div>
+                    <div className="acts">
+                      <Btn
+                        variant="quiet"
+                        disabled={i === 0}
+                        aria-label={`Move up: “${name}”`}
+                        onClick={() => {
+                          move(i, -1);
+                        }}
+                      >
+                        ↑
+                      </Btn>
+                      <Btn
+                        variant="quiet"
+                        disabled={i === rows.length - 1}
+                        aria-label={`Move down: “${name}”`}
+                        onClick={() => {
+                          move(i, 1);
+                        }}
+                      >
+                        ↓
+                      </Btn>
+                      <Btn
+                        variant="secondary"
+                        aria-label={`Change: “${name}”`}
+                        aria-expanded={open}
+                        onClick={() => {
+                          setEditing(open && r.target ? null : r.id);
+                        }}
+                      >
+                        Change
+                      </Btn>
+                      <Btn
+                        variant="quiet"
+                        aria-label={`Remove: “${name}”`}
+                        onClick={() => {
+                          setRows((now) => now.filter((_, j) => j !== i));
+                        }}
+                      >
+                        Remove
+                      </Btn>
+                    </div>
+                  </div>
+                  {open && (
+                    <MPanel variant="quiet">
+                      <Field label="Target" help={t?.help ?? undefined}>
+                        {(p) => (
+                          <Select
+                            {...p}
+                            id={`target-${String(r.id)}`}
+                            value={r.target}
+                            onChange={(e) => {
+                              change(i, { target: e.target.value });
+                            }}
+                          >
+                            {!r.target && <option value="">Choose where it leads…</option>}
+                            {GROUPS.map((g) => {
+                              const inGroup = data.targets.filter((x) => x.kind === g.kind);
+                              if (!inGroup.length) return null;
+                              return (
+                                <optgroup key={g.kind} label={g.heading}>
+                                  {inGroup.map((x) => (
+                                    <option
+                                      key={keyOf(x)}
+                                      value={keyOf(x)}
+                                      disabled={taken.has(keyOf(x))}
+                                    >
+                                      {x.label}
+                                      {x.showing ? '' : ' (not showing)'}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              );
+                            })}
+                          </Select>
+                        )}
+                      </Field>
+                      <div className="grid2 even">
+                        <Field label="Main text">
+                          {(p) => (
+                            <TextInput
+                              {...p}
+                              id={`main-${String(r.id)}`}
+                              value={r.label}
+                              maxLength={80}
+                              placeholder={t?.label ?? ''}
+                              onChange={(e) => {
+                                change(i, { label: e.target.value });
+                              }}
+                            />
+                          )}
+                        </Field>
+                        <Field label="Subtext">
+                          {(p) => (
+                            <TextInput
+                              {...p}
+                              id={`sub-${String(r.id)}`}
+                              value={r.sub}
+                              maxLength={160}
+                              placeholder={t?.blurb ?? 'None'}
+                              onChange={(e) => {
+                                change(i, { sub: e.target.value });
+                              }}
+                            />
+                          )}
+                        </Field>
+                      </div>
+                      <p className="muted">
+                        Left blank, the button says what the target says
+                        {second || !t ? '' : ', and has no second line'}.
+                      </p>
+                    </MPanel>
                   )}
-                  <div className="flex flex-col gap-1">
-                    <label htmlFor={`target-${String(r.id)}`} className="text-sm font-semibold">
-                      Target
-                    </label>
-                    <Select
-                      id={`target-${String(r.id)}`}
-                      value={r.target}
-                      onChange={(e) => {
-                        change(i, { target: e.target.value });
-                      }}
-                    >
-                      {!r.target && <option value="">Choose where it leads…</option>}
-                      {GROUPS.map((g) => {
-                        const inGroup = data.targets.filter((x) => x.kind === g.kind);
-                        if (!inGroup.length) return null;
-                        return (
-                          <optgroup key={g.kind} label={g.heading}>
-                            {inGroup.map((x) => (
-                              <option
-                                key={keyOf(x)}
-                                value={keyOf(x)}
-                                disabled={taken.has(keyOf(x))}
-                              >
-                                {x.label}
-                                {x.showing ? '' : ' (not showing)'}
-                              </option>
-                            ))}
-                          </optgroup>
-                        );
-                      })}
-                    </Select>
-                    {t?.help && <p className="text-sm text-muted">{t.help}</p>}
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor={`main-${String(r.id)}`} className="text-sm font-semibold">
-                        Main text
-                      </label>
-                      <TextInput
-                        id={`main-${String(r.id)}`}
-                        value={r.label}
-                        maxLength={80}
-                        placeholder={t?.label ?? ''}
-                        onChange={(e) => {
-                          change(i, { label: e.target.value });
-                        }}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label htmlFor={`sub-${String(r.id)}`} className="text-sm font-semibold">
-                        Subtext
-                      </label>
-                      <TextInput
-                        id={`sub-${String(r.id)}`}
-                        value={r.sub}
-                        maxLength={160}
-                        placeholder={t?.blurb ?? 'None'}
-                        onChange={(e) => {
-                          change(i, { sub: e.target.value });
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted">
-                    Left blank, the button says what the target says
-                    {second || !t ? '' : ', and has no second line'}.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="secondary"
-                      disabled={i === 0}
-                      aria-label={`Move up: “${name}”`}
-                      onClick={() => {
-                        move(i, -1);
-                      }}
-                    >
-                      Move up
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      disabled={i === rows.length - 1}
-                      aria-label={`Move down: “${name}”`}
-                      onClick={() => {
-                        move(i, 1);
-                      }}
-                    >
-                      Move down
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      aria-label={`Remove: “${name}”`}
-                      onClick={() => {
-                        setRows((now) => now.filter((_, j) => j !== i));
-                      }}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </li>
+                </div>
               );
             })}
-          </ol>
-          <div>
-            <Button
+          </div>
+          {unfinished && <p>Choose a target for every button before saving.</p>}
+          <Problem error={save.error ?? reset.error} />
+          <div className="acts">
+            <Btn
               variant="secondary"
               onClick={() => {
                 setRows((now) => [...now, { id: next, target: '', label: '', sub: '' }]);
@@ -308,12 +319,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
               }}
             >
               Add a button
-            </Button>
-          </div>
-          {unfinished && <p className="text-sm">Choose a target for every button before saving.</p>}
-          <Problem error={save.error ?? reset.error} />
-          <div className="flex flex-wrap gap-2">
-            <Button
+            </Btn>
+            <Btn
               variant="primary"
               disabled={save.isPending || unfinished}
               onClick={() => {
@@ -321,34 +328,47 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
               }}
             >
               Save this order
-            </Button>
-            <Button
-              variant="secondary"
+            </Btn>
+            <Btn
+              variant="quiet"
               disabled={reset.isPending}
               onClick={() => {
                 reset.mutate();
               }}
             >
               Go back to the standard order
-            </Button>
+            </Btn>
           </div>
-        </Panel>
+          <p className="muted">
+            Each button points at a logbook, list, map, page or the social links. Its words come
+            from the target unless you write your own. A closed target hides its button and says why
+            here.
+          </p>
+        </MPanel>
+      </div>
+      <div className="col">
+        <FrontPagePreview
+          buttons={drawn.map((r) => ({
+            key: String(r.id),
+            label: read(r).main,
+            icons: targets.get(r.target)?.kind === 'social',
+            accent: r === firstReal,
+          }))}
+        />
       </div>
     </div>
   );
 }
 
 /**
- * The front page's buttons as a phone shows them, in the site's own look:
- * the first one the main (primary) button, the rest secondary, each the
- * width of the screen; the social links a row of marks. It follows the list
- * as it is changed, before anything is saved, and leaves out what would not
- * draw. A picture: hidden from screen readers, with the list beside it
- * saying the same in words.
+ * The front page's buttons as a phone shows them (the mock-up's
+ * `phone-prev`): the first one the main button, the rest plain, social links
+ * a row of marks. It follows the list as it is changed, before anything is
+ * saved, and leaves out what would not draw. A picture: hidden from screen
+ * readers, with the list beside it saying the same in words.
  */
 function FrontPagePreview({
   buttons,
-  className,
 }: {
   buttons: readonly {
     key: string;
@@ -356,39 +376,27 @@ function FrontPagePreview({
     icons: boolean;
     accent: boolean;
   }[];
-  className?: string;
 }) {
   return (
-    <figure className={cn('m-0 flex flex-col gap-2', className)}>
-      <figcaption className="label-face text-xs text-ink-alt">
-        On a phone, as it will look
-      </figcaption>
-      <div
-        aria-hidden="true"
-        className="flex w-full max-w-[20rem] flex-col gap-3 rounded-[18px] border-2 border-ink bg-paper p-4"
-      >
+    <div className="phone-prev">
+      <span className="eyebrow">On a phone, as it will look</span>
+      <div className="pp" aria-hidden="true">
         {buttons.length === 0 ? (
-          <span className="text-sm text-ink-alt">No buttons.</span>
+          <span className="muted">No buttons.</span>
         ) : (
           buttons.map((b) =>
             b.icons ? (
-              <span key={b.key} className="text-center text-sm text-ink-alt">
+              <span key={b.key} className="muted">
                 {b.label}: ● ● ●
               </span>
             ) : (
-              <span
-                key={b.key}
-                className={buttonVariants({
-                  variant: b.accent ? 'primary' : 'secondary',
-                  block: true,
-                })}
-              >
+              <span key={b.key} className={b.accent ? 'ppb go' : 'ppb'}>
                 {b.label}
               </span>
             ),
           )
         )}
       </div>
-    </figure>
+    </div>
   );
 }

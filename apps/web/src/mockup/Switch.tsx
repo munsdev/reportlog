@@ -28,9 +28,7 @@ export function Switch({
         {...(label ? { 'aria-label': label } : {})}
         type="button"
         disabled={disabled}
-        onClick={() => {
-          onChange(!on);
-        }}
+        onClick={() => onChange(!on)}
       ></button>
     </div>
   );

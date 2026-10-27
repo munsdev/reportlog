@@ -5,15 +5,14 @@
  * (StaffShell.tsx), so a staff page draws no row of area tabs; a page with
  * sections of its own passes a `TabRow` (AreaTabs.tsx) as `tabs`.
  *
- * It is `Page` with the staff area's measures: the title stops at 2.4rem
- * (the mock-up's `.phead h1`; the public look's title is far larger than a
- * working screen wants) and the lede is body size.
+ * The markup is the mock-up's `spage`: `.phead` with `.phead-txt` (the
+ * `.eyebrow`, the `h1#h1`, the `.lead`) and `.phead-act`, styled by
+ * mockup/site.css. The page's body follows as its siblings in `.staff-main`
+ * (the shell's grid), so this renders a fragment.
  */
 import { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
-import { cn } from '@/lib/utils.ts';
 
 export interface StaffPageProps {
   title: string;
@@ -24,11 +23,11 @@ export interface StaffPageProps {
   lede?: ReactNode;
   /** Buttons or links that act on the whole page. */
   actions?: ReactNode;
-  /** A `TabRow` for the page's own sections, drawn under the head. */
+  /** The page's own sections (`.ptabs`), drawn under the head. */
   tabs?: ReactNode;
   /** The title in the mono face, for a code such as a reference. */
   mono?: boolean;
-  /** `prose` keeps lines readable for text; `wide` is for tables and boards. */
+  /** Kept for callers; the staff column sets its own measure. */
   width?: 'prose' | 'wide';
   className?: string | undefined;
   children?: ReactNode;
@@ -42,7 +41,6 @@ export function StaffPage({
   actions,
   tabs,
   mono = false,
-  width = 'wide',
   className,
   children,
 }: StaffPageProps) {
@@ -51,32 +49,19 @@ export function StaffPage({
     document.title = `${title} · ${siteName}`;
   }, [title, siteName]);
   return (
-    <section
-      className={cn(
-        'page-sections flex flex-col gap-[18px]',
-        width === 'prose' && 'max-w-prose',
-        className,
-      )}
-    >
-      <header className="flex flex-wrap items-end justify-between gap-x-5 gap-y-3">
-        <div className="flex max-w-[72ch] min-w-0 flex-[1_1_17.5rem] flex-col gap-1.5">
-          <Eyebrow className="font-mono tracking-[0.12em]">
-            {eyebrow ?? `${siteName} · ${area}`}
-          </Eyebrow>
-          <h1
-            className={cn(
-              'text-[clamp(1.6rem,3.6vw,2.4rem)] leading-[1.05] font-bold break-words',
-              mono ? 'font-mono tracking-tight' : 'font-display',
-            )}
-          >
+    <>
+      <div className="phead">
+        <div className="phead-txt">
+          <span className="eyebrow">{eyebrow ?? `${siteName} · ${area}`}</span>
+          <h1 id="h1" className={mono ? 'mono-title' : undefined}>
             {title}
           </h1>
-          {lede ? <p className="text-ink-alt">{lede}</p> : null}
+          {lede ? <p className="lead">{lede}</p> : null}
         </div>
-        {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
-      </header>
+        {actions ? <div className="phead-act">{actions}</div> : null}
+      </div>
       {tabs}
-      {children}
-    </section>
+      {className ? <div className={className}>{children}</div> : children}
+    </>
   );
 }

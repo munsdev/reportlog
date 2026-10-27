@@ -12,10 +12,10 @@
 import type { FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '../../../components/ui/button.tsx';
-import { Card } from '../../../components/ui/card.tsx';
-import { KeyValueList } from '../../../components/ui/key-value-list.tsx';
-import type { KeyValue } from '../../../components/ui/key-value-list.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Panel } from '@/mockup/PanelBox.tsx';
+import { Dl } from '@/mockup/DlList.tsx';
+import type { DlItem } from '@/mockup/DlList.tsx';
 import { useToast } from '../../../components/ui/toast.tsx';
 import { LimitsForm } from './LimitsForm.tsx';
 import type { Layer, LimitsBody } from './LimitsForm.tsx';
@@ -23,11 +23,11 @@ import { KIND_LABEL, LIMITS, toBox } from './words.ts';
 
 export const LIMITS_TITLE = 'How big, how long, how many';
 
-const unset = (words: ReactNode) => <span className="text-ink-alt">{words}</span>;
+const unset = (words: ReactNode) => <span className="muted">{words}</span>;
 
 /** The closed panel's values, one per limit, then the kinds. */
-export function limitsSummary(layers: FileLimitLayers, mine: Layer): KeyValue[] {
-  const rows: KeyValue[] = LIMITS.map((l) => {
+export function limitsSummary(layers: FileLimitLayers, mine: Layer): DlItem[] {
+  const rows: DlItem[] = LIMITS.map((l) => {
     const row = layers[l.key];
     const v = (n: number) => `${toBox(n, l.unit)} ${l.suffix}`;
     const own = mine === 'logbook' ? row.logbook : row.site;
@@ -70,10 +70,7 @@ export function LimitsPanel({
   const [open, setOpen] = useState(false);
   const toast = useToast();
   return (
-    <Card
-      heading={LIMITS_TITLE}
-      className={open ? 'outline-2 outline-offset-2 outline-ink' : undefined}
-    >
+    <Panel heading={LIMITS_TITLE} closed={!open}>
       {open ? (
         <LimitsForm
           layers={layers}
@@ -89,20 +86,20 @@ export function LimitsPanel({
         />
       ) : (
         <>
-          <KeyValueList items={limitsSummary(layers, mine)} />
-          <div>
-            <Button
+          <Dl items={limitsSummary(layers, mine)} />
+          <div className="acts">
+            <Btn
               variant="secondary"
               aria-label={`Edit ${LIMITS_TITLE}`}
               onClick={() => {
                 setOpen(true);
               }}
             >
-              Edit
-            </Button>
+              Change
+            </Btn>
           </div>
         </>
       )}
-    </Card>
+    </Panel>
   );
 }

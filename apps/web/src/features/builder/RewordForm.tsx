@@ -15,7 +15,7 @@ import type { OptionInput, Question, QuestionSettingsInput } from '@reportlog/co
 import { describeCondition, optionArray, optionSetsOf } from '@reportlog/fields';
 import type { FieldDefinition } from '@reportlog/fields';
 import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
+import { Btn } from '@/mockup/StaffBtn.tsx';
 import { Field, Problem, TextInput } from './controls.tsx';
 
 interface Props {
@@ -92,7 +92,7 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
 
   return (
     <form
-      className="space-y-4"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         setBusy(true);
@@ -106,7 +106,7 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
           });
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         Only the words can change now. Every code stays as it is, because filed reports hold it.
       </p>
       <Field label="The question, as the reporter will read it">
@@ -172,11 +172,8 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
         setOptions((now) => ({ ...now, [code]: v }));
       })}
       {sets.map((set, i) => (
-        <fieldset
-          key={`${set.when.field}-${set.when.in.join(',')}`}
-          className="space-y-2 rounded-card border border-line p-3"
-        >
-          <legend className="px-1 font-semibold">
+        <fieldset key={`${set.when.field}-${set.when.in.join(',')}`} className="panel quiet">
+          <legend className="lbl">
             Choices {describeCondition(set.when, earlier).replace(/^Asked only/, 'offered only')}
           </legend>
           {labelBoxes(set.options, setLabels[i] ?? {}, (code, v) => {
@@ -185,13 +182,13 @@ export function RewordForm({ question: q, earlier, onSubmit, onCancel }: Props) 
         </fieldset>
       ))}
       <Problem error={error} />
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" variant="secondary" disabled={busy}>
+      <div className="acts">
+        <Btn type="submit" variant="secondary" disabled={busy}>
           Save the wording
-        </Button>
-        <Button type="button" variant="quiet" onClick={onCancel}>
+        </Btn>
+        <Btn type="button" variant="quiet" onClick={onCancel}>
           Cancel
-        </Button>
+        </Btn>
       </div>
     </form>
   );
