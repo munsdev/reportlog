@@ -492,7 +492,8 @@
     fabBtn.addEventListener("click", function () { panel.hasAttribute("open") ? shut() : open(); });
     close.addEventListener("click", shut);
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && panel.hasAttribute("open")) shut(); });
-    document.body.append(panel, fabBtn);
+    document.body.append(panel);
+    (document.getElementById("fab-look") || document.body).append(fabBtn);
   }
   window.elLookSwitcher = function (on) {
     var fab = document.getElementById("lookfab"), pnl = document.getElementById("lookpanel");

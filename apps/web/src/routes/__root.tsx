@@ -15,6 +15,7 @@ import { SiteHeader } from '../features/nav/SiteHeader.tsx';
 import { Ticker } from '../features/nav/Ticker.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
 import { inFrame } from '../features/staff-nav/entries.ts';
+import { DockSlot } from '../mockup/Dock.tsx';
 import { EasyClass } from '../mockup/EasierReading.tsx';
 import { SiteLookScript } from '../mockup/siteLook.tsx';
 
@@ -33,7 +34,10 @@ function RootLayout() {
       <SiteLook />
       <SiteLookScript />
       <Frame />
-      <DevBadge />
+      {/* In the corner dock (index.html), under Look. */}
+      <DockSlot slot="fab-dev">
+        <DevBadge />
+      </DockSlot>
       <FollowButton />
       <StepUpHost />
       <LookSwitcher />

@@ -30,6 +30,7 @@ import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
 import { pageBlocksQuery } from '../features/pages/queries.ts';
 import { placedMapsQuery } from '../features/maps/queries.ts';
+import { DockSlot } from '../mockup/Dock.tsx';
 import { useBodyClass } from '../mockup/useBodyClass.ts';
 
 interface FrontSearch {
@@ -128,27 +129,24 @@ function Home() {
   return (
     <>
       {canEdit ? (
-        <div className="admin-bar" role="region" aria-label="Page editor">
-          <div className="wrap">
-            <span>
-              <b style={{ fontFamily: 'var(--rl-font-display)' }}>Front page</b>{' '}
-              <span className="mono" style={{ fontSize: '.75rem', opacity: 0.8 }}>
-                · only you see this bar
-              </span>
-            </span>
-            <div className="btns">
-              <button
-                className="abtn main"
-                type="button"
-                onClick={() => {
-                  void navigate({ to: '/', search: { edit: true } });
-                }}
-              >
-                Edit this page
-              </button>
-            </div>
-          </div>
-        </div>
+        <DockSlot slot="fab-edit">
+          {/* Only the owner and administrators see it (the old bar said so). */}
+          <button
+            className="lookfab dock-pill"
+            type="button"
+            onClick={() => {
+              void navigate({ to: '/', search: { edit: true } });
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
+              />
+            </svg>
+            <span>Edit this page</span>
+          </button>
+        </DockSlot>
       ) : null}
       <FrontPageBlocks placed={placed} buttons={buttons} notice={notice} />
     </>

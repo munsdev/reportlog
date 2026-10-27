@@ -733,8 +733,7 @@ a.row:hover{background:var(--rl-surface-2)}
 .copybox .row{min-width:0}
 .ptabs,.panel,.search{min-width:0;max-width:100%}
 .search input{min-width:0}
-@media (min-width:900px){body.staff .lookfab{right:auto;left:max(16px,env(safe-area-inset-left,0px))}body.staff .lookpanel{right:auto;left:max(12px,env(safe-area-inset-left,0px))}}
-@media (max-width:899px){body.staff .lookfab{bottom:calc(84px + env(safe-area-inset-bottom,0px))}body.staff .lookpanel{bottom:calc(144px + env(safe-area-inset-bottom,0px))}}
+@media (max-width:899px){body.staff .fab-dock{bottom:calc(84px + env(safe-area-inset-bottom,0px))}body.staff .lookpanel{bottom:calc(144px + env(safe-area-inset-bottom,0px))}}
 
 /* ---------- Follow along: socials, near the top ---------- */
 .follow{background:var(--p-brand);color:var(--p-on-action);padding:clamp(28px,5vw,48px) 0;position:relative}
@@ -797,3 +796,15 @@ body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
 .sb summary .n{font-size:.7rem;min-width:20px;height:20px;border-radius:10px;display:inline-grid;place-items:center;padding:0 6px}
 .sb-drawer summary{min-height:48px;color:var(--on-chrome-muted)}
 @media (min-width:700px){.sb-drawer{grid-template-columns:1fr}}
+/* Port (27 Oct): the corner dock. Edit this page, Look and the development
+   notice are one stack of the same pill (.lookfab), bottom right, never on
+   top of each other; the dock stays above a Save bar or a filing bar. */
+.fab-dock{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px) + max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px)));z-index:55;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
+.fab-dock > div:empty{display:none}
+.fab-dock .lookfab{position:static;pointer-events:auto}
+body.form .fab-dock{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+.dock-pill{text-decoration:none}
+.dock-dot{width:10px;height:10px;margin:0 6px;border-radius:50%;background:#F3B53F}
+@media print{.fab-dock{display:none}}
+/* Port (27 Oct): a long button label wraps on a phone instead of running off the screen. */
+@media (max-width:599px){.btn-row .btn{max-width:100%;white-space:normal;text-align:center;height:auto;min-height:var(--btn-h,48px);padding-block:10px}}
