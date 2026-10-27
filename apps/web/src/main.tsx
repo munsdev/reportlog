@@ -27,6 +27,8 @@ declare global {
   interface Window {
     elRefresh?: () => void;
     elLookSwitcher?: (on: boolean) => void;
+    elOpenLook?: (toBackground?: boolean) => void;
+    elSay?: (message: string) => void;
   }
 }
 router.subscribe('onResolved', () => {

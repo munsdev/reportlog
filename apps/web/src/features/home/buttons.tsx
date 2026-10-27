@@ -1,18 +1,12 @@
 /**
  * The front page's buttons: the ways in, in the operator's order, the first
- * the accent and no other.
- *
- * BIG ON PURPOSE. The person this page is for may be standing in a queue,
- * stressed, on a phone they barely use. Each button is the width of the
- * screen and taller than a thumb, with the label in a size that can be read
- * at arm's length.
+ * the accent and no other. Drawn by the headline block (HeroBlock.tsx) as
+ * the mock-up's `.btn-row`.
  */
 import { getHomeButtons } from '@reportlog/contracts';
 import type { HomeButton } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button.tsx';
-import { Count } from '@/components/ui/count.tsx';
-import { SocialLinks } from '@/components/ui/social-links.tsx';
 import { call } from '@/lib/api.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -31,79 +25,6 @@ const ACTION_HREF: Record<string, string> = { alerts: '/journalists/alerts' };
 
 export const hrefOf = (b: Pick<HomeButton, 'href' | 'action'>): string | null =>
   b.href ?? (b.action ? (ACTION_HREF[b.action] ?? null) : null);
-
-/** The classes that make a link one of the front page's big buttons. */
-export const BIG_BUTTON = 'min-h-16 text-base sm:min-h-18 sm:text-lg';
-
-/**
- * The ways in, full width and stacked, each a link that looks like a button.
- * A button may carry a second line, its blurb, in the body face. The board's
- * carries the number of published reports, when it is known.
- */
-export function HomeButtons({
-  buttons,
-  published,
-  siteName = '',
-  quiet = false,
-}: {
-  buttons: readonly HomeButton[];
-  /** For the social icons' names ("<site> on Bluesky"). */
-  siteName?: string;
-  /** The info layout: every button secondary and ordinary-sized. */
-  quiet?: boolean;
-  /** Published reports on the board, or undefined while unknown. */
-  published?: number | undefined;
-}) {
-  const drawn = buttons.flatMap((b): { b: HomeButton; href: string | null }[] => {
-    // The row of social icons has no address of its own: it is its accounts.
-    if (b.kind === 'social') return b.social?.length ? [{ b, href: null }] : [];
-    const href = hrefOf(b);
-    return href ? [{ b, href }] : [];
-  });
-  if (!drawn.length) return null;
-  return (
-    // ONE COLUMN, the accent first: on a desktop it is the page's right-hand
-    // column (FrontPage.tsx), so a button is as wide as that column, not the page.
-    <ul className="flex flex-col gap-3" aria-label="What you can do here">
-      {drawn.map(({ b, href }) =>
-        href === null ? (
-          <li key={`${b.kind}:${b.ref}`} className="flex flex-col items-center gap-1 py-1">
-            <p className="label-face text-sm">{b.label}</p>
-            <SocialLinks links={b.social} siteName={siteName} variant="icons" />
-            {b.blurb ? <p className="text-sm text-ink-alt">{b.blurb}</p> : null}
-          </li>
-        ) : (
-          <li key={`${b.kind}:${b.ref}`}>
-            <Button
-              asChild
-              size={quiet ? 'md' : 'lg'}
-              block
-              variant={b.accent && !quiet ? 'primary' : 'secondary'}
-              className={quiet ? undefined : cn(BIG_BUTTON, b.blurb && 'flex-col gap-0.5 py-3')}
-            >
-              <a href={href}>
-                <span className="inline-flex items-center gap-2">
-                  {b.label}
-                  {b.kind === 'builtin' && b.ref === 'board' && published !== undefined ? (
-                    <Count
-                      value={published}
-                      label={`${String(published)} published report${published === 1 ? '' : 's'}`}
-                    />
-                  ) : null}
-                </span>
-                {b.blurb ? (
-                  <span className="font-sans text-sm font-normal tracking-normal normal-case">
-                    {b.blurb}
-                  </span>
-                ) : null}
-              </a>
-            </Button>
-          </li>
-        ),
-      )}
-    </ul>
-  );
-}
 
 /**
  * What the front page offers when the buttons cannot be fetched. The page
