@@ -23,6 +23,7 @@ export function RadioGroup({
   onValueChange,
   name,
   disabled = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   orientation: _orientation,
   children,
   ...props

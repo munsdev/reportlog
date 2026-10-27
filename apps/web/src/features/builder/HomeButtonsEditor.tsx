@@ -71,6 +71,10 @@ interface Row {
   sub: string;
 }
 
+/** What kind of thing a button points at, for its line. */
+const kindWords = (kind: string) =>
+  kind === 'builtin' ? 'Built in' : kind.charAt(0).toUpperCase() + kind.slice(1);
+
 const keyOf = (t: { kind: string; ref: string }) => `${t.kind}:${t.ref}`;
 
 /** The drop-down's groups, in the order an operator looks for things. */
@@ -181,9 +185,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     <div>
                       <b>{name}</b>
                       <small>
-                        {t
-                          ? `${t.kind === 'builtin' ? 'Built in' : t.kind[0]?.toUpperCase() + t.kind.slice(1)} · ${t.label}`
-                          : 'Not yet pointed anywhere'}
+                        {t ? `${kindWords(t.kind)} · ${t.label}` : 'Not yet pointed anywhere'}
                         {r === firstReal ? ' · highlighted' : ''}
                       </small>
                       {t && !t.showing && (

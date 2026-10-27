@@ -39,6 +39,7 @@ export function RowLink({
   ...props
 }: ComponentProps<'a'> & { cols?: string }) {
   const s: Cols = { '--cols': cols, ...style };
+  // eslint-disable-next-line jsx-a11y/anchor-has-content
   return <a className={cn('row', className)} style={s} {...props} />;
 }
 

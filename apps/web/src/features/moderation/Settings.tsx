@@ -33,7 +33,7 @@ export function SettingsPage() {
   return (
     <ToastProvider>
       <SettingPanels>
-        <div className="flex max-w-prose flex-col gap-6">
+        <div className="col" style={{ gap: 18 }}>
           <StaffHead
             title="Moderation settings"
             lede="What the site publishes, what asks for a second read, and who opened what. Each change is recorded with your name."
@@ -166,7 +166,7 @@ function Keywords() {
         toast.show('The words are saved.');
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         A report whose own words (not its chosen answers) contain one of these is marked for a
         second read. That is all it means. Words match whole, and a phrase matches as a phrase.
       </p>
@@ -182,10 +182,10 @@ function Keywords() {
         />
       </Field>
       {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
-      <div>
+      <div className="acts">
         <Btn
           type="button"
-          variant="secondary"
+          variant="quiet"
           busy={save.isPending}
           busyLabel="Going back…"
           onClick={() => {
@@ -248,14 +248,14 @@ function NotesSwitches() {
         reset();
       }}
     >
-      <p className="text-sm text-ink-alt">
+      <p className="muted">
         A note is the archive’s own statement about a report it published, under the archive’s name.
         Off for a logbook unless switched on here.
       </p>
       {logbooks.length === 0 ? <p>No logbook has launched yet.</p> : null}
-      <ul className="flex flex-col gap-2">
+      <div className="choices">
         {logbooks.map((l) => (
-          <li key={l.slug}>
+          <div key={l.slug}>
             <CheckOption
               id={`notes-${l.slug}`}
               label={`${l.title} uses editorial notes`}
@@ -264,9 +264,9 @@ function NotesSwitches() {
                 setChosen((c) => ({ ...c, [l.slug]: v === true }));
               }}
             />
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
       {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
   );
@@ -282,10 +282,7 @@ function AccessLog() {
     <Panel variant="quiet" heading="Who opened what" id="who-opened-what">
       <p>
         Every opening of a reporter’s contact details or of a file’s original, with who and why, is
-        now its own page under Records:{' '}
-        <Link to="/who-opened-what" className="underline">
-          Who opened protected data
-        </Link>
+        now its own page under Records: <Link to="/who-opened-what">Who opened protected data</Link>
         . Opening it is recorded.
       </p>
     </Panel>

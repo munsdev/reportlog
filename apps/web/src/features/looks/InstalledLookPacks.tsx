@@ -6,10 +6,10 @@
  * another pack needs it, the row says so in words, and the server refuses
  * the removal with the same words.
  */
-import { CORE_PACK, removeLookPack } from '@reportlog/contracts';
+import { removeLookPack } from '@reportlog/contracts';
 import type { InstalledLookPack } from '@reportlog/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, useState } from 'react';
+import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
 import { Btn } from '@/mockup/StaffBtn.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
@@ -27,33 +27,18 @@ const day = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
 export function InstalledLookPacks() {
-  const headingId = useId();
   const packs = useQuery(lookPacksQuery);
-  const builtIn = {
-    palettes: CORE_PACK.palettes ?? [],
-    themes: CORE_PACK.themes ?? [],
-    looks: CORE_PACK.looks ?? [],
-  };
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-3">
-      <h3 id={headingId} className="font-display text-lg font-bold">
-        Installed
-      </h3>
-      <ul className="flex flex-col divide-y divide-line border-y border-line">
-        <li className="flex flex-col gap-1 py-3">
-          <span className="font-semibold">ReportLog, built in</span>
-          <span className="text-sm text-ink-alt">{counts(builtIn)}</span>
-        </li>
-        {packs.data?.packs.map((p) => (
-          <PackRow key={p.id} pack={p} />
-        ))}
-      </ul>
+    <>
+      {packs.data?.packs.map((p) => (
+        <PackRow key={p.id} pack={p} />
+      ))}
       {packs.isError ? (
         <Note tone="serious" title="The installed packs could not be listed.">
           {packs.error instanceof ApiRequestError ? packs.error.message : null}
         </Note>
       ) : null}
-    </section>
+    </>
   );
 }
 
@@ -76,16 +61,14 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
     }
   };
   return (
-    <li className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between">
-      <div className="flex flex-col gap-1">
-        <span className="font-semibold">
-          {pack.label} <span className="font-mono text-sm">{pack.version}</span>
-        </span>
-        <span className="text-sm text-ink-alt">
+    <div className="packrow">
+      <div>
+        <b>{pack.label}</b> <span className="pill">{pack.version}</span>
+        <p>
           {counts(pack)} · installed {day(pack.installed_at)} by{' '}
-          <span className="font-mono">{pack.installed_by}</span>
-        </span>
-        {pack.in_use ? <span className="text-sm">{pack.in_use}</span> : null}
+          <span className="mono">{pack.installed_by}</span>
+        </p>
+        {pack.in_use ? <p>{pack.in_use}</p> : null}
         {error ? (
           <Note tone="serious" title="Not removed">
             {error}
@@ -101,6 +84,6 @@ function PackRow({ pack }: { pack: InstalledLookPack }) {
       >
         Remove
       </Btn>
-    </li>
+    </div>
   );
 }

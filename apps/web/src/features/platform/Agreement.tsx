@@ -23,7 +23,6 @@ import { Panel } from '@/mockup/PanelBox.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
 import { Page } from '../../components/ui/page.tsx';
-import { ScrollX } from '../../components/ui/scroll-x.tsx';
 import { Textarea } from '@/mockup/FieldWired.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -120,11 +119,9 @@ export function AgreementAdminPage({
       {tabs}
       {state.data?.current ? (
         <Panel heading="The published version">
-          <p className="font-mono text-sm text-muted">
-            Version {String(state.data.current.version)}
-          </p>
-          <div className="rounded-control border border-line bg-paper p-5 text-ink">
-            <p className="whitespace-pre-wrap">{state.data.current.body}</p>
+          <p className="m">Version {String(state.data.current.version)}</p>
+          <div className="paper">
+            <p style={{ whiteSpace: 'pre-wrap' }}>{state.data.current.body}</p>
           </div>
         </Panel>
       ) : (
@@ -136,7 +133,7 @@ export function AgreementAdminPage({
       )}
       <Panel heading="The new version">
         <form
-          className="flex flex-col gap-3"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             publish.mutate();
@@ -158,36 +155,41 @@ export function AgreementAdminPage({
           </Field>
           {publish.isError ? <Note tone="serious">{publish.error.message}</Note> : null}
           {publish.isSuccess ? <Note tone="done">Published.</Note> : null}
-          <Btn type="submit" className="self-start" disabled={publish.isPending}>
-            Publish this version
-          </Btn>
+          <div className="acts">
+            <Btn type="submit" disabled={publish.isPending}>
+              Publish this version
+            </Btn>
+          </div>
         </form>
       </Panel>
       <Panel heading="Who accepted">
         {accepted.data?.acceptances.length ? (
-          <ScrollX label="Who accepted">
-            <table className="data-table">
-              <caption className="sr-only">Who accepted</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Who</th>
-                  <th scope="col">Version</th>
-                  <th scope="col">When</th>
-                </tr>
-              </thead>
-              <tbody>
-                {accepted.data.acceptances.map((a) => (
-                  <tr key={`${a.user_email}-${String(a.version)}-${a.accepted_at}`}>
-                    <td className="break-all">{a.user_email}</td>
-                    <td>{String(a.version)}</td>
-                    <td>{new Date(a.accepted_at).toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </ScrollX>
+          <div className="rows tbl" role="table" aria-label="Who accepted">
+            <div className="row head" role="row">
+              <span role="columnheader">Who</span>
+              <span role="columnheader">Version</span>
+              <span role="columnheader">When</span>
+            </div>
+            {accepted.data.acceptances.map((a) => (
+              <div
+                className="row"
+                role="row"
+                key={`${a.user_email}-${String(a.version)}-${a.accepted_at}`}
+              >
+                <span data-l="Who" role="cell">
+                  {a.user_email}
+                </span>
+                <span data-l="Version" role="cell">
+                  {String(a.version)}
+                </span>
+                <span data-l="When" role="cell">
+                  {new Date(a.accepted_at).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
         ) : (
-          <p className="text-ink-alt">Nobody yet.</p>
+          <p className="muted">Nobody yet.</p>
         )}
       </Panel>
     </StaffPage>

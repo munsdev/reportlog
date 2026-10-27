@@ -29,11 +29,10 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
 import { Btn } from '@/mockup/StaffBtn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { useSite } from '@/components/ui/site.tsx';
 import { ApiRequestError, call, pathFor } from '@/lib/api.ts';
 import { useMe } from '../identity/session.ts';
-import { HeaderBackgroundEditor, ToggleChip } from './header-background/HeaderBackgroundEditor.tsx';
+import { HeaderBackgroundEditor } from './header-background/HeaderBackgroundEditor.tsx';
 import { downscaleToJpeg } from './header-background/image.ts';
 import { useKit } from './header-background/kits.ts';
 import type { Kit } from './header-background/scene.ts';
@@ -177,92 +176,101 @@ export function LookOptionsPanel() {
   const isOwner = me?.signedIn === true && me.roles.includes('owner');
   if (!isOwner) {
     return (
-      <Panel heading="Header background, motion and grounds" headingLevel={2}>
-        <p>
+      <section className="settings-row" aria-labelledby="look-options">
+        <h2 id="look-options">Header background, motion and grounds</h2>
+        <p className="muted">
           Only the owner can change these. Right now sections{' '}
           {d.stored.zones === 'alternate' ? 'alternate' : 'keep one ground'}, and decoration{' '}
           {d.stored.motion === 'on' ? 'drifts as the page scrolls' : 'stays still'}.
         </p>
-      </Panel>
+      </section>
     );
   }
   const { draft, setDraft, dirty, kit, message, save, upload, remove } = d;
   return (
-    <div className="flex flex-col gap-8">
-      <Panel heading="Header background" headingLevel={2}>
-        <p className="text-muted">
-          Drawn behind headlines and section bands. Never behind form questions or report text.
+    <>
+      <section className="settings-row" aria-labelledby="look-bg">
+        <h2 id="look-bg">Header background</h2>
+        <p className="muted">
+          Drawn behind headlines and section bands. Never behind form questions or report text. The
+          same controls are in the page editor.
         </p>
-        <HeaderBackgroundEditor
-          header={draft.header}
-          onChange={(header) => {
-            setDraft({ ...draft, header });
-          }}
-          kit={kit}
-          onPickImage={(file) => {
-            d.setMessage(undefined);
-            upload.mutate(file);
-          }}
-          onRemoveImage={() => {
-            d.setMessage(undefined);
-            remove.mutate();
-          }}
-          imageMessage={message}
-          busy={upload.isPending || remove.isPending}
-        />
-      </Panel>
+        <div style={{ maxWidth: 560 }}>
+          <HeaderBackgroundEditor
+            header={draft.header}
+            onChange={(header) => {
+              setDraft({ ...draft, header });
+            }}
+            kit={kit}
+            onPickImage={(file) => {
+              d.setMessage(undefined);
+              upload.mutate(file);
+            }}
+            onRemoveImage={() => {
+              d.setMessage(undefined);
+              remove.mutate();
+            }}
+            imageMessage={message}
+            busy={upload.isPending || remove.isPending}
+          />
+        </div>
+      </section>
 
-      <Panel heading="Motion" headingLevel={2}>
-        <p className="text-muted">
+      <section className="settings-row" aria-labelledby="look-motion">
+        <h2 id="look-motion">Motion</h2>
+        <p className="muted">
           Decoration layers drift at different speeds as the page scrolls. Visitors whose device
           asks for reduced motion never see it, whatever this is set to.
         </p>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Motion">
+        <div className="seg" role="group" aria-labelledby="look-motion">
           {(
             [
               ['on', 'Parallax'],
               ['off', 'Still'],
             ] as const
           ).map(([value, label]) => (
-            <ToggleChip
+            <button
               key={value}
-              pressed={draft.motion === value}
+              type="button"
+              aria-pressed={draft.motion === value}
               onClick={() => {
                 setDraft({ ...draft, motion: value });
               }}
             >
               {label}
-            </ToggleChip>
+            </button>
           ))}
         </div>
-      </Panel>
+      </section>
 
-      <Panel heading="Section grounds" headingLevel={2}>
-        <p className="text-muted">
+      <section className="settings-row" aria-labelledby="look-zones">
+        <h2 id="look-zones">Section grounds</h2>
+        <p className="muted">
           Alternate dark and light bands on the front page and Get involved, or keep one ground
           throughout.
         </p>
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Section grounds">
+        <div className="seg" role="group" aria-labelledby="look-zones">
           {(
             [
               ['alternate', 'Alternate'],
               ['single', 'One ground'],
             ] as const
           ).map(([value, label]) => (
-            <ToggleChip
+            <button
               key={value}
-              pressed={draft.zones === value}
+              type="button"
+              aria-pressed={draft.zones === value}
               onClick={() => {
                 setDraft({ ...draft, zones: value });
               }}
             >
               {label}
-            </ToggleChip>
+            </button>
           ))}
         </div>
-      </Panel>
+      </section>
 
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="acts">
         <Btn
           busy={save.isPending}
           busyLabel="Saving…"
@@ -284,9 +292,7 @@ export function LookOptionsPanel() {
           {save.error.message}
         </Note>
       ) : null}
-      {save.isSuccess && !dirty ? (
-        <Note tone="done" title="Saved. The site now shows it." />
-      ) : null}
-    </div>
+      {save.isSuccess && !dirty ? <Note tone="done" title="Saved. The site now shows it." /> : null}
+    </>
   );
 }

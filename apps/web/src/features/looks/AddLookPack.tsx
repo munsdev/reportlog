@@ -103,10 +103,8 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
   };
 
   return (
-    <section aria-labelledby={headingId} className="flex flex-col gap-4">
-      <h3 id={headingId} className="font-display text-lg font-bold">
-        Add looks from a file
-      </h3>
+    <section aria-labelledby={headingId} className="form-stack" style={{ maxWidth: 'none' }}>
+      <h3 id={headingId}>Add looks from a file</h3>
       <FileDrop
         accept=".zip,application/zip"
         buttonLabel={state.at === 'choosing' ? 'Choose a .zip' : 'Choose another .zip'}
@@ -117,7 +115,7 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
       />
 
       {state.at === 'checking' ? (
-        <p role="status" className="text-ink-alt">
+        <p role="status" className="muted">
           Checking {state.name}…
         </p>
       ) : null}
@@ -126,9 +124,11 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
         <Note tone="serious" title={`${state.name} cannot be installed`}>
           <p>Nothing was installed. The check found:</p>
           {groupProblems(state.problems).map((g) => (
-            <div key={g.title} className="mt-2">
-              <p className="font-semibold text-ink">{g.title}</p>
-              <ul className="list-disc pl-5">
+            <div key={g.title}>
+              <p>
+                <b>{g.title}</b>
+              </p>
+              <ul>
                 {g.items.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -141,7 +141,7 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
       {state.at === 'failed' ? <Note tone="serious" title={state.message} /> : null}
 
       {state.at === 'ready' || state.at === 'installing' ? (
-        <div className="flex flex-col gap-4">
+        <div className="form-stack" style={{ maxWidth: 'none' }}>
           <p role="status">
             <strong>
               {state.pack.label} {state.pack.version}
@@ -156,7 +156,7 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
           </p>
           <PackContents pack={state.pack} />
           {state.error ? <Note tone="serious" title={state.error} /> : null}
-          <div>
+          <div className="acts">
             <Btn
               busy={state.at === 'installing'}
               busyLabel="Installing…"
@@ -190,48 +190,45 @@ export function PackContents({ pack }: { pack: LookPackSummary }) {
   const palette = (id: string) => pack.palettes.find((p) => p.id === id);
   const theme = (id: string) => pack.themes.find((t) => t.id === id);
   return (
-    <div className="flex flex-col gap-3">
+    <div className="form-stack" style={{ maxWidth: 'none' }}>
       {pack.looks.length ? (
-        <ul aria-label="Looks" className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div className="packrow" aria-label="Looks" role="list">
           {pack.looks.map((l) => (
-            <li
-              key={l.id}
-              className="flex flex-col gap-2 rounded-card border-(length:--rl-border-main) border-ink-alt bg-surface p-3"
-            >
-              <span className="font-semibold">{l.label}</span>
-              <span className="text-sm text-ink-alt">
+            <div key={l.id} role="listitem">
+              <b>{l.label}</b>
+              <p>
                 {palette(l.palette)?.label ?? l.palette} with {theme(l.theme)?.label ?? l.theme}
-              </span>
-            </li>
+              </p>
+            </div>
           ))}
-        </ul>
+        </div>
       ) : null}
-      <dl className="grid gap-1 text-sm sm:grid-cols-[max-content_1fr] sm:gap-x-4">
+      <dl className="dl">
         {pack.palettes.length ? (
-          <>
-            <dt className="label-face">Palettes</dt>
+          <div>
+            <dt>Palettes</dt>
             <dd>
               {pack.palettes.map((p) => `${p.label} (${p.dark ? 'dark' : 'light'})`).join(', ')}
             </dd>
-          </>
+          </div>
         ) : null}
         {pack.themes.length ? (
-          <>
-            <dt className="label-face">Themes</dt>
+          <div>
+            <dt>Themes</dt>
             <dd>{pack.themes.map((t) => t.label).join(', ')}</dd>
-          </>
+          </div>
         ) : null}
         {pack.fonts.length ? (
-          <>
-            <dt className="label-face">Fonts</dt>
+          <div>
+            <dt>Fonts</dt>
             <dd>{pack.fonts.join(', ')}</dd>
-          </>
+          </div>
         ) : null}
         {pack.author ? (
-          <>
-            <dt className="label-face">By</dt>
+          <div>
+            <dt>By</dt>
             <dd>{pack.author}</dd>
-          </>
+          </div>
         ) : null}
       </dl>
     </div>

@@ -10,31 +10,13 @@
  * linked on every page, and its card says which pack it came with.
  */
 import type { Look } from '@reportlog/contracts';
-import { useId } from 'react';
 import { St } from '@/mockup/St.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { Select } from '@/mockup/FieldWired.tsx';
-import { cn } from '@/lib/utils.ts';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';
-
-function Strip({ palette, theme }: { palette: string; theme: string }) {
-  return (
-    <span
-      data-palette={palette}
-      data-theme={theme}
-      aria-hidden="true"
-      className="flex h-7 overflow-hidden rounded-control border border-ink-alt"
-    >
-      <span className="flex-[2] bg-deep" />
-      <span className="flex-[3] bg-paper" />
-      <span className="flex-1 bg-action" />
-      <span className="flex-1 bg-surface" />
-    </span>
-  );
-}
 
 export interface LookChooserProps {
   value: Look;
@@ -43,13 +25,6 @@ export interface LookChooserProps {
   current?: Look | undefined;
   /** What may be chosen: the built-in pack unless the caller adds installed ones. */
   catalogue?: LookCatalogue | undefined;
-  /**
-   * Only the named looks, as one row that scrolls sideways, for a bar pinned
-   * to the bottom of a small screen. The same radio group and the same
-   * cards, not a second copy of the chooser's logic; the two parts picked
-   * separately stay in the full chooser.
-   */
-  compact?: boolean | undefined;
 }
 
 export function LookChooser({
@@ -57,9 +32,7 @@ export function LookChooser({
   onChange,
   current,
   catalogue = BUILT_IN_CATALOGUE,
-  compact = false,
 }: LookChooserProps) {
-  const headingId = useId();
   const chosen = namedLookFor(value, catalogue);
   const { looks: LOOKS, palettes: PALETTES, themes: THEMES } = catalogue;
   const palettes = PALETTES.length;
@@ -68,102 +41,67 @@ export function LookChooser({
     const look = LOOKS.find((l) => l.id === id);
     if (look) onChange({ palette: look.palette, theme: look.theme });
   };
-  const cards = LOOKS.map((l) => {
-    const onSite = current ? sameLook(current, l) : false;
-    return (
-      <RadioOption
-        key={l.id}
-        value={l.id}
-        className={cn('items-start px-3', compact && 'w-40 shrink-0 snap-start')}
-        label={
-          <span className="flex flex-col gap-2">
-            <Strip palette={l.palette} theme={l.theme} />
-            <span className="flex flex-wrap items-center gap-2">
-              <span>{l.label}</span>
-              {onSite ? <St tone="tag">On the site</St> : null}
-            </span>
-            {l.pack ? <span className="text-sm text-ink-alt">From {l.pack}</span> : null}
-          </span>
-        }
-      />
-    );
-  });
-
-  if (compact) {
-    // Named on its own, because the full chooser's group is on the page too.
-    return (
-      <RadioGroup
-        aria-label="Looks, quick pick"
-        orientation="horizontal"
-        value={chosen?.id ?? ''}
-        onValueChange={choose}
-        className="flex snap-x flex-row gap-2 overflow-x-auto pb-1"
-      >
-        {cards}
-      </RadioGroup>
-    );
-  }
+  const palette = PALETTES.find((p) => p.id === value.palette);
+  const theme = THEMES.find((t) => t.id === value.theme);
 
   return (
-    <div className="flex flex-col gap-8">
-      <section aria-labelledby={headingId} className="flex flex-col gap-3">
-        <h2 id={headingId} className="font-display text-xl font-bold">
-          Looks
-        </h2>
-        <RadioGroup
-          aria-labelledby={headingId}
-          value={chosen?.id ?? ''}
-          onValueChange={choose}
-          className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,11rem),1fr))] gap-3"
-        >
-          {cards}
-        </RadioGroup>
-      </section>
-
-      <section className="flex flex-col gap-3 border-t border-ink-alt pt-4">
-        <h2 className="font-display text-xl font-bold">Or choose the two parts yourself</h2>
-        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4">
-          <Field>
-            <Label>Palette, the colours</Label>
-            <Select
-              value={value.palette}
-              onChange={(e) => {
-                onChange({ ...value, palette: e.target.value });
-              }}
-            >
-              {PALETTES.map((p) => (
-                <option key={p.id} value={p.id} title={p.description}>
-                  {p.label} · {p.dark ? 'dark' : 'light'}
-                </option>
-              ))}
-            </Select>
-            <FieldDescription>
-              {PALETTES.find((p) => p.id === value.palette)?.description ??
-                `${String(palettes)} palettes.`}{' '}
-              Every one passes the contrast check.
-            </FieldDescription>
-          </Field>
-          <Field>
-            <Label>Theme, the type and shapes</Label>
-            <Select
-              value={value.theme}
-              onChange={(e) => {
-                onChange({ ...value, theme: e.target.value });
-              }}
-            >
-              {THEMES.map((t) => (
-                <option key={t.id} value={t.id} title={t.description}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
-            <FieldDescription>
-              {THEMES.find((t) => t.id === value.theme)?.description ?? `${String(themes)} themes.`}{' '}
-              Any theme works with any palette.
-            </FieldDescription>
-          </Field>
-        </div>
-      </section>
-    </div>
+    <>
+      <div className="opt-grid">
+        <Field>
+          <Label>Palette</Label>
+          <Select
+            value={value.palette}
+            onChange={(e) => {
+              onChange({ ...value, palette: e.target.value });
+            }}
+          >
+            {PALETTES.map((p) => (
+              <option key={p.id} value={p.id} title={p.description}>
+                {p.label} · {p.dark ? 'dark' : 'light'}
+              </option>
+            ))}
+          </Select>
+          <FieldDescription>
+            {palette?.description ?? `${String(palettes)} palettes.`} Every one passes the contrast
+            check.
+          </FieldDescription>
+        </Field>
+        <Field>
+          <Label>Theme</Label>
+          <Select
+            value={value.theme}
+            onChange={(e) => {
+              onChange({ ...value, theme: e.target.value });
+            }}
+          >
+            {THEMES.map((t) => (
+              <option key={t.id} value={t.id} title={t.description}>
+                {t.label}
+              </option>
+            ))}
+          </Select>
+          <FieldDescription>
+            {theme?.description ?? `${String(themes)} themes.`} Any theme works with any palette.
+          </FieldDescription>
+        </Field>
+      </div>
+      <RadioGroup aria-label="Named looks" value={chosen?.id ?? ''} onValueChange={choose}>
+        {LOOKS.map((l) => {
+          const onSite = current ? sameLook(current, l) : false;
+          return (
+            <RadioOption
+              key={l.id}
+              value={l.id}
+              label={
+                <>
+                  {l.label} {onSite ? <St tone="tag">On the site</St> : null}
+                </>
+              }
+              hint={l.pack ? `From ${l.pack}` : undefined}
+            />
+          );
+        })}
+      </RadioGroup>
+    </>
   );
 }
