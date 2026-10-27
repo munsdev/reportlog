@@ -13,48 +13,32 @@
  */
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Card } from '../../components/ui/card.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
-import { ProseSection } from '../../components/ui/prose-section.tsx';
 import { plainSiteName, useSite } from '../../components/ui/site.tsx';
 
-/**
- * One section of a guide. A numbered title ("1 · Make the draft") puts its
- * number in the eyebrow above the heading, so the steps read as steps.
- */
+/** One section of a guide: the mock-up's prose heading, with an anchor for the contents. */
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
-  const step = /^(\d+) · (.*)$/.exec(title);
   return (
-    <ProseSection
-      id={id}
-      {...(step ? { label: `Step ${step[1] ?? ''}` } : {})}
-      title={step?.[2] ?? title}
-    >
+    <>
+      <h2 id={id}>{title}</h2>
       {children}
-    </ProseSection>
+    </>
   );
 }
 
 /** A "Why" that folds out: the reason behind a rule, for whoever wants it. */
 function Why({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <details className="group">
-      <summary className="flex min-h-11 cursor-pointer items-center label-face text-sm">
-        {title}
-      </summary>
-      <Card variant="quiet" className="mt-2">
-        {children}
-      </Card>
+    <details className="tech">
+      <summary>{title}</summary>
+      <div className="in">{children}</div>
     </details>
   );
 }
 
-const linkClass = 'underline underline-offset-2';
-
 /**
- * A guide's frame: its contents at the top, and on a desktop in a left
- * column of 14rem that does not follow the page down (the old sticky strip
- * stays dropped, decision 28). Printed, the guide alone.
+ * A guide's frame: the text, and beside it the contents (the mock-up's
+ * `.two-col`, with the contents in an `.aside` card). Printed, the guide alone.
  */
 function Guide({
   title,
@@ -70,25 +54,23 @@ function Guide({
   const siteName = plainSiteName(useSite().data);
   return (
     <StaffPage eyebrow={`${siteName} · Guides`} title={title} lede={lede}>
-      <div className="layout-split grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="two-col">
+        <div className="prose">{children}</div>
         {/* Not numbered by the list: the steps carry their own numbers. */}
-        <nav aria-label="Contents" className="print:hidden lg:order-2">
-          <Card variant="quiet" heading="Contents" headingLevel={2}>
-            <ul className="flex flex-col">
+        <aside className="aside print:hidden">
+          <nav className="card plain" aria-label="Contents">
+            <h3>Contents</h3>
+            <ol className="steps" style={{ gap: 6 }}>
               {contents.map((c) => (
                 <li key={c.id}>
-                  <a
-                    href={`#${c.id}`}
-                    className="inline-flex min-h-11 items-center underline underline-offset-2"
-                  >
-                    {c.title}
-                  </a>
+                  <span>
+                    <a href={`#${c.id}`}>{c.title}</a>
+                  </span>
                 </li>
               ))}
-            </ul>
-          </Card>
-        </nav>
-        <div className="flex max-w-prose flex-col gap-8">{children}</div>
+            </ol>
+          </nav>
+        </aside>
       </div>
     </StaffPage>
   );
@@ -102,39 +84,23 @@ export function GuidesIndex() {
       title="Guides"
       lede="How to run this archive once it is installed: making a logbook, deciding who reviews, and checking it all works."
     >
-      <ul className="m-0 grid list-none grid-cols-[repeat(auto-fill,minmax(16rem,1fr))] gap-3.5 p-0">
-        <li>
-          <Card>
-            <h2 className="font-display text-xl font-bold">
-              <Link to="/docs/first-logbook" className={linkClass}>
-                Your first logbook
-              </Link>
-            </h2>
-            <p>
-              Building the questions, the one decision that cannot be undone, appointing somebody to
-              review, and filing a report through the whole path.
-            </p>
-          </Card>
-        </li>
-        <li>
-          <Card>
-            <h2 className="font-display text-xl font-bold">
-              <Link to="/docs/checking" className={linkClass}>
-                Checking it actually works
-              </Link>
-            </h2>
-            <p>
-              What to try in a browser on every new deployment, and how anybody checks a report.
-            </p>
-          </Card>
-        </li>
-      </ul>
-      <Card variant="quiet">
-        <p className="text-sm">
-          Installing the software on a server is described in the deployment’s own runbook, which
-          ships with the deployment files rather than on this site.
-        </p>
-      </Card>
+      <div className="areas">
+        <Link className="area-card" to="/docs/first-logbook">
+          <h3>Your first logbook</h3>
+          <p>
+            Building the questions, the one decision that cannot be undone, appointing somebody to
+            review, and filing a report through the whole path.
+          </p>
+        </Link>
+        <Link className="area-card" to="/docs/checking">
+          <h3>Checking it actually works</h3>
+          <p>What to try in a browser on every new deployment, and how anybody checks a report.</p>
+        </Link>
+      </div>
+      <p className="m">
+        Installing the software on a server is described in the deployment’s own runbook, which
+        ships with the deployment files rather than on this site.
+      </p>
     </StaffPage>
   );
 }
@@ -166,7 +132,7 @@ export function FirstLogbookGuide() {
           built from the same kinds of question. The choice between them is one question:{' '}
           <strong>does this need to be permanent and checkable?</strong>
         </p>
-        <ul className="list-disc pl-6">
+        <ul>
           <li>
             A <strong>logbook</strong> seals every report, chains it to the one before, never lets
             anything be changed or deleted afterwards, asks every reporter to agree to what the form
@@ -177,11 +143,7 @@ export function FirstLogbookGuide() {
             half of what it collects after a while, it is reviewed in batches, and it publishes
             counts rather than anything a person wrote. It is for things that do not need protecting
             from silent change: links to published material, a tally of how a day went, a contact
-            form. Lists are made under{' '}
-            <Link to="/lists" className={linkClass}>
-              Lists
-            </Link>
-            .
+            form. Lists are made under <Link to="/lists">Lists</Link>.
           </li>
         </ul>
         <Why title="Why a list is not a logbook with the guarantees turned off">
@@ -196,13 +158,9 @@ export function FirstLogbookGuide() {
 
       <Section id="create" title="1 · Make the draft">
         <p>
-          Sign in, open{' '}
-          <Link to="/logbooks" className={linkClass}>
-            Logbooks
-          </Link>
-          , and make one. It asks for two things.
+          Sign in, open <Link to="/logbooks">Logbooks</Link>, and make one. It asks for two things.
         </p>
-        <ul className="list-disc pl-6">
+        <ul>
           <li>
             <strong>A title.</strong> Reporters see it. A place, a period, a subject: whatever tells
             somebody they are filing to the right one. “Munich, November 2026” is the shape.
@@ -230,7 +188,7 @@ export function FirstLogbookGuide() {
           of a report.
         </p>
         <p>Three things people get wrong:</p>
-        <ul className="list-disc pl-6">
+        <ul>
           <li>
             <strong>
               Do not ask for contact details, consent, or whether it may be published.
@@ -282,11 +240,7 @@ export function FirstLogbookGuide() {
           A logbook can be given an opening and a closing time, and closed or reopened by hand.
           Closing it stops new reports; everything already filed stays published and checkable.
           Launching puts it on the front page as a button wearing its own title, which you can
-          rearrange or hide under{' '}
-          <Link to="/logbooks/front-page" className={linkClass}>
-            Front page
-          </Link>
-          .
+          rearrange or hide under <Link to="/logbooks/front-page">Front page</Link>.
         </p>
       </Section>
 
@@ -294,37 +248,34 @@ export function FirstLogbookGuide() {
         <p>
           <strong>Nothing is public until a moderator approves it.</strong> There is no automatic
           publishing and there never will be. A deployment that expects reports should have somebody
-          whose job that is. Appoint them under{' '}
-          <Link to="/access" className={linkClass}>
-            Access
-          </Link>
-          : their email address and a role. They sign in with a one-time code sent to that address,
-          every time, so email has to work first, and then prove a second factor: an authenticator
-          app or a passkey. Until they have, they act with no role at all.
+          whose job that is. Appoint them under <Link to="/access">Access</Link>: their email
+          address and a role. They sign in with a one-time code sent to that address, every time, so
+          email has to work first, and then prove a second factor: an authenticator app or a
+          passkey. Until they have, they act with no role at all.
         </p>
-        <table className="w-full border-collapse text-left text-sm">
+        <table>
           <thead>
-            <tr className="border-b border-line">
-              <th className="py-2 pr-4">Role</th>
-              <th className="py-2">Can appoint</th>
+            <tr>
+              <th>Role</th>
+              <th>Can appoint</th>
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-line">
-              <td className="py-2 pr-4">Moderator</td>
-              <td className="py-2">Nobody</td>
-            </tr>
-            <tr className="border-b border-line">
-              <td className="py-2 pr-4">Access Manager</td>
-              <td className="py-2">Moderators, not other Access Managers</td>
-            </tr>
-            <tr className="border-b border-line">
-              <td className="py-2 pr-4">Administrator</td>
-              <td className="py-2">Moderators and Access Managers, not other administrators</td>
+            <tr>
+              <td>Moderator</td>
+              <td>Nobody</td>
             </tr>
             <tr>
-              <td className="py-2 pr-4">Owner</td>
-              <td className="py-2">
+              <td>Access Manager</td>
+              <td>Moderators, not other Access Managers</td>
+            </tr>
+            <tr>
+              <td>Administrator</td>
+              <td>Moderators and Access Managers, not other administrators</td>
+            </tr>
+            <tr>
+              <td>Owner</td>
+              <td>
                 All of those, administrators and journalists. There is exactly one owner, and the
                 seat is only ever handed over, never granted.
               </td>
@@ -370,18 +321,15 @@ export function CheckingGuide() {
       ]}
     >
       <Section id="browser" title="In a browser">
-        <ol className="list-decimal pl-6">
+        <ol>
           <li>
             If the site password is on, the password screen appears, and the password gets you past
             it.
           </li>
           <li>Your deployment’s own name, not “ReportLog”, is in the browser tab.</li>
           <li>
-            You can{' '}
-            <Link to="/access/sign-in" className={linkClass}>
-              sign in
-            </Link>{' '}
-            with a one-time code sent by email, and then your second factor.
+            You can <Link to="/access/sign-in">sign in</Link> with a one-time code sent by email,
+            and then your second factor.
           </li>
           <li>
             You can build a logbook, launch it, file a test report, and, if the form asks for an

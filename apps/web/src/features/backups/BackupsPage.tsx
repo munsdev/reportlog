@@ -16,13 +16,14 @@
 import { copyDownloadPath, getCopies, startCopy } from '@reportlog/contracts';
 import type { CopiesState, CopyFile } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 
 const copiesQuery = queryOptions({
@@ -33,40 +34,31 @@ const copiesQuery = queryOptions({
   refetchInterval: (q) => (q.state.data?.running ? 2000 : false),
 });
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <Card heading={title}>{children}</Card>;
-}
-
 /** The restore command, to copy and type on the server. Nothing on this page runs it. */
 function RestoreCommand({ command }: { command: string }) {
   const [said, setSaid] = useState<string | null>(null);
   return (
-    <div className="flex flex-col gap-2">
-      <pre className="overflow-x-auto rounded-control bg-paper-alt p-3 font-mono text-sm">
-        {command}
-      </pre>
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={() => {
-            navigator.clipboard.writeText(command).then(
-              () => {
-                setSaid('Copied.');
-              },
-              () => {
-                setSaid('This browser would not copy it. Select the command instead.');
-              },
-            );
-          }}
-        >
-          Copy the command
-        </Button>
-        <span role="status" className="text-sm text-ink-alt">
-          {said}
-        </span>
-      </div>
-    </div>
+    <>
+      <div className="code">{command}</div>
+      <Btn
+        kind="ghost"
+        onClick={() => {
+          navigator.clipboard.writeText(command).then(
+            () => {
+              setSaid('Copied.');
+            },
+            () => {
+              setSaid('This browser would not copy it. Select the command instead.');
+            },
+          );
+        }}
+      >
+        Copy the command
+      </Btn>
+      <span role="status" className="m">
+        {said}
+      </span>
+    </>
   );
 }
 
@@ -87,30 +79,23 @@ function Files({
 }) {
   if (!files.length) return <p>{none}</p>;
   return (
-    <ul className="flex flex-col gap-2">
-      {files.map((f) => (
-        <li
-          key={f.name}
-          className="flex flex-col gap-2 border-b border-line pb-2 last:border-0 sm:flex-row sm:items-baseline sm:justify-between"
-        >
-          <span>
-            <span className="font-mono break-all">{f.name}</span>{' '}
-            <span className="font-mono text-sm text-ink-alt">
-              {size(f.bytes)} · {when(f.made_at)}
-            </span>
-          </span>
-          <span className="flex flex-col gap-1 sm:items-end">
-            {/* A step-up first (plan E, E3): the server refuses the file without one. */}
-            <StepUpDownload className="underline" href={copyDownloadPath(kind, f.name)}>
-              Download <span className="sr-only">{f.name}</span>
-            </StepUpDownload>
-            <span className="text-xs text-ink-alt">
-              Downloading is recorded in Who granted what before the file leaves.
-            </span>
-          </span>
-        </li>
-      ))}
-    </ul>
+    <Tbl
+      cols={['File', 'Size', '']}
+      widths="1.5fr 1fr auto"
+      rows={files.map((f) => ({
+        key: f.name,
+        cells: [
+          <>
+            {f.name} <span className="m">{when(f.made_at)}</span>
+          </>,
+          size(f.bytes),
+          // A step-up first (plan E, E3): the server refuses the file without one.
+          <StepUpDownload className="btn sm flat" href={copyDownloadPath(kind, f.name)}>
+            Download <span className="sr-only">{f.name}</span>
+          </StepUpDownload>,
+        ],
+      }))}
+    />
   );
 }
 
@@ -124,21 +109,12 @@ function Running({ state }: { state: CopiesState }) {
     );
   }
   if (!state.last) return null;
+  const what = state.last.kind === 'backup' ? 'backup' : 'export';
   return (
-    <Alert
-      tone={state.last.ok ? 'done' : 'serious'}
-      title={
-        state.last.ok
-          ? state.last.kind === 'backup'
-            ? 'The backup is ready'
-            : 'The export is ready'
-          : state.last.kind === 'backup'
-            ? 'The backup did not finish'
-            : 'The export did not finish'
-      }
-    >
+    <Note warn={!state.last.ok}>
+      <b>{state.last.ok ? `The ${what} is ready` : `The ${what} did not finish`}</b>{' '}
       {state.last.summary}
-    </Alert>
+    </Note>
   );
 }
 
@@ -158,23 +134,22 @@ export function BackupsPage() {
       lede="Copies of everything, for the owner only."
     >
       {query.isPending ? <p role="status">Loading…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      <ErrorLine error={query.error} />
       {query.data ? (
         <>
-          {query.data.unavailable ? <Alert tone="serious">{query.data.unavailable}</Alert> : null}
-          <Alert tone="note" title="Every download is recorded">
-            Each file holds every report, every account, and people’s contact details. Downloading
-            one is written to “Who granted what”, where the people who grant access can read it, and
-            it cannot be removed from there. Keep a downloaded copy as carefully as the server.
-          </Alert>
+          {query.data.unavailable ? <Note warn>{query.data.unavailable}</Note> : null}
+          <Note>
+            <b>Every download is recorded.</b> Each file holds every report, every account, and
+            people’s contact details. Downloading one is written to “Who granted what”, where the
+            people who grant access can read it, and it cannot be removed from there. Keep a
+            downloaded copy as carefully as the server.
+          </Note>
           <Running state={query.data} />
-          {go.error ? <Alert tone="serious">{go.error.message}</Alert> : null}
-          <Section title="Backups">
-            <p>
+          <ErrorLine error={go.error} />
+          <Panel title="Backups">
+            <p className="m">
               A backup is the database exactly as it is, for putting this site back after something
-              goes wrong. The server also takes one every night by itself.
-            </p>
-            <p>
+              goes wrong. The server also takes one every night by itself.{' '}
               {query.data.backup_health.state === 'none'
                 ? 'There is no backup on this server yet.'
                 : query.data.backup_health.state === 'stale'
@@ -185,12 +160,12 @@ export function BackupsPage() {
                 : ''}
             </p>
             {query.data.failure ? (
-              <Alert tone="serious" title="The last backup failed">
-                At {query.data.failure.step}: {query.data.failure.why}
-              </Alert>
+              <Note warn>
+                <b>The last backup failed</b> At {query.data.failure.step}: {query.data.failure.why}
+              </Note>
             ) : null}
-            <Button
-              className="self-start"
+            <Btn
+              kind="ink"
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
               }
@@ -199,29 +174,21 @@ export function BackupsPage() {
               }}
             >
               Take a backup now
-            </Button>
+            </Btn>
             <Files kind="backup" files={query.data.backups} none="No backups yet." />
             {query.data.restore_command ? (
-              <Card variant="quiet">
-                <h3 className="font-display text-lg font-bold">Nothing here restores.</h3>
-                <p>
-                  Restoring replaces everything in the database, so it is done on the server itself,
-                  never from this page. Whoever runs the server types this, with the file’s name in
-                  place of &lt;file&gt;:
+              <>
+                <p className="muted">
+                  Nothing here restores. Restoring replaces everything in the database, so it is
+                  done on the server itself, never from this page. Whoever runs the server types
+                  this, with the file’s name in place of &lt;file&gt;:
                 </p>
                 <RestoreCommand command={query.data.restore_command} />
-              </Card>
+              </>
             ) : null}
-          </Section>
-          <Section title="Archive exports">
-            <p>
-              An export is the archive in a form another server can take in: every report is
-              replayed there and checked against the fingerprint it has here. Use it to move the
-              archive. Lists are not in it, because their entries are erased on a timer.
-            </p>
-            <Button
-              className="self-start"
-              variant="secondary"
+          </Panel>
+          <Panel title="Archive exports">
+            <Btn
               disabled={
                 Boolean(query.data.running) || Boolean(query.data.unavailable) || go.isPending
               }
@@ -230,13 +197,15 @@ export function BackupsPage() {
               }}
             >
               Make an export
-            </Button>
-            <Files
-              kind="export"
-              files={query.data.exports}
-              none="No exports yet. The newest three are kept."
-            />
-          </Section>
+            </Btn>
+            <p className="muted">
+              An export is the archive in a form another server can take in: every report is
+              replayed there and checked against the fingerprint it has here. Use it to move the
+              archive. Lists are not in it, because their entries are erased on a timer. The newest
+              three are kept.
+            </p>
+            <Files kind="export" files={query.data.exports} none="No exports yet." />
+          </Panel>
         </>
       ) : null}
     </StaffPage>

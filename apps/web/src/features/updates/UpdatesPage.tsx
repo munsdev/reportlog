@@ -11,19 +11,14 @@ import { getUpdates, requestUpdate } from '@reportlog/contracts';
 import type { UpdatesView } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Dl } from '../../mockup/Dl.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
 
 const busy = (d: UpdatesView | undefined) => d?.waiting === true || d?.last?.state === 'running';
 
@@ -80,39 +75,52 @@ export function UpdatesPage() {
       lede="The software this site runs, and new versions of it."
     >
       {q.isPending ? <p role="status">Loading…</p> : null}
-      {q.isError && !d ? <Alert tone="serious">{q.error.message}</Alert> : null}
+      {q.isError && !d ? <ErrorLine error={q.error} /> : null}
       {d ? (
         <>
-          <Card heading="This site">
-            {/* A real button, drawn as plain text, so the eight presses are
-                reachable without a mouse and the linter has nothing to object to. */}
-            <button
-              type="button"
-              className="appearance-none bg-transparent p-0 text-left"
+          <Panel title="This site">
+            <Dl
+              items={[
+                [
+                  'Running',
+                  // A real button, drawn as plain text, so the eight presses are
+                  // reachable without a mouse and the linter has nothing to object to.
+                  <button
+                    type="button"
+                    style={{
+                      appearance: 'none',
+                      background: 'transparent',
+                      border: 0,
+                      padding: 0,
+                      font: 'inherit',
+                      color: 'inherit',
+                      textAlign: 'left',
+                      cursor: 'default',
+                    }}
+                    onClick={() => {
+                      setTaps((n) => n + 1);
+                    }}
+                  >
+                    {d.current_version ?? 'an unnumbered version'}
+                    {d.current ? ` (${d.current.slice(0, 12)})` : ''}, following{' '}
+                    <code>{d.ref || 'no branch set'}</code>
+                  </button>,
+                ],
+                ['Last checked', when(d.checked_at)],
+              ]}
+            />
+            {d.fetch_failed ? <p className="error">{d.fetch_failed}</p> : null}
+            <Btn
+              disabled={busy(d) || ask.isPending}
               onClick={() => {
-                setTaps((n) => n + 1);
+                ask.mutate({ action: 'check' });
               }}
             >
-              Running {d.current_version ?? 'an unnumbered version'}
-              {d.current ? ` (${d.current.slice(0, 12)})` : ''}, following{' '}
-              <code>{d.ref || 'no branch set'}</code>.
-            </button>
-            <p className="text-sm text-muted">Last checked: {when(d.checked_at)}</p>
-            {d.fetch_failed ? <Alert tone="serious">{d.fetch_failed}</Alert> : null}
-            <div>
-              <Button
-                variant="secondary"
-                disabled={busy(d) || ask.isPending}
-                onClick={() => {
-                  ask.mutate({ action: 'check' });
-                }}
-              >
-                Check now
-              </Button>
-            </div>
-          </Card>
+              Check now
+            </Btn>
+          </Panel>
 
-          <Card heading={offer ? 'An update is available' : 'Up to date'}>
+          <Panel title={offer ? 'An update is available' : 'Up to date'}>
             {offer ? (
               <>
                 <p>
@@ -120,33 +128,36 @@ export function UpdatesPage() {
                   {d.behind ? `, ${String(d.behind)} changes newer than this site` : ''}.
                 </p>
                 {d.releases.map((r) => (
-                  <div key={r.version} className="flex flex-col gap-1">
-                    <p className="font-semibold">
-                      {r.version} <span className="text-muted">{r.date}</span>
+                  <div key={r.version}>
+                    <p>
+                      <b>{r.version}</b> <span className="m">{r.date}</span>
                     </p>
-                    <p className="text-sm whitespace-pre-wrap">{r.notes}</p>
+                    <p className="m" style={{ whiteSpace: 'pre-wrap' }}>
+                      {r.notes}
+                    </p>
                   </div>
                 ))}
                 {!d.releases.length && d.commits.length ? (
-                  <ul className="list-disc pl-5 text-sm">
+                  <ul>
                     {d.commits.slice(0, 20).map((c) => (
                       <li key={c}>{c.replace(/^\S+\s/, '')}</li>
                     ))}
                   </ul>
                 ) : null}
-                <p className="text-sm text-muted">
+                <p className="m">
                   Installing takes a few minutes. The site stays up on the current version until the
                   new one is ready, and goes back to it by itself if the new one does not start.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
+                <div className="acts">
+                  <Btn
+                    kind="ink"
                     disabled={busy(d) || ask.isPending}
                     onClick={() => {
                       ask.mutate({ action: 'apply', sha: offer });
                     }}
                   >
                     Install the update
-                  </Button>
+                  </Btn>
                   {showTestBuild ? (
                     <TestBuildButtons disabled={busy(d) || ask.isPending} onAsk={setConfirming} />
                   ) : null}
@@ -156,50 +167,40 @@ export function UpdatesPage() {
               <>
                 <p>This site is running the newest version on its branch.</p>
                 {showTestBuild ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="acts">
                     <TestBuildButtons disabled={busy(d) || ask.isPending} onAsk={setConfirming} />
                   </div>
                 ) : null}
               </>
             )}
-          </Card>
-          <Dialog
+          </Panel>
+          <Modal
             open={confirming !== null}
-            onOpenChange={(open) => {
-              if (!open) setConfirming(null);
+            onClose={() => {
+              setConfirming(null);
             }}
-          >
-            <DialogContent>
-              {confirming === 'rollback' ? (
-                <DialogHeader>
-                  <DialogTitle>Go back to the previous version?</DialogTitle>
-                  <DialogDescription>
-                    The site goes back to the version it ran before the last update. The database
-                    keeps what the newer version added, which the older one ignores. This can be
-                    done once: to move forward again, install an update.
-                  </DialogDescription>
-                </DialogHeader>
-              ) : (
-                <DialogHeader>
-                  <DialogTitle>This is a TEST BUILD</DialogTitle>
-                  <DialogDescription>
-                    A test build is unfinished work. It may break things, and it may change the
-                    database in ways that the normal version cannot go back from. The Roll back
-                    button beside this one returns to the previous version. Only do this on a test
-                    server.
-                  </DialogDescription>
-                </DialogHeader>
-              )}
-              <DialogFooter>
-                <Button
-                  variant="secondary"
+            title={
+              confirming === 'rollback'
+                ? 'Go back to the previous version?'
+                : 'This is a TEST BUILD'
+            }
+            text={
+              confirming === 'rollback'
+                ? 'The site goes back to the version it ran before the last update. The database keeps what the newer version added, which the older one ignores. This can be done once: to move forward again, install an update.'
+                : 'A test build is unfinished work. It may break things, and it may change the database in ways that the normal version cannot go back from. The Roll back button beside this one returns to the previous version. Only do this on a test server.'
+            }
+            buttons={
+              <>
+                <Btn
+                  kind="ghost"
                   onClick={() => {
                     setConfirming(null);
                   }}
                 >
                   Cancel
-                </Button>
-                <Button
+                </Btn>
+                <Btn
+                  kind="ink"
                   disabled={busy(d) || ask.isPending}
                   onClick={() => {
                     const what = confirming;
@@ -209,26 +210,20 @@ export function UpdatesPage() {
                   }}
                 >
                   {confirming === 'rollback' ? 'Roll back' : 'Install the test build'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                </Btn>
+              </>
+            }
+          />
 
-          {ask.isError ? <Alert tone="serious">{ask.error.message}</Alert> : null}
-          {d.waiting ? (
-            <Alert tone="note">Asked. The server picks it up within a few seconds.</Alert>
-          ) : null}
+          <ErrorLine error={ask.error} />
+          {d.waiting ? <Note>Asked. The server picks it up within a few seconds.</Note> : null}
           {d.last ? (
-            <Card heading={`Last ${LAST_NAMES[d.last.action] ?? 'check'}`}>
+            <Panel title={`Last ${LAST_NAMES[d.last.action] ?? 'check'}`}>
               <p role="status">
                 {LAST_WORDS[d.last.state] ?? d.last.state} · {when(d.last.at)}
               </p>
-              {d.last.log ? (
-                <pre className="max-h-80 overflow-auto rounded-control bg-deep p-3 text-xs whitespace-pre-wrap text-on-deep">
-                  {d.last.log}
-                </pre>
-              ) : null}
-            </Card>
+              {d.last.log ? <div className="code">{d.last.log}</div> : null}
+            </Panel>
           ) : null}
         </>
       ) : null}
@@ -245,24 +240,22 @@ function TestBuildButtons({
 }) {
   return (
     <>
-      <Button
-        variant="secondary"
+      <Btn
         disabled={disabled}
         onClick={() => {
           onAsk('test');
         }}
       >
         Update to test build
-      </Button>
-      <Button
-        variant="secondary"
+      </Btn>
+      <Btn
         disabled={disabled}
         onClick={() => {
           onAsk('rollback');
         }}
       >
         Roll back
-      </Button>
+      </Btn>
     </>
   );
 }

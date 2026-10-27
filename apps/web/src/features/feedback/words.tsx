@@ -6,7 +6,7 @@ import {
   OPEN_FEEDBACK_STATUSES,
 } from '@reportlog/contracts';
 import type { FeedbackIssue, FeedbackStatus } from '@reportlog/contracts';
-import { Chip } from '../../components/ui/chip.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
 import { entryAt } from '../staff-nav/entries.ts';
 
 export const when = (iso: string) =>
@@ -14,11 +14,9 @@ export const when = (iso: string) =>
 
 const OPEN: readonly FeedbackStatus[] = OPEN_FEEDBACK_STATUSES;
 
-/** An issue's status as a chip: `open` while somebody still owes it something, `tag` after. */
+/** An issue's status as a chip: plain while somebody still owes it something, muted after. */
 export function StatusChip({ status }: { status: FeedbackStatus }) {
-  return (
-    <Chip tone={OPEN.includes(status) ? 'open' : 'tag'}>{FEEDBACK_STATUS_LABELS[status]}</Chip>
-  );
+  return <Chip kind={OPEN.includes(status) ? '' : 'off'}>{FEEDBACK_STATUS_LABELS[status]}</Chip>;
 }
 
 /**
@@ -34,19 +32,15 @@ export function pageNameFor(routeId: string): string | null {
   return entry.label;
 }
 
-/** One line under an issue's title: what it is, how bad, where it stands, who filed it. */
+/** The facts under an issue's title: who filed it, when, what kind, how bad. */
 export function IssueLine({ issue, author }: { issue: FeedbackIssue; author?: string }) {
   return (
-    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-alt">
-      <span className="font-mono text-ink">#{issue.id}</span>
-      <StatusChip status={issue.status} />
-      <span>
-        {FEEDBACK_TYPE_LABELS[issue.type]} · {FEEDBACK_SEVERITY_LABELS[issue.severity]} ·{' '}
-        {issue.mine ? 'you' : (author ?? issue.author)} · {when(issue.created_at)}
-        {issue.comment_count
-          ? ` · ${String(issue.comment_count)} comment${issue.comment_count === 1 ? '' : 's'}`
-          : ''}
-      </span>
+    <p className="m">
+      {issue.mine ? 'you' : (author ?? issue.author)} · {when(issue.created_at)} ·{' '}
+      {FEEDBACK_TYPE_LABELS[issue.type]} · {FEEDBACK_SEVERITY_LABELS[issue.severity]}
+      {issue.comment_count
+        ? ` · ${String(issue.comment_count)} comment${issue.comment_count === 1 ? '' : 's'}`
+        : ''}
     </p>
   );
 }

@@ -10,9 +10,8 @@
  */
 import { placeOptions } from '@reportlog/fields';
 import { useId, useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { Input } from '@/components/ui/input.tsx';
+import { SmBtn } from '../../mockup/SmBtn.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
 
 export const US_STATES = placeOptions({ scope: 'us' }).subdivisions;
 
@@ -36,16 +35,18 @@ export function StatesPicker({
     setFind(typed.trim());
   };
   return (
-    <fieldset className="flex flex-col gap-3" aria-describedby={`${id}-count`}>
-      <legend className="label-face mb-1 text-[0.8125rem]">States you cover</legend>
-      <div className="flex items-end gap-2">
-        <div className="flex min-w-0 grow flex-col gap-1">
-          <label htmlFor={`${id}-find`} className="text-sm text-ink-alt">
-            Find a state
-          </label>
-          <Input
+    <fieldset
+      style={{ display: 'grid', gap: 12, border: 0, padding: 0, margin: 0 }}
+      aria-describedby={`${id}-count`}
+    >
+      <legend className="lbl">States you cover</legend>
+      <div className="toolbar">
+        <div className="search grow">
+          <input
             id={`${id}-find`}
             type="search"
+            aria-label="Find a state"
+            placeholder="Find a state"
             enterKeyHint="search"
             value={typed}
             onChange={(e) => {
@@ -59,47 +60,47 @@ export function StatesPicker({
               }
             }}
           />
+          <SmBtn onClick={apply}>Find</SmBtn>
         </div>
-        <Button type="button" variant="secondary" onClick={apply}>
-          Find
-        </Button>
       </div>
-      <div
-        className="flex max-h-80 flex-col gap-2 overflow-y-auto rounded-card border border-ink-alt p-2"
-        role="group"
-        aria-label="States"
-      >
-        {find ? null : (
-          <CheckOption
-            id={`${id}-all`}
-            label="All states"
-            checked={all}
-            aria-invalid={invalid || undefined}
-            onCheckedChange={(on) => {
-              onChange(on === true ? US_STATES.map((s) => s.code) : []);
-            }}
-          />
-        )}
-        {shown.map((s) => (
-          <CheckOption
-            key={s.code}
-            id={`${id}-${s.code}`}
-            label={s.name}
-            checked={value.includes(s.code)}
-            onCheckedChange={(on) => {
-              onChange(
-                on === true
-                  ? US_STATES.map((x) => x.code).filter((c) => c === s.code || value.includes(c))
-                  : value.filter((x) => x !== s.code),
-              );
-            }}
-          />
-        ))}
+      <div role="group" aria-label="States">
+        <Choices>
+          {find ? null : (
+            <Choice
+              multi
+              name="st"
+              checked={all}
+              aria-invalid={invalid || undefined}
+              onChange={(e) => {
+                onChange(e.target.checked ? US_STATES.map((s) => s.code) : []);
+              }}
+            >
+              All states
+            </Choice>
+          )}
+          {shown.map((s) => (
+            <Choice
+              multi
+              key={s.code}
+              name="st"
+              checked={value.includes(s.code)}
+              onChange={(e) => {
+                onChange(
+                  e.target.checked
+                    ? US_STATES.map((x) => x.code).filter((c) => c === s.code || value.includes(c))
+                    : value.filter((x) => x !== s.code),
+                );
+              }}
+            >
+              {s.name}
+            </Choice>
+          ))}
+        </Choices>
         {shown.length === 0 ? (
-          <p className="p-2 text-ink-alt">No state is called that. Clear the search to see all.</p>
+          <p className="m">No state is called that. Clear the search to see all.</p>
         ) : null}
       </div>
-      <p id={`${id}-count`} aria-live="polite" className="font-mono text-sm">
+      <p id={`${id}-count`} aria-live="polite" className="m">
         {value.length === 1 ? '1 state chosen' : `${String(value.length)} states chosen`}
       </p>
     </fieldset>

@@ -10,16 +10,16 @@
 import { DIGEST_FREQUENCIES, getNotifications, setNotifications } from '@reportlog/contracts';
 import type { DigestFrequency, Notifications } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useId, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { CheckOption } from '../../components/ui/choice.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { StaffPage } from '../nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
+import { useState } from 'react';
 import { call } from '../../lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Choice, Choices } from '../../mockup/Choice.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Saved } from '../../mockup/Saved.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 
 export const notificationsQuery = queryOptions({
   queryKey: ['notifications'],
@@ -51,11 +51,7 @@ export function NotificationsPage() {
         <p role="status">Loading…</p>
       ) : null}
       {me.data && !me.data.signedIn ? <SignInPrompt next="/notifications" /> : null}
-      {query.isError ? (
-        <Alert tone="serious" title="Your choice could not be loaded.">
-          {query.error.message}
-        </Alert>
-      ) : null}
+      <ErrorLine error={query.error} />
       {query.data ? <NotificationsForm current={query.data} /> : null}
     </StaffPage>
   );
@@ -63,7 +59,6 @@ export function NotificationsPage() {
 
 export function NotificationsForm({ current }: { current: Notifications }) {
   const client = useQueryClient();
-  const allId = useId();
   const [frequency, setFrequency] = useState<DigestFrequency>(current.frequency);
   const [all, setAll] = useState(current.logbooks === null);
   const [picked, setPicked] = useState<string[]>(current.logbooks ?? []);
@@ -78,88 +73,85 @@ export function NotificationsForm({ current }: { current: Notifications }) {
 
   return (
     <form
-      className="flex flex-col gap-6"
+      className="col"
       onSubmit={(e) => {
         e.preventDefault();
         if (!nothingPicked) save.mutate();
       }}
     >
-      <Card heading="How often">
-        <RadioGroup
-          aria-label="How often"
-          value={frequency}
-          onValueChange={(v) => {
-            setFrequency(v as DigestFrequency);
-          }}
-        >
+      <Panel title="How often">
+        <Choices>
           {DIGEST_FREQUENCIES.map((f) => (
-            <RadioOption
+            <Choice
               key={f}
-              value={f}
-              label={FREQUENCY_WORDS[f].label}
-              hint={FREQUENCY_WORDS[f].hint}
-            />
+              name="often"
+              checked={frequency === f}
+              onChange={() => {
+                setFrequency(f);
+              }}
+            >
+              {FREQUENCY_WORDS[f].label}
+              <span className="m"> {FREQUENCY_WORDS[f].hint}</span>
+            </Choice>
           ))}
-        </RadioGroup>
-      </Card>
+        </Choices>
+      </Panel>
 
       {frequency !== 'none' ? (
-        <Card heading="From which logbooks">
-          <fieldset className="flex flex-col gap-3">
-            <legend className="sr-only">From which logbooks</legend>
-            <CheckOption
-              id={allId}
+        <Panel title="From which logbooks">
+          <Choices>
+            <Choice
+              multi
+              name="lb"
               checked={all}
-              onCheckedChange={(on) => {
-                setAll(on === true);
+              onChange={(e) => {
+                setAll(e.target.checked);
               }}
-              label="Every logbook, including new ones"
-            />
+            >
+              Every logbook, including new ones
+            </Choice>
             {!all ? (
-              <div className="flex flex-col gap-3 pl-9" data-testid="logbook-choices">
+              <>
                 {current.choices.length === 0 ? <p>No logbook has been launched yet.</p> : null}
-                {current.choices.map((c, i) => (
-                  <CheckOption
+                {current.choices.map((c) => (
+                  <Choice
+                    multi
                     key={c.slug}
-                    id={`${allId}-${String(i)}`}
-                    label={c.title}
+                    name="lb"
                     checked={picked.includes(c.slug)}
-                    onCheckedChange={(on) => {
+                    onChange={(e) => {
                       setPicked(
-                        on === true ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
+                        e.target.checked ? [...picked, c.slug] : picked.filter((s) => s !== c.slug),
                       );
                     }}
-                  />
+                  >
+                    {c.title}
+                  </Choice>
                 ))}
-                {nothingPicked ? (
-                  <p role="alert" className="text-sm">
-                    Choose at least one logbook, or tick “Every logbook”.
-                  </p>
-                ) : null}
-              </div>
+              </>
             ) : null}
-          </fieldset>
-        </Card>
+          </Choices>
+          {!all && nothingPicked ? (
+            <p role="alert" className="error">
+              Choose at least one logbook, or tick “Every logbook”.
+            </p>
+          ) : null}
+        </Panel>
       ) : null}
 
-      {save.isError ? (
-        <Alert tone="serious" title="That was not saved.">
-          {save.error.message}
-        </Alert>
-      ) : null}
-      {/* A one-line save is a sentence beside the button (account.md §01). */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={save.isPending || nothingPicked}>
+      <ErrorLine error={save.error} />
+      <div className="acts">
+        <Btn kind="go" type="submit" disabled={save.isPending || nothingPicked}>
           Save
-        </Button>
-        {save.isSuccess ? (
-          <p role="status">
-            {save.data.frequency === 'none'
-              ? 'Saved. You will not be emailed.'
-              : `Saved. You will be emailed ${save.data.frequency === 'hourly' ? 'at most once an hour' : 'once a week'}.`}
-          </p>
-        ) : null}
+        </Btn>
       </div>
+      {save.isSuccess ? (
+        <Saved>
+          {save.data.frequency === 'none'
+            ? 'Saved. You will not be emailed.'
+            : `Saved. You will be emailed ${save.data.frequency === 'hourly' ? 'at most once an hour' : 'once a week'}.`}
+        </Saved>
+      ) : null}
     </form>
   );
 }
