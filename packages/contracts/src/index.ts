@@ -27,3 +27,4 @@ export * from './looks.ts';
 export * from './updates.ts';
 export * from './slugs.ts';
 export * from './pages.ts';
+export * from './texts.ts';
