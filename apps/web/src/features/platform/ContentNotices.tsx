@@ -7,18 +7,14 @@ import { CONTENT_DECISIONS, decideContentNotice, listContentNotices } from '@rep
 import type { ContentNoticeRow } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
-import { Meta } from '../../components/ui/type.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Field, FieldDescription, Label, Textarea } from '../../mockup/Form.tsx';
+import { Err, Problem } from '../../mockup/Notice.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { StaffHead } from '../moderation/parts.tsx';
 
 const noticesQuery = queryOptions({
   queryKey: ['moderation', 'content-notices'],
@@ -38,24 +34,19 @@ export function ContentNoticesPage() {
     b.created_at.localeCompare(a.created_at),
   );
   return (
-    <div className="flex flex-col gap-6">
-      <StaffHead
-        title="Illegal content notices"
-        lede="Sent through the public form. Deciding one emails the sender the decision and your reason, if they gave an address; the sender can also follow the notice at their status link, with its receipt number."
-      />
+    <StaffPage
+      title="Illegal content notices"
+      lede="Sent through the public form. Deciding one emails the sender the decision and your reason, if they gave an address; the sender can also follow the notice at their status link, with its receipt number."
+    >
       {query.isPending ? <p role="status">Reading the notices…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data?.notices.length === 0 ? (
         <Empty title="No notice">Notices sent through the public form appear here.</Empty>
       ) : null}
-      <ul className="flex flex-col gap-4" aria-label="Notices">
-        {notices.map((n) => (
-          <li key={n.id}>
-            <Notice n={n} />
-          </li>
-        ))}
-      </ul>
-    </div>
+      {notices.map((n) => (
+        <Notice key={n.id} n={n} />
+      ))}
+    </StaffPage>
   );
 }
 
@@ -71,30 +62,32 @@ function Notice({ n }: { n: ContentNoticeRow }) {
   });
   const decided = n.status === 'decided' && n.decision;
   return (
-    <Card className="gap-3" role="article" aria-labelledby={`notice-${String(n.id)}`}>
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h2 id={`notice-${String(n.id)}`} className="font-mono text-lg font-semibold">
+    <article className="panel" aria-labelledby={`notice-${String(n.id)}`}>
+      <div className="closed-head">
+        <h2 id={`notice-${String(n.id)}`} className="mono">
           {n.receipt}
         </h2>
-        {decided ? <Chip tone="tag">Answered</Chip> : <Chip tone="open">Waiting</Chip>}
+        {decided ? <Chip kind="off">Answered</Chip> : <Chip kind="wait">Waiting</Chip>}
       </div>
-      <Meta>
+      <p className="m">
         {new Date(n.created_at).toLocaleString()}
         {n.sender_name ? ` · ${n.sender_name}` : ''}
         {n.has_email ? ' · will be emailed the decision' : ' · gave no address'}
-      </Meta>
-      <p>
-        <strong>Where:</strong> <span className="break-all">{n.where_found}</span>
       </p>
-      <p className="whitespace-pre-wrap">{n.explanation}</p>
+      <p>
+        <b>Where:</b> {n.where_found}
+      </p>
+      <p style={{ whiteSpace: 'pre-wrap' }}>{n.explanation}</p>
       {decided ? (
-        <Card variant="quiet" className="gap-1 p-4">
-          <p className="font-semibold">{DECISION_LABEL[decided]}</p>
-          <p className="whitespace-pre-wrap text-ink-alt">{n.decision_reason}</p>
-        </Card>
+        <div className="note">
+          <span>
+            <b>{DECISION_LABEL[decided]}</b>
+            <span style={{ display: 'block', whiteSpace: 'pre-wrap' }}>{n.decision_reason}</span>
+          </span>
+        </div>
       ) : (
         <form
-          className="flex flex-col gap-3"
+          className="col"
           noValidate
           onSubmit={(e) => {
             e.preventDefault();
@@ -105,26 +98,28 @@ function Notice({ n }: { n: ContentNoticeRow }) {
             decide.mutate();
           }}
         >
-          <Field>
-            <Label>Decision</Label>
-            <RadioGroup
-              value={decision}
-              onValueChange={(v) => {
-                setDecision(v);
-                setProblem('');
-              }}
-            >
+          <div role="radiogroup" aria-labelledby={`notice-${String(n.id)}-decision`}>
+            <span className="lbl" id={`notice-${String(n.id)}-decision`}>
+              Decision
+            </span>
+            <Choices>
               {CONTENT_DECISIONS.map((d) => (
-                <RadioOption
+                <Choice
                   key={d}
-                  id={`notice-${String(n.id)}-${d}`}
+                  name={`notice-${String(n.id)}`}
                   value={d}
-                  label={DECISION_LABEL[d]}
-                />
+                  checked={decision === d}
+                  onChange={() => {
+                    setDecision(d);
+                    setProblem('');
+                  }}
+                >
+                  {DECISION_LABEL[d]}
+                </Choice>
               ))}
-            </RadioGroup>
-            <FieldError>{problem}</FieldError>
-          </Field>
+            </Choices>
+            <Err>{problem}</Err>
+          </div>
           <Field>
             <Label>Reason, as the sender will read it</Label>
             <Textarea
@@ -138,17 +133,14 @@ function Notice({ n }: { n: ContentNoticeRow }) {
               At least a sentence. It is emailed, and it stays on the record.
             </FieldDescription>
           </Field>
-          {decide.isError ? <Alert tone="serious">{decide.error.message}</Alert> : null}
-          <Button
-            type="submit"
-            className="self-start"
-            busy={decide.isPending}
-            busyLabel="Recording…"
-          >
-            Record the decision
-          </Button>
+          {decide.isError ? <Problem>{decide.error.message}</Problem> : null}
+          <div className="acts">
+            <Btn sm flat look="ink" type="submit" disabled={decide.isPending}>
+              {decide.isPending ? 'Recording…' : 'Record the decision'}
+            </Btn>
+          </div>
         </form>
       )}
-    </Card>
+    </article>
   );
 }
