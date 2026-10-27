@@ -14,6 +14,7 @@ import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
 import { Input } from '@/mockup/Field.tsx';
 import { Label } from '@/mockup/Field.tsx';
@@ -28,11 +29,7 @@ import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
     <SettingsFrame>
-      <StaffPage
-        title="Name"
-        width="prose"
-        lede="How the name is drawn in the header and the footer."
-      >
+      <StaffPage title="Name" lede="How the name is drawn in the header and the footer.">
         <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
       </StaffPage>
     </SettingsFrame>
@@ -71,30 +68,31 @@ export function NameForm({ state }: { state: SiteEditor }) {
 
   return (
     <form
-      className="flex flex-col gap-6"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <Field>
-        <Label>The site’s name</Label>
-        <FieldDescription>
-          Put part of it in "double quotes" to draw it in the accent colour, or in 'single quotes'
-          for a quieter second accent. Leave it empty to use “ReportLog”.
-        </FieldDescription>
-        <Input
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            save.reset();
-          }}
-          autoComplete="off"
-        />
-        <FieldError>{problem}</FieldError>
-      </Field>
+      <Panel heading="The site’s name">
+        <Field>
+          <Label>The site’s name</Label>
+          <FieldDescription>
+            Put part of it in "double quotes" to draw it in the accent colour, or in 'single quotes'
+            for a quieter second accent. Leave it empty to use “ReportLog”.
+          </FieldDescription>
+          <Input
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value);
+              save.reset();
+            }}
+            autoComplete="off"
+          />
+          <FieldError>{problem}</FieldError>
+        </Field>
 
-      <NamePreview name={preview} />
+        <NamePreview name={preview} />
+      </Panel>
 
       {save.isError ? (
         <Note tone="serious" title="That was not saved.">

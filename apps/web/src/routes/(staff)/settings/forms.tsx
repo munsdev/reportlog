@@ -81,7 +81,7 @@ export function MinFormTime({ seconds }: { seconds: number }) {
   return (
     <form
       noValidate
-      className="flex flex-col gap-4"
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
@@ -201,7 +201,7 @@ export function EmailOnReports({ limits }: { limits: FilingLimits }) {
       }}
       onCancel={cancel}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         Asked only when somebody writes something or adds a link; optional otherwise. A report with
         an email is filed when its link is pressed.
       </p>
@@ -259,12 +259,8 @@ function FormsPage() {
   const limits = useQuery(limitsQuery);
   const state = useQuery(doorQuery);
   return (
-    <StaffPage
-      title="Report and tip forms"
-      width="prose"
-      lede="How forms tell people from scripts."
-    >
-      <p>
+    <StaffPage title="Report and tip forms" lede="How forms tell people from scripts.">
+      <p className="muted">
         Each form solves a small puzzle in the visitor’s own browser, carries a box nobody can see,
         and must have been open for a moment before it is sent. How many one network address may
         send is limited too. Anything turned away is told only to try again, and counted.
@@ -281,28 +277,16 @@ function FormsPage() {
           <MinFormTime seconds={state.data.min_form_seconds} />
         </Panel>
       ) : null}
-      <Panel variant="quiet">
-        <h2 className="font-display text-xl font-bold">Set elsewhere</h2>
-        <ul className="list-disc space-y-1 pl-5">
-          <li>
-            How hard the puzzle is: the “Harder puzzle” switch on the{' '}
-            <Link to="/moderate/flood" className="underline">
-              flood screen
-            </Link>
-            , where each use is recorded and shown publicly.
-          </li>
-          <li>
-            The sentence a visitor sees when a form is turned away:{' '}
-            <Link to="/settings/words" className="underline">
-              Wording
-            </Link>
-            , “When a form is turned away”.
-          </li>
-          <li>
-            How many reports and tips one network address may send per minute and per hour: the
-            server’s settings, DOOR_SUBMITS_PER_MINUTE and DOOR_SUBMITS_PER_HOUR.
-          </li>
-        </ul>
+      <Panel variant="quiet" heading="Set elsewhere">
+        <p>
+          <Link to="/moderate/flood">The puzzle and pausing intake</Link> (the “Harder puzzle”
+          switch, where each use is recorded and shown publicly) ·{' '}
+          <Link to="/settings/words">The wording on forms</Link> (“When a form is turned away”)
+        </p>
+        <p className="muted">
+          How many reports and tips one network address may send per minute and per hour are the
+          server’s settings, DOOR_SUBMITS_PER_MINUTE and DOOR_SUBMITS_PER_HOUR.
+        </p>
       </Panel>
     </StaffPage>
   );

@@ -1,20 +1,11 @@
 /**
  * The settings that apply the moment they are pressed: whether the site
  * takes new reports, and the development notice. Neither is a form, so
- * neither has Save or a Save bar. Each is a pair of choice cards and one
- * button that does what the chosen card says; the result is a toast, and
- * an error stays on the page as an alert (settings-and-admin.md §02).
  *
- * DELIBERATE DIFFERENCE FROM THE MOCK-UP. The mock-up draws Accepting reports
- * and the development notice as an instant switch. Here closing intake keeps
- * its two acts (choose the card, press the button) because it refuses
- * somebody part-way through a form; the development notice keeps the same
- * pair so the two read alike. Their summaries ("Accepting: Yes") are the
- * mock-up's.
- *
- * ASKED BEFORE, NEVER AFTER. Closing the site to reports stops somebody
- * part-way through a form, so it takes two acts: choosing the card that says
- * what will happen, then pressing the button. Nothing is sent by choosing.
+ * Both are the mock-up's instant switch. ASKED BEFORE, NEVER AFTER: closing
+ * the site to reports stops somebody part-way through a form, so turning that
+ * switch off first asks, in a dialog that says what will happen, and nothing
+ * is sent until it is confirmed. Turning it on needs no question.
  */
 import { getDevMode, getIntakePause, setDevMode, setIntakeSwitch } from '@reportlog/contracts';
 import type { DevMode } from '@reportlog/contracts';
@@ -24,7 +15,15 @@ import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/mockup/Dialog.tsx';
+import { Switch } from '@/mockup/Switch.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { intakeSwitchQuery, logbooksQuery } from '../builder/queries.ts';
@@ -59,11 +58,11 @@ export function AcceptingReportsPanel() {
   const query = useQuery(intakeSwitchQuery());
   const pause = useQuery(intakePauseQuery);
   const logbooks = useQuery(logbooksQuery());
-  const [choice, setChoice] = useState<'on' | 'off' | null>(null);
+  const [asking, setAsking] = useState(false);
   const save = useMutation({
     mutationFn: (open: boolean) => call(setIntakeSwitch, { body: { open } }),
     onSuccess: async (data) => {
-      setChoice(null);
+      setAsking(false);
       qc.setQueryData(intakeSwitchQuery().queryKey, data);
       toast.show(data.open ? 'Accepting reports is now on.' : 'Accepting reports is now off.');
       await qc.invalidateQueries({ queryKey: intakeSwitchQuery().queryKey });
@@ -87,13 +86,25 @@ export function AcceptingReportsPanel() {
       </Panel>
     );
   }
-  const now = query.data.open ? 'on' : 'off';
-  const chosen = choice ?? now;
   return (
     <Panel heading={title}>
+      <Switch
+        label="Taking new reports"
+        help="Every open logbook and list."
+        checked={query.data.open}
+        busy={save.isPending}
+        onChange={(next) => {
+          save.reset();
+          if (next) save.mutate(true);
+          else setAsking(true);
+        }}
+      />
+      <p className="m">
+        Turning it off is the same switch as Pause intake on the flood screen, and is recorded
+        publicly.
+      </p>
       <Dl
         items={[
-          { key: 'Accepting', value: yesNo(query.data.open) },
           {
             key: 'Paused by the flood screen',
             value: pause.data ? yesNo(pause.data.paused) : '…',
@@ -106,45 +117,50 @@ export function AcceptingReportsPanel() {
         ]}
       />
       {query.data.stored === null ? (
-        <p className="text-sm text-ink-alt">Nobody has set this; taking reports is the default.</p>
+        <p className="muted">Nobody has set this; taking reports is the default.</p>
       ) : null}
-      <RadioGroup
-        aria-label="New reports, across the site"
-        value={chosen}
-        onValueChange={(v) => {
-          save.reset();
-          setChoice(v === now ? null : (v as 'on' | 'off'));
-        }}
-      >
-        <RadioOption
-          value="on"
-          label="Taking new reports"
-          hint="Every logbook that is open takes reports."
-        />
-        <RadioOption
-          value="off"
-          label="Not taking new reports"
-          hint="Every logbook’s form says it is not taking reports, and somebody part-way through one is refused when they send it. Reports already filed are unaffected, and corrections to them still work."
-        />
-      </RadioGroup>
-      {save.isError ? (
+      {save.isError && !asking ? (
         <Note tone="serious" title="That did not change.">
           {save.error.message}
         </Note>
       ) : null}
-      {chosen !== now ? (
-        <div>
-          <Btn
-            busy={save.isPending}
-            busyLabel="Changing…"
-            onClick={() => {
-              save.mutate(chosen === 'on');
-            }}
-          >
-            {chosen === 'on' ? 'Turn it on' : 'Turn it off'}
-          </Btn>
-        </div>
-      ) : null}
+      <Dialog open={asking} onOpenChange={setAsking}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stop taking new reports?</DialogTitle>
+            <DialogDescription>
+              Every logbook’s form says it is not taking reports, and somebody part-way through one
+              is refused when they send it. Reports already filed are unaffected, and corrections to
+              them still work.
+            </DialogDescription>
+          </DialogHeader>
+          {save.isError ? (
+            <Note tone="serious" title="That did not change.">
+              {save.error.message}
+            </Note>
+          ) : null}
+          <DialogFooter>
+            <Btn
+              variant="danger"
+              busy={save.isPending}
+              busyLabel="Changing…"
+              onClick={() => {
+                save.mutate(false);
+              }}
+            >
+              Turn it off
+            </Btn>
+            <Btn
+              variant="quiet"
+              onClick={() => {
+                setAsking(false);
+              }}
+            >
+              Cancel
+            </Btn>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Panel>
   );
 }
@@ -166,11 +182,9 @@ export function devNoticeNow(state: DevMode): string {
 export function DevNoticePanel({ state }: { state: DevMode }) {
   const client = useQueryClient();
   const toast = useToast();
-  const [choice, setChoice] = useState<'on' | 'off' | null>(null);
   const change = useMutation({
     mutationFn: (hours: number | null) => call(setDevMode, { body: { hours } }),
     onSuccess: (next) => {
-      setChoice(null);
       client.setQueryData(devModeQuery.queryKey, next);
       // Every page reads the notice from the site's settings.
       void client.invalidateQueries({ queryKey: ['site'] });
@@ -182,64 +196,25 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
     },
   });
   const hours = String(state.default_hours);
-  const now = state.active ? 'on' : 'off';
-  const chosen = choice ?? now;
-  // "On" chosen while it is already on renews the window from now.
-  const pressable = chosen !== now || chosen === 'on';
   return (
     <Panel heading="Development notice">
-      <Dl
-        items={[
-          {
-            key: 'Showing',
-            value: state.active && state.until ? `Yes, until ${when(state.until)}` : 'No',
-          },
-          { key: 'After a release', value: `On by itself for ${hours} hours` },
-        ]}
+      <Switch
+        label={state.active && state.until ? `On until ${when(state.until)}` : 'Off'}
+        help={`Shows “Under active development” in a corner of every page. A release turns it on by itself for ${hours} hours.`}
+        checked={state.active}
+        busy={change.isPending}
+        onChange={(next) => {
+          change.reset();
+          change.mutate(next ? state.default_hours : null);
+        }}
       />
-      <p role="status" className="sr-only">
+      <p role="status" className="vh">
         {devNoticeNow(state)}
       </p>
-      <RadioGroup
-        aria-label="The development notice"
-        value={chosen}
-        onValueChange={(v) => {
-          change.reset();
-          setChoice(v === now ? null : (v as 'on' | 'off'));
-        }}
-      >
-        <RadioOption
-          value="on"
-          label={`On for ${hours} hours from now`}
-          hint="While you are making changes by hand. It switches itself off."
-        />
-        <RadioOption
-          value="off"
-          label="Off now"
-          hint={`The next release turns it on again for ${hours} hours by itself.`}
-        />
-      </RadioGroup>
       {change.isError ? (
         <Note tone="serious" title="That did not change.">
           {change.error.message}
         </Note>
-      ) : null}
-      {pressable ? (
-        <div>
-          <Btn
-            busy={change.isPending}
-            busyLabel="Changing…"
-            onClick={() => {
-              change.mutate(chosen === 'on' ? state.default_hours : null);
-            }}
-          >
-            {chosen === 'on'
-              ? now === 'on'
-                ? `Show it for ${hours} hours from now`
-                : 'Turn it on'
-              : 'Turn it off'}
-          </Btn>
-        </div>
       ) : null}
     </Panel>
   );

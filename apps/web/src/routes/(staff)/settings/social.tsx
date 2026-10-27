@@ -29,15 +29,14 @@ import type {
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
-import { Checkbox } from '@/components/ui/checkbox.tsx';
+import { CheckOption } from '@/mockup/Choices.tsx';
+import { Switch } from '@/mockup/Switch.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/Field.tsx';
 import { Input } from '@/mockup/Field.tsx';
 import { Label } from '@/mockup/Field.tsx';
 import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { SocialIcon } from '@/components/ui/social-icon.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
-import { Meta } from '@/components/ui/type.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
@@ -48,8 +47,7 @@ export const Route = createFileRoute('/(staff)/settings/social')({
     <SettingsFrame>
       <StaffPage
         title="Social media"
-        width="prose"
-        lede="This site’s accounts elsewhere, and where the site shows them. Each account you switch on is shown as a link, with its platform’s mark, in the places you pick below."
+        lede="Your accounts, and where the site shows them. Each account you switch on is shown as a link, with its platform’s mark, in the places you pick below."
       >
         <WithEditor>{(state) => <SocialForm state={state} />}</WithEditor>
       </StaffPage>
@@ -121,13 +119,12 @@ export function SocialForm({ state }: { state: SiteEditor }) {
 
   return (
     <form
-      className="flex flex-col gap-4"
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <p className="text-ink-alt">
+      <p className="muted">
         Paste the link to the account, or type its handle (such as @yourname) where the platform has
         them. Visitors leave this site when they follow one, and the platform is not told which page
         they came from.
@@ -138,10 +135,8 @@ export function SocialForm({ state }: { state: SiteEditor }) {
           save.reset();
           setPlacements(next);
         }}
-      />
-      <FloatingButton
         float={float}
-        onChange={(next) => {
+        onFloat={(next) => {
           save.reset();
           setFloat(next);
         }}
@@ -182,133 +177,106 @@ function PlatformRow({ row, onChange }: { row: Row; onChange: (change: Partial<R
   const checked = socialAddress(row.id, row.address);
   const url = checked.ok ? checked.url : null;
   return (
-    <Panel variant="quiet">
-      <fieldset className="flex flex-col gap-3" data-platform={row.id}>
-        <legend className="flex items-center gap-3 font-semibold">
-          <SocialIcon platform={row.id} />
-          {rule.name}
-        </legend>
-        <Field>
-          <Label>Address on {rule.name}</Label>
-          <FieldDescription>For example {rule.example}</FieldDescription>
-          <Input
-            value={row.address}
-            inputMode="url"
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(e) => {
-              const address = e.target.value;
-              // Emptying the address switches it off: there is nothing to show.
-              onChange(address.trim() ? { address } : { address, shown: false });
-            }}
-          />
-          <FieldError>{checked.ok ? null : checked.error}</FieldError>
-          {url && url !== row.address.trim() ? <Meta>Links to {url}</Meta> : null}
-        </Field>
-        <Field className="flex-row items-center gap-3">
-          <Checkbox
-            checked={row.shown}
-            disabled={!url}
-            onCheckedChange={(on) => {
-              onChange({ shown: on === true });
-            }}
-          />
-          <Label>Show on the site</Label>
-        </Field>
-      </fieldset>
-    </Panel>
+    <section className="panel" data-platform={row.id}>
+      <h2>
+        <SocialIcon platform={row.id} /> {rule.name}
+      </h2>
+      <Field>
+        <Label>Address on {rule.name}</Label>
+        <Input
+          value={row.address}
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={(e) => {
+            const address = e.target.value;
+            // Emptying the address switches it off: there is nothing to show.
+            onChange(address.trim() ? { address } : { address, shown: false });
+          }}
+        />
+        <FieldDescription>
+          {url ? `Links to ${url.replace(/^https?:\/\//, '')}` : `For example ${rule.example}`}
+        </FieldDescription>
+        <FieldError>{checked.ok ? null : checked.error}</FieldError>
+      </Field>
+      <Switch
+        label="Show on the site"
+        checked={row.shown && !!url}
+        disabled={!url}
+        onChange={(on) => {
+          onChange({ shown: on });
+        }}
+      />
+    </section>
   );
 }
 
 /**
  * Where the accounts show. Each place is its own switch, so the site can
  * carry them loudly on the front page and not at all in the footer, or the
- * other way round. A form or a door is not on the list.
+ * other way round. A form or a door is not on the list. The floating
+ * "Follow us" button is one more switch here; which pages may carry it is a
+ * choice among five, and a form or a door is not among them.
  */
 function Placements({
   on,
   onChange,
+  float,
+  onFloat,
 }: {
   on: readonly SocialPlacement[];
   onChange: (next: SocialPlacement[]) => void;
-}) {
-  return (
-    <Panel variant="quiet">
-      <fieldset className="flex flex-col gap-3" data-placements>
-        <legend className="font-semibold">Where the accounts show</legend>
-        {SOCIAL_PLACEMENTS.map((p) => (
-          <Field key={p} className="flex-row items-start gap-3" data-placement={p}>
-            <Checkbox
-              checked={on.includes(p)}
-              onCheckedChange={(next) => {
-                onChange(
-                  SOCIAL_PLACEMENTS.filter((q) => (q === p ? next === true : on.includes(q))),
-                );
-              }}
-            />
-            <div className="flex flex-col">
-              <Label>{SOCIAL_PLACEMENT_NAMES[p].name}</Label>
-              <FieldDescription>{SOCIAL_PLACEMENT_NAMES[p].where}</FieldDescription>
-            </div>
-          </Field>
-        ))}
-      </fieldset>
-    </Panel>
-  );
-}
-
-/**
- * The floating "Follow us" button. Which pages may carry it is a choice among
- * five; a form or a door is not among them and no setting can add one.
- */
-function FloatingButton({
-  float,
-  onChange,
-}: {
   float: SocialFloat;
-  onChange: (next: SocialFloat) => void;
+  onFloat: (next: SocialFloat) => void;
 }) {
-  const toggle = (page: SocialFloatPage, on: boolean) => {
-    onChange({
+  const toggle = (page: SocialFloatPage, set: boolean) => {
+    onFloat({
       ...float,
-      pages: SOCIAL_FLOAT_PAGES.filter((p) => (p === page ? on : float.pages.includes(p))),
+      pages: SOCIAL_FLOAT_PAGES.filter((p) => (p === page ? set : float.pages.includes(p))),
     });
   };
   return (
-    <Panel variant="quiet">
-      <fieldset className="flex flex-col gap-3" data-float>
-        <legend className="font-semibold">Floating “Follow us” button</legend>
-        <p className="text-ink-alt">
-          A small button in the corner that opens the accounts switched on below. It is never shown
-          on a form or on a page in front of the password, so nobody filling one in has anything
-          change under them.
-        </p>
-        <Field className="flex-row items-center gap-3">
-          <Checkbox
-            checked={float.on}
-            onCheckedChange={(on) => {
-              onChange({ ...float, on: on === true });
+    <section className="panel" data-placements>
+      <h2>Where the accounts show</h2>
+      {SOCIAL_PLACEMENTS.map((p) => (
+        <div key={p} data-placement={p}>
+          <Switch
+            label={SOCIAL_PLACEMENT_NAMES[p].name}
+            help={SOCIAL_PLACEMENT_NAMES[p].where}
+            checked={on.includes(p)}
+            onChange={(next) => {
+              onChange(SOCIAL_PLACEMENTS.filter((q) => (q === p ? next : on.includes(q))));
             }}
           />
-          <Label>Show the button</Label>
-        </Field>
-        {float.on ? (
-          <fieldset className="flex flex-col gap-2">
-            <legend className="text-sm font-semibold">On these pages</legend>
+        </div>
+      ))}
+      <div data-float>
+        <Switch
+          label="Floating “Follow us” button"
+          help="A small button in the corner that opens the accounts switched on below. It is never shown on a form or on a page in front of the password."
+          checked={float.on}
+          onChange={(next) => {
+            onFloat({ ...float, on: next });
+          }}
+        />
+      </div>
+      {float.on ? (
+        <fieldset style={{ border: 0, padding: 0, margin: 0, display: 'grid', gap: 10 }}>
+          <legend className="lbl">On these pages</legend>
+          <div className="choices">
             {SOCIAL_FLOAT_PAGES.map((page) => (
-              <Field key={page} className="flex-row items-center gap-3">
-                <Checkbox
-                  checked={float.pages.includes(page)}
-                  onCheckedChange={(on) => {
-                    toggle(page, on === true);
-                  }}
-                />
-                <Label>{SOCIAL_FLOAT_PAGE_NAMES[page]}</Label>
-              </Field>
+              <CheckOption
+                key={page}
+                label={SOCIAL_FLOAT_PAGE_NAMES[page]}
+                checked={float.pages.includes(page)}
+                onCheckedChange={(set) => {
+                  toggle(page, set === true);
+                }}
+              />
             ))}
-          </fieldset>
-        ) : null}
-      </fieldset>
-    </Panel>
+          </div>
+        </fieldset>
+      ) : null}
+    </section>
   );
 }

@@ -88,11 +88,11 @@ export function CoverPanel({
       onSave={() => mutation.mutateAsync()}
       onCancel={cancel}
     >
-      <p className="text-sm text-muted">
+      <p className="muted">
         The first card people see, before the first question. None of this is part of the questions,
         so it can change at any time. Leave a box empty to use the usual wording.
       </p>
-      <div className="space-y-3">
+      <div className="form-stack">
         <Field
           label="Small heading above the title (optional)"
           help={

@@ -25,7 +25,7 @@ export function TypeToConfirm({ title, children, action, primary = false, onConf
 
   return (
     <form
-      className="space-y-3"
+      className="dlg"
       onSubmit={(e) => {
         e.preventDefault();
         if (!matches) return;
@@ -40,7 +40,9 @@ export function TypeToConfirm({ title, children, action, primary = false, onConf
           });
       }}
     >
-      <div className="space-y-2 text-ink-alt">{children}</div>
+      <div className="form-stack" style={{ gap: 8 }}>
+        {children}
+      </div>
       <Field label={`Type the title, “${title}”, to confirm`}>
         {(p) => (
           <TextInput
@@ -54,7 +56,7 @@ export function TypeToConfirm({ title, children, action, primary = false, onConf
         )}
       </Field>
       <Problem error={error} />
-      <Btn type="submit" variant={primary ? 'primary' : 'secondary'} disabled={!matches || busy}>
+      <Btn type="submit" variant={primary ? 'primary' : 'danger'} disabled={!matches || busy}>
         {action}
       </Btn>
     </form>

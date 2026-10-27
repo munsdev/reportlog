@@ -58,10 +58,10 @@ export function LinkPanel({
   className,
 }: LinkPanelProps) {
   return (
-    <Panel heading={title} className={className}>
+    <Panel heading={title} closed {...(className ? { className } : {})}>
       {children}
       <Dl items={summary} />
-      <div>
+      <div className="acts">
         <Btn asChild variant="secondary">
           <Link to={to} aria-label={`${linkLabel} ${title}`}>
             {linkLabel}

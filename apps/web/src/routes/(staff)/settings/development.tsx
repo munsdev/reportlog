@@ -19,12 +19,8 @@ export const Route = createFileRoute('/(staff)/settings/development')({
 function DevelopmentPage() {
   return (
     <SettingsFrame>
-      <StaffPage
-        title="Development notice"
-        width="prose"
-        lede="A small notice for testing periods."
-      >
-        <p>
+      <StaffPage title="Development notice" lede="A small notice for testing periods.">
+        <p className="muted">
           Each new release turns it on for a few hours by itself, so testers know why something just
           moved. It always switches itself off: a notice left on for good teaches people to ignore
           it. Use this to show it while you are making changes by hand, or to take it down once

@@ -32,16 +32,15 @@ export const Route = createFileRoute('/(staff)/settings/legal')({
     <SettingsFrame>
       <StaffPage
         title="Legal notices"
-        width="prose"
         lede="The imprint and privacy policy the law asks for. The responsible person’s name appears only here."
       >
         <WithEditor>
           {(state) => (
-            <div className="flex flex-col gap-6">
+            <>
               {state.legal.map((l) => (
                 <LegalEditor key={l.kind} entry={l} />
               ))}
-            </div>
+            </>
           )}
         </WithEditor>
       </StaffPage>
@@ -98,7 +97,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
         <FieldDescription>Saving publishes it, exactly as written here.</FieldDescription>
         <Textarea
           rows={18}
-          className="font-mono text-sm"
+          className="mono"
           value={text}
           onChange={(e) => {
             setText(e.target.value);
@@ -107,7 +106,7 @@ export function LegalEditor({ entry }: { entry: SiteEditor['legal'][number] }) {
         <FieldError>{save.isError ? save.error.message : null}</FieldError>
       </Field>
       {entry.published ? (
-        <div>
+        <div className="acts">
           <Btn
             type="button"
             variant="quiet"

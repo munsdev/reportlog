@@ -16,10 +16,16 @@ import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/mockup/Dialog.tsx';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/mockup/Dialog.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
-import { Field } from '@/mockup/Field.tsx';
-import { Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
 import { call } from '@/lib/api.ts';
@@ -57,16 +63,15 @@ export function StartingPointsPage() {
   return (
     <StaffPage
       title="Starting points"
-      width="prose"
       lede="A starting point fills in a logbook, lists and wording you can then change."
     >
       {applied ? (
-        <p className="text-sm text-ink-alt">
+        <p className="muted">
           This site was last started from “{appliedLabel ?? applied.id}”, on {when(applied.at)}.
         </p>
       ) : null}
 
-      <p>
+      <p className="muted">
         Each one lists what it changes: page wording, whether reports are published, whether files
         are taken, and most also make a <strong>draft</strong> logbook. None touches the legal
         notices, and a draft takes no reports until you launch it yourself, under Logbooks.
@@ -77,11 +82,7 @@ export function StartingPointsPage() {
           {apply.data.logbook ? (
             <p>
               It made a draft logbook,{' '}
-              <Link
-                to="/logbooks/$id"
-                params={{ id: apply.data.logbook.id }}
-                className="underline underline-offset-4"
-              >
+              <Link to="/logbooks/$id" params={{ id: apply.data.logbook.id }}>
                 {apply.data.logbook.title}
               </Link>
               . Read its questions before you launch it.
@@ -100,8 +101,7 @@ export function StartingPointsPage() {
       ) : null}
 
       {templates.length > 0 ? (
-        <Field>
-          <Label>Starting points</Label>
+        <>
           <RadioGroup
             value={chosen?.id ?? ''}
             onValueChange={(id) => {
@@ -113,22 +113,21 @@ export function StartingPointsPage() {
               <RadioOption key={t.id} value={t.id} label={t.label} hint={t.description} />
             ))}
           </RadioGroup>
-        </Field>
+        </>
       ) : null}
 
       {/* Choosing shows what it would change; only the dialog's "Apply it" sends. */}
       {chosen ? (
-        <Panel heading={chosen.label}>
-          <p>What it changes:</p>
-          <ul className="list-disc pl-5 text-ink-alt">
+        <Panel heading="What it changes">
+          <ul>
             {chosen.sets.map((line) => (
               <li key={line}>{line}</li>
             ))}
           </ul>
-          <div>
+          <div className="acts">
             <Btn
               type="button"
-              variant="secondary"
+              variant="primary"
               onClick={() => {
                 apply.reset();
                 setAsking(chosen);
@@ -154,7 +153,7 @@ export function StartingPointsPage() {
                 It writes over what is set now. This is what it will change:
               </DialogDescription>
             </DialogHeader>
-            <ul className="list-disc pl-5">
+            <ul>
               {asking.sets.map((line) => (
                 <li key={line}>{line}</li>
               ))}

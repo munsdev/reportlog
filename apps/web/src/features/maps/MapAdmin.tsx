@@ -119,30 +119,32 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
             {none && !making ? (
               <Empty title="No maps yet">
                 Make one, choose what feeds it, then turn it on.
-                <span className="mt-3 flex justify-center">{make}</span>
+                <span className="acts">{make}</span>
               </Empty>
             ) : null}
             {maps.data.slots.map((slot) => {
               const here = maps.data.maps.filter((m) => m.slot === slot.id);
               if (!here.length) return null;
               return (
-                <section key={slot.id} aria-label={slot.label} className="flex flex-col gap-3">
-                  <h2 className="font-display text-xl font-bold">{slot.label}</h2>
-                  <p className="text-sm text-muted">{slot.description}</p>
-                  <ul className="flex flex-col gap-3">
-                    {here.map((m, i) => (
-                      <li key={m.id}>
-                        <MapCard
-                          map={m}
-                          order={here.map((x) => x.id)}
-                          index={i}
-                          slots={maps.data.slots}
-                          logbooks={cands.data.logbooks}
-                          lists={cands.data.lists}
-                        />
-                      </li>
-                    ))}
-                  </ul>
+                <section
+                  key={slot.id}
+                  aria-label={slot.label}
+                  className="form-stack"
+                  style={{ maxWidth: 'none' }}
+                >
+                  <h2 className="h-sec">{slot.label}</h2>
+                  <p className="muted">{slot.description}</p>
+                  {here.map((m, i) => (
+                    <MapCard
+                      key={m.id}
+                      map={m}
+                      order={here.map((x) => x.id)}
+                      index={i}
+                      slots={maps.data.slots}
+                      logbooks={cands.data.logbooks}
+                      lists={cands.data.lists}
+                    />
+                  ))}
                 </section>
               );
             })}
@@ -244,14 +246,14 @@ function PlaceQuestions({
   });
   return (
     <Panel heading="Which question places a report">
-      <div className="flex flex-col gap-4">
-        <p className="max-w-prose text-sm text-ink-alt">
+      <div className="form-stack">
+        <p className="muted">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
           pick the one that says where it happened. This can be set after a logbook has launched: it
           changes nothing that was sealed.
         </p>
         {error ? <Note tone="serious">{error}</Note> : null}
-        <ul className="flex flex-col gap-3">
+        <ul className="form-stack">
           {logbooks.map((l) => (
             <li key={`logbook-${String(l.id)}`}>
               <PlacePicker
@@ -302,7 +304,7 @@ function PlacePicker({
   onPick: (key: string | null) => void;
 }) {
   return (
-    <Field className="flex flex-col gap-1">
+    <Field>
       <Label>{title}</Label>
       {note ? <FieldDescription>{note}</FieldDescription> : null}
       {options.length ? (
@@ -321,7 +323,7 @@ function PlacePicker({
           ))}
         </Select>
       ) : (
-        <p className="text-sm text-muted">{none}</p>
+        <p className="muted">{none}</p>
       )}
     </Field>
   );
@@ -346,13 +348,13 @@ function NewMap({ onDone }: { onDone: () => void }) {
     <Panel heading="Make a map">
       <div>
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="form-stack"
           onSubmit={(e) => {
             e.preventDefault();
             make.mutate();
           }}
         >
-          <Field className="flex-1">
+          <Field>
             <Label>Title</Label>
             <Input
               value={title}
@@ -361,7 +363,7 @@ function NewMap({ onDone }: { onDone: () => void }) {
               }}
             />
           </Field>
-          <Field className="flex-1">
+          <Field>
             <Label>Short name</Label>
             <FieldDescription>
               Lowercase letters, numbers and hyphens. It goes in the map’s address.
@@ -375,21 +377,17 @@ function NewMap({ onDone }: { onDone: () => void }) {
               spellCheck={false}
             />
           </Field>
-          <Btn type="submit" disabled={make.isPending}>
-            Make the map
-          </Btn>
-          <Btn type="button" variant="quiet" onClick={onDone}>
-            Cancel
-          </Btn>
+          <div className="acts">
+            <Btn type="submit" variant="primary" disabled={make.isPending}>
+              Make the map
+            </Btn>
+            <Btn type="button" variant="quiet" onClick={onDone}>
+              Cancel
+            </Btn>
+          </div>
         </form>
-        {make.isError ? (
-          <Note tone="serious" className="mt-3">
-            {make.error.message}
-          </Note>
-        ) : null}
-        <p className="mt-3 text-sm text-muted">
-          A new map is off. Nothing is published until you turn it on.
-        </p>
+        {make.isError ? <Note tone="serious">{make.error.message}</Note> : null}
+        <p className="muted">A new map is off. Nothing is published until you turn it on.</p>
       </div>
     </Panel>
   );
@@ -433,8 +431,8 @@ function MapCard({
   const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
     ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Panel heading={map.title}>
-      <div className="flex flex-col gap-3">
+    <Panel heading={map.title} closed={!open}>
+      <div className="form-stack" style={{ maxWidth: 'none' }}>
         <Dl
           items={[
             { key: 'Shown', value: map.enabled ? 'On: readers can see it' : 'Off' },
@@ -467,7 +465,7 @@ function MapCard({
             { key: 'Public address', value: `/maps/${map.slug}`, mono: true },
           ]}
         />
-        <div className="flex flex-wrap gap-2">
+        <div className="acts">
           <Btn
             type="button"
 
@@ -485,24 +483,26 @@ function MapCard({
           <Btn
             type="button"
 
-            variant="secondary"
+            variant="quiet"
+            aria-label="Move up"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
               move(-1);
             }}
           >
-            Move up
+            ↑
           </Btn>
           <Btn
             type="button"
 
-            variant="secondary"
+            variant="quiet"
+            aria-label="Move down"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
               move(1);
             }}
           >
-            Move down
+            ↓
           </Btn>
           {map.enabled ? (
             <Btn asChild variant="quiet">
@@ -704,7 +704,8 @@ function MapEditor({
       // The server refuses a wrong threshold in a sentence that says why; the
       // browser's own check would stop the form with a generic one.
       noValidate
-      className="flex flex-col gap-5 border-t border-line pt-4"
+      className="form-stack"
+      style={{ maxWidth: 'none' }}
       onSubmit={(e) => {
         e.preventDefault();
         save.mutate();
@@ -762,7 +763,7 @@ function MapEditor({
           onChange={(e) => {
             setMinArea(e.target.value);
           }}
-          className="max-w-32"
+          style={{ maxWidth: 128 }}
         />
       </Field>
       <Field>
@@ -783,12 +784,12 @@ function MapEditor({
           onChange={(e) => {
             setCountyMin(e.target.value);
           }}
-          className="max-w-32"
+          style={{ maxWidth: 128 }}
         />
       </Field>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Which maps it offers</legend>
+      <fieldset className="form-stack">
+        <legend>Which maps it offers</legend>
         {PLANES.map(([p, name]) => (
           <Tick
             key={p}
@@ -800,15 +801,15 @@ function MapEditor({
             {name}
           </Tick>
         ))}
-        <p className="text-sm text-muted">
+        <p className="muted">
           A state answer is on the United States map; a country answer is on the world map. States
           are not added up into the United States, because the difference would give away the areas
           under the threshold.
         </p>
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">What the colour can show</legend>
+      <fieldset className="form-stack">
+        <legend>What the colour can show</legend>
         {VIEWS.map(([v, name]) => (
           <Tick
             key={v}
@@ -822,9 +823,9 @@ function MapEditor({
         ))}
       </fieldset>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Which logbooks feed it</legend>
-        <p className="text-sm text-muted">Tick none for every logbook.</p>
+      <fieldset className="form-stack">
+        <legend>Which logbooks feed it</legend>
+        <p className="muted">Tick none for every logbook.</p>
         {logbooks.map((l) => (
           <Tick
             key={l.id}
@@ -840,9 +841,9 @@ function MapEditor({
       </fieldset>
 
       {lists.length ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="font-semibold">Which lists feed it</legend>
-          <p className="text-sm text-muted">
+        <fieldset className="form-stack">
+          <legend>Which lists feed it</legend>
+          <p className="muted">
             Tick none for no lists. Only approved entries are counted, and the map says “entries”,
             not “reports”.
           </p>
@@ -862,8 +863,8 @@ function MapEditor({
       ) : null}
 
       {views.includes('outcome') || outcome ? (
-        <fieldset className="flex flex-col gap-3">
-          <legend className="font-semibold">The outcome question</legend>
+        <fieldset className="form-stack">
+          <legend>The outcome question</legend>
           <Field>
             <Label>Question</Label>
             <Select
@@ -927,8 +928,8 @@ function MapEditor({
         <FieldDescription>{slots.find((s) => s.id === slot)?.description}</FieldDescription>
       </Field>
 
-      <fieldset className="flex flex-col gap-2">
-        <legend className="font-semibold">Also show it in:</legend>
+      <fieldset className="form-stack">
+        <legend>Also show it in:</legend>
         {slots
           .filter((s) => s.id !== 'own_page' && s.id !== slot)
           .map((s) => (
@@ -952,7 +953,7 @@ function MapEditor({
         </p>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
+      <div className="acts">
         <Btn type="submit" disabled={save.isPending}>
           Save the map
         </Btn>
@@ -988,9 +989,7 @@ function MapEditor({
         )}
       </div>
       {confirmDelete ? (
-        <p className="text-sm text-muted">
-          Deleting a map takes no report with it. Its address stops working.
-        </p>
+        <p className="muted">Deleting a map takes no report with it. Its address stops working.</p>
       ) : null}
       {remove.isError ? <Note tone="serious">{remove.error.message}</Note> : null}
       {preview.isError ? <Note tone="serious">{preview.error.message}</Note> : null}
@@ -1004,36 +1003,35 @@ function Preview({ result }: { result: ResponseOf<typeof previewHeatMap> }) {
   if (!map.published) return <Note>{map.reason}</Note>;
   const shaded = Object.entries(map.areas).sort(([, a], [, b]) => b.n - a.n);
   return (
-    <div
-      role="status"
-      className="flex flex-col gap-1 rounded-control border border-line p-3 text-sm"
-    >
-      <p className="font-semibold">
-        Saved settings, counted now, under a threshold of {map.threshold}:
-      </p>
-      <p>
-        Shaded:{' '}
-        {shaded.length
-          ? shaded.map(([code, a]) => `${placeLabel(code)} ${String(a.n)}`).join(', ')
-          : 'none'}
-        .
-      </p>
-      <p>
-        Under the threshold, sent without a number:{' '}
-        {map.suppressed.areas.length
-          ? map.suppressed.areas.map((c) => placeLabel(c)).join(', ')
-          : 'none'}
-        .
-      </p>
-      {result.unplaced.no_question ? (
+    <div role="status" className="note">
+      <div>
+        <p>Saved settings, counted now, under a threshold of {map.threshold}:</p>
         <p>
-          {result.unplaced.no_question} published report(s) could not be placed: their logbook has
-          no question placing them, or they did not answer it.
+          Shaded:{' '}
+          {shaded.length
+            ? shaded.map(([code, a]) => `${placeLabel(code)} ${String(a.n)}`).join(', ')
+            : 'none'}
+          .
         </p>
-      ) : null}
-      {result.unplaced.country_only ? (
-        <p>{result.unplaced.country_only} gave only a country, and this map draws no countries.</p>
-      ) : null}
+        <p>
+          Under the threshold, sent without a number:{' '}
+          {map.suppressed.areas.length
+            ? map.suppressed.areas.map((c) => placeLabel(c)).join(', ')
+            : 'none'}
+          .
+        </p>
+        {result.unplaced.no_question ? (
+          <p>
+            {result.unplaced.no_question} published report(s) could not be placed: their logbook has
+            no question placing them, or they did not answer it.
+          </p>
+        ) : null}
+        {result.unplaced.country_only ? (
+          <p>
+            {result.unplaced.country_only} gave only a country, and this map draws no countries.
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }
