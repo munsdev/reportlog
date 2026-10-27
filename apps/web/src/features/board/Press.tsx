@@ -31,6 +31,7 @@ export function PressPage() {
   return (
     <BoardFrame
       title="Press pack"
+      heading="Press pack"
       lede="Documents about this archive, for reporters, reviewers and anybody writing about it."
       width="prose"
     >

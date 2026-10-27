@@ -90,11 +90,12 @@ function PublicFrame() {
           page's header. Other pages drop their own in (FollowBand). */}
       {front ? <FollowBand placement="front" bleed /> : null}
       <PauseBanner />
-      <main
-        id="main"
-        className="mx-auto w-full max-w-page flex-1 pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]"
-      >
-        <Outlet />
+      <main id="main" className="w-full flex-1">
+        {/* The padded column. A page that draws its own bands marks its root
+            `data-bleed` and this steps aside (styles.css, .rl-pad). */}
+        <div className="rl-pad mx-auto w-full max-w-page pt-8 pr-[max(1rem,env(safe-area-inset-right))] pb-16 pl-[max(1rem,env(safe-area-inset-left))]">
+          <Outlet />
+        </div>
       </main>
       <SiteFooter />
     </div>

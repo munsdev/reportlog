@@ -58,14 +58,12 @@ import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
 import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Card } from '@/components/ui/card.tsx';
 import { CheckOption } from '@/components/ui/choice.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
 import { RadioGroup, RadioOption } from '@/components/ui/radio-group.tsx';
-import { Eyebrow } from '@/components/ui/type.tsx';
 import {
   DoorPuzzle,
   Honeypot,
@@ -75,7 +73,6 @@ import {
 } from '@/features/door/useDoor.tsx';
 import { FilePicker, useFilingTarget } from '@/features/files/FilesCard.tsx';
 import { useUploader } from '@/features/files/uploader.ts';
-import { useGateMode } from '@/features/identity/gateMode.ts';
 import { ApiRequestError, call } from '@/lib/api.ts';
 import { PausedForm, useIntakePaused } from '../flood/IntakePaused.tsx';
 import { CardBar, CardFrame, FilingProgress, useCardTitle, useFocusOnMount } from './CardFrame.tsx';
@@ -86,7 +83,8 @@ import { Cover } from './Cover.tsx';
 import { ContactCard, ManageCard, ShareCard, shortened } from './WrittenCards.tsx';
 import type { CtaProps } from './HelpNow.tsx';
 import { QuestionControl, kindHelp } from './QuestionControl.tsx';
-import { TipOffer, rememberForTip } from './tipOffer.tsx';
+import { rememberForTip } from './tipOffer.tsx';
+import { FiledReceipt, LimitPage, SentReceipt } from './Receipts.tsx';
 import {
   askedCards,
   askedQuestions,
@@ -101,7 +99,6 @@ import {
   withChange,
 } from './walk.ts';
 import type { RawAnswers, RawValue } from './walk.ts';
-import { HeaderProgress } from '../nav/progress.tsx';
 
 export const publicLogbookQuery = (slug: string) =>
   queryOptions({
@@ -430,21 +427,18 @@ function Cards({
   );
 
   if (send.isSuccess) {
-    return (
-      <FormColumn>
-        {'filed' in send.data ? (
-          <FiledReceipt reference={send.data.public_ref} />
-        ) : (
-          <SentReceipt
-            email={email.trim()}
-            onChangeAddress={() => {
-              send.reset();
-              setStep('contact');
-              cards.push({ card: 'contact', toReview: false });
-            }}
-          />
-        )}
-      </FormColumn>
+    return 'filed' in send.data ? (
+      <FiledReceipt title={title} reference={send.data.public_ref} />
+    ) : (
+      <SentReceipt
+        email={email.trim()}
+        title={title}
+        onChangeAddress={() => {
+          send.reset();
+          setStep('contact');
+          cards.push({ card: 'contact', toReview: false });
+        }}
+      />
     );
   }
 
@@ -555,9 +549,10 @@ function Cards({
     <FormColumn>
       <Honeypot door={door} />
       <DoorPuzzle door={door} />
-      {/* The header rule takes a percentage; progress here is a fraction. */}
-      <HeaderProgress percent={progress === null ? null : Math.round(progress * 100)} />
-      <FilingProgress value={progress} />
+      <FilingProgress
+        value={progress}
+        question={step === 'intro' || step === 'review' ? null : at}
+      />
 
       {step === 'intro' ? (
         <Cover
@@ -668,7 +663,7 @@ function Cards({
       ) : null}
 
       {step === 'review' ? (
-        <CardFrame eyebrow={title} heading="Check your answers" focusKey={step}>
+        <CardFrame eyebrow={title} stepLabel="Review" heading="Check your answers" focusKey={step}>
           <p className="max-w-prose">
             {givesAddress
               ? 'Nothing is filed until you confirm it from your email. Check it over first.'
@@ -1101,154 +1096,6 @@ function ReviewRow({
           Change
         </Button>
       </dd>
-    </div>
-  );
-}
-
-/**
- * Sealed on arrival (E1): nothing to confirm and nothing to come back to. The
- * reference is shown here and only here (owner, 2026-10-24), beside the line
- * that says nobody has accepted it yet, so it is never read as approval.
- * "It's on the record" (file-sent): the reference, what a moderator does
- * next, and that nothing can quietly change.
- */
-function FiledReceipt({ reference }: { reference: string }) {
-  return (
-    <Receipt eyebrow="Sent" heading="It’s on the record">
-      <Card className="gap-2">
-        <p className="label-face text-xs text-ink-alt">Your reference</p>
-        <p
-          className="font-mono text-2xl font-bold"
-          aria-label={`Reference ${reference.split('').join(' ')}`}
-        >
-          {reference}
-        </p>
-        <p className="max-w-prose">
-          Save this. It is how you find your report on the board once it is published. You skipped
-          the manage link, so the report can’t be changed now. If something was wrong, file a new
-          one.
-        </p>
-        <CopyReference reference={reference} />
-      </Card>
-      <ol className="flex max-w-prose list-decimal flex-col gap-3 pl-5">
-        <li>
-          <b>A moderator reads it next.</b> Nothing is public until they approve it.
-        </li>
-        <li>
-          <b>If it meets the standard, it is published.</b> Look it up with your reference on the
-          board.
-        </li>
-        <li>
-          <b>It stays on the record.</b> Nobody can quietly change it or take it down.
-        </li>
-      </ol>
-    </Receipt>
-  );
-}
-
-/** A button that copies the reference. The text stays selectable when the browser refuses. */
-function CopyReference({ reference }: { reference: string }) {
-  const [said, setSaid] = useState<string | null>(null);
-  return (
-    <div className="flex flex-col items-start gap-1">
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => {
-          void navigator.clipboard.writeText(reference).then(
-            () => {
-              setSaid('Copied.');
-            },
-            () => {
-              setSaid('This browser would not copy it. Select the text instead.');
-            },
-          );
-        }}
-      >
-        Copy reference
-      </Button>
-      {said ? (
-        <p role="status" className="text-sm text-ink-alt">
-          {said}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-/** "Check your email to finish" (file-check-email). Nothing is kept but the waiting copy. */
-function SentReceipt({ email, onChangeAddress }: { email: string; onChangeAddress: () => void }) {
-  return (
-    <Receipt eyebrow="One more step" heading="Check your email to finish">
-      <p className="max-w-prose text-lede">
-        We sent a link to <strong className="break-all">{email}</strong>.{' '}
-        <b>Your report is filed when you press it.</b> Until then nothing is kept but the waiting
-        copy, and it is deleted if the link expires.
-      </p>
-      <Alert tone="note">
-        <span>
-          Nothing in your inbox? Check spam, or{' '}
-          <button type="button" className="min-h-11 underline" onClick={onChangeAddress}>
-            change the address
-          </button>
-          . One address can file up to five reports a day.
-        </span>
-      </Alert>
-    </Receipt>
-  );
-}
-
-/** "This address can't file more today" (file-limit): nothing was filed, the answers are kept. */
-function LimitPage({ onBack }: { onBack: () => void }) {
-  return (
-    <Receipt eyebrow="Not sent" heading="This address can’t file more today" tip={false}>
-      <p className="max-w-prose text-lede">
-        Nothing was filed. Try again tomorrow. Your answers are kept on this page until you leave
-        it.
-      </p>
-      <Button type="button" className="self-start" onClick={onBack}>
-        Back to your answers
-      </Button>
-    </Receipt>
-  );
-}
-
-/** The receipt replaces the form; focus moves to its heading. */
-function Receipt({
-  eyebrow = 'File a report',
-  heading,
-  tip = true,
-  children,
-}: {
-  eyebrow?: string;
-  heading: string;
-  /** The tip offer, only after a report was sent. */
-  tip?: boolean;
-  children: ReactNode;
-}) {
-  const onDoor = useGateMode() === 'door';
-  const focused = useFocusOnMount<HTMLHeadingElement>();
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>{eyebrow}</Eyebrow>
-        <h1 ref={focused} tabIndex={-1} className="font-display text-title outline-none">
-          {heading}
-        </h1>
-      </div>
-      {children}
-      {tip ? <TipOffer /> : null}
-      {/* Behind the password on a door, so not offered there. */}
-      {onDoor ? null : (
-        <p className="flex flex-wrap gap-x-2">
-          <Button asChild variant="quiet">
-            <a href="/">Back to the front page</a>
-          </Button>
-          <Button asChild variant="quiet">
-            <a href="/board">See the live board</a>
-          </Button>
-        </p>
-      )}
     </div>
   );
 }

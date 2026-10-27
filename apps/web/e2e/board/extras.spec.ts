@@ -59,7 +59,7 @@ test.describe('the press pack', () => {
     const outside = watchOutside(page);
     // The tab is hidden while the pack is empty, so go to the page itself.
     await page.goto('/board/press');
-    await expect(page.getByRole('heading', { level: 1, name: 'Press pack' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Press pack' })).toBeVisible();
     await expect(page.getByText('Nothing has been published here yet.')).toBeVisible();
     expect(outside).toEqual([]);
   });

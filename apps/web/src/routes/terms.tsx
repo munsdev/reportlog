@@ -12,6 +12,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { PublicPage } from '../features/site-pages/PublicPage.tsx';
+import { AsideCard } from '../components/ui/band.tsx';
 import { useSite } from '../components/ui/site.tsx';
 
 export const Route = createFileRoute('/terms')({
@@ -22,8 +23,40 @@ function TermsPage() {
   const site = useSite();
   return (
     <PublicPage
+      variant="band"
       title="Terms of use and contact"
-      width="prose"
+      eyebrow="Legal"
+      aside={
+        <AsideCard title="Related" plain>
+          <ul className="grid list-none gap-1 p-0">
+            <li>
+              <Link
+                to="/legal"
+                className="inline-flex min-h-11 items-center underline underline-offset-4"
+              >
+                Imprint and privacy
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/standards"
+                className="inline-flex min-h-11 items-center underline underline-offset-4"
+              >
+                Moderation standard
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/illegal-content"
+                className="inline-flex min-h-11 items-center underline underline-offset-4"
+              >
+                Report illegal content
+              </Link>
+            </li>
+          </ul>
+        </AsideCard>
+      }
+      asideLabel="Related"
       lede="What this site does with what you send it, and who to write to."
     >
       {site.isPending ? <p role="status">Loading…</p> : null}

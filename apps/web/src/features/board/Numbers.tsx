@@ -8,7 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Alert } from '../../components/ui/alert.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
 import { Card } from '../../components/ui/card.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
+import { Bars } from '../../components/ui/bars.tsx';
 import { Meta } from '../../components/ui/type.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
@@ -18,7 +18,7 @@ export function NumbersPage() {
   const query = useQuery(boardStatsQuery);
   const d = query.data?.published ? query.data : null;
   return (
-    <BoardFrame title="By the numbers" width="prose">
+    <BoardFrame title="By the numbers" heading="By the numbers">
       {query.isPending ? <p role="status">Counting…</p> : null}
       {query.isError ? (
         <Alert tone="serious" title="The numbers could not be loaded">
@@ -40,24 +40,22 @@ export function NumbersPage() {
               </p>
               {Object.entries(b.by_question).map(([key, q]) => (
                 <Card key={key} heading={q.label} headingLevel={3}>
-                  <KeyValueList
+                  <Bars
+                    label={q.label}
                     items={[
                       ...Object.entries(q.counts)
                         .sort((x, y) => y[1] - x[1])
-                        .map(([answer, n]) => ({ key: answer, value: n, mono: true })),
+                        .map(([answer, n]) => ({ label: answer, value: n })),
                       ...(q.withheld && q.withheld.reports !== null
                         ? [
                             {
-                              key: `Places with fewer than ${String(q.withheld.threshold)}, together`,
+                              label: `Places with fewer than ${String(q.withheld.threshold)}, together`,
                               value: q.withheld.reports,
-                              mono: true,
                             },
                           ]
                         : []),
                       // Last, always: an unanswered question is counted, not hidden.
-                      ...(q.unanswered
-                        ? [{ key: 'Not answered', value: q.unanswered, mono: true }]
-                        : []),
+                      ...(q.unanswered ? [{ label: 'Not answered', value: q.unanswered }] : []),
                     ]}
                   />
                   {q.withheld ? (

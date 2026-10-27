@@ -16,16 +16,15 @@ export function SignInPage({ next }: { next: string | undefined }) {
     <section className="flex max-w-prose flex-col gap-4">
       <Eyebrow>{site.data ? <BrandName parts={site.data.name_parts} /> : 'ReportLog'}</Eyebrow>
       <h1 className="font-display text-title font-bold">Sign in</h1>
-      <Lede>We email you a code. No password to remember.</Lede>
+      <Lede>
+        We send a six-digit code. Staff then confirm with a passkey or an authenticator app.
+      </Lede>
       <SignInForm
         onSignedIn={async () => {
           await changed();
           router.history.push(next ?? '/home');
         }}
       />
-      <p className="text-sm text-ink-alt">
-        Staff then confirm with an authenticator app or a passkey.
-      </p>
     </section>
   );
 }

@@ -15,14 +15,15 @@
  */
 import { listOpenLists, listPublicLogbooks } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { Alert } from '../components/ui/alert.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { Empty } from '../components/ui/empty.tsx';
-import { RadioGroup, RadioOption } from '../components/ui/radio-group.tsx';
+import { Wrap } from '../components/ui/band.tsx';
+import { Eyebrow } from '../components/ui/type.tsx';
+import { HelpNow } from '../features/form/HelpNow.tsx';
 import { useSite } from '../components/ui/site.tsx';
-import { CardBar, CardFrame, useCardTitle } from '../features/form/CardFrame.tsx';
+import { useCardTitle } from '../features/form/CardFrame.tsx';
 import { FormColumn, FormNotice } from '../features/form/FormNotice.tsx';
 import { call } from '../lib/api.ts';
 
@@ -47,9 +48,6 @@ function Submit() {
   const logbooks = useQuery(openLogbooksQuery);
   const lists = useQuery(openListsQuery);
   const site = useSite();
-  const navigate = useNavigate();
-  const [chosen, setChosen] = useState('');
-  const [problem, setProblem] = useState<string | null>(null);
   const question = site.data?.copy.submit_question ?? 'What are you reporting?';
   useCardTitle(question);
   if (logbooks.isPending || lists.isPending || site.isPending) {
@@ -72,18 +70,29 @@ function Submit() {
   // A tips list that failed to load is no reason to hide the logbooks.
   const tips = lists.data?.lists.find((l) => l.slug === TIPS_SLUG);
   const choices = [
-    ...open.map((l) => ({ value: `logbook:${l.slug}`, label: l.title, hint: l.blurb })),
-    ...(tips ? [{ value: `list:${tips.slug}`, label: tips.title, hint: tips.blurb }] : []),
+    ...open.map((l) => ({
+      value: `logbook:${l.slug}`,
+      to: '/file/$slug' as const,
+      params: { slug: l.slug },
+      tag: 'Logbook',
+      action: 'File a report',
+      label: l.title,
+      hint: l.blurb,
+    })),
+    ...(tips
+      ? [
+          {
+            value: `list:${tips.slug}`,
+            to: '/list/$slug' as const,
+            params: { slug: tips.slug },
+            tag: 'List',
+            action: 'Send a link',
+            label: tips.title,
+            hint: tips.blurb,
+          },
+        ]
+      : []),
   ];
-  const go = () => {
-    const [kind, slug] = chosen.split(':');
-    if (!slug) {
-      setProblem('Choose one of the answers to go on.');
-      return;
-    }
-    if (kind === 'list') void navigate({ to: '/list/$slug', params: { slug } });
-    else void navigate({ to: '/file/$slug', params: { slug } });
-  };
   if (choices.length === 0) {
     return (
       <FormNotice title={question}>
@@ -94,41 +103,52 @@ function Submit() {
       </FormNotice>
     );
   }
+  const help = site.data?.copy;
   return (
-    <FormColumn>
-      <form
-        noValidate
-        className="flex flex-col gap-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          go();
-        }}
-      >
-        <CardFrame
-          eyebrow="File a report"
-          heading={question}
-          headingId="submit-question"
-          focusKey="submit"
-          help={<CopyText slot="submit_intro" className="text-ink-alt" />}
-          error={problem}
-          errorId="submit-problem"
+    <div data-bleed>
+      <Wrap className="grid max-w-[56rem] gap-6 pt-8 pb-16">
+        <div className="grid gap-2.5">
+          <Eyebrow>File a report</Eyebrow>
+          <h1 id="submit-question" className="font-display text-title">
+            {question}
+          </h1>
+          <CopyText slot="submit_intro" className="text-lede text-ink-alt" />
+        </div>
+        {/* The mock-up's chooser: each answer is a card that is a link, so
+            choosing opens it. No card here moves anybody on without a press. */}
+        <ul
+          aria-labelledby="submit-question"
+          className="grid list-none gap-4 p-0 min-[820px]:grid-cols-3"
         >
-          <RadioGroup
-            aria-labelledby="submit-question"
-            aria-describedby={problem ? 'submit-problem' : undefined}
-            value={chosen}
-            onValueChange={(v) => {
-              setProblem(null);
-              setChosen(v);
-            }}
-          >
-            {choices.map((c) => (
-              <RadioOption key={c.value} value={c.value} label={c.label} hint={c.hint} />
-            ))}
-          </RadioGroup>
-        </CardFrame>
-        <CardBar primary="Next" submit />
-      </form>
-    </FormColumn>
+          {choices.map((c) => (
+            <li key={c.value} className="flex">
+              <Link
+                to={c.to}
+                params={c.params}
+                className="grid w-full content-start gap-2.5 rounded-card border-(length:--rl-border-main) border-ink bg-surface p-[18px] text-ink no-underline shadow-raised"
+              >
+                <span className="font-mono text-xs tracking-[0.1em] text-muted uppercase">
+                  {c.tag}
+                </span>
+                <span className="font-display text-[1.35rem] leading-none">{c.label}</span>
+                {c.hint ? <span className="text-[0.95rem] text-ink-alt">{c.hint}</span> : null}
+                <span className="label-face mt-1 inline-flex min-h-11 items-center justify-self-start rounded-control border-control border-ink bg-action px-4.5 text-[0.84375rem] text-on-action">
+                  {c.action}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {help?.help_now ? (
+          <HelpNow
+            text={help.help_now}
+            heading={help.cta_heading}
+            buttonLabel={help.cta_button_text}
+            buttonUrl={help.cta_button_url}
+            mini
+          />
+        ) : null}
+      </Wrap>
+    </div>
   );
 }

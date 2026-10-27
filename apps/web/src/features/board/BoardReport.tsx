@@ -7,17 +7,17 @@
 import type { PublicNote, PublicReport } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
-import { useEffect } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
-import { plainSiteName, useSite } from '../../components/ui/site.tsx';
-import { Eyebrow, Meta } from '../../components/ui/type.tsx';
+import { Meta } from '../../components/ui/type.tsx';
+import { AsideCard, BandPage, TwoCol, Wrap } from '../../components/ui/band.tsx';
+import { CopyBox } from '../site-pages/CopyBox.tsx';
+import { CopyButton } from '../site-pages/CopyButton.tsx';
 import { ApiRequestError } from '../../lib/api.ts';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
 import { boardReportQuery } from './queries.ts';
-import { ReportAnswers, useReportHeadline } from './ReportAnswers.tsx';
+import { ReportAnswers, useReportParts } from './ReportAnswers.tsx';
 import { ReportTags } from './Board.tsx';
 
 const INTAKE: Record<string, string> = {
@@ -30,19 +30,13 @@ const INTAKE: Record<string, string> = {
 
 export function BoardReportPage({ publicRef }: { publicRef: string }) {
   const query = useQuery(boardReportQuery(publicRef));
-  const site = plainSiteName(useSite().data);
-  const title = query.data?.published ? query.data.report.public_ref : 'No published report';
-  useEffect(() => {
-    if (!query.isPending) document.title = `${title} · ${site}`;
-  }, [title, site, query.isPending]);
   if (query.isPending) return <p role="status">Loading…</p>;
   if (query.isError) {
     // Not public, counts only, or never filed: the same page, on purpose.
     const missing = query.error instanceof ApiRequestError && query.error.status === 404;
     return (
-      <ReportColumn>
+      <BandPage title="No published report" eyebrow="Published report">
         <BackToBoard />
-        <h1 className="font-display text-title">No published report</h1>
         {missing ? (
           <p className="max-w-prose">There is no published report with that reference.</p>
         ) : (
@@ -50,52 +44,109 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
             {query.error.message}
           </Alert>
         )}
-      </ReportColumn>
+      </BandPage>
     );
   }
   if (!query.data.published) {
     return (
-      <ReportColumn>
+      <BandPage title="No published report" eyebrow="Published report">
         <BackToBoard />
-        <h1 className="font-display text-title">No published report</h1>
         <Card variant="deep">
           <p className="font-semibold">
             Publishing is paused. Reports still arrive and are being read.
           </p>
         </Card>
-      </ReportColumn>
+      </BandPage>
     );
   }
-  const { report: r } = query.data;
+  return <PublishedReport r={query.data.report} />;
+}
+
+/** The mock-up's report page: a band, the answers, a note, and share and cite beside. */
+function PublishedReport({ r }: { r: PublicReport }) {
+  const { where, what } = useReportParts(r.logbook_slug, r.answers);
+  const origin = typeof window === 'undefined' ? '' : window.location.origin;
+  const address = `${origin}/board/${r.public_ref}`;
+  const filedAt = new Date(r.received_at).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+  const citation = `Report ${r.public_ref}, filed ${filedAt}. ${address}`;
   return (
-    <ReportColumn>
-      <BackToBoard />
-      <div className="flex flex-col gap-2">
-        <Eyebrow>{r.logbook_title}</Eyebrow>
-        <ReportHeading r={r} />
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+    <BandPage
+      title={r.public_ref}
+      heading={what ?? where ?? r.logbook_title}
+      eyebrow={`Published report · ${where ?? r.logbook_title}`}
+      band={
+        <div className="flex flex-wrap items-center gap-x-3.5 gap-y-2">
           <ReportTags r={r} />
+          <span className="font-mono text-sm break-all text-muted">
+            {r.public_ref} · Filed {filedAt}
+          </span>
         </div>
-      </div>
-      <Card heading="What the reporter said">
-        <ReportAnswers slug={r.logbook_slug} answers={r.answers} />
-        {r.corrected ? (
-          <p className="max-w-prose text-sm text-ink-alt">
-            This is a corrected version. Its reporter corrected an earlier one, which is kept.
-          </p>
-        ) : null}
-      </Card>
+      }
+      bare
+    >
+      <Wrap className="pt-8 pb-16">
+        <BackToBoard />
+        <TwoCol
+          className="mt-3"
+          asideLabel="Share and cite"
+          aside={
+            <>
+              <AsideCard title="Share" plain>
+                <CopyBox text={address} what="the link" code={address} />
+              </AsideCard>
+              <AsideCard title="Cite this report" plain>
+                <p className="rounded-control border-[1.5px] border-line bg-surface p-3 font-mono text-sm break-words text-ink">
+                  {citation}
+                </p>
+                <CopyButton text={citation} what="the citation" />
+              </AsideCard>
+              <AsideCard title="Filed this report?" plain>
+                <p>
+                  If you left an email, the link we sent lets you correct or withdraw it. Without
+                  one, a report cannot be changed; file a new one.
+                </p>
+              </AsideCard>
+            </>
+          }
+        >
+          <ReportBody r={r} />
+        </TwoCol>
+      </Wrap>
+    </BandPage>
+  );
+}
+
+function ReportBody({ r }: { r: PublicReport }) {
+  return (
+    <>
+      <h2 className="sr-only">What the reporter said</h2>
+      <ReportAnswers slug={r.logbook_slug} answers={r.answers} />
+      {r.corrected ? (
+        <p className="max-w-prose text-sm text-ink-alt">
+          This is a corrected version. Its reporter corrected an earlier one, which is kept.
+        </p>
+      ) : null}
       <PublishedFiles publicRef={r.public_ref} />
       {r.editorial_note ? <Note note={r.editorial_note} /> : null}
-      <p>
-        <Link
-          to="/verify/$ref"
-          params={{ ref: r.public_ref }}
-          className="underline underline-offset-4"
-        >
-          Check this report
-        </Link>
-      </p>
+      <details className="rounded-card border-[1.5px] border-line bg-surface p-4">
+        <summary className="flex min-h-11 cursor-pointer items-center font-semibold">
+          Technical details
+        </summary>
+        <div className="mt-3 grid gap-2 text-sm">
+          <span className="label-face text-xs text-muted">Chain value</span>
+          <span className="font-mono break-all">{r.chain_hash}</span>
+          <Link
+            to="/verify/$ref"
+            params={{ ref: r.public_ref }}
+            className="inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            Check this report
+          </Link>
+        </div>
+      </details>
       {r.third_party ? (
         // Which organization, never who typed it.
         <p className="max-w-prose text-sm text-ink-alt">
@@ -107,12 +158,29 @@ export function BoardReportPage({ publicRef }: { publicRef: string }) {
           .
         </p>
       ) : null}
-    </ReportColumn>
+    </>
   );
 }
 
-function ReportColumn({ children }: { children: ReactNode }) {
-  return <article className="flex max-w-prose flex-col gap-6">{children}</article>;
+/**
+ * The mock-up's lock note: a written account or a link was sent with this
+ * report and is not published (D10). Says only that one exists; the content
+ * is never on a public page. Nothing draws it until the public report
+ * carries the flags (they are the free-text work's, not this page's).
+ */
+export function UnpublishedNote({ text, links }: { text: boolean; links: number }) {
+  if (!text && !links) return null;
+  const what = [
+    text ? 'a written account' : null,
+    links ? `${String(links)} link${links === 1 ? '' : 's'}` : null,
+  ]
+    .filter(Boolean)
+    .join(' and ');
+  return (
+    <p className="rounded-control border-[1.5px] border-dashed border-ink bg-surface p-3 text-[0.92rem]">
+      <b className="font-display">This report also has {what}.</b> They are not published.
+    </p>
+  );
 }
 
 function BackToBoard() {
@@ -145,27 +213,5 @@ function Note({ note }: { note: PublicNote }) {
         <p className="max-w-prose">{note.notice}</p>
       )}
     </Card>
-  );
-}
-
-/**
- * Where and what as the heading, the reference under it. The reference as it
- * is written, in mono, never in the display face's capitals or stretch.
- */
-function ReportHeading({ r }: { r: PublicReport }) {
-  const headline = useReportHeadline(r.logbook_slug, r.answers);
-  return (
-    <h1 className="flex flex-col gap-1">
-      {headline ? <span className="font-display text-title">{headline}</span> : null}
-      <span
-        className={
-          headline
-            ? 'font-mono text-base font-medium tracking-normal break-all text-ink-alt normal-case'
-            : 'font-mono text-[clamp(1.5rem,1.2rem+1.5vw,2.25rem)] leading-tight font-medium tracking-normal break-all normal-case'
-        }
-      >
-        {r.public_ref}
-      </span>
-    </h1>
   );
 }

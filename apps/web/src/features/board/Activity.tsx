@@ -166,6 +166,7 @@ export function ActivityPage() {
   return (
     <BoardFrame
       title="Arrivals, declines and switches"
+      heading="Arrivals, declines and switches"
       lede="When accepted reports arrived, by the hour, so a burst looks like a burst; how many reports were declined and why; and every time a moderator used a flood switch."
       width="prose"
     >

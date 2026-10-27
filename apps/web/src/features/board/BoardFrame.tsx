@@ -12,21 +12,19 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import { useRouterState } from '@tanstack/react-router';
-import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { plainSiteName, useSite } from '../../components/ui/site.tsx';
-import { Eyebrow, Lede } from '../../components/ui/type.tsx';
+import { BandPage, BandTabs } from '../../components/ui/band.tsx';
 import { cn } from '../../lib/utils.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
 import { pressQuery } from './queries.ts';
-import { TabRow } from '../nav/AreaTabs.tsx';
 
 type BoardPath = '/board' | '/board/numbers' | '/board/maps' | '/board/activity' | '/board/press';
 
 const TABS: readonly { to: BoardPath; label: string }[] = [
-  { to: '/board', label: 'Reports' },
-  { to: '/board/numbers', label: 'By the numbers' },
+  { to: '/board', label: 'List' },
+  { to: '/board/numbers', label: 'Numbers' },
   { to: '/board/maps', label: 'Maps' },
+  { to: '/board/activity', label: 'Activity' },
   { to: '/board/press', label: 'Press pack' },
 ];
 
@@ -42,53 +40,64 @@ export function BoardTabs() {
     (t) => (t.to !== '/board/maps' || hasMaps) && (t.to !== '/board/press' || hasPress),
   );
   return (
-    <TabRow
-      label="The board"
+    <BandTabs
+      label="Report views"
       tabs={tabs.map((t) => ({ to: t.to, label: t.label, current: path === t.to }))}
     />
   );
 }
 
 /**
- * A board page: the eyebrow, its heading and lede, the actions beside the
- * heading on a desktop (under it on a phone), the tabs, then the page.
+ * A board page (mock-up board*.html): the same band on every tab (the
+ * eyebrow, "Reports", the figure, the lead and the tabs), then the page.
+ * A tab other than the list names itself with a heading of its own
+ * (`heading`), under the band; the list needs none.
  */
 export function BoardFrame({
   title,
-  eyebrow,
+  heading,
   lede,
   actions,
   width = 'wide',
   children,
 }: {
+  /** The browser tab's title. */
   title: string;
-  /** The site's name on the board itself; "Live report board" on its tabs. */
-  eyebrow?: string;
+  /** This tab's own heading, under the band. */
+  heading?: string;
+  /** A sentence under this tab's heading. */
   lede?: ReactNode;
   actions?: ReactNode;
   width?: 'wide' | 'prose';
+  eyebrow?: string;
   children: ReactNode;
 }) {
-  const site = plainSiteName(useSite().data);
-  useEffect(() => {
-    document.title = `${title} · ${site}`;
-  }, [title, site]);
   return (
-    <section className="flex flex-col gap-6">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div className="flex flex-col gap-3">
-          <Eyebrow>{eyebrow ?? 'Live report board'}</Eyebrow>
-          <h1 className="font-display text-title">{title}</h1>
-          {lede ? <Lede>{lede}</Lede> : null}
+    <BandPage
+      title={title}
+      heading="Reports"
+      eyebrow="Public record"
+      lede="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
+      band={
+        <>
+          <BoardTabs />
+        </>
+      }
+    >
+      {heading || actions ? (
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="grid gap-2">
+            {heading ? <h2 className="font-display text-section">{heading}</h2> : null}
+            {lede ? <p className="max-w-[62ch] text-lede text-ink-alt">{lede}</p> : null}
+          </div>
+          {actions ? (
+            <div className="flex flex-col gap-3 lg:shrink-0 lg:flex-row">{actions}</div>
+          ) : null}
         </div>
-        {actions ? (
-          <div className="flex flex-col gap-3 lg:shrink-0 lg:flex-row">{actions}</div>
-        ) : null}
-      </header>
-      <BoardTabs />
+      ) : null}
       <div className={cn('flex flex-col gap-6', width === 'prose' && 'max-w-prose')}>
         {children}
       </div>
-    </section>
+    </BandPage>
   );
 }

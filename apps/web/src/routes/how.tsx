@@ -11,6 +11,8 @@
  */
 import { SOFTWARE_LICENCE, SOFTWARE_NAME, SOFTWARE_SOURCE } from '@reportlog/contracts';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router';
+import { AsideCard } from '../components/ui/band.tsx';
+import { Button } from '../components/ui/button.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { ProseSection } from '../components/ui/prose-section.tsx';
 import { DeveloperTab } from '../features/site-pages/DeveloperTab.tsx';
@@ -42,45 +44,89 @@ function HowPage() {
     void navigate({ to: '/how', search: id === 'filing' ? {} : { tab: id }, replace: true });
   };
   return (
-    <PublicPage title="How to use this" width="prose">
+    <PublicPage
+      variant="band"
+      title="How to use this"
+      eyebrow="How it works"
+      band={
+        // The band's tabs (mock-up .tabs): a row of buttons that scrolls
+        // inside itself, so the page never does.
+        <div
+          role="tablist"
+          aria-label="How to use this"
+          className="-mx-1 mt-1.5 flex overflow-x-auto border-b border-line [scrollbar-width:none]"
+        >
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              id={`how-tab-${t.id}`}
+              aria-selected={tab === t.id}
+              aria-controls={`how-panel-${t.id}`}
+              tabIndex={tab === t.id ? 0 : -1}
+              onClick={() => {
+                go(t.id);
+              }}
+              onKeyDown={(e) => {
+                const i = TABS.findIndex((x) => x.id === tab);
+                const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+                const next = TABS[(i + step + TABS.length) % TABS.length];
+                if (step && next) {
+                  e.preventDefault();
+                  go(next.id);
+                  document.getElementById(`how-tab-${next.id}`)?.focus();
+                }
+              }}
+              className={cn(
+                'label-face -mb-px inline-flex min-h-12 shrink-0 items-center border-b-[3px] px-4 text-[0.8125rem] whitespace-nowrap',
+                tab === t.id
+                  ? 'border-ink text-ink'
+                  : 'border-transparent text-muted hover:text-ink',
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      }
+      aside={
+        <>
+          <AsideCard title="On this page" plain>
+            <ol className="grid list-none gap-1 p-0">
+              {TABS.map((t, i) => (
+                <li key={t.id} className="grid grid-cols-[34px_1fr] items-center">
+                  <span aria-hidden="true" className="font-display text-xl text-ink">
+                    {i + 1}
+                  </span>
+                  <Link
+                    to="/how"
+                    search={t.id === 'filing' ? {} : { tab: t.id }}
+                    aria-current={tab === t.id ? 'page' : undefined}
+                    className="inline-flex min-h-11 items-center underline underline-offset-4 aria-[current=page]:font-bold"
+                  >
+                    {t.label}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </AsideCard>
+          <AsideCard title="Check a report">
+            <p>Confirm a report has not been changed since it was filed.</p>
+            <Button asChild variant="secondary" className="justify-self-start">
+              <Link to="/verify">Check</Link>
+            </Button>
+          </AsideCard>
+        </>
+      }
+      asideLabel="On this page"
+    >
       <CopyText slot="how_intro" />
-      <div role="tablist" aria-label="How to use this" className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            role="tab"
-            id={`how-tab-${t.id}`}
-            aria-selected={tab === t.id}
-            aria-controls={`how-panel-${t.id}`}
-            tabIndex={tab === t.id ? 0 : -1}
-            onClick={() => {
-              go(t.id);
-            }}
-            onKeyDown={(e) => {
-              const i = TABS.findIndex((x) => x.id === tab);
-              const step = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
-              const next = TABS[(i + step + TABS.length) % TABS.length];
-              if (step && next) {
-                e.preventDefault();
-                go(next.id);
-                document.getElementById(`how-tab-${next.id}`)?.focus();
-              }
-            }}
-            className={cn(
-              'min-h-11 rounded-control border px-4 font-semibold',
-              tab === t.id ? 'border-ink bg-ink text-paper' : 'border-line bg-surface text-ink',
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
       <div
         role="tabpanel"
         id={`how-panel-${tab}`}
         aria-labelledby={`how-tab-${tab}`}
-        className="flex flex-col gap-8"
+        className="flex max-w-[66ch] flex-col gap-8"
       >
         {tab === 'filing' ? <Filing /> : null}
         {tab === 'next' ? <Next /> : null}

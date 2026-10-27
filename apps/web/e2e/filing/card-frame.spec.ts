@@ -169,7 +169,7 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
   expect(sent).toHaveLength(0);
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).click();
   await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: /on the record/ })).toBeFocused({
+  await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeFocused({
     timeout: 30_000,
   });
 

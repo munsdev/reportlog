@@ -219,7 +219,7 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   );
   await expect(page.getByRole('button', { name: 'Under active development' })).toBeVisible();
   // Nothing of the board, and nothing behind the gate was asked to draw this.
-  await expect(page.getByRole('heading', { name: 'Live report board' })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Reports', level: 1 })).toHaveCount(0);
   await page.waitForLoadState('networkidle');
   expect(
     seen.paths.filter(

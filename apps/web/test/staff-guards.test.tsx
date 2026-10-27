@@ -115,6 +115,8 @@ const OPEN = [
   '/illegal-content/',
   '/illegal-content/status/$token',
   '/terms',
+  // Get involved: the open lists, public like the front page.
+  '/get-involved',
   '/list/$slug',
   '/$slug',
   '/map/$slug',

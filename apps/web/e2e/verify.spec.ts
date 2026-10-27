@@ -13,7 +13,7 @@ const ref = refs[0] ?? '';
 test('a reader checks a report from the front page', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Report reference').fill(ref);
-  await page.getByRole('button', { name: 'Check it' }).click();
+  await page.getByRole('button', { name: 'Check', exact: true }).click();
 
   await expect(page).toHaveURL(new RegExp(`/verify/${ref}$`));
   await page.getByText('Technical details').click();

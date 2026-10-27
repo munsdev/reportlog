@@ -10,10 +10,10 @@ export interface CheckRowProps {
 
 export function CheckRow({ ok, title, detail }: CheckRowProps) {
   return (
-    <li className="flex gap-3 rounded-card border border-line bg-surface p-4">
+    <li className="flex items-start gap-3 rounded-control border-[1.5px] border-line bg-surface px-3.5 py-3">
       <span
         aria-hidden="true"
-        className={`mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full font-bold ${
+        className={`flex size-7 shrink-0 items-center justify-center rounded-full font-bold ${
           ok ? 'bg-confirmed text-on-confirmed' : 'bg-serious text-on-serious'
         }`}
       >

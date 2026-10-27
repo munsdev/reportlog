@@ -19,12 +19,40 @@ export interface CtaProps {
   buttonUrl?: string | undefined;
 }
 
-export function HelpNow({ text, heading, buttonLabel, buttonUrl }: CtaProps) {
+export function HelpNow({
+  text,
+  heading,
+  buttonLabel,
+  buttonUrl,
+  mini = false,
+}: CtaProps & {
+  /** The mock-up's small notice on a cover: a rule at the left, no panel. */
+  mini?: boolean;
+}) {
   if (!text.trim()) return null;
   const label = buttonLabel?.trim();
   const url = buttonUrl?.trim();
   // A path on this site stays in the tab; anything with a scheme leaves it.
   const external = url ? /^[a-z][a-z0-9+.-]*:/i.test(url) : false;
+  if (mini) {
+    return (
+      <div className="border-l-[5px] border-ink py-1 pl-3 text-[0.95rem] text-ink-alt">
+        <h2 className="font-display font-bold text-ink">
+          {heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}
+        </h2>
+        <p data-copy="help_now" className="max-w-prose whitespace-pre-wrap">
+          {text}
+        </p>
+        {label && url ? (
+          <Button asChild variant="quiet" className="-ml-2">
+            <a href={url} {...(external ? { rel: 'noopener' } : {})}>
+              {label}
+            </a>
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
   return (
     <Card variant="deep" className="gap-2">
       <h2 className="label-face text-sm text-brand-on-deep">

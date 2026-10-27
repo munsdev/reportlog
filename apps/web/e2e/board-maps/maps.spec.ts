@@ -92,7 +92,7 @@ test('a map in each of the board’s slots, no count under the threshold, and no
   try {
     // Above the report board: before the filters.
     await page.goto('/board');
-    await expect(page.getByRole('heading', { level: 1, name: 'Live report board' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
     const above = mapOf('board_reports');
     await expect(above.getByRole('img')).toBeVisible();
     await expect(page.getByRole('search', { name: 'Search the board' })).toBeVisible();
@@ -122,13 +122,13 @@ test('a map in each of the board’s slots, no count under the threshold, and no
     // The board's own Maps page, reached from the board.
     await page.getByRole('link', { name: 'Maps', exact: true }).click();
     await expect(page).toHaveURL(/\/board\/maps$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
     await expect(mapOf('board_tab').getByRole('img')).toBeVisible();
     await expect(mapOf('board_reports')).toHaveCount(0);
 
     // With the numbers, below the counts.
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 1, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
     await expect(mapOf('board_numbers').getByRole('img')).toBeVisible();
     await expect(mapOf('board_reports')).toHaveCount(0);
 

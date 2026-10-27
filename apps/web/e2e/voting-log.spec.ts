@@ -86,7 +86,7 @@ async function send(page: Page) {
   // Send waits for the puzzle, solved in the background in this page.
   await page.getByRole('button', { name: 'Send report' }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
-  await expect(page.getByRole('heading', { level: 1, name: /on the record/ })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeVisible();
   await expect(page.getByText(/A moderator reads it before anything is public/)).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link\?/)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Send a link' })).toHaveAttribute(
@@ -363,12 +363,12 @@ test('the entry card: what do you want to do, and its two answers', async ({ pag
   const outside = watch(page);
   await page.goto('/submit');
   await heading(page, 'What do you want to do?');
-  await expect(page.getByRole('radio')).toHaveCount(2);
-  await expect(page.getByRole('radio', { name: 'Log how voting went' })).toBeVisible();
+  await expect(
+    page.getByRole('list', { name: 'What do you want to do?' }).getByRole('link'),
+  ).toHaveCount(2);
+  await expect(page.getByRole('link', { name: /Log how voting went/ })).toBeVisible();
   await expectAccessible(page, 'the entry card');
-  await page.getByRole('radio', { name: 'Send a link' }).check();
-  await expect(page).toHaveURL(/\/submit$/);
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('link', { name: /Send a link/ }).click();
   await expect(page).toHaveURL(/\/list\/tips$/);
   expect(outside).toEqual([]);
 });

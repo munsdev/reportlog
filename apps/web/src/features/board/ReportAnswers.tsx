@@ -79,12 +79,17 @@ export function ReportAnswers({
     );
   }
   const shown = all.slice(0, only);
+  // The mock-up's key and value list: a rule between rows, the question in
+  // the small label face, the answer beside it from 640px.
   return (
-    <dl className="flex flex-col gap-2">
+    <dl className="grid border-t border-line">
       {shown.map(({ q, text }) => (
-        <div key={q.key}>
-          <dt className="text-sm font-semibold text-ink-alt">{q.label}</dt>
-          <dd className="whitespace-pre-wrap">{text}</dd>
+        <div
+          key={q.key}
+          className="grid gap-1 border-b border-line py-3.5 min-[640px]:grid-cols-[220px_1fr] min-[640px]:gap-4"
+        >
+          <dt className="label-face text-xs text-muted">{q.label}</dt>
+          <dd className="m-0 font-medium whitespace-pre-wrap">{text}</dd>
         </div>
       ))}
     </dl>
@@ -100,15 +105,24 @@ export function ReportAnswers({
  * checked, not what somebody scans a list for.
  */
 export function useReportHeadline(slug: string, answers: Record<string, unknown>): string | null {
+  const { where, what } = useReportParts(slug, answers);
+  const parts = [where, what].filter((p): p is string => Boolean(p));
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/** The same two facts apart: where (a location answer) and what (a single choice). */
+export function useReportParts(
+  slug: string,
+  answers: Record<string, unknown>,
+): { where: string | null; what: string | null } {
   const logbook = useQuery({ ...publicLogbookQuery(slug), staleTime: 5 * 60_000 });
   const questions: FormQuestion[] = logbook.data?.fields ?? [];
-  if (!questions.length) return null;
+  if (!questions.length) return { where: null, what: null };
   const raw = rawFromAnswers(questions, answers);
   const asked = askedQuestions(questions, raw);
   const pick = (kind: string) => {
     const q = asked.find((x) => x.kind === kind && shownAnswer(x, raw, questions) !== null);
     return q ? shownAnswer(q, raw, questions) : null;
   };
-  const parts = [pick('location'), pick('choice_one')].filter((p): p is string => Boolean(p));
-  return parts.length ? parts.join(' · ') : null;
+  return { where: pick('location'), what: pick('choice_one') };
 }

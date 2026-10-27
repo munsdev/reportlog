@@ -39,6 +39,9 @@ import { clearTipPrefill, takeTipPrefill } from '../form/tipOffer.tsx';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
+import { Steps, Wrap } from '../../components/ui/band.tsx';
+import { FollowBand } from '../follow/FollowBand.tsx';
+import { useGateMode } from '../identity/gateMode.ts';
 import { Button } from '../../components/ui/button.tsx';
 import { Card } from '../../components/ui/card.tsx';
 import { CheckOption } from '../../components/ui/choice.tsx';
@@ -222,9 +225,12 @@ function Cards({ form }: { form: Form }) {
 
   if (send.isSuccess) {
     return (
-      <FormColumn>
-        <Sent erasureMailed={send.data.erasure_mailed} erasable={send.data.erasable} />
-      </FormColumn>
+      <Sent
+        erasureMailed={send.data.erasure_mailed}
+        erasable={send.data.erasable}
+        days={form.personal_days}
+        title={form.title}
+      />
     );
   }
 
@@ -278,7 +284,7 @@ function Cards({ form }: { form: Form }) {
         {/* A box nobody can see. Filled in means a script. */}
         <Honeypot door={door} />
         <DoorPuzzle door={door} />
-        <FilingProgress value={progress} />
+        <FilingProgress value={progress} question={at === 0 ? null : at} />
         {step.kind === 'intro' ? (
           <Intro form={form} />
         ) : step.kind === 'question' ? (
@@ -345,29 +351,70 @@ function Cards({ form }: { form: Form }) {
   );
 }
 
-/** After sending: quiet, with a tick, never teal. Focus moves to its heading. */
-function Sent({ erasureMailed, erasable }: { erasureMailed: boolean; erasable: boolean }) {
+/**
+ * After sending (mock-up tips-sent.html): quiet, never teal. What happens
+ * next is read from the list's own settings, so nothing here promises what
+ * the list does not do. Focus moves to the heading; the Follow along band
+ * (placement `after_tip`) sits under it.
+ */
+function Sent({
+  erasureMailed,
+  erasable,
+  days,
+  title,
+}: {
+  erasureMailed: boolean;
+  erasable: boolean;
+  days: number | null;
+  title: string;
+}) {
   const heading = useFocusOnMount<HTMLHeadingElement>();
+  const onDoor = useGateMode() === 'door';
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>Send something</Eyebrow>
-        <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
-          Sent. Thank you.
-        </h1>
-      </div>
-      <Alert tone="done">Nothing you sent is published. A moderator reads it.</Alert>
-      {erasureMailed ? (
-        <p className="max-w-prose">
-          We emailed you a link that deletes what you wrote and your email address. Keep that email
-          if you might want to use it.
-        </p>
-      ) : erasable ? (
-        <p className="max-w-prose">
-          We could not email you the link that deletes what you wrote. Ask whoever runs this site if
-          you want it deleted.
-        </p>
-      ) : null}
+    <div data-bleed className="flex flex-col">
+      <Wrap className="pt-8 pb-12">
+        <div className="flex max-w-[40rem] flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <Eyebrow>Sent</Eyebrow>
+            <h1 ref={heading} tabIndex={-1} className="font-display text-title outline-none">
+              Sent. Thank you.
+            </h1>
+          </div>
+          <Steps
+            items={[
+              {
+                title: 'A moderator reads it.',
+                body: `Your message to “${title}” goes to the team.`,
+              },
+              { title: 'Nothing here is published.', body: 'Nothing you sent is published.' },
+              {
+                title:
+                  days === null
+                    ? 'It is kept until it is erased.'
+                    : `It is deleted after ${String(days)} days.`,
+                body: erasureMailed
+                  ? 'We emailed you a link that deletes what you wrote and your email address. Keep that email if you might want to use it.'
+                  : erasable
+                    ? 'We could not email you the link that deletes what you wrote. Ask whoever runs this site if you want it deleted.'
+                    : 'You gave no name or email, so there is nothing else to erase.',
+              },
+            ]}
+          />
+          <div className="flex flex-wrap items-center gap-3.5">
+            <Button asChild variant="secondary">
+              <a href={typeof window === 'undefined' ? '.' : window.location.pathname}>
+                Send another
+              </a>
+            </Button>
+            {onDoor ? null : (
+              <Button asChild variant="quiet">
+                <a href="/">Back to the front page</a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </Wrap>
+      <FollowBand placement="after_tip" bleed />
     </div>
   );
 }
@@ -376,6 +423,36 @@ function Sent({ erasureMailed, erasable }: { erasureMailed: boolean; erasable: b
  * The first card: the shared cover (decision 78). What happens to an entry is
  * said on the email card, where it matters.
  */
+/**
+ * What this list does with what is sent, said before the first question
+ * (mock-up tips.html): published or not, what it asks about you, how long it
+ * is kept. Each line is read from the list's own settings, so none of it can
+ * promise what the list does not do.
+ */
+function coverFacts(form: Form): { term: string; detail: string }[] {
+  const parts: string[] = [];
+  if (form.asks_email && form.email_when !== 'never') {
+    parts.push(
+      `Your email address${form.email_when === 'if-written' ? ', only if you write something' : ''}${
+        form.email_reason === 'reply' ? ', so we can write back' : ', so you can have it erased'
+      }.`,
+    );
+  }
+  if (form.personal_keys.length) parts.push('Some answers are about you and are kept apart.');
+  const asks = parts.length ? parts.join(' ') : 'Nothing. No name, no email.';
+  const kept =
+    form.personal_days === null
+      ? form.asks_email
+        ? 'Until you erase it from the link in your email.'
+        : 'Until the team removes it.'
+      : `${String(form.personal_days)} days, then deleted.`;
+  return [
+    { term: 'Published?', detail: 'No. Nothing sent here is published.' },
+    { term: 'What we ask about you', detail: asks },
+    { term: 'How long it is kept', detail: kept },
+  ];
+}
+
 function Intro({ form }: { form: Form }) {
   const site = useSite().data?.copy;
   return (
@@ -384,6 +461,7 @@ function Intro({ form }: { form: Form }) {
       title={form.title}
       blurb={form.blurb}
       cover={form.cover}
+      facts={coverFacts(form)}
       // On a door the site cannot be asked, so a cover that follows it draws nothing.
       site={
         site

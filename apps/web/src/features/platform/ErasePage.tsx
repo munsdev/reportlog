@@ -138,7 +138,7 @@ function LinkPage({
     document.title = `${title} · ${site}`;
   }, [title, site]);
   return (
-    <section className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
+    <section className="flex w-full max-w-[40rem] flex-col gap-6">
       <div className="flex flex-col gap-2">
         {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
         <h1 className="font-display text-title">{title}</h1>

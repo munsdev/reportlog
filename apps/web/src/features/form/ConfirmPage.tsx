@@ -18,6 +18,8 @@ import type { ReactNode } from 'react';
 import { Alert } from '@/components/ui/alert.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
+import { Wrap } from '@/components/ui/band.tsx';
+import { FollowBand } from '@/features/follow/FollowBand.tsx';
 import { Eyebrow, Meta } from '@/components/ui/type.tsx';
 import { useGateMode } from '@/features/identity/gate.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
@@ -80,10 +82,13 @@ export function ConfirmPage({ token }: { token: string }) {
 function Column({
   eyebrow,
   title,
+  follow = false,
   children,
 }: {
   eyebrow?: string | undefined;
   title?: string | undefined;
+  /** The Follow along band under it: a filed report only. */
+  follow?: boolean;
   children: ReactNode;
 }) {
   const site = plainSiteName(useSite().data);
@@ -91,15 +96,20 @@ function Column({
     if (title) document.title = `${title} · ${site}`;
   }, [title, site]);
   return (
-    <section className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
-      {title ? (
-        <div className="flex flex-col gap-2">
-          {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-          <h1 className="font-display text-title">{title}</h1>
-        </div>
-      ) : null}
-      {children}
-    </section>
+    <div data-bleed className="flex flex-col">
+      <Wrap className="pt-8 pb-12">
+        <section className="flex max-w-[40rem] flex-col gap-6">
+          {title ? (
+            <div className="flex flex-col gap-2">
+              {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
+              <h1 className="font-display text-title">{title}</h1>
+            </div>
+          ) : null}
+          {children}
+        </section>
+      </Wrap>
+      {follow ? <FollowBand placement="after_filing" bleed /> : null}
+    </div>
   );
 }
 
@@ -224,23 +234,35 @@ function Shown({
         ? 'Your report is counted'
         : 'Your report is filed';
   return (
-    <Column eyebrow={c.logbook_title} title={title}>
+    <Column eyebrow={c.logbook_title} title={title} follow={!onDoor}>
       {/* Quiet, never teal: teal is a moderator's word, and this page says
           only where the report stands. */}
-      <Alert tone="done" title={`Its reference is ${c.public_ref}`}>
-        {c.state === 'public'
-          ? 'A moderator approved it, and it is on the public archive.'
-          : c.state === 'counted'
-            ? // A counts-only logbook (Plan E): counted, its words shown nowhere.
-              'A moderator approved it. This logbook publishes counts only, so your report is counted in the public figures, and its words are not shown on the site.'
-            : // While the archive is off nothing is public, so the page never
-              // says the word (decisions.md §5).
-              c.archive_closed
-              ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
-              : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
-      </Alert>
+      <div className="grid content-start gap-2.5 rounded-card border-(length:--rl-border-main) border-ink bg-surface p-[18px] shadow-raised">
+        <p className="grid gap-1">
+          <span className="font-mono text-xs tracking-[0.1em] text-muted uppercase">
+            Its reference is
+          </span>{' '}
+          <span className="font-display text-[clamp(2rem,8vw,3.5rem)] leading-none tracking-[0.02em] break-all">
+            {c.public_ref}
+          </span>
+        </p>
+        <p className="text-[0.95rem] text-ink-alt">
+          {c.state === 'public'
+            ? 'A moderator approved it, and it is on the public archive.'
+            : c.state === 'counted'
+              ? // A counts-only logbook (Plan E): counted, its words shown nowhere.
+                'A moderator approved it. This logbook publishes counts only, so your report is counted in the public figures, and its words are not shown on the site.'
+              : // While the archive is off nothing is public, so the page never
+                // says the word (decisions.md §5).
+                c.archive_closed
+                ? 'A moderator reads every report first. This site is not publishing reports at the moment, so a report it approves may be published later. You can come back to this link to see where it stands.'
+                : 'A moderator reads every report before anything is public. You can come back to this link to see where it stands.'}
+        </p>
+      </div>
       {c.files ? <FilesFiled files={c.files} /> : null}
-      <p className="max-w-prose">Keep the reference.</p>
+      <p className="max-w-prose">
+        Keep the reference. Sign in with your email to find it under your reports.
+      </p>
       {/* Behind the password, the rest of the site is not this page's to offer. */}
       {onDoor ? null : (
         <div className="flex flex-col items-start gap-2">

@@ -80,9 +80,12 @@ export function clearTipPrefill(): void {
  */
 export function TipOffer() {
   return (
-    <div className="flex flex-col items-stretch gap-3 sm:items-start">
-      <p className="max-w-prose">Thank you. Have a link? Send it as a tip.</p>
-      <Button asChild variant="secondary" size="lg" block className="sm:w-auto">
+    <div className="grid content-start gap-2.5 rounded-card border-[1.5px] border-line bg-surface p-[18px]">
+      <h2 className="font-display text-[1.35rem] leading-none">Saw it online too?</h2>
+      <p className="max-w-prose text-[0.95rem] text-ink-alt">
+        Thank you. Have a link? Send it as a tip.
+      </p>
+      <Button asChild variant="secondary" className="justify-self-start">
         <a href="/list/tips">Send a link</a>
       </Button>
     </div>

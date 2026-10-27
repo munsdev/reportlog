@@ -21,7 +21,9 @@ function StandardsPage() {
   const site = useSite();
   return (
     <PublicPage
+      variant="band"
       title="Moderation standard"
+      eyebrow="Legal"
       width="prose"
       lede="What gets published here, what is held back, and who decides."
     >

@@ -59,7 +59,7 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   const title = `Where it happened ${slug}`;
 
   await page.goto('/maps');
-  await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
 
   // Which question places the fixture logbook's reports.
   await page.getByLabel(lb.title).selectOption('where');
@@ -217,7 +217,7 @@ test('the staff screen says "No maps yet." when there are none, and draws no map
     return route.fulfill({ json: { maps: [], slots: body.slots } });
   });
   await page.goto('/maps');
-  await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
   await expect(page.getByText('No maps yet', { exact: true })).toBeVisible();
   await page.unrouteAll({ behavior: 'wait' });
 

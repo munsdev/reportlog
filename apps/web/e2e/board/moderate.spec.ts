@@ -167,7 +167,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   await page.getByLabel('Search the words').fill(word);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`q=${word}`));
-  await page.getByRole('link', { name: /^Read in full: RL-/ }).click();
+  await page.getByRole('link', { name: /RL-[A-Z0-9-]+/ }).click();
   await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
   await expect(page.locator('main')).not.toContainText('second read');
   await expect(page.locator('main')).not.toContainText(email);

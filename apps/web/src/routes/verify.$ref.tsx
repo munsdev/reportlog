@@ -10,14 +10,11 @@ import { verifyReport } from '@reportlog/contracts';
 import type { Verification } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { useEffect } from 'react';
 import { CheckRow } from '../components/CheckRow.tsx';
 import { Alert } from '../components/ui/alert.tsx';
-import { Card } from '../components/ui/card.tsx';
+import { BandPage } from '../components/ui/band.tsx';
 import { Tick } from '../components/ui/choice.tsx';
 import { KeyValueList } from '../components/ui/key-value-list.tsx';
-import { plainSiteName, useSite } from '../components/ui/site.tsx';
-import { Eyebrow } from '../components/ui/type.tsx';
 import { CheckAReport } from '../features/board/CheckAReport.tsx';
 import { CopyButton } from '../features/site-pages/CopyButton.tsx';
 import { ApiRequestError, call } from '../lib/api.ts';
@@ -36,26 +33,31 @@ export const Route = createFileRoute('/verify/$ref')({
 function VerifyPage() {
   const { ref } = Route.useParams();
   const query = useQuery(verificationQuery(ref));
-  const site = plainSiteName(useSite().data);
-  useEffect(() => {
-    document.title = `Check ${ref} · ${site}`;
-  }, [ref, site]);
-
   return (
-    <article className="flex max-w-prose flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <Eyebrow>Check a report</Eyebrow>
-        <h1 className="font-mono text-[clamp(1.5rem,1.2rem+1.5vw,2.25rem)] leading-tight font-medium tracking-normal break-all normal-case">
-          {ref}
-        </h1>
+    <BandPage
+      title={`Check ${ref}`}
+      heading="Has it changed?"
+      eyebrow="Check a report"
+      lede="Enter a reference. This page fetches the report’s sealed record and recomputes its fingerprint in your browser, then compares it with the chain."
+    >
+      <div className="flex max-w-[640px] flex-col gap-6">
+        {/* key: a new reference starts a new field. */}
+        <CheckAReport
+          key={ref}
+          inline
+          initial={ref}
+          button="Check"
+          help="Looks like RL-XXXX-XX. It is on the report page and in your email."
+        />
+        {query.isPending ? <p role="status">Checking…</p> : null}
+        {query.isError ? <VerifyError error={query.error} /> : null}
+        {query.isSuccess ? <VerifyResult v={query.data} ref_={ref} /> : null}
+        <p className="text-muted">
+          If a check fails, the page says which step failed and shows both values. A failed check on
+          one report means that report; it says nothing about the others.
+        </p>
       </div>
-      {query.isPending ? <p role="status">Checking…</p> : null}
-      {query.isError ? <VerifyError error={query.error} /> : null}
-      {query.isSuccess ? <VerifyResult v={query.data} /> : null}
-      <Card variant="quiet" heading={query.isError ? 'Try another reference' : 'Check another'}>
-        <CheckAReport button="Check it" help={null} />
-      </Card>
-    </article>
+    </BandPage>
   );
 }
 
@@ -69,30 +71,36 @@ function VerifyError({ error }: { error: Error }) {
 }
 
 /**
- * The verdict: words first, a mark second, colour last. Which check failed
- * is named, so "does not check out" is never the whole story.
+ * The verdict: words first, a mark second, colour last (mock-up .result).
+ * Which check failed is named, so "does not check out" is never the whole story.
  */
-function Verdict({ failed }: { failed: string[] }) {
+function Verdict({ failed, ref_ }: { failed: string[]; ref_: string }) {
   const ok = failed.length === 0;
   return (
-    <Card variant="deep" className="flex-row items-start gap-3">
+    <div
+      role="status"
+      className={`grid gap-1.5 rounded-card border-(length:--rl-border-main) bg-surface p-5 ${
+        ok ? 'border-confirmed' : 'border-serious'
+      }`}
+    >
       <span
-        aria-hidden="true"
-        className="flex size-8 shrink-0 items-center justify-center rounded-full bg-on-deep text-deep"
+        className={`label-face inline-flex items-center gap-2 text-xs ${
+          ok ? 'text-confirmed' : 'text-serious'
+        }`}
       >
-        {ok ? <Tick /> : <span className="font-bold">✕</span>}
+        <span aria-hidden="true">{ok ? <Tick /> : '✕'}</span>
+        {ok ? 'Checked just now' : 'Does not check out'}
       </span>
-      <div className="flex flex-col gap-1">
-        <p className="font-display text-xl">
-          {ok ? 'This report has not been changed.' : 'This report does not check out.'}
-        </p>
-        {ok ? null : <p className="text-on-deep-muted">What failed: {failed.join('; ')}.</p>}
-      </div>
-    </Card>
+      <h2 className="font-display text-[clamp(1.4rem,3.6vw,2rem)] leading-[1.05]">
+        {ok ? 'This report has not been changed.' : 'This report does not check out.'}
+      </h2>
+      <p className="font-mono text-sm text-muted">{ref_}</p>
+      {ok ? null : <p className="text-ink-alt">What failed: {failed.join('; ')}.</p>}
+    </div>
   );
 }
 
-export function VerifyResult({ v }: { v: Verification }) {
+export function VerifyResult({ v, ref_ = '' }: { v: Verification; ref_?: string }) {
   const browser = recheckInBrowser(v);
   const checks = [
     {
@@ -141,19 +149,19 @@ export function VerifyResult({ v }: { v: Verification }) {
   ];
   return (
     <div className="flex flex-col gap-6">
-      <Verdict failed={checks.filter((c) => !c.ok).map((c) => c.title.toLowerCase())} />
+      <Verdict failed={checks.filter((c) => !c.ok).map((c) => c.title.toLowerCase())} ref_={ref_} />
+      <ul className="grid list-none gap-2.5 p-0" aria-label="Checks">
+        {checks.map((c) => (
+          <CheckRow key={c.title} ok={c.ok} title={c.title} detail={c.detail} />
+        ))}
+      </ul>
       {/* The verdict above is the answer. The rest is for somebody who wants
           to see how it was reached, so it is folded away, not removed. */}
-      <details className="rounded-card border border-ink-alt bg-surface p-4">
+      <details className="rounded-card border-[1.5px] border-line bg-surface p-4">
         <summary className="flex min-h-11 cursor-pointer items-center font-semibold">
           Technical details
         </summary>
         <div className="mt-3 flex flex-col gap-4">
-          <ul className="flex flex-col gap-3" aria-label="Checks">
-            {checks.map((c) => (
-              <CheckRow key={c.title} ok={c.ok} title={c.title} detail={c.detail} />
-            ))}
-          </ul>
           <KeyValueList items={fingerprints} />
           {v.canonical_json === undefined ? null : (
             <div className="flex flex-col gap-3 text-sm">

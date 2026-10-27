@@ -75,7 +75,7 @@ test('several open logbooks: each is offered, with what it is for, and opens its
   await page.goto('/submit');
   await expect(chooser(page)).toBeVisible();
   for (const lb of made) {
-    const option = page.getByRole('radio', { name: lb.title });
+    const option = page.getByRole('link', { name: new RegExp(lb.title) });
     await expect(option).toBeVisible();
     await expect(page.getByText(lb.blurb).first()).toBeVisible();
   }
@@ -83,10 +83,8 @@ test('several open logbooks: each is offered, with what it is for, and opens its
 
   const second = made[1];
   if (!second) throw new Error('two logbooks were made');
-  // Choosing moves nobody on: only the confirm button does.
-  await page.getByRole('radio', { name: second.title }).check();
-  await expect(page).toHaveURL(/\/submit$/);
-  await page.getByRole('button', { name: 'Next' }).click();
+  // Each answer is a card that is a link: pressing it opens the form.
+  await page.getByRole('link', { name: new RegExp(second.title) }).click();
   await expect(page).toHaveURL(new RegExp(`/file/${second.slug}$`));
   await expect(page.getByRole('heading', { level: 1, name: second.title })).toBeVisible();
   expect(outside).toEqual([]);
@@ -111,8 +109,7 @@ test('one open logbook and an intro written: the intro and the one answer, and a
   await expect(chooser(page)).toBeVisible();
   await expect(page.getByText(words)).toBeVisible();
   await expectAccessible(page, '/submit with an intro');
-  await page.getByRole('radio', { name: 'The only one open' }).check();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('link', { name: /The only one open/ }).click();
   await expect(page).toHaveURL(/\/file\/demo$/);
 });
 
@@ -123,20 +120,22 @@ test('one open logbook and no intro: still a card, never a redirect (E2, E3)', a
   await page.goto('/submit');
   await expect(chooser(page)).toBeVisible();
   await expect(page).toHaveURL(/\/submit$/);
-  // Nothing chosen: the button asks for an answer rather than guessing one.
-  await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByText('Choose one of the answers to go on.')).toBeVisible();
-  await expect(page).toHaveURL(/\/submit$/);
+  // Nothing moves on by itself: the card waits to be pressed.
+  await expect(page.getByRole('link', { name: /The only one open/ })).toBeVisible();
 });
 
 test('a link or tip is the other answer, and goes to the tip form', async ({ page }) => {
   await onlyOpen(page, [{ slug: 'demo', title: 'I was at a polling place', blurb: '' }]);
   await openLists(page, [{ slug: 'tips', title: 'Send a link', blurb: 'A post or video.' }]);
   await page.goto('/submit');
-  await expect(page.getByRole('radio')).toHaveCount(2);
+  await expect(
+    page.getByRole('list', { name: 'What are you reporting?' }).getByRole('link'),
+  ).toHaveCount(2);
   await expectAccessible(page, '/submit with the tip answer');
-  await page.getByRole('radio', { name: 'Send a link' }).check();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page
+    .getByRole('link', { name: /Send a link/ })
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/list\/tips$/);
 });
 
@@ -146,7 +145,7 @@ test('nothing open: it says so, rather than showing an empty list', async ({ pag
   await expect(chooser(page)).toBeVisible();
   await expect(page.getByText('Nothing is taking reports at the moment.')).toBeVisible();
   // No answers to choose from; the page still links to the front page and the board.
-  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.getByRole('list', { name: 'What are you reporting?' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'The board' })).toBeVisible();
   await expectAccessible(page, '/submit with nothing open');
 });
