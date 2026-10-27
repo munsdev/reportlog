@@ -57,7 +57,13 @@ export async function launchedLogbook(
   }
   await db
     .updateTable('logbooks')
-    .set({ launched_at: new Date() })
+    .set({
+      launched_at: new Date(),
+      // Held questions are only asked while the logbook takes notes and links.
+      ...(questions.some((q) => q.kind === 'private_text' || q.kind === 'private_link')
+        ? { accepts_notes: true }
+        : {}),
+    })
     .where('id', '=', lb.id)
     .execute();
   return lb;

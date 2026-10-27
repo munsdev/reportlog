@@ -12,6 +12,7 @@
  * files (their manifest needs the files worker), which P1's fuller upgrade
  * test is to cover.
  */
+import { sql } from 'kysely';
 import { copyFile, mkdtemp, readdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -174,6 +175,10 @@ describe('the held-values migration on a database that already has reports', () 
     }
 
     // A report waiting for its link, sent through the routes on the old schema.
+    // Today's filing code reads logbooks.accepts_notes, which a later migration
+    // adds; give the old schema the bare column for this step and take it away
+    // again before the real tail runs, so that migration still applies.
+    await sql`ALTER TABLE logbooks ADD COLUMN accepts_notes boolean`.execute(db);
     const mailer = capturingMailer();
     const app = await buildApp({
       config: { LOG_LEVEL: 'silent', SITE_ORIGIN: SITE, CONTACT_KEY },
@@ -202,6 +207,7 @@ describe('the held-values migration on a database that already has reports', () 
       expect(v?.content.ok && v.link.ok && v.position.ok, v?.public_ref).toBe(true);
     }
 
+    await sql`ALTER TABLE logbooks DROP COLUMN accepts_notes`.execute(db);
     const applied = await migrate(old.url);
     // The held-values migration and every later one: other workers' migrations
     // land after it, and the point is that the whole tail changes nothing
