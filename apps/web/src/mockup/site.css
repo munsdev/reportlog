@@ -762,3 +762,9 @@ body.light .follow,.scope-light .follow{background:var(--p-chrome);color:#fff}
 .grid2 > *,.col > *{min-width:0}
 .textarea{width:100%;max-width:100%;box-sizing:border-box}
 .panel .mono{overflow-wrap:anywhere}
+
+/* ---------- added for the app (the mock-up's pages are static files) ---------- */
+/* The mock-up leaves "File a report" out of the header on a filing page. */
+body.form .site-head .head-right > .btn{display:none}
+/* A page the app draws inside its padded column (data-bleed) rather than directly in <main>. */
+body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
