@@ -280,6 +280,11 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
       call(updateLogbook, { params: { id: lb.id }, body: { email_required: on } }),
     onSuccess: refresh,
   });
+  const optional = useMutation({
+    mutationFn: (on: boolean) =>
+      call(updateLogbook, { params: { id: lb.id }, body: { email_optional: on } }),
+    onSuccess: refresh,
+  });
   const fromQuestions = lb.asks_email && !lb.email_required;
   return (
     <Panel title="Asking for an email address">
@@ -303,7 +308,18 @@ function EmailRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           }}
         />
       )}
-      <Problem error={save.error} />
+      {lb.asks_email ? null : (
+        <Check
+          label="Offer an optional email address"
+          checked={lb.email_optional}
+          disabled={optional.isPending}
+          help="A card asks if reporters want to correct or withdraw the report later. With an address the report is filed when they press the emailed link; without one it is filed at once. A reporter who writes something or gives a link is always asked."
+          onCheckedChange={(on) => {
+            optional.mutate(on);
+          }}
+        />
+      )}
+      <Problem error={save.error ?? optional.error} />
     </Panel>
   );
 }
