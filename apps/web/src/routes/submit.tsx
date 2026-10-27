@@ -18,7 +18,7 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { Note } from '@/mockup/Note.tsx';
 import { CopyText } from '../components/ui/copy-text.tsx';
-import { Empty } from '../components/ui/empty.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
 import { DEFAULT_CTA_HEADING } from '../features/form/HelpNow.tsx';
 import { useSite } from '../components/ui/site.tsx';
 import { BtnLink } from '../mockup/Btn.tsx';

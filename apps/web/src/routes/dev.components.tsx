@@ -185,8 +185,8 @@ function ComponentsPage() {
           <Chip>Counts only</Chip>
           <Count value={7} label="7 reports waiting" />
           <span className="rounded-control bg-deep p-2">
-            <Count tone="action" value={7} label="7 reports waiting for you" />{' '}
-            <Count tone="onDeep" value={3} label="3 tips waiting" />
+            <Count value={7} label="7 reports waiting for you" />{' '}
+            <Count value={3} label="3 tips waiting" />
           </span>
         </div>
       </Section>

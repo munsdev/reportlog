@@ -14,7 +14,7 @@
 import { getIntakePause } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Note } from '@/mockup/Note.tsx';
-import { Card } from '../../components/ui/card.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { FormNotice } from '../form/FormNotice.tsx';
 import { call } from '../../lib/api.ts';
 import { useGateMode } from '../identity/gateMode.ts';
@@ -36,7 +36,7 @@ export function PauseBanner() {
   const pause = useQuery({ ...intakePauseQuery, enabled: !onDoor }).data;
   if (!pause?.paused) return null;
   return (
-    <div className="mx-auto w-full max-w-page px-4 pt-4">
+    <div className="wrap" style={{ paddingTop: 16 }}>
       <Note title="Intake is paused">
         {/* The operator's words (site copy), sent with the pause. */}
         <span data-copy="intake_paused_notice">{pause.notice}</span>
@@ -58,13 +58,13 @@ export function PausedForm({ title, eyebrow }: { title: string; eyebrow?: string
   const pause = useQuery(intakePauseQuery).data;
   return (
     <FormNotice title={title} {...(eyebrow ? { eyebrow } : {})}>
-      <Card variant="deep">
-        <h2 className="label-face text-sm text-brand-on-deep">Intake is paused</h2>
+      <Panel kind="deep">
+        <h2>Intake is paused</h2>
         {/* The operator's words (site copy), sent with the pause. */}
-        <p data-copy="intake_paused_notice" className="max-w-prose whitespace-pre-wrap">
+        <p data-copy="intake_paused_notice" style={{ whiteSpace: 'pre-wrap' }}>
           {pause?.notice}
         </p>
-      </Card>
+      </Panel>
     </FormNotice>
   );
 }

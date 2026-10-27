@@ -7,14 +7,14 @@
  * asked for (see useSite), so this draws nothing there either.
  */
 import type { CopyKey } from '@reportlog/contracts';
-import { cn } from '@/lib/utils.ts';
 import { useSite } from './site.tsx';
 
 export function CopyText({ slot, className }: { slot: CopyKey; className?: string }) {
   const text = useSite().data?.copy[slot];
   if (!text) return null;
   return (
-    <p data-copy={slot} className={cn('max-w-prose whitespace-pre-wrap', className)}>
+    <p data-copy={slot} className={className}
+      style={{ whiteSpace: 'pre-wrap' }}>
       {text}
     </p>
   );

@@ -18,7 +18,6 @@ import { getMyReport } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Page } from '@/components/ui/page.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { rawFromAnswers, shownAnswer } from '@/features/form/walk.ts';
@@ -66,10 +65,10 @@ function Declaration({ threadId }: { threadId: string }) {
   if (report.isPending) return <p role="status">Loading…</p>;
   if (report.isError) {
     return (
-      <Page title="Not one of your reports" width="prose">
+      <StaffPage title="Not one of your reports" width="prose">
         <p>{report.error.message}</p>
         <Link to="/mine">Back to your reports</Link>
-      </Page>
+      </StaffPage>
     );
   }
   const r = report.data;

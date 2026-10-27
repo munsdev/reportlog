@@ -12,15 +12,15 @@ import type { ComponentProps } from 'react';
 import { cn } from '@/lib/utils.ts';
 
 export function Eyebrow({ className, ...props }: ComponentProps<'p'>) {
-  return <p className={cn('label-face text-xs text-muted', className)} {...props} />;
+  return <p className={cn('eyebrow', className)} {...props} />;
 }
 
 export function Lede({ className, ...props }: ComponentProps<'p'>) {
-  return <p className={cn('max-w-[65ch] text-lede text-ink-alt', className)} {...props} />;
+  return <p className={cn('lede', className)} {...props} />;
 }
 
 export function Meta({ className, ...props }: ComponentProps<'span'>) {
-  return <span className={cn('font-mono text-[0.8125rem] text-muted', className)} {...props} />;
+  return <span className={cn('m mono', className)} {...props} />;
 }
 
 export interface CountLineProps extends Omit<ComponentProps<'p'>, 'children'> {
@@ -34,7 +34,7 @@ export interface CountLineProps extends Omit<ComponentProps<'p'>, 'children'> {
  */
 export function CountLine({ parts, className, ...props }: CountLineProps) {
   return (
-    <p aria-live="polite" className={cn('font-mono text-sm text-ink', className)} {...props}>
+    <p aria-live="polite" className={cn('m mono', className)} {...props}>
       {parts.filter(Boolean).join(' · ')}
     </p>
   );

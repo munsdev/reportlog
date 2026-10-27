@@ -153,7 +153,7 @@ export function SiteMenu({
                     Your dashboard
                     {reports ? (
                       <Count
-                        tone="onDeep"
+
                         value={reports}
                         label={`, ${waitingWords('reports', reports)}`}
                         className="ml-3"

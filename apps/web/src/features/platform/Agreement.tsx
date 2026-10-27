@@ -21,7 +21,6 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Field, FieldDescription, Label, Textarea } from '@/mockup/Field.tsx';
-import { Page } from '../../components/ui/page.tsx';
 import { call } from '../../lib/api.ts';
 import { StaffPage } from '../nav/StaffPage.tsx';
 
@@ -55,16 +54,16 @@ export function AgreementGate({
   const { current, accepted } = state.data;
   if (!current || accepted) return children;
   return (
-    <Page
+    <StaffPage
       title="Read and accept the agreement"
       width="prose"
       lede={`Version ${String(current.version)}. You accept it before you ${audience === 'journalist' ? 'open the desk' : 'work on reports'}, and again whenever it changes.`}
     >
-      <div className="rounded-card border border-line bg-surface p-5">
-        <p className="whitespace-pre-wrap" data-agreement-text>
+      <Panel>
+        <p style={{ whiteSpace: 'pre-wrap' }} data-agreement-text>
           {current.body}
         </p>
-      </div>
+      </Panel>
       {accept.isError ? (
         <Note tone="serious" title="It was not recorded">
           {accept.error.message}
@@ -81,7 +80,7 @@ export function AgreementGate({
           I have read this and I accept it
         </Btn>
       </div>
-    </Page>
+    </StaffPage>
   );
 }
 

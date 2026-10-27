@@ -24,7 +24,6 @@ import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Page } from '@/components/ui/page.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
@@ -170,10 +169,10 @@ function MyReportView({ threadId }: { threadId: string }) {
   if (report.isPending) return <p role="status">Loading…</p>;
   if (report.isError) {
     return (
-      <Page title="Not one of your reports" width="prose">
+      <StaffPage title="Not one of your reports" width="prose">
         <p>{report.error.message}</p>
         <Link to="/mine">Back to your reports</Link>
-      </Page>
+      </StaffPage>
     );
   }
   const r = report.data;

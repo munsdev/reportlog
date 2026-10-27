@@ -59,7 +59,7 @@ import type { RouterHistory } from '@tanstack/react-router';
 import { cardHeading, cardsOf, helpFor } from '@reportlog/fields';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
-import { Card } from '@/components/ui/card.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { CopyText } from '@/components/ui/copy-text.tsx';
 import {
   DoorPuzzle,
@@ -162,7 +162,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   if (!lb.accepting) {
     return (
       <FormNotice title={lb.title}>
-        <Card variant="quiet">
+        <Panel kind="quiet">
           <p className="max-w-prose">
             {lb.state !== 'scheduled'
               ? 'This logbook is closed. It is not taking reports.'
@@ -170,7 +170,7 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
                 ? `This logbook has not opened yet. It opens on ${new Date(lb.opens_at).toLocaleString()}.`
                 : 'This logbook has not opened yet.'}
           </p>
-        </Card>
+        </Panel>
       </FormNotice>
     );
   }
@@ -179,12 +179,12 @@ export function FilingForm({ slug, history }: { slug: string; history?: RouterHi
   if (intake.data?.open === false) {
     return (
       <FormNotice title={lb.title}>
-        <Card variant="quiet">
+        <Panel kind="quiet">
           <p className="max-w-prose">
             This site is not taking reports at the moment. Nothing you type here could be sent.
             Please come back later.
           </p>
-        </Card>
+        </Panel>
       </FormNotice>
     );
   }

@@ -167,7 +167,7 @@ function HeaderAndMenu() {
               MENU
               {reports ? (
                 <Count
-                  tone="action"
+
                   value={reports}
                   label={`. ${waitingWords('reports', reports)}`}
                   className="ml-2"
