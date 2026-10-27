@@ -92,7 +92,15 @@ export function SiteHeader() {
 function FileAction() {
   const { label, href } = useMainAction();
   return (
-    <Button asChild size="md" className="focus-visible:outline-on-deep" data-file-action>
+    <Button
+      asChild
+      size="md"
+      // Below 380px the bar has no room for a second control beside the
+      // wordmark and Menu without scrolling sideways: the menu's own main
+      // action is the way there.
+      className="focus-visible:outline-on-deep max-[379px]:hidden"
+      data-file-action
+    >
       {href === '/submit' ? <Link to="/submit">{label}</Link> : <a href={href}>{label}</a>}
     </Button>
   );
