@@ -485,14 +485,14 @@ update_status() {
 run_update_request() {
   local req="$REQUEST_DIR/request" action sha ref tip rc=0 log="$STATUS_DIR/log"
   [ -f "$req" ] || return 0
-  action=$(sed -n 's/^action=\([a-z]*\)$/\1/p' "$req" | head -n 1)
+  action=$(sed -n 's/^action=\([a-z_]*\)$/\1/p' "$req" | head -n 1)
   sha=$(sed -n 's/^sha=\([0-9a-f]\{40\}\)$/\1/p' "$req" | head -n 1)
   # Removed before anything runs, so a request runs once even if it fails
   # and the path unit does not start it again.
   rm -f "$req"
   install -d -m 0755 "$STATUS_DIR"
   case "$action" in
-    check | apply) ;;
+    check | apply | apply_test) ;;
     *)
       update_status refused unknown ""
       return 0
@@ -508,6 +508,21 @@ run_update_request() {
   fi
   update_status running "$action" "$sha"
   update_check >>"$log" 2>&1 || rc=$?
+  # THE TEST BUILD. The one branch name this accepts is fixed here, never
+  # read from the request: the file can say "apply_test" and nothing more.
+  if [ "$action" = apply_test ] && [ "$rc" -eq 0 ]; then
+    tip=$(git -C "$MIRROR" rev-parse --verify --quiet "refs/heads/test^{commit}" 2>/dev/null || true)
+    if [ -z "$tip" ]; then
+      echo "There is no branch called test on the repository, so there is no test build." >>"$log"
+      update_status refused "$action" ""
+      return 0
+    fi
+    echo "Installing the test build $tip." >>"$log"
+    exec 8>&-
+    "$LIB/deploy.sh" "$tip" >>"$log" 2>&1 || rc=$?
+    update_check >/dev/null 2>&1 || true
+    sha=$tip
+  fi
   if [ "$action" = apply ] && [ "$rc" -eq 0 ]; then
     ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
     tip=$(git -C "$MIRROR" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null || true)

@@ -7,8 +7,9 @@
  * is the service user's (STATE_DIR/update-request); a root systemd path unit
  * sees it and runs `reportlog request` (deploy/lib.sh, run_update_request).
  * Root treats the file as untrusted: it can ask for a check, or for the
- * commit the configured DEPLOY_REF points at after a fresh fetch, and
- * nothing else. So the worst a forged request can do is deploy what the
+ * commit the configured DEPLOY_REF points at after a fresh fetch, or for the
+ * newest commit of the one branch called `test` (apply_test: the hidden
+ * "Update to test build" button), and nothing else. So the worst a forged request can do is deploy what the
  * operator already configured, which the daily check would have offered.
  *
  * Administrators (the owner included), like every other Operations panel.
@@ -88,7 +89,7 @@ export async function updatesView(stateDir: string): Promise<UpdatesView> {
  */
 export async function writeRequest(
   stateDir: string,
-  body: { action: 'check' } | { action: 'apply'; sha: string },
+  body: { action: 'check' } | { action: 'apply'; sha: string } | { action: 'apply_test' },
 ): Promise<void> {
   const view = await updatesView(stateDir);
   if (view.waiting || view.last?.state === 'running')
@@ -100,7 +101,12 @@ export async function writeRequest(
       'What is on offer has changed since this page was loaded. Reload it and try again.',
     );
   const dir = join(stateDir, REQUEST_DIR);
-  const text = body.action === 'apply' ? `action=apply\nsha=${body.sha}\n` : 'action=check\n';
+  const text =
+    body.action === 'apply'
+      ? `action=apply\nsha=${body.sha}\n`
+      : body.action === 'apply_test'
+        ? 'action=apply_test\n'
+        : 'action=check\n';
   const tmp = join(dir, `.request.${String(process.pid)}`);
   try {
     await writeFile(tmp, text, { mode: 0o640 });
@@ -125,7 +131,8 @@ export function updateRoutes(app: FastifyInstance, deps: { stateDir: string }): 
     route(admin, requestUpdate, async ({ request }) => {
       await writeRequest(
         deps.stateDir,
-        request.body as { action: 'check' } | { action: 'apply'; sha: string },
+        request.body as
+          { action: 'check' } | { action: 'apply'; sha: string } | { action: 'apply_test' },
       );
       return updatesView(deps.stateDir);
     });

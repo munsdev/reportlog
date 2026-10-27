@@ -33,6 +33,15 @@ describe('the Update button', () => {
     await expect(writeRequest(dir, { action: 'check' })).rejects.toMatchObject({ code: 'busy' });
   });
 
+  it('can ask for the test build, naming no commit and no branch', async () => {
+    const dir = await stateDir();
+    await writeRequest(dir, { action: 'apply_test' });
+    expect(await readFile(join(dir, 'update-request', 'request'), 'utf8')).toBe(
+      'action=apply_test\n',
+    );
+    await expect(writeRequest(dir, { action: 'check' })).rejects.toMatchObject({ code: 'busy' });
+  });
+
   it('refuses a commit that is not the one on offer', async () => {
     const dir = await stateDir();
     await expect(writeRequest(dir, { action: 'apply', sha: 'c'.repeat(40) })).rejects.toMatchObject(
