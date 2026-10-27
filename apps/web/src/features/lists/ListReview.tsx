@@ -20,18 +20,14 @@ import type { ReviewBatch, ReviewState, TriageState } from '@reportlog/contracts
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Card, CardContent } from '../../components/ui/card.tsx';
-import { Checkbox } from '../../components/ui/checkbox.tsx';
-import { Chip } from '../../components/ui/chip.tsx';
-import { Count } from '../../components/ui/count.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Meta } from '../../components/ui/type.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Problem } from '../../mockup/Notice.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Seg } from '../../mockup/Seg.tsx';
+import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { StaffHead } from '../moderation/parts.tsx';
 import { reviewBatchQuery, reviewQueuesQuery } from './queries.ts';
 import { LINK_OUTCOME, REVIEW, TRIAGE, said } from './words.ts';
 
@@ -39,51 +35,54 @@ export function ReviewQueues() {
   const query = useQuery(reviewQueuesQuery());
   const waiting = query.data?.queues.some((q) => q.waiting > 0);
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <StaffHead
-          title="List entries"
-          lede="Entries sent to lists. Nothing here is published, and nothing on a list is sealed or counted publicly until it is approved here. Entries are read a page at a time and approved together."
-        />
-        <Button asChild variant="secondary" className="self-start sm:self-end">
-          <Link to="/lists/links">Links</Link>
-        </Button>
-      </div>
+    <StaffPage
+      title="List entries"
+      lede="Entries sent to lists. Nothing here is published, and nothing on a list is sealed or counted publicly until it is approved here. Entries are read a page at a time and approved together."
+      actions={
+        <Link className="btn sm flat" to="/lists/links">
+          Tip links
+        </Link>
+      }
+    >
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data && !waiting ? (
         <Empty title="No list has entries waiting">
           New entries appear here as they arrive. This page does not refresh by itself.
         </Empty>
       ) : null}
+      {query.data?.queues.map((q) => (
+        <article className="panel" key={q.id}>
+          <h2>
+            {q.title}{' '}
+            <span className="n">
+              <span aria-hidden="true">{q.waiting}</span>
+              <span className="sr-only">
+                {`${String(q.waiting)} ${q.waiting === 1 ? 'entry' : 'entries'} waiting`}
+              </span>
+            </span>
+          </h2>
+          {q.oldest ? (
+            <p className="m">{`The oldest from ${new Date(q.oldest).toLocaleString()}`}</p>
+          ) : null}
+          <div className="acts">
+            <Link
+              className="btn sm flat"
+              to="/lists/review/$id"
+              params={{ id: q.id }}
+              aria-label={`Open ${q.title}`}
+            >
+              Open
+            </Link>
+          </div>
+        </article>
+      ))}
       {query.data?.queues.length ? (
-        <ul className="flex flex-col gap-3" aria-label="Lists to review">
-          {query.data.queues.map((q) => (
-            <li key={q.id}>
-              <Card className="flex-row flex-wrap items-center gap-3 p-4">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <p className="flex flex-wrap items-center gap-2 font-semibold">
-                    {q.title}
-                    <Count
-                      value={q.waiting}
-                      label={`${String(q.waiting)} ${q.waiting === 1 ? 'entry' : 'entries'} waiting`}
-                    />
-                  </p>
-                  {q.oldest ? (
-                    <Meta>{`The oldest from ${new Date(q.oldest).toLocaleString()}`}</Meta>
-                  ) : null}
-                </div>
-                <Button asChild variant="secondary">
-                  <Link to="/lists/review/$id" params={{ id: q.id }} aria-label={`Open ${q.title}`}>
-                    Open
-                  </Link>
-                </Button>
-              </Card>
-            </li>
-          ))}
-        </ul>
+        <p className="muted">
+          The tip line’s links are checked on <Link to="/lists/links">Tip links</Link>.
+        </p>
       ) : null}
-    </div>
+    </StaffPage>
   );
 }
 
@@ -91,36 +90,29 @@ export function ReviewPage({ id }: { id: number }) {
   const [state, setState] = useState<ReviewState>('received');
   const query = useQuery(reviewBatchQuery(id, state));
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <StaffHead title={query.data ? `Review: ${query.data.list.title}` : 'Review'} />
-        <Button asChild variant="secondary" className="self-start sm:self-end">
-          <Link to="/lists/review">All lists</Link>
-        </Button>
-      </div>
-      {/* Wraps on a phone rather than scrolling sideways: see the queue's StatusButtons. */}
-      <div className="pt-1 pb-2">
-        <div role="group" aria-label="Show entries that are" className="flex flex-wrap gap-2">
-          {(Object.keys(REVIEW) as ReviewState[]).map((s) => (
-            <Button
-              key={s}
-              type="button"
-              variant="secondary"
-              aria-pressed={state === s}
-              className="shrink-0 aria-pressed:border-[3px] aria-pressed:bg-paper-alt"
-              onClick={() => {
-                setState(s);
-              }}
-            >
-              {REVIEW[s]}
-            </Button>
-          ))}
-        </div>
-      </div>
+    <StaffPage
+      title={query.data ? `Review: ${query.data.list.title}` : 'Review'}
+      actions={
+        <Link className="btn sm flat" to="/lists/review">
+          All lists
+        </Link>
+      }
+    >
+      <Seg
+        label="Show entries that are"
+        options={(Object.keys(REVIEW) as ReviewState[]).map((s) => ({
+          key: s,
+          label: REVIEW[s],
+          pressed: state === s,
+          onClick: () => {
+            setState(s);
+          },
+        }))}
+      />
       {query.isPending ? <p role="status">Reading the entries…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      {query.isError ? <Problem>{query.error.message}</Problem> : null}
       {query.data ? <Batch key={`${String(id)}-${state}`} batch={query.data} /> : null}
-    </div>
+    </StaffPage>
   );
 }
 
@@ -139,39 +131,40 @@ export function ShowAddress({ listId, entryId }: { listId: number; entryId: numb
     },
   });
   return (
-    <div className="flex flex-col gap-1 text-sm">
+    <>
       {address === null ? (
-        <Button
-          type="button"
-          variant="secondary"
-          className="self-start"
-          disabled={open.isPending}
-          aria-label={`Show address for entry ${String(entryId)}`}
-          onClick={() => {
-            open.mutate();
-          }}
-        >
-          Show address
-        </Button>
+        <div className="acts">
+          <Btn
+            sm
+            flat
+            disabled={open.isPending}
+            aria-label={`Show address for entry ${String(entryId)}`}
+            onClick={() => {
+              open.mutate();
+            }}
+          >
+            Show address
+          </Btn>
+        </div>
       ) : (
         <p>
-          <span className="font-semibold">Address: </span>
-          <span className="break-all font-mono">{address}</span>{' '}
-          <Button
-            type="button"
-            variant="secondary"
+          <b>Address: </b>
+          <span className="mono">{address}</span>{' '}
+          <Btn
+            sm
+            flat
             aria-label={`Hide address for entry ${String(entryId)}`}
             onClick={() => {
               setAddress(null);
             }}
           >
             Hide
-          </Button>
+          </Btn>
         </p>
       )}
-      {address === null ? <span className="text-ink-alt">Opening it is recorded.</span> : null}
-      {open.isError ? <Alert tone="serious">{open.error.message}</Alert> : null}
-    </div>
+      {address === null ? <p className="m">Opening it is recorded.</p> : null}
+      {open.isError ? <Problem>{open.error.message}</Problem> : null}
+    </>
   );
 }
 
@@ -228,174 +221,165 @@ function Batch({ batch }: { batch: ReviewBatch }) {
     );
   }
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {hosts.size || (busiest && busiest.count > 1) ? (
-        <Card variant="quiet" heading="At a glance">
-          <ul className="flex flex-col gap-1">
-            {hosts.size ? (
-              <li>
-                {`${String(hosts.size)} site${hosts.size === 1 ? '' : 's'} linked`}
-                {unfamiliar.size ? `, ${String(unfamiliar.size)} of them unfamiliar` : ''}.
-              </li>
-            ) : null}
-            {busiest && busiest.count > 1 ? (
-              <li>
-                Busiest minute: {String(busiest.count)} entries at{' '}
-                {new Date(`${busiest.minute}:00Z`).toLocaleString()}.
-              </li>
-            ) : null}
-          </ul>
-        </Card>
+        <Panel kind="quiet" title="At a glance">
+          <p>
+            {hosts.size
+              ? `${String(hosts.size)} site${hosts.size === 1 ? '' : 's'} linked${unfamiliar.size ? `, ${String(unfamiliar.size)} of them unfamiliar` : ''}`
+              : ''}
+            {hosts.size && busiest && busiest.count > 1 ? ' · ' : ''}
+            {busiest && busiest.count > 1
+              ? `Busiest minute: ${new Date(`${busiest.minute}:00Z`).toLocaleString()} (${String(busiest.count)} entries)`
+              : ''}
+          </p>
+        </Panel>
       ) : null}
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="tick-all"
-            checked={ticked.length === all.length}
-            onCheckedChange={(on) => {
-              setTicked(on === true ? all : []);
-            }}
-          />
-          <Label htmlFor="tick-all">Tick every entry on this page</Label>
-        </div>
-      </div>
-      <p role="status" className="text-sm">
+      <p role="status" className="m">
         {told}
       </p>
 
-      <ul className="space-y-3" aria-label="Entries">
-        {batch.entries.map((e) => {
-          const box = `entry-${String(e.id)}`;
-          return (
-            <li key={e.id}>
-              <Card>
-                <CardContent className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id={box}
-                      checked={ticked.includes(e.id)}
-                      onCheckedChange={(on) => {
-                        setTicked((t) =>
-                          on === true ? [...t, e.id] : t.filter((x) => x !== e.id),
-                        );
-                      }}
-                    />
-                    <div className="flex min-w-0 flex-col gap-1.5">
-                      <Label htmlFor={box} className="font-normal">
-                        Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
-                      </Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        <Chip tone={e.review_state === 'received' ? 'open' : 'tag'}>
-                          {REVIEW[e.review_state]}
-                        </Chip>
-                        <Chip tone="tag">{TRIAGE[e.triage_state]}</Chip>
-                      </div>
-                    </div>
+      {batch.entries.map((e) => (
+        <article className="qrow" key={e.id}>
+          <label className="qsel">
+            <input
+              type="checkbox"
+              aria-label={`Select entry ${String(e.id)}`}
+              checked={ticked.includes(e.id)}
+              onChange={(ev) => {
+                setTicked((t) => (ev.target.checked ? [...t, e.id] : t.filter((x) => x !== e.id)));
+              }}
+            />
+          </label>
+          <div className="qbody">
+            <div className="chips">
+              <Chip kind={e.review_state === 'received' ? 'wait' : 'off'}>
+                {REVIEW[e.review_state]}
+              </Chip>
+              <Chip kind="off">{TRIAGE[e.triage_state]}</Chip>
+            </div>
+            <p className="qsum">
+              Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
+            </p>
+            {e.links.length ? (
+              // Checked one address at a time, for every tip that sent it.
+              <ul className="qlist" aria-label="Links">
+                {e.links.map((l) => (
+                  <li key={`${l.field_key}-${l.url}`}>
+                    <b>
+                      {l.host}
+                      {l.known_host ? '' : ' (unfamiliar site)'}
+                    </b>{' '}
+                    <span className="m">· {LINK_OUTCOME[l.outcome ?? 'unchecked']}</span>
+                    <span className="m" style={{ display: 'block', wordBreak: 'break-all' }}>
+                      {l.url}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <dl className="answers">
+              {Object.entries({ ...e.answers, ...(e.erasable_answers ?? {}) })
+                .filter(([k]) => !e.links.some((l) => l.field_key === k))
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <dt>{labels.get(k) ?? k}</dt>
+                    <dd style={{ whiteSpace: 'pre-wrap' }}>{said(v)}</dd>
                   </div>
-                  {e.links.length ? (
-                    // Checked one address at a time, for every tip that sent it.
-                    <ul className="space-y-1" aria-label="Links">
-                      {e.links.map((l) => (
-                        <li key={`${l.field_key}-${l.url}`} className="text-sm">
-                          <span className={l.known_host ? '' : 'font-semibold'}>
-                            {l.host}
-                            {l.known_host ? '' : ' (unfamiliar site)'}
-                          </span>{' '}
-                          <span className="text-ink-alt">
-                            · {LINK_OUTCOME[l.outcome ?? 'unchecked']}
-                          </span>
-                          <span className="block break-all font-mono text-ink-alt">{l.url}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                  <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-                    {Object.entries({ ...e.answers, ...(e.erasable_answers ?? {}) })
-                      .filter(([k]) => !e.links.some((l) => l.field_key === k))
-                      .map(([k, v]) => (
-                        <div key={k} className="contents">
-                          <dt className="font-semibold">{labels.get(k) ?? k}</dt>
-                          <dd className="whitespace-pre-wrap">{said(v)}</dd>
-                        </div>
-                      ))}
-                  </dl>
-                  {batch.list.write_back && e.has_email && !e.erased ? (
-                    <ShowAddress listId={batch.list.id} entryId={e.id} />
-                  ) : null}
-                  {e.erased ? (
-                    <p className="text-sm text-ink-alt">
-                      Its personal half and its links have been deleted. The choices stay.
-                    </p>
-                  ) : null}
-                </CardContent>
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
+                ))}
+            </dl>
+            {batch.list.write_back && e.has_email && !e.erased ? (
+              <ShowAddress listId={batch.list.id} entryId={e.id} />
+            ) : null}
+            {e.erased ? (
+              <p className="m">
+                Its personal half and its links have been deleted. The choices stay.
+              </p>
+            ) : null}
+          </div>
+        </article>
+      ))}
 
-      {review.isError ? <Alert tone="serious">{review.error.message}</Alert> : null}
-      {mark.isError ? <Alert tone="serious">{mark.error.message}</Alert> : null}
-      {/* Like the queue's bar: on the deep surface, held at the foot of a phone's screen. */}
-      <div className="sticky bottom-0 z-30">
-        <Card variant="deep" className="flex-row flex-wrap items-end gap-3 px-4 py-3">
-          <p className="label-face text-sm self-center">{`${String(ticked.length)} ticked`}</p>
+      {review.isError ? <Problem>{review.error.message}</Problem> : null}
+      {mark.isError ? <Problem>{mark.error.message}</Problem> : null}
+      <div className="bulkbar" role="region" aria-label="Selected entries">
+        <span>{`${String(ticked.length)} selected`}</span>
+        <div className="acts">
+          {ticked.length < all.length ? (
+            <Btn
+              sm
+              flat
+              onClick={() => {
+                setTicked(all);
+              }}
+            >
+              {`Select all ${String(all.length)}`}
+            </Btn>
+          ) : null}
+          {ticked.length ? (
+            <Btn
+              sm
+              flat
+              className="ghost"
+              onClick={() => {
+                setTicked([]);
+              }}
+            >
+              Select none
+            </Btn>
+          ) : null}
           {batch.state === 'received' ? (
             <>
-              <Button
-                type="button"
+              <Btn
+                sm
+                flat
+                look="ink"
                 disabled={!ticked.length || review.isPending}
                 onClick={() => {
                   review.mutate('approved');
                 }}
               >
-                Approve the ticked entries
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
+                Approve selected
+              </Btn>
+              <Btn
+                sm
+                flat
                 disabled={!ticked.length || review.isPending}
                 onClick={() => {
                   review.mutate('rejected');
                 }}
               >
-                Reject the ticked entries
-              </Button>
+                Reject selected
+              </Btn>
             </>
           ) : null}
-          <div className="flex items-end gap-2">
-            <div>
-              <Label htmlFor="triage" className="text-on-deep">
-                Mark the ticked entries as
-              </Label>
-              <Select
-                id="triage"
-                value={triage}
-                onChange={(e) => {
-                  setTriage(e.target.value as TriageState);
-                }}
-              >
-                {(Object.keys(TRIAGE) as TriageState[]).map((t) => (
-                  <option key={t} value={t}>
-                    {TRIAGE[t]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!ticked.length || mark.isPending}
-              onClick={() => {
-                mark.mutate();
+          <label className="select">
+            <span className="vh">Mark the selected entries as</span>
+            <select
+              value={triage}
+              onChange={(e) => {
+                setTriage(e.target.value as TriageState);
               }}
             >
-              Mark them
-            </Button>
-          </div>
-        </Card>
+              {(Object.keys(TRIAGE) as TriageState[]).map((t) => (
+                <option key={t} value={t}>
+                  {`Mark as: ${TRIAGE[t]}`}
+                </option>
+              ))}
+            </select>
+          </label>
+          <Btn
+            sm
+            flat
+            disabled={!ticked.length || mark.isPending}
+            onClick={() => {
+              mark.mutate();
+            }}
+          >
+            Mark them
+          </Btn>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
