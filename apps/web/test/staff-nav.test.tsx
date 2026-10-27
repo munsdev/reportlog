@@ -606,13 +606,16 @@ describe('the staff area', () => {
     await settle();
     expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
     await user.click(button);
-    expect(button).toHaveAttribute('aria-expanded', 'true');
-    const side = screen.getByRole('navigation', { name: 'Your pages' });
-    expect(side.contains(document.activeElement)).toBe(true);
+    // A full-screen dialog with its own Close, which takes focus first.
+    const dialog = screen.getByRole('dialog', { name: 'Staff menu' });
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+    const side = within(dialog).getByRole('navigation', { name: 'Your pages' });
     await user.tab({ shift: true });
-    expect(button).toHaveFocus();
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(button).not.toHaveFocus();
     await user.tab();
-    expect(side.contains(document.activeElement)).toBe(true);
+    expect(within(dialog).getByRole('button', { name: 'Close' })).toHaveFocus();
+    expect(side).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('navigation', { name: 'Your pages' })).toBeNull();
     expect(button).toHaveFocus();
