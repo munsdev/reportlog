@@ -117,10 +117,10 @@ export function WrittenPanel({
       ) : null}
       {anything ? (
         <Switch
-          title="Vetted journalists may read it"
-          sub="Only after a moderator has checked it. You can turn this off any time."
+          label="Vetted journalists may read it"
+          help="Only after a moderator has checked it. You can turn this off any time."
           // Read back from the server, never trusted from the click.
-          on={written.shared}
+          checked={written.shared}
           disabled={share.isPending}
           onChange={(on) => {
             share.mutate(on);

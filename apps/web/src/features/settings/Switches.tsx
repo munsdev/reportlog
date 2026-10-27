@@ -23,7 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/mockup/Dialog.tsx';
-import { Switch } from '@/mockup/SwitchRow.tsx';
+import { Switch } from '@/mockup/Switch.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { intakeSwitchQuery, logbooksQuery } from '../builder/queries.ts';

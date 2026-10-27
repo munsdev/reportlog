@@ -73,7 +73,7 @@ export function ClosedRow({
         {children}
         {onSave ? (
           <SaveBar
-            what={title}
+            name={title}
             busy={saving}
             saveLabel={saveLabel}
             onSave={() => void save()}

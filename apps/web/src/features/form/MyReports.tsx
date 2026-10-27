@@ -281,11 +281,11 @@ function Permissions({ r }: { r: MyReportDetail }) {
         .map((p) => (
           <Switch
             key={p}
-            title={PERMISSION_WORDS[p].label}
-            sub={PERMISSION_WORDS[p].hint}
+            label={PERMISSION_WORDS[p].label}
+            help={PERMISSION_WORDS[p].hint}
             // Read back from the server, never trusted from the click: the
             // server is where the current value lives.
-            on={r.permissions[p]}
+            checked={r.permissions[p]}
             disabled={set.isPending}
             onChange={(on) => {
               if (p === 'attachment_publication' && !on && r.published_files > 0) {

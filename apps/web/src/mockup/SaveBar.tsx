@@ -3,22 +3,20 @@ import type { ReactNode } from 'react';
 import { Btn } from './Btn.tsx';
 
 /**
- * The mock-up's `.savebar`: "Changes to X are not saved." with Save and
- * Cancel, sticky at the foot of the screen while a panel is open. Escape is
- * Cancel, unless it was pressed inside a dialog on top of the bar (the
- * question about unsaved changes), which that Escape closes instead.
+ * The mock-up's `savebar`: a sticky strip saying what is unsaved, with Save
+ * and Cancel. Escape cancels, unless a dialog has it.
  */
 export function SaveBar({
-  what,
+  name,
   onSave,
   onCancel,
   busy = false,
   saveLabel = 'Save',
 }: {
-  what: ReactNode;
+  name: ReactNode;
   onSave: () => void;
   onCancel: () => void;
-  busy?: boolean;
+  busy?: boolean | undefined;
   saveLabel?: ReactNode;
 }) {
   const cancel = useRef(onCancel);
@@ -39,10 +37,10 @@ export function SaveBar({
   }, []);
   return (
     <div className="savebar" role="region" aria-label="Unsaved changes">
-      <span>Changes to {what} are not saved.</span>
+      <span>Changes to {name} are not saved.</span>
       <div className="acts">
-        <Btn sm flat look="go" disabled={busy} onClick={onSave}>
-          {busy ? 'Saving…' : saveLabel}
+        <Btn sm flat look="go" busy={busy} busyLabel="Saving…" onClick={onSave}>
+          {saveLabel}
         </Btn>
         <Btn sm flat look="ghost" onClick={onCancel}>
           Cancel

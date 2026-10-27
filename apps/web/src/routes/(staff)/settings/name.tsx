@@ -17,7 +17,7 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
+import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';

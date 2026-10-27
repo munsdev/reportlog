@@ -22,7 +22,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Switch } from '@/mockup/SwitchRow.tsx';
+import { Switch } from '@/mockup/Switch.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';

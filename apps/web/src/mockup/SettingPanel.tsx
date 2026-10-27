@@ -26,7 +26,7 @@ import {
 import { Dl } from './Dl.tsx';
 import type { DlItem } from './Dl.tsx';
 import { Panel } from './Panel.tsx';
-import { SaveBar } from './SaveBarStrip.tsx';
+import { SaveBar } from './SaveBar.tsx';
 
 interface OpenPanel {
   id: string;

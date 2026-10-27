@@ -1,35 +1,44 @@
 import type { ReactNode } from 'react';
 
-/** The mock-up's `.switch` row: a title, a line under it, and the toggle. */
+/**
+ * The mock-up's `switch`: a name and a line of what it does at the left, the
+ * `tgl` at the right. It applies the moment it is pressed, so a screen that
+ * needs a question first asks it before calling `onChange`.
+ */
 export function Switch({
-  title,
-  sub,
-  on,
+  label,
+  help,
+  checked,
+  busy = false,
+  disabled = false,
   onChange,
-  disabled,
 }: {
-  title: ReactNode;
-  sub?: ReactNode;
-  on: boolean;
-  onChange: (next: boolean) => void;
+  label: ReactNode;
+  help?: ReactNode;
+  checked: boolean;
+  busy?: boolean;
   disabled?: boolean;
+  onChange: (next: boolean) => void;
 }) {
-  const label = typeof title === 'string' ? title : undefined;
+  const name = typeof label === 'string' ? label : undefined;
   return (
     <div className="switch">
       <div>
-        <b>{title}</b>
-        {sub ? <span>{sub}</span> : null}
+        <b>{label}</b>
+        <span>{help}</span>
       </div>
       <button
+        type="button"
         className="tgl"
         role="switch"
-        aria-checked={on}
-        {...(label ? { 'aria-label': label } : {})}
-        type="button"
-        disabled={disabled}
-        onClick={() => onChange(!on)}
-      ></button>
+        aria-checked={checked}
+        aria-busy={busy || undefined}
+        aria-label={name}
+        disabled={disabled || busy}
+        onClick={() => {
+          onChange(!checked);
+        }}
+      />
     </div>
   );
 }

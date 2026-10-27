@@ -487,13 +487,13 @@ function SitePassword() {
     <Panel title="The site password" id="site-password">
       {s.hasPassword && (
         <Switch
-          title="Password on"
-          sub={
+          label="Password on"
+          help={
             on
               ? 'Everyone but the open forms needs the password.'
               : 'The site is open: there is no password in front of it.'
           }
-          on={on}
+          checked={on}
           disabled={save.isPending}
           onChange={(next) => {
             save.mutate({ enabled: next });
