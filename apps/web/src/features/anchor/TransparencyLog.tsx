@@ -18,13 +18,13 @@
  */
 import { getAnchorStatus, getCompleteChainFile, listLogbooks } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Card } from '../../components/ui/card.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { Chip } from '../../mockup/Chip.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
-import { ScrollX } from '@/components/ui/scroll-x.tsx';
 
 const anchorQuery = queryOptions({
   queryKey: ['anchor', 'status'],
@@ -37,9 +37,9 @@ const logbooksQuery = queryOptions({
 });
 
 const HEALTH = {
-  ok: { tone: 'done', title: 'The anchor is running' },
-  warn: { tone: 'warning', title: 'The anchor needs a look' },
-  fail: { tone: 'serious', title: 'The anchor is not working' },
+  ok: { warn: false, title: 'The anchor is running' },
+  warn: { warn: true, title: 'The anchor needs a look' },
+  fail: { warn: true, title: 'The anchor is not working' },
 } as const;
 
 const OUTCOME: Record<string, string> = {
@@ -49,10 +49,6 @@ const OUTCOME: Record<string, string> = {
   refused: 'Refused: today’s list contradicts the last one published',
   failed: 'Failed',
 };
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return <Card heading={title}>{children}</Card>;
-}
 
 interface Anchor {
   date: string;
@@ -77,91 +73,79 @@ export function TransparencyLogPage() {
       width="prose"
     >
       {query.isPending ? <p role="status">Reading the anchor…</p> : null}
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      <ErrorLine error={query.error} />
       {query.data ? (
         <>
-          <Card variant="deep">
-            <p className="text-lede">{lastClaim(query.data.anchors)}</p>
-          </Card>
-          <Alert
-            tone={HEALTH[query.data.health.status].tone}
-            title={HEALTH[query.data.health.status].title}
-          >
-            {query.data.health.detail}
-          </Alert>
-          <Section title="The last anchors">
+          <Panel kind="deep" title={HEALTH[query.data.health.status].title}>
+            <p>{lastClaim(query.data.anchors)}</p>
+            <p>{query.data.health.detail}</p>
+          </Panel>
+          <Panel title="The last anchors">
             {query.data.anchors.length === 0 ? (
               <p>Nothing has been anchored yet.</p>
             ) : (
-              <ScrollX label="Anchors, newest first">
-                <table className="data-table">
-                  <caption className="sr-only">Anchors, newest first</caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Date</th>
-                      <th scope="col">Chain heads</th>
-                      <th scope="col">Digest</th>
-                      <th scope="col">In the log</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {query.data.anchors.map((a) => (
-                      <tr key={a.date} className="align-top">
-                        <td className="font-mono whitespace-nowrap">{a.date}</td>
-                        <td className="font-mono">{String(a.logbooks)}</td>
-                        <td className="font-mono break-all">{a.root_chain_hash}</td>
-                        <td className="font-mono break-all">
-                          {a.public_log_ref ?? (
-                            <span className="font-sans text-ink-alt">Not in the log yet</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </ScrollX>
+              <Tbl
+                cols={['Date', 'Chain heads', 'Digest', 'In the log']}
+                rows={query.data.anchors.map((a) => ({
+                  key: a.date,
+                  cells: [
+                    a.date,
+                    String(a.logbooks),
+                    <span className="mono">{a.root_chain_hash}</span>,
+                    a.public_log_ref ? (
+                      <>
+                        <Chip kind="ok">Published</Chip>{' '}
+                        <span className="mono">{a.public_log_ref}</span>
+                      </>
+                    ) : (
+                      <Chip kind="off">Not in the log yet</Chip>
+                    ),
+                  ],
+                }))}
+              />
             )}
-          </Section>
-          <Section title="What happened at each run">
-            <p className="text-sm text-ink-alt">
+          </Panel>
+          <Panel title="What happened at each run">
+            <p className="m">
               Every run is recorded, including the ones that published nothing: a timer that fires
               is not a timer that works.
             </p>
             {query.data.runs.length === 0 ? (
               <p>The anchor has not run yet.</p>
             ) : (
-              <ul className="flex flex-col gap-2 text-sm" aria-label="Runs">
-                {query.data.runs.map((r, i) => (
-                  <li key={`${r.finished_at}-${String(i)}`}>
-                    <span className="font-semibold">{day(r.finished_at)}</span>
-                    {r.anchor_date ? ` (for ${r.anchor_date})` : ''}:{' '}
-                    {OUTCOME[r.outcome] ?? r.outcome}
-                    {r.detail ? `. ${r.detail}` : ''}
-                  </li>
-                ))}
-              </ul>
+              <Tbl
+                cols={['Finished', 'For', 'What happened']}
+                rows={query.data.runs.map((r, i) => ({
+                  key: `${r.finished_at}-${String(i)}`,
+                  cells: [
+                    day(r.finished_at),
+                    r.anchor_date ?? '',
+                    `${OUTCOME[r.outcome] ?? r.outcome}${r.detail ? `. ${r.detail}` : ''}`,
+                  ],
+                }))}
+              />
             )}
-          </Section>
+          </Panel>
         </>
       ) : null}
       <ChainFiles />
-      <Card variant="quiet">
+      <Panel kind="quiet" title="This log is never rewritten">
         <p>
-          This log is never rewritten, not even to correct it. A fact that invalidates published
-          proofs is published beside them, by a command on the server, not by a button here.
+          Not even to correct it. A fact that invalidates published proofs is published beside them,
+          by a command on the server, not by a button here.
         </p>
-      </Card>
-      <Section title="Where it is published, and how to change that">
-        <p className="text-sm">
+      </Panel>
+      <Panel title="Where it is published, and how to change that">
+        <p>
           The mirrors, the timestamp authority and the key the log is pushed with are the server’s
-          configuration (<span className="font-mono">TRANSPARENCY_LOG_REMOTES</span>,{' '}
-          <span className="font-mono">TSA_URL</span>,{' '}
-          <span className="font-mono">TRANSPARENCY_LOG_SSH_KEY</span>), not settings on this page,
-          so a copy of the database can never publish in this site’s name. Several mirrors under
+          configuration (<span className="mono">TRANSPARENCY_LOG_REMOTES</span>,{' '}
+          <span className="mono">TSA_URL</span>,{' '}
+          <span className="mono">TRANSPARENCY_LOG_SSH_KEY</span>), not settings on this page, so a
+          copy of the database can never publish in this site’s name. Several mirrors under
           different operators is the point: a record one company holds is a record one company can
           be made to remove.
         </p>
-      </Section>
+      </Panel>
     </StaffPage>
   );
 }
@@ -171,27 +155,34 @@ function ChainFiles() {
   const query = useQuery(logbooksQuery);
   const launched = (query.data?.logbooks ?? []).filter((l) => l.launched_at !== null);
   return (
-    <Section title="Complete chain files">
-      <p className="text-sm text-ink-alt">
+    <Panel title="Complete chain files">
+      <p className="m">
         Every version of every report in a logbook, published or not, in chain order. It holds
         reports nobody has approved, so keep it as carefully as the database. The board offers the
         published file to everybody.
       </p>
-      {query.isError ? <Alert tone="serious">{query.error.message}</Alert> : null}
+      <ErrorLine error={query.error} />
       {query.data && launched.length === 0 ? <p>No logbook has been launched yet.</p> : null}
-      <ul className="flex flex-col gap-1 text-sm">
-        {launched.map((l) => (
-          <li key={l.slug}>
-            {/* A step-up first (plan E, E3): the server refuses the file without one. */}
-            <StepUpDownload
-              className="underline"
-              href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(l.slug))}
-            >
-              {l.title}
-            </StepUpDownload>
-          </li>
-        ))}
-      </ul>
-    </Section>
+      {launched.length > 0 ? (
+        <Tbl
+          cols={['Logbook', '']}
+          widths="1fr auto"
+          rows={launched.map((l) => ({
+            key: l.slug,
+            cells: [
+              l.title,
+              // A step-up first (plan E, E3): the server refuses the file without one.
+              <StepUpDownload
+                className="btn sm flat"
+                href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(l.slug))}
+              >
+                Download the chain
+                <span className="sr-only"> for {l.title}</span>
+              </StepUpDownload>,
+            ],
+          }))}
+        />
+      ) : null}
+    </Panel>
   );
 }

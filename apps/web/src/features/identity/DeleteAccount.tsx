@@ -11,11 +11,13 @@ import { deleteAccount } from '@reportlog/contracts';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
 import { call } from '../../lib/api.ts';
+import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { TextField } from '../../mockup/Fields.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
 import type { SignedInMe } from './session.ts';
-import { ErrorText, Panel, TextField } from './ui.tsx';
 
 export function DeleteAccount({ me }: { me: SignedInMe }) {
   const client = useQueryClient();
@@ -33,11 +35,11 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
 
   if (me.heldRoles.includes('owner')) {
     return (
-      <Panel title="Delete your account">
+      <Panel title="Delete your account" kind="danger">
         <p>
           You hold the owner’s seat, so your account cannot be deleted: a deployment always has one
           owner.{' '}
-          <Link to="/access" hash="owner-seat" className="underline">
+          <Link to="/access" hash="owner-seat">
             Hand it on
           </Link>{' '}
           to somebody else first. Then you can delete your account here.
@@ -48,20 +50,18 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
 
   const matches = typed.trim().toLowerCase() === me.email;
   return (
-    <Panel title="Delete your account">
+    <Panel title="Delete your account" kind="danger">
       <p>
         This deletes your address from this site, signs you out everywhere, and removes your second
         factor, your place in any organization, and your email updates. Signing in again later with
         the same address starts a new, empty account.
       </p>
-      <p className="text-ink-alt">
+      <p className="muted">
         Reports you already filed stay: they are sealed, and deleting your account does not withdraw
         them. To erase the contact details kept with a report, use{' '}
-        <Link to="/mine" className="underline">
-          My reports
-        </Link>{' '}
-        before you delete your account. If you held a role, what you did in it stays on the record
-        under your address, because that is how staff are held to account.
+        <Link to="/mine">My reports</Link> before you delete your account. If you held a role, what
+        you did in it stays on the record under your address, because that is how staff are held to
+        account.
       </p>
       <TextField
         label="Type your email address to confirm"
@@ -72,29 +72,26 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
           setTyped(e.target.value);
         }}
       />
-      <CheckOption
-        id="delete-account-sure"
-        label="I understand this cannot be undone."
+      <Check
         checked={sure}
-        onCheckedChange={(on) => {
-          setSure(on === true);
+        onChange={(e) => {
+          setSure(e.target.checked);
         }}
-      />
-      <ErrorText error={go.error} />
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!sure || !matches || go.isPending}
-          onClick={() => {
-            go.mutate();
-          }}
-        >
-          {go.isPending ? 'Deleting…' : 'Delete my account'}
-        </Button>
-      </div>
+      >
+        I understand this cannot be undone.
+      </Check>
+      <ErrorLine error={go.error} />
+      <Btn
+        kind="bad"
+        disabled={!sure || !matches || go.isPending}
+        onClick={() => {
+          go.mutate();
+        }}
+      >
+        {go.isPending ? 'Deleting…' : 'Delete my account'}
+      </Btn>
       {!matches && typed.trim() ? (
-        <p className="text-sm text-ink-alt">That is not the address you are signed in with.</p>
+        <p className="m">That is not the address you are signed in with.</p>
       ) : null}
     </Panel>
   );

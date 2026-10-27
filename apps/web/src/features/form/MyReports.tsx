@@ -21,34 +21,26 @@ import {
 import type { MyReport, MyReportDetail, MyWritten, Permission } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
+import type { CSSProperties } from 'react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { Chip } from '@/components/ui/chip.tsx';
-import { Empty } from '@/components/ui/empty.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog.tsx';
-import { Field, FieldDescription } from '@/components/ui/field.tsx';
-import { KeyValueList } from '@/components/ui/key-value-list.tsx';
-import { Label } from '@/components/ui/label.tsx';
 import { Page } from '@/components/ui/page.tsx';
-import { RowItem, Rows, rowLink } from '@/components/ui/rows.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { Textarea } from '@/components/ui/textarea.tsx';
 import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
 import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
+import { Back } from '../../mockup/Back.tsx';
+import { SmBtnLink as BtnLink, SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { CheckBox as Check } from '../../mockup/Field.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { ErrorLine } from '../../mockup/ErrorLine.tsx';
+import { AreaField } from '../../mockup/Fields.tsx';
+import { Modal } from '../../mockup/Modal.tsx';
+import { Panel } from '../../mockup/Panel.tsx';
+import { Saved } from '../../mockup/Saved.tsx';
+import { Switch } from '../../mockup/Switch.tsx';
 import { PERMISSION_WORDS } from './permissionWords.ts';
 import { WrittenPanel, heldRaw, myWrittenQuery } from './MyWritten.tsx';
 import { QuestionControl } from './QuestionControl.tsx';
@@ -63,6 +55,8 @@ import {
   withChange,
 } from './walk.ts';
 import type { RawAnswers } from './walk.ts';
+
+const ROW_COLS = { '--cols': '180px 1fr auto' } as CSSProperties;
 
 const myReportsQuery = queryOptions({
   queryKey: ['mine', 'reports'],
@@ -99,13 +93,13 @@ function statusOf(r: MyReport): string {
  * counts-only logbook, still shows the report's own state here, because this
  * list is not told either.
  */
-export function stateChip(r: MyReport): { tone: 'open' | 'tag'; label: string } {
-  if (r.withdrawn) return { tone: 'tag', label: 'Withdrawn' };
-  if (r.moderation_status === 'pending') return { tone: 'open', label: 'Waiting' };
-  if (r.moderation_status === 'invalid') return { tone: 'tag', label: 'Declined' };
+export function stateChip(r: MyReport): { kind: 'ok' | 'wait' | ''; label: string } {
+  if (r.withdrawn) return { kind: '', label: 'Withdrawn' };
+  if (r.moderation_status === 'pending') return { kind: 'wait', label: 'Waiting' };
+  if (r.moderation_status === 'invalid') return { kind: '', label: 'Declined' };
   if (r.moderation_status === 'valid')
-    return { tone: 'tag', label: r.may_publish ? 'Public' : 'Not published' };
-  return { tone: 'tag', label: 'Read' };
+    return r.may_publish ? { kind: 'ok', label: 'Public' } : { kind: '', label: 'Not published' };
+  return { kind: '', label: 'Read' };
 }
 
 export function MyReportsPage() {
@@ -121,7 +115,7 @@ function MyReportsList() {
   return (
     <StaffPage area="Account" title="My reports" lede="Reports you filed while signed in.">
       {list.isPending ? <p role="status">Loading…</p> : null}
-      {list.isError ? <Alert tone="serious" title={list.error.message} /> : null}
+      <ErrorLine error={list.error} />
       {list.data?.reports.length === 0 ? (
         <Empty title="No reports yet">
           There are no reports filed from this address. Reports you file while signed in, or confirm
@@ -129,32 +123,34 @@ function MyReportsList() {
         </Empty>
       ) : null}
       {list.data?.reports.length ? (
-        <Rows label="Your reports">
+        <div className="rows">
           {list.data.reports.map((r) => {
             const chip = stateChip(r);
             return (
-              <RowItem key={r.thread_id}>
-                {/* The whole row opens it: that is all anybody comes to a row to do. */}
-                <Link
-                  to="/mine/$threadId"
-                  params={{ threadId: r.thread_id }}
-                  aria-label={`Open ${r.public_ref}`}
-                  className={rowLink('ref')}
-                >
-                  <span className="font-mono font-semibold">{r.public_ref}</span>
-                  <span className="text-sm text-ink-alt">
-                    {r.logbook_title} · filed{' '}
-                    <time dateTime={r.first_received_at}>
-                      {new Date(r.first_received_at).toLocaleDateString()}
-                    </time>
-                    {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
-                  </span>
-                  <Chip tone={chip.tone}>{chip.label}</Chip>
-                </Link>
-              </RowItem>
+              /* The whole row opens it: that is all anybody comes to a row to do. */
+              <Link
+                key={r.thread_id}
+                className="row"
+                to="/mine/$threadId"
+                params={{ threadId: r.thread_id }}
+                aria-label={`Open ${r.public_ref}`}
+                style={ROW_COLS}
+              >
+                <span className="mono">{r.public_ref}</span>
+                <span>
+                  {r.logbook_title} · filed{' '}
+                  <time dateTime={r.first_received_at}>
+                    {new Date(r.first_received_at).toLocaleDateString()}
+                  </time>
+                  {r.versions > 1 ? ` · ${String(r.versions)} versions` : ''}
+                </span>
+                <span>
+                  <Chip kind={chip.kind}>{chip.label}</Chip>
+                </span>
+              </Link>
             );
           })}
-        </Rows>
+        </div>
       ) : null}
     </StaffPage>
   );
@@ -177,9 +173,7 @@ function MyReportView({ threadId }: { threadId: string }) {
     return (
       <Page title="Not one of your reports" width="prose">
         <p>{report.error.message}</p>
-        <Link to="/mine" className="underline">
-          Back to your reports
-        </Link>
+        <Link to="/mine">Back to your reports</Link>
       </Page>
     );
   }
@@ -191,13 +185,9 @@ function MyReportView({ threadId }: { threadId: string }) {
       title={`Report ${r.public_ref}`}
       lede={`${r.logbook_title} · ${statusOf(r)}`}
     >
-      <p>
-        <Link to="/mine" className="text-sm font-semibold underline underline-offset-4">
-          ← All your reports
-        </Link>
-      </p>
-      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-[1.5fr_1fr]">
-        <div className="grid min-w-0 content-start gap-[18px]">
+      <Back to="/mine">All your reports</Back>
+      <div className="grid2">
+        <div className="col">
           <Answers r={r} />
           {written.data ? (
             <WrittenPanel
@@ -211,7 +201,7 @@ function MyReportView({ threadId }: { threadId: string }) {
           <Permissions r={r} />
           <ContactAccesses threadId={r.thread_id} />
         </div>
-        <div className="grid min-w-0 content-start gap-[18px]">
+        <div className="col">
           {/* A correction carries the words along, so it waits for them. */}
           {written.isPending && r.questions.some((q) => isHeldKind(q.kind)) ? (
             <p role="status">Loading…</p>
@@ -220,59 +210,32 @@ function MyReportView({ threadId }: { threadId: string }) {
           )}
           {r.withdrawn ? null : <Withdraw r={r} />}
           <Erase r={r} />
-          <div>
-            <Button asChild variant="secondary">
-              <Link to="/mine/declaration/$threadId" params={{ threadId: r.thread_id }}>
-                Print a signed declaration
-              </Link>
-            </Button>
-          </div>
+          <BtnLink to={`/mine/declaration/${r.thread_id}`}>Print a signed declaration</BtnLink>
         </div>
       </div>
     </StaffPage>
   );
 }
 
-/** A section of the page: a panel with its own H2, in the theme's heading. */
-function Section({
-  title,
-  danger = false,
-  children,
-}: {
-  title: string;
-  danger?: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <Card heading={title} variant={danger ? 'danger' : 'raised'}>
-      {children}
-    </Card>
-  );
-}
-
 function Answers({ r }: { r: MyReportDetail }) {
   const raw = rawFromAnswers(r.questions, r.answers);
   return (
-    <Section title="What it says now">
-      <KeyValueList
-        items={[
-          ...askedQuestions(r.questions, raw)
-            .filter((q) => !isHeldKind(q.kind))
-            .map((q) => ({
-              key: q.label,
-              value: (
-                <span className="whitespace-pre-wrap">
-                  {shownAnswer(q, raw, r.questions) ?? '—'}
-                </span>
-              ),
-            })),
-          {
-            key: 'May it be published?',
-            value: r.may_publish ? 'Yes, if a moderator approves it' : 'No',
-          },
-        ]}
-      />
-    </Section>
+    <Panel title="What it says now">
+      <dl className="answers">
+        {askedQuestions(r.questions, raw)
+          .filter((q) => !isHeldKind(q.kind))
+          .map((q) => (
+            <div key={q.key}>
+              <dt>{q.label}</dt>
+              <dd style={{ whiteSpace: 'pre-wrap' }}>{shownAnswer(q, raw, r.questions) ?? '—'}</dd>
+            </div>
+          ))}
+        <div>
+          <dt>May it be published?</dt>
+          <dd>{r.may_publish ? 'Yes, if a moderator approves it' : 'No'}</dd>
+        </div>
+      </dl>
+    </Panel>
   );
 }
 
@@ -303,8 +266,8 @@ function Permissions({ r }: { r: MyReportDetail }) {
     },
   });
   return (
-    <Section title="What you allow">
-      <p className="text-ink-alt">
+    <Panel title="What you allow">
+      <p className="muted">
         You can change these at any time, and every change is kept so you can see it. Only you can
         change them.
       </p>
@@ -312,44 +275,48 @@ function Permissions({ r }: { r: MyReportDetail }) {
       {(Object.keys(PERMISSION_WORDS) as Permission[])
         .filter((p) => p !== 'journalist_sharing')
         .map((p) => (
-          <CheckOption
+          <Switch
             key={p}
-            id={`perm-${p}`}
-            label={PERMISSION_WORDS[p].label}
-            hint={PERMISSION_WORDS[p].hint}
+            title={PERMISSION_WORDS[p].label}
+            sub={PERMISSION_WORDS[p].hint}
             // Read back from the server, never trusted from the click: the
             // server is where the current value lives.
-            checked={r.permissions[p]}
+            on={r.permissions[p]}
             disabled={set.isPending}
-            onCheckedChange={(on) => {
-              if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
+            onChange={(on) => {
+              if (p === 'attachment_publication' && !on && r.published_files > 0) {
                 setAskTakeDown(true);
                 return;
               }
               setStatus('Saving…');
-              set.mutate({ permission: p, granted: on === true });
+              set.mutate({ permission: p, granted: on });
             }}
           />
         ))}
       {status ? <p role="status">{status}</p> : null}
-      <Dialog open={askTakeDown} onOpenChange={setAskTakeDown}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Take your files down?</DialogTitle>
-            <DialogDescription>
-              {r.published_files === 1
-                ? 'One of your files is published on this site. Switching this off takes it down now. It stays part of your report, and nobody can publish it again unless you switch this back on.'
-                : `${String(r.published_files)} of your files are published on this site. Switching this off takes them down now. They stay part of your report, and nobody can publish them again unless you switch this back on.`}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="secondary">
-                Leave it on
-              </Button>
-            </DialogClose>
-            <Button
-              type="button"
+      <Modal
+        open={askTakeDown}
+        onClose={() => {
+          setAskTakeDown(false);
+        }}
+        title="Take your files down?"
+        text={
+          r.published_files === 1
+            ? 'One of your files is published on this site. Switching this off takes it down now. It stays part of your report, and nobody can publish it again unless you switch this back on.'
+            : `${String(r.published_files)} of your files are published on this site. Switching this off takes them down now. They stay part of your report, and nobody can publish them again unless you switch this back on.`
+        }
+        buttons={
+          <>
+            <Btn
+              kind="ghost"
+              onClick={() => {
+                setAskTakeDown(false);
+              }}
+            >
+              Leave it on
+            </Btn>
+            <Btn
+              kind="ink"
               onClick={() => {
                 setAskTakeDown(false);
                 setStatus('Saving…');
@@ -357,25 +324,25 @@ function Permissions({ r }: { r: MyReportDetail }) {
               }}
             >
               Switch it off
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </Btn>
+          </>
+        }
+      />
       {r.permission_history.length ? (
-        <details>
-          <summary className="cursor-pointer underline">Every change you made</summary>
-          <ul className="mt-2 flex flex-col gap-1 text-sm">
+        <details className="tech">
+          <summary>Every change you made</summary>
+          <div className="in">
             {r.permission_history.map((h) => (
-              <li key={`${h.at}-${h.permission}`}>
+              <span key={`${h.at}-${h.permission}`}>
                 <time dateTime={h.at}>{new Date(h.at).toLocaleString()}</time>:{' '}
                 {h.granted ? 'allowed' : 'took back'} “{PERMISSION_WORDS[h.permission].label}”
                 {h.reason ? ` (${h.reason})` : ''}
-              </li>
+              </span>
             ))}
-          </ul>
+          </div>
         </details>
       ) : null}
-    </Section>
+    </Panel>
   );
 }
 
@@ -407,16 +374,16 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
   });
   const asked = askedQuestions(r.questions, raw);
   return (
-    <Section title="Correct it">
-      <p className="text-ink-alt">
-        A correction is a new version of the report. The one before it is kept, and both can be
-        checked.
+    <Panel title="Correct it">
+      <p className="muted">
+        A correction is a new entry pointing at this one. The original stays in the record, and a
+        moderator reads the correction before it is published.
       </p>
       {asked.map((q) => {
         const err = problem ? cardProblem(q, raw, r.questions) : null;
         return (
-          <div key={q.key} className="flex flex-col gap-2">
-            <p id={`correct-${q.key}`} className="font-semibold">
+          <div key={q.key} className="field">
+            <p id={`correct-${q.key}`} className="lbl">
               {q.label}
               {q.required ? '' : ' (optional)'}
             </p>
@@ -431,62 +398,54 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
               answers={sealedAnswers(r.questions, raw)}
               raw={raw}
             />
-            {err ? <p className="text-sm font-semibold text-serious">{err}</p> : null}
+            {err ? <p className="error">{err}</p> : null}
           </div>
         );
       })}
-      <Field>
-        <Label>Why are you correcting it?</Label>
-        <FieldDescription>A moderator sees this beside the new version.</FieldDescription>
-        <Textarea
-          rows={3}
-          value={comment}
-          onChange={(e) => {
-            setComment(e.target.value);
-          }}
-        />
-      </Field>
+      <AreaField
+        label="Why are you correcting it?"
+        help="A moderator sees this beside the new version."
+        rows={3}
+        value={comment}
+        onChange={(e) => {
+          setComment(e.target.value);
+        }}
+      />
       {r.may_publish ? (
-        <CheckOption
-          id="keep-out"
-          label="Keep it out of the public archive from now on. (This cannot be undone: a correction can take permission to publish back, never give it.)"
+        <Check
           checked={keepOut}
-          onCheckedChange={(on) => {
-            setKeepOut(on === true);
-          }}
-        />
-      ) : null}
-      {problem ? <Alert tone="serious" title={problem} /> : null}
-      {send.isError ? (
-        <Alert tone="serious" title="It was not saved">
-          {send.error.message}
-        </Alert>
-      ) : null}
-      {done ? <Alert tone="done" title={done} /> : null}
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={send.isPending}
-          onClick={() => {
-            setDone(null);
-            const missing = asked.find((q) => cardProblem(q, raw, r.questions));
-            if (missing) {
-              setProblem(`“${missing.label}” needs a different answer.`);
-              return;
-            }
-            if (!comment.trim()) {
-              setProblem('Say why you are correcting it.');
-              return;
-            }
-            setProblem(null);
-            send.mutate();
+          onChange={(e) => {
+            setKeepOut(e.target.checked);
           }}
         >
-          Save the correction
-        </Button>
-      </div>
-    </Section>
+          Keep it out of the public archive from now on. (This cannot be undone: a correction can
+          take permission to publish back, never give it.)
+        </Check>
+      ) : null}
+      {problem ? <p className="error">{problem}</p> : null}
+      {send.isError ? <ErrorLine error={send.error} /> : null}
+      {done ? <Saved>{done}</Saved> : null}
+      <Btn
+        kind="ink"
+        disabled={send.isPending}
+        onClick={() => {
+          setDone(null);
+          const missing = asked.find((q) => cardProblem(q, raw, r.questions));
+          if (missing) {
+            setProblem(`“${missing.label}” needs a different answer.`);
+            return;
+          }
+          if (!comment.trim()) {
+            setProblem('Say why you are correcting it.');
+            return;
+          }
+          setProblem(null);
+          send.mutate();
+        }}
+      >
+        Save the correction
+      </Btn>
+    </Panel>
   );
 }
 
@@ -502,35 +461,28 @@ function Withdraw({ r }: { r: MyReportDetail }) {
     onSuccess: refresh,
   });
   return (
-    <Section title="Withdraw it">
-      <p className="text-ink-alt">
-        It comes off the public board. It stays in the archive, because nothing in it can be
-        deleted.
-      </p>
-      <Field>
-        <Label>Why are you withdrawing it?</Label>
-        <Textarea
-          rows={2}
-          value={comment}
-          onChange={(e) => {
-            setComment(e.target.value);
-          }}
-        />
-      </Field>
-      {go.isError ? <Alert tone="serious" title={go.error.message} /> : null}
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!comment.trim() || go.isPending}
-          onClick={() => {
-            go.mutate();
-          }}
-        >
-          Withdraw it
-        </Button>
-      </div>
-    </Section>
+    <Panel
+      title="Withdraw it"
+      sub="It comes off the public board. It stays in the record, marked as withdrawn."
+    >
+      <AreaField
+        label="Why are you withdrawing it?"
+        rows={2}
+        value={comment}
+        onChange={(e) => {
+          setComment(e.target.value);
+        }}
+      />
+      <ErrorLine error={go.error} />
+      <Btn
+        disabled={!comment.trim() || go.isPending}
+        onClick={() => {
+          go.mutate();
+        }}
+      >
+        Withdraw it
+      </Btn>
+    </Panel>
   );
 }
 
@@ -547,33 +499,30 @@ function Erase({ r }: { r: MyReportDetail }) {
     },
   });
   return (
-    <Section title="Erase your contact details" danger>
-      <p className="text-ink-alt">
+    <Panel title="Erase your contact details" kind="danger">
+      <p className="muted">
         Your email address is destroyed. Your report is not withdrawn: it stays as it is (it never
         held your address), and is published or not exactly as before. Afterwards it no longer
         appears here, and nobody can reach you about it. To take the report down, withdraw it first.
       </p>
-      <CheckOption
-        id="erase-sure"
-        label="I understand this cannot be undone."
+      <Check
         checked={sure}
-        onCheckedChange={(on) => {
-          setSure(on === true);
+        onChange={(e) => {
+          setSure(e.target.checked);
         }}
-      />
-      {go.isError ? <Alert tone="serious" title={go.error.message} /> : null}
-      <div>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={!sure || go.isPending}
-          onClick={() => {
-            go.mutate();
-          }}
-        >
-          Erase my details
-        </Button>
-      </div>
-    </Section>
+      >
+        I understand this cannot be undone.
+      </Check>
+      <ErrorLine error={go.error} />
+      <Btn
+        kind="bad"
+        disabled={!sure || go.isPending}
+        onClick={() => {
+          go.mutate();
+        }}
+      >
+        Erase my details
+      </Btn>
+    </Panel>
   );
 }

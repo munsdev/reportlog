@@ -30,6 +30,7 @@ import { Link } from '@tanstack/react-router';
 import { useSite } from '@/components/ui/site.tsx';
 import { useFollow } from '@/features/follow/useFollow.ts';
 import { useGateMode } from '@/features/identity/gateMode.ts';
+import { FooterSlogan } from '@/features/nav/FooterSlogan.tsx';
 import { EasierReadingButton } from '@/mockup/EasierReading.tsx';
 import { SocialMark } from '@/mockup/SocialMark.tsx';
 import { Wordmark } from '@/mockup/Wordmark.tsx';
@@ -47,27 +48,13 @@ export function SiteFooter() {
   const follow = useFollow('footer');
   const site = useSite().data;
   const door = useGateMode() === 'door';
-  const [big, ...small] = (site?.copy.footer_slogan ?? '')
-    .split('\n')
-    .map((l) => l.trim())
-    .filter(Boolean);
   const version = versionLine(site?.version);
   return (
     <footer className="site-foot">
       <div className="wrap">
         <div className="foot-top">
           <Wordmark />
-          {big ? (
-            <p className="foot-slogan">
-              {big}
-              {small.length ? (
-                <>
-                  <br />
-                  <span>{small.join(' ')}</span>
-                </>
-              ) : null}
-            </p>
-          ) : null}
+          <FooterSlogan />
         </div>
         <div className="foot-cols">
           <div>

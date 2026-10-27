@@ -30,7 +30,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
 import { CheckOption } from '@/mockup/Choices.tsx';
-import { Switch } from '@/mockup/Switch.tsx';
+import { Switch } from '@/mockup/SwitchRow.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';

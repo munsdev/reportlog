@@ -7,8 +7,6 @@
  * the words from the logbook's own form call, so a door has them; the front
  * page from the site's wording.
  */
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
 import { BtnLink } from '@/mockup/Btn.tsx';
 
 export const DEFAULT_CTA_HEADING = 'If someone needs help right now';
@@ -52,23 +50,26 @@ export function HelpNow({
       </div>
     );
   }
+  // The mock-up's box, on its own ground: dark ink border and offset, the
+  // wording "Before you start" over the heading.
   return (
-    <Card variant="deep" className="gap-2">
-      <h2 className="label-face text-sm text-brand-on-deep">
-        {heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}
-      </h2>
-      <p data-copy="help_now" className="max-w-prose whitespace-pre-wrap">
-        {text}
-      </p>
-      {label && url ? (
-        <div>
-          <Button asChild variant="quiet">
-            <a href={url} {...(external ? { rel: 'noopener' } : {})}>
-              {label}
-            </a>
-          </Button>
-        </div>
-      ) : null}
-    </Card>
+    <div className="section">
+      <div
+        className="cta urgent scope-dark"
+        style={{
+          borderColor: 'var(--p-ink)',
+          boxShadow: 'var(--rl-shadow-offset) var(--rl-shadow-offset) 0 var(--p-ink)',
+        }}
+      >
+        <span className="mark">Before you start</span>
+        <h3>{heading?.trim() ? heading.trim() : DEFAULT_CTA_HEADING}</h3>
+        <p data-copy="help_now">{text}</p>
+        {label && url ? (
+          <BtnLink sm flat href={url} {...(external ? { rel: 'noopener' } : {})}>
+            {label}
+          </BtnLink>
+        ) : null}
+      </div>
+    </div>
   );
 }

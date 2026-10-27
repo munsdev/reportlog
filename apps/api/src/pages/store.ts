@@ -28,8 +28,32 @@ export async function pageBlocks(
   page: PageId,
 ): Promise<{ blocks: Block[]; customised: boolean }> {
   const row = await live(db, page);
-  if (row?.blocks) return { blocks: resolvePageBlocks(row.blocks), customised: true };
+  if (row?.blocks) {
+    const saved = resolvePageBlocks(row.blocks);
+    // A front page saved when it was only a headline (before it was built of
+    // blocks) keeps that headline and gets the rest of the page as it ships,
+    // once: every later save writes the `eyebrow` key, which marks the new shape.
+    if (page === 'home' && isHeadlineOnly(row.blocks)) {
+      const rest = resolvePageBlocks(await defaultBlocks(db, page)).filter(
+        (b) => b.type !== 'hero',
+      );
+      return { blocks: [...saved, ...rest], customised: true };
+    }
+    return { blocks: saved, customised: true };
+  }
   return { blocks: resolvePageBlocks(await defaultBlocks(db, page)), customised: false };
+}
+
+/** Whether stored blocks are the old shape: only headline blocks, none with the newer `eyebrow` word. */
+function isHeadlineOnly(stored: unknown): boolean {
+  if (!Array.isArray(stored) || !stored.length) return false;
+  return (stored as unknown[]).every((raw) => {
+    if (typeof raw !== 'object' || raw === null) return false;
+    const b = raw as { type?: unknown; fields?: unknown };
+    if (b.type !== 'hero') return false;
+    const f = typeof b.fields === 'object' && b.fields !== null ? b.fields : {};
+    return !('eyebrow' in f);
+  });
 }
 
 async function canUndo(db: Database, page: PageId): Promise<boolean> {
