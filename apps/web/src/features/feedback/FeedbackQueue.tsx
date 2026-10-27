@@ -13,7 +13,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { AreaField } from '../../mockup/Fields.tsx';
 import { Filters } from '../../mockup/Filters.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { adminIssueQuery, queueQuery } from './queries.ts';
 import { IssueLine, StatusChip, when } from './words.tsx';

@@ -35,7 +35,7 @@ import { Note } from '../../mockup/Note.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';

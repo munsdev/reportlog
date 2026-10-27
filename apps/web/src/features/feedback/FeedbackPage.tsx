@@ -26,7 +26,7 @@ import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { AreaField, TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';

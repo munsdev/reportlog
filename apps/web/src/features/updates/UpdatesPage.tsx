@@ -18,7 +18,7 @@ import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 
 const busy = (d: UpdatesView | undefined) => d?.waiting === true || d?.last?.state === 'running';
 

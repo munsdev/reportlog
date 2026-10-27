@@ -57,7 +57,7 @@ import {
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem as ProblemNote } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { EvidenceRequests, evidenceSummary } from '../files/staff/EvidenceRequests.tsx';

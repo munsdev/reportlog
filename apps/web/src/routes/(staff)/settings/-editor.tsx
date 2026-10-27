@@ -10,7 +10,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useBlocker } from '@tanstack/react-router';
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
 
 export const editorQuery = queryOptions({

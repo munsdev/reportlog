@@ -17,7 +17,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';

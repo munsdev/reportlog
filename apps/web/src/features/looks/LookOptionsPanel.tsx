@@ -27,7 +27,7 @@ import type { LookOptions, SiteEditor } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { useSite } from '@/components/ui/site.tsx';
 import { ApiRequestError, call, pathFor } from '@/lib/api.ts';

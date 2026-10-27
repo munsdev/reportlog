@@ -48,12 +48,12 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
@@ -245,7 +245,7 @@ function PlaceQuestions({
     },
   });
   return (
-    <Panel heading="Which question places a report">
+    <Panel title="Which question places a report">
       <div className="form-stack">
         <p className="muted">
           A map counts the answers to a “Location on a map” question. If a logbook asks where twice,
@@ -345,7 +345,7 @@ function NewMap({ onDone }: { onDone: () => void }) {
     },
   });
   return (
-    <Panel heading="Make a map">
+    <Panel title="Make a map">
       <div>
         <form
           className="form-stack"
@@ -431,7 +431,7 @@ function MapCard({
   const named = (ids: readonly number[], from: readonly { id: number; title: string }[]) =>
     ids.map((id) => from.find((x) => x.id === id)?.title ?? `#${String(id)}`).join(', ');
   return (
-    <Panel heading={map.title} closed={!open}>
+    <Panel title={map.title} kind={open ? undefined : 'closed'}>
       <div className="form-stack" style={{ maxWidth: 'none' }}>
         <Dl
           items={[

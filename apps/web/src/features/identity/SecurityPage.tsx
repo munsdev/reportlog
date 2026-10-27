@@ -23,7 +23,7 @@ import { Chip } from '../../mockup/Chip.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import {
   AddAuthenticatorApp,

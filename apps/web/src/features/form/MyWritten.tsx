@@ -20,7 +20,7 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import type { RawAnswers } from './walk.ts';
 

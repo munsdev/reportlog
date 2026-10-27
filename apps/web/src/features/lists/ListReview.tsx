@@ -24,7 +24,7 @@ import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';

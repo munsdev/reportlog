@@ -36,7 +36,7 @@ import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../m
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';

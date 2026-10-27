@@ -8,8 +8,8 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Panel as MockPanel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel as MockPanel } from '@/mockup/Panel.tsx';
 import { cn } from '@/lib/utils.ts';
 
 interface FieldProps {
@@ -90,7 +90,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <MockPanel heading={title} {...(className ? { className } : {})}>
+    <MockPanel title={title} {...(className ? { className } : {})}>
       {children}
     </MockPanel>
   );

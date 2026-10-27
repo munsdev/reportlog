@@ -30,7 +30,7 @@ import { useState } from 'react';
 import { Btn } from '../../../mockup/Btn.tsx';
 import { Note } from '../../../mockup/Note.tsx';
 import { Problem } from '../../../mockup/Notice.tsx';
-import { Panel } from '../../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { threadFilesQuery, refreshStaffViews } from './queries.ts';

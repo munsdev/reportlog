@@ -13,7 +13,7 @@
 import { FILE_KINDS } from '@reportlog/contracts';
 import type { FileKind, FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';

@@ -38,7 +38,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { AreaField } from '../../mockup/Fields.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { PERMISSION_WORDS } from './permissionWords.ts';

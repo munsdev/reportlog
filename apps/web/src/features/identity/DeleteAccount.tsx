@@ -16,7 +16,7 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import type { SignedInMe } from './session.ts';
 
 export function DeleteAccount({ me }: { me: SignedInMe }) {

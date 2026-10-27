@@ -23,7 +23,8 @@ import { Meta } from '../../components/ui/type.tsx';
 import { PublicPage } from './PublicPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
-import { Note, Panel } from '../../mockup/Panel.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
@@ -196,7 +197,7 @@ function Listing({ id }: { id: number }) {
             }}
           />
         </div>
-        <Panel variant="quiet" title="What this list is">
+        <Panel kind="quiet" title="What this list is">
           <p className="whitespace-pre-wrap">{s.disclaimer}</p>
         </Panel>
         <section aria-labelledby="appears" style={{ display: 'grid', gap: 10 }}>

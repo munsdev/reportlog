@@ -20,9 +20,9 @@ import type {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Btn, btnClass } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
@@ -548,7 +548,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
 
   const [open, setOpen] = useState<number | null>(null);
   return (
-    <Panel heading="Questions">
+    <Panel title="Questions">
       <p className="muted">
         Change the questions here and save them together. The server checks the whole form: a
         question somebody can type into makes the form ask for an email address, and only a question
@@ -629,7 +629,7 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                 </div>
               </div>
               {editing ? (
-                <Panel variant="quiet">
+                <Panel kind="quiet">
                   <div className="form-stack">
                     {d.id === null ? (
                       <Field>
@@ -799,7 +799,7 @@ const PERSONAL = new Set(['short_text', 'long_text', 'email', 'place']);
 function Counts({ list }: { list: ListAdminDetail }) {
   const { totals, fields } = list.summary;
   return (
-    <Panel heading="Counts so far">
+    <Panel title="Counts so far">
       <p>
         {String(totals.received)} {totals.received === 1 ? 'entry' : 'entries'} ·{' '}
         {String(totals.approved)} approved · {String(totals.rejected)} rejected.
@@ -840,7 +840,7 @@ function Remove({ list }: { list: ListAdminDetail }) {
   });
   if (list.summary.totals.received > 0) {
     return (
-      <Panel variant="danger" heading="Delete this list">
+      <Panel kind="danger" title="Delete this list">
         <p className="muted">
           This list has taken entries, so it cannot be deleted: that would destroy the links it
           keeps and break every deletion link already emailed. Untick “Taking entries” to close it
@@ -850,7 +850,7 @@ function Remove({ list }: { list: ListAdminDetail }) {
     );
   }
   return (
-    <Panel variant="danger" heading="Delete this list">
+    <Panel kind="danger" title="Delete this list">
       <div className="acts">
         <Btn look="bad" sm flat
           type="button"

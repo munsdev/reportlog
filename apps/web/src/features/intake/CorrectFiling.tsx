@@ -16,7 +16,7 @@ import { Check } from '../../mockup/Choices.tsx';
 import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import {
   askedQuestions,

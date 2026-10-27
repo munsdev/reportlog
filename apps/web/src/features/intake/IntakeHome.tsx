@@ -16,7 +16,7 @@ import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { SelectField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { batchesQuery, organizationsQuery, useIntakeRefresh } from './queries.ts';
 

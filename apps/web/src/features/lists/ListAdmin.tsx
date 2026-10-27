@@ -15,12 +15,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Empty } from '@/mockup/Empty.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
-import { Empty } from '@/mockup/EmptyBox.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
@@ -183,7 +183,7 @@ function NewList({ onCancel }: { onCancel: () => void }) {
   });
 
   return (
-    <Panel heading="Make a list">
+    <Panel title="Make a list">
       <div>
         <form
           className="form-stack"

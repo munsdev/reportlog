@@ -20,7 +20,7 @@ import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';

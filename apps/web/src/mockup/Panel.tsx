@@ -1,87 +1,49 @@
 import './panel.css';
 
-import type { ReactNode } from 'react';
-import { messageOf } from '../features/identity/ui.tsx';
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '@/lib/utils.ts';
 
 /**
- * The mock-up's `.panel` (staff.py `panel`): a titled box. `kind` (or its older
- * name `variant`) is deep, quiet, danger or closed.
+ * The mock-up's `.panel` (staff.py `panel`): a titled box. `kind` is deep,
+ * quiet, danger or closed; a closed panel is the summary form, its heading in
+ * `.closed-head` (with `head`, something at the right of it such as a status
+ * chip) above a `dl` and an `acts` row.
  */
 export function Panel({
   title,
   sub,
   kind,
-  variant,
-  id,
-  as: Tag = 'section',
   head,
+  headingLevel = 2,
+  as: Tag = 'section',
+  className,
   children,
   ...rest
-}: {
+}: Omit<ComponentProps<'section'>, 'title'> & {
   title?: ReactNode;
   sub?: ReactNode;
-  kind?: 'deep' | 'quiet' | 'danger' | 'closed';
-  variant?: 'deep' | 'quiet' | 'danger';
-  id?: string;
-  as?: 'section' | 'article';
-  /** Something at the right of the title (a status chip): the mock-up's `.closed-head`. */
+  kind?: 'deep' | 'quiet' | 'danger' | 'closed' | undefined;
   head?: ReactNode;
-  children?: ReactNode;
+  headingLevel?: 2 | 3;
+  as?: 'section' | 'article';
   /** data-* attributes a test or script looks for. */
   [attr: `data-${string}`]: string | boolean | undefined;
 }) {
-  const k = kind ?? variant;
+  const H = headingLevel === 3 ? 'h3' : 'h2';
   return (
-    <Tag className={k ? `panel ${k}` : 'panel'} {...(id ? { id } : {})} {...rest}>
-      {head ? (
-        <div className="closed-head">
-          {title ? <h2>{title}</h2> : null}
-          {head}
-        </div>
+    <Tag className={cn('panel', kind, className)} {...rest}>
+      {head || kind === 'closed' ? (
+        title || head ? (
+          <div className="closed-head">
+            {title ? <H>{title}</H> : null}
+            {head}
+          </div>
+        ) : null
       ) : title ? (
-        <h2>{title}</h2>
+        <H>{title}</H>
       ) : null}
       {sub ? <p className="sub">{sub}</p> : null}
       {children}
     </Tag>
-  );
-}
-
-/** The mock-up's `.note`: a short boxed statement. `warn` is a problem, said in words. */
-export function Note({
-  title,
-  warn = false,
-  children,
-}: {
-  title?: ReactNode;
-  warn?: boolean;
-  children?: ReactNode;
-}) {
-  return (
-    <div className={warn ? 'note warn' : 'note'} role={warn ? 'alert' : 'status'}>
-      <span>
-        {title ? <b>{title} </b> : null}
-        {children}
-      </span>
-    </div>
-  );
-}
-
-/** A failure from a call, as a boxed sentence a person can read. */
-export function ErrorNote({ error, title }: { error: unknown; title?: ReactNode }) {
-  if (!error) return null;
-  return (
-    <Note warn title={title}>
-      {messageOf(error)}
-    </Note>
-  );
-}
-
-/** A one-line wait, in the narrow column. */
-export function Waiting({ children }: { children: ReactNode }) {
-  return (
-    <p role="status" className="muted">
-      {children}
-    </p>
   );
 }

@@ -17,9 +17,9 @@ import type { AgreementAudience } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
 import { Page } from '../../components/ui/page.tsx';
@@ -118,7 +118,7 @@ export function AgreementAdminPage({
     >
       {tabs}
       {state.data?.current ? (
-        <Panel heading="The published version">
+        <Panel title="The published version">
           <p className="m">Version {String(state.data.current.version)}</p>
           <div className="paper">
             <p style={{ whiteSpace: 'pre-wrap' }}>{state.data.current.body}</p>
@@ -131,7 +131,7 @@ export function AgreementAdminPage({
             : 'Until one is, nobody is asked to accept anything before moderating.'}
         </Note>
       )}
-      <Panel heading="The new version">
+      <Panel title="The new version">
         <form
           className="form-stack"
           onSubmit={(e) => {
@@ -162,7 +162,7 @@ export function AgreementAdminPage({
           </div>
         </form>
       </Panel>
-      <Panel heading="Who accepted">
+      <Panel title="Who accepted">
         {accepted.data?.acceptances.length ? (
           <div className="rows tbl" role="table" aria-label="Who accepted">
             <div className="row head" role="row">

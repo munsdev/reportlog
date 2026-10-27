@@ -29,7 +29,7 @@ import { Btn } from '../../mockup/Btn.tsx';
 import { Field, Input, Label } from '../../mockup/Form.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';

@@ -15,7 +15,7 @@ import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { useMe } from '../identity/session.ts';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';

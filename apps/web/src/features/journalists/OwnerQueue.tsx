@@ -31,7 +31,7 @@ import { Dl } from '../../mockup/Dl.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 
 const KEY = ['owner', 'journalists'] as const;

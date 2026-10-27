@@ -19,8 +19,8 @@ import {
 import type { SiteEditor } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Switch } from '@/mockup/SwitchRow.tsx';
 import { BrandName, useSite } from '@/components/ui/site.tsx';
@@ -106,20 +106,20 @@ function PublishingPanel() {
 
   if (query.isPending)
     return (
-      <Panel heading="Publishing">
+      <Panel title="Publishing">
         <p role="status">Loading…</p>
       </Panel>
     );
   if (query.isError)
     return (
-      <Panel heading="Publishing">
+      <Panel title="Publishing">
         <Note tone="serious" title="Publishing could not be read.">
           {query.error.message}
         </Note>
       </Panel>
     );
   return (
-    <Panel heading="Publishing">
+    <Panel title="Publishing">
       <Switch
         label="Publish the archive"
         help="Approved reports appear on the board. Turning it off hides them; nothing is deleted. A reporter permitting publication does not oblige the site to publish, and the site publishing never overrides a reporter who said no."

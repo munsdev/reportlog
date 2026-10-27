@@ -29,7 +29,7 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';

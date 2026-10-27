@@ -30,7 +30,7 @@ import type { ArrangementEntry, ButtonTarget, HomeButtonsAdmin } from '@reportlo
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
+import { Panel as MPanel } from '@/mockup/Panel.tsx';
 import { FrontPageTabs } from './FrontPageTabs.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -168,7 +168,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
   return (
     <div className="grid2">
       <div className="col">
-        <MPanel heading="The big buttons, in this order">
+        <MPanel title="The big buttons, in this order">
           {rows.length === 0 && <p>No buttons. Open logbooks are still added to the page.</p>}
           <div className="qlist" role="list" aria-label="Buttons, in order">
             {rows.map((r, i) => {
@@ -235,7 +235,7 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                     </div>
                   </div>
                   {open && (
-                    <MPanel variant="quiet">
+                    <MPanel kind="quiet">
                       <Field label="Target" help={t?.help ?? undefined}>
                         {(p) => (
                           <Select

@@ -22,8 +22,8 @@ import type { FilingLimits } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
@@ -273,11 +273,11 @@ function FormsPage() {
       ) : null}
       {limits.data ? <EmailOnReports limits={limits.data} /> : null}
       {state.data ? (
-        <Panel heading="The minimum time on a form">
+        <Panel title="The minimum time on a form">
           <MinFormTime seconds={state.data.min_form_seconds} />
         </Panel>
       ) : null}
-      <Panel variant="quiet" heading="Set elsewhere">
+      <Panel kind="quiet" title="Set elsewhere">
         <p>
           <Link to="/moderate/flood">The puzzle and pausing intake</Link> (the “Harder puzzle”
           switch, where each use is recorded and shown publicly) ·{' '}

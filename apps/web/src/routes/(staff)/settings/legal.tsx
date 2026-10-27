@@ -14,7 +14,7 @@ import { setLegalText } from '@reportlog/contracts';
 import type { SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';

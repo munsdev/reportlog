@@ -31,7 +31,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
 import { DeskAlerts, deskQuery } from './AlertSettings.tsx';

@@ -27,7 +27,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { St } from '@/mockup/St.tsx';
 import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
 import { FitHeadline } from '@/components/ui/fit-headline.tsx';
@@ -221,7 +221,7 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
             Board
           </Btn>
         </div>
-        <Panel heading="RL-7K2M-4QXD" headingLevel={3} className="max-w-xl">
+        <Panel title="RL-7K2M-4QXD" headingLevel={3} className="max-w-xl">
           <div className="flex flex-wrap gap-1.5">
             <St tone="confirmed">Confirmed</St>
             <St tone="serious">Serious</St>

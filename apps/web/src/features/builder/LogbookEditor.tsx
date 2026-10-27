@@ -27,11 +27,11 @@ import type { FieldDefinition } from '@reportlog/fields';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel as MPanel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
 import { Btn, btnClass } from '@/mockup/Btn.tsx';
-import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
 import { St } from '@/mockup/St.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { SettingPanels } from '@/mockup/SettingPanel.tsx';
 import { GuardedPanel } from '../settings/panels.tsx';
@@ -117,7 +117,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
 
       <Panel title="Questions">
         {launched && (
-          <MPanel variant="quiet">
+          <MPanel kind="quiet">
             <p>
               {lb.launched_at ? `Launched on ${day(lb.launched_at)}. ` : ''}The questions’ keys,
               kinds, order, conditions and codes are frozen, so every sealed report still checks.
@@ -127,7 +127,7 @@ function Editor({ lb }: { lb: LogbookDetail }) {
           </MPanel>
         )}
         <QuestionList lb={lb} refresh={refresh} />
-        <MPanel variant="quiet" heading="Add a question" headingLevel={3}>
+        <MPanel kind="quiet" title="Add a question" headingLevel={3}>
           <QuestionForm
             earlier={lb.fields}
             launched={launched}

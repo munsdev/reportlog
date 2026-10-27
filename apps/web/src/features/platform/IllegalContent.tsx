@@ -197,14 +197,14 @@ export function NoticeStatusPage({ token }: { token: string }) {
       {/* Quiet either way, never teal: teal is a moderator confirming a
           report, and this is a decision about a notice. */}
       {n.status === 'open' || !n.decision ? (
-        <Panel variant="quiet" title="Not decided yet">
+        <Panel kind="quiet" title="Not decided yet">
           <p>
             A person will look at it and tell you what was decided and why. This page shows the
             decision when it is made.
           </p>
         </Panel>
       ) : (
-        <Panel variant="quiet" title="What we decided">
+        <Panel kind="quiet" title="What we decided">
           <p>
             {DECISION_WORDS[n.decision]}
             {n.decision_reason ? ' ' : ''}

@@ -22,7 +22,7 @@ import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StepUpDownload } from '../identity/StepUp.tsx';
 

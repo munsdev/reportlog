@@ -13,9 +13,9 @@ import { searchListEntries } from '@reportlog/contracts';
 import type { FoundListEntry, ListSearchResult } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { REVIEW, TRIAGE, said } from './words.ts';
@@ -30,7 +30,7 @@ export function ListSearch() {
       title="Find somebody's entries"
       lede="For answering a request to see or delete what somebody sent. It looks through what people wrote on every list and the email addresses they gave. Anything already deleted is not found, because it is not kept."
     >
-      <Panel heading="Look for">
+      <Panel title="Look for">
         <form
           onSubmit={(e) => {
             e.preventDefault();

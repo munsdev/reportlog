@@ -30,7 +30,7 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
 import { Note } from '../../mockup/Note.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 
 // The same key as "My reports" uses for this report, so the two share it.
 const reportQuery = (threadId: string) =>

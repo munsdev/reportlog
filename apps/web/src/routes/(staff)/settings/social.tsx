@@ -28,7 +28,7 @@ import type {
 } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Switch } from '@/mockup/SwitchRow.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';

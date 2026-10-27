@@ -21,7 +21,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
-import { Panel } from '../../mockup/Panel.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
 import { AccountDialog } from './AccountDialog.tsx';

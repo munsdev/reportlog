@@ -22,7 +22,8 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
 import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
-import { Note, Panel } from '@/mockup/Panel.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
 import { useBodyClass } from '@/mockup/useBodyClass.ts';
 import { PERMISSION_WORDS } from '@/features/form/permissionWords.ts';
 import { call } from '@/lib/api.ts';
@@ -113,7 +114,7 @@ export function EvidencePage({ token }: { token: string }) {
     <TokenPage title="A moderator asked for evidence">
       {a.public_ref ? <p className="m">{a.public_ref}</p> : null}
       <p>{`About your report to “${a.logbook_title}”.`}</p>
-      <Panel variant="quiet" title="What they asked">
+      <Panel kind="quiet" title="What they asked">
         <p className="whitespace-pre-wrap">{a.message}</p>
       </Panel>
       <p className="m">

@@ -11,10 +11,10 @@ import { getDevMode, getIntakePause, setDevMode, setIntakeSwitch } from '@report
 import type { DevMode } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
 import {
   Dialog,
   DialogContent,
@@ -72,14 +72,14 @@ export function AcceptingReportsPanel() {
   const title = 'Accepting reports';
   if (query.isPending) {
     return (
-      <Panel heading={title}>
+      <Panel title={title}>
         <p role="status">Reading the intake switch…</p>
       </Panel>
     );
   }
   if (query.isError) {
     return (
-      <Panel heading={title}>
+      <Panel title={title}>
         <Note tone="serious" title="The intake switch could not be read.">
           {query.error.message}
         </Note>
@@ -87,7 +87,7 @@ export function AcceptingReportsPanel() {
     );
   }
   return (
-    <Panel heading={title}>
+    <Panel title={title}>
       <Switch
         label="Taking new reports"
         help="Every open logbook and list."
@@ -197,7 +197,7 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
   });
   const hours = String(state.default_hours);
   return (
-    <Panel heading="Development notice">
+    <Panel title="Development notice">
       <Switch
         label={state.active && state.until ? `On until ${when(state.until)}` : 'Off'}
         help={`Shows “Under active development” in a corner of every page. A release turns it on by itself for ${hours} hours.`}
@@ -225,13 +225,13 @@ export function DevNotice() {
   const state = useQuery(devModeQuery);
   if (state.isPending)
     return (
-      <Panel heading="Development notice">
+      <Panel title="Development notice">
         <p role="status">Loading…</p>
       </Panel>
     );
   if (state.isError)
     return (
-      <Panel heading="Development notice">
+      <Panel title="Development notice">
         <Note tone="serious" title="The notice’s state could not be read.">
           {state.error.message}
         </Note>

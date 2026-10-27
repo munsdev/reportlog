@@ -16,9 +16,8 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Panel } from '@/mockup/PanelBox.tsx';
-import { Dl } from '@/mockup/DlList.tsx';
-import type { DlItem } from '@/mockup/DlList.tsx';
+import { Panel } from '@/mockup/Panel.tsx';
+import { Dl, type DlItem } from '@/mockup/Dl.tsx';
 import { SettingPanel, SettingPanels, useSettingPanels } from '@/mockup/SettingPanel.tsx';
 import type { SettingPanelProps } from '@/mockup/SettingPanel.tsx';
 import { ToastProvider } from '@/components/ui/toast.tsx';
@@ -58,7 +57,7 @@ export function LinkPanel({
   className,
 }: LinkPanelProps) {
   return (
-    <Panel heading={title} closed {...(className ? { className } : {})}>
+    <Panel title={title} kind="closed" {...(className ? { className } : {})}>
       {children}
       <Dl items={summary} />
       <div className="acts">

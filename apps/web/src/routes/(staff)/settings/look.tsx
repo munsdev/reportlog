@@ -24,7 +24,7 @@ import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { Note } from '@/mockup/NoteBox.tsx';
+import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
