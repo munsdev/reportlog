@@ -11,6 +11,7 @@ export function Panel({
   as: Tag = 'section',
   head,
   children,
+  ...rest
 }: {
   title?: ReactNode;
   sub?: ReactNode;
@@ -20,9 +21,11 @@ export function Panel({
   /** Something at the right of the title (a status chip): the mock-up's `.closed-head`. */
   head?: ReactNode;
   children?: ReactNode;
+  /** data-* attributes a test or script looks for. */
+  [attr: `data-${string}`]: string | boolean | undefined;
 }) {
   return (
-    <Tag className={kind ? `panel ${kind}` : 'panel'} {...(id ? { id } : {})}>
+    <Tag className={kind ? `panel ${kind}` : 'panel'} {...(id ? { id } : {})} {...rest}>
       {head ? (
         <div className="closed-head">
           {title ? <h2>{title}</h2> : null}
