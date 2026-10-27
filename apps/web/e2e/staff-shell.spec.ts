@@ -159,11 +159,22 @@ for (const [role, gone, kept] of [
     );
     await page.goto('/home');
     await expect(page.locator('[data-staff-app]')).toBeVisible();
-    if ((page.viewportSize()?.width ?? 1280) < 900)
-      await page.getByRole('banner').getByRole('button', { name: 'Menu' }).click();
+    if ((page.viewportSize()?.width ?? 1280) < 900) {
+      // Pressed again until the drawer is there: a press before the page has
+      // finished loading is lost, and under a busy machine that happened.
+      await expect(async () => {
+        if ((await page.getByRole('dialog', { name: 'Staff menu' }).count()) === 0)
+          await page.getByRole('banner').getByRole('button', { name: 'Menu' }).click();
+        await expect(page.getByRole('dialog', { name: 'Staff menu' })).toBeVisible({
+          timeout: 2000,
+        });
+      }).toPass({ timeout: 20_000 });
+    }
     const side = page.getByRole('navigation', { name: 'Your pages' });
     for (const label of kept)
-      await expect(side.getByRole('link', { name: label, exact: true }), label).toBeVisible();
+      await expect(side.getByRole('link', { name: label, exact: true }), label).toBeVisible({
+        timeout: 15_000,
+      });
     for (const label of gone)
       await expect(side.getByRole('link', { name: label, exact: true }), label).toHaveCount(0);
     await context.close();

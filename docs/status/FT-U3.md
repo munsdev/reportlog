@@ -80,3 +80,9 @@ every page the administrator and the moderator may open, no sideways scroll).
 desk specs follow the renamed labels and the 900 px breakpoint.
 
 Suite totals: see the end of this file.
+
+## Suite totals (final tree, run through heavy.sh)
+
+- `pnpm check`: format, lint, types and boundaries green. The first unit run had two real failures (the drawer unit test and `team.test.ts` still named the old labels); both fixed, and those two files rerun alone: 59 passed. Other packages: seal 46, fields 123, contracts 39, access 13, api 527 passed.
+- Browser suite, whole: 1213 passed, 12 skipped, 1 failed. The failure was `staff-shell.spec.ts` "moderator: sidebar" on the phone project, a menu press lost while the machine was busy (it passed alone, twice). The test now presses until the drawer is there; the whole spec rerun alone: 12 passed, 2 skipped by design. The other 1213 ran against the earlier version of that one spec only.
+- `pnpm test:db`: 96 files, 1476 passed. I changed nothing in `apps/api`.
