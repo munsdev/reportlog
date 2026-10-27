@@ -1,20 +1,20 @@
 /**
- * The board's pages share a head and a row of tabs (public.md §03, §04):
- * Reports, By the numbers, Maps (only when a map is placed on the board),
- * Press pack (only when it holds a document). Arrivals and declines is
- * reached from How to use this, not from a tab. Each tab is its own address, and the one
- * being read says so, to a screen reader as `aria-current="page"` and to the
- * eye as a brand-coloured underline, never the action colour.
+ * The board's pages share a head and a row of tabs (mock-up board*.html):
+ * Reports, Numbers, Maps (only when a map is placed on the board), Activity,
+ * Press pack (only when it holds a document). Each tab is its own address,
+ * and the one being read says so with `aria-current="page"`.
  *
- * The row is the site's `TabRow` (features/nav/AreaTabs.tsx): on a narrow
- * screen one dropdown, and on a wide one the tabs that do not fit go under
- * "More", so nothing scrolls sideways.
+ * The band is the same on every tab: the eyebrow, "Reports", the lead and
+ * the tabs. There is no row of headline figures: a bare "N published" is
+ * the number that gets quoted without the caveat, so the board never shows
+ * one (owner decision 36). A tab other than the list opens with a line of
+ * its own under the band.
  */
 import { useQuery } from '@tanstack/react-query';
-import { useRouterState } from '@tanstack/react-router';
+import { Link, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { BandPage, BandTabs } from '../../components/ui/band.tsx';
-import { cn } from '../../lib/utils.ts';
+import { Band, MockPage } from '../../mockup/Band.tsx';
+import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
 import { pressQuery } from './queries.ts';
 
@@ -22,8 +22,8 @@ type BoardPath = '/board' | '/board/numbers' | '/board/maps' | '/board/activity'
 
 const TABS: readonly { to: BoardPath; label: string }[] = [
   { to: '/board', label: 'List' },
-  { to: '/board/numbers', label: 'Numbers' },
   { to: '/board/maps', label: 'Maps' },
+  { to: '/board/numbers', label: 'Numbers' },
   { to: '/board/activity', label: 'Activity' },
   { to: '/board/press', label: 'Press pack' },
 ];
@@ -40,64 +40,67 @@ export function BoardTabs() {
     (t) => (t.to !== '/board/maps' || hasMaps) && (t.to !== '/board/press' || hasPress),
   );
   return (
-    <BandTabs
-      label="Report views"
-      tabs={tabs.map((t) => ({ to: t.to, label: t.label, current: path === t.to }))}
-    />
+    <nav className="tabs" aria-label="Report views">
+      {tabs.map((t) => (
+        <Link
+          key={t.to}
+          to={t.to}
+          activeProps={{}}
+          {...(path === t.to ? { 'aria-current': 'page' as const } : {})}
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
   );
 }
 
 /**
- * A board page (mock-up board*.html): the same band on every tab (the
- * eyebrow, "Reports", the figure, the lead and the tabs), then the page.
- * A tab other than the list names itself with a heading of its own
- * (`heading`), under the band; the list needs none.
+ * A board page. `list` is the report list (a plain wrap); every other tab
+ * stacks its panels with the mock-up's 22px rhythm under a line of its own.
  */
 export function BoardFrame({
   title,
-  heading,
   lede,
-  actions,
-  width = 'wide',
+  list = false,
   children,
 }: {
   /** The browser tab's title. */
   title: string;
-  /** This tab's own heading, under the band. */
-  heading?: string;
-  /** A sentence under this tab's heading. */
+  /** A sentence under the band, saying what this tab holds. */
   lede?: ReactNode;
-  actions?: ReactNode;
-  width?: 'wide' | 'prose';
-  eyebrow?: string;
+  /** The report list: no stacking, the page lays itself out. */
+  list?: boolean;
   children: ReactNode;
 }) {
+  useBodyClass('light');
   return (
-    <BandPage
-      title={title}
-      heading="Reports"
-      eyebrow="Public record"
-      lede="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
-      band={
-        <>
-          <BoardTabs />
-        </>
-      }
-    >
-      {heading || actions ? (
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="grid gap-2">
-            {heading ? <h2 className="font-display text-section">{heading}</h2> : null}
-            {lede ? <p className="max-w-[62ch] text-lede text-ink-alt">{lede}</p> : null}
-          </div>
-          {actions ? (
-            <div className="flex flex-col gap-3 lg:shrink-0 lg:flex-row">{actions}</div>
+    <MockPage>
+      <Band
+        motif
+        eyebrow="Public record"
+        title="Reports"
+        tabTitle={title}
+        lead="First-hand accounts a moderator has read and approved for publication, with their reporters’ permission. Published means judged publishable, which is a weaker claim than true."
+        leadSize=".95rem"
+      >
+        <BoardTabs />
+      </Band>
+      {list ? (
+        <div className="wrap">
+          {lede ? (
+            <p className="lead" style={{ paddingTop: 18, fontSize: '.95rem' }}>
+              {lede}
+            </p>
           ) : null}
+          {children}
         </div>
-      ) : null}
-      <div className={cn('flex flex-col gap-6', width === 'prose' && 'max-w-prose')}>
-        {children}
-      </div>
-    </BandPage>
+      ) : (
+        <div className="wrap" style={{ paddingTop: 22, display: 'grid', gap: 22 }}>
+          {lede ? <p className="muted">{lede}</p> : null}
+          {children}
+        </div>
+      )}
+    </MockPage>
   );
 }

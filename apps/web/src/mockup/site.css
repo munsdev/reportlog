@@ -774,3 +774,8 @@ body.light .follow,.scope-light .follow{background:var(--p-chrome);color:#fff}
 .seg-filter button[aria-pressed="true"] .n{background:var(--rl-background);color:var(--rl-text)}
 /* the sticky Decide column scrolls inside itself when it is taller than the screen, so its last rows stay reachable */
 @media (min-width:900px){.staff .decide{max-height:calc(100vh - 92px);overflow-y:auto;overscroll-behavior:contain}}
+/* ---------- added for the app (the mock-up's pages are static files) ---------- */
+/* The mock-up leaves "File a report" out of the header on a filing page. */
+body.form .site-head .head-right > .btn{display:none}
+/* A page the app draws inside its padded column (data-bleed) rather than directly in <main>. */
+body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}

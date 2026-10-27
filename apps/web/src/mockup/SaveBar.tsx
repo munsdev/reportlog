@@ -41,10 +41,10 @@ export function SaveBar({
     <div className="savebar" role="region" aria-label="Unsaved changes">
       <span>Changes to {what} are not saved.</span>
       <div className="acts">
-        <Btn kind="go" disabled={busy} onClick={onSave}>
+        <Btn sm flat look="go" disabled={busy} onClick={onSave}>
           {busy ? 'Saving…' : saveLabel}
         </Btn>
-        <Btn kind="ghost" onClick={onCancel}>
+        <Btn sm flat look="ghost" onClick={onCancel}>
           Cancel
         </Btn>
       </div>

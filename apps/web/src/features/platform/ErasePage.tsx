@@ -9,15 +9,11 @@
  */
 import { lookEraseLink, eraseViaLink } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import { Alert } from '@/components/ui/alert.tsx';
-import { Button } from '@/components/ui/button.tsx';
-import { Card } from '@/components/ui/card.tsx';
-import { CheckOption } from '@/components/ui/choice.tsx';
-import { plainSiteName, useSite } from '@/components/ui/site.tsx';
-import { Eyebrow, Meta } from '@/components/ui/type.tsx';
+import { useState } from 'react';
 import { ApiRequestError, call } from '@/lib/api.ts';
+import { Narrow, TokenPage } from '@/mockup/Narrow.tsx';
+import { Note, Panel } from '@/mockup/Panel.tsx';
+import { useBodyClass } from '@/mockup/useBodyClass.ts';
 
 const lookQuery = (token: string) =>
   queryOptions({
@@ -26,124 +22,105 @@ const lookQuery = (token: string) =>
     retry: false,
   });
 
+/** Mock-up t-erase.html. */
 export function ErasePage({ token }: { token: string }) {
+  useBodyClass('light', 'form');
   const look = useQuery(lookQuery(token));
   const [sure, setSure] = useState(false);
   const erase = useMutation({
     mutationFn: () => call(eraseViaLink, { params: { token }, body: { confirm: true } }),
   });
 
-  if (look.isPending) return <p role="status">Checking this link…</p>;
+  if (look.isPending) {
+    return (
+      <Narrow>
+        <p role="status" className="muted">
+          Checking this link…
+        </p>
+      </Narrow>
+    );
+  }
   if (look.isError) {
     const missing = look.error instanceof ApiRequestError && look.error.status === 404;
     return (
-      <LinkPage title="This link does not match anything">
-        <p className="max-w-prose">
+      <TokenPage title="This link does not match anything">
+        <p>
           {missing
             ? 'Either the whole link was not copied, or your contact details have already been erased.'
             : look.error.message}
         </p>
-      </LinkPage>
+      </TokenPage>
     );
   }
   if (erase.isSuccess) {
     return (
-      <LinkPage title="Your contact details are erased" eyebrow={look.data.logbook_title}>
-        <Alert tone="done">
+      <TokenPage eyebrow={look.data.logbook_title} title="Your contact details are erased">
+        <Note>
           The key your email address was kept under is destroyed. Nobody can read it again, and
           nobody can reach you about this report. Your report itself is unchanged.
-        </Alert>
-      </LinkPage>
+        </Note>
+      </TokenPage>
     );
   }
   if (look.data.state === 'not_yet_filed') {
     return (
-      <LinkPage title="Nothing to erase yet" eyebrow={look.data.logbook_title}>
-        <p className="max-w-prose">
+      <TokenPage eyebrow={look.data.logbook_title} title="Nothing to erase yet">
+        <p>
           Your report has not been filed, so this site holds nothing but the message it sent you. If
           you do not want to file it, ignore that email: the link in it stops working on its own.
         </p>
-      </LinkPage>
+      </TokenPage>
     );
   }
   return (
-    <LinkPage title="Erase your contact details" eyebrow={look.data.logbook_title}>
-      {look.data.public_ref ? (
-        <p>
-          For your report <Meta className="text-base text-ink">{look.data.public_ref}</Meta>.
-        </p>
-      ) : null}
-      <p className="max-w-prose">
+    <TokenPage eyebrow={look.data.logbook_title} title="Erase your contact details">
+      {look.data.public_ref ? <p className="m">For your report {look.data.public_ref}</p> : null}
+      <p>
         Pressing the button destroys the key your email address is kept under. After that nobody,
         including the people who run this site, can read your address or write to you about this
         report. This cannot be undone.
       </p>
-      <Card variant="deep" className="gap-2">
-        <h2 className="label-face text-sm text-brand-on-deep">What this does not do</h2>
-        <p className="max-w-prose">
+      <Panel variant="deep" title="What this does not do">
+        <p>
           Your report is not withdrawn. It stays exactly as it is, sealed, and is published or not
           as before. If you want it taken down, withdraw it from “My reports” first.
         </p>
-      </Card>
+      </Panel>
       {erase.isError ? (
-        <Alert tone="serious" title="It was not erased">
+        <Note warn title="It was not erased.">
           {erase.error.message}
-        </Alert>
+        </Note>
       ) : null}
-      <CheckOption
-        id="erase-sure"
-        checked={sure}
-        onCheckedChange={(on) => {
-          setSure(on === true);
-        }}
-        label="I understand this cannot be undone."
-      />
-      <div className="flex flex-col items-start gap-2">
-        {/* Secondary: a destructive action is never the action colour. */}
-        <Button
+      <label className="check">
+        <input
+          id="erase-sure"
+          type="checkbox"
+          checked={sure}
+          onChange={(e) => {
+            setSure(e.target.checked);
+          }}
+        />
+        I understand this cannot be undone.
+      </label>
+      {/* A destructive action is never the action colour; it says why it waits. */}
+      <div>
+        <button
+          className="btn sm flat bad"
           type="button"
-          variant="secondary"
-          disabled={!sure}
-          busy={erase.isPending}
-          busyLabel="Erasing…"
+          disabled={!sure || erase.isPending}
           aria-describedby={sure ? undefined : 'erase-why'}
           onClick={() => {
             erase.mutate();
           }}
         >
-          Erase my details
-        </Button>
+          {erase.isPending ? 'Erasing…' : 'Erase my details'}
+        </button>
         {sure ? null : (
-          <p id="erase-why" className="text-sm text-ink-alt">
+          <p id="erase-why" className="m">
             Tick the statement above first.
           </p>
         )}
       </div>
-    </LinkPage>
-  );
-}
-
-/** A page reached from a link in an email: its heading, and nothing of the rest of the site. */
-function LinkPage({
-  title,
-  eyebrow,
-  children,
-}: {
-  title: string;
-  eyebrow?: string;
-  children: ReactNode;
-}) {
-  const site = plainSiteName(useSite().data);
-  useEffect(() => {
-    document.title = `${title} · ${site}`;
-  }, [title, site]);
-  return (
-    <section className="flex w-full max-w-[40rem] flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}
-        <h1 className="font-display text-title">{title}</h1>
-      </div>
-      {children}
-    </section>
+    </TokenPage>
   );
 }

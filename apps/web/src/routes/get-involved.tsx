@@ -8,12 +8,14 @@
 import { listOpenLists } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
-import { BandPage, SecHead } from '../components/ui/band.tsx';
-import { Button } from '../components/ui/button.tsx';
-import { CopyBox } from '../features/site-pages/CopyBox.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { FollowBand } from '../features/follow/FollowBand.tsx';
 import { call } from '../lib/api.ts';
+import { MockPage } from '../mockup/Band.tsx';
+import { CopyBox } from '../mockup/CopyBox.tsx';
+import { SecHead } from '../mockup/SecHead.tsx';
+import { useBodyClass } from '../mockup/useBodyClass.ts';
+import { usePageTitle } from '../mockup/usePageTitle.ts';
 
 export const Route = createFileRoute('/get-involved')({
   component: GetInvolvedPage,
@@ -27,44 +29,52 @@ function GetInvolvedPage() {
   });
   const address = typeof window === 'undefined' ? '' : window.location.origin;
   const rows = lists.data?.lists ?? [];
+  useBodyClass('dark');
+  usePageTitle('Get involved');
   return (
-    <>
+    <MockPage>
       <FollowBand placement="get_involved" bleed />
-      <BandPage
-        title="Get involved"
-        heading={'Help it\nget seen'}
-        eyebrow="Get involved"
-        lede={`${site} works when people know it exists and someone reads every report. Here is what that takes.`}
-        className="gap-10"
-      >
+      <section className="hero motif-host" aria-labelledby="h1">
+        <div className="ov" data-slot="hero" />
+        <div className="wrap">
+          <span className="eyebrow">Get involved</span>
+          <h1 className="display" id="h1" style={{ fontSize: 'clamp(2.8rem,10vw,7rem)' }}>
+            Help it
+            <br />
+            <span className="two">get seen</span>
+          </h1>
+          <p className="lede">
+            {site} works when people know it exists and someone reads every report. Here is what
+            that takes.
+          </p>
+        </div>
+      </section>
+      <div className="wrap">
         {rows.length ? (
-          <section aria-labelledby="ways">
-            <SecHead num="01" title="Ways to help" id="ways" />
-            <ul className="grid gap-4 min-[820px]:grid-cols-3">
+          <section className="section" aria-labelledby="s1">
+            <SecHead num="01" id="s1" title="Ways to help" />
+            <div className="cards">
               {rows.map((l) => (
-                <li
-                  key={l.slug}
-                  className="grid content-start gap-2.5 rounded-card border-(length:--rl-border-main) border-ink bg-surface p-[18px] shadow-raised"
-                >
-                  <h3 className="font-display text-[1.35rem] leading-none">{l.title}</h3>
-                  {l.blurb ? <p className="text-[0.95rem] text-ink-alt">{l.blurb}</p> : null}
-                  <Button asChild variant="secondary" className="mt-1 justify-self-start">
-                    <Link to="/list/$slug" params={{ slug: l.slug }}>
-                      Sign up
-                    </Link>
-                  </Button>
-                </li>
+                <div className="card" key={l.slug}>
+                  <h3>{l.title}</h3>
+                  {l.blurb ? <p>{l.blurb}</p> : null}
+                  <Link className="btn sm flat" to="/list/$slug" params={{ slug: l.slug }}>
+                    Sign up
+                  </Link>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         ) : null}
-        <section id="share" aria-labelledby="share-h" className="max-w-[62ch]">
-          <SecHead num={rows.length ? '02' : '01'} title="Spread the word" id="share-h">
+        <section className="section" id="share" aria-labelledby="s2">
+          <SecHead num={rows.length ? '02' : '01'} id="s2" title="Spread the word">
             Share the address. Anybody who sees something can put it on the record.
           </SecHead>
-          <CopyBox text={address} what="the site address" code={address || site} />
+          <div className="share">
+            <CopyBox text={address} what="the site address" code={address || site} />
+          </div>
         </section>
-      </BandPage>
-    </>
+      </div>
+    </MockPage>
   );
 }

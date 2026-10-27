@@ -32,14 +32,7 @@ import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Check, Choice, Choices } from '../../mockup/Choices.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
-import {
-  Field,
-  FieldDescription,
-  Input,
-  Label,
-  Select,
-  Textarea,
-} from '../../mockup/Form.tsx';
+import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
@@ -116,6 +109,8 @@ export function Reveal({
     <div className="col">
       <div className="acts">
         <Btn
+          sm
+          flat
           disabled={open.isPending}
           onClick={() => {
             open.mutate();
@@ -353,7 +348,9 @@ function CheckForm({
       {save.isError ? <Problem>{save.error.message}</Problem> : null}
       <div className="acts">
         <Btn
-          kind="ink"
+          sm
+          flat
+          look="ink"
           disabled={!ready || save.isPending}
           onClick={() => {
             if (outcome === 'redacted') {
@@ -448,6 +445,8 @@ export function RedactPage({ textRef }: { textRef: string }) {
                 <>
                   <div className="acts">
                     <Btn
+                      sm
+                      flat
                       onMouseDown={(e) => {
                         // Keep the selection while the button is pressed.
                         e.preventDefault();
@@ -499,7 +498,9 @@ export function RedactPage({ textRef }: { textRef: string }) {
               ) : null}
               <div className="acts">
                 <Btn
-                  kind="ink"
+                  sm
+                  flat
+                  look="ink"
                   disabled={save.isPending || why.trim().length < WHY_MIN || copy.trim() === ''}
                   onClick={() => {
                     save.mutate(copy);
@@ -530,7 +531,9 @@ export function RedactPage({ textRef }: { textRef: string }) {
                     {review.isError ? <Problem>{review.error.message}</Problem> : null}
                     <div className="acts">
                       <Btn
-                        kind="ink"
+                        sm
+                        flat
+                        look="ink"
                         disabled={review.isPending}
                         onClick={() => {
                           review.mutate('approved');
@@ -539,6 +542,8 @@ export function RedactPage({ textRef }: { textRef: string }) {
                         Approve the note
                       </Btn>
                       <Btn
+                        sm
+                        flat
                         disabled={review.isPending}
                         onClick={() => {
                           review.mutate('returned');

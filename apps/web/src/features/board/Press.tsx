@@ -8,11 +8,10 @@
  */
 import { PRESS_FILE_PATH } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { Alert } from '../../components/ui/alert.tsx';
 import { NotASample } from '../../components/ui/not-a-sample.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Empty } from '../../components/ui/empty.tsx';
-import { Meta } from '../../components/ui/type.tsx';
+import { Empty } from '../../mockup/Empty.tsx';
+import { Note } from '../../mockup/Note.tsx';
+import { Tbl } from '../../mockup/Tbl.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
 
 import { pressQuery } from './queries.ts';
@@ -31,63 +30,69 @@ export function PressPage() {
   return (
     <BoardFrame
       title="Press pack"
-      heading="Press pack"
       lede="Documents about this archive, for reporters, reviewers and anybody writing about it."
-      width="prose"
     >
       {query.isPending ? <p role="status">Reading the pack…</p> : null}
       {query.isError ? (
-        <Alert tone="serious" title="The press pack could not be loaded">
-          {query.error.message}
-        </Alert>
+        <Note warn>
+          <span role="alert">
+            <b>The press pack could not be loaded.</b> {query.error.message}
+          </span>
+        </Note>
       ) : null}
       {d?.state === 'none' ? <NothingYet /> : null}
       {d?.state === 'unreadable' ? (
-        <Alert>
-          The press pack could not be read. Its list of files is not in the right shape.
-        </Alert>
+        <Note>
+          <span>
+            The press pack could not be read. Its list of files is not in the right shape.
+          </span>
+        </Note>
       ) : null}
       {d?.state === 'ready' ? (
         <>
           {d.files.length === 0 ? <NothingYet /> : null}
           <NotASample line={d.not_a_sample} />
-          {/* One row per document: its title, its kind and size in mono, and
-              Download. A file the pack lists but which is missing says so in
-              its row rather than being hidden. */}
-          <ul
-            className="flex flex-col divide-y divide-line rounded-card border border-ink-alt bg-surface"
-            aria-label="Documents"
-          >
-            {d.files.map((f) => (
-              <li
-                key={f.key}
-                className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="flex min-w-0 flex-col gap-1">
-                  <span className="font-semibold">{f.label}</span>
-                  {f.blurb ? <span className="text-ink-alt">{f.blurb}</span> : null}
-                  <Meta>
-                    {f.bytes === null
-                      ? 'This file is missing.'
-                      : `${kindOf(f.key)} · ${size(f.bytes)}`}
-                    {f.version ? ` · its own version, ${f.version}` : ''}
-                    {f.note ? ` · ${f.note}` : ''}
-                  </Meta>
-                </div>
-                {f.bytes === null ? null : (
-                  <Button asChild variant="secondary" className="shrink-0">
+          {/* One row per document: its title, its kind and size, and Download.
+              A file the pack lists but which is missing says so in its row
+              rather than being hidden. */}
+          {d.files.length ? (
+            <Tbl
+              cols={['Document', '']}
+              widths="1fr auto"
+              rows={d.files.map((f) => ({
+                key: f.key,
+                cells: [
+                  <>
+                    <b>{f.label}</b>
+                    {f.blurb ? (
+                      <>
+                        <br />
+                        {f.blurb}
+                      </>
+                    ) : null}
+                    <br />
+                    <span className="m">
+                      {f.bytes === null
+                        ? 'This file is missing.'
+                        : `${kindOf(f.key)} · ${size(f.bytes)}`}
+                      {f.version ? ` · its own version, ${f.version}` : ''}
+                      {f.note ? ` · ${f.note}` : ''}
+                    </span>
+                  </>,
+                  f.bytes === null ? null : (
                     <a
+                      className="btn sm flat"
                       href={PRESS_FILE_PATH.replace(':key', encodeURIComponent(f.key))}
                       download
                       aria-label={`Download ${f.label}`}
                     >
                       Download
                     </a>
-                  </Button>
-                )}
-              </li>
-            ))}
-          </ul>
+                  ),
+                ],
+              }))}
+            />
+          ) : null}
         </>
       ) : null}
     </BoardFrame>

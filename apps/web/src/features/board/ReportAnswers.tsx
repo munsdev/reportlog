@@ -79,17 +79,14 @@ export function ReportAnswers({
     );
   }
   const shown = all.slice(0, only);
-  // The mock-up's key and value list: a rule between rows, the question in
-  // the small label face, the answer beside it from 640px.
+  // The mock-up's key and value list (.kv-list): a rule between rows, the
+  // question in the small label face, the answer beside it from 640px.
   return (
-    <dl className="grid border-t border-line">
+    <dl className="kv-list">
       {shown.map(({ q, text }) => (
-        <div
-          key={q.key}
-          className="grid gap-1 border-b border-line py-3.5 min-[640px]:grid-cols-[220px_1fr] min-[640px]:gap-4"
-        >
-          <dt className="label-face text-xs text-muted">{q.label}</dt>
-          <dd className="m-0 font-medium whitespace-pre-wrap">{text}</dd>
+        <div key={q.key}>
+          <dt>{q.label}</dt>
+          <dd style={{ whiteSpace: 'pre-wrap' }}>{text}</dd>
         </div>
       ))}
     </dl>

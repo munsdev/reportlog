@@ -6,6 +6,7 @@
  */
 import { Link } from '@tanstack/react-router';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
+import { BrandRuns } from './Wordmark.tsx';
 
 export function Wm({ to = '/', onClick }: { to?: '/' | '/home'; onClick?: () => void }) {
   const site = useSite().data;
@@ -18,17 +19,7 @@ export function Wm({ to = '/', onClick }: { to?: '/' | '/home'; onClick?: () => 
       }
       onClick={onClick}
     >
-      {site
-        ? site.name_parts.map((p, i) =>
-            p.mark === 'a' ? (
-              <b key={i}>{p.text}</b>
-            ) : p.mark === 'b' ? (
-              <i key={i}>{p.text}</i>
-            ) : (
-              <span key={i}>{p.text}</span>
-            ),
-          )
-        : 'ReportLog'}
+      {site ? <BrandRuns parts={site.name_parts} /> : 'ReportLog'}
     </Link>
   );
 }

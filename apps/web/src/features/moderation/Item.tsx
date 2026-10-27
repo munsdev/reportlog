@@ -186,6 +186,8 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
         <div className="phone-decide">
           <div className="in">
             <Btn
+              sm
+              flat
               onClick={() => {
                 setSheet('invalid');
               }}
@@ -193,7 +195,9 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
               Decline…
             </Btn>
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               onClick={() => {
                 setSheet('valid');
               }}
@@ -325,7 +329,9 @@ function NextWaiting({ current, search }: { current: string; search: QueueSearch
   if (!next) return <p className="m">Nothing else is waiting in this queue.</p>;
   return (
     <Btn
-      kind="ink"
+      sm
+      flat
+      look="ink"
       onClick={() => {
         void navigate({
           to: '/moderate/$threadId',
@@ -808,7 +814,9 @@ function Citations({
                 {l.title}
               </a>
               <Btn
-                kind="ghost"
+                sm
+                flat
+                look="ghost"
                 aria-label={`Withdraw ${l.title}`}
                 onClick={() => {
                   remove.mutate(l.id);
@@ -854,7 +862,7 @@ function Citations({
           />
         </Field>
         <div className="acts">
-          <Btn type="submit" disabled={add.isPending}>
+          <Btn sm flat type="submit" disabled={add.isPending}>
             {add.isPending ? 'Citing…' : 'Cite it'}
           </Btn>
         </div>
@@ -907,7 +915,7 @@ function NoteState({ threadId, current }: { threadId: string; current: string })
       </Field>
       <Problem error={change.error} />
       <div className="acts">
-        <Btn type="submit" disabled={change.isPending}>
+        <Btn sm flat type="submit" disabled={change.isPending}>
           {change.isPending ? 'Changing…' : 'Change the state'}
         </Btn>
       </div>
@@ -1060,6 +1068,8 @@ function WhoFiledRow({ r }: { r: QueueItem }) {
       {summary}
       <div className="acts">
         <Btn
+          sm
+          flat
           onClick={() => {
             setAsking(true);
           }}
@@ -1083,10 +1093,10 @@ function WhoFiledRow({ r }: { r: QueueItem }) {
         }}
         buttons={
           <>
-            <Btn kind="ink" type="submit" disabled={open.isPending}>
+            <Btn sm flat look="ink" type="submit" disabled={open.isPending}>
               {open.isPending ? 'Opening…' : 'Open the details'}
             </Btn>
-            <Btn kind="ghost" onClick={reset}>
+            <Btn sm flat look="ghost" onClick={reset}>
               Cancel
             </Btn>
           </>

@@ -235,9 +235,13 @@ function Tools({
               setQ(e.target.value);
             }}
           />
-          <Btn type="submit">Search</Btn>
+          <Btn sm flat type="submit">
+            Search
+          </Btn>
         </div>
         <Btn
+          sm
+          flat
           aria-expanded={filtering}
           aria-controls={wide && filtering ? panelId : undefined}
           onClick={() => {
@@ -514,7 +518,9 @@ function FilterPanel({
           <p>One set of identical answers, chosen on the flood screen.</p>
           <div className="acts">
             <Btn
-              kind="ghost"
+              sm
+              flat
+              look="ghost"
               onClick={() => {
                 setAnswerSet('');
               }}
@@ -537,11 +543,13 @@ function FilterPanel({
 
   const actions = (
     <>
-      <Btn kind="ink" type="submit">
+      <Btn sm flat look="ink" type="submit">
         Apply
       </Btn>
-      <Btn onClick={onClose}>Cancel</Btn>
-      <Btn kind="ghost" onClick={clearAll}>
+      <Btn sm flat onClick={onClose}>
+        Cancel
+      </Btn>
+      <Btn sm flat look="ghost" onClick={clearAll}>
         Clear all
       </Btn>
     </>
@@ -720,6 +728,8 @@ function QueueList({
         buttons={
           <>
             <Btn
+              sm
+              flat
               onClick={() => {
                 openDirty.current = false;
                 setOpen(asking === '' ? null : asking);
@@ -729,7 +739,9 @@ function QueueList({
               Leave it
             </Btn>
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               onClick={() => {
                 setAsking(null);
               }}
@@ -819,7 +831,9 @@ function QueueRow({
         <div className="acts">
           {r.withdrawn ? null : (
             <Btn
-              kind="ink"
+              sm
+              flat
+              look="ink"
               data-decide={r.thread_id}
               aria-expanded={open}
               aria-controls={open ? formId : undefined}
@@ -898,13 +912,15 @@ function SelectionBar({
         <span role="status">{`${String(picked.size)} selected`}</span>
         <div className="acts">
           {picked.size < pickable ? (
-            <Btn onClick={onSelectAll}>{`Select all ${String(pickable)}`}</Btn>
+            <Btn sm flat onClick={onSelectAll}>{`Select all ${String(pickable)}`}</Btn>
           ) : null}
-          <Btn kind="ghost" onClick={onClear}>
+          <Btn sm flat look="ghost" onClick={onClear}>
             Select none
           </Btn>
           <Btn
-            kind="ink"
+            sm
+            flat
+            look="ink"
             disabled={approve.isPending}
             onClick={() => {
               approve.mutate();
@@ -917,6 +933,8 @@ function SelectionBar({
                 : 'Approve selected'}
           </Btn>
           <Btn
+            sm
+            flat
             onClick={() => {
               setDeclining(true);
             }}
@@ -1012,10 +1030,10 @@ function BulkDecline({
       buttons={
         <>
           {/* Not the action colour: declining a page of reports is rarely what somebody came for. */}
-          <Btn kind="ink" type="submit" disabled={decline.isPending}>
+          <Btn sm flat look="ink" type="submit" disabled={decline.isPending}>
             {decline.isPending ? 'Declining…' : `Decline ${n}`}
           </Btn>
-          <Btn kind="ghost" onClick={onClose}>
+          <Btn sm flat look="ghost" onClick={onClose}>
             Cancel
           </Btn>
         </>

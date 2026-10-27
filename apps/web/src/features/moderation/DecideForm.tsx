@@ -20,11 +20,54 @@ import {
 import type { QueueItem } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
+import type { ComponentProps, ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choices.tsx';
-import { AreaField, Field, SelectField, TextField } from '../../mockup/Field.tsx';
+import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
+
+/** The mock-up's labelled controls, one line each. */
+function SelectField({
+  label,
+  help,
+  children,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'select'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Select {...rest}>{children}</Select>
+    </Field>
+  );
+}
+function TextField({
+  label,
+  help,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'input'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Input {...rest} />
+    </Field>
+  );
+}
+function AreaField({
+  label,
+  help,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'textarea'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Textarea {...rest} />
+    </Field>
+  );
+}
 
 const WHY_MIN = 10;
 const WHY_MAX = 500;
@@ -259,11 +302,12 @@ export function DecideForm({
       </div>
       {choice === 'invalid' ? (
         <>
-          <Field
-            id={`${id}-reason`}
-            label="The reason the reporter is told"
-            help="They are emailed this reason and a link to the terms, if their address can still be read. They are never sent what you write below."
-          >
+          <Field controlId={`${id}-reason`}>
+            <Label>The reason the reporter is told</Label>
+            <FieldDescription>
+              They are emailed this reason and a link to the terms, if their address can still be
+              read. They are never sent what you write below.
+            </FieldDescription>
             <select
               ref={reasonRef}
               id={`${id}-reason`}
@@ -374,11 +418,9 @@ export function DecideForm({
           <Err>{problems.written}</Err>
         </div>
       ) : null}
-      <Field
-        id={`${id}-note`}
-        label="Note for the record (never sent)"
-        help="Kept on the record with your name. Not shown publicly."
-      >
+      <Field controlId={`${id}-note`}>
+        <Label>Note for the record (never sent)</Label>
+        <FieldDescription>Kept on the record with your name. Not shown publicly.</FieldDescription>
         <textarea
           ref={noteRef}
           id={`${id}-note`}
@@ -395,11 +437,11 @@ export function DecideForm({
       <Err>{problems.note}</Err>
       {decide.isError ? <Problem>{decide.error.message}</Problem> : null}
       <div className="acts">
-        <Btn kind="ink" type="submit" disabled={decide.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={decide.isPending}>
           {decide.isPending ? 'Recording…' : 'Record the decision'}
         </Btn>
         {onCancel ? (
-          <Btn kind="ghost" onClick={onCancel}>
+          <Btn sm flat look="ghost" onClick={onCancel}>
             Cancel
           </Btn>
         ) : null}

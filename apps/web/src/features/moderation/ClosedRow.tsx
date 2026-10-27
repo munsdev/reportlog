@@ -81,7 +81,7 @@ export function ClosedRow({
           />
         ) : (
           <div className="acts">
-            <Btn aria-label={`Close ${title}`} onClick={panels.close}>
+            <Btn sm flat aria-label={`Close ${title}`} onClick={panels.close}>
               Close
             </Btn>
           </div>
@@ -97,6 +97,8 @@ export function ClosedRow({
       {summary}
       <div className="acts">
         <Btn
+          sm
+          flat
           onClick={() => {
             panels.open(id);
           }}

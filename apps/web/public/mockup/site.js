@@ -467,7 +467,7 @@
   /* Copy buttons */
   var toast = document.getElementById("toast");
   function say(msg) { if (!toast) return; toast.textContent = msg; toast.classList.add("show"); clearTimeout(say.t); say.t = setTimeout(function () { toast.classList.remove("show"); }, 1800); }
-  document.querySelectorAll("[data-copy]").forEach(function (b) {
+  document.querySelectorAll("button[data-copy]").forEach(function (b) {
     b.addEventListener("click", function () {
       var txt = b.getAttribute("data-copy");
       function fallback() { var ta = document.createElement("textarea"); ta.value = txt; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) {} document.body.removeChild(ta); say("Copied"); }

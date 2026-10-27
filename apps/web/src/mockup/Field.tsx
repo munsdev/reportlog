@@ -1,70 +1,67 @@
-import { useId } from 'react';
-import type {
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
-} from 'react';
+import type { ComponentProps, ReactNode } from 'react';
+import { cn } from '@/lib/utils.ts';
 
-/** The mock-up's `.field`: label, one control, optional help. `children` is a custom control. */
+/** The mock-up's labelled field (site.css `.field`): label, control, then help. */
 export function Field({
   label,
+  labelId,
+  htmlFor,
   help,
-  id,
+  helpId,
+  helpMono = false,
   children,
 }: {
-  label: ReactNode;
+  label?: ReactNode;
+  /** Names a group of answer tiles (no single box to point a label at). */
+  labelId?: string | undefined;
+  htmlFor?: string | undefined;
   help?: ReactNode;
-  id: string;
+  helpId?: string | undefined;
+  helpMono?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="field">
-      <label htmlFor={id}>{label}</label>
+      {label ? (
+        htmlFor ? (
+          <label htmlFor={htmlFor}>{label}</label>
+        ) : (
+          <span className="lbl" id={labelId}>
+            {label}
+          </span>
+        )
+      ) : null}
       {children}
-      {help ? <span className="help">{help}</span> : null}
+      {help ? (
+        <span id={helpId} className={cn('help', helpMono && 'mono')}>
+          {help}
+        </span>
+      ) : null}
     </div>
   );
 }
 
-export function TextField({
-  label,
-  help,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & InputHTMLAttributes<HTMLInputElement>) {
-  const id = useId();
-  return (
-    <Field label={label} id={id} help={help}>
-      <input className="input" {...rest} id={id} />
-    </Field>
-  );
+/** The mock-up's text box, select and text area (site.css `.input`, `.sel`, `.textarea`). */
+export function TextInput({ className, ...props }: ComponentProps<'input'>) {
+  return <input {...props} className={cn('input', className)} />;
 }
 
-export function AreaField({
-  label,
-  help,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  const id = useId();
-  return (
-    <Field label={label} id={id} help={help}>
-      <textarea className="textarea" {...rest} id={id} />
-    </Field>
-  );
+export function SelectBox({ className, ...props }: ComponentProps<'select'>) {
+  return <select {...props} className={cn('sel', className)} />;
 }
 
-export function SelectField({
-  label,
-  help,
+export function TextArea({ className, ...props }: ComponentProps<'textarea'>) {
+  return <textarea {...props} className={cn('textarea', className)} />;
+}
+
+/** The mock-up's single tick box (site.css `.check`). */
+export function CheckBox({
   children,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & SelectHTMLAttributes<HTMLSelectElement>) {
-  const id = useId();
+  ...input
+}: Omit<ComponentProps<'input'>, 'type' | 'children'> & { children: ReactNode }) {
   return (
-    <Field label={label} id={id} help={help}>
-      <select className="sel" {...rest} id={id}>
-        {children}
-      </select>
-    </Field>
+    <label className="check">
+      <input {...input} type="checkbox" /> {children}
+    </label>
   );
 }
