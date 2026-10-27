@@ -18,7 +18,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
@@ -157,8 +157,8 @@ function Factors() {
               }}
             />
             <div className="acts">
-              <Btn
-                kind="ghost"
+              <Btn sm flat
+                look="ghost"
                 onClick={() => {
                   setAdding(null);
                 }}
@@ -170,7 +170,7 @@ function Factors() {
         ) : (
           <div className="acts">
             {s.totpAvailable ? (
-              <Btn
+              <Btn sm flat
                 onClick={() => {
                   setSaid(null);
                   setAdding('app');
@@ -184,8 +184,8 @@ function Factors() {
               </p>
             )}
             {s.totp && ways > 1 ? (
-              <Btn
-                kind="ghost"
+              <Btn sm flat
+                look="ghost"
                 disabled={dropApp.isPending}
                 onClick={() => {
                   dropApp.mutate();
@@ -218,8 +218,8 @@ function Factors() {
                   {p.last_used_at ? `, last used ${day(p.last_used_at)}` : ''}
                 </>,
                 ways > 1 ? (
-                  <Btn
-                    kind="ghost"
+                  <Btn sm flat
+                    look="ghost"
                     onClick={() => {
                       dropPasskey.reset();
                       setRemoving({ id: p.id, name: p.name });
@@ -252,8 +252,8 @@ function Factors() {
               }}
             />
             <div className="acts">
-              <Btn
-                kind="ghost"
+              <Btn sm flat
+                look="ghost"
                 onClick={() => {
                   setAdding(null);
                 }}
@@ -264,7 +264,7 @@ function Factors() {
           </div>
         ) : (
           <div className="acts">
-            <Btn
+            <Btn sm flat
               onClick={() => {
                 setSaid(null);
                 setAdding('passkey');
@@ -285,7 +285,7 @@ function Factors() {
           Making new ones stops the old ones working.
         </p>
         <div className="acts">
-          <Btn
+          <Btn sm flat
             disabled={remake.isPending}
             onClick={() => {
               remake.mutate();
@@ -310,16 +310,16 @@ function Factors() {
         }
         buttons={
           <>
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               onClick={() => {
                 setRemoving(null);
               }}
             >
               Keep it
             </Btn>
-            <Btn
-              kind="ink"
+            <Btn sm flat
+              look="ink"
               disabled={dropPasskey.isPending}
               onClick={() => {
                 if (removing) dropPasskey.mutate(removing.id);

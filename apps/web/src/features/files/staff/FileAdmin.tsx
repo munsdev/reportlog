@@ -18,7 +18,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { PTabs } from '@/mockup/PTabs.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
@@ -163,7 +163,7 @@ function Switch({
       ) : null}
       {chosen !== now ? (
         <div className="acts">
-          <Btn
+          <Btn look="ink" sm flat
             busy={save.isPending}
             busyLabel="Changing…"
             onClick={() => {
@@ -309,7 +309,7 @@ export function EraseFilePage() {
           <FieldError>{tried ? problem : null}</FieldError>
         </Field>
         <div className="acts">
-          <Btn type="submit" variant="secondary">
+          <Btn sm flat type="submit" >
             Show its files
           </Btn>
         </div>
@@ -347,7 +347,7 @@ function ErasingList({ data }: { data: ErasingData }) {
               <div className="acts">
                 <AskDialog
                   trigger={(open) => (
-                    <Btn variant="danger" onClick={open}>
+                    <Btn look="bad" sm flat  onClick={open}>
                       Erase this file…
                     </Btn>
                   )}

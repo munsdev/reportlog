@@ -17,7 +17,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { SelectField } from '../../mockup/Fields.tsx';
 import { Panel } from '../../mockup/Panel.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { batchesQuery, organizationsQuery, useIntakeRefresh } from './queries.ts';
 
 const ROW_COLS = { '--cols': '1fr auto' } as CSSProperties;
@@ -63,8 +63,8 @@ export function IntakeHome() {
           <p>The accounts will be filed for {list[0].name}.</p>
         ) : null}
         <ErrorLine error={start.error} />
-        <Btn
-          kind="ink"
+        <Btn sm flat
+          look="ink"
           disabled={orgId === undefined || start.isPending}
           onClick={() => {
             start.mutate();

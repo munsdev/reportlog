@@ -26,7 +26,7 @@ import type { BrandPart, Look } from '@reportlog/contracts';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { St } from '@/mockup/St.tsx';
 import { BrandName, setLayoutAttributes, useSite } from '@/components/ui/site.tsx';
@@ -216,8 +216,8 @@ export function PreviewPage({ parts }: { parts: readonly BrandPart[] }) {
           Once a report is filed, nobody can alter or remove it without that being visible.
         </Lede>
         <div className="flex flex-wrap gap-3">
-          <Btn tabIndex={-1}>Submit a report</Btn>
-          <Btn tabIndex={-1} variant="secondary">
+          <Btn look="ink" sm flat tabIndex={-1}>Submit a report</Btn>
+          <Btn sm flat tabIndex={-1} >
             Board
           </Btn>
         </div>
@@ -280,8 +280,8 @@ export function LookFrames({
         </PreviewFrame>
       </div>
       <div className={cn(always ? 'hidden' : 'lg:hidden')}>
-        <Btn
-          variant="secondary"
+        <Btn sm flat
+          
           aria-expanded={showDesktop}
           onClick={() => {
             setShowDesktop(!showDesktop);

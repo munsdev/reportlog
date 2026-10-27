@@ -17,7 +17,7 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { call } from '../../lib/api.ts';
 import { Field, Panel, Problem, Select } from './controls.tsx';
 import { outsideWords, when } from './words.ts';
@@ -96,8 +96,8 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
       )}
       <Problem error={freeze.error} />
       {frozen ? (
-        <Btn
-          variant="secondary"
+        <Btn sm flat
+          
           disabled={freeze.isPending}
           onClick={() => {
             freeze.mutate(false);
@@ -114,7 +114,7 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
             filed or published is hidden, and you can take the freeze off at any time.
           </p>
           <div className="acts">
-            <Btn
+            <Btn look="ink" sm flat
               disabled={freeze.isPending}
               onClick={() => {
                 freeze.mutate(true);
@@ -122,8 +122,8 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
             >
               Freeze uploads
             </Btn>
-            <Btn
-              variant="secondary"
+            <Btn sm flat
+              
               onClick={() => {
                 setAsking(false);
               }}
@@ -133,8 +133,8 @@ export function FreezePanel({ lb, refresh }: { lb: LogbookDetail; refresh: Refre
           </div>
         </div>
       ) : (
-        <Btn
-          variant="secondary"
+        <Btn sm flat
+          
           onClick={() => {
             setAsking(true);
           }}

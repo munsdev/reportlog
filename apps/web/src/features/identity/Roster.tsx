@@ -15,7 +15,7 @@ import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
@@ -116,8 +116,8 @@ function Roster() {
                 ) : (
                   'Never'
                 ),
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   aria-label={`Change the team and desks of ${p.email}`}
                   onClick={() => {
                     setEditing({ email: p.email, team: p.teamMember, desks: p.desks });
@@ -220,7 +220,7 @@ function TeamForm({
                   : `${email.trim()} is not on the team.`}
             </Saved>
           )}
-          <Btn kind="ink" type="submit" disabled={save.isPending}>
+          <Btn sm flat look="ink" type="submit" disabled={save.isPending}>
             Save
           </Btn>
         </form>

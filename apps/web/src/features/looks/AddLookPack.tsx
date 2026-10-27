@@ -17,7 +17,7 @@ import type { InstalledLookPack, LookPackSummary } from '@reportlog/contracts';
 import { useQueryClient } from '@tanstack/react-query';
 import { useId, useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { siteQuery } from '@/components/ui/site.tsx';
 import { ApiRequestError, call } from '@/lib/api.ts';
@@ -157,7 +157,7 @@ export function AddLookPack({ onInstalled }: AddLookPackProps) {
           <PackContents pack={state.pack} />
           {state.error ? <Note tone="serious" title={state.error} /> : null}
           <div className="acts">
-            <Btn
+            <Btn look="ink" sm flat
               busy={state.at === 'installing'}
               busyLabel="Installing…"
               onClick={() => void install()}

@@ -22,7 +22,7 @@ import type { CopySlot } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
@@ -94,9 +94,9 @@ function FigurePicker({ onInsert }: { onInsert: (placeholder: string) => void })
         ) : null}
       </Field>
       <div className="acts">
-        <Btn
+        <Btn sm flat
           type="button"
-          variant="secondary"
+          
           disabled={!current}
           onClick={() => {
             if (current) onInsert(`{{ [${current.id}] }}`);
@@ -252,9 +252,9 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           {slot.kind === 'block' && slot.key !== 'lock_intro' && slot.key !== 'help_now' ? (
             <div className="form-stack" style={{ maxWidth: 'none' }}>
               <div className="acts">
-                <Btn
+                <Btn look="ghost" sm flat
                   type="button"
-                  variant="quiet"
+                  
                   aria-expanded={picking}
                   onClick={() => {
                     setPicking(!picking);
@@ -268,9 +268,9 @@ export function SlotEditor({ slot }: { slot: CopySlot }) {
           ) : null}
           {slot.written ? (
             <div className="acts">
-              <Btn
+              <Btn look="ghost" sm flat
                 type="button"
-                variant="quiet"
+                
                 onClick={() => {
                   write('').then(
                     () => {

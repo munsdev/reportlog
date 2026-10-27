@@ -18,7 +18,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
@@ -73,7 +73,7 @@ export function AgreementGate({
         </Note>
       ) : null}
       <div>
-        <Btn
+        <Btn look="ink" sm flat
           type="button"
           disabled={accept.isPending}
           onClick={() => {
@@ -156,7 +156,7 @@ export function AgreementAdminPage({
           {publish.isError ? <Note tone="serious">{publish.error.message}</Note> : null}
           {publish.isSuccess ? <Note tone="done">Published.</Note> : null}
           <div className="acts">
-            <Btn type="submit" disabled={publish.isPending}>
+            <Btn look="ink" sm flat type="submit" disabled={publish.isPending}>
               Publish this version
             </Btn>
           </div>

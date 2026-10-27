@@ -12,7 +12,7 @@ import type { DevMode } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { Dl } from '@/mockup/DlList.tsx';
 import {
@@ -140,8 +140,8 @@ export function AcceptingReportsPanel() {
             </Note>
           ) : null}
           <DialogFooter>
-            <Btn
-              variant="danger"
+            <Btn look="bad" sm flat
+              
               busy={save.isPending}
               busyLabel="Changing…"
               onClick={() => {
@@ -150,8 +150,8 @@ export function AcceptingReportsPanel() {
             >
               Turn it off
             </Btn>
-            <Btn
-              variant="quiet"
+            <Btn look="ghost" sm flat
+              
               onClick={() => {
                 setAsking(false);
               }}

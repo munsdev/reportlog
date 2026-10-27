@@ -14,7 +14,7 @@ import {
   useState,
 } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './StaffBtn.tsx';
+import { Btn } from './Btn.tsx';
 import {
   Dialog,
   DialogContent,
@@ -111,11 +111,11 @@ export function SettingPanels({ children }: { children: ReactNode }) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Btn variant="secondary" onClick={discard}>
+            <Btn sm flat  onClick={discard}>
               Leave them
             </Btn>
-            <Btn
-              variant="quiet"
+            <Btn look="ghost" sm flat
+              
               onClick={() => {
                 setAsking(null);
               }}
@@ -185,8 +185,8 @@ export function SettingPanel({
     <Panel heading={title} closed {...(className ? { className } : {})}>
       <Dl items={summary} />
       <div className="acts">
-        <Btn
-          variant="secondary"
+        <Btn sm flat
+          
           aria-label={`Edit ${title}`}
           onClick={() => {
             panels.open(id);

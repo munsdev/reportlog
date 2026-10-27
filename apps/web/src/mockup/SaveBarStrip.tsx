@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './StaffBtn.tsx';
+import { Btn } from './Btn.tsx';
 
 /**
  * The mock-up's `savebar`: a sticky strip saying what is unsaved, with Save
@@ -42,10 +42,10 @@ export function SaveBar({
     <div className="savebar" role="region" aria-label="Unsaved changes">
       <span>Changes to {name} are not saved.</span>
       <div className="acts">
-        <Btn className="go" variant="secondary" busy={busy} busyLabel="Saving…" onClick={onSave}>
+        <Btn sm flat className="go"  busy={busy} busyLabel="Saving…" onClick={onSave}>
           {saveLabel}
         </Btn>
-        <Btn variant="quiet" onClick={onCancel}>
+        <Btn look="ghost" sm flat  onClick={onCancel}>
           Cancel
         </Btn>
       </div>

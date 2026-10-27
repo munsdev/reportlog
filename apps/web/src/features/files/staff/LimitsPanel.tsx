@@ -12,7 +12,7 @@
 import type { FileLimitLayers } from '@reportlog/contracts';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { Dl } from '@/mockup/DlList.tsx';
 import type { DlItem } from '@/mockup/DlList.tsx';
@@ -88,8 +88,8 @@ export function LimitsPanel({
         <>
           <Dl items={limitsSummary(layers, mine)} />
           <div className="acts">
-            <Btn
-              variant="secondary"
+            <Btn sm flat
+              
               aria-label={`Edit ${LIMITS_TITLE}`}
               onClick={() => {
                 setOpen(true);

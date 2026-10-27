@@ -25,7 +25,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
@@ -126,7 +126,7 @@ function LookChoice({ state }: { state: SiteEditor }) {
         </div>
         {previewing ? (
           <div className="acts">
-            <Btn
+            <Btn look="ink" sm flat
               busy={apply.isPending}
               busyLabel="Applying…"
               onClick={() => {
@@ -140,8 +140,8 @@ function LookChoice({ state }: { state: SiteEditor }) {
             >
               Apply to the site
             </Btn>
-            <Btn
-              variant="quiet"
+            <Btn look="ghost" sm flat
+              
               onClick={() => {
                 apply.reset();
                 setChosen(current);

@@ -16,7 +16,7 @@ import type { FormQuestion, MyWritten } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { call } from '@/lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Note } from '../../mockup/Note.tsx';
@@ -150,8 +150,8 @@ export function WrittenPanel({
             I understand this cannot be undone.
           </Check>
           <ErrorLine error={erase.error} />
-          <Btn
-            kind="bad"
+          <Btn sm flat
+            look="bad"
             disabled={!sure || erase.isPending}
             onClick={() => {
               erase.mutate();

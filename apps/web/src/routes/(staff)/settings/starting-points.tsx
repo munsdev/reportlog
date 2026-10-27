@@ -15,7 +15,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import {
   Dialog,
   DialogClose,
@@ -125,9 +125,9 @@ export function StartingPointsPage() {
             ))}
           </ul>
           <div className="acts">
-            <Btn
+            <Btn look="ink" sm flat
               type="button"
-              variant="primary"
+              
               onClick={() => {
                 apply.reset();
                 setAsking(chosen);
@@ -165,13 +165,13 @@ export function StartingPointsPage() {
             ) : null}
             <DialogFooter>
               <DialogClose asChild>
-                <Btn type="button" variant="secondary" disabled={apply.isPending}>
+                <Btn sm flat type="button"  disabled={apply.isPending}>
                   Cancel
                 </Btn>
               </DialogClose>
-              <Btn
+              <Btn look="ink" sm flat
                 type="button"
-                variant="primary"
+                
                 disabled={apply.isPending}
                 onClick={() => {
                   apply.mutate(asking.id);

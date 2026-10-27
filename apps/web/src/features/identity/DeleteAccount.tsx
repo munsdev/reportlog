@@ -12,7 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
@@ -81,8 +81,8 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
         I understand this cannot be undone.
       </Check>
       <ErrorLine error={go.error} />
-      <Btn
-        kind="bad"
+      <Btn sm flat
+        look="bad"
         disabled={!sure || !matches || go.isPending}
         onClick={() => {
           go.mutate();

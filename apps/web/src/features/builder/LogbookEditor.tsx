@@ -28,7 +28,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn, btnClass } from '@/mockup/StaffBtn.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
 import { St } from '@/mockup/St.tsx';
 import { Dl } from '@/mockup/DlList.tsx';
@@ -164,7 +164,7 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
           href={`/file/${lb.slug}`}
           target="_blank"
           rel="noopener"
-          className={btnClass('secondary')}
+          className={btnClass({ sm: true, flat: true })}
         >
           Open the reporter’s form
         </a>
@@ -172,14 +172,14 @@ function Downloads({ lb, launched }: { lb: LogbookDetail; launched: boolean }) {
       <a
         href={`/api/admin/logbooks/${String(lb.id)}/file`}
         download={`logbook-${lb.slug}.json`}
-        className={btnClass('secondary')}
+        className={btnClass({ sm: true, flat: true })}
       >
         The logbook file
       </a>
       {launched ? (
         <StepUpDownload
           href={getCompleteChainFile.path.replace(':slug', encodeURIComponent(lb.slug))}
-          className={btnClass('secondary')}
+          className={btnClass({ sm: true, flat: true })}
         >
           Its chain
         </StepUpDownload>
@@ -617,24 +617,24 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
               <div className="acts">
                 {!launched && (
                   <>
-                    <Btn
-                      variant="quiet"
+                    <Btn look="ghost" sm flat
+                      
                       disabled={i === 0}
                       aria-label={`Move up: “${q.label}”`}
                       onClick={() => void move(i, -1)}
                     >
                       ↑
                     </Btn>
-                    <Btn
-                      variant="quiet"
+                    <Btn look="ghost" sm flat
+                      
                       disabled={i === lb.fields.length - 1}
                       aria-label={`Move down: “${q.label}”`}
                       onClick={() => void move(i, 1)}
                     >
                       ↓
                     </Btn>
-                    <Btn
-                      variant="secondary"
+                    <Btn sm flat
+                      
                       aria-label={`Change “${q.label}”`}
                       onClick={() => {
                         setEditing(q.id);
@@ -642,8 +642,8 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                     >
                       Change
                     </Btn>
-                    <Btn
-                      variant="quiet"
+                    <Btn look="ghost" sm flat
+                      
                       aria-label={`Remove “${q.label}”`}
                       onClick={() =>
                         void run(() =>
@@ -656,8 +656,8 @@ function QuestionList({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promi
                   </>
                 )}
                 {launched && (
-                  <Btn
-                    variant="secondary"
+                  <Btn sm flat
+                    
                     aria-label={`Reword “${q.label}”`}
                     onClick={() => {
                       setEditing(q.id);
@@ -747,8 +747,8 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
         Closing stops new reports and keeps every report already filed. It can be undone.
       </p>
       <Problem error={closed.error} />
-      <Btn
-        variant="secondary"
+      <Btn sm flat
+        
         disabled={closed.isPending}
         onClick={() => {
           closed.mutate(!isClosed);
@@ -790,7 +790,7 @@ function Lifecycle({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
           )}
         </Field>
         <Problem error={schedule.error} />
-        <Btn type="submit" variant="secondary" disabled={schedule.isPending}>
+        <Btn sm flat type="submit"  disabled={schedule.isPending}>
           Save the opening times
         </Btn>
       </form>

@@ -14,7 +14,7 @@ import type { FoundListEntry, ListSearchResult } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -52,7 +52,7 @@ export function ListSearch() {
                 setQ(e.target.value);
               }}
             />
-            <Btn type="submit" variant="secondary" disabled={search.isPending}>
+            <Btn sm flat type="submit"  disabled={search.isPending}>
               Find
             </Btn>
           </div>

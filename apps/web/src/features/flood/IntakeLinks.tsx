@@ -22,7 +22,7 @@ import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { Narrow, TokenPage } from '../../mockup/Narrow.tsx';
 import { Note, Panel } from '../../mockup/Panel.tsx';
@@ -112,7 +112,7 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
             }}
           />
           <ErrorLine error={make.error} />
-          <Btn kind="ink" type="submit" disabled={make.isPending || !label.trim()}>
+          <Btn sm flat look="ink" type="submit" disabled={make.isPending || !label.trim()}>
             Make the link
           </Btn>
         </form>
@@ -130,8 +130,8 @@ function OrgLinks({ id, name }: { id: number; name: string }) {
                 l.disabled_at ? ` · switched off ${new Date(l.disabled_at).toLocaleString()}` : ''
               }`,
               !l.disabled_at ? (
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   disabled={off.isPending}
                   aria-label={`Switch off: ${l.label}`}
                   onClick={() => {
@@ -166,7 +166,7 @@ function NewLink({ url }: { url: string }) {
       <div className="copybox">
         <div className="row">
           <code>{url}</code>
-          <Btn
+          <Btn sm flat
             onClick={() => {
               navigator.clipboard.writeText(url).then(
                 () => {

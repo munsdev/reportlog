@@ -25,7 +25,7 @@ import type { ReactNode } from 'react';
 import { TabRow } from '@/features/nav/AreaTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
@@ -130,8 +130,8 @@ function RevokeButton({ r }: { r: AccessRequestView }) {
   });
   return (
     <>
-      <Btn
-        kind="ghost"
+      <Btn sm flat
+        look="ghost"
         disabled={act.isPending}
         title="Takes effect on their next request to the desk. They stay on the alert list."
         onClick={() => {
@@ -196,8 +196,8 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         <ErrorLine error={act.error} />
         {r.status === 'pending' ? (
           <div className="acts">
-            <Btn
-              kind="ink"
+            <Btn sm flat
+              look="ink"
               disabled={act.isPending}
               onClick={() => {
                 act.mutate('approve');
@@ -205,8 +205,8 @@ function RequestCard({ r }: { r: AccessRequestView }) {
             >
               Approve
             </Btn>
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(true);
@@ -226,16 +226,16 @@ function RequestCard({ r }: { r: AccessRequestView }) {
         text="This deletes what they sent: their outlet, role, what they said about themselves and press card. It cannot be undone. They stay on the alert list and can ask again."
         buttons={
           <>
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               onClick={() => {
                 setAsking(false);
               }}
             >
               Keep the request
             </Btn>
-            <Btn
-              kind="ink"
+            <Btn sm flat
+              look="ink"
               disabled={act.isPending}
               onClick={() => {
                 setAsking(false);

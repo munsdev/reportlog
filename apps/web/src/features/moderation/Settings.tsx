@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
@@ -183,9 +183,9 @@ function Keywords() {
       </Field>
       {save.error ? <Note tone="serious">{save.error.message}</Note> : null}
       <div className="acts">
-        <Btn
+        <Btn look="ghost" sm flat
           type="button"
-          variant="quiet"
+          
           busy={save.isPending}
           busyLabel="Going back…"
           onClick={() => {

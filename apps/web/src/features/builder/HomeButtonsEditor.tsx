@@ -29,7 +29,7 @@ import { clearHomeButtons, setHomeButtons } from '@reportlog/contracts';
 import type { ArrangementEntry, ButtonTarget, HomeButtonsAdmin } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel as MPanel } from '@/mockup/PanelBox.tsx';
 import { FrontPageTabs } from './FrontPageTabs.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
@@ -193,8 +193,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       )}
                     </div>
                     <div className="acts">
-                      <Btn
-                        variant="quiet"
+                      <Btn look="ghost" sm flat
+                        
                         disabled={i === 0}
                         aria-label={`Move up: “${name}”`}
                         onClick={() => {
@@ -203,8 +203,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         ↑
                       </Btn>
-                      <Btn
-                        variant="quiet"
+                      <Btn look="ghost" sm flat
+                        
                         disabled={i === rows.length - 1}
                         aria-label={`Move down: “${name}”`}
                         onClick={() => {
@@ -213,8 +213,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         ↓
                       </Btn>
-                      <Btn
-                        variant="secondary"
+                      <Btn sm flat
+                        
                         aria-label={`Change: “${name}”`}
                         aria-expanded={open}
                         onClick={() => {
@@ -223,8 +223,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
                       >
                         Change
                       </Btn>
-                      <Btn
-                        variant="quiet"
+                      <Btn look="ghost" sm flat
+                        
                         aria-label={`Remove: “${name}”`}
                         onClick={() => {
                           setRows((now) => now.filter((_, j) => j !== i));
@@ -311,8 +311,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
           {unfinished && <p>Choose a target for every button before saving.</p>}
           <Problem error={save.error ?? reset.error} />
           <div className="acts">
-            <Btn
-              variant="secondary"
+            <Btn sm flat
+              
               onClick={() => {
                 setRows((now) => [...now, { id: next, target: '', label: '', sub: '' }]);
                 setNext((n) => n + 1);
@@ -320,8 +320,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
             >
               Add a button
             </Btn>
-            <Btn
-              variant="primary"
+            <Btn look="ink" sm flat
+              
               disabled={save.isPending || unfinished}
               onClick={() => {
                 save.mutate();
@@ -329,8 +329,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
             >
               Save this order
             </Btn>
-            <Btn
-              variant="quiet"
+            <Btn look="ghost" sm flat
+              
               disabled={reset.isPending}
               onClick={() => {
                 reset.mutate();

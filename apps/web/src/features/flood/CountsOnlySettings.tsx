@@ -18,7 +18,7 @@ import {
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
@@ -124,7 +124,7 @@ function SmallArea({ slug, title, saved }: { slug: string; title: string; saved:
         <FieldError>{save.error ? save.error.message : null}</FieldError>
       </Field>
       <div>
-        <Btn type="submit" variant="secondary" disabled={save.isPending}>
+        <Btn sm flat type="submit"  disabled={save.isPending}>
           {save.isPending ? 'Saving…' : 'Save the threshold'}
         </Btn>
       </div>

@@ -28,7 +28,7 @@ import { useMutation } from '@tanstack/react-query';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { useSite } from '@/components/ui/site.tsx';
 import { ApiRequestError, call, pathFor } from '@/lib/api.ts';
 import { useMe } from '../identity/session.ts';
@@ -271,7 +271,7 @@ export function LookOptionsPanel() {
       </section>
 
       <div className="acts">
-        <Btn
+        <Btn look="ink" sm flat
           busy={save.isPending}
           busyLabel="Saving…"
           disabled={!dirty}
@@ -282,7 +282,7 @@ export function LookOptionsPanel() {
           Save these choices
         </Btn>
         {dirty ? (
-          <Btn variant="quiet" onClick={d.reset}>
+          <Btn look="ghost" sm flat  onClick={d.reset}>
             Discard changes
           </Btn>
         ) : null}

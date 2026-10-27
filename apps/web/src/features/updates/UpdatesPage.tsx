@@ -13,7 +13,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { useState } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '@/lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
@@ -110,7 +110,7 @@ export function UpdatesPage() {
               ]}
             />
             {d.fetch_failed ? <p className="error">{d.fetch_failed}</p> : null}
-            <Btn
+            <Btn sm flat
               disabled={busy(d) || ask.isPending}
               onClick={() => {
                 ask.mutate({ action: 'check' });
@@ -149,8 +149,8 @@ export function UpdatesPage() {
                   new one is ready, and goes back to it by itself if the new one does not start.
                 </p>
                 <div className="acts">
-                  <Btn
-                    kind="ink"
+                  <Btn sm flat
+                    look="ink"
                     disabled={busy(d) || ask.isPending}
                     onClick={() => {
                       ask.mutate({ action: 'apply', sha: offer });
@@ -191,16 +191,16 @@ export function UpdatesPage() {
             }
             buttons={
               <>
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   onClick={() => {
                     setConfirming(null);
                   }}
                 >
                   Cancel
                 </Btn>
-                <Btn
-                  kind="ink"
+                <Btn sm flat
+                  look="ink"
                   disabled={busy(d) || ask.isPending}
                   onClick={() => {
                     const what = confirming;
@@ -240,7 +240,7 @@ function TestBuildButtons({
 }) {
   return (
     <>
-      <Btn
+      <Btn sm flat
         disabled={disabled}
         onClick={() => {
           onAsk('test');
@@ -248,7 +248,7 @@ function TestBuildButtons({
       >
         Update to test build
       </Btn>
-      <Btn
+      <Btn sm flat
         disabled={disabled}
         onClick={() => {
           onAsk('rollback');

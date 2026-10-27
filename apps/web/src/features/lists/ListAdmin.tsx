@@ -16,7 +16,7 @@ import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { Rows, rowCols } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
@@ -59,7 +59,7 @@ export function ListAdmin() {
   const query = useQuery(listsQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Btn
+    <Btn look="ink" sm flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -123,10 +123,10 @@ export function ListAdmin() {
               ))}
             </Rows>
             <div className="acts">
-              <Btn asChild variant="secondary">
+              <Btn sm flat asChild >
                 <Link to="/lists/review">Review entries</Link>
               </Btn>
-              <Btn asChild variant="secondary">
+              <Btn sm flat asChild >
                 <Link to="/lists/search">Find somebody&apos;s entries</Link>
               </Btn>
             </div>
@@ -269,13 +269,13 @@ function NewList({ onCancel }: { onCancel: () => void }) {
               <p className="muted">
                 A new list starts hidden. Nobody outside sees it until you make it listed.
               </p>
-              <Btn type="submit" disabled={!template || make.isPending}>
+              <Btn look="ink" sm flat type="submit" disabled={!template || make.isPending}>
                 Make the list
               </Btn>
             </>
           ) : null}
           <div>
-            <Btn type="button" variant="quiet" onClick={onCancel}>
+            <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
               Cancel
             </Btn>
           </div>

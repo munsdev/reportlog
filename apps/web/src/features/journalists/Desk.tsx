@@ -24,7 +24,7 @@ import type { ReactNode } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { plainSiteName, useSite } from '@/components/ui/site.tsx';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
@@ -170,7 +170,7 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
             setDraft({ ...draft, q: e.target.value });
           }}
         />
-        <Btn type="submit">Search</Btn>
+        <Btn sm flat type="submit">Search</Btn>
       </div>
       {hasStates ? (
         <Check
@@ -200,7 +200,7 @@ function CopyableLink({ url }: { url: string }) {
     <div className="copybox">
       <div className="row">
         <code>{url}</code>
-        <Btn
+        <Btn sm flat
           onClick={() => {
             void navigator.clipboard.writeText(url).then(
               () => {

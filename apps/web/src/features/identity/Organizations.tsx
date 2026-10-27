@@ -32,7 +32,7 @@ import type { CSSProperties } from 'react';
 import { FileDrop } from '@/components/ui/file-drop.tsx';
 import { ApiRequestError, call, pathFor } from '../../lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
@@ -128,7 +128,7 @@ export function OrganizationsPage() {
             />
             <ErrorLine error={create.error} />
             {create.isSuccess && <Saved>Made {create.data.organization.name}.</Saved>}
-            <Btn kind="ink" type="submit" disabled={create.isPending}>
+            <Btn sm flat look="ink" type="submit" disabled={create.isPending}>
               Make it
             </Btn>
           </form>
@@ -185,8 +185,8 @@ export function OrganizationPage({ id }: { id: number }) {
                   <Chip>{m.role}</Chip>
                   {m.pending ? <Chip kind="off">Not joined yet</Chip> : null}
                 </>,
-                <Btn
-                  kind="ghost"
+                <Btn sm flat
+                  look="ghost"
                   aria-label={`Remove ${m.email}`}
                   onClick={() => {
                     remove.mutate(m.email);
@@ -309,12 +309,12 @@ function LogoPanel({
         />
         {file ? <p className="m">Chosen: {file.name}</p> : null}
         <div className="acts">
-          <Btn type="submit" disabled={!file || save.isPending}>
+          <Btn sm flat type="submit" disabled={!file || save.isPending}>
             {save.isPending ? 'Saving…' : 'Use this image'}
           </Btn>
           {logo && (
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               disabled={remove.isPending}
               onClick={() => {
                 remove.mutate();
@@ -412,7 +412,7 @@ function InvitePanel({
         </Choices>
         <ErrorLine error={invite.error} />
         {invite.isSuccess && <Saved>{invite.data.message}</Saved>}
-        <Btn kind="ink" type="submit" disabled={invite.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={invite.isPending}>
           Send the invitation
         </Btn>
       </form>
@@ -464,7 +464,7 @@ function InvitationRow({
       </p>
       <div className="acts">
         {i.status === 'pending' && (
-          <Btn
+          <Btn sm flat
             onClick={() => {
               resend.mutate();
             }}
@@ -473,7 +473,7 @@ function InvitationRow({
           </Btn>
         )}
         {i.status === 'awaiting_approval' && youGrantAccess && (
-          <Btn
+          <Btn sm flat
             onClick={() => {
               approve.mutate();
             }}
@@ -481,8 +481,8 @@ function InvitationRow({
             Approve and send
           </Btn>
         )}
-        <Btn
-          kind="ghost"
+        <Btn sm flat
+          look="ghost"
           onClick={() => {
             withdraw.mutate();
           }}
@@ -523,7 +523,7 @@ function AddDirectly({ id, onChange }: { id: number; onChange: () => Promise<voi
           }}
         />
         <ErrorLine error={add.error} />
-        <Btn type="submit" disabled={add.isPending}>
+        <Btn sm flat type="submit" disabled={add.isPending}>
           Add as manager
         </Btn>
       </form>

@@ -31,7 +31,7 @@ import { useMe } from '@/features/identity/session.ts';
 import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
-import { SmBtnLink as BtnLink, SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { CheckBox as Check } from '../../mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
@@ -210,7 +210,12 @@ function MyReportView({ threadId }: { threadId: string }) {
           )}
           {r.withdrawn ? null : <Withdraw r={r} />}
           <Erase r={r} />
-          <BtnLink to={`/mine/declaration/${r.thread_id}`}>Print a signed declaration</BtnLink>
+          <Link
+            to="/mine/declaration/$threadId"
+            params={{ threadId: r.thread_id }}
+            className={btnClass({ sm: true, flat: true })}>
+            Print a signed declaration
+          </Link>
         </div>
       </div>
     </StaffPage>
@@ -307,16 +312,16 @@ function Permissions({ r }: { r: MyReportDetail }) {
         }
         buttons={
           <>
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               onClick={() => {
                 setAskTakeDown(false);
               }}
             >
               Leave it on
             </Btn>
-            <Btn
-              kind="ink"
+            <Btn sm flat
+              look="ink"
               onClick={() => {
                 setAskTakeDown(false);
                 setStatus('Saving…');
@@ -425,8 +430,8 @@ function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undef
       {problem ? <p className="error">{problem}</p> : null}
       {send.isError ? <ErrorLine error={send.error} /> : null}
       {done ? <Saved>{done}</Saved> : null}
-      <Btn
-        kind="ink"
+      <Btn sm flat
+        look="ink"
         disabled={send.isPending}
         onClick={() => {
           setDone(null);
@@ -474,7 +479,7 @@ function Withdraw({ r }: { r: MyReportDetail }) {
         }}
       />
       <ErrorLine error={go.error} />
-      <Btn
+      <Btn sm flat
         disabled={!comment.trim() || go.isPending}
         onClick={() => {
           go.mutate();
@@ -514,8 +519,8 @@ function Erase({ r }: { r: MyReportDetail }) {
         I understand this cannot be undone.
       </Check>
       <ErrorLine error={go.error} />
-      <Btn
-        kind="bad"
+      <Btn sm flat
+        look="bad"
         disabled={!sure || go.isPending}
         onClick={() => {
           go.mutate();

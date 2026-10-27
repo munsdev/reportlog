@@ -19,7 +19,7 @@ import {
   optionArray,
 } from '@reportlog/fields';
 import { useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Check, Field, Problem, Select, TextArea, TextInput } from './controls.tsx';
 
 const LIST_KINDS: ReadonlySet<string> = new Set(['choice_one', 'choice_many', 'place']);
@@ -486,11 +486,11 @@ export function QuestionForm({
 
       <Problem error={error} />
       <div className="acts">
-        <Btn type="submit" variant="secondary" disabled={busy}>
+        <Btn sm flat type="submit"  disabled={busy}>
           {submitLabel}
         </Btn>
         {onCancel && (
-          <Btn type="button" variant="quiet" onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
             Cancel
           </Btn>
         )}

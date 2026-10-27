@@ -21,7 +21,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn, btnClass } from '@/mockup/StaffBtn.tsx';
+import { Btn, btnClass } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
@@ -119,7 +119,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
         <a
           href={`/api/admin/lists/${String(list.id)}/file`}
           download={`list-${list.slug}.json`}
-          className={btnClass('secondary')}
+          className={btnClass({ sm: true, flat: true })}
         >
           Download as file
         </a>
@@ -582,9 +582,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   <small className="mono">{d.key || 'new question'}</small>
                 </div>
                 <div className="acts">
-                  <Btn
+                  <Btn look="ghost" sm flat
                     type="button"
-                    variant="quiet"
+                    
                     disabled={i === 0}
                     aria-label={`Move “${d.label || d.key}” up`}
                     onClick={() => {
@@ -593,9 +593,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     ↑
                   </Btn>
-                  <Btn
+                  <Btn look="ghost" sm flat
                     type="button"
-                    variant="quiet"
+                    
                     disabled={i === drafts.length - 1}
                     aria-label={`Move “${d.label || d.key}” down`}
                     onClick={() => {
@@ -604,9 +604,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     ↓
                   </Btn>
-                  <Btn
+                  <Btn sm flat
                     type="button"
-                    variant="secondary"
+                    
                     aria-label={`Change “${d.label || d.key}”`}
                     aria-expanded={editing}
                     onClick={() => {
@@ -615,9 +615,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
                   >
                     Change
                   </Btn>
-                  <Btn
+                  <Btn look="ghost" sm flat
                     type="button"
-                    variant="quiet"
+                    
                     aria-label={`Remove “${d.label || d.key}”`}
                     onClick={() => {
                       setOpen(null);
@@ -750,9 +750,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
             ))}
           </Select>
         </Field>
-        <Btn
+        <Btn sm flat
           type="button"
-          variant="secondary"
+          
           onClick={() => {
             setOpen(drafts.length);
             setDrafts((all) => [
@@ -778,9 +778,9 @@ function Questions({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pr
       {save.isError ? <Note tone="serious">{save.error.message}</Note> : null}
       {save.isSuccess ? <Note tone="done">The questions are saved.</Note> : null}
       <div className="acts">
-        <Btn
+        <Btn look="ink" sm flat
           type="button"
-          variant="primary"
+          
           disabled={save.isPending}
           onClick={() => {
             save.mutate();
@@ -852,9 +852,9 @@ function Remove({ list }: { list: ListAdminDetail }) {
   return (
     <Panel variant="danger" heading="Delete this list">
       <div className="acts">
-        <Btn
+        <Btn look="bad" sm flat
           type="button"
-          variant="danger"
+          
           disabled={remove.isPending}
           onClick={() => {
             remove.mutate();

@@ -15,7 +15,7 @@ import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { Empty } from '@/mockup/EmptyBox.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
@@ -31,7 +31,7 @@ export function LogbookList() {
   const query = useQuery(logbooksQuery());
   const [making, setMaking] = useState(false);
   const make = (
-    <Btn
+    <Btn look="ink" sm flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -221,10 +221,10 @@ function NewLogbook({ onCancel }: { onCancel: () => void }) {
         <p className="muted">It is made as a draft. Nobody sees it until you launch it.</p>
         <Problem error={make.error} />
         <div className="acts">
-          <Btn type="submit" variant="primary" busy={make.isPending} busyLabel="Making it…">
+          <Btn look="ink" sm flat type="submit"  busy={make.isPending} busyLabel="Making it…">
             Make the draft
           </Btn>
-          <Btn type="button" variant="quiet" onClick={onCancel}>
+          <Btn look="ghost" sm flat type="button"  onClick={onCancel}>
             Cancel
           </Btn>
         </div>

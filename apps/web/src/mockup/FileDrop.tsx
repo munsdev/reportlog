@@ -1,6 +1,6 @@
 import { useId, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { Btn } from './StaffBtn.tsx';
+import { Btn } from './Btn.tsx';
 
 /** The mock-up's `file-drop`: a dashed area with a button, which also takes a dropped file. */
 export function FileDrop({
@@ -60,8 +60,8 @@ export function FileDrop({
           e.target.value = '';
         }}
       />
-      <Btn
-        variant="secondary"
+      <Btn sm flat
+        
         disabled={disabled}
         aria-describedby={described}
         onClick={() => input.current?.click()}

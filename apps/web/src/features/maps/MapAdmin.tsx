@@ -49,7 +49,7 @@ import {
 } from 'react';
 import type { ReactNode } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { Btn } from '@/mockup/StaffBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
 import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Empty } from '@/mockup/EmptyBox.tsx';
@@ -84,7 +84,7 @@ export function MapAdmin({ ask = (q: string) => window.confirm(q) }: { ask?: Ask
   const [making, setMaking] = useState(false);
   const none = maps.data?.maps.length === 0;
   const make = (
-    <Btn
+    <Btn look="ink" sm flat
       aria-expanded={making}
       onClick={() => {
         setMaking(!making);
@@ -378,10 +378,10 @@ function NewMap({ onDone }: { onDone: () => void }) {
             />
           </Field>
           <div className="acts">
-            <Btn type="submit" variant="primary" disabled={make.isPending}>
+            <Btn look="ink" sm flat type="submit"  disabled={make.isPending}>
               Make the map
             </Btn>
-            <Btn type="button" variant="quiet" onClick={onDone}>
+            <Btn look="ghost" sm flat type="button"  onClick={onDone}>
               Cancel
             </Btn>
           </div>
@@ -466,10 +466,10 @@ function MapCard({
           ]}
         />
         <div className="acts">
-          <Btn
+          <Btn sm flat
             type="button"
 
-            variant="secondary"
+            
             aria-expanded={open}
             onClick={() => {
               if (open && guard?.has(map.id) && !guard.ask(unsavedMapsQuestion([map.title]))) {
@@ -480,10 +480,10 @@ function MapCard({
           >
             {open ? 'Close' : 'Change'}
           </Btn>
-          <Btn
+          <Btn look="ghost" sm flat
             type="button"
 
-            variant="quiet"
+            
             aria-label="Move up"
             disabled={index === 0 || arrange.isPending}
             onClick={() => {
@@ -492,10 +492,10 @@ function MapCard({
           >
             ↑
           </Btn>
-          <Btn
+          <Btn look="ghost" sm flat
             type="button"
 
-            variant="quiet"
+            
             aria-label="Move down"
             disabled={index === order.length - 1 || arrange.isPending}
             onClick={() => {
@@ -505,7 +505,7 @@ function MapCard({
             ↓
           </Btn>
           {map.enabled ? (
-            <Btn asChild variant="quiet">
+            <Btn look="ghost" sm flat asChild >
               <Link to="/maps/$slug" params={{ slug: map.slug }}>
                 Open it
               </Link>
@@ -954,12 +954,12 @@ function MapEditor({
       ) : null}
 
       <div className="acts">
-        <Btn type="submit" disabled={save.isPending}>
+        <Btn look="ink" sm flat type="submit" disabled={save.isPending}>
           Save the map
         </Btn>
-        <Btn
+        <Btn sm flat
           type="button"
-          variant="secondary"
+          
           onClick={() => {
             preview.mutate();
           }}
@@ -967,9 +967,9 @@ function MapEditor({
           What would it publish?
         </Btn>
         {confirmDelete ? (
-          <Btn
+          <Btn sm flat
             type="button"
-            variant="secondary"
+            
             onClick={() => {
               remove.mutate();
             }}
@@ -977,9 +977,9 @@ function MapEditor({
             Yes, delete this map
           </Btn>
         ) : (
-          <Btn
+          <Btn look="ghost" sm flat
             type="button"
-            variant="quiet"
+            
             onClick={() => {
               setConfirmDelete(true);
             }}

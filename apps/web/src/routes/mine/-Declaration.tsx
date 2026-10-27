@@ -26,7 +26,7 @@ import { SignInPrompt } from '@/features/identity/SignInPrompt.tsx';
 import { useMe } from '@/features/identity/session.ts';
 import { call } from '@/lib/api.ts';
 import { Back } from '../../mockup/Back.tsx';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { TextField } from '../../mockup/Fields.tsx';
 import { Note } from '../../mockup/Note.tsx';
@@ -137,8 +137,8 @@ function Declaration({ threadId }: { threadId: string }) {
                 </Choice>
               </Choices>
             </div>
-            <Btn
-              kind="ink"
+            <Btn sm flat
+              look="ink"
               onClick={() => {
                 window.print();
               }}

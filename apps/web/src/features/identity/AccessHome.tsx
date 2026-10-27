@@ -25,7 +25,7 @@ import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { call } from '../../lib/api.ts';
-import { SmBtn as Btn } from '../../mockup/SmBtn.tsx';
+import { Btn } from '@/mockup/Btn.tsx';
 import { Choice, Choices } from '../../mockup/Choice.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
@@ -246,7 +246,7 @@ function GrantRole({ me }: { me: SignedInMe }) {
               : `${typed} now holds no role.`}
           </Saved>
         )}
-        <Btn kind="ink" type="submit" disabled={!changes.length || save.isPending}>
+        <Btn sm flat look="ink" type="submit" disabled={!changes.length || save.isPending}>
           {save.isPending ? 'Saving…' : 'Give the role'}
         </Btn>
       </form>
@@ -331,8 +331,8 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
         {accept.isSuccess ? (
           <Saved>You are now the owner.</Saved>
         ) : (
-          <Btn
-            kind="ink"
+          <Btn sm flat
+            look="ink"
             disabled={accept.isPending}
             onClick={() => {
               accept.mutate();
@@ -364,7 +364,7 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
             {new Date(o.pending.expiresAt).toUTCString()}.
           </p>
           {o.iAmOwner && (
-            <Btn
+            <Btn sm flat
               onClick={() => {
                 cancel.mutate();
               }}
@@ -415,7 +415,7 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
             }}
           />
           <ErrorLine error={askCode.error} />
-          <Btn type="submit" disabled={askCode.isPending}>
+          <Btn sm flat type="submit" disabled={askCode.isPending}>
             Start the hand-over
           </Btn>
         </form>
@@ -444,11 +444,11 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
           />
           <ErrorLine error={offer.error} />
           <div className="acts">
-            <Btn kind="ink" type="submit" disabled={offer.isPending}>
+            <Btn sm flat look="ink" type="submit" disabled={offer.isPending}>
               Offer the deployment
             </Btn>
-            <Btn
-              kind="ghost"
+            <Btn sm flat
+              look="ghost"
               onClick={() => {
                 setCodeSent(false);
               }}
@@ -526,7 +526,7 @@ function SitePassword() {
           }}
         />
         <ErrorLine error={save.error} />
-        <Btn kind="ink" type="submit" disabled={save.isPending || !password}>
+        <Btn sm flat look="ink" type="submit" disabled={save.isPending || !password}>
           Set the password
         </Btn>
       </form>
@@ -579,7 +579,7 @@ function ResetSecondFactor() {
         {doneFor && (
           <Saved>Reset. {doneFor} sets a new second factor up when they next sign in.</Saved>
         )}
-        <Btn type="submit" disabled={reset.isPending}>
+        <Btn sm flat type="submit" disabled={reset.isPending}>
           Reset their second factor
         </Btn>
       </form>
