@@ -6,9 +6,9 @@
  */
 import type { Cover } from '@reportlog/contracts';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
-import { Button } from '../../components/ui/button.tsx';
-import { Field, Panel, Problem, Select, TextArea, TextInput } from './controls.tsx';
+import { useCallback, useState } from 'react';
+import { GuardedPanel } from '../settings/panels.tsx';
+import { Field, Problem, Select, TextArea, TextInput } from './controls.tsx';
 
 type Mode = 'site' | 'hide' | 'custom';
 
@@ -48,22 +48,51 @@ export function CoverPanel({
       return save(out);
     },
   });
+  const cta = (m: Mode) =>
+    m === 'site' ? 'Follows the site' : m === 'hide' ? 'Hidden' : 'Its own box';
+  const savedMode: Mode = cover?.cta?.mode ?? (kind === 'logbook' ? 'site' : 'hide');
+  const same = (a: string, b: string | undefined) => a === (b ?? '');
+  const dirty =
+    !same(eyebrow, cover?.eyebrow) ||
+    !same(intro, cover?.intro) ||
+    !same(button, cover?.button_label) ||
+    mode !== savedMode ||
+    !same(heading, cover?.cta?.heading) ||
+    !same(body, cover?.cta?.body) ||
+    !same(ctaLabel, cover?.cta?.button_label) ||
+    !same(ctaUrl, cover?.cta?.button_url);
+  const resetSave = mutation.reset;
+  const cancel = useCallback(() => {
+    setEyebrow(cover?.eyebrow ?? '');
+    setIntro(cover?.intro ?? '');
+    setButton(cover?.button_label ?? '');
+    setMode(savedMode);
+    setHeading(cover?.cta?.heading ?? '');
+    setBody(cover?.cta?.body ?? '');
+    setCtaLabel(cover?.cta?.button_label ?? '');
+    setCtaUrl(cover?.cta?.button_url ?? '');
+    resetSave();
+  }, [cover, savedMode, resetSave]);
   const set = (f: (v: string) => void) => (e: { target: { value: string } }) => {
     f(e.target.value);
   };
   return (
-    <Panel title="Cover page">
+    <GuardedPanel
+      id="cover"
+      title="Cover page"
+      summary={[
+        { key: 'Eyebrow', value: cover?.eyebrow ?? 'The usual wording' },
+        { key: 'Call to action', value: cta(savedMode) },
+      ]}
+      dirty={dirty}
+      onSave={() => mutation.mutateAsync()}
+      onCancel={cancel}
+    >
       <p className="text-sm text-muted">
         The first card people see, before the first question. None of this is part of the questions,
         so it can change at any time. Leave a box empty to use the usual wording.
       </p>
-      <form
-        className="space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          mutation.mutate();
-        }}
-      >
+      <div className="space-y-3">
         <Field
           label="Small heading above the title (optional)"
           help={
@@ -131,11 +160,7 @@ export function CoverPanel({
           </>
         ) : null}
         <Problem error={mutation.error} />
-        <Button type="submit" variant="secondary" disabled={mutation.isPending}>
-          Save cover page
-        </Button>
-        {mutation.isSuccess && <p role="status">Saved.</p>}
-      </form>
-    </Panel>
+      </div>
+    </GuardedPanel>
   );
 }

@@ -19,7 +19,7 @@ import type {
 } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert } from '../../components/ui/alert.tsx';
 import { Button, buttonVariants } from '../../components/ui/button.tsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card.tsx';
@@ -28,6 +28,8 @@ import { Field, FieldDescription, FieldError } from '../../components/ui/field.t
 import { Input } from '../../components/ui/input.tsx';
 import { Label } from '../../components/ui/label.tsx';
 import { CoverPanel } from '../builder/CoverPanel.tsx';
+import { SettingPanels } from '../../components/ui/setting-panel.tsx';
+import { GuardedPanel } from '../settings/panels.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { Select } from '../../components/ui/select.tsx';
 import { Textarea } from '../../components/ui/textarea.tsx';
@@ -134,17 +136,19 @@ function Editor({ list }: { list: ListAdminDetail }) {
           /list/{list.slug}
         </a>
       </p>
-      <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
-        <Settings list={list} onSaved={refresh} />
-        <CoverPanel
-          kind="list"
-          cover={list.cover}
-          save={async (cover) => {
-            await call(updateList, { params: { id: list.id }, body: { cover } });
-            await refresh();
-          }}
-        />
-      </div>
+      <SettingPanels>
+        <div className="grid items-start gap-[18px] min-[960px]:grid-cols-2">
+          <Settings list={list} onSaved={refresh} />
+          <CoverPanel
+            kind="list"
+            cover={list.cover}
+            save={async (cover) => {
+              await call(updateList, { params: { id: list.id }, body: { cover } });
+              await refresh();
+            }}
+          />
+        </div>
+      </SettingPanels>
       <Questions key={list.fields.map((f) => f.id).join('-')} list={list} onSaved={refresh} />
       <Counts list={list} />
       <Remove list={list} />
@@ -198,19 +202,60 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
     onSuccess: onSaved,
   });
 
+  const dirty =
+    title !== list.title ||
+    slug.trim() !== list.slug ||
+    blurb !== (list.blurb ?? '') ||
+    visibility !== list.visibility ||
+    outside !== list.outside_access ||
+    emailMode !== list.email_mode ||
+    writeBack !== list.write_back ||
+    onFront !== list.show_on_front ||
+    published !== list.aggregates_published ||
+    taking !== (list.closed_at === null) ||
+    opens !== savedOpens ||
+    closes !== savedCloses ||
+    notify !== list.notify ||
+    notifyEmail.trim() !== named;
+  const resetSave = save.reset;
+  const cancel = useCallback(() => {
+    setTitle(list.title);
+    setSlug(list.slug);
+    setBlurb(list.blurb ?? '');
+    setVisibility(list.visibility);
+    setOutside(list.outside_access);
+    setEmailMode(list.email_mode);
+    setWriteBack(list.write_back);
+    setOnFront(list.show_on_front);
+    setPublished(list.aggregates_published);
+    setTaking(list.closed_at === null);
+    setOpens(savedOpens);
+    setCloses(savedCloses);
+    setNotify(list.notify);
+    setNotifyEmail(named);
+    resetSave();
+  }, [list, savedOpens, savedCloses, named, resetSave]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Settings</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            save.mutate();
-          }}
-        >
+    <>
+      <GuardedPanel
+        id="list-settings"
+        title="Settings"
+        summary={[
+          { key: 'Who can see it', value: VISIBILITY[list.visibility].label },
+          { key: 'Without the site password', value: OUTSIDE[list.outside_access].label },
+          { key: 'Ask for an email address', value: EMAIL_MODE[list.email_mode].label },
+          { key: 'Taking entries', value: list.closed_at === null ? 'Yes' : 'No' },
+          {
+            key: 'Email each new entry',
+            value: list.notify ? (list.notify_email ?? list.admin_email ?? 'Yes') : 'No',
+          },
+        ]}
+        dirty={dirty}
+        onSave={() => save.mutateAsync()}
+        onCancel={cancel}
+      >
+        <div className="space-y-5">
           <Field>
             <Label>Title</Label>
             <Input
@@ -349,21 +394,16 @@ function Settings({ list, onSaved }: { list: ListAdminDetail; onSaved: () => Pro
             </Field>
           ) : null}
           {save.isError ? <Alert tone="serious">{save.error.message}</Alert> : null}
-          {save.isSuccess ? (
-            <Alert tone="done">
-              {save.data.confirm_sent === true
-                ? 'Saved. A link was emailed to the new address; it receives nothing until it is used.'
-                : save.data.confirm_sent === false
-                  ? 'Saved, but the link to the new address could not be emailed.'
-                  : 'Saved.'}
-            </Alert>
-          ) : null}
-          <Button type="submit" disabled={save.isPending}>
-            Save the settings
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </GuardedPanel>
+      {save.isSuccess && save.data.confirm_sent !== null ? (
+        <Alert tone="done">
+          {save.data.confirm_sent
+            ? 'Saved. A link was emailed to the new address; it receives nothing until it is used.'
+            : 'Saved, but the link to the new address could not be emailed.'}
+        </Alert>
+      ) : null}
+    </>
   );
 }
 
