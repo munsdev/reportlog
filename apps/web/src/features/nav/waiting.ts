@@ -50,6 +50,8 @@ export function waitingWords(key: keyof MenuWaiting, n: number): string {
       return `${String(n)} list ${one ? 'entry' : 'entries'} waiting for review`;
     case 'tip_links':
       return `${String(n)} tip ${one ? 'link' : 'links'} waiting to be checked`;
+    case 'texts':
+      return `${String(n)} written ${one ? 'account' : 'accounts'} waiting to be checked`;
     case 'feedback':
       return `${String(n)} open feedback ${one ? 'issue' : 'issues'}`;
   }

@@ -18,7 +18,7 @@ import {
   setMyPermission,
   withdrawMyReport,
 } from '@reportlog/contracts';
-import type { MyReport, MyReportDetail, Permission } from '@reportlog/contracts';
+import type { MyReport, MyReportDetail, MyWritten, Permission } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -50,10 +50,12 @@ import { useMe } from '@/features/identity/session.ts';
 import { ContactAccesses } from '@/features/moderation/ContactAccesses.tsx';
 import { call } from '@/lib/api.ts';
 import { PERMISSION_WORDS } from './permissionWords.ts';
+import { WrittenPanel, heldRaw, myWrittenQuery } from './MyWritten.tsx';
 import { QuestionControl } from './QuestionControl.tsx';
 import {
   askedQuestions,
   cardProblem,
+  isHeldKind,
   rawFromAnswers,
   sealedAnswers,
   shownAnswer,
@@ -168,6 +170,8 @@ export function MyReportPage({ threadId }: { threadId: string }) {
 
 function MyReportView({ threadId }: { threadId: string }) {
   const report = useQuery(myReportQuery(threadId));
+  const written = useQuery(myWrittenQuery(threadId));
+  const client = useQueryClient();
   if (report.isPending) return <p role="status">Loading…</p>;
   if (report.isError) {
     return (
@@ -195,12 +199,25 @@ function MyReportView({ threadId }: { threadId: string }) {
       <div className="grid items-start gap-[18px] min-[960px]:grid-cols-[1.5fr_1fr]">
         <div className="grid min-w-0 content-start gap-[18px]">
           <Answers r={r} />
-          {/* The written account and its sharing switch (free-text work) belong here, under the answers. */}
+          {written.data ? (
+            <WrittenPanel
+              threadId={r.thread_id}
+              written={written.data}
+              onChanged={async () => {
+                await client.invalidateQueries({ queryKey: myReportQuery(threadId).queryKey });
+              }}
+            />
+          ) : null}
           <Permissions r={r} />
           <ContactAccesses threadId={r.thread_id} />
         </div>
         <div className="grid min-w-0 content-start gap-[18px]">
-          <Correct r={r} />
+          {/* A correction carries the words along, so it waits for them. */}
+          {written.isPending && r.questions.some((q) => isHeldKind(q.kind)) ? (
+            <p role="status">Loading…</p>
+          ) : (
+            <Correct r={r} written={written.data} />
+          )}
           {r.withdrawn ? null : <Withdraw r={r} />}
           <Erase r={r} />
           <div>
@@ -239,12 +256,16 @@ function Answers({ r }: { r: MyReportDetail }) {
     <Section title="What it says now">
       <KeyValueList
         items={[
-          ...askedQuestions(r.questions, raw).map((q) => ({
-            key: q.label,
-            value: (
-              <span className="whitespace-pre-wrap">{shownAnswer(q, raw, r.questions) ?? '—'}</span>
-            ),
-          })),
+          ...askedQuestions(r.questions, raw)
+            .filter((q) => !isHeldKind(q.kind))
+            .map((q) => ({
+              key: q.label,
+              value: (
+                <span className="whitespace-pre-wrap">
+                  {shownAnswer(q, raw, r.questions) ?? '—'}
+                </span>
+              ),
+            })),
           {
             key: 'May it be published?',
             value: r.may_publish ? 'Yes, if a moderator approves it' : 'No',
@@ -287,26 +308,29 @@ function Permissions({ r }: { r: MyReportDetail }) {
         You can change these at any time, and every change is kept so you can see it. Only you can
         change them.
       </p>
-      {(Object.keys(PERMISSION_WORDS) as Permission[]).map((p) => (
-        <CheckOption
-          key={p}
-          id={`perm-${p}`}
-          label={PERMISSION_WORDS[p].label}
-          hint={PERMISSION_WORDS[p].hint}
-          // Read back from the server, never trusted from the click: the
-          // server is where the current value lives.
-          checked={r.permissions[p]}
-          disabled={set.isPending}
-          onCheckedChange={(on) => {
-            if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
-              setAskTakeDown(true);
-              return;
-            }
-            setStatus('Saving…');
-            set.mutate({ permission: p, granted: on === true });
-          }}
-        />
-      ))}
+      {/* Sharing is the switch on "What you wrote", beside the words it is about. */}
+      {(Object.keys(PERMISSION_WORDS) as Permission[])
+        .filter((p) => p !== 'journalist_sharing')
+        .map((p) => (
+          <CheckOption
+            key={p}
+            id={`perm-${p}`}
+            label={PERMISSION_WORDS[p].label}
+            hint={PERMISSION_WORDS[p].hint}
+            // Read back from the server, never trusted from the click: the
+            // server is where the current value lives.
+            checked={r.permissions[p]}
+            disabled={set.isPending}
+            onCheckedChange={(on) => {
+              if (p === 'attachment_publication' && on !== true && r.published_files > 0) {
+                setAskTakeDown(true);
+                return;
+              }
+              setStatus('Saving…');
+              set.mutate({ permission: p, granted: on === true });
+            }}
+          />
+        ))}
       {status ? <p role="status">{status}</p> : null}
       <Dialog open={askTakeDown} onOpenChange={setAskTakeDown}>
         <DialogContent>
@@ -355,9 +379,12 @@ function Permissions({ r }: { r: MyReportDetail }) {
   );
 }
 
-function Correct({ r }: { r: MyReportDetail }) {
+function Correct({ r, written }: { r: MyReportDetail; written: MyWritten | undefined }) {
   const refresh = useRefresh(r.thread_id);
-  const [raw, setRaw] = useState<RawAnswers>(() => rawFromAnswers(r.questions, r.answers));
+  const [raw, setRaw] = useState<RawAnswers>(() => ({
+    ...rawFromAnswers(r.questions, r.answers),
+    ...(written ? heldRaw(r.questions, written) : {}),
+  }));
   const [comment, setComment] = useState('');
   const [keepOut, setKeepOut] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);

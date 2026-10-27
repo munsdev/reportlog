@@ -66,7 +66,23 @@ function parseOptions(text: string): OptionInput[] {
 }
 
 /** The settings this form edits; anything else a question carries is kept as it is. */
-const EDITED = ['options', 'allowOther', 'scope', 'depth', 'earliest', 'latest'];
+const EDITED = ['options', 'allowOther', 'scope', 'depth', 'earliest', 'latest', 'maxValues'];
+
+/**
+ * The words the approved filing cards use for the two kinds that are never
+ * published, offered when one is chosen so an owner starts from them. Typed
+ * over, they are the owner's own.
+ */
+const PRESETS: Record<string, { label: string; help: string }> = {
+  private_text: {
+    label: 'Want to tell us more?',
+    help: 'In your own words. Leave out names of private people and anything that would identify you.',
+  },
+  private_link: {
+    label: 'Got a link?',
+    help: 'A post, photo or video about what happened. Up to three.',
+  },
+};
 
 /** The kinds that may carry an earliest and a latest answer (E4), and how each is typed. */
 const LIMIT_INPUT: Record<string, { type: string; example: string }> = {
@@ -103,6 +119,9 @@ export function QuestionForm({
   const [latest, setLatest] = useState(limitShown(kind, initial?.settings.latest));
   const [whenField, setWhenField] = useState(initial?.shown_when?.field ?? '');
   const [whenValues, setWhenValues] = useState<string[]>(initial?.shown_when?.in ?? []);
+  const [linkCount, setLinkCount] = useState(
+    typeof initial?.settings.maxValues === 'number' ? String(initial.settings.maxValues) : '3',
+  );
   const [error, setError] = useState<Error | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -128,6 +147,7 @@ export function QuestionForm({
     if (kind === 'choice_one' || kind === 'choice_many')
       return hasSets ? kept : { ...kept, options: list };
     if (kind === 'place') return { ...kept, options: list, allowOther };
+    if (kind === 'private_link') return { ...kept, maxValues: Number(linkCount) };
     // Depth only as `county`: an absent depth IS state, and settings are sealed.
     if (kind === LOCATION_TYPE) {
       return { ...kept, scope, ...(scope === 'us' && depth === 'county' ? { depth } : {}) };
@@ -199,7 +219,13 @@ export function QuestionForm({
               {...p}
               value={kind}
               onChange={(e) => {
-                setKind(e.target.value);
+                const next = e.target.value;
+                setKind(next);
+                // Start from the approved words, but never over the owner's own.
+                const was = PRESETS[kind];
+                const now = PRESETS[next];
+                if (now && (label.trim() === '' || label === was?.label)) setLabel(now.label);
+                if (now && (help.trim() === '' || help === was?.help)) setHelp(now.help);
               }}
             >
               {FIELD_TYPES.map((t) => (
@@ -238,6 +264,35 @@ export function QuestionForm({
           />
         )}
       </Field>
+
+      {kind === 'private_link' && (
+        <Field
+          label="How many links a reporter can give"
+          help="Never published. Each is checked on the Links page, like the tip line's."
+        >
+          {(p) => (
+            <Select
+              {...p}
+              value={linkCount}
+              onChange={(e) => {
+                setLinkCount(e.target.value);
+              }}
+            >
+              <option value="1">One</option>
+              <option value="2">Up to two</option>
+              <option value="3">Up to three</option>
+            </Select>
+          )}
+        </Field>
+      )}
+
+      {(kind === 'private_text' || kind === 'private_link') && (
+        <p className="text-sm text-ink-alt">
+          A reporter who writes something or gives a link is asked for an email address and whether
+          vetted journalists may read it. After launch this can only be added as an optional
+          question.
+        </p>
+      )}
 
       {LIST_KINDS.has(kind) && !hasSets && (
         <Field

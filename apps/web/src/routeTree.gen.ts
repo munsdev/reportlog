@@ -40,6 +40,7 @@ import { Route as BoardPressRouteImport } from './routes/board/press'
 import { Route as DeskIndexRouteImport } from './routes/desk/index'
 import { Route as DeskAlertsRouteImport } from './routes/desk/alerts'
 import { Route as DeskSourcesRouteImport } from './routes/desk/sources'
+import { Route as DeskTextsRouteImport } from './routes/desk/texts'
 import { Route as DevComponentsRouteImport } from './routes/dev.components'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as DocsCheckingRouteImport } from './routes/docs/checking'
@@ -116,6 +117,8 @@ import { Route as staffFilesLogbooksIdRouteImport } from './routes/(staff)/files
 import { Route as staffIntakeReportsThreadIdRouteImport } from './routes/(staff)/intake/reports.$threadId'
 import { Route as staffListsReviewIndexRouteImport } from './routes/(staff)/lists/review.index'
 import { Route as staffListsReviewIdRouteImport } from './routes/(staff)/lists/review.$id'
+import { Route as staffModerateTextsIndexRouteImport } from './routes/(staff)/moderate/texts.index'
+import { Route as staffModerateTextsRefRouteImport } from './routes/(staff)/moderate/texts.$ref'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -270,6 +273,11 @@ const DeskAlertsRoute = DeskAlertsRouteImport.update({
 const DeskSourcesRoute = DeskSourcesRouteImport.update({
   id: '/desk/sources',
   path: '/desk/sources',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DeskTextsRoute = DeskTextsRouteImport.update({
+  id: '/desk/texts',
+  path: '/desk/texts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DevComponentsRoute = DevComponentsRouteImport.update({
@@ -660,6 +668,16 @@ const staffListsReviewIdRoute = staffListsReviewIdRouteImport.update({
   path: '/review/$id',
   getParentRoute: () => staffListsRouteRoute,
 } as any)
+const staffModerateTextsIndexRoute = staffModerateTextsIndexRouteImport.update({
+  id: '/texts/',
+  path: '/texts/',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
+const staffModerateTextsRefRoute = staffModerateTextsRefRouteImport.update({
+  id: '/texts/$ref',
+  path: '/texts/$ref',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -691,6 +709,7 @@ export interface FileRoutesByFullPath {
   '/board/press': typeof BoardPressRoute
   '/desk/alerts': typeof DeskAlertsRoute
   '/desk/sources': typeof DeskSourcesRoute
+  '/desk/texts': typeof DeskTextsRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -766,9 +785,11 @@ export interface FileRoutesByFullPath {
   '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/lists/review/$id': typeof staffListsReviewIdRoute
+  '/moderate/texts/$ref': typeof staffModerateTextsRefRoute
   '/access/orgs/': typeof staffAccessOrgsIndexRoute
   '/files/logbooks/': typeof staffFilesLogbooksIndexRoute
   '/lists/review/': typeof staffListsReviewIndexRoute
+  '/moderate/texts/': typeof staffModerateTextsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -794,6 +815,7 @@ export interface FileRoutesByTo {
   '/board/press': typeof BoardPressRoute
   '/desk/alerts': typeof DeskAlertsRoute
   '/desk/sources': typeof DeskSourcesRoute
+  '/desk/texts': typeof DeskTextsRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -869,9 +891,11 @@ export interface FileRoutesByTo {
   '/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/lists/review/$id': typeof staffListsReviewIdRoute
+  '/moderate/texts/$ref': typeof staffModerateTextsRefRoute
   '/access/orgs': typeof staffAccessOrgsIndexRoute
   '/files/logbooks': typeof staffFilesLogbooksIndexRoute
   '/lists/review': typeof staffListsReviewIndexRoute
+  '/moderate/texts': typeof staffModerateTextsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -904,6 +928,7 @@ export interface FileRoutesById {
   '/board/press': typeof BoardPressRoute
   '/desk/alerts': typeof DeskAlertsRoute
   '/desk/sources': typeof DeskSourcesRoute
+  '/desk/texts': typeof DeskTextsRoute
   '/dev/components': typeof DevComponentsRoute
   '/docs/checking': typeof DocsCheckingRoute
   '/docs/first-logbook': typeof DocsFirstLogbookRoute
@@ -979,9 +1004,11 @@ export interface FileRoutesById {
   '/(staff)/files/logbooks/$id': typeof staffFilesLogbooksIdRoute
   '/(staff)/intake/reports/$threadId': typeof staffIntakeReportsThreadIdRoute
   '/(staff)/lists/review/$id': typeof staffListsReviewIdRoute
+  '/(staff)/moderate/texts/$ref': typeof staffModerateTextsRefRoute
   '/(staff)/access/orgs/': typeof staffAccessOrgsIndexRoute
   '/(staff)/files/logbooks/': typeof staffFilesLogbooksIndexRoute
   '/(staff)/lists/review/': typeof staffListsReviewIndexRoute
+  '/(staff)/moderate/texts/': typeof staffModerateTextsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -1015,6 +1042,7 @@ export interface FileRouteTypes {
     | '/board/press'
     | '/desk/alerts'
     | '/desk/sources'
+    | '/desk/texts'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -1090,9 +1118,11 @@ export interface FileRouteTypes {
     | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
     | '/lists/review/$id'
+    | '/moderate/texts/$ref'
     | '/access/orgs/'
     | '/files/logbooks/'
     | '/lists/review/'
+    | '/moderate/texts/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1118,6 +1148,7 @@ export interface FileRouteTypes {
     | '/board/press'
     | '/desk/alerts'
     | '/desk/sources'
+    | '/desk/texts'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -1193,9 +1224,11 @@ export interface FileRouteTypes {
     | '/files/logbooks/$id'
     | '/intake/reports/$threadId'
     | '/lists/review/$id'
+    | '/moderate/texts/$ref'
     | '/access/orgs'
     | '/files/logbooks'
     | '/lists/review'
+    | '/moderate/texts'
   id:
     | '__root__'
     | '/'
@@ -1227,6 +1260,7 @@ export interface FileRouteTypes {
     | '/board/press'
     | '/desk/alerts'
     | '/desk/sources'
+    | '/desk/texts'
     | '/dev/components'
     | '/docs/checking'
     | '/docs/first-logbook'
@@ -1302,9 +1336,11 @@ export interface FileRouteTypes {
     | '/(staff)/files/logbooks/$id'
     | '/(staff)/intake/reports/$threadId'
     | '/(staff)/lists/review/$id'
+    | '/(staff)/moderate/texts/$ref'
     | '/(staff)/access/orgs/'
     | '/(staff)/files/logbooks/'
     | '/(staff)/lists/review/'
+    | '/(staff)/moderate/texts/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1337,6 +1373,7 @@ export interface RootRouteChildren {
   BoardPressRoute: typeof BoardPressRoute
   DeskAlertsRoute: typeof DeskAlertsRoute
   DeskSourcesRoute: typeof DeskSourcesRoute
+  DeskTextsRoute: typeof DeskTextsRoute
   DevComponentsRoute: typeof DevComponentsRoute
   DocsCheckingRoute: typeof DocsCheckingRoute
   DocsFirstLogbookRoute: typeof DocsFirstLogbookRoute
@@ -1599,6 +1636,13 @@ declare module '@tanstack/react-router' {
       path: '/desk/sources'
       fullPath: '/desk/sources'
       preLoaderRoute: typeof DeskSourcesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desk/texts': {
+      id: '/desk/texts'
+      path: '/desk/texts'
+      fullPath: '/desk/texts'
+      preLoaderRoute: typeof DeskTextsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dev/components': {
@@ -2133,6 +2177,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffListsReviewIdRouteImport
       parentRoute: typeof staffListsRouteRoute
     }
+    '/(staff)/moderate/texts/': {
+      id: '/(staff)/moderate/texts/'
+      path: '/texts'
+      fullPath: '/moderate/texts/'
+      preLoaderRoute: typeof staffModerateTextsIndexRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
+    '/(staff)/moderate/texts/$ref': {
+      id: '/(staff)/moderate/texts/$ref'
+      path: '/texts/$ref'
+      fullPath: '/moderate/texts/$ref'
+      preLoaderRoute: typeof staffModerateTextsRefRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
   }
 }
 
@@ -2219,6 +2277,8 @@ interface staffModerateRouteRouteChildren {
   staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
   staffModerateSettingsRoute: typeof staffModerateSettingsRoute
   staffModerateIndexRoute: typeof staffModerateIndexRoute
+  staffModerateTextsRefRoute: typeof staffModerateTextsRefRoute
+  staffModerateTextsIndexRoute: typeof staffModerateTextsIndexRoute
 }
 
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
@@ -2228,6 +2288,8 @@ const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,
   staffModerateSettingsRoute: staffModerateSettingsRoute,
   staffModerateIndexRoute: staffModerateIndexRoute,
+  staffModerateTextsRefRoute: staffModerateTextsRefRoute,
+  staffModerateTextsIndexRoute: staffModerateTextsIndexRoute,
 }
 
 const staffModerateRouteRouteWithChildren =
@@ -2292,6 +2354,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardPressRoute: BoardPressRoute,
   DeskAlertsRoute: DeskAlertsRoute,
   DeskSourcesRoute: DeskSourcesRoute,
+  DeskTextsRoute: DeskTextsRoute,
   DevComponentsRoute: DevComponentsRoute,
   DocsCheckingRoute: DocsCheckingRoute,
   DocsFirstLogbookRoute: DocsFirstLogbookRoute,

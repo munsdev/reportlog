@@ -349,8 +349,15 @@ export async function stageSubmission(
     );
   }
 
+  // The questions these answers are checked against, as a version. Sealed
+  // at confirmation, so what is sealed is the form this person was asked.
+  const questions = await questionsFor(db, lb.id);
   // E1: derived from the questions, or the operator's switch (logbooks.ts).
+  // Erasable text and links are NOT among the questions that oblige an
+  // address (D8): the address is needed only when the reporter wrote
+  // something, which is checked below.
   const asksEmail = lb.asks_email;
+  const asksHeld = questions.some((q) => q.kind === 'private_text' || q.kind === 'private_link');
   // Only a form that keeps an address needs the key that protects it.
   if (asksEmail && !deps.ring) throw notConfigured();
   const email = normalizeEmail(b.email);
@@ -359,7 +366,7 @@ export async function stageSubmission(
   // followed, exactly as for a form that requires one; skipped, the report
   // is filed at once. A blank is a skip. Off (NULL) for every logbook until
   // the owner turns it on (D21).
-  const optionalCard = !asksEmail && lb.email_optional;
+  const optionalCard = !asksEmail && (lb.email_optional || asksHeld);
   const holds = asksEmail || (optionalCard && email !== '');
   if (holds && !deps.ring) throw notConfigured();
   const problems: string[] = [];
@@ -373,9 +380,6 @@ export async function stageSubmission(
     );
   if (b.consent !== true) problems.push('Confirm the statement on the last card.');
 
-  // The questions these answers are checked against, as a version. Sealed
-  // at confirmation, so what is sealed is the form this person was asked.
-  const questions = await questionsFor(db, lb.id);
   const form = await formAsked(db, lb, questions, b.form);
   const { answers, errors } = buildAnswers(questions, b.answers ?? {});
   problems.push(...answerRefusals(questions, b.answers ?? {}));
@@ -383,11 +387,15 @@ export async function stageSubmission(
   // Text and links kept apart from the report, so they can be erased (W1).
   const built = buildHeldValues(questions, b.answers ?? {}, answers);
   problems.push(...built.errors.map((e) => `${e}.`), ...heldRefusals(questions, built.problems));
+  // D8: words or a link need an address, so they can be corrected, withdrawn
+  // or erased. Without either, the address stays as the form decided.
+  if (holdsAnything(built.held) && !asksEmail && email === '')
+    problems.push('Enter an email address we can reach you at, because you wrote something.');
   if (problems.length) throw refused(400, 'incomplete', problems.join(' '));
   const held = holdsAnything(built.held) ? built.held : undefined;
-  // A held value asks for an address (TYPED_KINDS), so it always waits for
-  // its link below. Without the keys it cannot be kept at all.
-  if (held && (!asksEmail || !deps.linkKeys)) throw notConfigured();
+  // A held value is kept only for a report that waits for its link below.
+  // Without the keys it cannot be kept at all.
+  if (held && (!holds || !deps.linkKeys)) throw notConfigured();
 
   // The digest arrives from the client, so it is not trusted: it has to name
   // wording this site actually put on screen, and the general card's at that.

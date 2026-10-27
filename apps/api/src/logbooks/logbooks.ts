@@ -161,7 +161,14 @@ function present(row: SummaryRow): LogbookSummary {
     email_optional: row.email_optional === true,
     // DERIVED, like asks_for_files: a question somebody types into or files
     // ask for an address; the operator's switch can only add one (E1).
-    asks_email: formAsksEmail(row.question_shapes ?? [], row.email_required),
+    // Erasable text and links do not oblige an address by themselves (D8):
+    // the form asks for one only when the reporter wrote something.
+    asks_email: formAsksEmail(
+      (row.question_shapes ?? []).filter(
+        (q) => q.kind !== 'private_text' && q.kind !== 'private_link',
+      ),
+      row.email_required,
+    ),
     publish_by_terms: row.publish_by_terms,
     show_on_front: row.show_on_front,
     short_slug: row.short_slug,
