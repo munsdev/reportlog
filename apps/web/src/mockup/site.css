@@ -783,3 +783,17 @@ body.form .site-head .head-right > .btn{display:none}
 body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
 /* A heading the app focuses when a card or page changes is not a control: the mock-up draws no ring round it. */
 [tabindex="-1"]:focus-visible{outline:none}
+/* Port (27 Oct): the signed-in person's way to the dashboard, at the top of the menu,
+   and the label over their own links in the second list. */
+.menu-dash{justify-self:start;gap:10px}
+.menu-list .menu-sep{margin-top:14px;padding:0 14px;font-family:var(--rl-font-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--on-chrome-muted)}
+@media (min-width:900px){.menu .wrap:has(> .menu-dash){grid-template-areas:"top top" "dash dash" "follow follow" "main second" "foot foot"}.menu-dash{grid-area:dash}}
+/* Port (27 Oct): sidebar sections fold under their headings. */
+.sb summary{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 10px 0 0;cursor:pointer;list-style:none}
+.sb summary::-webkit-details-marker{display:none}
+.sb summary h3{margin:0;flex:1}
+.sb summary::after{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);opacity:.6;transition:transform .15s}
+.sb details[open] > summary::after{transform:rotate(45deg)}
+.sb summary .n{font-size:.7rem;min-width:20px;height:20px;border-radius:10px;display:inline-grid;place-items:center;padding:0 6px}
+.sb-drawer summary{min-height:48px;color:var(--on-chrome-muted)}
+@media (min-width:700px){.sb-drawer{grid-template-columns:1fr}}

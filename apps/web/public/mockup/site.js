@@ -193,6 +193,11 @@
     function search(ok) { var lo = min, hi = max, best = 0; h.style.fontSize = hi + "px"; if (ok()) return hi; for (var i = 0; i < 9; i++) { var mid = (lo + hi) / 2; h.style.fontSize = mid + "px"; if (ok()) { best = mid; lo = mid; } else hi = mid; } return best; }
     /* 1. every line on one line */
     var single = search(function () { return widest() <= avail; });
+    /* Port, the owner's call (27 Oct): on a phone a headline keeps each line on
+       one row, a little short of the edges, instead of breaking lines in two to
+       set them bigger. Four huge rows filled the screen. */
+    var narrow = window.innerWidth < 600;
+    if (narrow && single) { h.style.fontSize = Math.floor(single * 0.94) + "px"; return; }
     /* 2. if that came out small, try letting each line break once (at most two rows per line) */
     var wrapped = 0;
     if (single < max * 0.62) {
@@ -213,6 +218,8 @@
   window.elFitAll = fitAll;
   fitAll();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitAll);
+  /* Port: the app draws pages after this script ran, and a theme's display face can arrive after a page was fitted with the fallback (a headline then ran off a phone screen). Refit whenever a font finishes loading. */
+  if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function () { fitAll(); });
   var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(fitAll, 80); });
   document.querySelectorAll("[data-easy]").forEach(function (b) { b.addEventListener("click", function () { setTimeout(fitAll, 0); }); });
 

@@ -196,24 +196,69 @@ export function StaffSidebar({
 }) {
   const here = entryAt(pathname);
   const sections = me ? sectionsFor(me) : [];
+  // The owner's call (27 Oct): some forty links in one column was too much.
+  // Each section folds under its heading, with what waits in it counted
+  // there. Open to start: the section of the page being read, and any with
+  // work waiting. A section opened by hand stays open while moving around.
+  const waitingIn = (pages: readonly StaffEntry[]) =>
+    pages.reduce((n, p) => n + (p.waiting ? (waiting?.[p.waiting] ?? 0) : 0), 0);
+  const hereId = sections.find((sec) => sec.pages.some((p) => p === here))?.id;
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set());
+  const [closed, setClosed] = useState<ReadonlySet<string>>(() => new Set());
+  const isOpen = (id: string, pages: readonly StaffEntry[]) =>
+    opened.has(id) || (!closed.has(id) && (id === hereId || waitingIn(pages) > 0));
+  const toggle = (id: string, open: boolean) => {
+    setOpened((was) => {
+      const next = new Set(was);
+      if (open) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    setClosed((was) => {
+      const next = new Set(was);
+      if (open) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
   return (
     <nav className={tone === 'drawer' ? 'sb sb-drawer' : undefined} aria-label="Staff areas">
       {me ? null : <p className="muted">Loading…</p>}
-      {sections.map((section) => (
-        <div className="sb-g" key={section.id}>
-          <h3>{section.label}</h3>
-          <ul>
-            {section.pages.map((p) => (
-              <li key={`${p.to}#${p.hash ?? ''}`}>
-                <SideLink entry={p} here={here === p} waiting={waiting} onChoose={onChoose} />
-              </li>
-            ))}
-            {me && section.id === 'help' ? (
-              <BugLink me={me} pathname={pathname} onChoose={onChoose ?? noop} className="" />
-            ) : null}
-          </ul>
-        </div>
-      ))}
+      {sections.map((section) => {
+        const n = waitingIn(section.pages);
+        const open = isOpen(section.id, section.pages);
+        return (
+          <details
+            className="sb-g"
+            key={section.id}
+            open={open}
+            onToggle={(e) => {
+              const now = e.currentTarget.open;
+              if (now !== open) toggle(section.id, now);
+            }}
+          >
+            <summary>
+              <h3>{section.label}</h3>
+              {n ? (
+                <span className="n">
+                  <span aria-hidden="true">{n}</span>
+                  <span className="sr-only">, {n} waiting</span>
+                </span>
+              ) : null}
+            </summary>
+            <ul>
+              {section.pages.map((p) => (
+                <li key={`${p.to}#${p.hash ?? ''}`}>
+                  <SideLink entry={p} here={here === p} waiting={waiting} onChoose={onChoose} />
+                </li>
+              ))}
+              {me && section.id === 'help' ? (
+                <BugLink me={me} pathname={pathname} onChoose={onChoose ?? noop} className="" />
+              ) : null}
+            </ul>
+          </details>
+        );
+      })}
     </nav>
   );
 }
@@ -313,7 +358,8 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
             CLOSE
           </button>
         </div>
-        {children}
+        {/* The way back to the public site and Sign out come first (the owner's
+            call, 27 Oct): at the foot they sat under some forty links. */}
         <div className="menu-foot">
           <Link className="btn sm flat" to="/" style={FOOT_STYLE} onClick={onClose}>
             View the public site
@@ -335,6 +381,7 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
             {out.isPending ? 'Signing out…' : 'Sign out'}
           </button>
         </div>
+        {children}
       </div>
     </div>
   );

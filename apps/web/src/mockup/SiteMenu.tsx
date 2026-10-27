@@ -93,6 +93,20 @@ export function SiteMenu({
             CLOSE
           </button>
         </div>
+        {/* Signed in: the way into the staff area, first and plain to see
+            (the owner's call, 27 Oct: it was buried in the second list). */}
+        {me ? (
+          <Link className="btn sm flat ghost menu-dash" style={GHOST} to="/home" onClick={onChoose}>
+            Your dashboard
+            {reports ? (
+              <Count
+                value={reports}
+                label={`, ${waitingWords('reports', reports)}`}
+                className="ml-3"
+              />
+            ) : null}
+          </Link>
+        ) : null}
         {links.length ? (
           <div className="menu-follow" aria-label={`Follow ${name}`}>
             {links.map((l) => (
@@ -148,17 +162,8 @@ export function SiteMenu({
             </li>
             {me ? (
               <>
-                <li>
-                  <Link to="/home" onClick={onChoose} {...here('/home')}>
-                    Your dashboard
-                    {reports ? (
-                      <Count
-                        value={reports}
-                        label={`, ${waitingWords('reports', reports)}`}
-                        className="ml-3"
-                      />
-                    ) : null}
-                  </Link>
+                <li className="menu-sep" aria-hidden="true">
+                  Yours
                 </li>
                 <li>
                   <Link to="/mine" onClick={onChoose} {...here('/mine')}>
@@ -170,19 +175,16 @@ export function SiteMenu({
                     Email updates
                   </Link>
                 </li>
+                {/* One account page: a role holder's lands on its security part. */}
                 <li>
-                  <Link to="/access" onClick={onChoose} {...here('/access')}>
+                  <Link
+                    to={me.heldRoles.length ? '/access/security' : '/access'}
+                    onClick={onChoose}
+                    {...here('/access')}
+                  >
                     Your account
                   </Link>
                 </li>
-                {/* Role holders' second factor, on the role they HOLD so that somebody who has not proved one yet can find it. */}
-                {me.heldRoles.length ? (
-                  <li>
-                    <Link to="/access/security" onClick={onChoose} {...here('/access/security')}>
-                      Account and security
-                    </Link>
-                  </li>
-                ) : null}
                 {bugs && pathname !== '/feedback' ? (
                   <li>
                     <Link
