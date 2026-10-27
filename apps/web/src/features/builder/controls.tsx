@@ -7,7 +7,7 @@
  */
 import type { ComponentProps, ReactNode } from 'react';
 import { useId } from 'react';
-import { CheckOption } from '@/mockup/Choices.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Note } from '@/mockup/NoteBox.tsx';
 import { Panel as MockPanel } from '@/mockup/PanelBox.tsx';
 import { cn } from '@/lib/utils.ts';

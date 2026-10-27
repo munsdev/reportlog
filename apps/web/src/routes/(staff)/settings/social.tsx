@@ -29,12 +29,12 @@ import type {
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
-import { CheckOption } from '@/mockup/Choices.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Switch } from '@/mockup/SwitchRow.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
-import { SaveBar } from '@/mockup/SaveBar.tsx';
+import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
 import { SocialIcon } from '@/components/ui/social-icon.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';

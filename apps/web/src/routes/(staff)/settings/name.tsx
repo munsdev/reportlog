@@ -19,7 +19,7 @@ import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/mockup/SaveBar.tsx';
+import { SaveBar } from '@/mockup/SaveBarStrip.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';

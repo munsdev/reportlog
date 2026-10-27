@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { Note } from '@/mockup/NoteBox.tsx';
 import { Btn } from '@/mockup/StaffBtn.tsx';
 import { Panel } from '@/mockup/PanelBox.tsx';
-import { CheckOption } from '@/mockup/Choices.tsx';
+import { CheckOption } from '@/mockup/ChoicesWired.tsx';
 import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';

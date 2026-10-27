@@ -6,20 +6,17 @@ import type { FormQuestion, QueueItem } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Chip } from '../../components/ui/chip.tsx';
-import { KeyValueList } from '../../components/ui/key-value-list.tsx';
+import { Chip } from '../../mockup/Chip.tsx';
 import { plainSiteName, useSite } from '../../components/ui/site.tsx';
-import { Eyebrow, Lede } from '../../components/ui/type.tsx';
-import { cn } from '../../lib/utils.ts';
 import { publicLogbookQuery } from '../form/FilingForm.tsx';
 import { askedQuestions, rawFromAnswers, shownAnswer } from '../form/walk.ts';
 import { SEVERITY_WORDS } from './words.ts';
 
 /**
- * A staff page's head: eyebrow, title, lede. Its own rather than `Page`'s,
- * because one report's title is its reference, set in the mono face so it
- * reads as one code. It names the browser tab, as `Page` does, and draws
- * the staff area's tabs under the lede (navigation.md, section 05).
+ * A staff page's head: the mock-up's `.phead` (eyebrow, title, lede). Its
+ * own rather than `StaffPage`'s for the pages that draw their body
+ * themselves; one report's title is its reference, in the mono face. It
+ * names the browser tab, as `StaffPage` does.
  */
 export function StaffHead({
   eyebrow,
@@ -40,19 +37,16 @@ export function StaffHead({
     document.title = `${title} · ${siteName}`;
   }, [title, siteName]);
   return (
-    <header className="flex flex-col items-start gap-1.5">
-      <Eyebrow className="font-mono tracking-[0.12em]">{eyebrow ?? `${siteName} · Staff`}</Eyebrow>
-      <h1
-        className={cn(
-          'text-[clamp(1.6rem,3.6vw,2.4rem)] leading-[1.05] font-bold break-words',
-          mono ? 'font-mono tracking-tight' : 'font-display',
-        )}
-      >
-        {title}
-      </h1>
-      {lede ? <Lede>{lede}</Lede> : null}
-      {children}
-    </header>
+    <div className="phead">
+      <div className="phead-txt">
+        <span className="eyebrow">{eyebrow ?? `${siteName} · Staff`}</span>
+        <h1 id="h1" className={mono ? 'mono-title' : undefined}>
+          {title}
+        </h1>
+        {lede ? <p className="lead">{lede}</p> : null}
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -113,7 +107,7 @@ export function AnswerLine({ slug, answers }: { slug: string; answers: Record<st
     .filter(Boolean)
     .map((t) => (/[.!?…]$/.test(t) ? t : `${t}.`))
     .join(' ');
-  return <p className="line-clamp-2 break-words">{line || 'No answers.'}</p>;
+  return <p className="qsum">{line || 'No answers.'}</p>;
 }
 
 /** A report's answers by label, for the report under moderation. */
@@ -121,39 +115,41 @@ export function AnswerList({ slug, answers }: { slug: string; answers: Record<st
   const rows = answerRows(useQuestions(slug), answers);
   if (!rows.length) return <p>No answers.</p>;
   return (
-    <KeyValueList
-      items={rows.map((r) => ({
-        key: r.label,
-        value: <span className="whitespace-pre-wrap">{r.text}</span>,
-      }))}
-    />
+    <dl className="answers">
+      {rows.map((r) => (
+        <div key={r.key}>
+          <dt>{r.label}</dt>
+          <dd style={{ whiteSpace: 'pre-wrap' }}>{r.text}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
-/** Where a report stands, as a chip. Teal only for an approval, which a moderator confirmed. */
+/** Where a report stands, as the mock-up's status chip. Filled only for an approval. */
 export function StatusChip({ r }: { r: Pick<QueueItem, 'moderation_status' | 'withdrawn'> }) {
-  if (r.withdrawn) return <Chip tone="tag">Withdrawn</Chip>;
+  if (r.withdrawn) return <Chip kind="off">Withdrawn</Chip>;
   switch (r.moderation_status) {
     case 'valid':
-      return <Chip tone="confirmed">Approved</Chip>;
+      return <Chip kind="ok">Approved</Chip>;
     case 'invalid':
-      return <Chip tone="tag">Declined</Chip>;
+      return <Chip kind="off">Declined</Chip>;
     case 'unknown':
-      return <Chip tone="open">Unclear</Chip>;
+      return <Chip>Unclear</Chip>;
     default:
-      return <Chip tone="open">Waiting</Chip>;
+      return <Chip kind="wait">Waiting</Chip>;
   }
 }
 
 /**
  * A rating as a chip: the two that mean somebody was or could be harmed are
- * status (serious); the two that do not are a plain fact.
+ * filled red; the two that do not are a plain fact.
  */
 export function SeverityChip({ severity }: { severity: QueueItem['severity'] }) {
   if (!severity) return null;
   const label = SEVERITY_WORDS[severity]?.label ?? severity;
   const grave = severity === 'serious' || severity === 'systemic';
-  return <Chip tone={grave ? 'serious' : 'tag'}>{label}</Chip>;
+  return grave ? <span className="st bad">{label}</span> : <Chip>{label}</Chip>;
 }
 
 /** "3 Nov 14:02", the way the record and the rows write a time. */

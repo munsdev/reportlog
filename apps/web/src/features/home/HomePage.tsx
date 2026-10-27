@@ -1,8 +1,8 @@
 /**
- * /home: the dashboard every signed-in person lands on. One card for each
- * thing this person has (their reports and account always; review, the
- * desk, an organization, site administration when they hold them), each
- * with a sentence and a link or two.
+ * /home: the dashboard every signed-in person lands on (mock-up s-home.html).
+ * One `.area-card` for each thing this person has (their reports and account
+ * always; review, the desk, an organization, site administration when they
+ * hold them), each with a sentence and a link or two.
  *
  * It asks for nothing the frame has not already asked: the waiting totals
  * are the header's own query (useWaiting), so there is no new call. Nothing
@@ -12,15 +12,11 @@
 import { Link } from '@tanstack/react-router';
 import type { LinkProps } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
-import { Card } from '@/components/ui/card.tsx';
-import { Count } from '@/components/ui/count.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { SignInPrompt } from '../identity/SignInPrompt.tsx';
-import { useMe } from '../identity/session.ts';
+import { rolesLabel, useMe } from '../identity/session.ts';
 import { mayOpen } from '../staff-nav/entries.ts';
-import { useWaiting, waitingWords } from '../nav/waiting.ts';
-
-const LINK = 'inline-flex min-h-11 items-center text-ink underline underline-offset-4';
+import { useWaiting } from '../nav/waiting.ts';
 
 type To = NonNullable<LinkProps['to']>;
 
@@ -31,22 +27,28 @@ function Tile({
 }: {
   title: string;
   children: ReactNode;
-  links: readonly { to: To; label: string; count?: ReactNode }[];
+  links: readonly { to: To; label: string; n?: number | undefined; words?: string }[];
 }) {
   return (
-    <Card heading={title} className="gap-3 p-4">
-      <div className="text-ink-alt">{children}</div>
-      <ul className="flex flex-wrap gap-x-5">
+    <section className="area-card">
+      <h3>{title}</h3>
+      {children}
+      <ul>
         {links.map((l) => (
-          <li key={l.to} className="flex items-center gap-2">
-            <Link to={l.to} className={LINK}>
+          <li key={l.to}>
+            <Link to={l.to}>
               {l.label}
+              {l.n ? (
+                <>
+                  <span aria-hidden="true"> · {l.n}</span>
+                  <span className="sr-only">, {l.words}</span>
+                </>
+              ) : null}
             </Link>
-            {l.count}
           </li>
         ))}
       </ul>
-    </Card>
+    </section>
   );
 }
 
@@ -61,7 +63,22 @@ export function HomePage() {
   const admin = mayOpen({ for: ['admin'] }, me);
   const journalist = mayOpen({ for: ['journalist'] }, me);
   const organization = mayOpen({ for: ['organization'] }, me);
-  const total = (waiting?.reports ?? 0) + (waiting?.list_entries ?? 0) + (waiting?.tip_links ?? 0);
+  const waitingLine = waiting
+    ? [
+        waiting.reports
+          ? `${String(waiting.reports)} ${waiting.reports === 1 ? 'report' : 'reports'}`
+          : '',
+        waiting.texts
+          ? `${String(waiting.texts)} written ${waiting.texts === 1 ? 'account' : 'accounts'}`
+          : '',
+        waiting.tip_links
+          ? `${String(waiting.tip_links)} ${waiting.tip_links === 1 ? 'link' : 'links'}`
+          : '',
+        waiting.list_entries
+          ? `${String(waiting.list_entries)} list ${waiting.list_entries === 1 ? 'entry' : 'entries'}`
+          : '',
+      ].filter(Boolean)
+    : [];
 
   return (
     <StaffPage
@@ -71,23 +88,61 @@ export function HomePage() {
     >
       {/* The mock-up's figures row: only what the waiting totals already say. */}
       {moderator && waiting ? (
-        <ul aria-label="Waiting now" className="flex flex-wrap gap-3">
-          {[
-            [waiting.reports, 'reports waiting'],
-            [waiting.tip_links, 'links waiting'],
-            [waiting.list_entries, 'list entries waiting'],
-          ].map(([n, what]) => (
-            <li
-              key={what}
-              className="min-w-[8.5rem] flex-1 rounded-card border border-line bg-surface px-3.5 py-3 sm:max-w-[11.25rem]"
-            >
-              <span className="block font-display text-[1.75rem] leading-none font-bold">{n}</span>
-              <span className="mt-1 block text-sm text-muted">{what}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="stats">
+          <div className="mini-stat">
+            <b>{waiting.reports}</b>
+            <span>reports waiting</span>
+          </div>
+          <div className="mini-stat">
+            <b>{waiting.tip_links}</b>
+            <span>tip links waiting</span>
+          </div>
+          <div className="mini-stat">
+            <b>{waiting.list_entries}</b>
+            <span>list entries waiting</span>
+          </div>
+        </div>
       ) : null}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="areas">
+        {moderator ? (
+          <Tile
+            title="Review"
+            links={[
+              {
+                to: '/moderate',
+                label: 'Reports queue',
+                n: waiting?.reports,
+                words: 'reports waiting for a moderator',
+              },
+              {
+                to: '/moderate/texts',
+                label: 'Written accounts',
+                n: waiting?.texts,
+                words: 'written accounts waiting to be checked',
+              },
+              {
+                to: '/lists/links',
+                label: 'Links',
+                n: waiting?.tip_links,
+                words: 'tip links waiting to be checked',
+              },
+              {
+                to: '/lists/review',
+                label: 'List entries',
+                n: waiting?.list_entries,
+                words: 'list entries waiting for review',
+              },
+            ]}
+          >
+            <p>
+              {waiting
+                ? waitingLine.length > 0
+                  ? `Work is waiting: ${waitingLine.join(', ')}.`
+                  : 'Nothing is waiting for review.'
+                : 'Reports, tip links and list entries wait here until a moderator decides.'}
+            </p>
+          </Tile>
+        ) : null}
         <Tile
           title="Your reports"
           links={[
@@ -95,7 +150,7 @@ export function HomePage() {
             { to: '/notifications', label: 'Email updates' },
           ]}
         >
-          <p>The reports you have filed, and the emails you have asked for about them.</p>
+          <p>Reports you filed while signed in, and how you hear about them.</p>
         </Tile>
         <Tile
           title="Your account"
@@ -106,56 +161,13 @@ export function HomePage() {
               : []),
           ]}
         >
-          <p>Your address, how you sign in, and what you may do here.</p>
+          <p>
+            Signed in as {me.email}. {rolesLabel(me.roles)}.
+          </p>
         </Tile>
-        {moderator ? (
-          <Tile
-            title="Review"
-            links={[
-              {
-                to: '/moderate',
-                label: 'Reports queue',
-                count: waiting?.reports ? (
-                  <Count
-                    value={waiting.reports}
-                    label={`, ${waitingWords('reports', waiting.reports)}`}
-                  />
-                ) : null,
-              },
-              {
-                to: '/lists/review',
-                label: 'List entries',
-                count: waiting?.list_entries ? (
-                  <Count
-                    value={waiting.list_entries}
-                    label={`, ${waitingWords('list_entries', waiting.list_entries)}`}
-                  />
-                ) : null,
-              },
-              {
-                to: '/lists/links',
-                label: 'Links',
-                count: waiting?.tip_links ? (
-                  <Count
-                    value={waiting.tip_links}
-                    label={`, ${waitingWords('tip_links', waiting.tip_links)}`}
-                  />
-                ) : null,
-              },
-            ]}
-          >
-            <p>
-              {waiting
-                ? total > 0
-                  ? 'Work is waiting for a moderator.'
-                  : 'Nothing is waiting for review.'
-                : 'Reports, tip links and list entries wait here until a moderator decides.'}
-            </p>
-          </Tile>
-        ) : null}
         {journalist ? (
           <Tile title="Journalist desk" links={[{ to: '/desk', label: 'Open the desk' }]}>
-            <p>The checked links you may read.</p>
+            <p>Checked links, written accounts and sources for vetted journalists.</p>
           </Tile>
         ) : null}
         {/* One card per organization: the listing and members pages are an
@@ -163,27 +175,20 @@ export function HomePage() {
             them to these cards. */}
         {organization
           ? me.memberships.map((m) => (
-              <Card key={m.organization_id} heading={m.name} className="gap-3 p-4">
-                <p className="text-ink-alt">
-                  You are its {m.role}. Reports your volunteers bring in, the links they use, and
-                  how the organization appears in the directory.
-                </p>
-                <ul className="flex flex-wrap gap-x-5">
+              <section className="area-card" key={m.organization_id}>
+                <h3>{m.name}</h3>
+                <p>You {m.role === 'manager' ? 'manage' : 'coordinate'} this organization.</p>
+                <ul>
                   <li>
-                    <Link to="/intake" className={LINK}>
-                      Filing for an organization
-                    </Link>
+                    <Link to="/intake">Intake</Link>
                   </li>
                   <li>
-                    <Link to="/intake/links" className={LINK}>
-                      Volunteer links
-                    </Link>
+                    <Link to="/intake/links">Volunteer links</Link>
                   </li>
                   <li>
                     <Link
                       to="/organizations/$id/listing"
                       params={{ id: String(m.organization_id) }}
-                      className={LINK}
                     >
                       Directory listing
                     </Link>
@@ -191,17 +196,13 @@ export function HomePage() {
                   {/* The server admits a manager of this organization only. */}
                   {m.role === 'manager' ? (
                     <li>
-                      <Link
-                        to="/access/orgs/$id"
-                        params={{ id: String(m.organization_id) }}
-                        className={LINK}
-                      >
+                      <Link to="/access/orgs/$id" params={{ id: String(m.organization_id) }}>
                         Members
                       </Link>
                     </li>
                   ) : null}
                 </ul>
-              </Card>
+              </section>
             ))
           : null}
         {admin ? (
@@ -213,7 +214,7 @@ export function HomePage() {
               { to: '/transparency-log', label: 'Transparency log' },
             ]}
           >
-            <p>Run the site: what it collects, how it looks, and the records it keeps.</p>
+            <p>Logbooks, settings and the public record.</p>
           </Tile>
         ) : null}
       </div>

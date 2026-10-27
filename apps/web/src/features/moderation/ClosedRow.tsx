@@ -1,20 +1,20 @@
 /**
- * A closed row on the report under moderation: its title, one line of what
- * is set, and one button naming what it does (Edit, Link, Clear, Ask, Look…).
+ * A closed row on the report under moderation, as the mock-up draws it
+ * (`closed()` in staff.py): a `.panel.closed` with its title, one line of
+ * what is set, and one button naming what it does (Edit, Link, Clear, Ask,
+ * Look…). Open, it is the same panel holding its form, with the mock-up's
+ * `.savebar` naming what Save saves.
  *
- * It is the setting panel (components/ui/setting-panel.tsx) with its own
- * button words, and it shares that panel's rule through `SettingPanels`:
- * ONE ROW OPEN AT A TIME, and opening another with something unsaved asks
- * first, so a moderator cannot leave two half-written. An open row saves
- * through the Save bar, which names it. A row with no `onSave` (asking for
+ * It shares the setting panels' rule through `SettingPanels`: ONE ROW OPEN AT
+ * A TIME, and opening another with something unsaved asks first, so a
+ * moderator cannot leave two half-written. A row with no `onSave` (asking for
  * evidence, whose dialogs record their own acts) opens with a Close instead.
  */
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Button } from '../../components/ui/button.tsx';
-import { Card } from '../../components/ui/card.tsx';
-import { SaveBar } from '../../components/ui/save-bar.tsx';
 import { useSettingPanels } from '../../components/ui/setting-panel.tsx';
+import { Btn } from '../../mockup/Btn.tsx';
+import { SaveBar } from '../../mockup/SaveBar.tsx';
 
 export interface ClosedRowProps {
   id: string;
@@ -66,43 +66,47 @@ export function ClosedRow({
     }
   };
 
+  if (isOpen) {
+    return (
+      <section className="panel" id={id}>
+        <h2>{title}</h2>
+        {children}
+        {onSave ? (
+          <SaveBar
+            what={title}
+            busy={saving}
+            saveLabel={saveLabel}
+            onSave={() => void save()}
+            onCancel={panels.close}
+          />
+        ) : (
+          <div className="acts">
+            <Btn sm flat aria-label={`Close ${title}`} onClick={panels.close}>
+              Close
+            </Btn>
+          </div>
+        )}
+      </section>
+    );
+  }
   return (
-    <Card variant="plain" heading={title} className={isOpen ? 'pb-2' : undefined}>
-      {isOpen ? (
-        <>
-          {children}
-          {onSave ? (
-            <SaveBar
-              name={title}
-              busy={saving}
-              saveLabel={saveLabel}
-              onSave={() => void save()}
-              onCancel={panels.close}
-            />
-          ) : (
-            <div>
-              <Button variant="secondary" aria-label={`Close ${title}`} onClick={panels.close}>
-                Close
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">{summary}</div>
-          {/* Named by the visible word first, then the row, as the setting panel's Edit is. */}
-          <Button
-            variant="secondary"
-            aria-label={`${action} ${title}`}
-            onClick={() => {
-              panels.open(id);
-            }}
-          >
-            {action}
-          </Button>
-        </div>
-      )}
-    </Card>
+    <section className="panel closed" id={id}>
+      <div className="closed-head">
+        <h2>{title}</h2>
+      </div>
+      {summary}
+      <div className="acts">
+        <Btn
+          sm
+          flat
+          onClick={() => {
+            panels.open(id);
+          }}
+        >
+          {action}
+        </Btn>
+      </div>
+    </section>
   );
 }
 

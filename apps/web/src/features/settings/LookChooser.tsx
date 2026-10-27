@@ -13,7 +13,7 @@ import type { Look } from '@reportlog/contracts';
 import { St } from '@/mockup/St.tsx';
 import { Field, FieldDescription } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { Select } from '@/mockup/FieldWired.tsx';
 import { BUILT_IN_CATALOGUE, namedLookFor, sameLook } from './looks.ts';
 import type { LookCatalogue } from './looks.ts';

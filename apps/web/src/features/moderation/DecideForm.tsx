@@ -4,7 +4,7 @@
  * row through the same call (`decideReport`).
  *
  * THE CHOICE COMES FIRST. Approve, Decline or Unclear for now, as three
- * choice cards; the reason the reporter is told appears under Decline, below
+ * of the mock-up's `.choice` rows; the reason the reporter is told appears under Decline, below
  * the answer just given, never above or around it.
  *
  * THE NOTE IS REQUIRED. The design drew it as optional; the server keeps
@@ -20,15 +20,54 @@ import {
 import type { QueueItem } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import { Alert } from '../../components/ui/alert.tsx';
-import { Button } from '../../components/ui/button.tsx';
-import { Field, FieldDescription, FieldError } from '../../components/ui/field.tsx';
-import { Input } from '../../components/ui/input.tsx';
-import { Label } from '../../components/ui/label.tsx';
-import { RadioGroup, RadioOption } from '../../components/ui/radio-group.tsx';
-import { Select } from '../../components/ui/select.tsx';
-import { Textarea } from '../../components/ui/textarea.tsx';
+import type { ComponentProps, ReactNode } from 'react';
+import { Btn } from '../../mockup/Btn.tsx';
+import { Choice, Choices } from '../../mockup/Choices.tsx';
+import { Field, FieldDescription, Input, Label, Select, Textarea } from '../../mockup/Form.tsx';
+import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
+
+/** The mock-up's labelled controls, one line each. */
+function SelectField({
+  label,
+  help,
+  children,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'select'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Select {...rest}>{children}</Select>
+    </Field>
+  );
+}
+function TextField({
+  label,
+  help,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'input'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Input {...rest} />
+    </Field>
+  );
+}
+function AreaField({
+  label,
+  help,
+  ...rest
+}: { label: ReactNode; help?: ReactNode } & ComponentProps<'textarea'>) {
+  return (
+    <Field>
+      <Label>{label}</Label>
+      {help ? <FieldDescription>{help}</FieldDescription> : null}
+      <Textarea {...rest} />
+    </Field>
+  );
+}
 
 const WHY_MIN = 10;
 const WHY_MAX = 500;
@@ -80,6 +119,8 @@ export function DecideForm({
   onDirty,
   onCancel,
   focusOnOpen = false,
+  title,
+  bare = false,
 }: {
   report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written'>;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
@@ -91,6 +132,10 @@ export function DecideForm({
   onCancel?: () => void;
   /** Put focus on the first choice when the form appears (a queue row's Decide here). */
   focusOnOpen?: boolean;
+  /** A heading for the panel, on the report page; a queue row has none. */
+  title?: string;
+  /** Without the panel's box, for a form that sits inside a dialog already. */
+  bare?: boolean;
 }) {
   const qc = useQueryClient();
   const id = useId();
@@ -115,7 +160,7 @@ export function DecideForm({
 
   useEffect(() => {
     if (!focusOnOpen) return;
-    choiceRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
+    choiceRef.current?.querySelector<HTMLElement>('input[type="radio"]')?.focus();
   }, [focusOnOpen]);
 
   // Approving a report that holds a written account or link nobody has
@@ -194,7 +239,7 @@ export function DecideForm({
     if (note.trim().length > 2000) found.note = 'Keep the note under 2000 characters.';
     setProblems(found);
     if (found.choice) {
-      choiceRef.current?.querySelector<HTMLElement>('[role="radio"]')?.focus();
+      choiceRef.current?.querySelector<HTMLElement>('input[type="radio"]')?.focus();
       return;
     }
     if (found.reason) {
@@ -219,79 +264,80 @@ export function DecideForm({
   return (
     <form
       aria-label={`Decide ${report.public_ref}`}
-      className="flex flex-col gap-4"
+      className={bare ? 'col' : 'panel'}
       noValidate
       onSubmit={(e) => {
         e.preventDefault();
         submit();
       }}
     >
-      <Field>
-        <Label>Your decision</Label>
-        <RadioGroup
-          ref={choiceRef}
-          value={choice}
-          onValueChange={(v) => {
-            setChoice(v as Decision);
-            setProblems((p) => ({ ...p, choice: undefined }));
-          }}
-          aria-invalid={problems.choice ? true : undefined}
-        >
-          <RadioOption
-            id={`${id}-valid`}
-            value="valid"
-            label="Approve"
-            hint="Publishes the text. Files only if the reporter allowed it."
-          />
-          <RadioOption
-            id={`${id}-invalid`}
-            value="invalid"
-            label="Decline"
-            hint="The reporter is told one reason from the list."
-          />
-          <RadioOption
-            id={`${id}-unknown`}
-            value="unknown"
-            label="Unclear for now"
-            hint="Stays out of the public archive; you or another moderator decide later."
-          />
-        </RadioGroup>
-        <FieldError>{problems.choice}</FieldError>
-      </Field>
+      {title ? <h2>{title}</h2> : null}
+      <div ref={choiceRef} role="radiogroup" aria-labelledby={`${id}-decision`}>
+        <span className="lbl" id={`${id}-decision`}>
+          Your decision
+        </span>
+        <Choices>
+          {(
+            [
+              ['valid', 'Approve'],
+              ['invalid', 'Decline'],
+              ['unknown', 'Unclear for now'],
+            ] as const
+          ).map(([v, label]) => (
+            <Choice
+              key={v}
+              name={`${id}-decision`}
+              value={v}
+              checked={choice === v}
+              onChange={() => {
+                setChoice(v);
+                setProblems((p) => ({ ...p, choice: undefined }));
+              }}
+            >
+              {label}
+            </Choice>
+          ))}
+        </Choices>
+        <Err>{problems.choice}</Err>
+      </div>
       {choice === 'invalid' ? (
-        <Field>
-          <Label>The reason the reporter is told</Label>
-          <FieldDescription>
-            They are emailed this reason and a link to the terms, if their address can still be
-            read. They are never sent what you write below.
-          </FieldDescription>
-          <Select
-            ref={reasonRef}
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-              setProblems((p) => ({ ...p, reason: undefined }));
-            }}
-          >
-            <option value="">Choose a reason</option>
-            {REJECTION_REASONS.map((x) => (
-              <option key={x.code} value={x.code}>
-                {x.label}
-              </option>
-            ))}
-          </Select>
-          <FieldError>{problems.reason}</FieldError>
-        </Field>
+        <>
+          <Field controlId={`${id}-reason`}>
+            <Label>The reason the reporter is told</Label>
+            <FieldDescription>
+              They are emailed this reason and a link to the terms, if their address can still be
+              read. They are never sent what you write below.
+            </FieldDescription>
+            <select
+              ref={reasonRef}
+              id={`${id}-reason`}
+              className="sel"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                setProblems((p) => ({ ...p, reason: undefined }));
+              }}
+            >
+              <option value="">Choose a reason</option>
+              {REJECTION_REASONS.map((x) => (
+                <option key={x.code} value={x.code}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Err>{problems.reason}</Err>
+        </>
       ) : null}
       {needsWritten ? (
-        <fieldset className="flex flex-col gap-4 rounded-card border border-line p-3">
-          <legend className="label-face text-sm">Written accounts and links</legend>
-          <p className="text-sm text-ink-alt">
+        <div className="panel quiet" role="group" aria-labelledby={`${id}-written`}>
+          <h2 id={`${id}-written`}>Written accounts and links</h2>
+          <p className="sub">
             This report holds words or links nobody has decided yet. Decide each one, with a reason.
             Open them on the report page first if you need to read them.
           </p>
           {panel.isPending ? <p role="status">Reading what the report holds…</p> : null}
-          {panel.isError ? <Alert tone="serious">{panel.error.message}</Alert> : null}
+          {panel.isError ? <Problem>{panel.error.message}</Problem> : null}
           {undecided.map((u) => {
             const c = choiceOf(u.ref);
             // A link keeps its own three (a link is not prose). A written
@@ -313,80 +359,72 @@ export function DecideForm({
               ['illegal', 'Illegal: erase it now'],
             ];
             return (
-              <div key={u.ref} className="flex flex-col gap-3">
-                <Field>
-                  <Label>{`${u.name}: your decision`}</Label>
-                  <Select
-                    value={c.outcome}
+              <div key={u.ref} className="col">
+                <SelectField
+                  label={`${u.name}: your decision`}
+                  value={c.outcome}
+                  onChange={(e) => {
+                    setChoiceOf(u.ref, { outcome: e.target.value });
+                  }}
+                >
+                  <option value="">Choose one</option>
+                  {options.map(([v, label]) => (
+                    <option key={v} value={v}>
+                      {label}
+                    </option>
+                  ))}
+                </SelectField>
+                {c.outcome === 'illegal' ? (
+                  <SelectField
+                    label="Why it is illegal"
+                    value={c.reason}
                     onChange={(e) => {
-                      setChoiceOf(u.ref, { outcome: e.target.value });
+                      setChoiceOf(u.ref, { reason: e.target.value });
                     }}
                   >
                     <option value="">Choose one</option>
-                    {options.map(([v, label]) => (
-                      <option key={v} value={v}>
-                        {label}
+                    {TEXT_ERASE_REASONS.filter(
+                      (r) => u.name !== 'Link' || r !== 'personal-data',
+                    ).map((r) => (
+                      <option key={r} value={r}>
+                        {ERASE_WORDS[r]}
                       </option>
                     ))}
-                  </Select>
-                </Field>
-                {c.outcome === 'illegal' ? (
-                  <Field>
-                    <Label>Why it is illegal</Label>
-                    <Select
-                      value={c.reason}
-                      onChange={(e) => {
-                        setChoiceOf(u.ref, { reason: e.target.value });
-                      }}
-                    >
-                      <option value="">Choose one</option>
-                      {TEXT_ERASE_REASONS.filter(
-                        (r) => u.name !== 'Link' || r !== 'personal-data',
-                      ).map((r) => (
-                        <option key={r} value={r}>
-                          {ERASE_WORDS[r]}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
+                  </SelectField>
                 ) : null}
                 {c.outcome === 'redacted' ? (
-                  <Field>
-                    <Label>{`${u.name}: note for journalists`}</Label>
-                    <FieldDescription>
-                      Write it in your own words. Put anything you quote in quotation marks.
-                    </FieldDescription>
-                    <Textarea
-                      rows={4}
-                      value={c.note}
-                      onChange={(e) => {
-                        setChoiceOf(u.ref, { note: e.target.value });
-                      }}
-                    />
-                  </Field>
-                ) : null}
-                <Field>
-                  <Label>{`${u.name}: why (for the record)`}</Label>
-                  <FieldDescription>10 to 500 characters. Only staff can read it.</FieldDescription>
-                  <Input
-                    value={c.why}
-                    maxLength={WHY_MAX}
+                  <AreaField
+                    label={`${u.name}: note for journalists`}
+                    help="Write it in your own words. Put anything you quote in quotation marks."
+                    rows={4}
+                    value={c.note}
                     onChange={(e) => {
-                      setChoiceOf(u.ref, { why: e.target.value });
+                      setChoiceOf(u.ref, { note: e.target.value });
                     }}
                   />
-                </Field>
+                ) : null}
+                <TextField
+                  label={`${u.name}: why (for the record)`}
+                  help="10 to 500 characters. Only staff can read it."
+                  value={c.why}
+                  maxLength={WHY_MAX}
+                  onChange={(e) => {
+                    setChoiceOf(u.ref, { why: e.target.value });
+                  }}
+                />
               </div>
             );
           })}
-          <FieldError>{problems.written}</FieldError>
-        </fieldset>
+          <Err>{problems.written}</Err>
+        </div>
       ) : null}
-      <Field>
-        <Label optional>Note for the record (never sent)</Label>
+      <Field controlId={`${id}-note`}>
+        <Label>Note for the record (never sent)</Label>
         <FieldDescription>Kept on the record with your name. Not shown publicly.</FieldDescription>
-        <Textarea
+        <textarea
           ref={noteRef}
+          id={`${id}-note`}
+          className="textarea"
           rows={3}
           value={note}
           maxLength={2000}
@@ -395,17 +433,17 @@ export function DecideForm({
             setProblems((p) => ({ ...p, note: undefined }));
           }}
         />
-        <FieldError>{problems.note}</FieldError>
       </Field>
-      {decide.isError ? <Alert tone="serious">{decide.error.message}</Alert> : null}
-      <div className="flex flex-col gap-2">
-        <Button type="submit" size="lg" block busy={decide.isPending} busyLabel="Recording…">
-          Record the decision
-        </Button>
+      <Err>{problems.note}</Err>
+      {decide.isError ? <Problem>{decide.error.message}</Problem> : null}
+      <div className="acts">
+        <Btn sm flat look="ink" type="submit" disabled={decide.isPending}>
+          {decide.isPending ? 'Recording…' : 'Record the decision'}
+        </Btn>
         {onCancel ? (
-          <Button type="button" variant="quiet" className="self-end" onClick={onCancel}>
+          <Btn sm flat look="ghost" onClick={onCancel}>
             Cancel
-          </Button>
+          </Btn>
         ) : null}
       </div>
     </form>

@@ -30,7 +30,7 @@ import { Field, FieldDescription, FieldError } from '@/mockup/FieldWired.tsx';
 import { Input } from '@/mockup/FieldWired.tsx';
 import { Label } from '@/mockup/FieldWired.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { RadioGroup, RadioOption } from '@/mockup/Choices.tsx';
+import { RadioGroup, RadioOption } from '@/mockup/ChoicesWired.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
 import { LimitsPanel } from './LimitsPanel.tsx';
