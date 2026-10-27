@@ -766,3 +766,9 @@ body.light .follow,.scope-light .follow{background:var(--p-chrome);color:#fff}
 /* ---------- a dialog that is really modal (the mock-up draws .dlg inline) ---------- */
 .dlg-scrim{position:fixed;inset:0;z-index:90;background:rgba(10,15,21,.6)}
 .dlg.modal{position:fixed;z-index:91;top:50%;left:50%;transform:translate(-50%,-50%);width:min(520px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:0}
+/* a pager whose pages are buttons (a list that pages in place), dressed as .pager a */
+.pager button{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 10px;border-radius:var(--rl-radius-sm);border:2px solid var(--rl-border);background:transparent;color:inherit;cursor:pointer;font-family:var(--rl-font-mono);font-size:.85rem}
+/* .seg-filter whose choices are buttons (pressed = in force), dressed as .seg-filter a */
+.seg-filter button{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1.5px solid var(--rl-border);border-radius:999px;font-family:inherit;font-weight:600;font-size:.88rem;background:var(--rl-surface);color:inherit;cursor:pointer}
+.seg-filter button[aria-pressed="true"]{background:var(--rl-text);color:var(--rl-background);border-color:var(--rl-text)}
+.seg-filter button[aria-pressed="true"] .n{background:var(--rl-background);color:var(--rl-text)}
