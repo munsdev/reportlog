@@ -7,14 +7,16 @@
  * of the installed look packs, which are converted here from the packs' own
  * format 2 words to the shape the script reads.
  *
- * Reads the same site answer every page reads, so it is quiet on a door
- * (`useSite` is off there) and follows a save on the Look screen, which
- * refetches the site.
+ * Reads the same site answer every page reads, and follows a save on the
+ * Look screen, which refetches the site. On the lock screen and a door, where
+ * the site is not asked, the password check's look stands in.
  */
 import { headerImagePath } from '@reportlog/contracts';
 import type { KitPalette, KitTheme, LookKit, LookOptions } from '@reportlog/contracts';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useSite } from '@/components/ui/site.tsx';
+import { siteStatusQuery } from '@/features/identity/gateMode.ts';
 import { useKit } from '@/features/looks/header-background/kits.ts';
 
 interface ScriptPalette {
@@ -127,11 +129,38 @@ export function scriptLook(palette: string, theme: string, o: LookOptions | unde
 export function SiteLookScript() {
   const site = useSite();
   const look = site.data?.look;
+  // On the lock screen and a door the site is not asked; the password check
+  // carries the palette and theme instead (decision 60), so they wear it too.
+  const status = useQuery(siteStatusQuery);
+  const painted = look ?? status.data?.look;
   const { packs } = useKit(look?.kits);
-  const key = JSON.stringify([look?.palette, look?.theme, look?.options, packs]);
+  const key = JSON.stringify([painted?.palette, painted?.theme, look?.options, packs]);
   useEffect(() => {
-    if (!look || !window.elSetLook) return;
-    window.elSetLook(scriptLook(look.palette, look.theme, look.options), packs.map(scriptPack));
+    if (!painted || !window.elSetLook) return;
+    window.elSetLook(
+      scriptLook(painted.palette, painted.theme, look?.options),
+      packs.map(scriptPack),
+    );
+    // `key` stands for everything read above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return null;
+}
+
+/**
+ * The same, for the password screen, which is drawn outside the router and
+ * may not ask for the site: only the palette and theme the password check
+ * carries, with the built-in kit (the Civic palettes and Poster are painted
+ * by the page script, not by looks.gen.css alone).
+ */
+export function LockLookScript() {
+  const status = useQuery(siteStatusQuery);
+  const painted = status.data?.look;
+  const { packs } = useKit(undefined);
+  const key = JSON.stringify([painted?.palette, painted?.theme, packs.length]);
+  useEffect(() => {
+    if (!painted || !window.elSetLook) return;
+    window.elSetLook(scriptLook(painted.palette, painted.theme, undefined), packs.map(scriptPack));
     // `key` stands for everything read above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);

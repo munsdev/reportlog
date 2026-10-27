@@ -31,6 +31,7 @@ import { Narrow } from '@/mockup/Narrow.tsx';
 import { Note } from '@/mockup/Note.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
 import { GateContext, siteStatusQuery } from './gateMode.ts';
+import { LockLookScript } from '../../mockup/siteLook.tsx';
 import { LockScreen } from './LockScreen.tsx';
 import { SetupWizard } from './SetupWizard.tsx';
 
@@ -182,13 +183,16 @@ export function SiteGate({
   }
   if (locked && !door) {
     return (
-      <LockScreen
-        site={status.data.site}
-        onUnlocked={async () => {
-          setDoorRefused(false);
-          await client.resetQueries();
-        }}
-      />
+      <>
+        <LockLookScript />
+        <LockScreen
+          site={status.data.site}
+          onUnlocked={async () => {
+            setDoorRefused(false);
+            await client.resetQueries();
+          }}
+        />
+      </>
     );
   }
   if (open && setup.isPending)
