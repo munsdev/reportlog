@@ -26,6 +26,7 @@ import {
   fieldType,
   formAsksEmail,
   isFieldKind,
+  isPublishedFreeText,
   LIMITED_KINDS,
   limitsOf,
   normalizeCondition,
@@ -111,6 +112,7 @@ function summaries(db: Db) {
     'logbooks.outside_access',
     'logbooks.email_required',
     'logbooks.email_optional',
+    'logbooks.accepts_notes',
     'logbooks.publish_by_terms',
     'logbooks.show_on_front',
     'logbooks.short_slug',
@@ -159,6 +161,9 @@ function present(row: SummaryRow): LogbookSummary {
     email_required: row.email_required,
     // NULL (every logbook that existed) is off (D21).
     email_optional: row.email_optional === true,
+    // NULL (every logbook that existed) is off: the attached note and link
+    // questions are not asked until an operator turns this on (N1).
+    accepts_notes: row.accepts_notes === true,
     // DERIVED, like asks_for_files: a question somebody types into or files
     // ask for an address; the operator's switch can only add one (E1).
     // Erasable text and links do not oblige an address by themselves (D8):
@@ -420,6 +425,7 @@ export async function updateDetails(
     blurb?: string | null | undefined;
     email_required?: boolean | undefined;
     email_optional?: boolean | undefined;
+    accepts_notes?: boolean | undefined;
     publish_by_terms?: boolean | undefined;
     show_on_front?: boolean | undefined;
     short_slug?: string | null | undefined;
@@ -431,6 +437,7 @@ export async function updateDetails(
     blurb?: string | null;
     email_required?: boolean;
     email_optional?: boolean;
+    accepts_notes?: boolean;
     publish_by_terms?: boolean;
     show_on_front?: boolean;
     short_slug?: string | null;
@@ -447,6 +454,9 @@ export async function updateDetails(
   // The optional card, likewise: never sealed, changes only what the next
   // reporter is shown.
   if (spec.email_optional !== undefined) set.email_optional = spec.email_optional;
+  // Whether the held questions are asked at all. A setting, not a question,
+  // so it may change after launch; reports already filed sealed what they held.
+  if (spec.accepts_notes !== undefined) set.accepts_notes = spec.accepts_notes;
   // The same, for publication: it changes what the next reporter is shown,
   // and every report already filed sealed the wording its reporter saw.
   if (spec.publish_by_terms !== undefined) set.publish_by_terms = spec.publish_by_terms;
@@ -942,6 +952,10 @@ export async function addField(db: Db, logbookId: number, spec: QuestionSpec): P
 
     const kind = spec.kind;
     if (!isFieldKind(kind)) refuse('kind');
+    // Nothing a reporter types freely is published: a logbook may ask only the
+    // held kinds. (Questions that already exist keep working; see updateField.)
+    if (isPublishedFreeText({ kind, settings: settingsFor(kind, spec.settings) }))
+      refuse('free-text');
     const label = checkLabel(spec.label);
     const key = spec.key?.trim() ? spec.key.trim() : keyify(label);
     if (!KEY_RE.test(key)) refuse('key');
@@ -1072,6 +1086,9 @@ export async function updateField(
     ) {
       refuse('launched-codes');
     }
+    // A place may not be turned into an open box; one that already is may be
+    // reworded (the Alert in the staff page says it stays published as typed).
+    if (isPublishedFreeText(next) && !isPublishedFreeText(current)) refuse('free-text');
     // A change to this question's choices could strand a later condition.
     checkForm(toDefinitions(all.map((f) => (f.id === fieldId ? next : f))));
 

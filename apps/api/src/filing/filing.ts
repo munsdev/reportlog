@@ -351,7 +351,11 @@ export async function stageSubmission(
 
   // The questions these answers are checked against, as a version. Sealed
   // at confirmation, so what is sealed is the form this person was asked.
-  const questions = await questionsFor(db, lb.id);
+  const allQuestions = await questionsFor(db, lb.id);
+  // Where the operator has not turned on attached notes (N1), the held
+  // questions are not asked: a value sent for one is refused below rather than
+  // dropped, and they do not make the form offer an address.
+  const questions = lb.accepts_notes ? allQuestions : allQuestions.filter((q) => !isHeld(q));
   // E1: derived from the questions, or the operator's switch (logbooks.ts).
   // Erasable text and links are NOT among the questions that oblige an
   // address (D8): the address is needed only when the reporter wrote
@@ -374,13 +378,20 @@ export async function stageSubmission(
     problems.push('Enter an email address we can reach you at.');
   // An address sent to a form that does not ask for one is not kept, and not
   // quietly dropped either: the page that sent it is not this form.
+  if (!lb.accepts_notes) {
+    const sent = allQuestions.filter((q) => isHeld(q) && !isEmptyValue(b.answers?.[q.key]));
+    if (sent.length)
+      problems.push(
+        'This logbook does not take an attached note or link. Reload the page and send it again.',
+      );
+  }
   if (!asksEmail && !optionalCard && email)
     problems.push(
       'This form does not ask for an email address. Reload the page and send it again.',
     );
   if (b.consent !== true) problems.push('Confirm the statement on the last card.');
 
-  const form = await formAsked(db, lb, questions, b.form);
+  const form = await formAsked(db, lb, allQuestions, b.form);
   const { answers, errors } = buildAnswers(questions, b.answers ?? {});
   problems.push(...answerRefusals(questions, b.answers ?? {}));
   problems.push(...errors.map((e) => `${e}.`));
@@ -745,3 +756,12 @@ async function recordSharing(
   if (!granted) return;
   await setPermission(trx, { threadId, permission: 'journalist_sharing', granted: true });
 }
+
+const isHeld = (q: { kind: string }) => q.kind === 'private_text' || q.kind === 'private_link';
+
+/** Nothing sent: absent, blank, or an empty list. */
+const isEmptyValue = (v: unknown): boolean =>
+  v === undefined ||
+  v === null ||
+  (typeof v === 'string' && v.trim() === '') ||
+  (Array.isArray(v) && v.every((x) => isEmptyValue(x)));

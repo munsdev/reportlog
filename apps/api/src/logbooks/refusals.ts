@@ -19,6 +19,8 @@ const SENTENCES = {
   slug: 'A web address may use lowercase letters, numbers and hyphens, and must start with a letter or number.',
   'slug-taken': 'Another logbook or list already uses that web address. Choose a different one.',
   'slug-reserved': 'That web address belongs to a page of the site. Choose a different one.',
+  'free-text':
+    'Free text on a logbook is an attached note that is never published. Use an attached note or link.',
   kind: 'That is not a kind of question this software can ask.',
   'setting-kind': 'That setting does not apply to this kind of question, so it is not kept.',
   label: 'Give the question some words, up to 160 characters.',

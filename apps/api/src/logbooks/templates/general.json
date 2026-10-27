@@ -8,10 +8,10 @@
   "questions": [
     {
       "key": "account",
-      "kind": "long_text",
+      "kind": "private_text",
       "label": "What happened?",
       "help": "In your own words. What you saw, who was involved, what happened next.",
-      "required": true,
+      "required": false,
       "filterable": false
     },
     {
@@ -30,7 +30,7 @@
     },
     {
       "key": "place",
-      "kind": "short_text",
+      "kind": "private_text",
       "label": "Where?",
       "help": "The place, the street, or as near as you can say.",
       "required": false,
@@ -54,7 +54,7 @@
     },
     {
       "key": "evidence_of",
-      "kind": "short_text",
+      "kind": "private_text",
       "label": "What is it of?",
       "help": "One line. 'Thirty seconds of the queue outside', or 'a photo of the notice on the door'.",
       "required": false,

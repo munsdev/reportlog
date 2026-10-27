@@ -42,6 +42,7 @@ const LB: LogbookDetail = {
   outside_access: 'closed',
   email_required: false,
   email_optional: false,
+  accepts_notes: false,
   asks_email: true,
   publish_by_terms: false,
   show_on_front: true,

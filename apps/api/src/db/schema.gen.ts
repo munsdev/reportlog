@@ -646,6 +646,7 @@ export interface LogbookPublication {
 }
 
 export interface Logbooks {
+  accepts_notes: boolean | null;
   blurb: string | null;
   closed_at: Timestamp | null;
   closes_at: Timestamp | null;

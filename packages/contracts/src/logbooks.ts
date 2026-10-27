@@ -122,6 +122,11 @@ export const LogbookSummary = z.object({
    */
   email_optional: z.boolean(),
   /**
+   * The operator's setting: reporters may attach a note or link (the held
+   * questions are asked). Off for every logbook until turned on (N1).
+   */
+  accepts_notes: z.boolean(),
+  /**
    * Publication is a condition of filing: the reporter is told, not asked,
    * and the report seals may_publish = true beside the terms' digest.
    * Changeable after launch; never sealed itself.
@@ -257,6 +262,8 @@ export const updateLogbook = defineRoute({
     email_required: z.boolean().optional(),
     /** Show the email card on a form that needs none, and let it be skipped (D8, D20). Changeable after launch. */
     email_optional: z.boolean().optional(),
+    /** Ask the attached note and link questions. Changeable after launch (N1). */
+    accepts_notes: z.boolean().optional(),
     /** Publication as a condition of filing rather than a question. Changeable after launch. */
     publish_by_terms: z.boolean().optional(),
     /** Show it on the front page while it is open. Changeable after launch. */
