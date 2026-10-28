@@ -50,6 +50,12 @@ bucket.
    `getent hosts reports.example.org` instead, which every machine has, or
    `sudo apt install dnsutils` to get `dig`. Either way you should see the
    server's address and nothing else.
+
+   If people will also type `www.` (or any other name), point that name here
+   too and list it in `SITE_ALIASES` in `/etc/reportlog/deploy.env`. Caddy
+   then gets it a certificate and sends it to the site's address. A name
+   that points here without being listed gets a TLS error, not the site.
+
 2. **Firewall.** In the Hetzner Cloud console, allow inbound 22, 80 and 443
    (443/udp too, for HTTP/3) and nothing else. PostgreSQL listens on no TCP
    port at all, so there is nothing else to protect, but a firewall at the
@@ -632,15 +638,16 @@ site and its certificate through Caddy, backups local and off-site, every
 timer and the last result of every job, unattended updates, disk space and
 the Node version. Each line says what to do.
 
-| Symptom           | Look at                                                                     |
-| ----------------- | --------------------------------------------------------------------------- |
-| The site is down  | `systemctl status reportlog-api caddy`, `journalctl -u reportlog-api -n 50` |
-| No certificate    | `journalctl -u caddy`: DNS not pointing here, or 80/443 closed              |
-| Mail not arriving | `sudo reportlog mail-test you@example.org`                                  |
-| Owner locked out  | `sudo reportlog reset-2fa <the owner's address>` (Two-factor login, above)  |
-| A job failed      | `journalctl -u reportlog-job@<name> -n 50`                                  |
-| An error, in code | Bugsink, if `ERROR_TRACKING_DSN` is set; otherwise the journal              |
-| Disk filling      | `du -sh /srv/reportlog/releases/* /var/backups/reportlog`                   |
+| Symptom           | Look at                                                                      |
+| ----------------- | ---------------------------------------------------------------------------- |
+| The site is down  | `systemctl status reportlog-api caddy`, `journalctl -u reportlog-api -n 50`  |
+| No certificate    | `journalctl -u caddy`: DNS not pointing here, or 80/443 closed               |
+| TLS error on www. | Add the name to `SITE_ALIASES` in `deploy.env`, then `sudo reportlog deploy` |
+| Mail not arriving | `sudo reportlog mail-test you@example.org`                                   |
+| Owner locked out  | `sudo reportlog reset-2fa <the owner's address>` (Two-factor login, above)   |
+| A job failed      | `journalctl -u reportlog-job@<name> -n 50`                                   |
+| An error, in code | Bugsink, if `ERROR_TRACKING_DSN` is set; otherwise the journal               |
+| Disk filling      | `du -sh /srv/reportlog/releases/* /var/backups/reportlog`                    |
 
 Logs never contain an IP address or a full URL: Caddy keeps no access log,
 and the API logs route patterns. Caddy does pass the visitor's address to the

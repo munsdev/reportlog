@@ -262,3 +262,87 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     expect(caddyOutput).not.toContain('c'.repeat(64));
   });
 });
+
+describe.skipIf(!hasCaddy)('deploy/caddy/aliases.caddy, in Caddy', () => {
+  const ALIASES = readFileSync(join(REPO, 'deploy/caddy/aliases.caddy'), 'utf8');
+
+  it('validates with real names, beside the site, as deploy/lib.sh renders them', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rl-caddy-aliases-'));
+    try {
+      const file = join(dir, 'Caddyfile');
+      writeFileSync(
+        file,
+        SHIPPED.replaceAll('@SITE_DOMAIN@', 'reports.example.org').replace(
+          '@ACME_EMAIL_LINE@',
+          '',
+        ) +
+          '\n' +
+          ALIASES.replace('@SITE_ALIASES@', 'www.reports.example.org, old.example.org').replace(
+            '@SITE_DOMAIN@',
+            'reports.example.org',
+          ),
+      );
+      execFileSync(CADDY, ['validate', '--adapter', 'caddyfile', '--config', file], {
+        stdio: 'pipe',
+        env: { ...process.env, HOME: dir, XDG_DATA_HOME: dir, XDG_CONFIG_HOME: dir },
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('sends every path on another name to the same path on the site, permanently', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'rl-caddy-aliases-'));
+    const [site, admin] = [await freePort(), await freePort()];
+    const file = join(dir, 'Caddyfile');
+    writeFileSync(
+      file,
+      `{\n\tadmin 127.0.0.1:${String(admin)}\n}\n\n` +
+        ALIASES.replace('@SITE_ALIASES@', `http://127.0.0.1:${String(site)}`).replace(
+          '@SITE_DOMAIN@',
+          'reports.example.org',
+        ),
+    );
+    let output = '';
+    const caddy = spawn(CADDY, ['run', '--adapter', 'caddyfile', '--config', file], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env, HOME: dir, XDG_DATA_HOME: dir, XDG_CONFIG_HOME: dir },
+    });
+    for (const stream of [caddy.stdout, caddy.stderr]) {
+      stream.on('data', (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+      });
+    }
+    try {
+      const get = (path: string) =>
+        fetch(`http://127.0.0.1:${String(site)}${path}`, {
+          redirect: 'manual',
+          headers: { 'x-forwarded-for': '203.0.113.88' },
+        });
+      let res: Response | undefined;
+      for (let i = 0; i < 50 && !res; i++) {
+        res = await get('/').catch(() => undefined);
+        if (!res) await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(res?.status).toBe(301);
+      expect(res?.headers.get('location')).toBe('https://reports.example.org/');
+
+      const token = 'd'.repeat(64);
+      const deep = await get(`/file/erase/${token}?from=email`);
+      expect(deep.status).toBe(301);
+      expect(deep.headers.get('location')).toBe(
+        `https://reports.example.org/file/erase/${token}?from=email`,
+      );
+      expect(deep.headers.get('strict-transport-security')).toContain('max-age=31536000');
+      expect(deep.headers.get('server')).toBeNull();
+
+      // No access log here either: neither the address nor the token.
+      await new Promise((r) => setTimeout(r, 300));
+      expect(output).not.toContain('203.0.113.88');
+      expect(output).not.toContain(token);
+    } finally {
+      caddy.kill();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

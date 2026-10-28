@@ -43,6 +43,9 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- `www.` (or any other name for the site) can be sent to the site's address: list it in
+  `SITE_ALIASES` in `/etc/reportlog/deploy.env` and deploy. Before, a name that pointed at the
+  server got no certificate, and anyone who typed it saw a TLS error.
 - Updates has a hidden button for test servers. Press the "Running ..." line eight times and
   "Update to test build" appears beside the update button (a refresh hides it again). It asks
   first, in capital letters, that this is a TEST BUILD that may break things, then installs the
