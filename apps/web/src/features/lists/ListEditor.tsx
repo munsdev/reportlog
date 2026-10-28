@@ -136,7 +136,8 @@ function Editor({ list }: { list: ListAdminDetail }) {
         The form is at <a href={`/list/${list.slug}`}>/list/{list.slug}</a>
       </p>
       <SettingPanels>
-        <div className="grid2 even">
+        {/* One panel per row: two columns of cards read badly (the owner, 28 Oct). */}
+        <div className="col">
           <Settings list={list} onSaved={refresh} />
           <CoverPanel
             kind="list"

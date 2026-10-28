@@ -95,7 +95,8 @@ function Editor({ lb }: { lb: LogbookDetail }) {
       <Downloads lb={lb} launched={launched} />
 
       <SettingPanels>
-        <div className="grid2 even">
+        {/* One panel per row: two columns of cards read badly (the owner, 28 Oct). */}
+        <div className="col">
           <Details lb={lb} refresh={refresh} />
           <CoverPanel
             kind="logbook"

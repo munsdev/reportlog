@@ -121,7 +121,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .menu-list a[aria-current="page"]{box-shadow:inset 6px 0 0 var(--rl-brand-on-deep);padding-left:20px}
 .menu-list.second a{font-size:1.05rem;font-weight:600;text-transform:none;min-height:48px;color:var(--on-chrome-muted)}
 .menu-foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center;border-top:1px solid var(--chrome-rule);padding-top:18px}
-@media (min-width:900px){.menu .wrap{grid-template-columns:1.4fr 1fr;grid-template-areas:"top top" "follow follow" "main second" "foot foot"}.menu-top{grid-area:top}.menu-main{grid-area:main}.menu-second{grid-area:second}.menu-foot{grid-area:foot}}
+@media (min-width:900px){.menu .wrap{grid-template-columns:1.4fr 1fr;grid-template-areas:"top top" "main second" "follow second" "foot foot"}.menu-top{grid-area:top}.menu-main{grid-area:main}.menu-second{grid-area:second}.menu-foot{grid-area:foot}}
 
 /* ---------- buttons ---------- */
 .btn{--bb:var(--rl-surface);text-transform:var(--btn-case,uppercase);--bf:var(--rl-text);display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;font-family:var(--rl-font-display);font-weight:700;font-stretch:var(--h-stretch);font-size:.95rem;letter-spacing:.07em;text-transform:uppercase;text-decoration:none;white-space:nowrap;color:var(--bf);background:var(--bb);border:var(--rl-line) solid var(--rl-border-main);border-radius:var(--rl-radius-btn);box-shadow:var(--rl-shadow-offset) var(--rl-shadow-offset) 0 var(--rl-shadow-color);cursor:pointer;transition:transform .08s ease,box-shadow .08s ease,background .13s ease}
@@ -131,6 +131,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .btn.go:hover{--bb:var(--rl-action-hover)}
 .btn.ink{--bb:var(--rl-text);--bf:var(--rl-background)}
 .btn.ghost{--bb:transparent;box-shadow:none}
+/* The staff accent: signed-in staff ways in (Your dashboard). A muted violet
+   that holds white text (5.4:1) and stands off the dark menu and the paper. */
+.btn.staff{--bb:var(--rl-staff,#7458c2);--bf:#fff;border-color:var(--rl-staff,#7458c2)}
+.btn.staff:hover{--bb:var(--rl-staff-hover,#644aae)}
 .btn.ghost:hover{transform:none;background:color-mix(in srgb,var(--rl-text) 8%,transparent)}
 .btn.flat{box-shadow:none}
 .btn.flat:hover{transform:none}
@@ -788,9 +792,9 @@ body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
 [tabindex="-1"]:focus-visible{outline:none}
 /* Port (27 Oct): the signed-in person's way to the dashboard, at the top of the menu,
    and the label over their own links in the second list. */
-.menu-dash{justify-self:start;gap:10px}
+.menu-dash{gap:10px}
 .menu-list .menu-sep{margin-top:14px;padding:0 14px;font-family:var(--rl-font-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--on-chrome-muted)}
-@media (min-width:900px){.menu .wrap:has(> .menu-dash){grid-template-areas:"top top" "dash dash" "follow follow" "main second" "foot foot"}.menu-dash{grid-area:dash}}
+
 /* Port (27 Oct): sidebar sections fold under their headings. */
 .sb summary{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 10px 0 0;cursor:pointer;list-style:none}
 .sb summary::-webkit-details-marker{display:none}
