@@ -108,7 +108,17 @@ export const listOpenLists = defineRoute({
   path: '/api/lists',
   summary: 'The lists taking entries that anybody past the site password may see.',
   response: z.object({
-    lists: z.array(z.object({ slug: z.string(), title: z.string(), blurb: z.string().nullable() })),
+    lists: z.array(
+      z.object({
+        slug: z.string(),
+        title: z.string(),
+        blurb: z.string().nullable(),
+        /** Shown on Get involved. */
+        on_get_involved: z.boolean(),
+        /** The site's contact form: the footer, the menu, About and the terms link to it. */
+        is_contact: z.boolean(),
+      }),
+    ),
   }),
 });
 
@@ -218,6 +228,10 @@ export const ListDetail = z.object({
   write_back: z.boolean(),
   /** Whether the front page advertises it while it is open. */
   show_on_front: z.boolean(),
+  /** Whether Get involved shows it while it is open. */
+  on_get_involved: z.boolean(),
+  /** Whether it is the site's contact form (one list at most). */
+  is_contact: z.boolean(),
   notify: z.boolean(),
   notify_email: z.string().nullable(),
   notify_pending_email: z.string().nullable(),
@@ -351,6 +365,8 @@ export const updateList = defineRoute({
     email_mode: z.string().optional(),
     write_back: z.boolean().optional(),
     show_on_front: z.boolean().optional(),
+    on_get_involved: z.boolean().optional(),
+    is_contact: z.boolean().optional(),
     notify: z.boolean().optional(),
     /** Naming an address other than the admin one sends it a link first. */
     notify_email: z.string().nullable().optional(),

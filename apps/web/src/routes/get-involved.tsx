@@ -5,12 +5,11 @@
  * anybody (`/api/lists`), so the page promises nothing the site does not
  * run: no list open, no card, only the sharing section.
  */
-import { listOpenLists } from '@reportlog/contracts';
+import { openListsQuery } from '../features/lists/contact.ts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { FollowBand } from '../features/follow/FollowBand.tsx';
-import { call } from '../lib/api.ts';
 import { MockPage } from '../mockup/Band.tsx';
 import { CopyBox } from '../mockup/CopyBox.tsx';
 import { SecHead } from '../mockup/SecHead.tsx';
@@ -23,12 +22,11 @@ export const Route = createFileRoute('/get-involved')({
 
 function GetInvolvedPage() {
   const site = plainSiteName(useSite().data);
-  const lists = useQuery({
-    queryKey: ['open-lists'],
-    queryFn: ({ signal }) => call(listOpenLists, { signal }),
-  });
+  const lists = useQuery(openListsQuery);
   const address = typeof window === 'undefined' ? '' : window.location.origin;
-  const rows = lists.data?.lists ?? [];
+  // Only the lists marked for this page: a contact form or a tip list is
+  // not a way to help (Front page and pages, "Where each list appears").
+  const rows = (lists.data?.lists ?? []).filter((l) => l.on_get_involved);
   useBodyClass('dark');
   usePageTitle('Get involved');
   return (

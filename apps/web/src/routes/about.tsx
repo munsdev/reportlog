@@ -5,6 +5,7 @@
  * The page is the mock-up's about.html: a band, the text, and cards to what
  * comes next.
  */
+import { useContactList } from '../features/lists/contact.ts';
 import { hasAdminAuthority } from '@reportlog/access';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
@@ -26,6 +27,8 @@ function AboutPage() {
   // The contact wording itself, where the card used to send people to find
   // it ("Who to write to", which read as a sentence that stopped).
   const contact = site?.copy.contact_users ?? '';
+  // The site's contact form, when one is marked and open (lists/contact.ts).
+  const form = useContactList();
   useBodyClass('light');
   return (
     <MockPage>
@@ -46,18 +49,24 @@ function AboutPage() {
                 How to help
               </Link>
             </Card>
-            {contact ? (
+            {contact || form ? (
               <Card title="Contact" plain>
-                <p>For questions about the project or a report you filed:</p>
+                <p>For questions about the project or a report you filed{contact ? ':' : '.'}</p>
                 <CopyText slot="contact_users" />
+                {form ? (
+                  <Link className="btn sm flat" to="/list/$slug" params={{ slug: form.slug }}>
+                    Write to us
+                  </Link>
+                ) : null}
               </Card>
             ) : admin ? (
               // Nothing written yet: visitors see no card that says nothing,
               // and an administrator is told what fills it.
               <Card title="Contact" plain>
                 <p className="muted">
-                  Visitors see no contact card until one is written. Choose Edit, then “Edit this
-                  page’s words”, and fill in the contact for people who use this site.
+                  Visitors see no contact card yet. Mark a list as the contact form on Front page
+                  and pages, or choose Edit, then “Edit this page’s words”, and write the contact
+                  for people who use this site.
                 </p>
               </Card>
             ) : null}

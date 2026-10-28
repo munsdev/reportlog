@@ -9,6 +9,7 @@
  * for a moderator), the person's own pages, "Report a bug on this page" for
  * those the tracker admits, and Sign out.
  */
+import { useContactList } from '@/features/lists/contact.ts';
 import { DIRECTORY_NAME, SOCIAL_RULES } from '@reportlog/contracts';
 import type { MenuWaiting } from '@reportlog/contracts';
 import { Link, useMatches, useNavigate } from '@tanstack/react-router';
@@ -64,6 +65,7 @@ export function SiteMenu({
   onChoose: () => void;
 }) {
   const { links, name } = useFollow('menu');
+  const contact = useContactList();
   const navigate = useNavigate();
   const out = useSignOut();
   const routeId = useMatches().at(-1)?.routeId;
@@ -139,6 +141,13 @@ export function SiteMenu({
         </nav>
         <nav className="menu-second" aria-label="More">
           <ul className="menu-list second">
+            {contact ? (
+              <li>
+                <Link to="/list/$slug" params={{ slug: contact.slug }} onClick={onChoose}>
+                  Contact
+                </Link>
+              </li>
+            ) : null}
             <li>
               <Link to="/how" onClick={onChoose} {...here('/how')}>
                 How it works

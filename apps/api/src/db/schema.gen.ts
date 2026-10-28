@@ -581,9 +581,11 @@ export interface Lists {
   created_at: Generated<Timestamp>;
   email_mode: Generated<string>;
   id: Generated<number>;
+  is_contact: Generated<boolean>;
   notify: Generated<boolean>;
   notify_email: string | null;
   notify_pending_email: string | null;
+  on_get_involved: Generated<boolean>;
   opens_at: Timestamp | null;
   outside_access: Generated<string>;
   show_on_front: Generated<boolean>;

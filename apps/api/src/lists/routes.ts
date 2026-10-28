@@ -245,6 +245,8 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
       slug: l.slug,
       title: l.title,
       blurb: l.blurb,
+      on_get_involved: l.on_get_involved,
+      is_contact: l.is_contact,
     })),
   }));
 

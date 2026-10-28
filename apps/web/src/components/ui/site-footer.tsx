@@ -18,6 +18,7 @@
  * On a door `useSite` asks nothing, so both are simply absent there, and so
  * is Sign in, which a door may not reach.
  */
+import { useContactList } from '@/features/lists/contact.ts';
 import {
   DIRECTORY_NAME,
   SOCIAL_RULES,
@@ -48,6 +49,7 @@ export function SiteFooter() {
   const follow = useFollow('footer');
   const site = useSite().data;
   const door = useGateMode() === 'door';
+  const contact = useContactList();
   const version = versionLine(site?.version);
   return (
     <footer className="site-foot">
@@ -66,6 +68,14 @@ export function SiteFooter() {
             <Link to="/journalists" hash="press">
               Press
             </Link>
+            {contact ? (
+              <>
+                <br />
+                <Link to="/list/$slug" params={{ slug: contact.slug }}>
+                  Contact
+                </Link>
+              </>
+            ) : null}
           </div>
           <div>
             <h4>Using the site</h4>
