@@ -324,11 +324,11 @@ test('two on one report: each sees the other, and a stale decision is refused, n
   expect(decided.ok(), await decided.text()).toBe(true);
   await admin.dispose();
 
-  await decideOnReportPage(page, 'Decline', 'Decided second, without knowing.');
-  // A decline needs its reason first; the refusal is the server's, after it.
-  const phone = (page.viewportSize()?.width ?? 1280) < 1024;
-  const form = phone ? page.getByRole('dialog') : page.getByRole('region', { name: 'Decide' });
+  // The page's own Decide form, beside the report on a desktop and under it on a phone.
+  const form = page.getByRole('form', { name: /^Decide RL-/ }).first();
+  await form.getByRole('radio', { name: 'Decline' }).check();
   await form.getByLabel('The reason the reporter is told').selectOption('duplicate');
+  await form.getByLabel(/^Note for the record/).fill('Decided second, without knowing.');
   await form.getByRole('button', { name: 'Record the decision' }).click();
   await expect(
     form.getByText(/approved it after you opened it\. Nothing you sent was recorded\./),
