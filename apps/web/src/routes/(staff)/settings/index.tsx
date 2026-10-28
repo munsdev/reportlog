@@ -74,7 +74,8 @@ function SettingsHome() {
   return (
     <SettingsFrame>
       <StaffPage title="Site settings" lede="The switches that affect the whole site.">
-        <div className="grid2 even">
+        {/* One panel per row: two columns of cards read badly (the owner, 28 Oct). */}
+        <div className="col">
           <AcceptingReportsPanel />
           <PublishingPanel />
           <NamePanel />

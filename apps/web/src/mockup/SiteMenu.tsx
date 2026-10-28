@@ -95,20 +95,19 @@ export function SiteMenu({
             CLOSE
           </button>
         </div>
-        {/* Signed in: the way into the staff area, first and plain to see
-            (the owner's call, 27 Oct: it was buried in the second list). */}
-        {me ? (
-          <Link className="btn sm flat ghost menu-dash" style={GHOST} to="/home" onClick={onChoose}>
-            Your dashboard
-            {reports ? (
-              <Count
-                value={reports}
-                label={`, ${waitingWords('reports', reports)}`}
-                className="ml-3"
-              />
-            ) : null}
-          </Link>
-        ) : null}
+        <nav className="menu-main" aria-label="Menu">
+          <ul className="menu-list">
+            <li>{mainAction}</li>
+            {MAIN_LINKS.map((l) => (
+              <li key={l.to}>
+                <Link to={l.to} onClick={onChoose} {...here(l.to)}>
+                  {l.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {/* The socials under the main links (the owner's call, 28 Oct). */}
         {links.length ? (
           <div className="menu-follow" aria-label={`Follow ${name}`}>
             {links.map((l) => (
@@ -124,21 +123,7 @@ export function SiteMenu({
               </a>
             ))}
           </div>
-        ) : (
-          <div className="menu-follow" />
-        )}
-        <nav className="menu-main" aria-label="Menu">
-          <ul className="menu-list">
-            <li>{mainAction}</li>
-            {MAIN_LINKS.map((l) => (
-              <li key={l.to}>
-                <Link to={l.to} onClick={onChoose} {...here(l.to)}>
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
+        ) : null}
         <nav className="menu-second" aria-label="More">
           <ul className="menu-list second">
             {contact ? (
@@ -212,6 +197,19 @@ export function SiteMenu({
               <span className="mono" style={{ color: 'var(--on-chrome-muted)', fontSize: '.8rem' }}>
                 Signed in as {me.email}
               </span>
+              {/* The way into the staff area, beside Sign out, in the staff
+                  accent (the owner's call, 28 Oct): staff find their portal
+                  by its colour. */}
+              <Link className="btn sm flat staff menu-dash" to="/home" onClick={onChoose}>
+                Your dashboard
+                {reports ? (
+                  <Count
+                    value={reports}
+                    label={`, ${waitingWords('reports', reports)}`}
+                    className="ml-3"
+                  />
+                ) : null}
+              </Link>
               <button
                 className="btn sm flat ghost"
                 type="button"
