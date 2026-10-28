@@ -812,8 +812,8 @@ body.rl-look-editing .fab-dock,.rl-preview .fab-dock{display:none}
 .social-bar svg{width:20px;height:20px}
 .dock-menu-wrap{display:grid;justify-items:end;gap:8px}
 .dock-menu{display:grid;min-width:180px;padding:6px;border:2px solid #fff;border-radius:14px;background:#05080B;box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.dock-menu button{min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#fff;font:700 .9rem "Public Sans",system-ui,sans-serif;text-align:left;cursor:pointer}
-.dock-menu button:hover,.dock-menu button:focus-visible{background:#26313D}
+.dock-menu button,.dock-menu a{display:flex;align-items:center;min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#fff;font:700 .9rem "Public Sans",system-ui,sans-serif;text-align:left;text-decoration:none;cursor:pointer}
+.dock-menu button:hover,.dock-menu button:focus-visible,.dock-menu a:hover,.dock-menu a:focus-visible{background:#26313D}
 @media (max-width:599px){.fab-dock .dock-label{display:none}.fab-dock .lookfab{padding:0 12px}}
 /* The look editor on the site: a panel at the side of a desktop, a sheet at the foot of
    a phone; the other kind of screen is shown beside it in a frame (.le-stage). */
