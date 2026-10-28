@@ -314,7 +314,7 @@ function NotesRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<
     >
       <p className="muted">
         {lb.accepts_notes
-          ? 'Reporters are asked this logbook’s attached note and link questions. What they write is never published. A reporter who writes something is asked for an email address, so they can correct or erase it.'
+          ? 'Reporters are asked this logbook’s note and link questions. Moderators read what they write, and may share it with vetted journalists if the reporter agrees. A reporter who writes something is asked for an email address, so they can correct or erase it.'
           : 'Reporters are not asked for a note or a link, and nothing they type reaches this logbook. Its attached note and link questions, if it has any, are skipped.'}
       </p>
       <Check

@@ -141,18 +141,20 @@ export const FIELD_TYPES: readonly FieldTypeInfo[] = [
   // as typed, and every report that answered one is sealed that way.
   {
     id: 'private_text',
-    label: 'Text that is never published',
+    label: 'A note in their own words',
     description:
-      'Several paragraphs in their own words. Never published. Kept apart from ' +
-      'the report so it can be erased, and only a fingerprint of it is sealed.',
+      'Several paragraphs in their own words. Kept apart from the report so it ' +
+      'can be erased. Moderators read it, and may share what it says with vetted ' +
+      'journalists if the reporter agrees.',
     settings: { maxLength: 5000 },
   },
   {
     id: 'private_link',
-    label: 'Links that are never published',
+    label: 'Links to a post, photo or video',
     description:
-      'Up to three links to a post, photo or video. Never published. Kept apart ' +
-      'from the report so each can be erased, and only a fingerprint of each is sealed.',
+      'Up to three links. Kept apart from the report so each can be erased. ' +
+      'Moderators check them, and may share them with vetted journalists if the ' +
+      'reporter agrees.',
     settings: { maxValues: 1 },
   },
 ];
