@@ -14,6 +14,7 @@ describe('the team-member flag in the staff menu', () => {
       'Your dashboard',
       'My reports',
       'Email updates',
+      'Your account',
       'Guides',
     ]);
   });

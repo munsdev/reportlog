@@ -21,16 +21,17 @@ import { SiteGate } from '../src/features/identity/gate.tsx';
 import { mainAction } from '../src/features/nav/Menu.tsx';
 import { HeaderProgress } from '../src/features/nav/progress.tsx';
 import {
-  STAFF_AREAS,
+  ARRANGED_ENTRIES,
   STAFF_ENTRIES,
-  areaAt,
-  areasFor,
+  UNSORTED,
   entriesFor,
   entryAt,
-  groupsFor,
   inFrame,
+  sectionAt,
+  sectionsFor,
 } from '../src/features/staff-nav/entries.ts';
 import type { Viewer } from '../src/features/staff-nav/entries.ts';
+import { FOLDED, MENU } from '../src/features/staff-nav/menu.ts';
 import { Route as RootRoute } from '../src/routes/__root.tsx';
 import { DESK } from './look-fixture.ts';
 
@@ -38,61 +39,60 @@ const as = (role: Viewer['roles'][number] | 'user', tester = false): Viewer => (
   roles: role === 'user' ? [] : [role],
   tester,
 });
+/** Each section this person sees, by its heading, with its pages' labels. */
 const shape = (v: Viewer) =>
-  Object.fromEntries(areasFor(v).map((a) => [a.label, a.pages.map((p) => p.label)]));
-const others = (v: Viewer) => groupsFor(v).flatMap((g) => g.pages.map((p) => p.label));
-const YOU = ['Your dashboard', 'My reports', 'Email updates'];
+  Object.fromEntries(sectionsFor(v).map((s) => [s.label, s.pages.map((p) => p.label)]));
+const YOU = ['Your dashboard', 'My reports', 'Email updates', 'Your account'];
+const HEADINGS = (v: Viewer) => sectionsFor(v).map((s) => s.label);
 
-describe('who sees which staff area and page', () => {
-  it('somebody with no role and no flag sees no area, only their own pages', () => {
-    expect(areasFor(as('user'))).toEqual([]);
-    expect(others(as('user'))).toEqual(YOU);
+describe('who sees which section and page (menu.ts)', () => {
+  it('somebody with no role and no flag sees only their own pages', () => {
+    expect(shape(as('user'))).toEqual({ You: YOU });
   });
 
   it('a moderator sees Review without the administrator’s pages, and the guides', () => {
     expect(shape(as('moderator'))).toEqual({
+      You: YOU,
       Review: [
         'Reports queue',
         'Written accounts',
         'Links',
         'List entries',
-        'Files',
+        'Files waiting',
         'Illegal content notices',
         'Flood screen',
       ],
       Help: ['Guides'],
     });
-    expect(others(as('moderator'))).toEqual([...YOU, 'Signing in']);
   });
 
-  it('an administrator sees every area, without the owner’s pages', () => {
+  it('an administrator sees the five staff areas, without the owner’s pages', () => {
     const admin = shape(as('admin'));
-    expect(Object.keys(admin)).toEqual([
+    expect(HEADINGS(as('admin'))).toEqual([
+      'You',
       'Review',
       'Content',
-      'Site',
-      'Rules',
+      'Site settings',
       'People',
-      'Logs and system',
+      'Records and system',
       'Help',
     ]);
-    expect(admin.Content).toContain('Maps');
-    expect(admin.People).not.toContain('Journalist requests');
-    expect(admin.Rules).not.toContain('Journalist agreement');
-    expect(admin['Logs and system']).toEqual([
+    expect(admin['Site settings']?.[0]).toBe('Switches');
+    expect(admin['Site settings']).not.toContain('Import and export');
+    expect(admin.People).toEqual(['People', 'Organizations', 'Ownership']);
+    expect(admin['Records and system']).toEqual([
       'Transparency log',
-      'Who granted what',
       'Who opened protected data',
       'Updates',
     ]);
     expect(admin.Help).toEqual(['Guides', 'Feedback', 'Feedback queue']);
   });
 
-  it('the owner satisfies administrator, plus backups and vetting journalists', () => {
+  it('the owner satisfies administrator, plus backups, the bundle and vetting journalists', () => {
     const owner = shape(as('owner'));
-    expect(owner['Logs and system']).toContain('Backups and exports');
-    expect(owner.People).toContain('Journalist requests');
-    expect(owner.Rules).toContain('Journalist agreement');
+    expect(owner['Records and system']).toContain('Backups and exports');
+    expect(owner['Site settings']).toContain('Import and export');
+    expect(owner.People).toEqual(['People', 'Organizations', 'Journalists', 'Ownership']);
   });
 
   it('a screen for moderators alone is not shown to an administrator (admin is not moderator)', () => {
@@ -102,69 +102,57 @@ describe('who sees which staff area and page', () => {
     expect(entriesFor(as('admin'), modOnly)).toEqual([]);
   });
 
-  it('an Access Manager sees People without journalist requests, and feedback and guides', () => {
+  it('an Access Manager sees People, with no extra area for ownership, and feedback and guides', () => {
     expect(shape(as('access_manager'))).toEqual({
-      People: ['People and roles', 'Organizations', 'Testers', 'Who is doing what'],
-      'Logs and system': ['Who granted what'],
+      You: YOU,
+      People: ['People', 'Organizations', 'Ownership'],
       Help: ['Guides', 'Feedback'],
     });
   });
 
-  it('a journalist sees the desk and no area', () => {
-    expect(areasFor(as('journalist'))).toEqual([]);
-    expect(others(as('journalist'))).toEqual([
-      ...YOU,
-      'Signing in',
-      'Checked links',
-      'Written accounts',
-      'Sources',
-      'Your alerts',
-    ]);
+  it('a journalist sees the desk and no staff area', () => {
+    expect(shape(as('journalist'))).toEqual({
+      You: YOU,
+      'Journalist desk': ['Checked links', 'Written accounts', 'Sources', 'Your alerts'],
+    });
   });
 
-  it('the tester flag shows feedback, whatever the role, and not the testers page', () => {
-    expect(shape(as('user', true))).toEqual({ Help: ['Feedback'] });
+  it('the tester flag shows feedback, whatever the role', () => {
+    expect(shape(as('user', true))).toEqual({ You: YOU, Help: ['Feedback'] });
   });
 
-  it('an organization’s coordinator sees their own group, by membership', () => {
-    const coordinator = {
-      roles: [] as const,
+  it('volunteer links are offered to an organization’s managers, the only people they work for', () => {
+    const member = (role: string): Viewer => ({
+      roles: [],
       tester: false,
-      memberships: [{ role: 'coordinator' }],
-    };
-    expect(groupsFor(coordinator).map((g) => [g.label, g.pages.map((p) => p.label)])).toEqual([
-      ['You', YOU],
-      ['Your organization', ['Filing for an organization', 'Volunteer links']],
+      memberships: [{ role }],
+    });
+    expect(shape(member('coordinator'))['Your organization']).toEqual([
+      'Filing for an organization',
+    ]);
+    expect(shape(member('manager'))['Your organization']).toEqual([
+      'Filing for an organization',
+      'Volunteer links',
     ]);
   });
 
-  it('lists every staff screen once, and /maps for the first time', () => {
-    // The site password entry is an alias of /access and shares its address
-    // on purpose.
+  it('lists every staff screen once', () => {
     const keys = STAFF_ENTRIES.filter((e) => !e.alias).map((e) => `${e.to}#${e.hash ?? ''}`);
     expect(new Set(keys).size).toBe(keys.length);
-    // Only an alias may share an address with another entry.
     const real = STAFF_ENTRIES.filter((e) => !e.alias).map((e) => e.to);
     expect(new Set(real).size).toBe(real.length);
-    for (const path of [
-      '/access',
-      '/logbooks',
-      '/logbooks/pages',
-      '/home',
-      '/lists',
-      '/lists/review',
-      '/lists/links',
-      '/moderate',
-      '/moderate/settings',
-      '/transparency-log',
-      '/backups',
-      '/files',
-      '/files/settings',
-      '/maps',
-      '/feedback/testers',
-    ]) {
-      expect(STAFF_ENTRIES.map((e) => e.to)).toContain(path);
-    }
+  });
+
+  it('every page of the old arrangement is in the menu, folded into a page of it, or under one', () => {
+    // A line another workstream adds to entries.ts lands in UNSORTED; today
+    // there is none, so "Not sorted yet" is not drawn.
+    expect(UNSORTED).toEqual([]);
+    for (const e of ARRANGED_ENTRIES.filter((x) => !x.alias)) expect(entryAt(e.to)).not.toBeNull();
+  });
+
+  it('every folded page names a menu entry that exists', () => {
+    for (const into of Object.values(FOLDED))
+      expect(MENU.flatMap((s) => s.pages).map((p) => p.to)).toContain(into);
   });
 });
 
@@ -174,49 +162,61 @@ describe('which page an address is', () => {
     ['/moderate/', 'Reports queue'],
     ['/moderate/3f0e2a3c-1111-4b4b-8c8c-000000000000', 'Reports queue'],
     ['/moderate/flood', 'Flood screen'],
-    ['/moderate/settings', 'Moderation settings'],
+    ['/moderate/settings', 'Moderation rules'],
     ['/lists/review/12', 'List entries'],
     ['/lists/12', 'Lists'],
     ['/lists/links', 'Links'],
-    ['/files/RL-ABCD', 'Files'],
+    ['/files/RL-ABCD', 'Files waiting'],
+    ['/files/erase', 'Files waiting'],
     ['/files/settings', 'File limits'],
+    ['/files/logbooks/3', 'File limits'],
     ['/access/orgs/4', 'Organizations'],
-    ['/access/journalists/agreement', 'Journalist agreement'],
+    ['/access/journalists/agreement', 'Journalists'],
     ['/settings/look', 'Look'],
     ['/intake/7', 'Filing for an organization'],
+    ['/people/history', 'People'],
   ])('%s is %s', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
+  });
+
+  it.each([
+    ['/access', 'People'],
+    ['/access/roster', 'People'],
+    ['/access/audit', 'People'],
+    ['/feedback/testers', 'People'],
+    ['/access/security', 'Your account'],
+    ['/settings', 'Switches'],
+    ['/settings/development', 'Switches'],
+    ['/lists/search', 'Lists'],
+  ])('%s still opens, in the frame, as part of %s', (path, label) => {
+    expect(entryAt(path)?.label).toBe(label);
+    expect(inFrame(path)).toBe(true);
   });
 
   it.each(['/', '/board', '/access/sign-in', '/access/invitation/x'])(
     '%s is no staff page',
     (path) => {
       expect(entryAt(path)).toBeNull();
-      expect(areaAt(path)).toBeNull();
+      expect(sectionAt(path)).toBeNull();
+      expect(inFrame(path)).toBe(false);
     },
   );
 
   it.each([
     ['/home', 'Your dashboard'],
     ['/mine/abc', 'My reports'],
-    ['/access/security', 'Signing in'],
+    ['/account', 'Your account'],
   ])('%s is %s, in the frame for everybody', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
-    expect(areaAt(path)).toBeNull();
+    expect(sectionAt(path)?.id).toBe('you');
     expect(inFrame(path)).toBe(true);
   });
 
-  it('the settings overview is a page of the Site area, and the front page’s tab is the page for pages', () => {
-    expect(entryAt('/settings')?.label).toBe('Site settings');
-    expect(areaAt('/settings')?.id).toBe('site');
-    expect(inFrame('/settings')).toBe(true);
+  it('the front page’s tab is the page for pages', () => {
     expect(entryAt('/logbooks/front-page')?.label).toBe('Front page and pages');
-    expect(inFrame('/access/sign-in')).toBe(false);
   });
 
   it('an alias is never the page you are on', () => {
-    // No entry is an alias today (the access log has its own page); the rule
-    // is kept for the next second way to a page.
     const page = { to: '/moderate/settings' as const, label: 'Settings', for: ['admin'] as const };
     const alias = { ...page, hash: 'part', label: 'A part of it', alias: true };
     expect(entryAt('/moderate/settings', [alias, page])?.label).toBe('Settings');
@@ -224,9 +224,10 @@ describe('which page an address is', () => {
     expect(entryAt('/who-opened-what')?.label).toBe('Who opened protected data');
   });
 
-  it('every area page belongs to its area', () => {
-    for (const area of STAFF_AREAS)
-      for (const p of area.pages.filter((e) => !e.alias)) expect(areaAt(p.to)?.id).toBe(area.id);
+  it('every menu page belongs to its section', () => {
+    for (const section of MENU)
+      for (const p of section.pages.filter((e) => !e.alias))
+        expect(sectionAt(p.to)?.id).toBe(section.id);
   });
 });
 
@@ -539,10 +540,10 @@ describe('the menu on a desktop', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'MENU' }));
     const menu = siteMenu();
-    // One account page; a role holder's lands on its security part.
+    // One account page, the same for everybody; it links on to Signing in.
     expect(within(menu).getByRole('link', { name: 'Your account' })).toHaveAttribute(
       'href',
-      '/access/security',
+      '/account',
     );
     expect(within(menu).getByRole('link', { name: 'Your dashboard' })).toBeInTheDocument();
   });
@@ -566,10 +567,9 @@ describe('the staff area', () => {
       'You',
       'Review',
       'Content',
-      'Site',
-      'Rules',
+      'Site settings',
       'People',
-      'Logs and system',
+      'Records and system',
       'Help',
     ])
       expect(sectionOf(side, area)).toBeInTheDocument();
@@ -594,8 +594,8 @@ describe('the staff area', () => {
       '/',
     );
     expect(
-      within(banner).getByRole('link', { name: 'Your account, admin@example.org' }),
-    ).toHaveAttribute('href', '/access');
+      within(banner).getByRole('link', { name: 'Account, admin@example.org' }),
+    ).toHaveAttribute('href', '/account');
     // The public site menu is not drawn in the staff frame.
     expect(screen.queryByRole('dialog', { name: 'Site menu' })).toBeNull();
     // No row of area tabs: the sidebar is the list.
@@ -652,7 +652,7 @@ describe('the staff area', () => {
     // Choosing a page closes it.
     await user.click(button);
     const again = within(screen.getByRole('dialog', { name: 'Staff menu' }));
-    await user.click(again.getByText('Site'));
+    await user.click(again.getByText('Site settings'));
     await user.click(again.getByRole('link', { name: 'Look' }));
     await settle();
     expect(screen.getByRole('heading', { level: 1, name: 'Look' })).toBeInTheDocument();

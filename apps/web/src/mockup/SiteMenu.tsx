@@ -175,13 +175,9 @@ export function SiteMenu({
                     Email updates
                   </Link>
                 </li>
-                {/* One account page: a role holder's lands on its security part. */}
+                {/* One account page, the same for everybody (staff-nav/menu.ts). */}
                 <li>
-                  <Link
-                    to={me.heldRoles.length ? '/access/security' : '/access'}
-                    onClick={onChoose}
-                    {...here('/access')}
-                  >
+                  <Link to="/account" onClick={onChoose} {...here('/account')}>
                     Your account
                   </Link>
                 </li>

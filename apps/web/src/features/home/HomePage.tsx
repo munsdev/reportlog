@@ -63,6 +63,7 @@ export function HomePage() {
   const admin = mayOpen({ for: ['admin'] }, me);
   const journalist = mayOpen({ for: ['journalist'] }, me);
   const organization = mayOpen({ for: ['organization'] }, me);
+  const grants = mayOpen({ for: ['admin', 'access_manager'] }, me);
   const waitingLine = waiting
     ? [
         waiting.reports
@@ -155,7 +156,7 @@ export function HomePage() {
         <Tile
           title="Your account"
           links={[
-            { to: '/access', label: 'Your account' },
+            { to: '/account', label: 'Your account' },
             ...(me.heldRoles.length > 0
               ? [{ to: '/access/security' as const, label: 'Signing in' }]
               : []),
@@ -205,16 +206,28 @@ export function HomePage() {
               </section>
             ))
           : null}
+        {/* Access Managers had no card of their own here before. */}
+        {grants ? (
+          <Tile
+            title="People"
+            links={[
+              { to: '/people', label: 'People' },
+              { to: '/access/orgs', label: 'Organizations' },
+            ]}
+          >
+            <p>Who holds a role, a flag or a place in an organization, and what they may do.</p>
+          </Tile>
+        ) : null}
         {admin ? (
           <Tile
             title="Site administration"
             links={[
               { to: '/logbooks', label: 'Logbooks' },
-              { to: '/settings/name', label: 'Site settings' },
+              { to: '/settings/switches', label: 'Switches' },
               { to: '/transparency-log', label: 'Transparency log' },
             ]}
           >
-            <p>Logbooks, settings and the public record.</p>
+            <p>Logbooks, the site’s switches and the public record.</p>
           </Tile>
         ) : null}
       </div>

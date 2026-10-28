@@ -47,7 +47,8 @@ export function SettingsPage() {
   );
 }
 
-function Archive() {
+/** Exported for Switches (routes/(staff)/settings/switches.tsx). */
+export function Archive() {
   const qc = useQueryClient();
   const toast = useToast();
   const query = useQuery(archiveQuery);

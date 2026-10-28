@@ -263,7 +263,9 @@ describe('the front page editor', () => {
 
 describe('words', () => {
   it('names the screen feedback came from by the menu’s name', () => {
-    expect(pageNameFor('/(staff)/settings/')).toBe('Site settings');
+    expect(pageNameFor('/(staff)/settings/switches')).toBe('Switches');
+    // A page folded into another is named by the page that took it over.
+    expect(pageNameFor('/(staff)/access/roster')).toBe('People');
     expect(pageNameFor('/(staff)/moderate/')).toBe('Reports queue');
     expect(pageNameFor('/(staff)/moderate/$threadId')).toBe('Reports queue');
     expect(pageNameFor('/board/')).toBeNull();

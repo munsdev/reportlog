@@ -87,6 +87,28 @@ export function FileSettingsPage() {
 }
 
 /**
+ * The Taking files switch on its own, for Switches
+ * (routes/(staff)/settings/switches.tsx). Needs a ToastProvider around it.
+ */
+export function TakingFilesPanel() {
+  const qc = useQueryClient();
+  const query = useQuery(fileSettingsQuery());
+  const put = (body: BodyOf<typeof setFileSettings>) =>
+    call(setFileSettings, { body }).then((d) => {
+      qc.setQueryData(fileSettingsQuery().queryKey, d);
+      return d;
+    });
+  if (query.isPending)
+    return (
+      <Panel title="Taking files">
+        <p role="status">Reading the settings…</p>
+      </Panel>
+    );
+  if (query.isError) return <Note tone="serious">{query.error.message}</Note>;
+  return <Switch settings={query.data} put={put} />;
+}
+
+/**
  * Whether the site takes files: a switch that applies at once (§02), two
  * choice cards and one button that does what the chosen card says, then a
  * toast. Choosing a card sends nothing.
