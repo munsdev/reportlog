@@ -42,6 +42,7 @@ import { call } from '../../lib/api.ts';
 import { floodQuery, laneQuery } from '../flood/queries.ts';
 import { Chip } from '../../mockup/Chip.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
+import { ViewingNotice, openBy, useOthersViewing, useViewing } from './viewing.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { AnswerLine, SeverityChip, StatusChip, useWide, when } from './parts.tsx';
 import { corroborationQuery, queueQuery, sortOf } from './queries.ts';
@@ -613,6 +614,7 @@ function QueueList({
   const [focusNext, setFocusNext] = useState<string | null>(null);
   const [result, setResult] = useState<ReactNode>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const viewing = useOthersViewing();
 
   // After a decision the list is read again; focus moves to the "Decide here"
   // of the report that followed the decided one, or the first left.
@@ -667,6 +669,7 @@ function QueueList({
           <QueueRow
             key={r.thread_id}
             r={r}
+            viewers={viewing.get(r.thread_id) ?? []}
             search={search}
             picked={picked.has(r.thread_id)}
             onPick={
@@ -702,6 +705,7 @@ function QueueList({
       {picked.size ? (
         <SelectionBar
           picked={picked}
+          seen={Object.fromEntries(data.reports.map((r) => [r.thread_id, r.seen]))}
           pickable={pickable.length}
           search={search}
           onSelectAll={() => {
@@ -757,6 +761,7 @@ function QueueList({
 
 function QueueRow({
   r,
+  viewers,
   search,
   picked,
   onPick,
@@ -766,6 +771,8 @@ function QueueRow({
   onDecided,
 }: {
   r: QueueItem;
+  /** Other staff with this report open now. */
+  viewers: readonly string[];
   search: QueueSearch;
   picked: boolean;
   onPick: ((on: boolean) => void) | null;
@@ -811,6 +818,7 @@ function QueueRow({
           {r.needs_review ? <Chip kind="flag">Second read</Chip> : null}
           {r.origin === 'organization' ? <Chip kind="off">Organization</Chip> : null}
           {r.public ? <Chip kind="ok">Public</Chip> : null}
+          {viewers.length ? <Chip kind="off">{openBy(viewers)}</Chip> : null}
         </div>
         {blocked ? (
           <p id={whyId} className="m">
@@ -853,7 +861,8 @@ function QueueRow({
           </Link>
         </div>
         {open ? (
-          <div id={formId}>
+          <div id={formId} className="col">
+            <DecidingHere r={r} />
             <DecideForm
               report={r}
               focusOnOpen
@@ -868,10 +877,17 @@ function QueueRow({
   );
 }
 
+/** A report decided from its queue row is open too: others see it, and this sees them. */
+function DecidingHere({ r }: { r: QueueItem }) {
+  const viewing = useViewing(r.thread_id, r.seen);
+  return <ViewingNotice threadId={r.thread_id} others={viewing.others} changed={viewing.changed} />;
+}
+
 // ── selected reports ────────────────────────────────────────────────────
 
 function SelectionBar({
   picked,
+  seen,
   pickable,
   search,
   onSelectAll,
@@ -879,6 +895,8 @@ function SelectionBar({
   onDone,
 }: {
   picked: ReadonlySet<string>;
+  /** Each listed report's `seen`: one that changed since is skipped, never acted over. */
+  seen: Record<string, string>;
   pickable: number;
   search: QueueSearch;
   onSelectAll: () => void;
@@ -889,7 +907,8 @@ function SelectionBar({
   const [declining, setDeclining] = useState(false);
   const ids = [...picked];
   const approve = useMutation({
-    mutationFn: () => call(batchApproveReports, { body: { thread_ids: ids.slice(0, MAX_BATCH) } }),
+    mutationFn: () =>
+      call(batchApproveReports, { body: { thread_ids: ids.slice(0, MAX_BATCH), seen } }),
     onSuccess: async (out) => {
       onDone(
         `Approved ${String(out.approved.length)}.`,
@@ -947,6 +966,7 @@ function SelectionBar({
       <BulkDecline
         open={declining}
         ids={ids}
+        seen={seen}
         search={search}
         onClose={() => {
           setDeclining(false);
@@ -969,12 +989,14 @@ function SelectionBar({
 function BulkDecline({
   open,
   ids,
+  seen,
   search,
   onClose,
   onDone,
 }: {
   open: boolean;
   ids: string[];
+  seen: Record<string, string>;
   search: QueueSearch;
   onClose: () => void;
   onDone: (toast: string, alert: ReactNode) => void;
@@ -990,6 +1012,7 @@ function BulkDecline({
       call(bulkDeclineReports, {
         body: {
           thread_ids: ids,
+          seen,
           reason_code: reason,
           ...(comment.trim() ? { comment: comment.trim() } : {}),
           filter: Object.fromEntries(

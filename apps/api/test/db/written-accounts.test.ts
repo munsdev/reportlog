@@ -30,7 +30,7 @@ import type { FilingHarness } from './filing-helpers.ts';
 import { launchedLogbook, uniqueSlug } from './helpers.ts';
 import { address } from './identity-helpers.ts';
 import { linkKeys } from './links-helpers.ts';
-import { moderationHarness, staff } from './moderation-helpers.ts';
+import { moderationHarness, seenMap, seenOf, staff } from './moderation-helpers.ts';
 import { HELD_QUESTIONS, fileHeld, textRef } from './written-helpers.ts';
 
 const run = `${String(process.pid)}${String(Date.now() % 1e6)}`;
@@ -458,26 +458,40 @@ describe('N2 · reasons, readings and approval', () => {
   it('a report holding an undecided account is skipped in a batch and needs decisions to approve', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} d` } }, { share: true });
     const plain = await fileHeld(h.db, keys, lb, {}, { share: true });
-    const out = await decideBatch(h.db, [t.threadId, plain.threadId], MOD);
+    const out = await decideBatch(
+      h.db,
+      [t.threadId, plain.threadId],
+      MOD,
+      await seenMap(h.db, [t.threadId, plain.threadId]),
+    );
     expect(out.approved).toEqual([plain.threadId]);
     expect(out.skipped).toEqual([
       { thread_id: t.threadId, why: 'It has a written account, which needs its own look.' },
     ]);
     const mod = await staff(h, 'texts-approve', 'moderator');
     const url = `/api/moderation/reports/${t.threadId}/decision`;
-    const refused = await mod.call({ method: 'POST', url, payload: { status: 'valid' } });
+    const seen = await seenOf(h.db, t.threadId);
+    const refused = await mod.call({ method: 'POST', url, payload: { status: 'valid', seen } });
     expect(refused.statusCode).toBe(409);
     const ref = await textRef(h.db, t.reportId);
     const noReason = await mod.call({
       method: 'POST',
       url,
-      payload: { status: 'valid', written: [{ ref, outcome: 'redacted', note: COPY, why: 'no' }] },
+      payload: {
+        status: 'valid',
+        seen,
+        written: [{ ref, outcome: 'redacted', note: COPY, why: 'no' }],
+      },
     });
     expect(noReason.statusCode).toBe(400);
     const ok = await mod.call({
       method: 'POST',
       url,
-      payload: { status: 'valid', written: [{ ref, outcome: 'redacted', note: COPY, why: WHY }] },
+      payload: {
+        status: 'valid',
+        seen,
+        written: [{ ref, outcome: 'redacted', note: COPY, why: WHY }],
+      },
     });
     expect(ok.statusCode, ok.body).toBe(200);
     const head = await h.db
@@ -491,7 +505,7 @@ describe('N2 · reasons, readings and approval', () => {
     const bareOk = await mod.call({
       method: 'POST',
       url: `/api/moderation/reports/${bare.threadId}/decision`,
-      payload: { status: 'valid' },
+      payload: { status: 'valid', seen: await seenOf(h.db, bare.threadId) },
     });
     expect(bareOk.statusCode, bareOk.body).toBe(200);
   });

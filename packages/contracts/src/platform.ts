@@ -71,7 +71,14 @@ export const batchApproveReports = defineRoute({
   method: 'POST',
   path: '/api/moderation/reports/batch-approve',
   summary: 'Approve many reports at once. One approval is recorded per report; no reason is asked.',
-  body: z.object({ thread_ids: z.array(ThreadId).min(1).max(MAX_BATCH) }),
+  body: z.object({
+    thread_ids: z.array(ThreadId).min(1).max(MAX_BATCH),
+    /**
+     * Required: each report's `seen` (moderation.ts) as the page showed it. A
+     * report that changed since is skipped, never approved over.
+     */
+    seen: z.record(z.string(), z.string()).optional(),
+  }),
   response: z.object({
     approved: z.array(ThreadId),
     skipped: z.array(z.object({ thread_id: ThreadId, why: z.string() })),

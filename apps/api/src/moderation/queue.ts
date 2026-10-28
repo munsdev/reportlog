@@ -18,6 +18,14 @@
  *
  * Every decision is written to moderation_log in the same transaction as the
  * change, with the version it was about.
+ *
+ * NOBODY OVERWRITES A DECISION THEY NEVER SAW. Every report the queue hands
+ * out carries `seen`, a token for its head as it was read; every act on it
+ * sends that token back, and is refused if the head moved since (another
+ * moderator decided it, its reporter corrected or withdrew it). Checked
+ * under the head's row lock, so two moderators pressing at once cannot both
+ * pass. Without it the second decision silently replaced the first, and a
+ * decline emails the reporter.
  */
 import type { Kysely, Transaction } from 'kysely';
 import { sql } from 'kysely';
@@ -151,6 +159,14 @@ function filtered(db: Kysely<DB>, filter: QueueFilter) {
   return q;
 }
 
+/**
+ * The head's version, as the queue read it: its revision, which a database
+ * trigger moves on every change to the row, whoever makes it (migration
+ * 20261028183024_report_heads_revision). Read over `h`, like
+ * `organizationOf`. Text, so a bigint reaches the browser and comes back whole.
+ */
+export const seenToken = sql<string>`h.revision::text`;
+
 /** Where a report stands for the status buttons: withdrawn first, as the filter reads it. */
 const standing = sql<string>`case when h.withdrawn then 'withdrawn' else h.moderation_status end`;
 
@@ -279,6 +295,7 @@ export async function listQueue(
                             where wg.id = wv.group_id and wg.outcome is null))))`.as(
       'has_undecided_written',
     ),
+    seenToken.as('seen'),
   ]);
 
   const status = filter.status ?? 'all';
@@ -331,12 +348,103 @@ async function lockedHead(trx: Transaction<DB>, threadId: string) {
       'h.withdrawn',
       'h.moderation_status',
       'r.may_publish',
+      seenToken.as('seen'),
     ])
     .where('h.thread_id', '=', threadId)
     .forUpdate('h')
     .executeTakeFirst();
   if (!head) throw noReport();
   return head;
+}
+
+/** The token a request sent, or a sentence saying it sent none. */
+export function seenOf(seen: unknown): string {
+  if (typeof seen === 'string' && /^\d{1,20}$/.test(seen)) return seen;
+  throw refuse(
+    400,
+    'seen_required',
+    'This page did not say which version of the report it showed you. Reload it and try again.',
+  );
+}
+
+const DECIDED_AS: Record<string, string> = {
+  valid: 'approved it',
+  invalid: 'declined it',
+  unknown: 'marked it unclear',
+  pending: 'sent it back to waiting',
+};
+
+/**
+ * What moved the head, in a sentence: the newest of a moderator's act, the
+ * reporter's withdrawal, and a new version arriving.
+ */
+async function whatChanged(trx: Transaction<DB>, threadId: string): Promise<string> {
+  const staff = await trx
+    .selectFrom('moderation_log')
+    .select(['action', 'new_status', 'actor_email', 'created_at'])
+    .where('thread_id', '=', threadId)
+    .where('action', 'in', ['review', 'withdraw', 'restore'])
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const reporter = await trx
+    .selectFrom('reporter_actions')
+    .select('created_at')
+    .where('thread_id', '=', threadId)
+    .where('action', '=', 'withdraw')
+    .orderBy('id', 'desc')
+    .limit(1)
+    .executeTakeFirst();
+  const version = await trx
+    .selectFrom('report_heads as h')
+    .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+    .select('r.received_at')
+    .where('h.thread_id', '=', threadId)
+    .executeTakeFirstOrThrow();
+  const t = (d: Date | undefined) => d?.getTime() ?? -Infinity;
+  const newest = Math.max(t(staff?.created_at), t(reporter?.created_at), t(version.received_at));
+  if (staff && t(staff.created_at) === newest) {
+    const did =
+      staff.action === 'withdraw'
+        ? 'took it off the board'
+        : staff.action === 'restore'
+          ? 'put it back'
+          : (DECIDED_AS[staff.new_status ?? ''] ?? 'changed it');
+    return `${staff.actor_email} ${did} after you opened it.`;
+  }
+  if (reporter && t(reporter.created_at) === newest) {
+    return 'Its reporter withdrew it after you opened it.';
+  }
+  return 'A new version of it arrived after you opened it.';
+}
+
+/**
+ * The same check, before a route does anything else it would have to undo:
+ * approval settles undecided written accounts first (texts/approval.ts).
+ * The act itself checks again under its own lock.
+ */
+export async function assertSeen(db: Kysely<DB>, threadId: string, seen: unknown): Promise<void> {
+  const shown = seenOf(seen);
+  await db.transaction().execute(async (trx) => {
+    await assertUnchanged(trx, await lockedHead(trx, threadId), shown);
+  });
+}
+
+/**
+ * Refuse an act on a head that moved since the page read it. Called with the
+ * head locked, so nothing can move it between this check and the write.
+ */
+async function assertUnchanged(
+  trx: Transaction<DB>,
+  head: { thread_id: string; seen: string },
+  seen: string,
+): Promise<void> {
+  if (head.seen === seen) return;
+  throw refuse(
+    409,
+    'changed',
+    `${await whatChanged(trx, head.thread_id)} Nothing you sent was recorded. Look at it again before you decide.`,
+  );
 }
 
 async function log(
@@ -369,6 +477,8 @@ export async function decide(
   status: unknown,
   comment: unknown,
   actor: string,
+  /** The head's version the moderator was shown (`seen` on the queue item). */
+  seen: unknown,
   /** A decline's reason from the fixed list, kept on the decision (public counts by reason). */
   reasonCode: string | null = null,
 ): Promise<{ previous: string; report_id: number }> {
@@ -376,8 +486,10 @@ export async function decide(
     throw refuse(400, 'invalid_status', 'A decision is approve, decline or unclear.');
   }
   const why = noteOf(comment);
+  const shown = seenOf(seen);
   return db.transaction().execute(async (trx) => {
     const head = await lockedHead(trx, threadId);
+    await assertUnchanged(trx, head, shown);
     await trx
       .updateTable('report_heads')
       .set({ moderation_status: status as Decision, updated_at: new Date() })
@@ -413,13 +525,22 @@ export const BATCH_REASON = 'Approved in a batch.';
  * approved anyway: one withdrawn report must not stop the other ninety-nine,
  * and must not be put back on the board by being in the same list.
  */
-export async function decideBatch(db: Kysely<DB>, threadIds: readonly string[], actor: string) {
+export async function decideBatch(
+  db: Kysely<DB>,
+  threadIds: readonly string[],
+  actor: string,
+  /** Each report's `seen` as the selecting page had it. One missing is a report never shown. */
+  seen: Readonly<Record<string, unknown>>,
+) {
   const approved: string[] = [];
   const skipped: { thread_id: string; why: string }[] = [];
   for (const threadId of new Set(threadIds)) {
     try {
       await db.transaction().execute(async (trx) => {
         const head = await lockedHead(trx, threadId);
+        if (head.seen !== seen[threadId]) {
+          throw refuse(409, 'changed', 'It changed after you selected it.');
+        }
         if (head.withdrawn) throw refuse(409, 'withdrawn', 'It is withdrawn.');
         if (head.moderation_status === 'valid')
           throw refuse(409, 'already', 'It is already approved.');
@@ -454,10 +575,18 @@ export async function decideBatch(db: Kysely<DB>, threadIds: readonly string[], 
  * Take a report off the public board. The report and its versions are never
  * touched: withdrawal is a flag on report_heads, not a deletion.
  */
-export async function withdraw(db: Kysely<DB>, threadId: string, comment: unknown, actor: string) {
+export async function withdraw(
+  db: Kysely<DB>,
+  threadId: string,
+  comment: unknown,
+  actor: string,
+  seen: unknown,
+) {
   const why = reasonOf(comment);
+  const shown = seenOf(seen);
   await db.transaction().execute(async (trx) => {
     const head = await lockedHead(trx, threadId);
+    await assertUnchanged(trx, head, shown);
     if (head.withdrawn) throw refuse(409, 'already_withdrawn', 'That report is already withdrawn.');
     await trx
       .updateTable('report_heads')
@@ -489,6 +618,7 @@ export async function restore(
   status: unknown,
   comment: unknown,
   actor: string,
+  seen: unknown,
 ) {
   if (!RESTORE_TO.includes(status as (typeof RESTORE_TO)[number])) {
     throw refuse(
@@ -498,8 +628,10 @@ export async function restore(
     );
   }
   const why = reasonOf(comment);
+  const shown = seenOf(seen);
   await db.transaction().execute(async (trx) => {
     const head = await lockedHead(trx, threadId);
+    await assertUnchanged(trx, head, shown);
     if (!head.withdrawn) throw refuse(409, 'not_withdrawn', 'That report is not withdrawn.');
     const byReporter = await trx
       .selectFrom('reporter_actions')

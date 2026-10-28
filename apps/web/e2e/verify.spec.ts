@@ -84,10 +84,16 @@ test('an unpublished report shows its fingerprints and not its words, until it i
   const admin = await playwright.request.newContext({ baseURL, storageState: ADMIN });
   const queue = (await (
     await admin.get(`/api/moderation/reports?status=pending&q=${word}`)
-  ).json()) as { reports: { thread_id: string }[] };
+  ).json()) as { reports: { thread_id: string; seen: string }[] };
   const ok = await admin.post(
     `/api/moderation/reports/${queue.reports[0]?.thread_id ?? ''}/decision`,
-    { data: { status: 'valid', comment: 'Approved for the verify test.' } },
+    {
+      data: {
+        status: 'valid',
+        comment: 'Approved for the verify test.',
+        seen: queue.reports[0]?.seen ?? '',
+      },
+    },
   );
   expect(ok.ok(), await ok.text()).toBe(true);
   await admin.dispose();

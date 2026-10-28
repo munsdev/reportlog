@@ -16,6 +16,7 @@ import {
   fileThread,
   moderationHarness,
   resetModerationSettings,
+  seenOf,
   staff,
 } from './moderation-helpers.ts';
 import type { Thread } from './moderation-helpers.ts';
@@ -214,7 +215,7 @@ describe('incidents and corroboration', () => {
     await mod.call({
       method: 'POST',
       url: `/api/moderation/reports/${b.threadId}/withdraw`,
-      payload: { comment: 'Taken down while we check.' },
+      payload: { comment: 'Taken down while we check.', seen: await seenOf(h.db, b.threadId) },
     });
     seen = await item(a);
     expect(seen.report).toMatchObject({ corroboration: 1, incident_size: 3 });

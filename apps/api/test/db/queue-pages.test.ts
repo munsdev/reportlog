@@ -16,6 +16,7 @@ import {
   fileThread,
   moderationHarness,
   resetModerationSettings,
+  seenOf,
   staff,
 } from './moderation-helpers.ts';
 
@@ -53,6 +54,7 @@ const decide = async (thread: string, status: string) => {
       status,
       comment: 'Read and checked.',
       ...(status === 'invalid' ? { reason_code: 'cannot_assess' } : {}),
+      seen: await seenOf(h.db, thread),
     },
   });
   expect(res.statusCode, res.body).toBe(200);
@@ -81,7 +83,10 @@ beforeAll(async () => {
   const off = await mod({
     method: 'POST',
     url: `/api/moderation/reports/${threads[12] ?? ''}/withdraw`,
-    payload: { comment: 'A test of the withdrawn count.' },
+    payload: {
+      comment: 'A test of the withdrawn count.',
+      seen: await seenOf(h.db, threads[12] ?? ''),
+    },
   });
   expect(off.statusCode, off.body).toBe(200);
 });

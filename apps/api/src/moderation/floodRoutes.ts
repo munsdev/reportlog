@@ -126,7 +126,15 @@ export async function floodRoutes(app: FastifyInstance, deps: FloodRouteDeps): P
       guarded.addHook('preHandler', stepUpGuard());
       route(guarded, C.bulkDeclineReports, async ({ request }) => {
         const b = bodyOf<C.BodyOf<typeof C.bulkDeclineReports>>(C.bulkDeclineReports, request);
+        if (!b.seen) {
+          throw new HttpError(
+            400,
+            'seen_required',
+            'This page did not say which versions of the reports it showed you. Reload it and try again.',
+          );
+        }
         return bulkDecline(db, {
+          seen: b.seen,
           threadIds: b.thread_ids,
           reasonCode: b.reason_code,
           comment: b.comment,

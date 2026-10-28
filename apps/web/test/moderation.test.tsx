@@ -62,6 +62,7 @@ const REPORT: QueueItem = {
   origin: 'open_form',
   organization_id: null,
   answer_set: 'a'.repeat(32),
+  seen: '3',
 };
 const SECOND: QueueItem = { ...REPORT, thread_id: OTHER, public_ref: 'RL-7K2M-4QXD' };
 
@@ -130,6 +131,9 @@ function wrap(node: ReactNode, at = '/moderate') {
 
 const queueReads = (sent: Sent[]) =>
   sent.filter((s) => s.method === 'GET' && s.url.startsWith('/api/moderation/reports?')).length;
+
+/** A POST that acts on a report: not the heartbeat saying the page is open. */
+const isAct = (s: Sent) => s.method === 'POST' && !s.url.endsWith('/viewing');
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -209,9 +213,9 @@ describe('deciding', () => {
     const inQueue = screen.getByRole('form', { name: 'Decide RL-4HT8-0QNC' });
     await decideIn(inQueue, 'Checked against the photos.');
     await waitFor(() => {
-      expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+      expect(sent.filter(isAct)).toHaveLength(1);
     });
-    const fromQueue = sent.find((s) => s.method === 'POST');
+    const fromQueue = sent.find(isAct);
     // The toast, and the row closed.
     expect(await screen.findByText('RL-4HT8-0QNC approved.')).toBeInTheDocument();
 
@@ -225,14 +229,16 @@ describe('deciding', () => {
     const panel = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
     await decideIn(panel, 'Checked against the photos.');
     await waitFor(() => {
-      expect(again.filter((s) => s.method === 'POST')).toHaveLength(1);
+      expect(again.filter(isAct)).toHaveLength(1);
     });
-    const fromPage = again.find((s) => s.method === 'POST');
+    const fromPage = again.find(isAct);
     expect(fromPage).toEqual(fromQueue);
     expect(fromPage).toEqual({
       method: 'POST',
       url: `/api/moderation/reports/${THREAD}/decision`,
-      body: { status: 'valid', comment: 'Checked against the photos.' },
+      // `seen` is the version the page showed, so a decision on a report that
+      // moved since is refused rather than written over.
+      body: { status: 'valid', comment: 'Checked against the photos.', seen: REPORT.seen },
     });
   });
 
@@ -254,16 +260,17 @@ describe('deciding', () => {
     ).toBeTruthy();
     await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
     expect(within(form).getByText('Choose the reason the reporter is told.')).toBeInTheDocument();
-    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
+    expect(sent.filter(isAct)).toHaveLength(0);
     await user.selectOptions(reason, 'duplicate');
     await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
     // No note written: the decision goes, and carries no comment at all (decision 64).
     await waitFor(() => {
-      expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+      expect(sent.filter(isAct)).toHaveLength(1);
     });
-    expect(sent.find((s) => s.method === 'POST')?.body).toEqual({
+    expect(sent.find(isAct)?.body).toEqual({
       status: 'invalid',
       reason_code: 'duplicate',
+      seen: REPORT.seen,
     });
   });
 });
@@ -283,15 +290,16 @@ describe('a bulk decline', () => {
     expect(within(dialog).getByText('Nobody is emailed when you decline in bulk.')).toBeVisible();
     await user.click(within(dialog).getByRole('button', { name: 'Decline 1' }));
     expect(within(dialog).getByText(/Choose the reason/)).toBeInTheDocument();
-    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
+    expect(sent.filter(isAct)).toHaveLength(0);
     await user.selectOptions(within(dialog).getByLabelText('Reason'), 'abusive_or_spam');
     await user.click(within(dialog).getByRole('button', { name: 'Decline 1' }));
     await waitFor(() => {
-      expect(sent.filter((s) => s.method === 'POST')).toHaveLength(1);
+      expect(sent.filter(isAct)).toHaveLength(1);
     });
-    expect(sent.find((s) => s.method === 'POST')?.body).toMatchObject({
+    expect(sent.find(isAct)?.body).toMatchObject({
       thread_ids: [THREAD],
       reason_code: 'abusive_or_spam',
+      seen: { [THREAD]: REPORT.seen, [OTHER]: SECOND.seen },
     });
   });
 });
@@ -319,6 +327,86 @@ describe('who filed it', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(row).toHaveTextContent(restricted);
     expect(row).not.toHaveTextContent('reporter@example.org');
-    expect(sent.filter((s) => s.method === 'POST')).toHaveLength(0);
+    expect(sent.filter(isAct)).toHaveLength(0);
+  });
+});
+
+describe('two moderators on one report', () => {
+  const viewingUrl = `POST /api/moderation/reports/${THREAD}/viewing`;
+
+  it('the report page says who else has it open', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: ITEM,
+      [viewingUrl]: { others: [{ email: 'maria@example.org' }], seen: REPORT.seen },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    expect(
+      await screen.findByText(/maria@example\.org has it open too\. If you are both deciding it/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^This report changed after you opened it/)).toBeNull();
+  });
+
+  it('says the report changed, and does not change it underneath the reader', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: ITEM,
+      [viewingUrl]: { others: [], seen: '4' },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    expect(await screen.findByText(/^This report changed after you opened it/)).toBeInTheDocument();
+    const reads = () => sent.filter((s) => s.url === `/api/moderation/reports/${THREAD}`).length;
+    expect(reads()).toBe(1);
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Show it as it is now' }));
+    await waitFor(() => {
+      expect(reads()).toBe(2);
+    });
+  });
+
+  it("a decision on a report somebody else decided shows the server's sentence and records nothing", async () => {
+    const sentence =
+      'maria@example.org approved it after you opened it. Nothing you sent was recorded. Look at it again before you decide.';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) => {
+        const key = `${init?.method ?? 'GET'} ${url}`;
+        if (key === `POST /api/moderation/reports/${THREAD}/decision`) {
+          return Promise.resolve(
+            new Response(JSON.stringify({ error: { code: 'changed', message: sentence } }), {
+              status: 409,
+            }),
+          );
+        }
+        const body =
+          key === `GET /api/moderation/reports/${THREAD}`
+            ? ITEM
+            : key === viewingUrl
+              ? { others: [], seen: REPORT.seen }
+              : { ok: true };
+        return Promise.resolve(new Response(JSON.stringify(body), { status: 200 }));
+      }),
+    );
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    expect(await within(form).findByText(sentence)).toBeInTheDocument();
+    expect(within(form).getByRole('button', { name: 'Show it as it is now' })).toBeInTheDocument();
+    expect(screen.queryByText(/RL-4HT8-0QNC approved\./)).toBeNull();
+  });
+
+  it('the queue marks a report somebody else has open', async () => {
+    serve({
+      'GET /api/moderation/reports': QUEUE,
+      'GET /api/moderation/viewing': {
+        viewing: [{ thread_id: OTHER, email: 'maria@example.org' }],
+      },
+    });
+    wrap(<QueuePage search={{}} />);
+    const rows = await screen.findAllByRole('listitem');
+    const second = rows.find((r) => r.textContent.includes('RL-7K2M-4QXD'));
+    if (!second) throw new Error('no second row');
+    expect(await within(second).findByText('maria@example.org has it open')).toBeInTheDocument();
+    const first = rows.find((r) => r.textContent.includes('RL-4HT8-0QNC'));
+    expect(first).not.toHaveTextContent('has it open');
   });
 });

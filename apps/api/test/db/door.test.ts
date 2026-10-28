@@ -45,6 +45,7 @@ import {
 } from './filing-helpers.ts';
 import type { FilingHarness } from './filing-helpers.ts';
 import { address, as, liftCurtain, seat, signIn } from './identity-helpers.ts';
+import { seenOf } from './moderation-helpers.ts';
 
 const PLAIN = 'Something went wrong. Please try again.';
 
@@ -516,7 +517,12 @@ describe('E1: when a form asks for an email', () => {
     const decided = await call({
       method: 'POST',
       url: `/api/moderation/reports/${report.thread_id}/decision`,
-      payload: { status: 'invalid', reason_code: 'outside_scope', comment: 'Not about voting.' },
+      payload: {
+        status: 'invalid',
+        reason_code: 'outside_scope',
+        comment: 'Not about voting.',
+        seen: await seenOf(h.db, report.thread_id),
+      },
     });
     expect(decided.json()).toMatchObject({ ok: true, notice: 'none' });
     const notices = await h.db

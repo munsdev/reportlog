@@ -26,6 +26,7 @@ import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
+import { ChangedProblem, isChanged } from './viewing.tsx';
 
 /** The mock-up's labelled controls, one line each. */
 function SelectField({
@@ -122,7 +123,7 @@ export function DecideForm({
   title,
   bare = false,
 }: {
-  report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written'>;
+  report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written' | 'seen'>;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
   initial?: Decision | undefined;
   onDecided?: (d: Decided) => void;
@@ -205,6 +206,8 @@ export function DecideForm({
           status,
           ...(note.trim() ? { comment: note.trim() } : {}),
           ...(status === 'invalid' ? { reason_code: reason } : {}),
+          // The version this page showed: refused if somebody acted on it since.
+          seen: report.seen,
           ...(status === 'valid' && undecided.length
             ? {
                 written: undecided.map((u) => {
@@ -435,7 +438,13 @@ export function DecideForm({
         />
       </Field>
       <Err>{problems.note}</Err>
-      {decide.isError ? <Problem>{decide.error.message}</Problem> : null}
+      {decide.isError ? (
+        isChanged(decide.error) ? (
+          <ChangedProblem threadId={report.thread_id} error={decide.error} />
+        ) : (
+          <Problem>{decide.error.message}</Problem>
+        )
+      ) : null}
       <div className="acts">
         <Btn sm flat look="ink" type="submit" disabled={decide.isPending}>
           {decide.isPending ? 'Recording…' : 'Record the decision'}

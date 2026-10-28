@@ -29,6 +29,8 @@ import {
   fileThread,
   moderationHarness,
   resetModerationSettings,
+  seenMap,
+  seenOf,
   staff,
 } from './moderation-helpers.ts';
 import type { Thread } from './moderation-helpers.ts';
@@ -328,11 +330,12 @@ describe('declined reports, counted publicly by reason', () => {
     const t2 = await fileThread(h.db, lb, PLACE_QUESTIONS as never, { what: marker });
     const t3 = await fileThread(h.db, lb, PLACE_QUESTIONS as never, { what: marker });
     const pending = await fileThread(h.db, lb, PLACE_QUESTIONS as never, { what: marker });
-    const decide = (t: Thread, reason_code: string) =>
+    const decide = async (t: Thread, reason_code: string) =>
       post(mod.call, `/api/moderation/reports/${t.threadId}/decision`, {
         status: 'invalid',
         comment: 'Moderator sentence that stays private.',
         reason_code,
+        seen: await seenOf(h.db, t.threadId),
       });
     expect((await decide(t1, 'duplicate')).status).toBe(200);
     expect((await decide(t2, 'duplicate')).status).toBe(200);
@@ -341,6 +344,7 @@ describe('declined reports, counted publicly by reason', () => {
     await post(mod.call, `/api/moderation/reports/${t3.threadId}/decision`, {
       status: 'unknown',
       comment: 'Looking again.',
+      seen: await seenOf(h.db, t3.threadId),
     });
     const r = await get<{
       logbooks: { slug: string; by_reason: { code: string; reports: number }[] }[];
@@ -388,6 +392,10 @@ describe('bulk decline', () => {
       '/api/moderation/reports/bulk-decline',
       {
         thread_ids: flood.map((t) => t.threadId),
+        seen: await seenMap(
+          h.db,
+          flood.map((t) => t.threadId),
+        ),
         reason_code: 'abusive_or_spam',
         filter: { logbook: lb.slug },
       },
@@ -454,7 +462,11 @@ describe('bulk decline', () => {
     const r = await post<{ declined: string[]; skipped: { thread_id: string }[] }>(
       mod.call,
       '/api/moderation/reports/bulk-decline',
-      { thread_ids: [t.threadId, w.threadId], reason_code: 'duplicate' },
+      {
+        thread_ids: [t.threadId, w.threadId],
+        seen: await seenMap(h.db, [t.threadId, w.threadId]),
+        reason_code: 'duplicate',
+      },
     );
     expect(r.body.declined).toEqual([t.threadId]);
     expect(r.body.skipped.map((s) => s.thread_id)).toEqual([w.threadId]);
@@ -628,6 +640,10 @@ describe('the organization lane', () => {
       '/api/moderation/reports/batch-approve',
       {
         thread_ids: set.body.reports.map((r) => r.thread_id),
+        seen: await seenMap(
+          h.db,
+          set.body.reports.map((r) => r.thread_id),
+        ),
       },
     );
     expect(ok.body.approved).toContain(org.threadId);

@@ -17,7 +17,7 @@
  */
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
-import { MODERATOR } from '../auth.ts';
+import { ADMIN, MODERATOR } from '../auth.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { doorFields } from '../door.ts';
 import { goViaMenu } from '../menu.ts';
@@ -290,6 +290,58 @@ test('a bulk decline takes one reason from the fixed list and emails nobody', as
   await expect(page.getByRole('link', { name: /^Open RL-/ })).toHaveCount(2);
   // Decision 51: nobody was emailed, though both reporters gave an address.
   expect(emails.map(countTo)).toEqual(before);
+});
+
+test('two on one report: each sees the other, and a stale decision is refused, not recorded', async ({
+  page,
+  request,
+  playwright,
+  baseURL,
+}) => {
+  test.setTimeout(60_000);
+  const word = `two${unique()}`;
+  await fileAndConfirm(page, request, `two-${word}@example.org`, `Open twice, ${word}.`);
+  await page.goto('/moderate');
+  await search(page, word);
+  const open = page.getByRole('link', { name: /^Open RL-/ });
+  const thread = threadIn((await open.getAttribute('href')) ?? '');
+
+  // An administrator already has it open: the page says so on its first heartbeat.
+  const admin = await playwright.request.newContext({
+    baseURL: baseURL ?? 'http://127.0.0.1:4173',
+    storageState: ADMIN,
+  });
+  const beat = await admin.post(`/api/moderation/reports/${thread}/viewing`);
+  expect(beat.ok(), await beat.text()).toBe(true);
+  const { seen } = (await beat.json()) as { seen: string };
+  await open.click();
+  await expect(page.getByText(/has it open too\. If you are both deciding it/)).toBeVisible();
+
+  // The administrator decides it while the moderator's page still shows it waiting.
+  const decided = await admin.post(`/api/moderation/reports/${thread}/decision`, {
+    data: { status: 'valid', comment: 'Decided first.', seen },
+  });
+  expect(decided.ok(), await decided.text()).toBe(true);
+  await admin.dispose();
+
+  await decideOnReportPage(page, 'Decline', 'Decided second, without knowing.');
+  // A decline needs its reason first; the refusal is the server's, after it.
+  const phone = (page.viewportSize()?.width ?? 1280) < 1024;
+  const form = phone ? page.getByRole('dialog') : page.getByRole('region', { name: 'Decide' });
+  await form.getByLabel('The reason the reporter is told').selectOption('duplicate');
+  await form.getByRole('button', { name: 'Record the decision' }).click();
+  await expect(
+    form.getByText(/approved it after you opened it\. Nothing you sent was recorded\./),
+  ).toBeVisible();
+
+  // Only the administrator's decision is on the record.
+  const record = await decisionsOn(page.request, thread);
+  expect(record).toHaveLength(1);
+  expect(record[0]).toMatchObject({ new_status: 'valid' });
+
+  // Shown as it is now, the page says approved.
+  await form.getByRole('button', { name: 'Show it as it is now' }).click();
+  await expect(page.getByText(/ · Approved$/)).toBeVisible();
 });
 
 test('a moderator is not shown the administrators’ settings', async ({ page }) => {

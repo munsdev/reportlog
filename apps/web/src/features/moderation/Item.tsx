@@ -71,6 +71,7 @@ import type { Decided, Decision } from './DecideForm.tsx';
 import { AnswerList, StatusChip, waited, when } from './parts.tsx';
 import { noteQuery, queueItemQuery, queueQuery } from './queries.ts';
 import type { QueueSearch } from './queries.ts';
+import { ChangedProblem, ViewingNotice, isChanged, useViewing } from './viewing.tsx';
 import { ACTION_WORDS, SEVERITIES, SEVERITY_WORDS, STATUS_WORDS } from './words.ts';
 
 type Item = ResponseOf<typeof getQueueItem>;
@@ -89,7 +90,11 @@ function useAct<T>(fn: (input: T) => Promise<unknown>) {
   });
 }
 
-function Problem({ error }: { error: Error | null }) {
+/** A refusal in words; one because the report moved since the page read it offers to read it again. */
+function Problem({ error, threadId }: { error: Error | null; threadId?: string }) {
+  if (error && threadId && isChanged(error)) {
+    return <ChangedProblem threadId={threadId} error={error} />;
+  }
   return error ? <ProblemNote>{error.message}</ProblemNote> : null;
 }
 
@@ -115,6 +120,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
   const toast = useToast();
   const [decided, setDecided] = useState<Decided | null>(null);
   const [sheet, setSheet] = useState<Decision | null>(null);
+  const viewing = useViewing(threadId, query.data?.report.seen ?? '');
 
   const onDecided = useCallback(
     (d: Decided, ref: string) => {
@@ -154,6 +160,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
         {r.reporter_withdrew ? <Chip kind="off">Withdrawn by its reporter</Chip> : null}
         {r.threat_open ? <span className="st bad">Threat to safety</span> : null}
       </div>
+      <ViewingNotice threadId={threadId} others={viewing.others} changed={viewing.changed} />
       <div className="grid2">
         <div className="col">
           <Said r={r} />
@@ -703,7 +710,12 @@ function NoteRow({ r }: { r: QueueItem }) {
   const write = useAct(() =>
     call(writeReportNote, {
       params: { threadId: r.thread_id },
-      body: { body: body ?? '', ...(why.trim() ? { revision_reason: why } : {}) },
+      body: {
+        body: body ?? '',
+        ...(why.trim() ? { revision_reason: why } : {}),
+        // The versions this page showed: the server refuses if somebody wrote one since.
+        based_on: query.data?.note?.versions ?? 0,
+      },
     }),
   );
   const reset = useCallback(() => {
@@ -785,7 +797,7 @@ function NoteRow({ r }: { r: QueueItem }) {
         </Field>
       ) : null}
       {problem ? <ProblemNote>{problem}</ProblemNote> : null}
-      <Problem error={write.error} />
+      <Problem error={write.error} threadId={r.thread_id} />
       {note ? <Citations threadId={r.thread_id} links={links} /> : null}
       {note && isAdmin ? <NoteState threadId={r.thread_id} current={note.state} /> : null}
     </ClosedRow>
@@ -928,10 +940,13 @@ function BoardRow({ r }: { r: QueueItem }) {
   const [status, setStatus] = useState('pending');
   const [problem, setProblem] = useState('');
   const withdraw = useAct(() =>
-    call(withdrawReport, { params: { threadId: r.thread_id }, body: { comment } }),
+    call(withdrawReport, { params: { threadId: r.thread_id }, body: { comment, seen: r.seen } }),
   );
   const restore = useAct(() =>
-    call(restoreReport, { params: { threadId: r.thread_id }, body: { status, comment } }),
+    call(restoreReport, {
+      params: { threadId: r.thread_id },
+      body: { status, comment, seen: r.seen },
+    }),
   );
   const act = r.withdrawn ? restore : withdraw;
   const reset = useCallback(() => {
@@ -996,7 +1011,7 @@ function BoardRow({ r }: { r: QueueItem }) {
         />
         <FieldError>{problem}</FieldError>
       </Field>
-      <Problem error={act.error} />
+      <Problem error={act.error} threadId={r.thread_id} />
     </ClosedRow>
   );
 }
