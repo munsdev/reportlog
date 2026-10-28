@@ -1006,6 +1006,13 @@ export interface SiteCopy {
   updated_at: Generated<Timestamp>;
 }
 
+export interface SiteCopyVersions {
+  body: string;
+  created_at: Generated<Timestamp>;
+  id: Generated<number>;
+  key: string;
+}
+
 export interface SitePageEdits {
   blocks: Json | null;
   id: Generated<number>;
@@ -1283,6 +1290,7 @@ export interface DB {
   site_access_tokens: SiteAccessTokens;
   site_bundle_backups: SiteBundleBackups;
   site_copy: SiteCopy;
+  site_copy_versions: SiteCopyVersions;
   site_page_edits: SitePageEdits;
   site_pages: SitePages;
   site_settings: SiteSettings;

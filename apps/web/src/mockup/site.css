@@ -234,6 +234,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .tabs a{display:inline-flex;align-items:center;min-height:48px;padding:0 16px;text-decoration:none;font-family:var(--rl-font-display);font-weight:700;font-stretch:var(--h-stretch);font-size:.9rem;letter-spacing:.06em;text-transform:uppercase;color:var(--rl-text-muted);border-bottom:4px solid transparent;white-space:nowrap}
 .tabs a:hover{color:var(--rl-text)}
 .tabs a[aria-current="page"]{color:var(--rl-text);border-bottom-color:var(--rl-text)}
+/* The selected tab filled, where the underline alone did not read as chosen (Standards). */
+.tabs-filled{gap:6px;border-bottom:0}
+.tabs-filled a{min-height:40px;border:1.5px solid var(--rl-border);border-radius:var(--rl-radius-pill,999px)}
+.tabs-filled a[aria-current="page"]{background:var(--rl-text);color:var(--rl-surface);border-color:var(--rl-text)}
 
 /* ---------- board ---------- */
 .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-block:18px 10px}

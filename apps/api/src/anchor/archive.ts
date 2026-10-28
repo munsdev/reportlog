@@ -68,6 +68,8 @@ const LIST_REASON =
 export const EXCLUDED: Readonly<Record<string, string>> = {
   ...Object.fromEntries(LIST_TABLES.map((t) => [t, LIST_REASON])),
   schema_migrations: "The migration runner's own record. The new database has its own.",
+  site_copy_versions:
+    "The history behind a standard's version number. Rebuilt as the wording arrives: each written slot starts again at version 1 on the new server.",
   sessions: 'Live sign-ins. Everybody signs in again on the new server.',
   otp_codes: 'Sign-in codes, minutes old at most.',
   site_access_tokens: 'Site-password cookies. Visitors type the password again.',
