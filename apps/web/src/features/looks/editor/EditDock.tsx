@@ -4,12 +4,21 @@
  * pills): a pencil that opens a short menu, Edit this page where the page can
  * be edited, and Edit the look. Never in a preview frame or on a door, and
  * hidden while the look editor is open.
+ *
+ * On every page with wording of its own it also offers "Edit this page's
+ * words" (the owner's call, 28 Oct: the pencil everywhere, no new block
+ * pages), and on the legal page the way to the legal notices.
  */
-import { useEffect, useId, useRef, useState } from 'react';
+import { Link, useLocation } from '@tanstack/react-router';
+import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { useGateMode } from '../../identity/gateMode.ts';
 import { useMe } from '../../identity/session.ts';
 import { inPreviewFrame } from './override.ts';
 import { usePageEdit } from './pageEdit.ts';
+import { slotsOn } from './pageWords.ts';
+
+// Only an administrator who opens it downloads the settings code it uses.
+const PageWords = lazy(() => import('./PageWords.tsx'));
 import { setLookEditorOpen } from './state.ts';
 
 export function EditDock() {
@@ -22,7 +31,11 @@ export function EditDock() {
 
 function EditMenu() {
   const [open, setOpen] = useState(false);
+  const [words, setWords] = useState(false);
   const pageEdit = usePageEdit();
+  const { pathname } = useLocation();
+  const slots = slotsOn(pathname);
+  const legal = pathname.replace(/\/+$/, '') === '/legal';
   const menu = useId();
   const root = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
@@ -50,12 +63,43 @@ function EditMenu() {
   };
   return (
     <div ref={root} className="dock-menu-wrap">
+      {words ? (
+        <Suspense fallback={null}>
+          <PageWords
+            slots={slots}
+            onClose={() => {
+              setWords(false);
+              button.current?.focus();
+            }}
+          />
+        </Suspense>
+      ) : null}
       {open ? (
         <div id={menu} className="dock-menu" role="group" aria-label="Edit">
           {pageEdit ? (
             <button type="button" onClick={choose(pageEdit)}>
               Edit this page
             </button>
+          ) : null}
+          {slots.length ? (
+            <button
+              type="button"
+              onClick={choose(() => {
+                setWords(true);
+              })}
+            >
+              Edit this page’s words
+            </button>
+          ) : null}
+          {legal ? (
+            <Link
+              to="/settings/legal"
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              Edit the legal notices
+            </Link>
           ) : null}
           <button
             type="button"
