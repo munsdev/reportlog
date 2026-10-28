@@ -157,7 +157,8 @@ export function ContactCard({
       help={
         <p className="muted">
           We email you one link. <b>Your report is filed when you press it.</b> The address also
-          lets you correct, withdraw or erase what you wrote from My reports.
+          lets you correct the report, take it off the public board, or erase what you wrote, from
+          My reports.
         </p>
       }
       error={problem}
@@ -193,13 +194,14 @@ export function ManageCard({
     <CardFrame
       eyebrow={eyebrow}
       step="Optional"
-      heading="Want to be able to correct or withdraw it later?"
+      heading="Want to be able to correct it later?"
       focusKey="manage"
       help={
         <p className="muted">
-          Leave an email address and you can correct or withdraw the report from My reports. If you
-          do, we email you a link and <b>the report is filed when you press it</b>. Skip this and it
-          is filed right away, and can’t be changed after.
+          Leave an email address and you can correct the report or take it off the public board,
+          from My reports. If you do, we email you a link and{' '}
+          <b>the report is filed when you press it</b>. Skip this and it is filed right away, and
+          can’t be changed after.
         </p>
       }
       error={problem}

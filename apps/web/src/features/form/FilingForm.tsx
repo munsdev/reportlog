@@ -417,7 +417,7 @@ function Cards({
     review: 'Check your answers',
     publish: card?.question ?? 'Should this report be published?',
     share: 'Can vetted journalists read what you wrote?',
-    manage: 'Want to be able to correct or withdraw it later?',
+    manage: 'Want to be able to correct it later?',
     contact: wrote ? 'Your email address' : 'Where can we reach you?',
     files: fileQuestion?.label ?? 'Files',
   };
@@ -784,8 +784,8 @@ function Cards({
                   <span className="mark">What is published</span>
                   <p>
                     After a moderator approves it, your answers are published on the board. What you
-                    wrote and any links are never published. The original always stays in the
-                    record, even if you correct or withdraw it later.
+                    wrote and any links are never published, and you can erase them at any time from
+                    My reports. Your answers stay in the sealed record.
                   </p>
                 </div>
               ) : null}
@@ -810,17 +810,18 @@ function Cards({
               {/* The operator's own line about sending, when they wrote one. */}
               <CopyText slot="send_note" className="lbl" />
               {/* G7, D2: said only when no address was given. With one, the
-                  report can be corrected or withdrawn from My reports, and says so. */}
+                  report can be corrected or taken off the board from My reports, and says so.
+                  Never "withdrawn": the report is sealed and cannot be deleted (terms § 4). */}
               {givesAddress ? (
                 <Note>
                   <b>
-                    You can correct or withdraw this report from My reports. The original stays in
-                    the record.
+                    From My reports you can add a correction or take this report off the public
+                    board. The report itself is sealed and can’t be deleted.
                   </b>
                 </Note>
               ) : (
                 <Note warn>
-                  <b>This report can’t be changed or withdrawn after you send it.</b>
+                  <b>This report can’t be changed or taken down after you send it.</b>
                 </Note>
               )}
             </CardFrame>
