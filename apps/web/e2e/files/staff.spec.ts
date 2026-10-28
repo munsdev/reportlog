@@ -140,8 +140,8 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   const outside = watchOutside(page);
 
   await page.goto('/');
-  await goViaMenu(page, 'Files', { area: 'Moderation' });
-  await expect(page.getByRole('heading', { level: 1, name: 'Files' })).toBeVisible();
+  await goViaMenu(page, 'Files waiting', { area: 'Review' });
+  await expect(page.getByRole('heading', { level: 1, name: 'Files waiting' })).toBeVisible();
   await page
     .getByRole('list', { name: 'Reports with files waiting' })
     .getByRole('link', { name: new RegExp(ref) })
@@ -263,7 +263,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   // The queue names administrators as well as moderators, as moderation
   // does. (Admin still does not imply moderator: the screen names both.)
   await page.goto('/files');
-  await expect(page.getByRole('heading', { name: 'Files', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Files waiting', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Not for this account' })).toHaveCount(0);
   expect(outside).toEqual([]);
 });

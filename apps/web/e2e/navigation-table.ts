@@ -29,6 +29,8 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Your alerts', href: '/desk/alerts' },
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
+  { label: 'Members', href: '/intake/members' },
+  { label: 'Directory listing', href: '/intake/listing' },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
   { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
   { area: 'Review', label: 'Links', href: '/lists/links' },
@@ -42,14 +44,12 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Content', label: 'Front page and pages', href: '/logbooks/pages' },
   { area: 'Content', label: 'Starting points', href: '/settings/starting-points' },
   { area: 'Site settings', label: 'Switches', href: '/settings/switches' },
-  { area: 'Site settings', label: 'Name', href: '/settings/name' },
-  { area: 'Site settings', label: 'Look', href: '/settings/look' },
+  { area: 'Site settings', label: 'Name and look', href: '/settings/name' },
   { area: 'Site settings', label: 'Wording', href: '/settings/words' },
   { area: 'Site settings', label: 'Legal notices', href: '/settings/legal' },
   { area: 'Site settings', label: 'Social media', href: '/settings/social' },
   { area: 'Site settings', label: 'Report and tip forms', href: '/settings/forms' },
   { area: 'Site settings', label: 'Moderation rules', href: '/moderate/settings' },
-  { area: 'Site settings', label: 'Moderator agreement', href: '/moderate/agreement' },
   { area: 'Site settings', label: 'File limits', href: '/files/settings' },
   { area: 'Site settings', label: 'Import and export', href: '/settings/bundle' },
   { area: 'People', label: 'People', href: '/people' },
@@ -62,7 +62,6 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Records and system', label: 'Updates', href: '/updates' },
   { area: 'Help', label: 'Guides', href: '/docs' },
   { area: 'Help', label: 'Feedback', href: '/feedback' },
-  { area: 'Help', label: 'Feedback queue', href: '/settings/feedback' },
 ];
 
 export type MenuRole =
@@ -110,8 +109,8 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   owner: STAFF_ONLY(),
   access_manager: [...YOU, ...pick('People', 'Organizations', 'Ownership', 'Guides', 'Feedback')],
   journalist: [...YOU, ...DESK],
-  // Volunteer links are for an organization's managers.
-  coordinator: [...YOU, 'Filing for an organization'],
+  // Volunteer links and Members are for an organization's managers.
+  coordinator: [...YOU, 'Filing for an organization', 'Directory listing'],
   tester: [...YOU, 'Feedback'],
 };
 

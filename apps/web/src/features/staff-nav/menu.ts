@@ -76,6 +76,10 @@ export const MENU: readonly MenuSection[] = [
       // Its route still admits them (intake/route.tsx); the menu offers it
       // to those it works for.
       { to: '/intake/links', label: 'Volunteer links', for: ['org_manager'] },
+      // An organization's own pages, which name it in their address: these go
+      // on to it, or ask which (intake/OrganizationJump.tsx).
+      { to: '/intake/members', label: 'Members', for: ['org_manager'] },
+      { to: '/intake/listing', label: 'Directory listing', for: ['organization'] },
     ],
   },
   {
@@ -132,14 +136,14 @@ export const MENU: readonly MenuSection[] = [
     label: 'Site settings',
     pages: [
       { to: '/settings/switches', label: 'Switches', for: ADMIN },
-      { to: '/settings/name', label: 'Name', for: ADMIN },
-      { to: '/settings/look', label: 'Look', for: ADMIN },
+      // Two tabs: Name and Look (settings/NameLookTabs.tsx).
+      { to: '/settings/name', label: 'Name and look', for: ADMIN },
       { to: '/settings/words', label: 'Wording', for: ADMIN },
       { to: '/settings/legal', label: 'Legal notices', for: ADMIN },
       { to: '/settings/social', label: 'Social media', for: ADMIN },
       { to: '/settings/forms', label: 'Report and tip forms', for: ADMIN },
+      // Two tabs: the rules, and the moderator agreement (moderation/RulesTabs.tsx).
       { to: '/moderate/settings', label: 'Moderation rules', for: ADMIN },
-      { to: '/moderate/agreement', label: 'Moderator agreement', for: ADMIN },
       // A logbook's own limits are this page's too, not the files queue's.
       { to: '/files/settings', label: 'File limits', for: ADMIN, under: ['/files/logbooks/'] },
       // The owner's: it replaces the wording, pages, accounts and look in one go.
@@ -189,8 +193,6 @@ export const MENU: readonly MenuSection[] = [
         for: ['tester', 'admin', 'access_manager'],
         ...wait('feedback'),
       },
-      // The triage queue, not the form: a different screen from Feedback.
-      { to: '/settings/feedback', label: 'Feedback queue', for: ADMIN },
     ],
   },
 ];
@@ -211,4 +213,8 @@ export const FOLDED: Readonly<Record<string, string>> = {
   '/settings': '/settings/switches',
   '/settings/development': '/settings/switches',
   '/lists/search': '/lists',
+  // The tabs of a page with one entry.
+  '/settings/look': '/settings/name',
+  '/moderate/agreement': '/moderate/settings',
+  '/settings/feedback': '/feedback',
 };

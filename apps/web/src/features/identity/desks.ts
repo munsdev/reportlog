@@ -19,7 +19,7 @@ export const STARTS_AT: Readonly<Record<DeskId, StaffEntry['to']>> = {
   policy: '/moderate',
   group: '/access/orgs',
   translation: '/settings/words',
-  design: '/settings/look',
+  design: '/settings/name',
   outreach: '/docs',
 };
 

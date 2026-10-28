@@ -1,23 +1,16 @@
 /**
- * At the door: the one setting of the checks every report and tip passes
- * before it is read (apps/api/src/door/). The minimum time a form must have
- * been open before it is sent.
+ * Report and tip forms: what forms ask of reporters' email (how long a
+ * confirmation link works, when report emails are deleted, how many reports
+ * one address may file a day).
  *
- * WHAT IS NOT HERE, AND WHERE IT IS. The puzzle's difficulty is the
- * moderators' "Harder puzzle" switch on the flood screen, recorded and shown
- * publicly. The limits per network address are server settings
- * (DOOR_SUBMITS_PER_MINUTE and the rest, deploy/README.md). The sentence a
- * refusal shows is a page wording slot.
- *
- * One setting on its own page: the field is open from the start, and the
- * Save bar appears once there is a change to save.
+ * WHAT IS NOT HERE, AND WHERE IT IS. The minimum time on a form, the puzzle's
+ * difficulty and pausing intake are on the flood screen, with the other
+ * defences against a flood (features/settings/MinFormTime.tsx). The limits
+ * per network address are server settings (DOOR_SUBMITS_PER_MINUTE and the
+ * rest, deploy/README.md). The sentence a refusal shows is a page wording
+ * slot.
  */
-import {
-  getDoorSettings,
-  getFilingLimits,
-  setDoorSettings,
-  setFilingLimits,
-} from '@reportlog/contracts';
+import { getFilingLimits, setFilingLimits } from '@reportlog/contracts';
 import type { FilingLimits } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
@@ -26,16 +19,9 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
-import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { GuardedPanel, SettingsFrame } from '../../../features/settings/panels.tsx';
-import { useUnsavedChanges } from './-editor.tsx';
-
-const doorQuery = queryOptions({
-  queryKey: ['admin', 'door'],
-  queryFn: ({ signal }) => call(getDoorSettings, { signal }),
-});
 
 const limitsQuery = queryOptions({
   queryKey: ['admin', 'filing-limits'],
@@ -49,78 +35,6 @@ export const Route = createFileRoute('/(staff)/settings/forms')({
     </SettingsFrame>
   ),
 });
-
-/** A whole number of seconds from 0 to 600, or the sentence saying what it must be. */
-export function minFormProblem(text: string): string | null {
-  const t = text.trim();
-  if (!/^\d{1,3}$/.test(t) || Number(t) > 600)
-    return 'Write a whole number of seconds from 0 to 600.';
-  return null;
-}
-
-export function MinFormTime({ seconds }: { seconds: number }) {
-  const client = useQueryClient();
-  const toast = useToast();
-  const [text, setText] = useState(String(seconds));
-  const problem = minFormProblem(text);
-  const dirty = text.trim() !== String(seconds);
-  useUnsavedChanges('the minimum time on a form', dirty);
-  const save = useMutation({
-    mutationFn: () => call(setDoorSettings, { body: { min_form_seconds: Number(text.trim()) } }),
-    onSuccess: (next) => {
-      client.setQueryData(doorQuery.queryKey, next);
-      setText(String(next.min_form_seconds));
-      toast.show('Saved. Forms are checked with the new time from now.');
-    },
-  });
-  const submit = () => {
-    if (!problem) save.mutate();
-  };
-  return (
-    <form
-      noValidate
-      className="form-stack"
-      onSubmit={(e) => {
-        e.preventDefault();
-        submit();
-      }}
-    >
-      <Field>
-        <Label>Minimum time on a form, in seconds</Label>
-        <FieldDescription>
-          A report or tip sent sooner than this after its form was opened is turned away, as
-          something no person could have read. Three seconds is a cautious start; raise it during a
-          flood if fast scripts are getting through. 0 turns this check off.
-        </FieldDescription>
-        <Input
-          inputMode="numeric"
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            save.reset();
-          }}
-        />
-        <FieldError>{text.trim() ? problem : null}</FieldError>
-      </Field>
-      {save.isError ? (
-        <Note tone="serious" title="That was not saved.">
-          {save.error.message}
-        </Note>
-      ) : null}
-      {dirty ? (
-        <SaveBar
-          name="Minimum time on a form"
-          busy={save.isPending}
-          onSave={submit}
-          onCancel={() => {
-            setText(String(seconds));
-            save.reset();
-          }}
-        />
-      ) : null}
-    </form>
-  );
-}
 
 /** A whole number from 1 to `max`, or the sentence saying what it must be. */
 export function wholeProblem(text: string, max: number, what: string): string | null {
@@ -255,7 +169,6 @@ export function EmailOnReports({ limits }: { limits: FilingLimits }) {
 
 function FormsPage() {
   const limits = useQuery(limitsQuery);
-  const state = useQuery(doorQuery);
   return (
     <StaffPage title="Report and tip forms" lede="How forms tell people from scripts.">
       <p className="muted">
@@ -263,22 +176,19 @@ function FormsPage() {
         and must have been open for a moment before it is sent. How many one network address may
         send is limited too. Anything turned away is told only to try again, and counted.
       </p>
-      {state.isPending ? <p role="status">Loading…</p> : null}
-      {state.isError ? (
+      {limits.isPending ? <p role="status">Loading…</p> : null}
+      {limits.isError ? (
         <Note tone="serious" title="The settings could not be read.">
-          {state.error.message}
+          {limits.error.message}
         </Note>
       ) : null}
       {limits.data ? <EmailOnReports limits={limits.data} /> : null}
-      {state.data ? (
-        <Panel title="The minimum time on a form">
-          <MinFormTime seconds={state.data.min_form_seconds} />
-        </Panel>
-      ) : null}
       <Panel kind="quiet" title="Set elsewhere">
         <p>
-          <Link to="/moderate/flood">The puzzle and pausing intake</Link> (the “Harder puzzle”
-          switch, where each use is recorded and shown publicly) ·{' '}
+          <Link to="/moderate/flood">
+            The puzzle, the minimum time on a form, and pausing intake
+          </Link>{' '}
+          (on the flood screen, with the other defences against a flood) ·{' '}
           <Link to="/settings/words">The wording on forms</Link> (“When a form is turned away”)
         </p>
         <p className="muted">

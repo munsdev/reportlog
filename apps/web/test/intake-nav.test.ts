@@ -14,12 +14,15 @@ describe('who sees the intake screens', () => {
     expect(labels({ roles: [], tester: false, memberships: [{ role: 'coordinator' }] })).toEqual([
       ...YOU,
       'Filing for an organization',
+      'Directory listing',
     ]);
-    // Volunteer links work for managers only, so only managers are offered them.
+    // Volunteer links and members work for managers only, so only managers are offered them.
     expect(labels({ roles: [], tester: false, memberships: [{ role: 'manager' }] })).toEqual([
       ...YOU,
       'Filing for an organization',
       'Volunteer links',
+      'Members',
+      'Directory listing',
     ]);
     expect(
       labels({ roles: ['moderator'], tester: false, memberships: [{ role: 'manager' }] }),

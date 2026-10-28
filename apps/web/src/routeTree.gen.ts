@@ -75,6 +75,8 @@ import { Route as staffFilesSettingsRouteImport } from './routes/(staff)/files/s
 import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/index'
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
 import { Route as staffIntakeLinksRouteImport } from './routes/(staff)/intake/links'
+import { Route as staffIntakeListingRouteImport } from './routes/(staff)/intake/listing'
+import { Route as staffIntakeMembersRouteImport } from './routes/(staff)/intake/members'
 import { Route as staffListsIndexRouteImport } from './routes/(staff)/lists/index'
 import { Route as staffListsIdRouteImport } from './routes/(staff)/lists/$id'
 import { Route as staffListsLinksRouteImport } from './routes/(staff)/lists/links'
@@ -458,6 +460,16 @@ const staffIntakeLinksRoute = staffIntakeLinksRouteImport.update({
   path: '/links',
   getParentRoute: () => staffIntakeRouteRoute,
 } as any)
+const staffIntakeListingRoute = staffIntakeListingRouteImport.update({
+  id: '/listing',
+  path: '/listing',
+  getParentRoute: () => staffIntakeRouteRoute,
+} as any)
+const staffIntakeMembersRoute = staffIntakeMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => staffIntakeRouteRoute,
+} as any)
 const staffListsIndexRoute = staffListsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -791,6 +803,8 @@ export interface FileRoutesByFullPath {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/intake/links': typeof staffIntakeLinksRoute
+  '/intake/listing': typeof staffIntakeListingRoute
+  '/intake/members': typeof staffIntakeMembersRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -905,6 +919,8 @@ export interface FileRoutesByTo {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/intake/links': typeof staffIntakeLinksRoute
+  '/intake/listing': typeof staffIntakeListingRoute
+  '/intake/members': typeof staffIntakeMembersRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -1026,6 +1042,8 @@ export interface FileRoutesById {
   '/(staff)/files/settings': typeof staffFilesSettingsRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
   '/(staff)/intake/links': typeof staffIntakeLinksRoute
+  '/(staff)/intake/listing': typeof staffIntakeListingRoute
+  '/(staff)/intake/members': typeof staffIntakeMembersRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
   '/(staff)/lists/links': typeof staffListsLinksRoute
   '/(staff)/lists/search': typeof staffListsSearchRoute
@@ -1148,6 +1166,8 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/intake/links'
+    | '/intake/listing'
+    | '/intake/members'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -1262,6 +1282,8 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/intake/links'
+    | '/intake/listing'
+    | '/intake/members'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -1382,6 +1404,8 @@ export interface FileRouteTypes {
     | '/(staff)/files/settings'
     | '/(staff)/intake/$id'
     | '/(staff)/intake/links'
+    | '/(staff)/intake/listing'
+    | '/(staff)/intake/members'
     | '/(staff)/lists/$id'
     | '/(staff)/lists/links'
     | '/(staff)/lists/search'
@@ -1984,6 +2008,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffIntakeLinksRouteImport
       parentRoute: typeof staffIntakeRouteRoute
     }
+    '/(staff)/intake/listing': {
+      id: '/(staff)/intake/listing'
+      path: '/listing'
+      fullPath: '/intake/listing'
+      preLoaderRoute: typeof staffIntakeListingRouteImport
+      parentRoute: typeof staffIntakeRouteRoute
+    }
+    '/(staff)/intake/members': {
+      id: '/(staff)/intake/members'
+      path: '/members'
+      fullPath: '/intake/members'
+      preLoaderRoute: typeof staffIntakeMembersRouteImport
+      parentRoute: typeof staffIntakeRouteRoute
+    }
     '/(staff)/lists/': {
       id: '/(staff)/lists/'
       path: '/'
@@ -2376,6 +2414,8 @@ const staffFilesRouteRouteWithChildren = staffFilesRouteRoute._addFileChildren(
 interface staffIntakeRouteRouteChildren {
   staffIntakeIdRoute: typeof staffIntakeIdRoute
   staffIntakeLinksRoute: typeof staffIntakeLinksRoute
+  staffIntakeListingRoute: typeof staffIntakeListingRoute
+  staffIntakeMembersRoute: typeof staffIntakeMembersRoute
   staffIntakeIndexRoute: typeof staffIntakeIndexRoute
   staffIntakeReportsThreadIdRoute: typeof staffIntakeReportsThreadIdRoute
 }
@@ -2383,6 +2423,8 @@ interface staffIntakeRouteRouteChildren {
 const staffIntakeRouteRouteChildren: staffIntakeRouteRouteChildren = {
   staffIntakeIdRoute: staffIntakeIdRoute,
   staffIntakeLinksRoute: staffIntakeLinksRoute,
+  staffIntakeListingRoute: staffIntakeListingRoute,
+  staffIntakeMembersRoute: staffIntakeMembersRoute,
   staffIntakeIndexRoute: staffIntakeIndexRoute,
   staffIntakeReportsThreadIdRoute: staffIntakeReportsThreadIdRoute,
 }

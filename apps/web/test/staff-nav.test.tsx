@@ -85,7 +85,17 @@ describe('who sees which section and page (menu.ts)', () => {
       'Who opened protected data',
       'Updates',
     ]);
-    expect(admin.Help).toEqual(['Guides', 'Feedback', 'Feedback queue']);
+    expect(admin['Site settings']).toEqual([
+      'Switches',
+      'Name and look',
+      'Wording',
+      'Legal notices',
+      'Social media',
+      'Report and tip forms',
+      'Moderation rules',
+      'File limits',
+    ]);
+    expect(admin.Help).toEqual(['Guides', 'Feedback']);
   });
 
   it('the owner satisfies administrator, plus backups, the bundle and vetting journalists', () => {
@@ -129,10 +139,13 @@ describe('who sees which section and page (menu.ts)', () => {
     });
     expect(shape(member('coordinator'))['Your organization']).toEqual([
       'Filing for an organization',
+      'Directory listing',
     ]);
     expect(shape(member('manager'))['Your organization']).toEqual([
       'Filing for an organization',
       'Volunteer links',
+      'Members',
+      'Directory listing',
     ]);
   });
 
@@ -172,7 +185,7 @@ describe('which page an address is', () => {
     ['/files/logbooks/3', 'File limits'],
     ['/access/orgs/4', 'Organizations'],
     ['/access/journalists/agreement', 'Journalists'],
-    ['/settings/look', 'Look'],
+    ['/intake/members', 'Members'],
     ['/intake/7', 'Filing for an organization'],
     ['/people/history', 'People'],
   ])('%s is %s', (path, label) => {
@@ -188,6 +201,9 @@ describe('which page an address is', () => {
     ['/settings', 'Switches'],
     ['/settings/development', 'Switches'],
     ['/lists/search', 'Lists'],
+    ['/settings/look', 'Name and look'],
+    ['/moderate/agreement', 'Moderation rules'],
+    ['/settings/feedback', 'Feedback'],
   ])('%s still opens, in the frame, as part of %s', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
     expect(inFrame(path)).toBe(true);
@@ -653,9 +669,9 @@ describe('the staff area', () => {
     await user.click(button);
     const again = within(screen.getByRole('dialog', { name: 'Staff menu' }));
     await user.click(again.getByText('Site settings'));
-    await user.click(again.getByRole('link', { name: 'Look' }));
+    await user.click(again.getByRole('link', { name: 'Name and look' }));
     await settle();
-    expect(screen.getByRole('heading', { level: 1, name: 'Look' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'the page' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();
   });
 
