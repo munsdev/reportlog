@@ -101,8 +101,8 @@ function AboutPage() {
             <li>
               <span>
                 <b>It stays on the record.</b>
-                If you left an address, you can add a correction or withdraw it; the original stays
-                in the record with a note.
+                If you left an address, you can add a correction or take it off the public board;
+                the report itself is sealed and stays in the record with a note.
               </span>
             </li>
           </ol>

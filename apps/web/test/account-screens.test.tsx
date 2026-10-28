@@ -270,7 +270,10 @@ describe('my reports', () => {
       tone: 'tag',
       label: 'Declined',
     });
-    expect(stateChip({ ...base, withdrawn: true })).toEqual({ tone: 'tag', label: 'Withdrawn' });
+    expect(stateChip({ ...base, withdrawn: true })).toEqual({
+      tone: 'tag',
+      label: 'Off the board',
+    });
   });
 });
 

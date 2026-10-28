@@ -142,7 +142,7 @@ function Filing() {
         <p>
           A form of choices only does not ask for an address. Your report is filed the moment you
           send it, with no confirmation, and nothing ties it to you, so you cannot come back to
-          correct or withdraw it.
+          correct it or take it off the board.
         </p>
       </Sec>
     </>
@@ -170,9 +170,10 @@ function Next() {
         <p>
           If you gave an address, sign in with it and open <Link to="/mine">your reports</Link>.
           From there you can file a correction (a new version; the original is kept beside it),
-          change the permissions you give, withdraw a report from the public board, or erase your
-          address for good. A withdrawn report stays in the archive, and the fact that it was
-          withdrawn is part of the record.
+          change the permissions you give, take a report off the public board, erase what you wrote
+          in a note or link, or erase your address for good. A report is sealed and cannot be
+          deleted: one taken off the board stays in the archive, and that it was taken off is part
+          of the record.
         </p>
       </Sec>
     </>

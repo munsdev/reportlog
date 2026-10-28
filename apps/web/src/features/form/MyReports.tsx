@@ -77,7 +77,7 @@ function SignedIn({ children }: { children: ReactNode }) {
 }
 
 function statusOf(r: MyReport): string {
-  if (r.withdrawn) return 'Withdrawn';
+  if (r.withdrawn) return 'Off the board';
   if (r.moderation_status === 'pending') return 'Waiting for a moderator';
   return 'Read by a moderator';
 }
@@ -92,7 +92,7 @@ function statusOf(r: MyReport): string {
  * list is not told either.
  */
 export function stateChip(r: MyReport): { kind: 'ok' | 'wait' | ''; label: string } {
-  if (r.withdrawn) return { kind: '', label: 'Withdrawn' };
+  if (r.withdrawn) return { kind: '', label: 'Off the board' };
   if (r.moderation_status === 'pending') return { kind: 'wait', label: 'Waiting' };
   if (r.moderation_status === 'invalid') return { kind: '', label: 'Declined' };
   if (r.moderation_status === 'valid')
@@ -472,11 +472,11 @@ function Withdraw({ r }: { r: MyReportDetail }) {
   });
   return (
     <Panel
-      title="Withdraw it"
-      sub="It comes off the public board. It stays in the record, marked as withdrawn."
+      title="Take it off the board"
+      sub="It comes off the public board. The report itself is sealed: it stays in the record, marked as taken off the board, and can’t be deleted."
     >
       <AreaField
-        label="Why are you withdrawing it?"
+        label="Why are you taking it off the board?"
         rows={2}
         value={comment}
         onChange={(e) => {
@@ -492,7 +492,7 @@ function Withdraw({ r }: { r: MyReportDetail }) {
           go.mutate();
         }}
       >
-        Withdraw it
+        Take it off the board
       </Btn>
     </Panel>
   );
@@ -513,9 +513,9 @@ function Erase({ r }: { r: MyReportDetail }) {
   return (
     <Panel title="Erase your contact details" kind="danger">
       <p className="muted">
-        Your email address is destroyed. Your report is not withdrawn: it stays as it is (it never
-        held your address), and is published or not exactly as before. Afterwards it no longer
-        appears here, and nobody can reach you about it. To take the report down, withdraw it first.
+        Your email address is destroyed. Your report stays as it is (it never held your address),
+        and is published or not exactly as before. Afterwards it no longer appears here, and nobody
+        can reach you about it. To take the report off the board, do that first.
       </p>
       <CheckBox
         checked={sure}
