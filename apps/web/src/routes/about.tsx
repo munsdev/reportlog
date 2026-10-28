@@ -5,9 +5,11 @@
  * The page is the mock-up's about.html: a band, the text, and cards to what
  * comes next.
  */
+import { hasAdminAuthority } from '@reportlog/access';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
+import { useMe } from '../features/identity/session.ts';
 import { Band, MockPage } from '../mockup/Band.tsx';
 import { Card, TwoCol } from '../mockup/TwoCol.tsx';
 import { useBodyClass } from '../mockup/useBodyClass.ts';
@@ -17,7 +19,13 @@ export const Route = createFileRoute('/about')({
 });
 
 function AboutPage() {
-  const name = plainSiteName(useSite().data);
+  const site = useSite().data;
+  const name = plainSiteName(site);
+  const me = useMe().data;
+  const admin = me?.signedIn === true && hasAdminAuthority(me.roles);
+  // The contact wording itself, where the card used to send people to find
+  // it ("Who to write to", which read as a sentence that stopped).
+  const contact = site?.copy.contact_users ?? '';
   useBodyClass('light');
   return (
     <MockPage>
@@ -38,14 +46,21 @@ function AboutPage() {
                 How to help
               </Link>
             </Card>
-            <Card title="Contact" plain>
-              <p>For questions about the project or a report you filed.</p>
-              <p>
-                <Link to="/terms" hash="t-users">
-                  Who to write to
-                </Link>
-              </p>
-            </Card>
+            {contact ? (
+              <Card title="Contact" plain>
+                <p>For questions about the project or a report you filed:</p>
+                <CopyText slot="contact_users" />
+              </Card>
+            ) : admin ? (
+              // Nothing written yet: visitors see no card that says nothing,
+              // and an administrator is told what fills it.
+              <Card title="Contact" plain>
+                <p className="muted">
+                  Visitors see no contact card until one is written. Choose Edit, then “Edit this
+                  page’s words”, and fill in the contact for people who use this site.
+                </p>
+              </Card>
+            ) : null}
           </>
         }
       >

@@ -10,7 +10,7 @@
  */
 const PAGES: readonly { path: string; prefix?: boolean; slots: readonly string[] }[] = [
   { path: '/', slots: ['home_headline', 'home_lede', 'home_intro'] },
-  { path: '/about', slots: ['about_archive'] },
+  { path: '/about', slots: ['about_archive', 'contact_users'] },
   {
     path: '/submit',
     slots: [
