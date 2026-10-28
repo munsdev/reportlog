@@ -26,10 +26,11 @@ import type {
   BundleBackupInfo,
   BundleResult,
   LookOptions,
+  AgreementAudience,
   PageId,
   SiteBundle,
 } from '@reportlog/contracts';
-import { BUNDLE_FORMAT } from '@reportlog/contracts';
+import { AGREEMENT_AUDIENCES, BUNDLE_FORMAT } from '@reportlog/contracts';
 import type { Database } from '../db/database.ts';
 import { checkText, figureValues } from '../board/figures.ts';
 import { afterCommit } from '../files/publication.ts';
@@ -43,6 +44,7 @@ import { storeHeaderImage, headerKey } from '../site/headerImage.ts';
 import { validateHomeSections } from '../site/homeSections.ts';
 import { validateSiteName } from '../site/identity.ts';
 import { validateLegalText } from '../site/legal.ts';
+import { insertAgreementVersion, newestText } from '../moderation/agreement.ts';
 import { validateLook } from '../site/look.ts';
 import type { Checked } from '../site/result.ts';
 import { readCopy, readSettings, writeCopy, writeSettings } from '../site/settings.ts';
@@ -98,6 +100,13 @@ export async function exportBundle(
     name: settings.site_name,
     copy: Object.fromEntries(copyRows.map((r) => [r.key, r.body])),
     legal: { impressum: settings.impressum_text, privacy: settings.privacy_text },
+    agreements: Object.fromEntries(
+      (
+        await Promise.all(
+          AGREEMENT_AUDIENCES.map(async (a) => [a, (await newestText(db, a))?.body] as const),
+        )
+      ).filter((e): e is readonly [AgreementAudience, string] => typeof e[1] === 'string'),
+    ),
     pages,
     home_sections: resolveHomeSections(settings.home_sections).map((s) => ({
       id: s.id,
@@ -275,6 +284,17 @@ async function apply(
       await del.execute();
     }
     written.push(`${String(Object.keys(site.copy).length)} pieces of wording`);
+  }
+  for (const audience of AGREEMENT_AUDIENCES) {
+    const body = site.agreements?.[audience]?.trim();
+    if (!body) continue;
+    const what = audience === 'moderator' ? 'The moderator agreement' : 'The journalist agreement';
+    if ((await newestText(trx, audience))?.body === body) {
+      skipped.push(`${what}, already the same`);
+      continue;
+    }
+    await insertAgreementVersion(trx, audience, body, ctx.actor);
+    written.push(what);
   }
   for (const [page, blocks] of Object.entries(site.pages ?? {})) {
     await savePageIn(trx, page as PageId, blocks, null);

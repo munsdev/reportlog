@@ -47,6 +47,17 @@ export const BundleSite = z.object({
       privacy: z.string().nullable().optional(),
     })
     .optional(),
+  /**
+   * The moderator and journalist agreements, as published. An import publishes
+   * one as a new version only when its words differ from the newest, so
+   * nobody is asked to accept the same agreement twice.
+   */
+  agreements: z
+    .object({
+      moderator: z.string().max(20000).optional(),
+      journalist: z.string().max(20000).optional(),
+    })
+    .optional(),
   pages: z.partialRecord(PageIdSchema, z.array(Block)).optional(),
   home_sections: z.array(z.object({ id: z.string(), shown: z.boolean() })).optional(),
   social: z

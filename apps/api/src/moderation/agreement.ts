@@ -85,23 +85,35 @@ export async function publishAgreement(
       `Keep the agreement under ${String(MAX_AGREEMENT)} characters.`,
     );
   }
+  return db.transaction().execute((trx) => insertAgreementVersion(trx, audience, text, actor));
+}
+
+/**
+ * The next version of an agreement, inside a transaction the caller holds
+ * (publishing here, or a site bundle's import). Everybody accepts it again
+ * before they next act, so a caller should not write the same words twice.
+ */
+export async function insertAgreementVersion(
+  trx: Kysely<DB>,
+  audience: AgreementAudience,
+  text: string,
+  actor: string,
+): Promise<number> {
   // Two administrators publishing at once must not both become version 5.
-  return db.transaction().execute(async (trx) => {
-    const last = await trx
-      .selectFrom('agreement_texts')
-      .select('version')
-      .where('audience', '=', audience)
-      .orderBy('version', 'desc')
-      .limit(1)
-      .forUpdate()
-      .executeTakeFirst();
-    const version = (last?.version ?? 0) + 1;
-    await trx
-      .insertInto('agreement_texts')
-      .values({ audience, version, body: text, digest: digestOf(text), created_by: actor })
-      .execute();
-    return version;
-  });
+  const last = await trx
+    .selectFrom('agreement_texts')
+    .select('version')
+    .where('audience', '=', audience)
+    .orderBy('version', 'desc')
+    .limit(1)
+    .forUpdate()
+    .executeTakeFirst();
+  const version = (last?.version ?? 0) + 1;
+  await trx
+    .insertInto('agreement_texts')
+    .values({ audience, version, body: text, digest: digestOf(text), created_by: actor })
+    .execute();
+  return version;
 }
 
 export async function accept(
