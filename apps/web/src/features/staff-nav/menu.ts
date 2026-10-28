@@ -118,6 +118,7 @@ export const MENU: readonly MenuSection[] = [
     id: 'content',
     label: 'Content',
     pages: [
+      // Two tabs: the logbooks, and starting points (builder/LogbooksTabs.tsx).
       { to: '/logbooks', label: 'Logbooks', for: ADMIN, under: ['/logbooks/'] },
       // Finding somebody's entries is reached from the Lists page.
       { to: '/lists', label: 'Lists', for: ADMIN, under: ['/lists/'] },
@@ -128,7 +129,6 @@ export const MENU: readonly MenuSection[] = [
         for: ADMIN,
         under: ['/logbooks/front-page'],
       },
-      { to: '/settings/starting-points', label: 'Starting points', for: ADMIN },
     ],
   },
   {
@@ -217,4 +217,5 @@ export const FOLDED: Readonly<Record<string, string>> = {
   '/settings/look': '/settings/name',
   '/moderate/agreement': '/moderate/settings',
   '/settings/feedback': '/feedback',
+  '/settings/starting-points': '/logbooks',
 };

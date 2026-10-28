@@ -204,6 +204,7 @@ describe('which page an address is', () => {
     ['/settings/look', 'Name and look'],
     ['/moderate/agreement', 'Moderation rules'],
     ['/settings/feedback', 'Feedback'],
+    ['/settings/starting-points', 'Logbooks'],
   ])('%s still opens, in the frame, as part of %s', (path, label) => {
     expect(entryAt(path)?.label).toBe(label);
     expect(inFrame(path)).toBe(true);

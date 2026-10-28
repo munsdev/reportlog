@@ -62,10 +62,12 @@ export function FilesQueue() {
                   {String(r.files)} · sent {new Date(r.received_at).toLocaleString()}
                 </p>
                 <div className="acts">
+                  {/* The report itself, where its files card is: one copy of it
+                      (staff-nav/menu.ts), not the files-only page. */}
                   <Link
                     className="btn sm flat"
-                    to="/files/$ref"
-                    params={{ ref: r.public_ref }}
+                    to="/moderate/$threadId"
+                    params={{ threadId: r.thread_id }}
                     aria-label={`Open ${r.public_ref}`}
                   >
                     Open

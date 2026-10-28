@@ -42,7 +42,6 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Content', label: 'Lists', href: '/lists' },
   { area: 'Content', label: 'Maps', href: '/maps' },
   { area: 'Content', label: 'Front page and pages', href: '/logbooks/pages' },
-  { area: 'Content', label: 'Starting points', href: '/settings/starting-points' },
   { area: 'Site settings', label: 'Switches', href: '/settings/switches' },
   { area: 'Site settings', label: 'Name and look', href: '/settings/name' },
   { area: 'Site settings', label: 'Wording', href: '/settings/words' },

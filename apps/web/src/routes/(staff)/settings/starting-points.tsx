@@ -9,6 +9,7 @@
  * own words, and asks. Nothing on the page moves while somebody reads it,
  * and choosing a template applies nothing until "Apply it" is pressed.
  */
+import { LogbooksTabs } from '../../../features/builder/LogbooksTabs.tsx';
 import { applyTemplate, listTemplates } from '@reportlog/contracts';
 import type { TemplateSummary } from '@reportlog/contracts';
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -62,8 +63,9 @@ export function StartingPointsPage() {
 
   return (
     <StaffPage
-      title="Starting points"
+      title="Logbooks"
       lede="A starting point fills in a logbook, lists and wording you can then change."
+      tabs={<LogbooksTabs />}
     >
       {applied ? (
         <p className="muted">
