@@ -101,6 +101,24 @@ export const AgreementState = z.object({
 });
 export type AgreementState = z.infer<typeof AgreementState>;
 
+/**
+ * The journalist agreement as a public standard (/standards?tab=journalists):
+ * the newest published text, its version and date, for anybody past the site
+ * password, so somebody can read the terms before asking for desk access.
+ * Accepting it still needs an approved, signed-in journalist, and nothing
+ * about who accepted is here. The moderator agreement is not offered.
+ */
+export const getJournalistStandard = defineRoute({
+  method: 'GET',
+  path: '/api/standards/journalist',
+  summary: 'The newest published journalist agreement, to read before applying.',
+  response: z.object({
+    current: z
+      .object({ version: z.number().int(), body: z.string(), published_at: z.string() })
+      .nullable(),
+  }),
+});
+
 export const getAgreement = defineRoute({
   method: 'GET',
   path: '/api/agreement/:audience',
