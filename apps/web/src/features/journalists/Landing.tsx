@@ -70,8 +70,8 @@ export function JournalistsLanding() {
               <Link className="btn" to="/journalists/alerts" search={{ access: '1' }}>
                 Apply for desk access
               </Link>
-              <Link className="btn ghost" to="/standards">
-                Read the standard
+              <Link className="btn ghost" to="/standards" search={{ tab: 'journalists' }}>
+                Read the journalist standard
               </Link>
             </div>
           </section>

@@ -28,6 +28,7 @@ import {
   acceptances,
   agreementState,
   moderatorGuard,
+  newestText,
   publishAgreement,
 } from './agreement.ts';
 import { decideNotice, listNotices, statusByToken, submitNotice } from './contentNotices.ts';
@@ -53,6 +54,15 @@ export async function platformRoutes(app: FastifyInstance, deps: PlatformDeps): 
   const sends = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
   const looks = limiter({ max: 60, windowMs: 60 * 60 * 1000 });
   await app.register((open) => {
+    // The journalist agreement, readable before applying (contracts: getJournalistStandard).
+    route(open, C.getJournalistStandard, async () => {
+      const text = await newestText(db, 'journalist');
+      return {
+        current: text
+          ? { version: text.version, body: text.body, published_at: text.created_at.toISOString() }
+          : null,
+      };
+    });
     route(open, C.submitContentNotice, async ({ request }) => {
       sends.take(request.ip);
       const out = await submitNotice(

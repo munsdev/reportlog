@@ -27,7 +27,7 @@ test.describe('signed out', () => {
     const pages = [
       ['/about', /^About /],
       ['/how', 'How to use this'],
-      ['/standards', 'Moderation standard'],
+      ['/standards', 'Standards'],
       // The public API moved into How to use this, under For developers.
       ['/public-api', 'How to use this'],
     ] as const;
@@ -54,7 +54,7 @@ test.describe('signed out', () => {
     for (const [link, heading] of [
       ['About', /^About /],
       ['How to use', 'How to use this'],
-      ['Moderation standard', 'Moderation standard'],
+      ['Standards', 'Standards'],
     ] as const) {
       await footer.getByRole('link', { name: link, exact: true }).click();
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading);

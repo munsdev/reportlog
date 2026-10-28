@@ -83,7 +83,7 @@ export function SiteFooter() {
             <br />
             <Link to="/verify">Check a report</Link>
             <br />
-            <Link to="/standards">Moderation standard</Link>
+            <Link to="/standards">Standards</Link>
             <br />
             <Link to="/organizations">{DIRECTORY_NAME}</Link>
           </div>

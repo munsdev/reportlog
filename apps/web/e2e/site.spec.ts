@@ -44,7 +44,8 @@ test('the legal page says plainly what has not been published', async ({ page })
   await expect(page.getByText('outline to complete')).toHaveCount(0);
   await page.getByRole('main').getByRole('link', { name: 'moderation standard' }).click();
   await expect(page).toHaveURL(/\/standards$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Moderation standard' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Standards' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 2, name: 'Moderation standard' })).toBeVisible();
 });
 
 test('the footer reaches the legal page', async ({ page }) => {
