@@ -1,12 +1,17 @@
 /**
- * "What is on the front page": each logbook's and each list's front-page
- * switch, on the page that arranges the front page. They were inside each
- * editor ("On the front page"), where they overrode this page's buttons out
- * of sight of it; the decision is now taken in one place.
+ * "Where things appear": on the page that arranges the front page, where
+ * each logbook and list is advertised on the public site, decided in one
+ * place.
  *
- * Each switch is the same call the editors made (`show_on_front`), and
- * applies at once: it advertises, and opens or closes nothing. The summaries
- * do not carry the flag, so each logbook's and list's own record is read.
+ *   A logbook: on the front page or not (it was a switch in its editor).
+ *   A list: on the front page, on Get involved, and whether it is the
+ *   site's contact form, which the footer, the site menu, About and the
+ *   terms link to. One list at most is the contact form; choosing another
+ *   moves it (the server and the database both keep it to one).
+ *
+ * Each switch applies at once and advertises only: it opens, closes or hides
+ * nothing. The summaries do not carry these flags, so each logbook's and
+ * list's own record is read.
  */
 import { updateList, updateLogbook } from '@reportlog/contracts';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,83 +22,109 @@ import { listQuery, listsQuery } from '../lists/queries.ts';
 import { homeButtonsAdminQuery, logbookQuery, logbooksQuery } from './queries.ts';
 import { Problem } from './controls.tsx';
 
-interface Row {
-  kind: 'logbook' | 'list';
-  id: number;
-  title: string;
-  /** Said under its name: what it is, and a draft's "once launched". */
-  what: string;
-  on: boolean | undefined;
-}
+type ListFlag = 'show_on_front' | 'on_get_involved' | 'is_contact';
+type Change =
+  | { kind: 'logbook'; id: number; on: boolean }
+  | { kind: 'list'; id: number; flag: ListFlag; on: boolean };
 
 export function OnTheFrontPage() {
   const qc = useQueryClient();
   const logbooks = useQuery(logbooksQuery());
   const lists = useQuery(listsQuery());
   // A draft is listed too: switched on, it is shown once it is launched and open.
-  const launched = logbooks.data?.logbooks ?? [];
+  const lbRows = logbooks.data?.logbooks ?? [];
   const listRows = lists.data?.lists ?? [];
-  const lbDetails = useQueries({ queries: launched.map((l) => logbookQuery(l.id)) });
+  const lbDetails = useQueries({ queries: lbRows.map((l) => logbookQuery(l.id)) });
   const listDetails = useQueries({ queries: listRows.map((l) => listQuery(l.id)) });
 
-  const rows: Row[] = [
-    ...launched.map((l, i) => ({
-      kind: 'logbook' as const,
-      id: l.id,
-      title: l.title,
-      what:
-        l.state === 'draft' ? 'Logbook, a draft: shown once it is launched and open' : 'Logbook',
-      on: lbDetails[i]?.data?.show_on_front,
-    })),
-    ...listRows.map((l, i) => ({
-      kind: 'list' as const,
-      id: l.id,
-      title: l.title,
-      what: 'List',
-      on: listDetails[i]?.data?.show_on_front,
-    })),
-  ];
-
   const save = useMutation({
-    mutationFn: async (r: { kind: Row['kind']; id: number; on: boolean }) => {
-      const body = { show_on_front: r.on };
-      if (r.kind === 'logbook') await call(updateLogbook, { params: { id: r.id }, body });
-      else await call(updateList, { params: { id: r.id }, body });
+    mutationFn: async (c: Change) => {
+      if (c.kind === 'logbook') {
+        await call(updateLogbook, { params: { id: c.id }, body: { show_on_front: c.on } });
+      } else {
+        await call(updateList, { params: { id: c.id }, body: { [c.flag]: c.on } });
+      }
     },
-    onSuccess: async (_d, r) => {
+    onSuccess: async (_d, c) => {
       await Promise.all([
-        qc.invalidateQueries({
-          queryKey: ['admin', r.kind === 'logbook' ? 'logbooks' : 'lists', r.id],
-        }),
+        // A new contact form un-marks the old one, so every list is read again.
+        qc.invalidateQueries({ queryKey: ['admin', c.kind === 'logbook' ? 'logbooks' : 'lists'] }),
         qc.invalidateQueries({ queryKey: homeButtonsAdminQuery().queryKey }),
+        qc.invalidateQueries({ queryKey: ['open-lists'] }),
       ]);
     },
   });
+  const busy = save.isPending;
 
   return (
-    <Panel title="What is on the front page">
+    <Panel title="Where things appear">
       <p className="m">
-        A logbook or list that is switched on here is a button on the front page while it is open,
-        added at the end if the buttons below do not place it. Switched off, it is not shown there,
-        whatever the buttons say.
+        Each switch applies at once. Nothing here opens or closes a logbook or list: something is
+        shown only while it is open.
       </p>
       {logbooks.isPending || lists.isPending ? <p role="status">Reading what there is…</p> : null}
       <Problem error={logbooks.error ?? lists.error ?? save.error} />
-      {logbooks.data && lists.data && rows.length === 0 ? (
+      {logbooks.data && lists.data && lbRows.length + listRows.length === 0 ? (
         <p className="m">There is no logbook or list yet.</p>
       ) : null}
-      {rows.map((r) => (
-        <Switch
-          key={`${r.kind}:${String(r.id)}`}
-          label={r.title}
-          help={r.what}
-          checked={r.on === true}
-          disabled={r.on === undefined || save.isPending}
-          onChange={(on) => {
-            save.mutate({ kind: r.kind, id: r.id, on });
-          }}
-        />
-      ))}
+
+      {lbRows.length ? <h3 className="lbl">Logbooks</h3> : null}
+      {lbRows.map((l, i) => {
+        const on = lbDetails[i]?.data?.show_on_front;
+        return (
+          <Switch
+            key={`logbook:${String(l.id)}`}
+            label={`${l.title}: on the front page`}
+            help={
+              l.state === 'draft'
+                ? 'A draft: shown once it is launched and open. A button at the end if the buttons below do not place it.'
+                : 'A button at the end if the buttons below do not place it. Off, it is not shown there, whatever they say.'
+            }
+            checked={on === true}
+            disabled={on === undefined || busy}
+            onChange={(next) => {
+              save.mutate({ kind: 'logbook', id: l.id, on: next });
+            }}
+          />
+        );
+      })}
+
+      {listRows.length ? <h3 className="lbl">Lists</h3> : null}
+      {listRows.map((l, i) => {
+        const d = listDetails[i]?.data;
+        const flip = (flag: ListFlag) => (next: boolean) => {
+          save.mutate({ kind: 'list', id: l.id, flag, on: next });
+        };
+        return (
+          <fieldset key={`list:${String(l.id)}`} style={FIELDSET}>
+            <legend className="lbl">{l.title}</legend>
+            <Switch
+              label="On the front page"
+              help="A button at the end if the buttons below do not place it."
+              checked={d?.show_on_front === true}
+              disabled={!d || busy}
+              onChange={flip('show_on_front')}
+            />
+            <Switch
+              label="On Get involved"
+              help="A card on the Get involved page, as a way to help."
+              checked={d?.on_get_involved === true}
+              disabled={!d || busy}
+              onChange={flip('on_get_involved')}
+            />
+            <Switch
+              label="The contact form"
+              help="The footer, the site menu, About and the terms send people here to write to you. One list at a time."
+              checked={d?.is_contact === true}
+              disabled={!d || busy}
+              onChange={flip('is_contact')}
+            />
+          </fieldset>
+        );
+      })}
     </Panel>
   );
 }
+
+// As the other forms draw a group of switches (LimitsForm.tsx, CardFrame.tsx).
+const FIELDSET = { border: 0, padding: 0, margin: '8px 0 0', display: 'grid', gap: 6 } as const;

@@ -9,6 +9,7 @@
  * use the site, and one for authorities. An unwritten slot says so, and is
  * never filled with something that reads like a real address.
  */
+import { useContactList } from '../features/lists/contact.ts';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { CopyText } from '../components/ui/copy-text.tsx';
 import { PublicPage } from '../features/site-pages/PublicPage.tsx';
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/terms')({
 });
 
 function TermsPage() {
+  const form = useContactList();
   const site = useSite();
   return (
     <PublicPage
@@ -90,6 +92,13 @@ function TermsPage() {
       <section aria-labelledby="t-users">
         <h2 id="t-users">Contact for people who use this site</h2>
         <CopyText slot="contact_users" />
+        {form ? (
+          <p>
+            <Link className="btn sm flat" to="/list/$slug" params={{ slug: form.slug }}>
+              Write to us
+            </Link>
+          </p>
+        ) : null}
       </section>
 
       <section aria-labelledby="t-auth">

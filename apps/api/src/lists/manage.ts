@@ -58,6 +58,8 @@ export function describe(list: LoadedList, now: Date = new Date()) {
     email_mode: list.email_mode as (typeof EMAIL_MODES)[number],
     write_back: list.write_back,
     show_on_front: list.show_on_front,
+    on_get_involved: list.on_get_involved,
+    is_contact: list.is_contact,
     notify: list.notify,
     notify_email: list.notify_email,
     notify_pending_email: list.notify_pending_email,
@@ -240,6 +242,8 @@ export interface SettingsPatch {
   email_mode?: string | undefined;
   write_back?: boolean | undefined;
   show_on_front?: boolean | undefined;
+  on_get_involved?: boolean | undefined;
+  is_contact?: boolean | undefined;
   notify?: boolean | undefined;
   aggregates_published?: boolean | undefined;
   closed?: boolean | undefined;
@@ -317,6 +321,15 @@ export async function updateSettings(
   }
   if (patch.write_back !== undefined) set.write_back = patch.write_back;
   if (patch.show_on_front !== undefined) set.show_on_front = patch.show_on_front;
+  if (patch.on_get_involved !== undefined) set.on_get_involved = patch.on_get_involved;
+  if (patch.is_contact !== undefined) {
+    // One contact form at a time (lists_one_contact): naming this one stops
+    // naming any other, before this row is written.
+    if (patch.is_contact) {
+      await db.updateTable('lists').set({ is_contact: false }).where('id', '!=', id).execute();
+    }
+    set.is_contact = patch.is_contact;
+  }
   if (patch.notify !== undefined) set.notify = patch.notify;
   if (patch.aggregates_published !== undefined) {
     set.aggregates_published = patch.aggregates_published;
@@ -520,7 +533,17 @@ export async function reviewQueues(db: Db) {
 export async function openListedLists(db: Db, now: Date = new Date()) {
   const rows = await db
     .selectFrom('lists')
-    .select(['slug', 'title', 'blurb', 'opens_at', 'closes_at', 'closed_at', 'outside_access'])
+    .select([
+      'slug',
+      'title',
+      'blurb',
+      'opens_at',
+      'closes_at',
+      'closed_at',
+      'outside_access',
+      'on_get_involved',
+      'is_contact',
+    ])
     .where('visibility', '=', 'listed')
     .orderBy('created_at')
     .orderBy('id')
