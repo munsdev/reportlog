@@ -1,7 +1,7 @@
 /**
- * Moderation's settings, for administrators: whether the site publishes an
- * archive at all, the words that raise a review flag, which logbooks use
- * editorial notes, and who opened a reporter's contact details.
+ * Moderation rules, for administrators: the words that raise a review flag,
+ * which logbooks use editorial notes, and which publish counts only. The
+ * archive switch (exported below) is drawn on Switches.
  *
  * Setting panels (moderation.md section 10): each closed panel shows what is
  * set, one editor is open at a time, and the Save bar names what it saves.
@@ -13,10 +13,8 @@
  */
 import { setArchiveSwitch, setNotesSwitch, setReviewKeywords } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import { useCallback, useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
-import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { CheckOption } from '@/mockup/Choice.tsx';
 import { Field, FieldDescription, Label, Textarea } from '@/mockup/Field.tsx';
@@ -25,6 +23,7 @@ import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { CountsOnlySettings } from '../flood/CountsOnlySettings.tsx';
 import { StaffHead } from './parts.tsx';
+import { RulesTabs } from './RulesTabs.tsx';
 import { archiveQuery, keywordsQuery, notesSwitchesQuery } from './queries.ts';
 
 export function SettingsPage() {
@@ -32,22 +31,24 @@ export function SettingsPage() {
     <ToastProvider>
       <SettingPanels>
         <div className="col" style={{ gap: 18 }}>
+          {/* The archive switch is on Switches and the access log has its own
+              page, so this is the rules alone (staff-nav/menu.ts). */}
           <StaffHead
-            title="Moderation settings"
-            lede="What the site publishes, what asks for a second read, and who opened what. Each change is recorded with your name."
+            title="Moderation rules"
+            lede="What asks for a second read, which logbooks carry editorial notes, and which publish counts only. Each change is recorded with your name."
           />
-          <Archive />
+          <RulesTabs />
           <Keywords />
           <NotesSwitches />
           <CountsOnlySettings />
-          <AccessLog />
         </div>
       </SettingPanels>
     </ToastProvider>
   );
 }
 
-function Archive() {
+/** Exported for Switches (routes/(staff)/settings/switches.tsx). */
+export function Archive() {
   const qc = useQueryClient();
   const toast = useToast();
   const query = useQuery(archiveQuery);
@@ -270,22 +271,5 @@ function NotesSwitches() {
       </div>
       {set.error ? <Note tone="serious">{set.error.message}</Note> : null}
     </SettingPanel>
-  );
-}
-
-/**
- * The access log has its own page under Records (settings-and-admin.md §13).
- * This says where it went, for anybody who still looks for it here, and
- * reads nothing: reading the log is a look of its own.
- */
-function AccessLog() {
-  return (
-    <Panel kind="quiet" title="Who opened what" id="who-opened-what">
-      <p>
-        Every opening of a reporter’s contact details or of a file’s original, with who and why, is
-        now its own page under Records: <Link to="/who-opened-what">Who opened protected data</Link>
-        . Opening it is recorded.
-      </p>
-    </Panel>
   );
 }

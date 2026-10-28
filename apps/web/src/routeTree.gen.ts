@@ -22,6 +22,7 @@ import { Route as PublicApiRouteImport } from './routes/public-api'
 import { Route as StandardsRouteImport } from './routes/standards'
 import { Route as SubmitRouteImport } from './routes/submit'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as staffAccountRouteImport } from './routes/(staff)/account'
 import { Route as staffBackupsRouteImport } from './routes/(staff)/backups'
 import { Route as staffFilesRouteRouteImport } from './routes/(staff)/files/route'
 import { Route as staffIntakeRouteRouteImport } from './routes/(staff)/intake/route'
@@ -74,6 +75,8 @@ import { Route as staffFilesSettingsRouteImport } from './routes/(staff)/files/s
 import { Route as staffIntakeIndexRouteImport } from './routes/(staff)/intake/index'
 import { Route as staffIntakeIdRouteImport } from './routes/(staff)/intake/$id'
 import { Route as staffIntakeLinksRouteImport } from './routes/(staff)/intake/links'
+import { Route as staffIntakeListingRouteImport } from './routes/(staff)/intake/listing'
+import { Route as staffIntakeMembersRouteImport } from './routes/(staff)/intake/members'
 import { Route as staffListsIndexRouteImport } from './routes/(staff)/lists/index'
 import { Route as staffListsIdRouteImport } from './routes/(staff)/lists/$id'
 import { Route as staffListsLinksRouteImport } from './routes/(staff)/lists/links'
@@ -89,6 +92,9 @@ import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/mod
 import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderate/flood'
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
+import { Route as staffPeopleIndexRouteImport } from './routes/(staff)/people/index'
+import { Route as staffPeopleHistoryRouteImport } from './routes/(staff)/people/history'
+import { Route as staffPeopleOwnershipRouteImport } from './routes/(staff)/people/ownership'
 import { Route as staffSettingsIndexRouteImport } from './routes/(staff)/settings/index'
 import { Route as staffSettingsBundleRouteImport } from './routes/(staff)/settings/bundle'
 import { Route as staffSettingsDevelopmentRouteImport } from './routes/(staff)/settings/development'
@@ -99,6 +105,7 @@ import { Route as staffSettingsLookRouteImport } from './routes/(staff)/settings
 import { Route as staffSettingsNameRouteImport } from './routes/(staff)/settings/name'
 import { Route as staffSettingsSocialRouteImport } from './routes/(staff)/settings/social'
 import { Route as staffSettingsStartingPointsRouteImport } from './routes/(staff)/settings/starting-points'
+import { Route as staffSettingsSwitchesRouteImport } from './routes/(staff)/settings/switches'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
 import { Route as FileEraseTokenRouteImport } from './routes/file/erase/$token'
@@ -186,6 +193,11 @@ const SubmitRoute = SubmitRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffAccountRoute = staffAccountRouteImport.update({
+  id: '/(staff)/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const staffBackupsRoute = staffBackupsRouteImport.update({
@@ -448,6 +460,16 @@ const staffIntakeLinksRoute = staffIntakeLinksRouteImport.update({
   path: '/links',
   getParentRoute: () => staffIntakeRouteRoute,
 } as any)
+const staffIntakeListingRoute = staffIntakeListingRouteImport.update({
+  id: '/listing',
+  path: '/listing',
+  getParentRoute: () => staffIntakeRouteRoute,
+} as any)
+const staffIntakeMembersRoute = staffIntakeMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => staffIntakeRouteRoute,
+} as any)
 const staffListsIndexRoute = staffListsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -524,6 +546,21 @@ const staffModerateSettingsRoute = staffModerateSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
+const staffPeopleIndexRoute = staffPeopleIndexRouteImport.update({
+  id: '/(staff)/people/',
+  path: '/people/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffPeopleHistoryRoute = staffPeopleHistoryRouteImport.update({
+  id: '/(staff)/people/history',
+  path: '/people/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const staffPeopleOwnershipRoute = staffPeopleOwnershipRouteImport.update({
+  id: '/(staff)/people/ownership',
+  path: '/people/ownership',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const staffSettingsIndexRoute = staffSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -576,6 +613,11 @@ const staffSettingsStartingPointsRoute =
     path: '/starting-points',
     getParentRoute: () => staffSettingsRouteRoute,
   } as any)
+const staffSettingsSwitchesRoute = staffSettingsSwitchesRouteImport.update({
+  id: '/switches',
+  path: '/switches',
+  getParentRoute: () => staffSettingsRouteRoute,
+} as any)
 const staffSettingsWordsRoute = staffSettingsWordsRouteImport.update({
   id: '/words',
   path: '/words',
@@ -717,6 +759,7 @@ export interface FileRoutesByFullPath {
   '/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/moderate': typeof staffModerateRouteRouteWithChildren
   '/settings': typeof staffSettingsRouteRouteWithChildren
+  '/account': typeof staffAccountRoute
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/updates': typeof staffUpdatesRoute
@@ -760,6 +803,8 @@ export interface FileRoutesByFullPath {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/intake/links': typeof staffIntakeLinksRoute
+  '/intake/listing': typeof staffIntakeListingRoute
+  '/intake/members': typeof staffIntakeMembersRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -771,6 +816,8 @@ export interface FileRoutesByFullPath {
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/people/history': typeof staffPeopleHistoryRoute
+  '/people/ownership': typeof staffPeopleOwnershipRoute
   '/settings/bundle': typeof staffSettingsBundleRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -780,6 +827,7 @@ export interface FileRoutesByFullPath {
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/social': typeof staffSettingsSocialRoute
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
+  '/settings/switches': typeof staffSettingsSwitchesRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
@@ -799,6 +847,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/': typeof staffLogbooksIndexRoute
   '/maps/': typeof staffMapsIndexRoute
   '/moderate/': typeof staffModerateIndexRoute
+  '/people/': typeof staffPeopleIndexRoute
   '/settings/': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/journalists/agreement': typeof staffAccessJournalistsAgreementRoute
@@ -826,6 +875,7 @@ export interface FileRoutesByTo {
   '/standards': typeof StandardsRoute
   '/submit': typeof SubmitRoute
   '/terms': typeof TermsRoute
+  '/account': typeof staffAccountRoute
   '/backups': typeof staffBackupsRoute
   '/transparency-log': typeof staffTransparencyLogRoute
   '/updates': typeof staffUpdatesRoute
@@ -869,6 +919,8 @@ export interface FileRoutesByTo {
   '/files/settings': typeof staffFilesSettingsRoute
   '/intake/$id': typeof staffIntakeIdRoute
   '/intake/links': typeof staffIntakeLinksRoute
+  '/intake/listing': typeof staffIntakeListingRoute
+  '/intake/members': typeof staffIntakeMembersRoute
   '/lists/$id': typeof staffListsIdRoute
   '/lists/links': typeof staffListsLinksRoute
   '/lists/search': typeof staffListsSearchRoute
@@ -880,6 +932,8 @@ export interface FileRoutesByTo {
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
+  '/people/history': typeof staffPeopleHistoryRoute
+  '/people/ownership': typeof staffPeopleOwnershipRoute
   '/settings/bundle': typeof staffSettingsBundleRoute
   '/settings/development': typeof staffSettingsDevelopmentRoute
   '/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -889,6 +943,7 @@ export interface FileRoutesByTo {
   '/settings/name': typeof staffSettingsNameRoute
   '/settings/social': typeof staffSettingsSocialRoute
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
+  '/settings/switches': typeof staffSettingsSwitchesRoute
   '/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
@@ -908,6 +963,7 @@ export interface FileRoutesByTo {
   '/logbooks': typeof staffLogbooksIndexRoute
   '/maps': typeof staffMapsIndexRoute
   '/moderate': typeof staffModerateIndexRoute
+  '/people': typeof staffPeopleIndexRoute
   '/settings': typeof staffSettingsIndexRoute
   '/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/access/journalists/agreement': typeof staffAccessJournalistsAgreementRoute
@@ -942,6 +998,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks': typeof staffLogbooksRouteRouteWithChildren
   '/(staff)/moderate': typeof staffModerateRouteRouteWithChildren
   '/(staff)/settings': typeof staffSettingsRouteRouteWithChildren
+  '/(staff)/account': typeof staffAccountRoute
   '/(staff)/backups': typeof staffBackupsRoute
   '/(staff)/transparency-log': typeof staffTransparencyLogRoute
   '/(staff)/updates': typeof staffUpdatesRoute
@@ -985,6 +1042,8 @@ export interface FileRoutesById {
   '/(staff)/files/settings': typeof staffFilesSettingsRoute
   '/(staff)/intake/$id': typeof staffIntakeIdRoute
   '/(staff)/intake/links': typeof staffIntakeLinksRoute
+  '/(staff)/intake/listing': typeof staffIntakeListingRoute
+  '/(staff)/intake/members': typeof staffIntakeMembersRoute
   '/(staff)/lists/$id': typeof staffListsIdRoute
   '/(staff)/lists/links': typeof staffListsLinksRoute
   '/(staff)/lists/search': typeof staffListsSearchRoute
@@ -996,6 +1055,8 @@ export interface FileRoutesById {
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
+  '/(staff)/people/history': typeof staffPeopleHistoryRoute
+  '/(staff)/people/ownership': typeof staffPeopleOwnershipRoute
   '/(staff)/settings/bundle': typeof staffSettingsBundleRoute
   '/(staff)/settings/development': typeof staffSettingsDevelopmentRoute
   '/(staff)/settings/feedback': typeof staffSettingsFeedbackRoute
@@ -1005,6 +1066,7 @@ export interface FileRoutesById {
   '/(staff)/settings/name': typeof staffSettingsNameRoute
   '/(staff)/settings/social': typeof staffSettingsSocialRoute
   '/(staff)/settings/starting-points': typeof staffSettingsStartingPointsRoute
+  '/(staff)/settings/switches': typeof staffSettingsSwitchesRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
@@ -1024,6 +1086,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/': typeof staffLogbooksIndexRoute
   '/(staff)/maps/': typeof staffMapsIndexRoute
   '/(staff)/moderate/': typeof staffModerateIndexRoute
+  '/(staff)/people/': typeof staffPeopleIndexRoute
   '/(staff)/settings/': typeof staffSettingsIndexRoute
   '/(staff)/access/invitation/$token': typeof staffAccessInvitationTokenRoute
   '/(staff)/access/journalists_/agreement': typeof staffAccessJournalistsAgreementRoute
@@ -1059,6 +1122,7 @@ export interface FileRouteTypes {
     | '/logbooks'
     | '/moderate'
     | '/settings'
+    | '/account'
     | '/backups'
     | '/transparency-log'
     | '/updates'
@@ -1102,6 +1166,8 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/intake/links'
+    | '/intake/listing'
+    | '/intake/members'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -1113,6 +1179,8 @@ export interface FileRouteTypes {
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
+    | '/people/history'
+    | '/people/ownership'
     | '/settings/bundle'
     | '/settings/development'
     | '/settings/feedback'
@@ -1122,6 +1190,7 @@ export interface FileRouteTypes {
     | '/settings/name'
     | '/settings/social'
     | '/settings/starting-points'
+    | '/settings/switches'
     | '/settings/words'
     | '/file/confirm/$token'
     | '/file/erase/$token'
@@ -1141,6 +1210,7 @@ export interface FileRouteTypes {
     | '/logbooks/'
     | '/maps/'
     | '/moderate/'
+    | '/people/'
     | '/settings/'
     | '/access/invitation/$token'
     | '/access/journalists/agreement'
@@ -1168,6 +1238,7 @@ export interface FileRouteTypes {
     | '/standards'
     | '/submit'
     | '/terms'
+    | '/account'
     | '/backups'
     | '/transparency-log'
     | '/updates'
@@ -1211,6 +1282,8 @@ export interface FileRouteTypes {
     | '/files/settings'
     | '/intake/$id'
     | '/intake/links'
+    | '/intake/listing'
+    | '/intake/members'
     | '/lists/$id'
     | '/lists/links'
     | '/lists/search'
@@ -1222,6 +1295,8 @@ export interface FileRouteTypes {
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
+    | '/people/history'
+    | '/people/ownership'
     | '/settings/bundle'
     | '/settings/development'
     | '/settings/feedback'
@@ -1231,6 +1306,7 @@ export interface FileRouteTypes {
     | '/settings/name'
     | '/settings/social'
     | '/settings/starting-points'
+    | '/settings/switches'
     | '/settings/words'
     | '/file/confirm/$token'
     | '/file/erase/$token'
@@ -1250,6 +1326,7 @@ export interface FileRouteTypes {
     | '/logbooks'
     | '/maps'
     | '/moderate'
+    | '/people'
     | '/settings'
     | '/access/invitation/$token'
     | '/access/journalists/agreement'
@@ -1283,6 +1360,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks'
     | '/(staff)/moderate'
     | '/(staff)/settings'
+    | '/(staff)/account'
     | '/(staff)/backups'
     | '/(staff)/transparency-log'
     | '/(staff)/updates'
@@ -1326,6 +1404,8 @@ export interface FileRouteTypes {
     | '/(staff)/files/settings'
     | '/(staff)/intake/$id'
     | '/(staff)/intake/links'
+    | '/(staff)/intake/listing'
+    | '/(staff)/intake/members'
     | '/(staff)/lists/$id'
     | '/(staff)/lists/links'
     | '/(staff)/lists/search'
@@ -1337,6 +1417,8 @@ export interface FileRouteTypes {
     | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
+    | '/(staff)/people/history'
+    | '/(staff)/people/ownership'
     | '/(staff)/settings/bundle'
     | '/(staff)/settings/development'
     | '/(staff)/settings/feedback'
@@ -1346,6 +1428,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings/name'
     | '/(staff)/settings/social'
     | '/(staff)/settings/starting-points'
+    | '/(staff)/settings/switches'
     | '/(staff)/settings/words'
     | '/file/confirm/$token'
     | '/file/erase/$token'
@@ -1365,6 +1448,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/'
     | '/(staff)/maps/'
     | '/(staff)/moderate/'
+    | '/(staff)/people/'
     | '/(staff)/settings/'
     | '/(staff)/access/invitation/$token'
     | '/(staff)/access/journalists_/agreement'
@@ -1399,6 +1483,7 @@ export interface RootRouteChildren {
   staffLogbooksRouteRoute: typeof staffLogbooksRouteRouteWithChildren
   staffModerateRouteRoute: typeof staffModerateRouteRouteWithChildren
   staffSettingsRouteRoute: typeof staffSettingsRouteRouteWithChildren
+  staffAccountRoute: typeof staffAccountRoute
   staffBackupsRoute: typeof staffBackupsRoute
   staffTransparencyLogRoute: typeof staffTransparencyLogRoute
   staffUpdatesRoute: typeof staffUpdatesRoute
@@ -1437,6 +1522,8 @@ export interface RootRouteChildren {
   staffAccessRosterRoute: typeof staffAccessRosterRoute
   staffAccessSecurityRoute: typeof staffAccessSecurityRoute
   staffAccessSignInRoute: typeof staffAccessSignInRoute
+  staffPeopleHistoryRoute: typeof staffPeopleHistoryRoute
+  staffPeopleOwnershipRoute: typeof staffPeopleOwnershipRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   FileEraseTokenRoute: typeof FileEraseTokenRoute
   IllegalContentStatusTokenRoute: typeof IllegalContentStatusTokenRoute
@@ -1450,6 +1537,7 @@ export interface RootRouteChildren {
   OrganizationsJoinTokenRoute: typeof OrganizationsJoinTokenRoute
   staffAccessIndexRoute: typeof staffAccessIndexRoute
   staffMapsIndexRoute: typeof staffMapsIndexRoute
+  staffPeopleIndexRoute: typeof staffPeopleIndexRoute
   staffAccessInvitationTokenRoute: typeof staffAccessInvitationTokenRoute
   staffAccessJournalistsAgreementRoute: typeof staffAccessJournalistsAgreementRoute
   staffAccessOrgsIdRoute: typeof staffAccessOrgsIdRoute
@@ -1547,6 +1635,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/account': {
+      id: '/(staff)/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof staffAccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(staff)/backups': {
@@ -1913,6 +2008,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffIntakeLinksRouteImport
       parentRoute: typeof staffIntakeRouteRoute
     }
+    '/(staff)/intake/listing': {
+      id: '/(staff)/intake/listing'
+      path: '/listing'
+      fullPath: '/intake/listing'
+      preLoaderRoute: typeof staffIntakeListingRouteImport
+      parentRoute: typeof staffIntakeRouteRoute
+    }
+    '/(staff)/intake/members': {
+      id: '/(staff)/intake/members'
+      path: '/members'
+      fullPath: '/intake/members'
+      preLoaderRoute: typeof staffIntakeMembersRouteImport
+      parentRoute: typeof staffIntakeRouteRoute
+    }
     '/(staff)/lists/': {
       id: '/(staff)/lists/'
       path: '/'
@@ -2018,6 +2127,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffModerateSettingsRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
+    '/(staff)/people/': {
+      id: '/(staff)/people/'
+      path: '/people'
+      fullPath: '/people/'
+      preLoaderRoute: typeof staffPeopleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/people/history': {
+      id: '/(staff)/people/history'
+      path: '/people/history'
+      fullPath: '/people/history'
+      preLoaderRoute: typeof staffPeopleHistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(staff)/people/ownership': {
+      id: '/(staff)/people/ownership'
+      path: '/people/ownership'
+      fullPath: '/people/ownership'
+      preLoaderRoute: typeof staffPeopleOwnershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(staff)/settings/': {
       id: '/(staff)/settings/'
       path: '/'
@@ -2086,6 +2216,13 @@ declare module '@tanstack/react-router' {
       path: '/starting-points'
       fullPath: '/settings/starting-points'
       preLoaderRoute: typeof staffSettingsStartingPointsRouteImport
+      parentRoute: typeof staffSettingsRouteRoute
+    }
+    '/(staff)/settings/switches': {
+      id: '/(staff)/settings/switches'
+      path: '/switches'
+      fullPath: '/settings/switches'
+      preLoaderRoute: typeof staffSettingsSwitchesRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
     '/(staff)/settings/words': {
@@ -2277,6 +2414,8 @@ const staffFilesRouteRouteWithChildren = staffFilesRouteRoute._addFileChildren(
 interface staffIntakeRouteRouteChildren {
   staffIntakeIdRoute: typeof staffIntakeIdRoute
   staffIntakeLinksRoute: typeof staffIntakeLinksRoute
+  staffIntakeListingRoute: typeof staffIntakeListingRoute
+  staffIntakeMembersRoute: typeof staffIntakeMembersRoute
   staffIntakeIndexRoute: typeof staffIntakeIndexRoute
   staffIntakeReportsThreadIdRoute: typeof staffIntakeReportsThreadIdRoute
 }
@@ -2284,6 +2423,8 @@ interface staffIntakeRouteRouteChildren {
 const staffIntakeRouteRouteChildren: staffIntakeRouteRouteChildren = {
   staffIntakeIdRoute: staffIntakeIdRoute,
   staffIntakeLinksRoute: staffIntakeLinksRoute,
+  staffIntakeListingRoute: staffIntakeListingRoute,
+  staffIntakeMembersRoute: staffIntakeMembersRoute,
   staffIntakeIndexRoute: staffIntakeIndexRoute,
   staffIntakeReportsThreadIdRoute: staffIntakeReportsThreadIdRoute,
 }
@@ -2365,6 +2506,7 @@ interface staffSettingsRouteRouteChildren {
   staffSettingsNameRoute: typeof staffSettingsNameRoute
   staffSettingsSocialRoute: typeof staffSettingsSocialRoute
   staffSettingsStartingPointsRoute: typeof staffSettingsStartingPointsRoute
+  staffSettingsSwitchesRoute: typeof staffSettingsSwitchesRoute
   staffSettingsWordsRoute: typeof staffSettingsWordsRoute
   staffSettingsIndexRoute: typeof staffSettingsIndexRoute
 }
@@ -2379,6 +2521,7 @@ const staffSettingsRouteRouteChildren: staffSettingsRouteRouteChildren = {
   staffSettingsNameRoute: staffSettingsNameRoute,
   staffSettingsSocialRoute: staffSettingsSocialRoute,
   staffSettingsStartingPointsRoute: staffSettingsStartingPointsRoute,
+  staffSettingsSwitchesRoute: staffSettingsSwitchesRoute,
   staffSettingsWordsRoute: staffSettingsWordsRoute,
   staffSettingsIndexRoute: staffSettingsIndexRoute,
 }
@@ -2406,6 +2549,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffLogbooksRouteRoute: staffLogbooksRouteRouteWithChildren,
   staffModerateRouteRoute: staffModerateRouteRouteWithChildren,
   staffSettingsRouteRoute: staffSettingsRouteRouteWithChildren,
+  staffAccountRoute: staffAccountRoute,
   staffBackupsRoute: staffBackupsRoute,
   staffTransparencyLogRoute: staffTransparencyLogRoute,
   staffUpdatesRoute: staffUpdatesRoute,
@@ -2444,6 +2588,8 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessRosterRoute: staffAccessRosterRoute,
   staffAccessSecurityRoute: staffAccessSecurityRoute,
   staffAccessSignInRoute: staffAccessSignInRoute,
+  staffPeopleHistoryRoute: staffPeopleHistoryRoute,
+  staffPeopleOwnershipRoute: staffPeopleOwnershipRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   FileEraseTokenRoute: FileEraseTokenRoute,
   IllegalContentStatusTokenRoute: IllegalContentStatusTokenRoute,
@@ -2457,6 +2603,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrganizationsJoinTokenRoute: OrganizationsJoinTokenRoute,
   staffAccessIndexRoute: staffAccessIndexRoute,
   staffMapsIndexRoute: staffMapsIndexRoute,
+  staffPeopleIndexRoute: staffPeopleIndexRoute,
   staffAccessInvitationTokenRoute: staffAccessInvitationTokenRoute,
   staffAccessJournalistsAgreementRoute: staffAccessJournalistsAgreementRoute,
   staffAccessOrgsIdRoute: staffAccessOrgsIdRoute,

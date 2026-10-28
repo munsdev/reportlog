@@ -108,7 +108,6 @@ function Editor({ lb }: { lb: LogbookDetail }) {
           <NotesRule lb={lb} refresh={refresh} />
           <EmailRule lb={lb} refresh={refresh} />
           <PublicationRule lb={lb} refresh={refresh} />
-          <FrontPageSwitch lb={lb} refresh={refresh} />
           {launched && <Lifecycle lb={lb} refresh={refresh} />}
           <OutsidePanel lb={lb} refresh={refresh} />
           <FreezePanel lb={lb} refresh={refresh} />
@@ -460,43 +459,6 @@ function PublicationRule({ lb, refresh }: { lb: LogbookDetail; refresh: () => Pr
         label="Publishing is a condition of filing"
         checked={on}
         help="For a logbook that exists to be public and asks for nothing personal. Each report records which of the two it was filed under."
-        onCheckedChange={setOn}
-      />
-      <Problem error={save.error} />
-    </GuardedPanel>
-  );
-}
-
-/**
- * Whether the front page advertises this logbook while it is open. Only
- * advertising: it opens nothing and closes nothing, and it is never sealed, so
- * it can change after launch. Off, the logbook is left off the front page even
- * if the page's buttons name it (Logbooks, The front page's buttons).
- */
-function FrontPageSwitch({ lb, refresh }: { lb: LogbookDetail; refresh: () => Promise<void> }) {
-  const [on, setOn] = useState(lb.show_on_front);
-  const save = useMutation({
-    mutationFn: () => call(updateLogbook, { params: { id: lb.id }, body: { show_on_front: on } }),
-    onSuccess: refresh,
-  });
-  const resetSave = save.reset;
-  const reset = useCallback(() => {
-    setOn(lb.show_on_front);
-    resetSave();
-  }, [lb.show_on_front, resetSave]);
-  return (
-    <GuardedPanel
-      id="front"
-      title="On the front page"
-      summary={[{ key: 'Btn', value: lb.show_on_front ? 'Shown while open' : 'Not shown' }]}
-      dirty={on !== lb.show_on_front}
-      onSave={() => save.mutateAsync()}
-      onCancel={reset}
-    >
-      <Check
-        label="Show on the front page"
-        checked={on}
-        help="While it is open, it is a button on the front page, added at the end if the page’s buttons do not place it. Off, it is not shown there, whatever the buttons say."
         onCheckedChange={setOn}
       />
       <Problem error={save.error} />

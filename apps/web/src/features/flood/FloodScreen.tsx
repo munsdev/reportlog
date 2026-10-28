@@ -19,6 +19,7 @@
  * Pausing, the puzzle and the bulk declines ask for the second factor again
  * (step-up); the API client shows the prompt and retries (lib/api.ts).
  */
+import { hasAdminAuthority } from '@reportlog/access';
 import { bulkDeclineLinks, setIntakePause, setPuzzleLevel } from '@reportlog/contracts';
 import type { ResponseOf, getFloodScreen } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +34,8 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { Switch } from '../../mockup/Switch.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
+import { useMe } from '../identity/session.ts';
+import { MinFormTime, doorQuery } from '../settings/MinFormTime.tsx';
 import { ToastProvider, useToast } from '../../components/ui/toast.tsx';
 import { call } from '../../lib/api.ts';
 import { switchWords } from '../board/Activity.tsx';
@@ -42,6 +45,24 @@ import { floodQuery, laneQuery, switchesQuery } from './queries.ts';
 const hour = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { timeStyle: 'short' });
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+
+/**
+ * The minimum time on a form, moved here from Report and tip forms so every
+ * defence against a flood is on one screen. Administrators only: the server
+ * refuses anybody else, so a moderator is not shown it.
+ */
+function FormTime() {
+  const me = useMe();
+  const admin = me.data?.signedIn === true && hasAdminAuthority(me.data.roles);
+  const door = useQuery({ ...doorQuery, enabled: admin });
+  if (!admin) return null;
+  return (
+    <Panel title="The minimum time on a form">
+      {door.isError ? <Problem>{door.error.message}</Problem> : null}
+      {door.data ? <MinFormTime seconds={door.data.min_form_seconds} /> : null}
+    </Panel>
+  );
+}
 
 export function FloodScreen() {
   return (
@@ -72,6 +93,7 @@ function FloodBody() {
       }
     >
       <Switches />
+      <FormTime />
       {flood.isPending ? <p role="status">Counting…</p> : null}
       {flood.isError ? <Problem>{flood.error.message}</Problem> : null}
       {flood.data ? (

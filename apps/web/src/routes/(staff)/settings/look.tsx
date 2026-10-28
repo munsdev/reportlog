@@ -19,6 +19,7 @@
  * stylesheet (features/settings/LookPreview.tsx), never by a colour this
  * screen computed.
  */
+import { NameLookTabs } from '../../../features/settings/NameLookTabs.tsx';
 import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
@@ -43,8 +44,9 @@ export const Route = createFileRoute('/(staff)/settings/look')({
   component: () => (
     <SettingsFrame>
       <StaffPage
-        title="Look"
+        title="Name and look"
         lede="Pick a look and see it on a desktop and a phone. Nothing on the site changes until you apply it."
+        tabs={<NameLookTabs />}
       >
         <WithEditor>{(state) => <LookScreen state={state} />}</WithEditor>
       </StaffPage>

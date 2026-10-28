@@ -15,6 +15,7 @@ import { AreaField } from '@/mockup/Field.tsx';
 import { Filters } from '../../mockup/Filters.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
+import { FeedbackTabs } from './FeedbackTabs.tsx';
 import { adminIssueQuery, queueQuery } from './queries.ts';
 import { IssueLine, StatusChip, when } from './words.tsx';
 
@@ -27,8 +28,9 @@ export function FeedbackQueue() {
 
   return (
     <StaffPage
-      title="Feedback queue"
+      title="Feedback"
       lede="Everything testers and staff have filed. Anything still open is in the weekly email until somebody moves it."
+      tabs={<FeedbackTabs />}
     >
       <Filters
         value={filter}

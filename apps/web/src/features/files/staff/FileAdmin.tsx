@@ -31,13 +31,14 @@ import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
+import { FilesTabs } from './FilesTabs.tsx';
 import { LimitsPanel } from './LimitsPanel.tsx';
 import { fileSettingsQuery, logbookLimitsQuery } from './queries.ts';
 import { PUBLICATION, describeFile } from './words.ts';
 
 /**
- * The pages under /files that are for administrators, as the page's own
- * tabs under the area's: the site's limits, each logbook's, and erasing.
+ * File limits' own tabs: the site's limits and each logbook's. Erasing a
+ * file is a tab of Files waiting (FilesTabs.tsx).
  */
 export function FileAdminSections() {
   const { pathname } = useLocation();
@@ -52,7 +53,6 @@ export function FileAdminSections() {
           label: 'Each logbook',
           current: here.startsWith('/files/logbooks'),
         },
-        { to: '/files/erase', label: 'Erasing a file', current: here === '/files/erase' },
       ]}
     />
   );
@@ -84,6 +84,28 @@ export function FileSettingsPage() {
       </StaffPage>
     </ToastProvider>
   );
+}
+
+/**
+ * The Taking files switch on its own, for Switches
+ * (routes/(staff)/settings/switches.tsx). Needs a ToastProvider around it.
+ */
+export function TakingFilesPanel() {
+  const qc = useQueryClient();
+  const query = useQuery(fileSettingsQuery());
+  const put = (body: BodyOf<typeof setFileSettings>) =>
+    call(setFileSettings, { body }).then((d) => {
+      qc.setQueryData(fileSettingsQuery().queryKey, d);
+      return d;
+    });
+  if (query.isPending)
+    return (
+      <Panel title="Taking files">
+        <p role="status">Reading the settings…</p>
+      </Panel>
+    );
+  if (query.isError) return <Note tone="serious">{query.error.message}</Note>;
+  return <Switch settings={query.data} put={put} />;
 }
 
 /**
@@ -279,7 +301,7 @@ export function EraseFilePage() {
   });
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <StaffPage title="Erasing a file" tabs={<FileAdminSections />}>
+    <StaffPage title="Files waiting" tabs={<FilesTabs />}>
       <Panel kind="deep" title="What erasing does">
         <p>
           Erasing destroys the key the file was locked with, so nobody can ever open it again, this

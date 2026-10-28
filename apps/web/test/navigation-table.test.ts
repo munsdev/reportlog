@@ -1,18 +1,14 @@
 /**
  * The browser suite's written-out menu (e2e/navigation-table.ts) is exactly
- * what entries.ts gives each role, so the browser tests check the real menu
- * and cannot quietly fall behind it.
+ * what the menu (staff-nav/menu.ts, through entries.ts) gives each role, so
+ * the browser tests check the real menu and cannot quietly fall behind it.
  */
 import { describe, expect, it } from 'vitest';
 import { ALL_PAGES, MENU_FOR } from '../e2e/navigation-table.ts';
 import type { MenuRole } from '../e2e/navigation-table.ts';
-import {
-  STAFF_AREAS,
-  STAFF_ENTRIES,
-  areasFor,
-  groupsFor,
-} from '../src/features/staff-nav/entries.ts';
+import { STAFF_ENTRIES, sectionsFor } from '../src/features/staff-nav/entries.ts';
 import type { Viewer } from '../src/features/staff-nav/entries.ts';
+import { MENU } from '../src/features/staff-nav/menu.ts';
 
 const VIEWERS: Record<MenuRole, Viewer | null> = {
   visitor: null,
@@ -27,15 +23,13 @@ const VIEWERS: Record<MenuRole, Viewer | null> = {
 };
 
 const shown = (v: Viewer | null) =>
-  v
-    ? [
-        ...groupsFor(v).flatMap((g) => g.pages.map((p) => p.label)),
-        ...areasFor(v).flatMap((a) => a.pages.map((p) => p.label)),
-      ]
-    : [];
+  v ? sectionsFor(v).flatMap((s) => s.pages.map((p) => p.label)) : [];
+
+/** The groups by who you are carry no area in the table. */
+const GROUPS = new Set(['you', 'desk', 'organization']);
 
 describe('the browser suite’s menu table', () => {
-  it.each(Object.keys(VIEWERS) as MenuRole[])('matches entries.ts for %s', (role) => {
+  it.each(Object.keys(VIEWERS) as MenuRole[])('matches the menu for %s', (role) => {
     expect(MENU_FOR[role]).toEqual(shown(VIEWERS[role]));
   });
 
@@ -45,7 +39,8 @@ describe('the browser suite’s menu table', () => {
     STAFF_ENTRIES.forEach((e, i) => {
       const row = ALL_PAGES[i];
       expect(row?.href).toBe(`${e.to}${e.hash ? `#${e.hash}` : ''}`);
-      expect(row?.area).toBe(STAFF_AREAS.find((a) => a.pages.includes(e))?.label);
+      const section = MENU.find((m) => m.pages.includes(e));
+      expect(row?.area).toBe(section && !GROUPS.has(section.id) ? section.label : undefined);
     });
   });
 });

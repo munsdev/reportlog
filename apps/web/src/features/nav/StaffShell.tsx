@@ -129,9 +129,9 @@ export function StaffShell({
             {me ? (
               <Link
                 className="who-chip"
-                to="/access"
+                to="/account"
                 aria-label={`Account, ${me.email}`}
-                aria-current={pathname === '/access' ? 'page' : undefined}
+                aria-current={pathname === '/account' ? 'page' : undefined}
               >
                 <i>{me.email.slice(0, 1)}</i>
                 <span>Account</span>

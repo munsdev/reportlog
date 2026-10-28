@@ -32,6 +32,7 @@ import { useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Panel as MPanel } from '@/mockup/Panel.tsx';
 import { FrontPageTabs } from './FrontPageTabs.tsx';
+import { OnTheFrontPage } from './OnTheFrontPage.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { UnsavedChangesGuard, useUnsavedChanges } from '../../routes/(staff)/settings/-editor.tsx';
@@ -48,8 +49,9 @@ export function HomeButtonsEditor() {
       <StaffPage
         title="Front page and pages"
         tabs={<FrontPageTabs current="buttons" />}
-        lede="What the front page’s buttons lead to, and their order. The first is the main one. Logbooks and lists that are open and set to show on the front page are added at the end by themselves."
+        lede="What the front page’s buttons lead to, and their order. The first is the main one. Logbooks and lists that are open and switched on here are added at the end by themselves."
       >
+        <OnTheFrontPage />
         {query.isPending && <p role="status">Reading the front page…</p>}
         {query.isError && <Problem error={query.error} />}
         {/* Keyed on what is stored, so a save or a reset starts the editor

@@ -124,9 +124,7 @@ test.describe('the moderation screens', () => {
     await page.goto('/moderate');
     await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
     await page.goto('/moderate/settings');
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Moderation settings' }),
-    ).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Moderation rules' })).toBeVisible();
     expect(outside).toEqual([]);
   });
 
@@ -144,7 +142,8 @@ test.describe('the moderation screens', () => {
     // flip it under each other.
     test.skip(info.project.name !== 'chromium', 'a site-wide switch, turned by one project');
     const csvLink = page.getByRole('link', { name: 'Download these (CSV)' });
-    await page.goto('/moderate/settings');
+    await page.goto('/settings/switches');
+    // The archive switch is on Switches (staff-nav/menu.ts), once.
     const archive = page.getByRole('region', { name: 'The public archive' });
     await expect(archive).toContainText('Nobody has chosen, which means no downloads.');
     expect((await page.request.get('/api/board/reports.csv')).status()).toBe(404);
@@ -152,7 +151,7 @@ test.describe('the moderation screens', () => {
     await expect(page.getByRole('status').filter({ hasText: /^\d+ reports?\b/ })).toBeVisible();
     await expect(csvLink).toHaveCount(0);
 
-    await page.goto('/moderate/settings');
+    await page.goto('/settings/switches');
     // A setting panel: Edit, tick, then the Save bar, which names what it saves.
     await archive.getByRole('button', { name: 'Edit The public archive' }).click();
     await archive.getByRole('checkbox', { name: 'Offer downloads of the whole archive' }).click();

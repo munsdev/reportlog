@@ -10,6 +10,7 @@
  * settings overview as "Accepting reports" (features/settings/Switches.tsx):
  * it is the whole site's state, not a logbook's. This page links to it.
  */
+import { LogbooksTabs } from './LogbooksTabs.tsx';
 import { createLogbook, createLogbookFromFile } from '@reportlog/contracts';
 import type { LogbookDetail } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -46,6 +47,7 @@ export function LogbookList() {
   return (
     <StaffPage
       title="Logbooks"
+      tabs={<LogbooksTabs />}
       lede="A logbook is a permanent, checkable record: once launched, its reports are sealed and chained."
       // One "Make" button at a time: an empty page carries it in its empty state.
       actions={making || query.data?.logbooks.length === 0 ? null : make}

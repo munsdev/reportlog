@@ -30,6 +30,7 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { Saved } from '../../mockup/Saved.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Tbl } from '../../mockup/Tbl.tsx';
+import { FeedbackTabs } from './FeedbackTabs.tsx';
 import { feedbackListQuery, feedbackQuery } from './queries.ts';
 import { IssueLine, StatusChip, pageNameFor, when } from './words.tsx';
 
@@ -38,6 +39,7 @@ export function FeedbackPage({ from }: { from?: string | undefined }) {
     <StaffPage
       title="Feedback"
       lede="Tell the people building this what is broken or confusing. This is about the site itself, not about any report."
+      tabs={<FeedbackTabs />}
     >
       <FileForm from={from} />
       <Issues />

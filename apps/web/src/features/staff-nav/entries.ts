@@ -1,12 +1,19 @@
 /**
- * Every staff screen, once, with who may open it, arranged as the menu
- * shows them (docs/design/navigation.md, section 04): seven AREAS sorted
- * by job, each with its pages, and before them the GROUPS every signed-in
- * person has (their own pages, the desk, their organization), by audience.
+ * THE SIDEBAR NOW READS `menu.ts`, the reorganization of 28 October 2026.
+ * The arrangement below (seven AREAS and the GROUPS before them) is the one
+ * it replaced, kept where it is so that a screen another workstream adds
+ * here still appears: any page named below and not in menu.ts is listed
+ * under "Not sorted yet" (`unsorted`) until somebody gives it a line there.
+ * The helpers at the bottom of this file (who may open what, which page an
+ * address is) serve both.
  *
- * TO ADD A SCREEN, ADD ONE LINE HERE, in the area it belongs to. The menu
- * and the tabs read nothing else, so a screen another workstream builds
- * appears for exactly the people its line names:
+ * Every staff screen, once, with who may open it (docs/design/navigation.md,
+ * section 04): seven AREAS sorted by job, each with its pages, and before
+ * them the GROUPS every signed-in person has (their own pages, the desk,
+ * their organization), by audience.
+ *
+ * TO ADD A SCREEN, add one line to menu.ts, in the section it belongs to. A
+ * line here works too, and shows under "Not sorted yet":
  *
  *   { to: '/moderate/flood', label: 'Flood screen', for: ['moderator', 'admin'] },
  *
@@ -25,39 +32,11 @@
  */
 import { roleSatisfies } from '@reportlog/access';
 import type { SystemRole } from '@reportlog/access';
-import type { MenuWaiting } from '@reportlog/contracts';
-import type { LinkProps } from '@tanstack/react-router';
+import { FOLDED, MENU } from './menu.ts';
+import type { MenuSection } from './menu.ts';
+import type { Audience, StaffEntry } from './types.ts';
 
-/**
- * `anyone` is every signed-in person; `role` is anyone who holds a role,
- * proved a second factor yet or not (the account-and-security page is how
- * they prove it).
- */
-export type Audience = SystemRole | 'tester' | 'team' | 'organization' | 'anyone' | 'role';
-
-export interface StaffEntry {
-  to: NonNullable<LinkProps['to']>;
-  label: string;
-  for: readonly Audience[];
-  /** A shorter name for the area tabs, where the area already says the rest. */
-  tab?: string;
-  /**
-   * Addresses under these prefixes are this page too (a report's own page is
-   * the queue's), so the menu and the tabs say "you are here" on them. The
-   * longest matching prefix wins, so `/lists/review/` beats `/lists/`.
-   */
-  under?: readonly string[];
-  /** Where on the page it opens, when that is not the top. */
-  hash?: string;
-  /**
-   * A second way to a page another entry owns (the access log, inside
-   * Moderation settings until it gets a route of its own). Never marked as
-   * where you are, so one page is never "here" twice.
-   */
-  alias?: boolean;
-  /** Which of the menu's waiting totals belongs beside it. */
-  waiting?: keyof MenuWaiting;
-}
+export type { Audience, StaffEntry } from './types.ts';
 
 export type AreaId = 'review' | 'content' | 'site' | 'rules' | 'people' | 'logs' | 'help';
 
@@ -270,11 +249,25 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
   },
 ];
 
-/** Every staff screen in one list, areas first, in the menu's order. */
-export const STAFF_ENTRIES: readonly StaffEntry[] = [
+/** The arrangement above in one list, groups first. */
+export const ARRANGED_ENTRIES: readonly StaffEntry[] = [
   ...STAFF_GROUPS.flatMap((g) => g.pages),
   ...STAFF_AREAS.flatMap((a) => a.pages),
 ];
+
+const MENU_ENTRIES: readonly StaffEntry[] = MENU.flatMap((s) => s.pages);
+
+/**
+ * Pages the arrangement above names that the menu does not hold yet: not one
+ * of its addresses, not folded into one of its pages, and not under one. An
+ * alias is a second way to a page, so it is never listed on its own.
+ */
+export const UNSORTED: readonly StaffEntry[] = ARRANGED_ENTRIES.filter(
+  (e) => !e.alias && entryAt(e.to, MENU_ENTRIES) === null,
+);
+
+/** Every staff screen in one list, in the menu's order, then those not sorted yet. */
+export const STAFF_ENTRIES: readonly StaffEntry[] = [...MENU_ENTRIES, ...UNSORTED];
 
 export interface Viewer {
   /** Every role held; an entry opens when any one of them satisfies it (decision 70). */
@@ -300,7 +293,9 @@ export function mayOpen(entry: Pick<StaffEntry, 'for'>, viewer: Viewer): boolean
             ? viewer.teamMember === true
             : a === 'organization'
               ? (viewer.memberships ?? []).some((m) => ORGANIZATION_ROLES.includes(m.role))
-              : roleSatisfies(viewer.roles, a),
+              : a === 'org_manager'
+                ? (viewer.memberships ?? []).some((m) => m.role === 'manager')
+                : roleSatisfies(viewer.roles, a),
   );
 }
 
@@ -334,12 +329,15 @@ export function inFrame(pathname: string): boolean {
   return entryAt(pathname) !== null || FRAMED_ALSO.includes(trimmed(pathname));
 }
 
-const trimmed = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
+// A declaration, not a const: UNSORTED calls entryAt while the module loads.
+function trimmed(pathname: string): string {
+  return pathname.replace(/\/+$/, '') || '/';
+}
 
 /**
  * Which staff page this address is, if any: its own address exactly, else
- * the entry with the longest `under` prefix that holds it. An alias is
- * never the answer.
+ * the menu entry it was folded into (menu.ts, FOLDED), else the entry with
+ * the longest `under` prefix that holds it. An alias is never the answer.
  */
 export function entryAt(
   pathname: string,
@@ -349,6 +347,9 @@ export function entryAt(
   const real = entries.filter((e) => !e.alias);
   const exact = real.find((e) => e.to === path);
   if (exact) return exact;
+  const folded = FOLDED[path];
+  const into = folded === undefined ? undefined : real.find((e) => e.to === folded);
+  if (into) return into;
   let best: StaffEntry | null = null;
   let length = 0;
   for (const e of real) {
@@ -362,27 +363,28 @@ export function entryAt(
   return best;
 }
 
-/** The area this address belongs to, if any. */
-export function areaAt(pathname: string): StaffArea | null {
+/** The menu section this address belongs to, if any ("Not sorted yet" included). */
+export function sectionAt(pathname: string): MenuSection | null {
   const entry = entryAt(pathname);
   if (!entry) return null;
-  return STAFF_AREAS.find((a) => a.pages.includes(entry)) ?? null;
+  return allSections().find((s) => s.pages.includes(entry)) ?? null;
 }
 
-/**
- * The menu's sections in the mock-up's order (staff.py GROUPS): You, then
- * Review to Logs and system, then the desk and the organization, then Help;
- * each with only what this person may open.
- */
-export function sectionsFor(viewer: Viewer): (StaffGroup | StaffArea)[] {
-  const groups = groupsFor(viewer);
-  const areas = areasFor(viewer);
-  const group = (id: GroupId) => groups.filter((g) => g.id === id);
+const NOT_SORTED: MenuSection = { id: 'unsorted', label: 'Not sorted yet', pages: UNSORTED };
+
+/** The menu's sections in order, "Not sorted yet" (when it holds anything) before Help. */
+function allSections(): MenuSection[] {
+  const help = MENU.filter((s) => s.id === 'help');
   return [
-    ...group('you'),
-    ...areas.filter((a) => a.id !== 'help'),
-    ...group('desk'),
-    ...group('organization'),
-    ...areas.filter((a) => a.id === 'help'),
+    ...MENU.filter((s) => s.id !== 'help'),
+    ...(UNSORTED.length ? [NOT_SORTED] : []),
+    ...help,
   ];
+}
+
+/** The menu's sections (menu.ts), each with only what this person may open. */
+export function sectionsFor(viewer: Viewer): MenuSection[] {
+  return allSections()
+    .map((s) => ({ ...s, pages: entriesFor(viewer, s.pages) }))
+    .filter((s) => s.pages.length > 0);
 }

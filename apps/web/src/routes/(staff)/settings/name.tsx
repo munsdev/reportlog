@@ -21,13 +21,18 @@ import { SaveBar } from '@/mockup/SaveBar.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { NamePreview } from '../../../features/settings/NamePreview.tsx';
+import { NameLookTabs } from '../../../features/settings/NameLookTabs.tsx';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
 import { WithEditor, useSave, useUnsavedChanges } from './-editor.tsx';
 
 export const Route = createFileRoute('/(staff)/settings/name')({
   component: () => (
     <SettingsFrame>
-      <StaffPage title="Name" lede="How the name is drawn in the header and the footer.">
+      <StaffPage
+        title="Name and look"
+        lede="How the name is drawn in the header and the footer."
+        tabs={<NameLookTabs />}
+      >
         <WithEditor>{(state) => <NameForm state={state} />}</WithEditor>
       </StaffPage>
     </SettingsFrame>

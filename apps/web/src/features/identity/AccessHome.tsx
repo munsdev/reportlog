@@ -78,7 +78,8 @@ export function AccessHome() {
   );
 }
 
-function YourAccount({ me }: { me: SignedInMe }) {
+/** Exported for Your account (features/account/AccountPage.tsx). */
+export function YourAccount({ me }: { me: SignedInMe }) {
   const desks = me.teamMember ? desksFor(me.desks, me) : [];
   const items: [ReactNode, ReactNode][] = [
     ['Signed in as', me.email],
@@ -281,8 +282,11 @@ function People() {
  * The owner's seat. The owner hands it on in three deliberate steps: the
  * address, a code sent to the OWNER naming that address, then the offer.
  * Nothing moves until the other person accepts.
+ *
+ * Exported for Ownership and Your account; `offerOnly` draws only the offer
+ * waiting for this person, which is what Your account shows.
  */
-function OwnerSeat({ me }: { me: SignedInMe }) {
+export function OwnerSeat({ me, offerOnly = false }: { me: SignedInMe; offerOnly?: boolean }) {
   const client = useQueryClient();
   const changed = useIdentityChanged();
   const owner = useQuery({
@@ -346,7 +350,7 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
       </Panel>
     );
   }
-  if (!me.grantsAccess) return null;
+  if (offerOnly || !me.grantsAccess) return null;
 
   return (
     <Panel title="The owner" id="owner-seat">
@@ -469,7 +473,8 @@ function OwnerSeat({ me }: { me: SignedInMe }) {
   );
 }
 
-function SitePassword() {
+/** Exported for Switches (routes/(staff)/settings/switches.tsx). */
+export function SitePassword() {
   const client = useQueryClient();
   const settings = useQuery({
     queryKey: ['identity', 'site-access'],

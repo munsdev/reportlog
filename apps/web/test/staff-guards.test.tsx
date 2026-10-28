@@ -71,6 +71,8 @@ const OPEN_IN_STAFF = {
     'an invitee with no account reads what they are invited to before signing in',
   '/(staff)/access/':
     'every signed-in person\'s own account page ("Your account"); its staff parts show only to those who grant access',
+  '/(staff)/account':
+    "every signed-in person's own account page, with nothing on it about anybody else (staff-nav/menu.ts)",
   '/(staff)/access/security':
     "every signed-in person's own second factor; it says so to an account that needs none (plan E, E3)",
 } as const;

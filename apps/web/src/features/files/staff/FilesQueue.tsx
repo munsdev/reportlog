@@ -17,6 +17,7 @@ import { Err, Problem } from '../../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { EvidenceRequests } from './EvidenceRequests.tsx';
+import { FilesTabs } from './FilesTabs.tsx';
 import { ReportFiles } from './ReportFiles.tsx';
 import { fileQueueQuery } from './queries.ts';
 
@@ -26,8 +27,9 @@ export function FilesQueue() {
   const query = useQuery(fileQueueQuery(''));
   return (
     <StaffPage
-      title="Files"
+      title="Files waiting"
       lede="Files sent with reports are never public until a moderator publishes them, and only if the reporter allows it. These reports have files nobody has decided on yet."
+      tabs={<FilesTabs />}
     >
       {query.isPending ? <p role="status">Reading the files…</p> : null}
       {query.isError ? <Problem>{query.error.message}</Problem> : null}
@@ -60,10 +62,12 @@ export function FilesQueue() {
                   {String(r.files)} · sent {new Date(r.received_at).toLocaleString()}
                 </p>
                 <div className="acts">
+                  {/* The report itself, where its files card is: one copy of it
+                      (staff-nav/menu.ts), not the files-only page. */}
                   <Link
                     className="btn sm flat"
-                    to="/files/$ref"
-                    params={{ ref: r.public_ref }}
+                    to="/moderate/$threadId"
+                    params={{ threadId: r.thread_id }}
                     aria-label={`Open ${r.public_ref}`}
                   >
                     Open
