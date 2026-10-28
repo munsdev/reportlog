@@ -65,19 +65,21 @@ export function DevBadge() {
   if (!active) return null;
   return (
     <Dialog>
-      <DialogTrigger className="lookfab dock-pill">
-        <span aria-hidden="true" className="dock-dot" />
-        Under active development
+      {/* One round "!" for every notice there is (the owner's call, 28 Oct),
+          bottom left; today the development notice is the only one. */}
+      <DialogTrigger className="dock-round" aria-label="Notices: 1">
+        <span aria-hidden="true">!</span>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>This site is under active development</DialogTitle>
-          <DialogDescription>New versions are going out while you use it.</DialogDescription>
+          <DialogTitle>Notices</DialogTitle>
+          <DialogDescription>What is worth knowing about this site right now.</DialogDescription>
         </DialogHeader>
+        <h3>This site is under active development</h3>
         <p>
-          You may run into pages that look broken, behave oddly, or change shape while you are using
-          them. If something is not working, wait a few minutes and reload the page before assuming
-          it is broken for good.
+          New versions are going out while you use it. You may run into pages that look broken,
+          behave oddly, or change shape while you are using them. If something is not working, wait
+          a few minutes and reload the page before assuming it is broken for good.
         </p>
       </DialogContent>
     </Dialog>

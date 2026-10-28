@@ -44,8 +44,10 @@
 
 		# The same policy the API sends, without its `https:` allowances: the
 		# site loads nothing from anywhere else, so there is nothing to allow.
-		header Content-Security-Policy "default-src 'self'; base-uri 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
-		header X-Frame-Options DENY
+		# Framed by itself only: the look editor shows the real page in a frame
+		# at a phone's or a desktop's width. No other site may frame it.
+		header Content-Security-Policy "default-src 'self'; base-uri 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+		header X-Frame-Options SAMEORIGIN
 		header Cross-Origin-Opener-Policy same-origin
 
 		# Vite puts a content hash in every asset's name, so an asset never

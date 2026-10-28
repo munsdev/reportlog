@@ -21,31 +21,25 @@ async function fetchKit(path: string, signal: AbortSignal): Promise<LookKit> {
 
 /**
  * The built-in pack's header elements and shapes (stars, stripes, the two big
- * shapes), and the palettes and themes the page script paints itself rather
- * than from looks.gen.css: the Civic ones, built in since 27 October so a
- * site can look like the approved mock-up without installing a pack. They
- * are options; the default look is still Workstation.
+ * shapes), and every built-in palette and theme in the words the page script
+ * paints from. The script paints the mock-up's grounds, headlines and
+ * buttons itself, so a palette or theme it was not handed kept the colours
+ * of the one before it, on the site and in every preview (fixed 28 Oct).
  */
-const SCRIPT_PALETTES = ['civic-night', 'civic-navy', 'civic-old-glory'];
-const SCRIPT_THEMES = ['poster'];
 export const BUILT_IN_KIT: LookKit = LookKit.parse({
   pack: CORE_PACK.id,
   label: CORE_PACK.label,
   ...(CORE_PACK.credit ? { credit: CORE_PACK.credit } : {}),
   elements: (CORE_PACK.elements ?? []).filter((e) => e.id !== 'ruled'),
   shapes: CORE_PACK.shapes ?? {},
-  palettes: (CORE_PACK.palettes ?? [])
-    .filter((p) => SCRIPT_PALETTES.includes(p.id))
-    .map((p) => ({ id: p.id, label: p.label, colors: p.colors })),
-  themes: (CORE_PACK.themes ?? [])
-    .filter((t) => SCRIPT_THEMES.includes(t.id))
-    .map((t) => ({
-      id: t.id,
-      label: t.label,
-      type: t.type,
-      shape: t.shape,
-      ...(t.display ? { display: t.display } : {}),
-    })),
+  palettes: (CORE_PACK.palettes ?? []).map((p) => ({ id: p.id, label: p.label, colors: p.colors })),
+  themes: (CORE_PACK.themes ?? []).map((t) => ({
+    id: t.id,
+    label: t.label,
+    type: t.type,
+    shape: t.shape,
+    ...(t.display ? { display: t.display } : {}),
+  })),
 });
 
 /** The built-in elements plus every installed pack's, once they have arrived. */

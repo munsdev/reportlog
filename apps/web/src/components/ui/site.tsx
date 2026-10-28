@@ -20,6 +20,7 @@
  * (features/easy-reading/easyReading.ts). What is remembered is always the
  * site's own look, never the Easier reading one.
  */
+import { useLookOverride } from '@/features/looks/editor/override.ts';
 import { DEFAULT_LOOK, PaintedLook, getSite, layoutOf, paintedLayout } from '@reportlog/contracts';
 import type { BrandPart, Look, LookOptions, Site, ThemeLayout } from '@reportlog/contracts';
 import { queryOptions, useQuery } from '@tanstack/react-query';
@@ -54,10 +55,11 @@ export function useSite() {
 /** The site's look as last applied, so Easier reading can be switched without asking again. */
 let siteLook: { look: PaintedLook; root: HTMLElement } | null = null;
 
-/** Paint a look onto the page. Remembers it for the next visit. */
+/** Paint a look onto the page. Remembers it for the next visit, unless it is only being tried on. */
 export function applyLook(
   look: Look | PaintedLook,
   root: HTMLElement = document.documentElement,
+  remember = true,
 ): void {
   // The server sends the theme's layout with the look; a bare palette and
   // theme (the setup wizard's choice, say) takes a built-in theme's.
@@ -69,6 +71,7 @@ export function applyLook(
   if (stylesheets && !painted.stylesheets) painted = { ...painted, stylesheets };
   siteLook = { look: painted, root };
   paint(painted, root);
+  if (!remember) return;
   try {
     localStorage.setItem(REMEMBERED, JSON.stringify(painted));
   } catch {
@@ -164,9 +167,12 @@ if (typeof document !== 'undefined') {
 /** Keeps the page wearing the site's look. Renders nothing. */
 export function SiteLook() {
   const { data } = useSite();
+  // A look being tried on (the look editor, or a preview frame) wins while it is set.
+  const trying = useLookOverride();
   useEffect(() => {
-    if (data) applyLook(data.look);
-  }, [data]);
+    if (trying) applyLook({ palette: trying.palette, theme: trying.theme }, undefined, false);
+    else if (data) applyLook(data.look);
+  }, [data, trying]);
   return null;
 }
 

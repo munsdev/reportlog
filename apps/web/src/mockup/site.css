@@ -796,15 +796,43 @@ body:has([data-bleed] > .zone:last-child) .site-foot{margin-top:0}
 .sb summary .n{font-size:.7rem;min-width:20px;height:20px;border-radius:10px;display:inline-grid;place-items:center;padding:0 6px}
 .sb-drawer summary{min-height:48px;color:var(--on-chrome-muted)}
 @media (min-width:700px){.sb-drawer{grid-template-columns:1fr}}
-/* Port (27 Oct): the corner dock. Edit this page, Look and the development
-   notice are one stack of the same pill (.lookfab), bottom right, never on
-   top of each other; the dock stays above a Save bar or a filing bar. */
-.fab-dock{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px) + max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px)));z-index:55;display:flex;flex-direction:column;align-items:flex-end;gap:10px;pointer-events:none}
-.fab-dock > div:empty{display:none}
-.fab-dock .lookfab{position:static;pointer-events:auto}
+/* The bottom row (owner's call, 28 Oct): notices at the left, the social strip in the
+   middle, an administrator's Edit at the right. One row, so nothing stacks up the
+   screen; it stays above a Save bar or a filing bar. */
+.fab-dock{position:fixed;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px) + max(var(--rl-savebar-height,0px),var(--rl-bottom-bar-height,0px)));z-index:55;display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px;pointer-events:none}
+#fab-notice{justify-self:start}#fab-social{justify-self:center}#fab-edit{justify-self:end}
+.fab-dock .lookfab,.fab-dock .dock-round,.fab-dock .social-bar,.fab-dock .dock-menu{position:static;pointer-events:auto}
 body.form .fab-dock{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+body.rl-look-editing .fab-dock,.rl-preview .fab-dock{display:none}
 .dock-pill{text-decoration:none}
-.dock-dot{width:10px;height:10px;margin:0 6px;border-radius:50%;background:#F3B53F}
+.dock-round{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:50%;border:2px solid #fff;background:#05080B;color:#F3B53F;font:900 1.35rem/1 "Public Sans",system-ui,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.35);cursor:pointer}
+.social-bar{display:inline-flex;align-items:center;gap:2px;padding:4px 8px;min-height:48px;border-radius:999px;border:2px solid #fff;background:#05080B;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.social-bar a{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:50%;color:#fff}
+.social-bar a:hover,.social-bar a:focus-visible{background:#26313D}
+.social-bar svg{width:20px;height:20px}
+.dock-menu-wrap{display:grid;justify-items:end;gap:8px}
+.dock-menu{display:grid;min-width:180px;padding:6px;border:2px solid #fff;border-radius:14px;background:#05080B;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.dock-menu button{min-height:44px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:#fff;font:700 .9rem "Public Sans",system-ui,sans-serif;text-align:left;cursor:pointer}
+.dock-menu button:hover,.dock-menu button:focus-visible{background:#26313D}
+@media (max-width:599px){.fab-dock .dock-label{display:none}.fab-dock .lookfab{padding:0 12px}}
+/* The look editor on the site: a panel at the side of a desktop, a sheet at the foot of
+   a phone; the other kind of screen is shown beside it in a frame (.le-stage). */
+.le-panel{position:fixed;z-index:70;display:grid;grid-template-rows:auto auto 1fr auto auto;gap:12px;padding:14px;background:var(--rl-surface,#fff);color:var(--rl-text,#111);border:2px solid var(--rl-border-main,#111);box-shadow:0 18px 50px rgba(0,0,0,.35);font-family:"Public Sans",system-ui,sans-serif}
+@media (min-width:900px){.le-panel{top:calc(env(safe-area-inset-top,0px) + 76px);right:12px;bottom:12px;width:400px;border-radius:16px}}
+@media (max-width:899px){.le-panel{left:0;right:0;bottom:0;height:62vh;border-radius:16px 16px 0 0;border-bottom:0;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}}
+.le-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.le-head b{font-size:1.1rem}
+.le-tabs{flex-wrap:wrap}
+.le-body{overflow:auto;min-height:0}
+.le-foot{display:flex;justify-content:flex-end;gap:8px}
+.le-stage{position:fixed;z-index:65;background:rgba(5,8,11,.88);overflow:auto;padding:16px}
+@media (min-width:900px){.le-stage{top:calc(env(safe-area-inset-top,0px) + 64px);left:0;right:424px;bottom:0}}
+@media (max-width:899px){.le-stage{top:0;left:0;right:0;bottom:62vh}}
+/* Settings › Look: the choices beside the site wearing them, kept in view. */
+.look-split{display:grid;gap:20px;margin-bottom:28px}
+@media (min-width:1100px){.look-split{grid-template-columns:minmax(0,1fr) 420px}.look-preview-col{order:2;position:sticky;top:calc(env(safe-area-inset-top,0px) + 92px);align-self:start;display:grid;gap:10px}}
+@media (max-width:1099px){.look-preview-col{position:sticky;top:calc(env(safe-area-inset-top,0px) + 64px);z-index:5;display:grid;gap:8px;padding:8px 0;background:var(--rl-background)}}
+.live-preview{border:2px solid var(--rl-border,#ccd);border-radius:12px;overflow:hidden;background:#fff}
 @media print{.fab-dock{display:none}}
 /* Port (27 Oct): a long button label wraps on a phone instead of running off the screen. */
 @media (max-width:599px){.btn-row .btn{max-width:100%;white-space:normal;text-align:center;height:auto;min-height:var(--btn-h,48px);padding-block:10px}}
@@ -816,3 +844,4 @@ body.form .fab-dock{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .sec-head{grid-template-columns:1fr}
 .sec-head .num{display:none}
 .sec-head p{grid-column:1}
+.le-body{overflow-x:hidden}.le-body select,.le-body .input{width:100%;max-width:100%;min-width:0}.le-body > *{min-width:0}

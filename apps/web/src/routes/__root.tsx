@@ -1,5 +1,4 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { Outlet, createRootRouteWithContext, useLocation } from '@tanstack/react-router';
 import { DevBadge } from '../components/ui/dev-badge.tsx';
 import { FollowButton } from '../components/ui/follow-button.tsx';
@@ -16,6 +15,8 @@ import { Ticker } from '../features/nav/Ticker.tsx';
 import { StaffShell } from '../features/nav/StaffShell.tsx';
 import { inFrame } from '../features/staff-nav/entries.ts';
 import { DockSlot } from '../mockup/Dock.tsx';
+import { EditDock } from '../features/looks/editor/EditDock.tsx';
+import { LookEditor } from '../features/looks/editor/LookEditor.tsx';
 import { EasyClass } from '../mockup/EasierReading.tsx';
 import { SiteLookScript } from '../mockup/siteLook.tsx';
 
@@ -35,36 +36,23 @@ function RootLayout() {
       <SiteLookScript />
       <Frame />
       {/* In the corner dock (index.html), under Look. */}
-      <DockSlot slot="fab-dev">
+      {/* The bottom row (index.html): notices, the social strip, Edit. */}
+      <DockSlot slot="fab-notice">
         <DevBadge />
       </DockSlot>
-      <FollowButton />
+      <DockSlot slot="fab-social">
+        <FollowButton />
+      </DockSlot>
+      <DockSlot slot="fab-edit">
+        <EditDock />
+      </DockSlot>
+      <LookEditor />
       <StepUpHost />
-      <LookSwitcher />
       <EasyClass />
       {/* Where the mock-up's page script says things ("Copied", "Saved"). */}
       <div className="toast" id="toast" role="status" aria-live="polite" />
     </HeaderProgressProvider>
   );
-}
-
-/**
- * The mock-up's floating look switcher (public/mockup/site.js), for an
- * administrator or the owner only. Not on a door, which may not ask who is
- * signed in.
- */
-function LookSwitcher() {
-  return useGateMode() === 'door' ? null : <LookSwitcherFor />;
-}
-
-function LookSwitcherFor() {
-  const me = useMe();
-  const admin =
-    me.data?.signedIn === true && me.data.roles.some((r) => r === 'admin' || r === 'owner');
-  useEffect(() => {
-    window.elLookSwitcher?.(admin);
-  }, [admin]);
-  return null;
 }
 
 /**

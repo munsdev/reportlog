@@ -12,7 +12,7 @@ export function DockSlot({
   slot,
   children,
 }: {
-  slot: 'fab-edit' | 'fab-dev';
+  slot: 'fab-notice' | 'fab-social' | 'fab-edit';
   children: ReactNode;
 }) {
   const el = typeof document === 'undefined' ? null : document.getElementById(slot);

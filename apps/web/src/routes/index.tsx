@@ -16,7 +16,7 @@ import { blockText, newBlock } from '@reportlog/contracts';
 import { roleSatisfies } from '@reportlog/access';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { plainSiteName, useSite } from '../components/ui/site.tsx';
 import { ToastProvider, useToast } from '../components/ui/toast.tsx';
 import { boardReportsQuery } from '../features/board/queries.ts';
@@ -30,7 +30,7 @@ import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
 import { pageBlocksQuery } from '../features/pages/queries.ts';
 import { placedMapsQuery } from '../features/maps/queries.ts';
-import { DockSlot } from '../mockup/Dock.tsx';
+import { useRegisterPageEdit } from '../features/looks/editor/pageEdit.ts';
 import { useBodyClass } from '../mockup/useBodyClass.ts';
 
 interface FrontSearch {
@@ -113,6 +113,12 @@ function Home() {
       }
     : null;
 
+  // The corner Edit menu offers "Edit this page" while the front page is drawn.
+  const startEditing = useCallback(() => {
+    void navigate({ to: '/', search: { edit: true } });
+  }, [navigate]);
+  useRegisterPageEdit(canEdit && !edit ? startEditing : null);
+
   if (edit && canEdit && notice) {
     return (
       <BlockEditor
@@ -128,26 +134,6 @@ function Home() {
   if (!page.data && !page.isError) return <div data-bleed />;
   return (
     <>
-      {canEdit ? (
-        <DockSlot slot="fab-edit">
-          {/* Only the owner and administrators see it (the old bar said so). */}
-          <button
-            className="lookfab dock-pill"
-            type="button"
-            onClick={() => {
-              void navigate({ to: '/', search: { edit: true } });
-            }}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                fill="currentColor"
-                d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-              />
-            </svg>
-            <span>Edit this page</span>
-          </button>
-        </DockSlot>
-      ) : null}
       <FrontPageBlocks placed={placed} buttons={buttons} notice={notice} />
     </>
   );

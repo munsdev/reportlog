@@ -74,6 +74,11 @@ interface Draft {
 
 const DraftContext = createContext<Draft | null>(null);
 
+/** The draft the provider holds, for the look editor on the site (editor/LookEditor.tsx). */
+export function useLookOptionsDraft(): Draft | null {
+  return useContext(DraftContext);
+}
+
 /**
  * Holds the draft for the screen. `onEditor` is how the screen's own copy of
  * the editor state is replaced by a server answer.

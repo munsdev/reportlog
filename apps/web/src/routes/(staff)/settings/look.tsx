@@ -21,21 +21,20 @@
  */
 import { setLook } from '@reportlog/contracts';
 import type { Look, SiteEditor } from '@reportlog/contracts';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Note } from '@/mockup/Note.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { useToast } from '@/components/ui/toast.tsx';
 import { call } from '@/lib/api.ts';
 import { LookChooser } from '../../../features/settings/LookChooser.tsx';
-import { LookFrames } from '../../../features/settings/LookPreview.tsx';
+import { LivePreview } from '../../../features/looks/editor/LivePreview.tsx';
+import type { Device } from '../../../features/looks/editor/LivePreview.tsx';
+import { setLookEditorOpen } from '../../../features/looks/editor/state.ts';
 import { LookPacks } from '../../../features/settings/LookPacks.tsx';
-import {
-  LookOptionsPanel,
-  LookOptionsProvider,
-} from '../../../features/looks/LookOptionsPanel.tsx';
+import { LookOptionsProvider } from '../../../features/looks/LookOptionsPanel.tsx';
 import { lookName, sameLook, useLookCatalogue } from '../../../features/settings/looks.ts';
 import { SettingsFrame } from '../../../features/settings/panels.tsx';
 import { WithEditor, editorQuery, useSave, useUnsavedChanges } from './-editor.tsx';
@@ -59,26 +58,6 @@ export const Route = createFileRoute('/(staff)/settings/look')({
  * growing at the shell's maximum, so a viewport breakpoint put two columns
  * (and four cards across) into a space that held neither.
  */
-function useColumnWide(min: number) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [wide, setWide] = useState(false);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const read = () => {
-      setWide(el.clientWidth >= min);
-    };
-    read();
-    if (typeof ResizeObserver === 'undefined') return;
-    const watch = new ResizeObserver(read);
-    watch.observe(el);
-    return () => {
-      watch.disconnect();
-    };
-  }, [min]);
-  return [ref, wide] as const;
-}
-
 /** Whether the window is at least 900px wide: the staff layout's own breakpoint. */
 function useDesktop() {
   const [yes, setYes] = useState(
@@ -122,8 +101,9 @@ function LookChoice({ state }: { state: SiteEditor }) {
   const previewing = !sameLook(chosen, current);
   useUnsavedChanges('the look', previewing);
   // The frames sit under the chooser at the page's own width.
-  const [column, wide] = useColumnWide(896);
   const desktop = useDesktop();
+  const [device, setDevice] = useState<Device>('desktop');
+  const navigate = useNavigate();
   const applyIt = () => {
     apply.mutate(chosen, {
       onSuccess: (next) => {
@@ -138,46 +118,105 @@ function LookChoice({ state }: { state: SiteEditor }) {
   };
 
   return (
-    <div ref={column} style={{ maxWidth: 960 }}>
-      <section className="settings-row" aria-labelledby="look-palette">
-        <h2 id="look-palette">Palette and theme</h2>
-        <LookChooser value={chosen} onChange={setChosen} current={current} catalogue={catalogue} />
-        {/* The sentence is the status, not the panel: its buttons are not news. */}
-        <div className="note" role="status">
-          <span>
-            {previewing ? (
-              <>
-                <b>Preview only.</b> The site is still showing {lookName(current, catalogue)}. You
-                are previewing {lookName(chosen, catalogue)}.
-              </>
-            ) : (
-              <>The site is showing {lookName(current, catalogue)}.</>
-            )}
-          </span>
+    <div>
+      {/* The choices on one side and the site itself, wearing them, beside
+          them and in view (the owner's call, 28 Oct): no scrolling between
+          what you change and what it does. On a phone the preview sits at
+          the top and the choices scroll under it. */}
+      <div className="look-split">
+        <div className="look-preview-col">
+          <div className="seg" role="group" aria-label="Preview on">
+            {(
+              [
+                ['desktop', 'Desktop'],
+                ['phone', 'Phone'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={device === value}
+                onClick={() => {
+                  setDevice(value);
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <LivePreview
+            path="/"
+            device={device}
+            look={{ palette: chosen.palette, theme: chosen.theme }}
+            maxHeight={desktop ? 560 : 300}
+          />
         </div>
-        {previewing && desktop ? (
+        <section className="settings-row look-choice-col" aria-labelledby="look-palette">
+          <h2 id="look-palette">Palette and theme</h2>
+          {/* The sentence is the status, not the panel: its buttons are not news. */}
+          <div className="note" role="status">
+            <span>
+              {previewing ? (
+                <>
+                  <b>Preview only.</b> The site is still showing {lookName(current, catalogue)}. You
+                  are previewing {lookName(chosen, catalogue)}.
+                </>
+              ) : (
+                <>The site is showing {lookName(current, catalogue)}.</>
+              )}
+            </span>
+          </div>
+          {previewing && desktop ? (
+            <div className="acts">
+              <Btn
+                look="ink"
+                sm
+                flat
+                busy={apply.isPending}
+                busyLabel="Applying…"
+                onClick={applyIt}
+              >
+                Apply to the site
+              </Btn>
+              <Btn look="ghost" sm flat onClick={back}>
+                Back to what the site shows
+              </Btn>
+            </div>
+          ) : null}
+          {apply.isError ? (
+            <Note tone="serious" title="The look was not applied.">
+              {apply.error.message}
+            </Note>
+          ) : null}
+          <LookChooser
+            value={chosen}
+            onChange={setChosen}
+            current={current}
+            catalogue={catalogue}
+          />
+          <p className="muted">
+            The header background, motion and section grounds are set on the site itself.
+          </p>
           <div className="acts">
-            <Btn look="ink" sm flat busy={apply.isPending} busyLabel="Applying…" onClick={applyIt}>
-              Apply to the site
-            </Btn>
-            <Btn look="ghost" sm flat onClick={back}>
-              Back to what the site shows
+            <Btn
+              look="ghost"
+              sm
+              flat
+              onClick={() => {
+                void navigate({ to: '/' }).then(() => {
+                  setLookEditorOpen(true);
+                });
+              }}
+            >
+              Edit the look on the site
             </Btn>
           </div>
-        ) : null}
-        {apply.isError ? (
-          <Note tone="serious" title="The look was not applied.">
-            {apply.error.message}
-          </Note>
-        ) : null}
-        <LookFrames look={chosen} catalogue={catalogue} fit={wide ? 'always' : false} />
-      </section>
-
-      <LookOptionsPanel />
+        </section>
+      </div>
 
       <LookPacks />
 
-      {/* On a phone the decision stays at the foot of the screen while the previews scroll. */}
+      {/* On a phone the decision stays at the foot of the screen while the choices scroll. */}
       {previewing && !desktop ? (
         <div className="phone-decide">
           <div className="in">

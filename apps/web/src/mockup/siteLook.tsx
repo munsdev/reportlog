@@ -17,6 +17,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { useSite } from '@/components/ui/site.tsx';
 import { siteStatusQuery } from '@/features/identity/gateMode.ts';
+import { useLookOverride } from '@/features/looks/editor/override.ts';
 import { useKit } from '@/features/looks/header-background/kits.ts';
 
 interface ScriptPalette {
@@ -132,15 +133,15 @@ export function SiteLookScript() {
   // On the lock screen and a door the site is not asked; the password check
   // carries the palette and theme instead (decision 60), so they wear it too.
   const status = useQuery(siteStatusQuery);
-  const painted = look ?? status.data?.look;
+  // A look being tried on (the look editor, or a preview frame) wins while it is set.
+  const trying = useLookOverride();
+  const painted = trying ?? look ?? status.data?.look;
+  const options = trying?.options ?? look?.options;
   const { packs } = useKit(look?.kits);
-  const key = JSON.stringify([painted?.palette, painted?.theme, look?.options, packs]);
+  const key = JSON.stringify([painted?.palette, painted?.theme, options, packs]);
   useEffect(() => {
     if (!painted || !window.elSetLook) return;
-    window.elSetLook(
-      scriptLook(painted.palette, painted.theme, look?.options),
-      packs.map(scriptPack),
-    );
+    window.elSetLook(scriptLook(painted.palette, painted.theme, options), packs.map(scriptPack));
     // `key` stands for everything read above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
