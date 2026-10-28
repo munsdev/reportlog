@@ -94,7 +94,6 @@ export function DeveloperTab() {
         These counts are of published reports only. Declined reports are counted separately, by the
         reason they were declined, on the board’s activity page; nothing still under review is
         counted anywhere. A place with too few reports to show safely is named without a number.
-        Reports never confirmed by email are counted nowhere: they never entered the record.
       </p>
       <p>
         <strong>Published is not the same as true.</strong> It means a moderator judged an account
