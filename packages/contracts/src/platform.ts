@@ -119,6 +119,21 @@ export const getJournalistStandard = defineRoute({
   }),
 });
 
+/**
+ * The moderation standard's version and date (/standards): how many times
+ * this site has written it (site_copy_versions) and when it last did. Null
+ * while it is the wording the software ships with. Its words come with the
+ * site's other wording (`standards`).
+ */
+export const getModerationStandard = defineRoute({
+  method: 'GET',
+  path: '/api/standards/moderation',
+  summary: "The moderation standard's version and when it was published.",
+  response: z.object({
+    current: z.object({ version: z.number().int(), published_at: z.string() }).nullable(),
+  }),
+});
+
 export const getAgreement = defineRoute({
   method: 'GET',
   path: '/api/agreement/:audience',

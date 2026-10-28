@@ -63,6 +63,25 @@ export async function platformRoutes(app: FastifyInstance, deps: PlatformDeps): 
           : null,
       };
     });
+    // Version N is the Nth time this site wrote it; null while it ships as is.
+    route(open, C.getModerationStandard, async () => {
+      const written = await db
+        .selectFrom('site_copy')
+        .select('key')
+        .where('key', '=', 'standards')
+        .executeTakeFirst();
+      if (!written) return { current: null };
+      const v = await db
+        .selectFrom('site_copy_versions')
+        .select((eb) => [eb.fn.countAll<string>().as('n'), eb.fn.max('created_at').as('at')])
+        .where('key', '=', 'standards')
+        .executeTakeFirstOrThrow();
+      return {
+        // Written means at least one version: the migration kept every slot
+        // already written, and the trigger records each change since.
+        current: { version: Number(v.n), published_at: new Date(v.at).toISOString() },
+      };
+    });
     route(open, C.submitContentNotice, async ({ request }) => {
       sends.take(request.ip);
       const out = await submitNotice(

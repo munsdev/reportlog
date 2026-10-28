@@ -12,7 +12,7 @@
  *                 access (GET /api/standards/journalist). Accepting it is
  *                 still the desk's, for an approved journalist.
  */
-import { getJournalistStandard } from '@reportlog/contracts';
+import { getJournalistStandard, getModerationStandard } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, createFileRoute } from '@tanstack/react-router';
 import { Note } from '@/mockup/Note.tsx';
@@ -44,7 +44,7 @@ function StandardsPage() {
   const tab = Route.useSearch().tab ?? 'moderation';
   return (
     <PublicPage variant="band" title="Standards" eyebrow="Legal" width="prose" lede={LEDE[tab]}>
-      <nav className="tabs" aria-label="Standards">
+      <nav className="tabs tabs-filled" aria-label="Standards">
         {TABS.map((t) => (
           <Link
             key={t.id}
@@ -63,11 +63,30 @@ function StandardsPage() {
   );
 }
 
+/** "Version 2, published 28 October 2026.", as both standards say it. */
+function Published({ version, at }: { version: number; at: string }) {
+  return (
+    <p className="m">
+      Version {version}, published{' '}
+      {new Date(at).toLocaleDateString(undefined, { dateStyle: 'long' })}.
+    </p>
+  );
+}
+
 function Moderation() {
   const site = useSite();
+  const info = useQuery({
+    queryKey: ['standards', 'moderation'],
+    queryFn: ({ signal }) => call(getModerationStandard, { signal }),
+  });
+  const current = info.data?.current;
   return (
     <>
       <h2>Moderation standard</h2>
+      {current ? <Published version={current.version} at={current.published_at} /> : null}
+      {info.data && !current ? (
+        <p className="m">The wording this software ships with, until this site writes its own.</p>
+      ) : null}
       {site.isPending ? <p role="status">Loading…</p> : null}
       {site.isError ? (
         <Note tone="serious" title="The standard could not be loaded">
@@ -106,10 +125,7 @@ function Journalists() {
       ) : null}
       {current ? (
         <>
-          <p className="m">
-            Version {current.version}, published{' '}
-            {new Date(current.published_at).toLocaleDateString(undefined, { dateStyle: 'long' })}.
-          </p>
+          <Published version={current.version} at={current.published_at} />
           <p style={{ whiteSpace: 'pre-wrap' }}>{current.body}</p>
         </>
       ) : null}
