@@ -31,6 +31,8 @@ async function visitorSees(browser: Browser, slug: string, text: RegExp | string
 
 async function edit(page: Page) {
   // The settings are a closed panel until Edit; an error leaves it open.
+  // Drawn first (after a reload the page is still arriving), then opened.
+  await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible();
   const open = page.getByRole('button', { name: 'Edit Settings' });
   if (await open.isVisible()) await open.click();
 }

@@ -48,7 +48,9 @@ async function sendTip(browser: Browser, slug: string, link: string): Promise<vo
   await v.getByRole('button', { name: 'Next' }).click();
   // The optional words, skipped. The Tip List always asks for an address.
   await v.getByRole('button', { name: 'Next' }).click();
-  await v.getByLabel(/Your email address/).fill(`tipster-${String(Date.now())}@example.org`);
+  await v
+    .getByRole('textbox', { name: /^Email/ })
+    .fill(`tipster-${String(Date.now())}@example.org`);
   await v.waitForTimeout(2600);
   await v.getByRole('button', { name: 'Send' }).click();
   await expect(v.getByRole('heading', { name: 'Sent. Thank you.' })).toBeVisible();
@@ -77,7 +79,7 @@ test('a moderator checks a link as text, comments for journalists, and erases an
   await expect(page.getByRole('link', { name: 'jugendschutz.net' })).toBeVisible();
 
   const card = (url: string) =>
-    page.getByRole('list', { name: 'Links' }).getByRole('listitem').filter({ hasText: url });
+    page.getByRole('main').getByRole('article').filter({ hasText: url });
   await expect(card(good)).toBeVisible();
   // K6: text, never an anchor, so nothing on the page can open or prefetch it.
   await expect(page.locator(`a[href*="${tag}"]`)).toHaveCount(0);
@@ -97,7 +99,7 @@ test('a moderator checks a link as text, comments for journalists, and erases an
   await card(good).getByRole('button', { name: 'Save the comment' }).click();
   await expect(card(good).getByText('Saved.')).toBeVisible();
   await card(good).getByRole('button', { name: 'Show the history' }).click();
-  await expect(card(good).getByRole('list', { name: 'History' })).toContainText('comment');
+  await expect(card(good).getByRole('group', { name: 'History' })).toContainText('comment');
 
   await page
     .getByRole('group', { name: 'Show links that are' })

@@ -98,7 +98,7 @@ test('the election tips list sends a county as one code', async ({ page, browser
   await v.getByRole('radio', { name: 'Long lines or wait times' }).click();
   await next();
   await next();
-  await v.getByLabel(/Your email address/).fill(`county-${run()}@example.org`);
+  await v.getByRole('textbox', { name: /^Email/ }).fill(`county-${run()}@example.org`);
   // A form sent faster than it can be read is taken for a script.
   await v.waitForTimeout(2600);
   await v.getByRole('button', { name: 'Send' }).click();
