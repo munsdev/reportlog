@@ -16,7 +16,7 @@
  */
 import type { AreaCount, MapAggregate, MapPlane, MapView, Stance } from '@reportlog/contracts';
 import { MIN_AREA_FLOOR, NOT_A_SAMPLE } from '@reportlog/contracts';
-import { LOCATION_TYPE, stateOfPlace } from '@reportlog/fields';
+import { LOCATION_TYPE, placeCodeOf, stateOfPlace } from '@reportlog/fields';
 import { sql } from 'kysely';
 import { publishedReportIds } from '../board/published.ts';
 import { smallAreaThresholds } from '../moderation/switches.ts';
@@ -62,6 +62,13 @@ export function areaOf(answer: unknown): string | null {
   // stay state-level, so `US-AZ-04013` is one more for `US-AZ`.
   const m = /^[A-Z]{2}(-[A-Z0-9]{1,3})?(-\d{5})?$/.exec(answer);
   return m ? stateOfPlace(m[0]) : null;
+}
+
+/** A question's settings as jsonb hands them over: an object, or nothing to read. */
+function settingsOf(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
 }
 
 /** The county a sealed answer names (`US-AZ-04013`), or null for a state or a country. */
@@ -188,13 +195,13 @@ export async function computeMap(
     .select([
       // NULL when the logbook has no place question, or this report did not
       // answer it.
-      // A state written by postal code (`AZ`) is the area `US-AZ`, as
-      // `placeCodeOf` reads it. Every other location answer is its own code.
-      sql<
-        string | null
-      >`CASE WHEN f.settings ->> 'code' = 'postal' THEN 'US-' || (r.answers ->> f.key) ELSE r.answers ->> f.key END`.as(
-        'place',
-      ),
+      // THE ANSWER AS SEALED, WITH THE QUESTION'S SETTINGS, read into an area
+      // by `placeCodeOf` below and never in SQL: a state sealed by postal code
+      // (`AZ`) and a county sealed by its FIPS digits alone (`04013`) are only
+      // places once read the way the form wrote them. A CASE here that knew
+      // `postal` and not `fips` left every county-only report unplaced.
+      sql<string | null>`r.answers ->> f.key`.as('answer'),
+      sql`f.settings`.as('settings'),
       outcome
         ? sql`CASE WHEN r.logbook_id = ${outcome.logbookId} THEN r.answers -> ${outcome.key} END`.as(
             'outcome',
@@ -202,7 +209,7 @@ export async function computeMap(
         : sql`NULL::jsonb`.as('outcome'),
       sql<string>`count(*)`.as('n'),
     ])
-    .groupBy(['place', 'outcome']);
+    .groupBy([sql`r.answers ->> f.key`, sql`f.settings`, 'outcome']);
   if (scope.length) reportQuery = reportQuery.where('r.logbook_id', 'in', scope);
   const reportGroups = await reportQuery.execute();
 
@@ -245,9 +252,10 @@ export async function computeMap(
 
   for (const g of reportGroups) {
     const n = Number(g.n);
-    const a = place(g.place, n);
+    const code = placeCodeOf(g.answer, settingsOf(g.settings));
+    const a = place(code, n);
     if (!a) continue;
-    const c = countyCount(g.place);
+    const c = countyCount(code);
     for (const t of c ? [a, c] : [a]) {
       t.n += n;
       if (outcome) {
@@ -302,8 +310,12 @@ export async function computeMap(
       const entryGroups = await db
         .selectFrom('list_entries as e')
         .innerJoin('map_list_place_questions as q', 'q.list_id', 'e.list_id')
+        .innerJoin('list_fields as f', (j) =>
+          j.onRef('f.list_id', '=', 'q.list_id').onRef('f.key', '=', 'q.field_key'),
+        )
         .select([
-          sql<string | null>`e.answers ->> q.field_key`.as('place'),
+          sql<string | null>`e.answers ->> q.field_key`.as('answer'),
+          sql`f.settings`.as('settings'),
           sql<string>`count(*)`.as('n'),
         ])
         .where('e.review_state', '=', 'approved')
@@ -312,16 +324,19 @@ export async function computeMap(
           'in',
           listKeys.map((l) => l.list_id),
         )
-        .groupBy('place')
+        .groupBy([sql`e.answers ->> q.field_key`, sql`f.settings`])
         .execute();
       for (const g of entryGroups) {
         const n = Number(g.n);
-        const a = place(g.place, n);
+        // Read as the report half reads it, so a list asking by postal code
+        // or FIPS places its entries too.
+        const code = placeCodeOf(g.answer, settingsOf(g.settings));
+        const a = place(code, n);
         // THE COUNT AND NOTHING ELSE. A list has no outcome reading: it is
         // approved in bulk, so nobody made a judgement about one entry.
         if (a) {
           a.n += n;
-          const c = countyCount(g.place);
+          const c = countyCount(code);
           if (c) c.n += n;
         }
       }
