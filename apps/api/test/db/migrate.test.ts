@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { inject } from 'vitest';
-import { migrate } from '../../src/db/migrate.ts';
+import { appliedMigrations, migrate } from '../../src/db/migrate.ts';
 import { createThrowawayDatabase } from '../../src/db/throwaway.ts';
 import type { Throwaway } from '../../src/db/throwaway.ts';
 
@@ -27,6 +27,20 @@ describe('the migration runner', () => {
     await migrate(t.url, dir);
     await writeFile(join(dir, '20260101000000_one.sql'), 'CREATE TABLE one (id bigint);');
     await expect(migrate(t.url, dir)).rejects.toThrow(/has changed since it was applied/);
+  });
+
+  it('says which migrations a database has applied, and none before the first', async () => {
+    const t = await createThrowawayDatabase(inject('serverUrl'), 'mig');
+    made.push(t);
+    expect(await appliedMigrations(t.url)).toEqual([]);
+    const dir = await mkdtemp(join(tmpdir(), 'rl-mig-'));
+    await writeFile(join(dir, '20260102000000_two.sql'), 'CREATE TABLE two (id int);');
+    await writeFile(join(dir, '20260101000000_one.sql'), 'CREATE TABLE one (id int);');
+    await migrate(t.url, dir);
+    expect(await appliedMigrations(t.url)).toEqual([
+      '20260101000000_one.sql',
+      '20260102000000_two.sql',
+    ]);
   });
 
   it('refuses names that are not timestamped', async () => {

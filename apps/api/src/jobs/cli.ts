@@ -14,6 +14,7 @@
  *   timers --write       regenerate deploy/systemd/*.timer from the registry
  *   timers --check       fail if they differ (also a unit test)
  *   updates [--notify]   what the last update check found; email a new one
+ *   applied-migrations   the migrations the database has applied (for deploy)
  *
  * Exit codes: 0 fine, 1 something failed, 2 used wrongly.
  */
@@ -23,6 +24,7 @@ import { join } from 'node:path';
 import { loadConfig } from '../config.ts';
 import type { Config } from '../config.ts';
 import { createDatabase } from '../db/database.ts';
+import { appliedMigrations } from '../db/migrate.ts';
 import { createMailer } from '../email/index.ts';
 import { mailTest } from '../email/mail-test.ts';
 import { CODE_ROOT } from './backup.ts';
@@ -71,11 +73,14 @@ async function main(): Promise<number> {
       return timers(rest.includes('--write'));
     case 'updates':
       return updates(rest.includes('--notify'));
+    case 'applied-migrations':
+      for (const name of await appliedMigrations(config().DATABASE_URL)) console.log(name);
+      return 0;
     default:
       console.log(
         readFileSync(new URL(import.meta.url), 'utf8')
           .split('\n')
-          .slice(1, 18)
+          .slice(1, 19)
           .map((l) => l.replace(/^ \*\/? ?/, ''))
           .join('\n'),
       );

@@ -40,6 +40,7 @@ main() {
   # The tooling follows the running release, so the next deploy is run by
   # the scripts this release shipped with.
   install_tooling "$target"
+  write_release_facts || true
 
   say "Running $(basename "$target") ($(cut -c1-12 "$target/REVISION"))"
   note "The database keeps the newer release's migrations; that is expected."

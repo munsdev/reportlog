@@ -37,6 +37,14 @@ LIB=/usr/local/lib/reportlog
 NODE=/usr/local/bin/node
 KEEP_RELEASES=5
 UNIT_DIR=/etc/systemd/system
+# The branch this server follows, once somebody installed from one on the
+# Updates screen. Root's file, never the application's: the screen may only
+# ask. Absent until then, which means DEPLOY_REF. See followed_ref.
+FOLLOW_FILE=$SRV/follow
+# The only branches the Updates screen may name (decided by the owner). A
+# server can still follow another one through DEPLOY_REF; it just cannot be
+# asked for by name.
+OFFERED_BRANCHES="main beta alpha"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 note() { printf '  %s\n' "$*"; }
@@ -387,6 +395,80 @@ fetch_mirror() {
   fi
 }
 
+# Is $1 one of the branches the Updates screen may name? Exact words only.
+is_offered_branch() {
+  local b
+  for b in $OFFERED_BRANCHES; do [ "$1" = "$b" ] && return 0; done
+  return 1
+}
+
+# The ref this server checks and deploys by default: the branch last
+# installed from on the Updates screen, or DEPLOY_REF. The file is root's,
+# but it is read as strictly as if it were not.
+followed_ref() {
+  local b
+  b=$(head -n 1 "$FOLLOW_FILE" 2>/dev/null || true)
+  if is_offered_branch "$b"; then
+    echo "$b"
+  else
+    env_value DEPLOY_REF "$DEPLOY_ENV"
+  fi
+}
+
+# Follow branch $1 from now on (one of OFFERED_BRANCHES), in one rename.
+set_follow() {
+  is_offered_branch "$1" || return 1
+  printf '%s\n' "$1" >"$FOLLOW_FILE.new"
+  chmod 0644 "$FOLLOW_FILE.new"
+  mv -f "$FOLLOW_FILE.new" "$FOLLOW_FILE"
+}
+
+# The branch commit $1 came from, for the record a release keeps (BRANCH):
+# the followed ref if its tip is that commit, else the first offered branch
+# whose tip is, else nothing. A guess only when nobody said; deploy.sh is
+# told whenever the Updates screen asked.
+branch_of_commit() {
+  local sha=$1 b
+  for b in "$(followed_ref)" $OFFERED_BRANCHES; do
+    [ -n "$b" ] || continue
+    if [ "$(git -C "$MIRROR" rev-parse --verify --quiet "refs/heads/$b^{commit}" 2>/dev/null)" = "$sha" ]; then
+      echo "$b"
+      return 0
+    fi
+  done
+}
+
+# NEVER INSTALL ANYTHING OLDER THAN THE DATABASE. The migrations the
+# database has applied that commit $1 does not carry, one per line; nothing
+# when it carries them all. Asked of the database, through the running
+# release $2 (as the service user). A release too old to answer is replaced
+# by its own migrations folder, which the database has at least applied.
+#
+# The migration runner would refuse such a commit too ("migrated by a newer
+# version"), but only after a build of several minutes, leaving a failed
+# release behind. This says so before anything is unpacked.
+migrations_missing() {
+  local sha=$1 was=$2 applied
+  [ -n "$was" ] || return 0
+  if ! applied=$(app_node "$was/apps/api/src/jobs/cli.ts" applied-migrations 2>/dev/null); then
+    applied=$(ls "$was/apps/api/migrations" 2>/dev/null || true)
+  fi
+  printf '%s\n' "$applied" | grep -E '^[0-9]{14}_[a-z0-9_]+\.sql$' | LC_ALL=C sort -u \
+    | LC_ALL=C comm -23 - <(git -C "$MIRROR" ls-tree --name-only "$sha" apps/api/migrations/ \
+      | sed 's|.*/||' | LC_ALL=C sort -u)
+}
+
+# The sentence that refuses commit $1 when it is older than the database
+# (running release $2), and success; or failure, saying nothing, when it is not.
+older_than_database() {
+  local missing n
+  missing=$(migrations_missing "$1" "$2" || true)
+  [ -n "$missing" ] || return 1
+  n=$(printf '%s\n' "$missing" | wc -l)
+  printf '%s\n' "Not installed: ${1:0:12} is older than this site's database. The database already has $(printf '%s\n' "$missing" | head -n 1)$([ "$n" -gt 1 ] && printf ' and %s more' "$((n - 1))"), which that version does not, so it would run older code than its database. To go back to older code on purpose, roll back to a release this server keeps."
+  return 0
+}
+
 # Why a fetch failed, as one word, from git's error text on standard input
 # (ported from legacy updateCheck.js). Only the word is ever kept: git's own
 # text can contain the repository's address, and an address can carry a
@@ -452,10 +534,12 @@ write_update_facts() {
 # a deploy does) and write what it found under the state directory. Never
 # deploys anything. A failed fetch still writes the facts, from the mirror as
 # it was, with the cause.
+#
+#   update_check [branch]   against the followed ref, or one offered branch
 update_check() {
   local repo ref cause="" err rc=0
   repo=$(env_value REPO_URL "$DEPLOY_ENV")
-  ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
+  ref=${1:-$(followed_ref)}
   [ -n "$repo" ] || die "REPO_URL is not set in $DEPLOY_ENV."
   [ -n "$ref" ] || die "DEPLOY_REF is not set in $DEPLOY_ENV."
   # No prompt: in a timer there is nobody to type a password, and a prompt
@@ -473,17 +557,76 @@ update_check() {
   else
     write_update_facts /nonexistent "$ref" "" "$STATE_DIR/updates" "$cause"
   fi
+  write_release_facts
 }
 
-# One line of the request file's status, written whole (rename) so the panel
-# never reads half of one.
+# What is installed, what the server follows, and the releases it keeps,
+# as plain files under STATE_DIR/installed for the Updates screen
+# (apps/api/src/site/updateRoutes.ts). DISPLAY ONLY, like the update facts:
+# a rollback request names a release, and root checks that name against
+# $RELEASES itself. Written after every check, deploy and rollback.
+#
+#   following   the followed ref
+#   current     the running release's id; previous, the one before it
+#   releases    one line per kept release, newest first:
+#               <id> <commit> <branch or -> <version or ->
+write_release_facts() {
+  local out="$STATE_DIR/installed" tmp d b v
+  [ -d "$STATE_DIR" ] || return 0
+  tmp=$(mktemp -d "$out.new.XXXXXX")
+  followed_ref >"$tmp/following"
+  d=$(release_of "$CURRENT")
+  [ -z "$d" ] || basename "$d" >"$tmp/current"
+  d=$(release_of "$PREVIOUS")
+  [ -z "$d" ] || basename "$d" >"$tmp/previous"
+  : >"$tmp/releases"
+  # Names start with a UTC time, so name order is age order. Failed
+  # releases are not release points: they never ran.
+  for d in $(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d ! -name '*.failed' 2>/dev/null | LC_ALL=C sort -r); do
+    [ -f "$d/REVISION" ] || continue
+    b=$(head -n 1 "$d/BRANCH" 2>/dev/null || true)
+    v=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([0-9][0-9.]*\)".*/\1/p' "$d/package.json" 2>/dev/null | head -n 1)
+    printf '%s %s %s %s\n' "$(basename "$d")" "$(head -c 40 "$d/REVISION")" "${b:--}" "${v:--}" >>"$tmp/releases"
+  done
+  chmod 0755 "$tmp"
+  chmod 0644 "$tmp"/*
+  rm -rf "$out"
+  mv -T "$tmp" "$out"
+}
+
+# The request's status, written whole (rename) so the panel never reads
+# half of one.
+#   update_status <state> <action> [sha] [branch] [release]
 update_status() {
   local tmp
   tmp=$(mktemp "$STATUS_DIR/.status.XXXXXX")
-  printf 'state=%s\naction=%s\nsha=%s\nat=%s\n' "$1" "$2" "$3" \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$tmp"
+  printf 'state=%s\naction=%s\nsha=%s\nbranch=%s\nrelease=%s\nat=%s\n' "$1" "$2" "${3:-}" \
+    "${4:-}" "${5:-}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$tmp"
   chmod 0644 "$tmp"
   mv -f "$tmp" "$STATUS_DIR/status"
+}
+
+# The value of `<key>=` in request text $1 when it has exactly the shape $3
+# (an extended regex, anchored here); nothing when the key is absent; and
+# "!" when it is there with any other value, or more than once, which
+# refuses the whole request. A value that does not match is never trimmed
+# or guessed at.
+request_field() {
+  local text=$1 key=$2 shape=$3 line value="" found=0
+  while IFS= read -r line; do
+    case "$line" in "$key="*) ;; *) continue ;; esac
+    if [ "$found" -eq 1 ]; then
+      echo '!'
+      return 0
+    fi
+    found=1
+    value=${line#"$key="}
+    if ! [[ "$value" =~ ^($shape)$ ]]; then
+      echo '!'
+      return 0
+    fi
+  done <<<"$text"
+  printf '%s' "$value"
 }
 
 # THE UPDATE BUTTON. The admin panel writes $REQUEST_DIR/request as the
@@ -491,99 +634,146 @@ update_status() {
 # so nobody needs a shell, sudo or ssh to update the site.
 #
 # THE FILE IS UNTRUSTED: anything that can run as the service user can write
-# it. So it can ask for exactly two things, and can choose nothing root
-# would not choose anyway:
-#   action=check            run the update check now
-#   action=apply sha=<40>   deploy ONLY the commit DEPLOY_REF points at after
-#                           a fresh fetch. Any other sha is refused, so the
-#                           file cannot pick a branch, a tag or an old release.
+# it. It is read once, from a plain file (never through a link), at most
+# 4 KB, and each value must have an exact shape or the request is refused:
+#
+#   action=check   [branch=<b>]    run the update check now, against the
+#                                  followed ref, or against branch <b>
+#   action=apply   sha=<40 hex>    deploy ONLY the commit the followed ref,
+#                  [branch=<b>]    or branch <b>, points at after a fresh
+#                                  fetch. Any other sha is refused.
+#                                  Installing from <b> makes the server
+#                                  follow <b> from then on.
+#   action=rollback [release=<id>] one step back while `previous` is older
+#                                  than what runs; or to release <id>, which
+#                                  must be the exact name of a release
+#                                  directory this server keeps.
+#
+# <b> is one of OFFERED_BRANCHES, compared word for word, and reaches git
+# only as refs/heads/<b>. <id> has the shape deploy.sh names releases with.
+# Nothing from the file reaches a shell unquoted.
+#
+# An apply is also refused when the commit is older than the database
+# (older_than_database): only a rollback goes to older code, on purpose.
 # The deploy is the ordinary one: it migrates, switches, checks the new
 # release answers, and switches back if it does not.
 run_update_request() {
-  local req="$REQUEST_DIR/request" action sha ref tip rc=0 log="$STATUS_DIR/log"
-  [ -f "$req" ] || return 0
-  action=$(sed -n 's/^action=\([a-z_]*\)$/\1/p' "$req" | head -n 1)
-  sha=$(sed -n 's/^sha=\([0-9a-f]\{40\}\)$/\1/p' "$req" | head -n 1)
+  local req="$REQUEST_DIR/request" text="" action sha branch release ref tip rc=0 \
+    log="$STATUS_DIR/log"
+  [ -e "$req" ] || [ -L "$req" ] || return 0
+  if [ -f "$req" ] && [ ! -L "$req" ]; then text=$(head -c 4096 "$req" || true); fi
   # Removed before anything runs, so a request runs once even if it fails
   # and the path unit does not start it again.
   rm -f "$req"
   install -d -m 0755 "$STATUS_DIR"
-  case "$action" in
-    check | apply | apply_test | rollback) ;;
-    *)
-      update_status refused unknown ""
-      return 0
-      ;;
-  esac
+  action=$(request_field "$text" action 'check|apply|rollback')
+  sha=$(request_field "$text" sha '[0-9a-f]{40}')
+  branch=$(request_field "$text" branch "${OFFERED_BRANCHES// /|}")
+  release=$(request_field "$text" release '[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}')
   : >"$log"
   chmod 0644 "$log"
+  if [ -z "$action" ] || [ "$action" = '!' ]; then
+    echo "The request was not one this server accepts, so nothing was done." >>"$log"
+    update_status refused unknown
+    return 0
+  fi
+  # Each action takes only its own fields, so nothing is quietly ignored.
+  if [ "$sha" = '!' ] || [ "$branch" = '!' ] || [ "$release" = '!' ] \
+    || { [ "$action" = check ] && [ -n "$sha$release" ]; } \
+    || { [ "$action" = apply ] && { [ -z "$sha" ] || [ -n "$release" ]; }; } \
+    || { [ "$action" = rollback ] && [ -n "$sha$branch" ]; }; then
+    echo "The request was not one this server accepts, so nothing was done. The branches it can be asked for are: $OFFERED_BRANCHES." >>"$log"
+    update_status refused "$action"
+    return 0
+  fi
   exec 8>/run/reportlog-deploy.lock
   if ! flock -n 8; then
     echo "A deploy is already running. Try again when it has finished." >>"$log"
-    update_status refused "$action" "$sha"
+    update_status refused "$action" "$sha" "$branch" "$release"
     return 0
   fi
-  update_status running "$action" "$sha"
-  # ROLLBACK: the release that ran before this one, exactly `reportlog
-  # rollback` with no argument (no release is named by the request). It needs
-  # no network, so it comes before the fetch. The database keeps what the
-  # newer release added; older code runs on it.
+  update_status running "$action" "$sha" "$branch" "$release"
+  # ROLLBACK needs no network, so it comes before the fetch. The database
+  # keeps what the newer release added; older code runs on it.
   if [ "$action" = rollback ]; then
-    # ONCE, THEN IT STAYS. Release ids start with their UTC time, so a
-    # rollback is allowed only while `previous` is OLDER than what is running.
-    # After one rollback `previous` is the newer release it left, so a second
-    # request would only go forward again: refused. A new deploy makes `previous`
-    # older again. (The terminal command `reportlog rollback` still toggles.)
-    local now_id back_id
+    local now_id back_id d found=""
     now_id=$(basename "$(release_of "$CURRENT")")
-    back_id=$(basename "$(release_of "$PREVIOUS")")
-    if [ -z "$back_id" ] || [ "$back_id" = "$now_id" ] \
-      || [ "$(printf '%s\n%s\n' "$back_id" "$now_id" | LC_ALL=C sort | head -n 1)" != "$back_id" ]; then
-      echo "There is nothing older to go back to. The site has already been rolled back, or this is its first release. To move forward, install an update." >>"$log"
-      update_status refused "$action" ""
-      return 0
+    if [ -n "$release" ]; then
+      # A NAMED RELEASE (the Updates screen's release points): the exact name
+      # of a directory this server keeps, never a path built from the file.
+      for d in "$RELEASES"/*; do
+        if [ "$(basename "$d")" = "$release" ] && [ -d "$d" ] && [ ! -L "$d" ] && [ -f "$d/REVISION" ]; then
+          found=$release
+        fi
+      done
+      if [ -z "$found" ]; then
+        echo "This server keeps no release called $release, so there is nothing to go back to. Reload the page to see the ones it keeps." >>"$log"
+        update_status refused "$action" "" "" "$release"
+        return 0
+      fi
+      if [ "$found" = "$now_id" ]; then
+        echo "Release $release is the one running already." >>"$log"
+        update_status refused "$action" "" "" "$release"
+        return 0
+      fi
+    else
+      # ONCE, THEN IT STAYS. Release ids start with their UTC time, so a
+      # rollback is allowed only while `previous` is OLDER than what is
+      # running. After one rollback `previous` is the newer release it left,
+      # so a second request would only go forward again: refused. A new
+      # deploy makes `previous` older again. (The terminal command
+      # `reportlog rollback` still toggles.)
+      back_id=$(basename "$(release_of "$PREVIOUS")")
+      if [ -z "$back_id" ] || [ "$back_id" = "$now_id" ] \
+        || [ "$(printf '%s\n%s\n' "$back_id" "$now_id" | LC_ALL=C sort | head -n 1)" != "$back_id" ]; then
+        echo "There is nothing older to go back to. The site has already been rolled back, or this is its first release. To move forward, install an update." >>"$log"
+        update_status refused "$action"
+        return 0
+      fi
     fi
     exec 8>&-
-    "$LIB/rollback.sh" >>"$log" 2>&1 || rc=$?
+    "$LIB/rollback.sh" ${found:+"$found"} >>"$log" 2>&1 || rc=$?
+    write_release_facts >/dev/null 2>&1 || true
     if [ "$rc" -eq 0 ]; then
-      update_status "done" "$action" ""
+      update_status "done" "$action" "" "" "$release"
     else
-      update_status failed "$action" ""
+      update_status failed "$action" "" "" "$release"
     fi
     return 0
   fi
-  update_check >>"$log" 2>&1 || rc=$?
-  # THE TEST BUILD. The one branch name this accepts is fixed here, never
-  # read from the request: the file can say "apply_test" and nothing more.
-  if [ "$action" = apply_test ] && [ "$rc" -eq 0 ]; then
-    tip=$(git -C "$MIRROR" rev-parse --verify --quiet "refs/heads/test^{commit}" 2>/dev/null || true)
-    if [ -z "$tip" ]; then
-      echo "There is no branch called test on the repository, so there is no test build." >>"$log"
-      update_status refused "$action" ""
-      return 0
-    fi
-    echo "Installing the test build $tip." >>"$log"
-    exec 8>&-
-    "$LIB/deploy.sh" "$tip" >>"$log" 2>&1 || rc=$?
-    update_check >/dev/null 2>&1 || true
-    sha=$tip
-  fi
+  update_check "$branch" >>"$log" 2>&1 || rc=$?
   if [ "$action" = apply ] && [ "$rc" -eq 0 ]; then
-    ref=$(env_value DEPLOY_REF "$DEPLOY_ENV")
+    # An offered branch is named in full, so a tag of the same name never
+    # answers for it.
+    if [ -n "$branch" ]; then ref="refs/heads/$branch"; else ref=$(followed_ref); fi
     tip=$(git -C "$MIRROR" rev-parse --verify --quiet "$ref^{commit}" 2>/dev/null || true)
-    if [ -z "$sha" ] || [ "$sha" != "$tip" ]; then
-      echo "What is on offer changed since the page was loaded. Reload it and try again." >>"$log"
-      update_status refused "$action" "$sha"
+    if [ -z "$tip" ]; then
+      echo "There is no branch called ${branch:-$ref} on the repository, so there is nothing to install from it." >>"$log"
+      update_status refused "$action" "$sha" "$branch"
       return 0
     fi
-    # The deploy takes the same lock itself, so let go of it first.
+    if [ "$sha" != "$tip" ]; then
+      echo "What is on offer changed since the page was loaded. Reload it and try again." >>"$log"
+      update_status refused "$action" "$sha" "$branch"
+      return 0
+    fi
+    if older_than_database "$sha" "$(release_of "$CURRENT")" >>"$log"; then
+      update_status refused "$action" "$sha" "$branch"
+      return 0
+    fi
+    # The deploy takes the same lock itself, so let go of it first. It is
+    # told the branch, so the release records where it came from.
     exec 8>&-
-    "$LIB/deploy.sh" "$sha" >>"$log" 2>&1 || rc=$?
+    REPORTLOG_DEPLOY_BRANCH="$branch" "$LIB/deploy.sh" "$sha" >>"$log" 2>&1 || rc=$?
+    if [ "$rc" -eq 0 ] && [ -n "$branch" ] && [ "$branch" != "$(followed_ref)" ]; then
+      set_follow "$branch"
+      echo "From now on this server follows $branch: its checks, the daily one too, look there." >>"$log"
+    fi
     update_check >/dev/null 2>&1 || true
   fi
   if [ "$rc" -eq 0 ]; then
-    update_status "done" "$action" "$sha"
+    update_status "done" "$action" "$sha" "$branch"
   else
-    update_status failed "$action" "$sha"
+    update_status failed "$action" "$sha" "$branch"
   fi
 }

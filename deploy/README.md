@@ -18,6 +18,7 @@ check (`docs/decisions.md`, 14).
 | `/srv/reportlog/releases/<id>` | One directory per deploy (`<UTC time>-<commit>`)       | root, read-only to the app |
 | `/srv/reportlog/current`       | → the release that is running                          | root                       |
 | `/srv/reportlog/previous`      | → the release that ran before it (where rollback goes) | root                       |
+| `/srv/reportlog/follow`        | The branch the Updates screen last installed from      | root                       |
 | `/srv/reportlog/repo.git`      | A mirror of the repository, fetched on deploy          | root                       |
 | `/etc/reportlog/reportlog.env` | The application's settings (see `.env.example`)        | root:reportlog, 0640       |
 | `/etc/reportlog/deploy.env`    | Where code comes from; the ACME email                  | root                       |
@@ -415,9 +416,16 @@ backups, are explained in their own sections above.
 ## Deploying
 
 ```sh
-sudo reportlog deploy            # DEPLOY_REF from /etc/reportlog/deploy.env (main)
+sudo reportlog deploy            # the followed branch (below); at first DEPLOY_REF (main)
 sudo reportlog deploy v1.2.0     # or any branch, tag or commit
 ```
+
+Each release records the branch it came from in `releases/<id>/BRANCH`
+(none for a bare commit that is no branch's tip); `reportlog releases` and
+the Updates screen show it. **A commit older than the database is refused**
+before anything is unpacked: one whose `apps/api/migrations/` lacks a
+migration the database has already applied would run older code than its
+database. Going back to older code is a rollback (below), never a deploy.
 
 What happens, in this order. Everything that can fail happens before the
 running release is touched:
@@ -468,19 +476,53 @@ credential, DNS, the network), and when the daily check has stopped. To turn
 the check off: `sudo systemctl disable --now reportlog-update-check.timer`
 (a deploy turns it back on).
 
-**The Updates screen.** Records › Updates shows what the last check found,
-with two buttons: **Check now**, and **Install**, which deploys exactly the
-commit `DEPLOY_REF` points at, the one the daily check offered. The website
-never runs git and never deploys anything itself. It writes one small request
-file (`/var/lib/reportlog/update-request/request`), and the root unit
+**The Updates screen.** Records › Updates says what is installed (version,
+commit, when, and the branch it came from) and what the last check found.
+One button: **Check for update**, which becomes **Install update** when the
+check found one; installing asks first, naming what. **Roll back** appears
+only while it can be used: one step back to an older release, once.
+
+**Branches.** `main` is live; `beta` and `alpha` are for testing. Pressing
+the installed version eight times adds a branch selector beside the button,
+and a server that does not follow `main` always shows it. Choose a branch,
+check, and the screen shows what that branch offers; installing asks first,
+naming the branch. **Installing from a branch makes the server follow it**:
+root writes the branch to `/srv/reportlog/follow`, and every later check,
+the daily one included, and a plain `sudo reportlog deploy`, use it. Until
+somebody installs from a branch the server follows `DEPLOY_REF`, which may
+name a branch outside the three (a test server following `test`, say): it
+is shown, checked and updated as before, but never asked for by name. To go
+back to `DEPLOY_REF`, delete `/srv/reportlog/follow`.
+
+The same eight presses offer every release the server keeps
+(`/srv/reportlog/releases`, newest first, with date, commit and branch) to
+roll back to, each asking first. Nothing new is stored for this: they are
+the releases a deploy keeps anyway (`KEEP_RELEASES`, five).
+
+**How a request is checked.** The website never runs git and never deploys
+anything itself. It writes one small request file
+(`/var/lib/reportlog/update-request/request`), and the root unit
 `reportlog-update-request.path` sees it and runs `reportlog request`, which
-treats the file as untrusted: it accepts a check, or the commit `DEPLOY_REF`
-points at after a fresh fetch, and refuses anything else, including a commit
-that moved since the page was loaded. So the worst a forged request can do is
-install what this server is already configured to install. The deploy is the
-same one `sudo reportlog deploy` runs, with the same checks and the same
-automatic switch back, and the end of its output appears on the screen.
-(Decided 22 October 2026, `docs/decisions.md` 68.)
+treats the file as untrusted. It reads it once, from a plain file (never
+through a link), at most 4 KB. Each value must have an exact shape, or the
+whole request is refused:
+
+| Field     | Accepted                                                                                       |
+| --------- | ---------------------------------------------------------------------------------------------- |
+| `action`  | `check`, `apply` or `rollback`                                                                 |
+| `branch`  | `main`, `beta` or `alpha`, word for word (check and apply only); reaches git as `refs/heads/…` |
+| `sha`     | 40 hex characters (apply only); must be the branch's tip after a fresh fetch                   |
+| `release` | `<UTC time>-<12 hex>` (rollback only); must be the exact name of a kept release directory      |
+
+A field said twice, or one the action does not take, also refuses it. An
+apply is refused when the commit moved since the page was loaded, and when
+it is older than the database (above). So the worst a forged request can do
+is install the newest commit of one of the three branches, or go back to a
+release this server already ran. The deploy is the same one
+`sudo reportlog deploy` runs, with the same checks and the same automatic
+switch back, under the same lock, and the end of its output appears on the
+screen. (Decided 22 October 2026, `docs/decisions.md` 68; branches decided
+by the owner, 29 October 2026.)
 
 The check runs as root only because the repository's address and credentials
 are root's, as they are for a deploy; it runs root's own copy of these
@@ -496,7 +538,9 @@ sudo reportlog rollback <id>     # to a named one
 
 A rollback switches `current` and restarts. It installs the units and
 Caddyfile that release shipped with. **It does not touch the database.**
-Rolling back twice returns you to where you started.
+Rolling back twice returns you to where you started. (The Updates screen's
+ordinary Roll back goes once only; after the eight presses it can name any
+kept release, as `rollback <id>` does.)
 
 ### Why rolling back is safe
 
@@ -513,9 +557,10 @@ situation a rollback leaves you in.
 
 After a rollback the doctor says the database has migrations the running
 release does not know, as a warning, not a failure. **Deploying an older
-commit is refused for the same reason** ("This database has migrations
-this code does not"): the migration runner will not run code older than the
-database. To go back, use `rollback`, which never migrates. To go forward,
+commit is refused for the same reason**: the deploy checks before it unpacks
+anything ("Not installed: … is older than this site's database"), and the
+migration runner would refuse it too ("This database has migrations this
+code does not"). Neither will run code older than the database. To go back, use `rollback`, which never migrates. To go forward,
 deploy a commit that includes every applied migration.
 
 If a migration ever had to be undone, that would be a new, additive

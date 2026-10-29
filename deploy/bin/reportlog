@@ -42,7 +42,7 @@ case "$cmd" in
       mark="  "
       [ "$d" = "$cur" ] && mark="* "
       [ "$d" = "$prev" ] && mark="< "
-      printf '%s%s\n' "$mark" "$(basename "$d")"
+      printf '%s%s%s\n' "$mark" "$(basename "$d")" "$(sed -n '1s/^/  from /p' "$d/BRANCH" 2>/dev/null)"
     done
     echo
     echo "* running   < previous (where 'reportlog rollback' goes)"
