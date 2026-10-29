@@ -344,9 +344,9 @@ export function DecideForm({
         </>
       ) : null}
       {needsWritten && (panel.isPending || asked.length) ? (
-        <div className="panel quiet" role="group" aria-labelledby={`${id}-written`}>
-          <h2 id={`${id}-written`}>Its written account and links</h2>
-          <p className="sub">
+        <div className="col" role="group" aria-labelledby={`${id}-written`}>
+          <h3 id={`${id}-written`}>Its written account and links</h3>
+          <p className="m">
             Read them on this page first if you need to. A written account stays with the report,
             for staff only, unless you choose otherwise.
           </p>

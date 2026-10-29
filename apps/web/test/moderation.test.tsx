@@ -165,8 +165,8 @@ describe('the queue', () => {
       expect(within(work).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
   });
 
-  it('narrows to the reports holding a kind of work, asked of the server', async () => {
-    const sent = serve({ 'GET /api/moderation/reports': QUEUE });
+  it('narrows to the reports holding a kind of work, in the address', async () => {
+    serve({ 'GET /api/moderation/reports': QUEUE });
     const router = wrap(<QueuePage search={{}} />);
     const user = userEvent.setup();
     const work = await screen.findByRole('group', { name: 'Only reports that' });
@@ -174,6 +174,22 @@ describe('the queue', () => {
     await waitFor(() => {
       expect(router.state.location.search).toMatchObject({ links: true });
     });
+  });
+
+  it('asks the server for the work filters in force, and shows them pressed', async () => {
+    const sent = serve({ 'GET /api/moderation/reports': QUEUE });
+    wrap(<QueuePage search={{ links: true, sharing: true }} />);
+    const work = await screen.findByRole('group', { name: 'Only reports that' });
+    expect(within(work).getByRole('button', { name: /^Has links to check/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await waitFor(() => {
+      expect(sent.some((x) => /[?&]links=true/.test(x.url) && /[?&]sharing=true/.test(x.url))).toBe(
+        true,
+      );
+    });
+    expect(sent.some((x) => /[?&]written=/.test(x.url))).toBe(false);
   });
 
   it('searches on Enter, never on each keystroke (decision 59)', async () => {

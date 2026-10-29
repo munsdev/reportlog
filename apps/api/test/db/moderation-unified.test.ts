@@ -175,6 +175,7 @@ describe('list entries, by the work an entry holds', () => {
     const ref = entry.texts[0]?.ref ?? '';
     await checkText(h.db, keys, ref, {
       outcome: 'withheld',
+      reason: undefined,
       why: 'Left with the list entry, for staff only.',
       actor: address('unified-mod'),
     });
