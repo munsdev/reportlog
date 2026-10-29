@@ -92,6 +92,8 @@ test('a visitor sends a tip; the emailed link erases what they wrote, and only w
   const review = async () => {
     await page.goto('/lists');
     await page.getByRole('link', { name: 'Review entries' }).click();
+    // The list's own page links to it by name too: wait to have left it.
+    await expect(page.getByRole('heading', { level: 1, name: 'List entries' })).toBeVisible();
     await page.getByRole('link', { name: new RegExp(slug.replace(/-/g, '.')) }).click();
   };
   await review();
