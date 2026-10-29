@@ -32,7 +32,7 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Members', href: '/intake/members' },
   // Sends a coordinator on to their own organization's listing page.
   { label: 'Directory listing', href: '/intake/listing', lands: /\/organizations\/\d+\/listing$/ },
-  { area: 'Review', label: 'Reports', href: '/moderate' },
+  { area: 'Review', label: 'Reports queue', href: '/moderate' },
   { area: 'Review', label: 'List entries', href: '/lists/review' },
   { area: 'Safety', label: 'Illegal content notices', href: '/moderate/illegal-content' },
   { area: 'Safety', label: 'Flood screen', href: '/moderate/flood' },
@@ -94,7 +94,7 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   moderator: [
     ...YOU,
     ...pick(
-      'Reports',
+      'Reports queue',
       'List entries',
       'Illegal content notices',
       'Flood screen',

@@ -266,8 +266,8 @@ describe('words', () => {
     expect(pageNameFor('/(staff)/settings/switches')).toBe('Switches');
     // A page folded into another is named by the page that took it over.
     expect(pageNameFor('/(staff)/access/roster')).toBe('People');
-    expect(pageNameFor('/(staff)/moderate/')).toBe('Reports');
-    expect(pageNameFor('/(staff)/moderate/$threadId')).toBe('Reports');
+    expect(pageNameFor('/(staff)/moderate/')).toBe('Reports queue');
+    expect(pageNameFor('/(staff)/moderate/$threadId')).toBe('Reports queue');
     expect(pageNameFor('/board/')).toBeNull();
   });
 

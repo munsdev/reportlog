@@ -105,7 +105,7 @@ function QueueScreen({ search }: { search: QueueSearch }) {
 
   return (
     <StaffPage
-      title="Reports"
+      title="Reports queue"
       lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished. Its written account, links and files are decided on its page."
     >
       {query.data && !query.data.archive_published ? (

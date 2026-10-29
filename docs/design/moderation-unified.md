@@ -17,6 +17,10 @@ Two queues in the sidebar's Review group, nothing else:
 | **Reports**      | `/moderate`     | the report page, `/moderate/$threadId` (`features/moderation/Item.tsx`)       |
 | **List entries** | `/lists/review` | one list's review page, `/lists/review/$id` (`features/lists/ListReview.tsx`) |
 
+The sidebar and the page title keep the name **Reports queue**: the public
+board is called "Reports" too, and two links with one name on one menu would
+send people to the wrong place.
+
 A hub holds the answers, the written account, its links, its files, the
 decision and the row actions (severity, threat, incident, second read,
 evidence, note, board, who filed it). Nothing about an item has to be decided

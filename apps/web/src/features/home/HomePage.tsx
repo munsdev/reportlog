@@ -69,12 +69,6 @@ export function HomePage() {
         waiting.reports
           ? `${String(waiting.reports)} ${waiting.reports === 1 ? 'report' : 'reports'}`
           : '',
-        waiting.texts
-          ? `${String(waiting.texts)} written ${waiting.texts === 1 ? 'account' : 'accounts'}`
-          : '',
-        waiting.tip_links
-          ? `${String(waiting.tip_links)} ${waiting.tip_links === 1 ? 'link' : 'links'}`
-          : '',
         waiting.list_entries
           ? `${String(waiting.list_entries)} list ${waiting.list_entries === 1 ? 'entry' : 'entries'}`
           : '',
@@ -95,10 +89,6 @@ export function HomePage() {
             <span>reports waiting</span>
           </div>
           <div className="mini-stat">
-            <b>{waiting.tip_links}</b>
-            <span>tip links waiting</span>
-          </div>
-          <div className="mini-stat">
             <b>{waiting.list_entries}</b>
             <span>list entries waiting</span>
           </div>
@@ -109,23 +99,13 @@ export function HomePage() {
           <Tile
             title="Review"
             links={[
+              // The two queues (moderation-unified.md): a report's written
+              // account, links and files are decided on its page.
               {
                 to: '/moderate',
                 label: 'Reports queue',
                 n: waiting?.reports,
                 words: 'reports waiting for a moderator',
-              },
-              {
-                to: '/moderate/texts',
-                label: 'Written accounts',
-                n: waiting?.texts,
-                words: 'written accounts waiting to be checked',
-              },
-              {
-                to: '/lists/links',
-                label: 'Links',
-                n: waiting?.tip_links,
-                words: 'tip links waiting to be checked',
               },
               {
                 to: '/lists/review',
@@ -140,7 +120,7 @@ export function HomePage() {
                 ? waitingLine.length > 0
                   ? `Work is waiting: ${waitingLine.join(', ')}.`
                   : 'Nothing is waiting for review.'
-                : 'Reports, tip links and list entries wait here until a moderator decides.'}
+                : 'Reports and list entries wait here until a moderator decides.'}
             </p>
           </Tile>
         ) : null}

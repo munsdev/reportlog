@@ -295,79 +295,83 @@ function Batch({ batch, filtered }: { batch: ReviewBatch; filtered: boolean }) {
         {told}
       </p>
 
-      {batch.entries.map((e) => (
-        <article className="qrow" key={e.id}>
-          <label className="qsel">
-            <input
-              type="checkbox"
-              aria-label={`Select entry ${String(e.id)}`}
-              checked={ticked.includes(e.id)}
-              onChange={(ev) => {
-                setTicked((t) => (ev.target.checked ? [...t, e.id] : t.filter((x) => x !== e.id)));
-              }}
-            />
-          </label>
-          <div className="qbody">
-            <div className="chips">
-              <Chip kind={e.review_state === 'received' ? 'wait' : 'off'}>
-                {REVIEW[e.review_state]}
-              </Chip>
-              <Chip kind="off">{TRIAGE[e.triage_state]}</Chip>
-            </div>
-            <p className="qsum">
-              Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
-            </p>
-            {e.links.length ? (
-              // Judged one address at a time, for every tip and report that
-              // sent it: a verdict here is the same verdict everywhere.
-              <ul className="qlist" aria-label="Links">
-                {e.links.map((l) => (
-                  <li key={`${l.field_key}-${l.url}`} className="col">
-                    <span>
-                      <b>
-                        {l.host}
-                        {l.known_host ? '' : ' (unfamiliar site)'}
-                      </b>
-                      {l.kind ? <span className="m"> · {l.kind}</span> : null}
-                    </span>
-                    <span className="m mono block break-all">{l.url}</span>
-                    <LinkVerdict link={l} />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <dl className="answers">
-              {Object.entries({ ...e.answers, ...(e.erasable_answers ?? {}) })
-                .filter(([k]) => !e.links.some((l) => l.field_key === k))
-                .map(([k, v]) => (
-                  <div key={k}>
-                    <dt>{labels.get(k) ?? k}</dt>
-                    <dd className="whitespace-pre-wrap">{said(v)}</dd>
-                  </div>
-                ))}
-            </dl>
-            {e.texts.map((t) => (
-              <WrittenPanel
-                key={t.ref}
-                textRef={t.ref}
-                shared
-                outcome={t.outcome}
-                on="entry"
-                reveal={false}
-                title={`Written account · ${labels.get(t.field_key) ?? t.field_key} · not published`}
+      <div className="qlist2" role="list" aria-label="Entries">
+        {batch.entries.map((e) => (
+          <article className="qrow" role="listitem" key={e.id}>
+            <label className="qsel">
+              <input
+                type="checkbox"
+                aria-label={`Select entry ${String(e.id)}`}
+                checked={ticked.includes(e.id)}
+                onChange={(ev) => {
+                  setTicked((t) =>
+                    ev.target.checked ? [...t, e.id] : t.filter((x) => x !== e.id),
+                  );
+                }}
               />
-            ))}
-            {batch.list.write_back && e.has_email && !e.erased ? (
-              <ShowAddress listId={batch.list.id} entryId={e.id} />
-            ) : null}
-            {e.erased ? (
-              <p className="m">
-                Its personal half and its links have been deleted. The choices stay.
+            </label>
+            <div className="qbody">
+              <div className="chips">
+                <Chip kind={e.review_state === 'received' ? 'wait' : 'off'}>
+                  {REVIEW[e.review_state]}
+                </Chip>
+                <Chip kind="off">{TRIAGE[e.triage_state]}</Chip>
+              </div>
+              <p className="qsum">
+                Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
               </p>
-            ) : null}
-          </div>
-        </article>
-      ))}
+              {e.links.length ? (
+                // Judged one address at a time, for every tip and report that
+                // sent it: a verdict here is the same verdict everywhere.
+                <ul className="qlist" aria-label="Links">
+                  {e.links.map((l) => (
+                    <li key={`${l.field_key}-${l.url}`} className="col">
+                      <span>
+                        <b>
+                          {l.host}
+                          {l.known_host ? '' : ' (unfamiliar site)'}
+                        </b>
+                        {l.kind ? <span className="m"> · {l.kind}</span> : null}
+                      </span>
+                      <span className="m mono block break-all">{l.url}</span>
+                      <LinkVerdict link={l} />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <dl className="answers">
+                {Object.entries({ ...e.answers, ...(e.erasable_answers ?? {}) })
+                  .filter(([k]) => !e.links.some((l) => l.field_key === k))
+                  .map(([k, v]) => (
+                    <div key={k}>
+                      <dt>{labels.get(k) ?? k}</dt>
+                      <dd className="whitespace-pre-wrap">{said(v)}</dd>
+                    </div>
+                  ))}
+              </dl>
+              {e.texts.map((t) => (
+                <WrittenPanel
+                  key={t.ref}
+                  textRef={t.ref}
+                  shared
+                  outcome={t.outcome}
+                  on="entry"
+                  reveal={false}
+                  title={`Written account · ${labels.get(t.field_key) ?? t.field_key} · not published`}
+                />
+              ))}
+              {batch.list.write_back && e.has_email && !e.erased ? (
+                <ShowAddress listId={batch.list.id} entryId={e.id} />
+              ) : null}
+              {e.erased ? (
+                <p className="m">
+                  Its personal half and its links have been deleted. The choices stay.
+                </p>
+              ) : null}
+            </div>
+          </article>
+        ))}
+      </div>
 
       {review.isError ? <Problem>{review.error.message}</Problem> : null}
       {mark.isError ? <Problem>{mark.error.message}</Problem> : null}

@@ -140,13 +140,16 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   const outside = watchOutside(page);
 
   await page.goto('/');
-  await goViaMenu(page, 'Files waiting', { area: 'Review' });
-  await expect(page.getByRole('heading', { level: 1, name: 'Files waiting' })).toBeVisible();
+  // Files waiting is a filter on the reports queue now (moderation-unified.md),
+  // and a report's files are decided on its page, beside the rest of it.
+  await goViaMenu(page, 'Reports queue', { area: 'Review' });
+  await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await page
-    .getByRole('list', { name: 'Reports with files waiting' })
-    .getByRole('link', { name: new RegExp(ref) })
+    .getByRole('group', { name: 'Only reports that' })
+    .getByRole('button', { name: /^Has files to check/ })
     .click();
-  await expect(page.getByRole('heading', { level: 1, name: `Files of ${ref}` })).toBeVisible();
+  await page.getByRole('link', { name: `Open ${ref}` }).click();
+  await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
   await expect(page.getByText('The reporter allows their files to be published')).toBeVisible();
 
   // The copy that would be published, from this site, really an image.
@@ -195,6 +198,7 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
 
   // Asking for evidence, in the moderator's words, reaches the reporter.
   before = countTo(reporterEmail);
+  await page.getByRole('button', { name: 'Ask for evidence', exact: true }).click();
   await page.getByRole('button', { name: 'Ask for evidence…' }).click();
   dialog = page.getByRole('dialog');
   await dialog
@@ -261,9 +265,11 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   expect(config.max_files).toBe(2);
 
   // The queue names administrators as well as moderators, as moderation
-  // does. (Admin still does not imply moderator: the screen names both.)
+  // does. (Admin still does not imply moderator: the screen names both.) Its
+  // old address lands on the reports queue, narrowed to files to check.
   await page.goto('/files');
-  await expect(page.getByRole('heading', { name: 'Files waiting', exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/moderate\?files=true$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Not for this account' })).toHaveCount(0);
   expect(outside).toEqual([]);
 });

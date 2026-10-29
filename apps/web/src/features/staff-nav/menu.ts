@@ -96,7 +96,7 @@ export const MENU: readonly MenuSection[] = [
       // files are decided there.
       {
         to: '/moderate',
-        label: 'Reports',
+        label: 'Reports queue',
         for: MOD,
         under: ['/moderate/'],
         ...wait('reports'),
