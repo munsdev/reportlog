@@ -3,22 +3,13 @@
   var root = document.documentElement;
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /* Easier reading, remembered per browser */
-  var EASY = "el-easy";
-  function setEasy(on) {
-    root.classList.toggle("easy", on);
-    document.querySelectorAll("[data-easy]").forEach(function (b) {
-      b.setAttribute("aria-pressed", on ? "true" : "false");
-      b.textContent = on ? "Easier reading: on" : "Easier reading";
-    });
-    try { localStorage.setItem(EASY, on ? "1" : "0"); } catch (e) {}
-  }
-  var easy = false;
-  try { easy = localStorage.getItem(EASY) === "1"; } catch (e) {}
-  setEasy(easy);
-  document.querySelectorAll("[data-easy]").forEach(function (b) {
-    b.addEventListener("click", function () { setEasy(!root.classList.contains("easy")); });
-  });
+  /* Easier reading is the app's own (features/easy-reading): it marks
+     <html data-easy> and draws the button. This only mirrors that as the
+     `easy` class the stylesheet and the headline fitting read. It once kept
+     its own setting and rewrote the text of every [data-easy] element, which
+     matched <html data-easy> itself and emptied the page on reload. */
+  function setEasy() { root.classList.toggle("easy", root.hasAttribute("data-easy")); }
+  setEasy();
 
   /* Menu dialog */
   var menu = document.getElementById("menu");
@@ -221,7 +212,8 @@
   /* Port: the app draws pages after this script ran, and a theme's display face can arrive after a page was fitted with the fallback (a headline then ran off a phone screen). Refit whenever a font finishes loading. */
   if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener("loadingdone", function () { fitAll(); });
   var rz; window.addEventListener("resize", function () { clearTimeout(rz); rz = setTimeout(fitAll, 80); });
-  document.querySelectorAll("[data-easy]").forEach(function (b) { b.addEventListener("click", function () { setTimeout(fitAll, 0); }); });
+  /* The app turns Easier reading on and off; follow it, then fit again. */
+  new MutationObserver(function () { setEasy(); fitAll(); }).observe(root, { attributes: true, attributeFilter: ["data-easy"] });
 
   /* ---------- Header background engine (core) ----------
      Layers behind a headline: pattern elements (lines, stars, stripes), big
@@ -516,6 +508,6 @@
   /* The app renders pages without reloading: it calls this after every page is drawn. */
   window.elRefresh = function () {
     applyLook(); redrawAll(); fitAll();
-    setEasy(root.classList.contains("easy"));
+    setEasy();
   };
 })();
