@@ -1,5 +1,28 @@
 # Moderation in two queues
 
+## Where this stands
+
+Paused on 29 October 2026 to save tokens. Everything below is pushed to
+`claude/moderation-unified`, with `origin/test` merged in (the report-page
+layout from `claude/moderator-layout` included).
+
+**Done.** Both queues, their filters, both hubs (written account, link
+verdicts, files, decision), the old addresses redirected, the Safety group,
+the server additions, and unit, database and browser tests for them.
+`pnpm check` and `pnpm test:db` passed on the last full run. In the browser
+specs touched, the four failures left are outside this work:
+`board/moderate.spec.ts:106` (the reporter's "Who looked at your details")
+and `staff-shell.spec.ts:64` (the phone menu dialog).
+
+**Half done.** `e2e/files/staff.spec.ts` is updated for the filtered queue
+but never reaches those steps: on `test` it already fails when it files its
+report ("an answer the form did not ask for").
+
+**Next.** The owner's three open questions (end of this file): batch approval
+of reports holding a written account, whether the server should stop asking
+a reason for "Leave it" and "Write a note", and whether an unjudged link must
+still be judged at approval. Then a PR from this branch to `test`.
+
 29 October 2026 · branch `claude/moderation-unified` · the owner's decision of
 the same day:
 
