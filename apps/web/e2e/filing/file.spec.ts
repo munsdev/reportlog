@@ -140,7 +140,7 @@ test('a reporter files a report card by card, and confirms it from the email', a
 
   // ── the email, and its link, in a different browser ────────────────────
   const mail = await lastMessageTo(email, before);
-  expect(mail.subject).toBe('Confirm your report');
+  expect(mail.subject).toBe('Action needed: confirm your report, or it won’t be filed');
   const link = linkIn(mail);
   expect(link).toMatch(/^http:\/\/127\.0\.0\.1:4173\/file\/confirm\/[a-f0-9]{64}$/);
 
