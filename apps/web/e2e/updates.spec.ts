@@ -83,10 +83,14 @@ test('says what is installed, and checks with one button', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'v0.2.0' })).toBeVisible();
   await expect(page.getByText('bbbbbbbbbbbb')).toBeVisible();
   await expect(page.getByText('From branch')).toBeVisible();
-  await expect(page.getByText('running the newest version on main')).toBeVisible();
+  // One status line beside the one button.
+  await expect(page.getByRole('status').filter({ hasText: /update/i })).toHaveText(
+    'No update needed. This is the newest version on main.',
+  );
   await expect(page.getByRole('combobox')).toHaveCount(0);
   await page.getByRole('button', { name: 'Check for update' }).click();
-  await expect(page.getByText('Asked. The server picks it up')).toBeVisible();
+  // While the server works, the button itself says so.
+  await expect(page.getByRole('button', { name: 'Checking…' })).toBeDisabled();
   expect(requested()).toBe('action=check\n');
   expect(outside).toEqual([]);
 });
@@ -101,7 +105,8 @@ test('installs only after the confirmation, naming what', async ({ page }) => {
   expect(() => requested()).toThrow();
   await page.getByRole('button', { name: 'Install update' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Install' }).click();
-  await expect(page.getByText('Asked. The server picks it up')).toBeVisible();
+  // While the server works, the button itself says so.
+  await expect(page.getByRole('button', { name: 'Installing…' })).toBeDisabled();
   expect(requested()).toBe(`action=apply\nsha=${TIP}\n`);
 });
 
@@ -111,7 +116,8 @@ test('rolls back one step, asking first, and hides the button once used', async 
   await page.getByRole('button', { name: 'Roll back to v0.1.1' }).click();
   await expect(page.getByRole('dialog')).toContainText('v0.1.1 (cccccccccccc) from main');
   await page.getByRole('dialog').getByRole('button', { name: 'Roll back' }).click();
-  await expect(page.getByText('Asked. The server picks it up')).toBeVisible();
+  // While the server works, the button itself says so.
+  await expect(page.getByRole('button', { name: 'Going back…' })).toBeDisabled();
   expect(requested()).toBe('action=rollback\n');
   // Root rolled back: `previous` is now the newer release it left.
   server({ previous: '20261023T100000Z-eeeeeeeeeeee' });
@@ -127,7 +133,8 @@ test('eight presses: a branch selector, and any kept release to go back to', asy
   for (let i = 0; i < 8; i += 1) await version.click();
   await page.getByRole('combobox', { name: /Branch/ }).selectOption('beta');
   await page.getByRole('button', { name: 'Check for update' }).click();
-  await expect(page.getByText('Asked. The server picks it up')).toBeVisible();
+  // While the server works, the button itself says so.
+  await expect(page.getByRole('button', { name: 'Checking…' })).toBeDisabled();
   expect(requested()).toBe('action=check\nbranch=beta\n');
 
   rmSync(join(STATE, 'update-request', 'request'));
@@ -137,6 +144,7 @@ test('eight presses: a branch selector, and any kept release to go back to', asy
   await page.getByRole('button', { name: 'Roll back', exact: true }).click();
   await expect(page.getByRole('dialog')).toContainText('v0.1.0 (dddddddddddd) from beta');
   await page.getByRole('dialog').getByRole('button', { name: 'Roll back' }).click();
-  await expect(page.getByText('Asked. The server picks it up')).toBeVisible();
+  // While the server works, the button itself says so.
+  await expect(page.getByRole('button', { name: 'Going back…' })).toBeDisabled();
   expect(requested()).toBe(`action=rollback\nrelease=${OLDEST}\n`);
 });

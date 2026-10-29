@@ -122,7 +122,10 @@ describe('what is installed', () => {
     expect(screen.getByText('bbbbbbbbbbbb')).toBeInTheDocument();
     expect(screen.getByText('From branch').nextSibling).toHaveTextContent('main');
     expect(screen.getByText('Installed').nextSibling?.textContent).not.toBe('not recorded');
-    expect(screen.getByText(/running the newest version on main/)).toBeInTheDocument();
+    // One status line beside the one button says where things stand.
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'No update needed. This is the newest version on main.',
+    );
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Roll back/ })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Check for update' }));
@@ -135,7 +138,11 @@ describe('installing', () => {
     const user = userEvent.setup();
     const posts = serve(OFFER);
     wrap();
-    expect(await screen.findByText(/v0\.3\.0 on main, 4 changes newer/)).toBeInTheDocument();
+    expect(await screen.findByText('Update available: v0.3.0 on main.')).toHaveAttribute(
+      'role',
+      'status',
+    );
+    expect(screen.getByText(/4 changes newer than this site/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Check for update' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Install update' }));
     const dialog = await screen.findByRole('dialog');
@@ -166,7 +173,7 @@ describe('the eight presses', () => {
     ).toEqual(['main', 'beta', 'alpha']);
     await user.selectOptions(select, 'beta');
     // What is on offer was found on main, so for beta the button checks first.
-    expect(screen.getByText(/to see what beta offers/)).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Not checked against beta yet.');
     await user.click(screen.getByRole('button', { name: 'Check for update' }));
     expect(posts()).toEqual([{ action: 'check', branch: 'beta' }]);
   });
