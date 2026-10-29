@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { saveChanges } from './save-bar.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -30,15 +31,14 @@ async function visitorSees(browser: Browser, slug: string, text: RegExp | string
 
 async function edit(page: Page) {
   // The settings are a closed panel until Edit; an error leaves it open.
-  const open = page.getByRole('button', { name: 'Edit Settings' });
+  // Drawn first (after a reload the page is still arriving), then opened.
+  await expect(page.getByRole('heading', { level: 2, name: 'Settings' })).toBeVisible();
+  const open = page.getByRole('button', { name: 'Change Settings' });
   if (await open.isVisible()) await open.click();
 }
 
 async function save(page: Page) {
-  await page
-    .getByRole('region', { name: 'Save changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
 }
 
 test('opening times on the editor screen decide when the form takes entries', async ({

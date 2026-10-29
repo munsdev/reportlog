@@ -12,6 +12,7 @@ import type { Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { panel } from '../panel.ts';
 import { passSecondFactor } from '../second-factor.ts';
 import { goViaMenu } from '../menu.ts';
 
@@ -81,13 +82,13 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
   await dialog.getByRole('button', { name: 'Save this account' }).click();
   await expect(dialog).toBeHidden();
 
-  const check = page.getByRole('region', { name: 'Before filing' });
+  const check = panel(page, 'Before filing');
   await expect(check).toContainText('1 ready to file, 1 still needs work');
   await expect(check).toContainText('Account 2: needs to say how the account was collected');
   await expect(check).toContainText('needs the answer to whether it may be published');
 
   // ── fix account 2 ─────────────────────────────────────────────────────
-  const accounts = page.getByRole('region', { name: 'Accounts' });
+  const accounts = page.getByRole('list', { name: 'Accounts' });
   await accounts.getByRole('button', { name: 'Change account 2' }).click();
   dialog = page.getByRole('dialog', { name: 'Account 2' });
   await expect(dialog.getByRole('textbox', { name: 'What happened?' })).toHaveValue(
@@ -110,12 +111,12 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
   await attest.getByRole('checkbox', { name: /transcribed them faithfully/ }).click();
   await go.click();
   await expect(page.getByRole('status').filter({ hasText: 'Filed 2 accounts' })).toBeVisible();
-  await expect(accounts.getByText(/Filed as RL-/)).toHaveCount(2);
+  await expect(accounts.getByRole('listitem').filter({ hasText: /Filed\s*RL-/ })).toHaveCount(2);
   await expect(accounts.getByRole('button', { name: /^Change account/ })).toHaveCount(0);
 
   // The batch list says it is filed.
   await page.getByRole('link', { name: 'All your batches' }).click();
-  await expect(page.getByRole('region', { name: 'Your batches' })).toContainText('Filed');
+  await expect(page.getByRole('link', { name: /^Open the batch/ }).first()).toContainText('Filed');
 
   // ── correct account 1, as the coordinator ─────────────────────────────
   await page
@@ -124,7 +125,7 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
     .click();
   await accounts.getByRole('link', { name: 'Correct account 1' }).click();
   await expect(page.getByRole('heading', { level: 1, name: /^Correct RL-/ })).toBeVisible();
-  const form = page.getByRole('region', { name: 'The correction' });
+  const form = panel(page, 'The correction');
   await expect(form.getByRole('textbox', { name: 'What happened?' })).toHaveValue(
     'Turned away over a student ID.',
   );
@@ -141,7 +142,7 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
   await expect(
     page.getByRole('status').filter({ hasText: /Filed as a new version, RL-/ }),
   ).toBeVisible();
-  const history = page.getByRole('region', { name: 'What has been done to it' });
+  const history = panel(page, 'What has been done to it');
   await expect(history).toContainText('I mistyped the time and the day.');
   await expect(history).toContainText(email);
 

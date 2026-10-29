@@ -25,6 +25,7 @@ import type { CSSProperties } from 'react';
 import { Count } from '@/components/ui/count.tsx';
 import { MAIN_LINKS, SiteMenu, isHere } from '@/mockup/SiteMenu.tsx';
 import { Wordmark } from '@/mockup/Wordmark.tsx';
+import { useFilingProgress } from '../form/CardFrame.tsx';
 import { useGateMode } from '../identity/gateMode.ts';
 import { useMe } from '../identity/session.ts';
 import { useMainAction } from './Menu.tsx';
@@ -69,6 +70,22 @@ function MainButton({
   );
 }
 
+/**
+ * The header's bottom rule as the progress track on a filing card
+ * (navigation.md, Progress rule). Drawn only while a card publishes how far
+ * somebody is; its width is CardFrame's `--rl-filing-progress` on <html>, so
+ * nothing here sets a style. Decoration: the card has the progressbar.
+ */
+function ProgressRule() {
+  const progress = useFilingProgress();
+  if (progress === null) return null;
+  return (
+    <div className="progress-rule" aria-hidden="true" data-progress={Math.round(progress * 100)}>
+      <span />
+    </div>
+  );
+}
+
 export function SiteHeader() {
   const door = useGateMode() === 'door';
   return door ? (
@@ -76,6 +93,7 @@ export function SiteHeader() {
       <div className="wrap">
         <Wordmark />
       </div>
+      <ProgressRule />
     </header>
   ) : (
     <HeaderAndMenu />
@@ -175,6 +193,7 @@ function HeaderAndMenu() {
             </button>
           </div>
         </div>
+        <ProgressRule />
       </header>
       <SiteMenu
         open={open}

@@ -15,6 +15,7 @@ import type { Browser, Page, PlaywrightWorkerArgs } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { expectAccessible } from '../filing/axe.ts';
+import { heldTextOf } from '../held.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 import { doorFields } from '../door.ts';
 
@@ -38,13 +39,18 @@ async function askedForEvidence(
     data: { title: `Evidence ${name} ${run()}` },
   });
   const lb = (await made.json()) as { id: number; slug: string };
-  const add = async (data: Record<string, unknown>) =>
-    (
-      (await (
-        await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data })
-      ).json()) as { key: string }
-    ).key;
-  const what = await add({ kind: 'long_text', label: 'What happened?', required: true });
+  // A logbook asks for words only as a held note (isPublishedFreeText), and
+  // asks that only where the operator turned notes on.
+  const notes = await admin.patch(`/api/admin/logbooks/${String(lb.id)}`, {
+    data: { accepts_notes: true },
+  });
+  expect(notes.ok(), await notes.text()).toBe(true);
+  const add = async (data: Record<string, unknown>) => {
+    const r = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data });
+    expect(r.ok(), await r.text()).toBe(true);
+    return ((await r.json()) as { key: string }).key;
+  };
+  const what = await add({ kind: 'private_text', label: 'What happened?', required: true });
   const has = await add({ kind: 'evidence_declaration', label: 'Do you have photos of it?' });
   expect((await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`)).ok()).toBe(true);
   const card = (await (await admin.get('/api/publication-card?variant=general')).json()) as {
@@ -109,6 +115,7 @@ async function askedForEvidence(
   const link = await ask();
   return {
     what,
+    first: done.confirmation.public_ref,
     link,
     thread,
     ask,
@@ -142,7 +149,7 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
 }, info) => {
   const baseURL = info.project.use.baseURL ?? 'http://127.0.0.1:4173';
   const asked = await askedForEvidence(playwright, baseURL, info.project.name);
-  const { what, link } = asked;
+  const { what, first, link } = asked;
   await asked.dispose();
 
   // The reporter follows the link in a fresh browser.
@@ -171,12 +178,21 @@ test('a moderator asks for the photo a reporter mentioned, and the reporter send
   const staff = await playwright.request.newContext({ baseURL, storageState: ADMIN });
   const v = (await (await staff.get(`/api/reports/${ref}/verify`)).json()) as {
     content: { ok: boolean };
-    hashed_fields: { attachments?: unknown[]; answers?: Record<string, unknown> };
+    hashed_fields: { attachments?: unknown[]; text_fingerprints?: Record<string, string> };
   };
   expect(v.content.ok).toBe(true);
   expect(v.hashed_fields.attachments).toHaveLength(1);
-  // The words carried forward untouched.
-  expect(v.hashed_fields.answers?.[what]).toBe('The queue was turned away.');
+  // The words carried forward untouched: held apart from the report, the
+  // new version seals the same fingerprint of them as the first, and they
+  // read as they were written.
+  const original = (await (await staff.get(`/api/reports/${first}/verify`)).json()) as {
+    hashed_fields: { text_fingerprints?: Record<string, string> };
+  };
+  expect(v.hashed_fields.text_fingerprints?.[what]).toMatch(/^[a-f0-9]{64}$/);
+  expect(v.hashed_fields.text_fingerprints?.[what]).toBe(
+    original.hashed_fields.text_fingerprints?.[what],
+  );
+  expect(await heldTextOf(staff, ref)).toBe('The queue was turned away.');
   // And the reporter, holding only the reference, is shown none of it.
   const anyone = (await (await page.request.get(`/api/reports/${ref}/verify`)).json()) as object;
   expect(anyone).not.toHaveProperty('hashed_fields');

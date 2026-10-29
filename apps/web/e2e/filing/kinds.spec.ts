@@ -1,7 +1,10 @@
 /**
  * Every kind of question a reporter can be asked, filed through the form in
  * a real browser, and what each one sealed (file.spec.ts files the first
- * four kinds; the upload question is files/attach.spec.ts's).
+ * four kinds; the upload question is files/attach.spec.ts's). A logbook asks
+ * for words and links only as a note or link held apart from the report
+ * (isPublishedFreeText): those are sealed as fingerprints, and a moderator
+ * opening them reads what was written.
  *
  * The same walk checks two things on EVERY card, not only the first:
  *   - the accessibility check (decision 12), which the page walk can only
@@ -16,6 +19,8 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { heldTextOf } from '../held.ts';
+import { shownReference } from '../reference.ts';
 import { expectAccessible } from './axe.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
@@ -27,6 +32,11 @@ async function everyKind(admin: APIRequestContext, title: string) {
   const made = await admin.post('/api/admin/logbooks', { data: { title } });
   expect(made.ok(), await made.text()).toBe(true);
   const lb = (await made.json()) as { id: number; slug: string };
+  // The note and link questions are asked only where the operator turned notes on.
+  const notes = await admin.patch(`/api/admin/logbooks/${String(lb.id)}`, {
+    data: { accepts_notes: true },
+  });
+  expect(notes.ok(), await notes.text()).toBe(true);
   const add = async (data: Record<string, unknown>) => {
     const r = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data });
     expect(r.ok(), await r.text()).toBe(true);
@@ -49,7 +59,6 @@ async function everyKind(admin: APIRequestContext, title: string) {
     state: '',
     photos: '',
     turnedAway: '',
-    contact: '',
     link: '',
   };
   k.queue = await add({
@@ -58,7 +67,7 @@ async function everyKind(admin: APIRequestContext, title: string) {
     shown_when: { field: k.where, in: ['Outside'] },
   });
   k.howLong = await add({
-    kind: 'short_text',
+    kind: 'private_text',
     label: 'How long was the queue?',
     shown_when: { field: k.queue, in: ['yes'] },
   });
@@ -74,7 +83,7 @@ async function everyKind(admin: APIRequestContext, title: string) {
     label: 'Which building?',
     settings: { options: ['The school', 'The library'], allowOther: false },
   });
-  k.other = await add({ kind: 'place', label: 'Anywhere else?' });
+  k.other = await add({ kind: 'private_text', label: 'Anywhere else?' });
   k.state = await add({ kind: 'location', label: 'Which state?', settings: { scope: 'us' } });
   k.photos = await add({ kind: 'evidence_declaration', label: 'Do you have photos of it?' });
   k.turnedAway = await add({
@@ -82,8 +91,7 @@ async function everyKind(admin: APIRequestContext, title: string) {
     label: 'How many people were turned away?',
     settings: { min: 0, max: 10000 },
   });
-  k.contact = await add({ kind: 'email', label: 'An address for the polling station' });
-  k.link = await add({ kind: 'url', label: 'A link to anything published about it' });
+  k.link = await add({ kind: 'private_link', label: 'A link to anything published about it' });
   const launched = await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`);
   expect(launched.ok(), await launched.text()).toBe(true);
   return { ...lb, k };
@@ -116,9 +124,7 @@ test('every kind of question, filed card by card: each card passes the check, an
     await expectAccessible(page, name);
     bar.push(
       Number(
-        await page
-          .getByRole('progressbar', { name: 'How far through the form' })
-          .getAttribute('aria-valuenow'),
+        await page.getByRole('progressbar', { name: 'Progress' }).getAttribute('aria-valuenow'),
       ),
     );
   };
@@ -160,7 +166,8 @@ test('every kind of question, filed card by card: each card passes the check, an
   await next();
 
   await on('Anywhere else?');
-  await box('Anywhere else?').fill('The car park behind it');
+  // A note's box is named for what it holds, whatever the card asks.
+  await box('What happened (optional)').fill('The car park behind it');
   await next();
 
   await on('Which state?');
@@ -180,32 +187,32 @@ test('every kind of question, filed card by card: each card passes the check, an
   await page.getByRole('spinbutton', { name: 'How many people were turned away?' }).fill('12');
   await next();
 
-  await on('An address for the polling station');
-  await page
-    .getByRole('textbox', { name: 'An address for the polling station' })
-    .fill('Polling@Example.org');
-  await next();
-
   await on('A link to anything published about it');
-  await box('A link to anything published about it').fill('https://example.org/news/queue');
+  await box('Link (optional)').fill('https://example.org/news/queue');
   await next();
 
   await on('Should this report be published?');
   await page.getByRole('radio', { name: 'No, keep it out of the public archive' }).click();
   await next();
 
-  await on('Where can we reach you?');
+  // Something was written, so sharing it is asked, and the address is needed.
+  await on('Can vetted journalists read what you wrote?');
+  await page.getByRole('radio', { name: 'No, keep it for the moderators only' }).click();
+  await next();
+
+  await on('Your email address');
   const email = `kinds-${run()}@example.org`;
-  await page.getByLabel('Your email address').fill(email);
+  await box('Email').fill(email);
   await next();
 
   await on('Check your answers');
   // In the words the reporter read: the place's name, not its code.
-  const review = page.getByRole('definition');
-  await expect(review.filter({ hasText: 'Ohio' })).toHaveCount(1);
+  // Each answer is the line beside its question, exactly as shown.
+  const answer = (text: string) => page.getByRole('main').getByText(text, { exact: true });
+  await expect(answer('Ohio')).toHaveCount(1);
   await expect(page.getByText('US-OH')).toHaveCount(0);
-  await expect(review.filter({ hasText: 'Yes, I have something' })).toHaveCount(1);
-  await expect(review.filter({ hasText: 'A locked door, A long queue' })).toHaveCount(1);
+  await expect(answer('Yes, I have something')).toHaveCount(1);
+  await expect(answer('A locked door, A long queue')).toHaveCount(1);
   await expect(page.getByText('Were you in the queue?')).toHaveCount(0);
 
   // THE BAR ONLY EVER FILLS, and the last card is the end of it.
@@ -217,26 +224,34 @@ test('every kind of question, filed card by card: each card passes the check, an
   const before = countTo(email);
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   await expectAccessible(page, 'the review, ready to send');
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(heading(page, 'Check your email')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(heading(page, 'Check your email to finish')).toBeVisible();
   await expectAccessible(page, 'the receipt');
 
   await page.goto(linkIn(await lastMessageTo(email, before)));
   await page.getByRole('button', { name: 'Confirm and file my report' }).click();
   await expect(heading(page, 'Your report is filed')).toBeVisible();
-  const ref = /RL-\S+/.exec(
-    (await page.getByText(/Its reference is RL-/).textContent()) ?? '',
-  )?.[0];
-  expect(ref).toMatch(/^RL-/);
+  const ref = await shownReference(page);
   expect(outside).toEqual([]);
 
   // What each kind sealed, read as staff (decisions.md §1: not published).
-  const sealed = (await (await admin.get(`/api/reports/${ref ?? ''}/verify`)).json()) as {
+  const sealed = (await (await admin.get(`/api/reports/${ref}/verify`)).json()) as {
     content: { ok: boolean };
-    hashed_fields: { answers: Record<string, unknown> };
+    hashed_fields: {
+      answers: Record<string, unknown>;
+      text_fingerprints?: Record<string, unknown>;
+      link_fingerprints?: Record<string, unknown>;
+    };
   };
-  await admin.dispose();
   expect(sealed.content.ok).toBe(true);
+  // The note and the link are sealed as fingerprints under their own keys,
+  // never as written; what was written is kept, as a moderator opening it reads.
+  expect(Object.keys(sealed.hashed_fields.text_fingerprints ?? {})).toEqual([lb.k.other]);
+  expect(Object.keys(sealed.hashed_fields.link_fingerprints ?? {})).toEqual([lb.k.link]);
+  expect(JSON.stringify(sealed)).not.toContain('The car park behind it');
+  expect(JSON.stringify(sealed)).not.toContain('example.org/news/queue');
+  expect(await heldTextOf(admin, ref)).toBe('The car park behind it');
+  await admin.dispose();
   const { k } = lb;
   expect(sealed.hashed_fields.answers).toEqual({
     [k.where]: 'Inside',
@@ -244,11 +259,8 @@ test('every kind of question, filed card by card: each card passes the check, an
     [k.started]: '09:30:00',
     [k.ended]: '2026-10-19T18:45:00.000Z',
     [k.building]: 'The library',
-    [k.other]: 'The car park behind it',
     [k.state]: 'US-OH',
     [k.photos]: true,
     [k.turnedAway]: 12,
-    [k.contact]: 'polling@example.org',
-    [k.link]: 'https://example.org/news/queue',
   });
 });

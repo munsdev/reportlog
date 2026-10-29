@@ -18,6 +18,7 @@ import type { Browser, Page } from '@playwright/test';
 import { axe, describeViolation } from '../a11y.ts';
 import { identityState } from '../identity/mail.ts';
 import { signInWithSecondFactor } from '../second-factor.ts';
+import { panel } from '../panel.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -67,7 +68,7 @@ test('the small-area threshold, set on the settings screen, withholds every thin
   const outside = outsideRequests(page);
 
   await page.goto('/moderate/settings');
-  const section = page.getByRole('region', { name: 'Publish as counts only' });
+  const section = panel(page, 'Publish as counts only');
   // Controlled by the server's answer, so it ticks once the change is saved.
   await section.getByLabel(`${lb.title} is published as counts only`).click();
   await expect(section.getByLabel(`${lb.title} is published as counts only`)).toBeChecked();
@@ -100,7 +101,10 @@ test('the small-area threshold, set on the settings screen, withholds every thin
   });
   await reader.goto(`/board?logbook=${lb.slug}`);
   const counted = reader.getByRole('region', { name: `${lb.title}, as counts` });
-  const byPlace = counted.getByRole('table', { name: 'By place' });
+  // The table under its "By place" heading, its first column the place.
+  const byPlace = counted
+    .getByRole('table')
+    .filter({ has: reader.getByRole('columnheader', { name: 'Place' }) });
   await expect(byPlace).toBeVisible();
   for (const [place, n] of [
     ['Arizona', '4'],
@@ -133,9 +137,13 @@ test('the small-area threshold, set on the settings screen, withholds every thin
 
   // The change is public, with its time and never who.
   await reader.goto('/board/activity');
-  const use = reader.getByRole('listitem').filter({
-    hasText: `Places with fewer than 3 accepted reports counted without a number: ${lb.slug}`,
-  });
+  const use = reader
+    .getByRole('table')
+    .filter({ has: reader.getByRole('columnheader', { name: 'What' }) })
+    .getByRole('row')
+    .filter({
+      hasText: `Places with fewer than 3 accepted reports counted without a number: ${lb.slug}`,
+    });
   await expect(use.first()).toBeVisible();
   await expect(use.first().locator('time')).toHaveAttribute('datetime', /\d{4}-\d{2}-\d{2}T/);
   await expect(reader.locator('main')).not.toContainText('@example');
