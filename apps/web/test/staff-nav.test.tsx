@@ -646,10 +646,10 @@ describe('the staff area', () => {
     await settle();
     expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();
     await user.click(button);
-    // A full-screen dialog with its own CLOSE; focus lands on its first control.
+    // A full-screen dialog with its own CLOSE, its first control, where focus lands.
     const dialog = screen.getByRole('dialog', { name: 'Staff menu' });
     expect(dialog).toHaveAttribute('open');
-    expect(within(dialog).getByRole('link', { name: 'ReportLog, your dashboard' })).toHaveFocus();
+    expect(within(dialog).getByRole('button', { name: 'CLOSE' })).toHaveFocus();
     // The way back to the public site and Sign out come before the sections.
     const controls = within(dialog)
       .getAllByRole('link')
@@ -661,7 +661,7 @@ describe('the staff area', () => {
     expect(dialog.contains(document.activeElement)).toBe(true);
     expect(button).not.toHaveFocus();
     await user.tab();
-    expect(within(dialog).getByRole('link', { name: 'ReportLog, your dashboard' })).toHaveFocus();
+    expect(within(dialog).getByRole('button', { name: 'CLOSE' })).toHaveFocus();
     expect(side).toBeInTheDocument();
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog', { name: 'Staff menu' })).toBeNull();

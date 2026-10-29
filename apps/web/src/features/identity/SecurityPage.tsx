@@ -16,6 +16,7 @@
 import { newRecoveryCodes, removePasskey, removeTotp } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
 import { Btn } from '@/mockup/Btn.tsx';
@@ -59,6 +60,46 @@ export function SecurityPage() {
 const day = (iso: string) =>
   new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
+type Section = 'app' | 'passkey' | 'codes';
+
+const codesLeft = (n: number) =>
+  n === 1 ? 'One recovery code left.' : `${String(n)} recovery codes left.`;
+
+/**
+ * One of the three panels (account.md §05): closed, what is set and a Change
+ * button; open, its actions. A region by its title, so each is found by name.
+ */
+function Factor({
+  title,
+  closed,
+  isOpen,
+  onOpen,
+  children,
+}: {
+  title: string;
+  closed: ReactNode;
+  isOpen: boolean;
+  onOpen: () => void;
+  children: ReactNode;
+}) {
+  if (isOpen)
+    return (
+      <Panel title={title} aria-label={title}>
+        {children}
+      </Panel>
+    );
+  return (
+    <Panel title={title} aria-label={title} kind="closed">
+      <p>{closed}</p>
+      <div className="acts">
+        <Btn sm flat aria-label={`Change ${title}`} onClick={onOpen}>
+          Change
+        </Btn>
+      </div>
+    </Panel>
+  );
+}
+
 function Factors() {
   const client = useQueryClient();
   const status = useQuery(secondFactorQuery);
@@ -68,6 +109,7 @@ function Factors() {
   const [firstCodes, setFirstCodes] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [removing, setRemoving] = useState<{ id: number; name: string } | null>(null);
+  const [open, setOpen] = useState<Section | null>(null);
   const done = useRef<HTMLDivElement>(null);
   const refresh = () => client.invalidateQueries({ queryKey: secondFactorQuery.queryKey });
 
@@ -120,6 +162,11 @@ function Factors() {
   const s = status.data;
   const optional = s.state === 'optional';
   const ways = (s.totp ? 1 : 0) + s.passkeys.length;
+  const opener = (section: Section) => () => {
+    setAdding(null);
+    setSaid(null);
+    setOpen(section);
+  };
   return (
     <StaffPage
       area="Account"
@@ -138,7 +185,12 @@ function Factors() {
         </div>
       ) : null}
 
-      <Panel title="Authenticator app">
+      <Factor
+        title="Authenticator app"
+        closed={<Chip kind={s.totp ? 'ok' : 'off'}>{s.totp ? 'Set up' : 'Not set up'}</Chip>}
+        isOpen={open === 'app'}
+        onOpen={opener('app')}
+      >
         <div>
           <Chip kind={s.totp ? 'ok' : 'off'}>{s.totp ? 'Set up' : 'Not set up'}</Chip>
         </div>
@@ -208,9 +260,18 @@ function Factors() {
           </p>
         ) : null}
         <ErrorLine error={dropApp.error} />
-      </Panel>
+      </Factor>
 
-      <Panel title="Passkeys">
+      <Factor
+        title="Passkeys"
+        closed={
+          s.passkeys.length === 0
+            ? 'None yet'
+            : `${String(s.passkeys.length)} ${s.passkeys.length === 1 ? 'passkey' : 'passkeys'}`
+        }
+        isOpen={open === 'passkey'}
+        onOpen={opener('passkey')}
+      >
         {s.passkeys.length > 0 ? (
           <Tbl
             cols={['Name', 'Added', '']}
@@ -286,15 +347,17 @@ function Factors() {
             </Btn>
           </div>
         )}
-      </Panel>
+      </Factor>
 
-      <Panel title="Recovery codes">
+      <Factor
+        title="Recovery codes"
+        closed={codesLeft(s.recoveryLeft)}
+        isOpen={open === 'codes'}
+        onOpen={opener('codes')}
+      >
         <p className="muted">
-          Ten one-time codes for when you lose your phone.{' '}
-          {s.recoveryLeft === 1
-            ? 'One recovery code is left.'
-            : `${String(s.recoveryLeft)} are left.`}{' '}
-          Making new ones stops the old ones working.
+          Ten one-time codes for when you lose your phone. {codesLeft(s.recoveryLeft)} Making new
+          ones stops the old ones working.
         </p>
         <div className="acts">
           <Btn
@@ -309,7 +372,7 @@ function Factors() {
           </Btn>
         </div>
         <ErrorLine error={remake.error} />
-      </Panel>
+      </Factor>
 
       <Modal
         open={removing !== null}

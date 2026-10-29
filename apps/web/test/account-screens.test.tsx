@@ -194,7 +194,7 @@ describe('the security page', () => {
     );
     expect(screen.queryByText('Work laptop')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Change Passkeys' }));
-    expect(screen.getByText('Work laptop')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Work laptop' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Change Recovery codes' }));
     // Opening another closes the first.
     expect(screen.queryByText('Work laptop')).toBeNull();
@@ -209,9 +209,10 @@ describe('the security page', () => {
     });
     const user = userEvent.setup();
     wrap(<SecurityPage />);
+    await user.click(await screen.findByRole('button', { name: 'Change Passkeys' }));
     // The passkey's name sits in a screen-reader-only span after "Remove"; the
     // space between them is whitespace jsdom does not count in a name.
-    await user.click(await screen.findByRole('button', { name: /^Remove\s?Work laptop$/ }));
+    await user.click(screen.getByRole('button', { name: /^Remove\s?Work laptop$/ }));
     const ask = await screen.findByRole('dialog', { name: 'Remove this passkey?' });
     expect(within(ask).getByText(/You can add it again later/)).toBeInTheDocument();
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
@@ -224,8 +225,10 @@ describe('the security page', () => {
       'GET /api/auth/me': me({}),
       'GET /api/auth/second-factor': { ...STATUS, passkeys: [passkey] },
     });
+    const user = userEvent.setup();
     wrap(<SecurityPage />);
-    expect(await screen.findByText('Work laptop')).toBeInTheDocument();
+    await user.click(await screen.findByRole('button', { name: 'Change Passkeys' }));
+    expect(screen.getByText('Work laptop')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /^Remove\s?Work laptop$/ })).toBeNull();
     expect(
       screen.getByText(

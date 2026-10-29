@@ -91,12 +91,12 @@ function statusOf(r: MyReport): string {
  * counts-only logbook, still shows the report's own state here, because this
  * list is not told either.
  */
-export function stateChip(r: MyReport): { kind: 'ok' | 'wait' | ''; label: string } {
+export function stateChip(r: MyReport): { kind: 'wait' | ''; label: string } {
   if (r.withdrawn) return { kind: '', label: 'Off the board' };
   if (r.moderation_status === 'pending') return { kind: 'wait', label: 'Waiting' };
   if (r.moderation_status === 'invalid') return { kind: '', label: 'Declined' };
   if (r.moderation_status === 'valid')
-    return r.may_publish ? { kind: 'ok', label: 'Public' } : { kind: '', label: 'Not published' };
+    return r.may_publish ? { kind: '', label: 'Public' } : { kind: '', label: 'Not published' };
   return { kind: '', label: 'Read' };
 }
 

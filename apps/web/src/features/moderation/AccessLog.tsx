@@ -42,6 +42,10 @@ const readName = (ref: string) =>
       ? 'a tip’s description'
       : 'a written account';
 
+/** The count line (settings-and-admin.md §13): "214 openings · since 1 Oct", from the oldest row. */
+const countLine = (n: number, oldest: string) =>
+  `${String(n)} ${n === 1 ? 'opening' : 'openings'} · since ${new Date(oldest).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`;
+
 const when = (iso: string) => new Date(iso).toISOString().slice(0, 16).replace('T', ' ');
 
 export function AccessLogPage() {
@@ -66,6 +70,9 @@ export function AccessLogPage() {
       ) : null}
       {entries.length > 0 ? (
         <>
+          <p className="mono">
+            {countLine(entries.length, entries[entries.length - 1]?.accessed_at ?? '')}
+          </p>
           <Tbl
             cols={['When', 'Who', 'What', 'Report', 'Their reason']}
             widths="1fr 1.2fr 1.4fr 1fr 1.6fr"

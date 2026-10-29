@@ -193,7 +193,12 @@ function RequestCard({ r }: { r: AccessRequestView }) {
   const status = STATUS[r.status];
   return (
     <>
-      <Panel as="article" title={r.name} head={<Chip kind={status.kind}>{status.words}</Chip>}>
+      <Panel
+        as="article"
+        aria-label={`Request from ${r.name}`}
+        title={r.name}
+        head={<Chip kind={status.kind}>{status.words}</Chip>}
+      >
         <Dl items={facts} />
         <ErrorLine error={act.error} />
         {r.status === 'pending' ? (
