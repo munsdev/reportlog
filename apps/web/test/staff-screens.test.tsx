@@ -248,15 +248,15 @@ describe('the front page editor', () => {
     const user = userEvent.setup();
     serve({ 'GET /api/admin/home-buttons': HOME });
     wrap(<HomeButtonsEditor />, '/logbooks/front-page');
-    const preview = (await screen.findByText('On a phone, as it will look')).closest('figure');
+    const preview = (await screen.findByText('On a phone, as it will look')).closest('.phone-prev');
     if (!preview) throw new Error('no preview');
-    const stack = () => [...preview.querySelectorAll('div > span')].map((n) => n.textContent);
+    const stack = () => [...preview.querySelectorAll('.pp > span')].map((n) => n.textContent);
     expect(stack()).toEqual(['Polling day', 'Mail ballots']);
     await user.click(screen.getByRole('button', { name: 'Move up: “Mail ballots”' }));
     expect(stack()).toEqual(['Mail ballots', 'Polling day']);
-    const [first] = screen.getAllByLabelText('Main text');
-    if (!first) throw new Error('no wording box');
-    await user.type(first, 'Mail');
+    // A row's wording is behind its Change button.
+    await user.click(screen.getByRole('button', { name: 'Change: “Mail ballots”' }));
+    await user.type(screen.getByLabelText('Main text'), 'Mail');
     expect(stack()[0]).toBe('Mail');
   });
 });

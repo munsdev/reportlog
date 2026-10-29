@@ -19,6 +19,8 @@ const SITE = {
     { id: 'bluesky', url: 'https://bsky.app/profile/munich.bsky.social' },
   ],
   social_placements: ['front', 'after_filing'],
+  // The band's heading and line come from the site's words.
+  copy: { follow_heading: 'Follow along', follow_line: 'Find us elsewhere.' },
 } as unknown as Site;
 
 afterEach(() => {

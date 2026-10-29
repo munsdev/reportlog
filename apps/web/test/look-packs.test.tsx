@@ -402,19 +402,21 @@ describe('the Look screen offers what the packs add', () => {
       }),
     ).toBeInTheDocument();
 
+    // jsdom does not deliver a message to a frame of another origin, so what the
+    // frame is told is read from the spy.
+    const frame = document.querySelector<HTMLIFrameElement>(
+      'iframe[title="The page on a desktop"]',
+    );
+    if (!frame?.contentWindow) throw new Error('no preview frame');
+    const told = vi.spyOn(frame.contentWindow, 'postMessage').mockImplementation(() => undefined);
     await user.click(card);
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('You are previewing Tideline.');
-    // The frames are named with the pack's ids, and its theme's own heading shape.
-    for (const name of ['Desktop preview', 'Phone preview']) {
-      const frame = document.querySelector<HTMLIFrameElement>(`iframe[title="${name}"]`);
-      expect(frame).toHaveAttribute('data-palette', 'tideline');
-      await vi.waitFor(() => {
-        expect(frame?.contentDocument?.documentElement).toHaveAttribute(
-          'data-panel-head',
-          'title-bar',
-        );
-      });
-    }
+    // The frame is the site itself, handed the pack's ids; it finds the
+    // theme's own heading shape from the installed pack, as the site does.
+    expect(told).toHaveBeenLastCalledWith(
+      { type: 'rl-look', look: { palette: 'tideline', theme: 'tideline' } },
+      window.location.origin,
+    );
   });
 
   it('offers the built-in looks alone when the packs cannot be read', () => {

@@ -89,7 +89,7 @@ describe('the chip and the count', () => {
 
   it('a count is said as a sentence, not a bare number', () => {
     render(<Count value={7} label="7 reports waiting for a moderator" />);
-    expect(screen.getByText('7 reports waiting for a moderator')).toHaveClass('sr-only');
+    expect(screen.getByText('7 reports waiting for a moderator')).toHaveClass('vh');
     expect(screen.getByText('7')).toHaveAttribute('aria-hidden', 'true');
   });
 

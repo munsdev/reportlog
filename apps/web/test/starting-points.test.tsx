@@ -97,12 +97,16 @@ describe('starting points after setup', () => {
     const sent = serve({ status: 200, body: {} });
     const user = userEvent.setup();
     show();
-    const card = await screen.findByRole('radio', { name: 'Election incidents' });
-    expect(card).toHaveAccessibleDescription('Observers and voters reporting what went wrong.');
+    const card = await screen.findByRole('radio', { name: /^Election incidents/ });
+    // The description is part of the card's label.
+    expect(card.closest('label')).toHaveTextContent(
+      'Observers and voters reporting what went wrong.',
+    );
     expect(screen.getByText(/last started from “Start from nothing”/)).toBeInTheDocument();
     expect(screen.queryByText('Takes files with reports')).toBeNull();
     await user.click(card);
-    const panel = screen.getByRole('region', { name: 'Election incidents' });
+    const panel = screen.getByRole('heading', { name: 'What it changes' }).closest('section');
+    if (!panel) throw new Error('no panel of changes');
     expect(within(panel).getByText('Takes files with reports')).toBeInTheDocument();
     // Choosing applies nothing.
     expect(writes(sent)).toEqual([]);
@@ -115,7 +119,7 @@ describe('starting points after setup', () => {
     });
     const user = userEvent.setup();
     show();
-    await user.click(await screen.findByRole('radio', { name: 'Election incidents' }));
+    await user.click(await screen.findByRole('radio', { name: /^Election incidents/ }));
     await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     const dialog = await screen.findByRole('dialog', { name: 'Apply “Election incidents”?' });
     expect(within(dialog).getByText('Takes files with reports')).toBeInTheDocument();
@@ -137,7 +141,7 @@ describe('starting points after setup', () => {
     const sent = serve({ status: 200, body: { applied: 'blank' } });
     const user = userEvent.setup();
     show();
-    await user.click(await screen.findByRole('radio', { name: 'Start from nothing' }));
+    await user.click(await screen.findByRole('radio', { name: /^Start from nothing/ }));
     await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     await user.click(await screen.findByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -151,7 +155,7 @@ describe('starting points after setup', () => {
     });
     const user = userEvent.setup();
     show();
-    await user.click(await screen.findByRole('radio', { name: 'Start from nothing' }));
+    await user.click(await screen.findByRole('radio', { name: /^Start from nothing/ }));
     await user.click(screen.getByRole('button', { name: 'Apply it…' }));
     const dialog = await screen.findByRole('dialog');
     await user.click(within(dialog).getByRole('button', { name: 'Apply it' }));
