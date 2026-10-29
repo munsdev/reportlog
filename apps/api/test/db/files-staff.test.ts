@@ -8,7 +8,9 @@
  *     decision, so it leaves the queue as publishing does;
  *   - a reference finds its report whatever version it names, and an unknown
  *     one finds nothing rather than an error;
- *   - each is for its own role only (admin does not imply moderator).
+ *   - each is for its own role only (admin does not imply moderator);
+ *   - the reports queue's "has files to check" filter, which replaced this
+ *     queue's page (moderation-unified.md), finds exactly what it finds.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { workOnce } from '../../src/files/worker.ts';
@@ -39,6 +41,17 @@ const queue = async (query = '') =>
   (await moderator({ method: 'GET', url: `/api/moderate/files${query}` })).json<{
     reports: Listed[];
   }>().reports;
+
+/** Whether the reports queue, narrowed to files to check, holds this report. */
+const filtered = async () =>
+  (
+    await moderator({
+      method: 'GET',
+      url: `/api/moderation/reports?status=all&files=true&q=${encodeURIComponent(ref)}`,
+    })
+  )
+    .json<{ reports: { thread_id: string }[] }>()
+    .reports.some((r) => r.thread_id === thread);
 
 describe.skipIf(toolsMissing)('the files staff lookups', () => {
   beforeAll(async () => {
@@ -120,6 +133,7 @@ describe.skipIf(toolsMissing)('the files staff lookups', () => {
       published: 0,
       files_permitted: false,
     });
+    expect(await filtered()).toBe(true);
   });
 
   it('a deliberate withhold is a decision: the file leaves the queue', async () => {
@@ -130,12 +144,14 @@ describe.skipIf(toolsMissing)('the files staff lookups', () => {
     });
     expect(r.statusCode).toBe(200);
     expect((await queue()).find((x) => x.thread_id === thread)?.undecided).toBe(1);
+    expect(await filtered()).toBe(true);
     await moderator({
       method: 'POST',
       url: `/api/moderate/files/file/${String(fileIds[1])}/publication`,
       payload: { publication: 'refused', reason: 'Not about this' },
     });
     expect((await queue()).find((x) => x.thread_id === thread)).toBeUndefined();
+    expect(await filtered()).toBe(false);
   });
 
   it('a reference still finds the report once it has left the queue, and an unknown one finds nothing', async () => {

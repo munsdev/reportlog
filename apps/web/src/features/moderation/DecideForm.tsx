@@ -7,26 +7,37 @@
  * of the mock-up's `.choice` rows; the reason the reporter is told appears under Decline, below
  * the answer just given, never above or around it.
  *
- * THE NOTE IS REQUIRED. The design drew it as optional; the server keeps
- * every decision with a written reason (queue.ts, `reasonOf`), and that rule
- * has its own test. So the form asks for it, and says it is never sent.
+ * THE NOTE IS OPTIONAL (decision 64); only its length is checked.
+ *
+ * JOURNALIST SHARING IS PART OF THE DECISION (docs/design/moderation-unified.md).
+ * Approving a report whose written account nobody has decided offers, for
+ * each one the reporter allowed journalists to read, "Write a note for
+ * journalists" beside "Leave it with the report (staff only)", which is
+ * already chosen: ignoring it is doing nothing wrong. One the reporter did not
+ * allow is not asked about at all; it is left with the report. Only "Illegal"
+ * asks for a reason. A link nobody has judged is judged here, once for every
+ * copy, with no reason asked.
  */
 import {
+  LINK_REASONS,
   REJECTION_REASONS,
   TEXT_ERASE_REASONS,
   decideReport,
   getReportWritten,
 } from '@reportlog/contracts';
+import type { LinkReason } from '@reportlog/contracts';
 import type { QueueItem } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import { CheckBox, Field, FieldDescription, Label, Select, Textarea } from '@/mockup/Field.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
+import { Hotlines } from './LinkVerdict.tsx';
 import { ChangedProblem, isChanged } from './viewing.tsx';
+import { ERASE_WORDS, LEFT_WHY, NOTE_WHY, WHY_MAX, WHY_MIN } from './Written.tsx';
 
 /** The mock-up's labelled controls, one line each. */
 function SelectField({
@@ -40,19 +51,6 @@ function SelectField({
       <Label>{label}</Label>
       {help ? <FieldDescription>{help}</FieldDescription> : null}
       <Select {...rest}>{children}</Select>
-    </Field>
-  );
-}
-function TextField({
-  label,
-  help,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & ComponentProps<'input'>) {
-  return (
-    <Field>
-      <Label>{label}</Label>
-      {help ? <FieldDescription>{help}</FieldDescription> : null}
-      <Input {...rest} />
     </Field>
   );
 }
@@ -70,25 +68,22 @@ function AreaField({
   );
 }
 
-const WHY_MIN = 10;
-const WHY_MAX = 500;
+/** On the record for a link judged here: the decision asks no reason but illegal's. */
+const LINK_WHY = 'Judged when the report was approved.';
 
 interface WrittenChoice {
+  /** Empty: not chosen. A written account starts at "withheld" (leave it). */
   outcome: string;
+  /** Illegal only: the reason for the record. */
   why: string;
+  /** Illegal only: the category. */
   reason: string;
+  /** Illegal only: the tick that says it cannot be undone. */
+  sure: boolean;
   /** The note for journalists, when the choice is to write one. */
   note: string;
 }
-const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '', note: '' };
-const ERASE_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
-  'child-sexual-abuse': 'Child sexual abuse material',
-  'terrorist-content': 'Terrorist content',
-  'non-consensual-intimate-imagery': 'Intimate images shared without consent',
-  'incitement-or-threats': 'Incitement or threats',
-  'other-illegal': 'Other illegal content',
-  'personal-data': 'Personal data that must not be kept',
-};
+const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '', sure: false, note: '' };
 
 export type Decision = 'valid' | 'invalid' | 'unknown';
 
@@ -165,7 +160,7 @@ export function DecideForm({
   }, [focusOnOpen]);
 
   // Approving a report that holds a written account or link nobody has
-  // decided asks for a decision on each, with a reason, in this same step.
+  // decided settles each in this same step: the server asks it (approval.ts).
   const needsWritten = choice === 'valid' && report.has_undecided_written;
   const panel = useQuery({
     queryKey: ['written', report.thread_id],
@@ -177,24 +172,30 @@ export function DecideForm({
     ? [
         ...(panel.data?.texts ?? [])
           .filter((t) => t.outcome === null)
-          .map((t) => ({ ref: t.ref, name: 'Written account', shared: t.shared })),
+          .map((t) => ({ ref: t.ref, isLink: false, shared: t.shared })),
         ...(panel.data?.links ?? [])
           .filter((l) => l.outcome === null && l.group_id !== null)
-          .map((l) => ({ ref: l.ref, name: 'Link', shared: panel.data?.shared ?? false })),
+          .map((l) => ({ ref: l.ref, isLink: true, shared: false })),
       ]
     : [];
-  const choiceOf = (ref: string) => written[ref] ?? EMPTY_CHOICE;
-  const setChoiceOf = (ref: string, patch: Partial<WrittenChoice>) => {
-    setWritten((w) => ({ ...w, [ref]: { ...(w[ref] ?? EMPTY_CHOICE), ...patch } }));
+  // An account the reporter did not share has nothing to decide: it is left
+  // with the report. So is one the moderator did not touch.
+  const asked = undecided.filter((u) => u.isLink || u.shared);
+  const choiceOf = (u: { ref: string; isLink: boolean }) =>
+    written[u.ref] ?? (u.isLink ? EMPTY_CHOICE : { ...EMPTY_CHOICE, outcome: 'withheld' });
+  const setChoiceOf = (u: { ref: string; isLink: boolean }, patch: Partial<WrittenChoice>) => {
+    setWritten((w) => ({ ...w, [u.ref]: { ...choiceOf(u), ...patch } }));
   };
   const writtenReady = undecided.every((u) => {
-    const c = choiceOf(u.ref);
+    const c = choiceOf(u);
     return (
       c.outcome !== '' &&
-      c.why.trim().length >= WHY_MIN &&
-      c.why.trim().length <= WHY_MAX &&
       (c.outcome !== 'redacted' || c.note.trim() !== '') &&
-      (c.outcome !== 'illegal' || c.reason !== '')
+      (c.outcome !== 'illegal' ||
+        (c.reason !== '' &&
+          c.sure &&
+          c.why.trim().length >= WHY_MIN &&
+          c.why.trim().length <= WHY_MAX))
     );
   });
 
@@ -211,11 +212,21 @@ export function DecideForm({
           ...(status === 'valid' && undecided.length
             ? {
                 written: undecided.map((u) => {
-                  const c = choiceOf(u.ref);
+                  const c = choiceOf(u);
+                  // Only illegal asks for a reason; the server keeps one with
+                  // every decision, so the others carry what was done.
+                  const why =
+                    c.outcome === 'illegal'
+                      ? c.why.trim()
+                      : u.isLink
+                        ? LINK_WHY
+                        : c.outcome === 'redacted'
+                          ? NOTE_WHY
+                          : LEFT_WHY;
                   return {
                     ref: u.ref,
                     outcome: c.outcome,
-                    why: c.why.trim(),
+                    why,
                     ...(c.outcome === 'illegal' ? { reason: c.reason } : {}),
                     ...(c.outcome === 'redacted' ? { note: c.note.trim() } : {}),
                   };
@@ -257,7 +268,7 @@ export function DecideForm({
       setProblems((p) => ({
         ...p,
         written:
-          'Decide each written account and link below, with a reason of 10 to 500 characters.',
+          'Judge each link below. A note needs its words; erasing as illegal needs a category, a reason of 10 to 500 characters and the tick.',
       }));
       return;
     }
@@ -332,89 +343,108 @@ export function DecideForm({
           <Err>{problems.reason}</Err>
         </>
       ) : null}
-      {needsWritten ? (
+      {needsWritten && (panel.isPending || asked.length) ? (
         <div className="panel quiet" role="group" aria-labelledby={`${id}-written`}>
-          <h2 id={`${id}-written`}>Written accounts and links</h2>
+          <h2 id={`${id}-written`}>Its written account and links</h2>
           <p className="sub">
-            This report holds words or links nobody has decided yet. Decide each one, with a reason.
-            Open them on the report page first if you need to read them.
+            Read them on this page first if you need to. A written account stays with the report,
+            for staff only, unless you choose otherwise.
           </p>
           {panel.isPending ? <p role="status">Reading what the report holds…</p> : null}
           {panel.isError ? <Problem>{panel.error.message}</Problem> : null}
-          {undecided.map((u) => {
-            const c = choiceOf(u.ref);
-            // A link keeps its own three (a link is not prose). A written
-            // account is kept internal, given a note a moderator writes, or
-            // erased: its words are never passed on as they were written.
-            const isLink = u.name === 'Link';
-            const options = [
-              ...(u.shared
-                ? [
-                    isLink
-                      ? ['checked', 'Checked: journalists may read it']
-                      : ['redacted', 'Write a note for journalists'],
-                  ]
-                : []),
-              [
-                'withheld',
-                isLink ? 'Withheld: nobody outside moderation reads it' : 'Keep internal',
-              ],
-              ['illegal', 'Illegal: erase it now'],
-            ];
+          {asked.map((u) => {
+            const c = choiceOf(u);
+            const same = asked.filter((x) => x.isLink === u.isLink);
+            const base = u.isLink ? 'Link' : 'Written account';
+            const name = same.length > 1 ? `${base} ${String(same.indexOf(u) + 1)}` : base;
+            // A link keeps its own verdicts (a link is not prose), judged
+            // once for every copy. A written account is never passed on as
+            // it was written: a moderator may write a note about it.
+            const options: [string, string][] = u.isLink
+              ? [
+                  ['checked', 'Passes: vetted journalists may see it'],
+                  ['withheld', 'Withheld: journalists never see it'],
+                  ['illegal', 'Illegal: erase every copy now'],
+                ]
+              : [
+                  ['withheld', 'Leave it with the report (staff only)'],
+                  ['redacted', 'Write a note for journalists'],
+                  ['illegal', 'Illegal: erase it now'],
+                ];
             return (
-              <div key={u.ref} className="col">
-                <SelectField
-                  label={`${u.name}: your decision`}
-                  value={c.outcome}
-                  onChange={(e) => {
-                    setChoiceOf(u.ref, { outcome: e.target.value });
-                  }}
-                >
-                  <option value="">Choose one</option>
+              <div key={u.ref} className="col" role="radiogroup" aria-label={name}>
+                <span className="lbl">{name}</span>
+                <Choices>
                   {options.map(([v, label]) => (
-                    <option key={v} value={v}>
+                    <Choice
+                      key={v}
+                      name={`${id}-${u.ref}`}
+                      value={v}
+                      checked={c.outcome === v}
+                      onChange={() => {
+                        setChoiceOf(u, { outcome: v });
+                      }}
+                    >
                       {label}
-                    </option>
+                    </Choice>
                   ))}
-                </SelectField>
-                {c.outcome === 'illegal' ? (
-                  <SelectField
-                    label="Why it is illegal"
-                    value={c.reason}
-                    onChange={(e) => {
-                      setChoiceOf(u.ref, { reason: e.target.value });
-                    }}
-                  >
-                    <option value="">Choose one</option>
-                    {TEXT_ERASE_REASONS.filter(
-                      (r) => u.name !== 'Link' || r !== 'personal-data',
-                    ).map((r) => (
-                      <option key={r} value={r}>
-                        {ERASE_WORDS[r]}
-                      </option>
-                    ))}
-                  </SelectField>
-                ) : null}
+                </Choices>
                 {c.outcome === 'redacted' ? (
                   <AreaField
-                    label={`${u.name}: note for journalists`}
+                    label={`${name}: note for journalists`}
                     help="Write it in your own words. Put anything you quote in quotation marks."
                     rows={4}
                     value={c.note}
                     onChange={(e) => {
-                      setChoiceOf(u.ref, { note: e.target.value });
+                      setChoiceOf(u, { note: e.target.value });
                     }}
                   />
                 ) : null}
-                <TextField
-                  label={`${u.name}: why (for the record)`}
-                  help="10 to 500 characters. Only staff can read it."
-                  value={c.why}
-                  maxLength={WHY_MAX}
-                  onChange={(e) => {
-                    setChoiceOf(u.ref, { why: e.target.value });
-                  }}
-                />
+                {c.outcome === 'illegal' ? (
+                  <>
+                    {u.isLink ? <Hotlines /> : null}
+                    <SelectField
+                      label="Why it is illegal"
+                      value={c.reason}
+                      onChange={(e) => {
+                        setChoiceOf(u, { reason: e.target.value });
+                      }}
+                    >
+                      <option value="">Choose one</option>
+                      {u.isLink
+                        ? (Object.keys(LINK_REASONS) as LinkReason[]).map((r) => (
+                            <option key={r} value={r}>
+                              {LINK_REASONS[r]}
+                            </option>
+                          ))
+                        : TEXT_ERASE_REASONS.map((r) => (
+                            <option key={r} value={r}>
+                              {ERASE_WORDS[r]}
+                            </option>
+                          ))}
+                    </SelectField>
+                    <AreaField
+                      label={`${name}: your reason (for the record)`}
+                      help="10 to 500 characters. Only staff can read it. Describe the kind of thing, not the words."
+                      rows={2}
+                      value={c.why}
+                      maxLength={WHY_MAX}
+                      onChange={(e) => {
+                        setChoiceOf(u, { why: e.target.value });
+                      }}
+                    />
+                    <CheckBox
+                      checked={c.sure}
+                      onChange={(e) => {
+                        setChoiceOf(u, { sure: e.target.checked });
+                      }}
+                    >
+                      {u.isLink
+                        ? 'I have followed the procedure above. Every copy will be erased and cannot be brought back.'
+                        : 'The words will be erased now and cannot be brought back. A marker stays.'}
+                    </CheckBox>
+                  </>
+                ) : null}
               </div>
             );
           })}

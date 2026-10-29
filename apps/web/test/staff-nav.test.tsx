@@ -53,15 +53,9 @@ describe('who sees which section and page (menu.ts)', () => {
   it('a moderator sees Review without the administrator’s pages, and the guides', () => {
     expect(shape(as('moderator'))).toEqual({
       You: YOU,
-      Review: [
-        'Reports queue',
-        'Written accounts',
-        'Links',
-        'List entries',
-        'Files waiting',
-        'Illegal content notices',
-        'Flood screen',
-      ],
+      // Two queues (moderation-unified.md); what is not an incoming item is Safety.
+      Review: ['Reports', 'List entries'],
+      Safety: ['Illegal content notices', 'Flood screen', 'Link blocklist'],
       Help: ['Guides'],
     });
   });
@@ -71,6 +65,7 @@ describe('who sees which section and page (menu.ts)', () => {
     expect(HEADINGS(as('admin'))).toEqual([
       'You',
       'Review',
+      'Safety',
       'Content',
       'Site settings',
       'People',
@@ -171,16 +166,20 @@ describe('who sees which section and page (menu.ts)', () => {
 
 describe('which page an address is', () => {
   it.each([
-    ['/moderate', 'Reports queue'],
-    ['/moderate/', 'Reports queue'],
-    ['/moderate/3f0e2a3c-1111-4b4b-8c8c-000000000000', 'Reports queue'],
+    ['/moderate', 'Reports'],
+    ['/moderate/', 'Reports'],
+    ['/moderate/3f0e2a3c-1111-4b4b-8c8c-000000000000', 'Reports'],
+    // Pages that became filters on the queue send you on to it.
+    ['/moderate/texts', 'Reports'],
+    ['/moderate/texts/report-12', 'Reports'],
+    ['/moderate/blocklist', 'Link blocklist'],
     ['/moderate/flood', 'Flood screen'],
     ['/moderate/settings', 'Moderation rules'],
     ['/lists/review/12', 'List entries'],
     ['/lists/12', 'Lists'],
-    ['/lists/links', 'Links'],
-    ['/files/RL-ABCD', 'Files waiting'],
-    ['/files/erase', 'Files waiting'],
+    ['/lists/links', 'Reports'],
+    ['/files', 'Reports'],
+    ['/files/erase', 'Erasing a file'],
     ['/files/settings', 'File limits'],
     ['/files/logbooks/3', 'File limits'],
     ['/access/orgs/4', 'Organizations'],
@@ -482,14 +481,9 @@ describe('the menu on a desktop', () => {
         name: 'Your dashboard, 2 reports waiting for a moderator',
       }),
     ).toHaveAttribute('href', '/home');
-    for (const name of [
-      'Reports queue',
-      'Flood screen',
-      'Look',
-      'Maps',
-      'Roles',
-      'Transparency log',
-    ])
+    // "Reports" is a public page too (the board), so the queue is looked for by address.
+    expect(menu.querySelector('a[href="/moderate"]')).toBeNull();
+    for (const name of ['Flood screen', 'Look', 'Maps', 'Roles', 'Transparency log'])
       expect(within(menu).queryByRole('link', { name })).toBeNull();
     expect(within(menu).getByText(/admin@example\.org/)).toBeInTheDocument();
     expect(within(menu).getByRole('button', { name: 'Sign out' })).toBeInTheDocument();
@@ -599,7 +593,7 @@ describe('the staff area', () => {
     expect(within(side).getByRole('link', { name: 'Maps' })).toHaveAttribute('href', '/maps');
     expect(
       await within(side).findByRole('link', {
-        name: 'Reports queue, 3 reports waiting for a moderator',
+        name: 'Reports, 3 reports waiting for a moderator',
       }),
     ).toBeInTheDocument();
     const here = within(side).getAllByRole('link', { current: 'page' });
@@ -629,9 +623,9 @@ describe('the staff area', () => {
       within(side)
         .getAllByRole('heading', { level: 3 })
         .map((h) => h.textContent),
-    ).toEqual(['You', 'Review', 'Help']);
+    ).toEqual(['You', 'Review', 'Safety', 'Help']);
     expect(within(side).queryByRole('link', { name: 'Look' })).toBeNull();
-    expect(within(side).getByRole('link', { name: 'Reports queue' })).toHaveAttribute(
+    expect(within(side).getByRole('link', { name: 'Reports' })).toHaveAttribute(
       'aria-current',
       'page',
     );

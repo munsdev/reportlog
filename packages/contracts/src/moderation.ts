@@ -126,6 +126,18 @@ export const listQueue = defineRoute({
       .regex(/^[1-9]\d{0,15}$/)
       .optional(),
     lane: z.enum(['organization', 'open_form']).optional(),
+    // What used to be pages of their own (owner, 29 October 2026): each
+    // narrows the queue to the reports holding that kind of work. Staff work
+    // filters on a staff queue, not filters on public data, so they are not
+    // the operator's to choose (CLAUDE.md, "nothing is filterable").
+    /** Its newest version holds a written account. */
+    written: z.enum(['true', 'false']).optional(),
+    /** Its newest version holds a link nobody has judged yet. */
+    links: z.enum(['true', 'false']).optional(),
+    /** Its newest version holds a file nobody has decided on yet. */
+    files: z.enum(['true', 'false']).optional(),
+    /** Its reporter allows journalists to read what they wrote, now. */
+    sharing: z.enum(['true', 'false']).optional(),
     /** 1-based, QUEUE_PAGE_SIZE reports to a page. */
     page: z
       .string()

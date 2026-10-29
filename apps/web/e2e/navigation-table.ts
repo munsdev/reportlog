@@ -24,8 +24,6 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Email updates', href: '/notifications' },
   { label: 'Your account', href: '/account' },
   { label: 'Checked links', href: '/desk' },
-  // Review has a "Written accounts" too: same words, a different page and a
-  // different reader, so anything that looks one up must go by address.
   { label: 'Written accounts', href: '/desk/texts' },
   { label: 'Sources', href: '/desk/sources' },
   { label: 'Your alerts', href: '/desk/alerts' },
@@ -34,13 +32,12 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Members', href: '/intake/members' },
   // Sends a coordinator on to their own organization's listing page.
   { label: 'Directory listing', href: '/intake/listing', lands: /\/organizations\/\d+\/listing$/ },
-  { area: 'Review', label: 'Reports queue', href: '/moderate' },
-  { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
-  { area: 'Review', label: 'Links', href: '/lists/links' },
+  { area: 'Review', label: 'Reports', href: '/moderate' },
   { area: 'Review', label: 'List entries', href: '/lists/review' },
-  { area: 'Review', label: 'Files waiting', href: '/files' },
-  { area: 'Review', label: 'Illegal content notices', href: '/moderate/illegal-content' },
-  { area: 'Review', label: 'Flood screen', href: '/moderate/flood' },
+  { area: 'Safety', label: 'Illegal content notices', href: '/moderate/illegal-content' },
+  { area: 'Safety', label: 'Flood screen', href: '/moderate/flood' },
+  { area: 'Safety', label: 'Link blocklist', href: '/moderate/blocklist' },
+  { area: 'Safety', label: 'Erasing a file', href: '/files/erase' },
   { area: 'Content', label: 'Logbooks', href: '/logbooks' },
   { area: 'Content', label: 'Lists', href: '/lists' },
   { area: 'Content', label: 'Maps', href: '/maps' },
@@ -97,13 +94,11 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   moderator: [
     ...YOU,
     ...pick(
-      'Reports queue',
-      'Written accounts',
-      'Links',
+      'Reports',
       'List entries',
-      'Files waiting',
       'Illegal content notices',
       'Flood screen',
+      'Link blocklist',
       'Guides',
     ),
   ],
@@ -117,9 +112,9 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
 };
 
 /**
- * The page a label names in this role's sidebar. Two labels are shared (see
- * "Written accounts" above): the journalist's is the desk page, everyone
- * else's the one in a staff area.
+ * The page a label names in this role's sidebar. Should two labels ever be
+ * shared again (Review once had its own "Written accounts"), the
+ * journalist's is the desk page, everyone else's the one in a staff area.
  */
 export const pageByLabel = (label: string, role: MenuRole): MenuPage => {
   const pages = ALL_PAGES.filter((p) => p.label === label);

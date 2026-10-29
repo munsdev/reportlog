@@ -202,6 +202,8 @@ export const ReportLinkPanel = z.object({
   /** Names the link for `openText`; the address itself is not in this list. */
   ref: z.string(),
   outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
+  /** The group's comment for journalists, edited beside the verdict. */
+  comment: z.string().nullable(),
   /** Tips and other reports that sent the same address, besides this one. */
   also_tips: z.number().int(),
   also_reports: z.number().int(),

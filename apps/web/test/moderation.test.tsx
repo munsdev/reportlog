@@ -152,12 +152,28 @@ describe('the queue', () => {
       'aria-pressed',
       'false',
     );
-    // Second read is not a status: it narrows whichever one is showing, so it
-    // is not pressed with Waiting and has its own pressed state.
-    expect(within(group).getByRole('button', { name: /^Only second reads/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    // The work a report holds is not a status: each narrows whichever one is
+    // showing, in a row of its own, none pressed until asked.
+    const work = screen.getByRole('group', { name: 'Only reports that' });
+    for (const name of [
+      /^Has a written account/,
+      /^Has links to check/,
+      /^Has files to check/,
+      /^Can go to journalists/,
+      /^Needs a second read/,
+    ])
+      expect(within(work).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('narrows to the reports holding a kind of work, asked of the server', async () => {
+    const sent = serve({ 'GET /api/moderation/reports': QUEUE });
+    const router = wrap(<QueuePage search={{}} />);
+    const user = userEvent.setup();
+    const work = await screen.findByRole('group', { name: 'Only reports that' });
+    await user.click(within(work).getByRole('button', { name: /^Has links to check/ }));
+    await waitFor(() => {
+      expect(router.state.location.search).toMatchObject({ links: true });
+    });
   });
 
   it('searches on Enter, never on each keystroke (decision 59)', async () => {
@@ -178,10 +194,19 @@ describe('the queue', () => {
 
   it('names every filter in force, in words', () => {
     expect(
-      filterWords({ q: 'hall', flagged: true, severity: 'serious', lane: 'organization' }),
+      filterWords({
+        q: 'hall',
+        flagged: true,
+        written: true,
+        sharing: true,
+        severity: 'serious',
+        lane: 'organization',
+      }),
     ).toEqual([
       'matching “hall”',
-      'only second reads',
+      'with a written account',
+      'the reporter allows journalists',
+      'waiting for a second read',
       'rated: Serious',
       'filed by an organization',
     ]);
@@ -271,6 +296,139 @@ describe('deciding', () => {
       status: 'invalid',
       reason_code: 'duplicate',
       seen: REPORT.seen,
+    });
+  });
+});
+
+describe('a written account and its links (moderation-unified.md)', () => {
+  const text = (ref: string, shared: boolean) => ({
+    ref,
+    source: 'report' as const,
+    text: null,
+    length: 120,
+    outcome: null,
+    checked_at: null,
+    checked_by: null,
+    shared,
+    reference: REPORT.public_ref,
+    thread_id: THREAD,
+    place: null,
+    form_title: 'Election incidents',
+    answers_public: false,
+    received_at: REPORT.received_at,
+    redaction: null,
+  });
+  const WRITTEN = {
+    texts: [text('report-1', true), text('report-2', false)],
+    links: [
+      {
+        group_id: 9,
+        ref: 'link-3',
+        outcome: null,
+        comment: null,
+        also_tips: 1,
+        also_reports: 0,
+      },
+    ],
+    erased: [],
+    shared: true,
+  };
+  const HOLDING = { ...ITEM, report: { ...REPORT, has_undecided_written: true } };
+
+  it('offers a note only where the reporter allowed it, and erasing everywhere', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const panels = await screen.findAllByRole('region', { name: /^Written account/ });
+    expect(panels).toHaveLength(2);
+    const [shared, unshared] = panels as [HTMLElement, HTMLElement];
+    expect(
+      within(shared).getByRole('button', { name: 'Write a note for journalists' }),
+    ).toBeVisible();
+    expect(
+      within(shared).getByRole('button', { name: 'Leave it with the report (staff only)' }),
+    ).toBeVisible();
+    // Not shared: nothing waits on a moderator, and the one act is erasing.
+    expect(
+      within(unshared)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Show the written account', 'Erase as illegal…']);
+    // The link: its verdict, judged once for every copy.
+    expect(await screen.findByText(/Not judged yet\. Also sent in 1 tip\./)).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Judge this link' })).toBeVisible();
+  });
+
+  it('approving leaves the accounts with the report unless asked, and judges the link', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+      [`POST /api/moderation/reports/${THREAD}/decision`]: { ok: true, notice: 'none' },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    // Only the shared account is asked about, with "leave it" chosen already.
+    const account = await within(form).findByRole('radiogroup', { name: 'Written account' });
+    expect(
+      within(account).getByRole('radio', { name: 'Leave it with the report (staff only)' }),
+    ).toBeChecked();
+    expect(within(form).queryAllByRole('radiogroup', { name: /^Written account/ })).toHaveLength(1);
+    // The link has no verdict yet, so one is asked for.
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    expect(within(form).getByText(/Judge each link below/)).toBeInTheDocument();
+    expect(sent.filter(isAct)).toHaveLength(0);
+    const link = within(form).getByRole('radiogroup', { name: 'Link' });
+    await user.click(within(link).getByRole('radio', { name: /^Withheld/ }));
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    await waitFor(() => {
+      expect(sent.filter(isAct)).toHaveLength(1);
+    });
+    // No reason was asked; the server keeps one, so each says what was done.
+    expect(sent.find(isAct)?.body).toEqual({
+      status: 'valid',
+      seen: REPORT.seen,
+      written: [
+        { ref: 'report-1', outcome: 'withheld', why: 'Left with the report, for staff only.' },
+        { ref: 'report-2', outcome: 'withheld', why: 'Left with the report, for staff only.' },
+        { ref: 'link-3', outcome: 'withheld', why: 'Judged when the report was approved.' },
+      ],
+    });
+  });
+
+  it('a note for journalists goes with the approval, in the moderator’s words', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: { ...WRITTEN, links: [] },
+      [`POST /api/moderation/reports/${THREAD}/decision`]: { ok: true, notice: 'none' },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    const account = await within(form).findByRole('radiogroup', { name: 'Written account' });
+    await user.click(within(account).getByRole('radio', { name: 'Write a note for journalists' }));
+    await user.type(
+      within(form).getByLabelText('Written account: note for journalists'),
+      'A polling place moved without notice.',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    await waitFor(() => {
+      expect(sent.filter(isAct)).toHaveLength(1);
+    });
+    expect(sent.find(isAct)?.body).toMatchObject({
+      written: [
+        {
+          ref: 'report-1',
+          outcome: 'redacted',
+          why: 'Wrote a note for journalists.',
+          note: 'A polling place moved without notice.',
+        },
+        { ref: 'report-2', outcome: 'withheld' },
+      ],
     });
   });
 });

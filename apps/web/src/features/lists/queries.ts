@@ -42,8 +42,36 @@ export const reviewQueuesQuery = () =>
     queryFn: ({ signal }) => call(listReviewQueues, { signal }),
   });
 
-export const reviewBatchQuery = (id: number, state: ReviewState) =>
+/** The review page's filters, from its address (routes/(staff)/lists/review.$id.tsx). */
+export interface ReviewSearch {
+  state?: ReviewState | undefined;
+  /** Only entries holding a link nobody has judged yet. */
+  links?: boolean | undefined;
+  /** Only entries holding a written account (a tip description). */
+  written?: boolean | undefined;
+}
+
+export function parseReviewSearch(s: Record<string, unknown>): ReviewSearch {
+  const out: ReviewSearch = {};
+  if (s.state === 'received' || s.state === 'approved' || s.state === 'rejected') {
+    out.state = s.state;
+  }
+  if (s.links === true || s.links === 'true') out.links = true;
+  if (s.written === true || s.written === 'true') out.written = true;
+  return out;
+}
+
+export const reviewBatchQuery = (id: number, s: ReviewSearch) =>
   queryOptions({
-    queryKey: ['list-review', id, state],
-    queryFn: ({ signal }) => call(getReviewBatch, { params: { id }, query: { state }, signal }),
+    queryKey: ['list-review', id, s],
+    queryFn: ({ signal }) =>
+      call(getReviewBatch, {
+        params: { id },
+        query: {
+          state: s.state ?? 'received',
+          ...(s.links ? { links: 'true' as const } : {}),
+          ...(s.written ? { written: 'true' as const } : {}),
+        },
+        signal,
+      }),
   });

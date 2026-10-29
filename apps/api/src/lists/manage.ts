@@ -29,7 +29,7 @@ import type { ListField } from './fields.ts';
 import { refuse } from './refusals.ts';
 import { isRetention } from './retention.ts';
 import type { Retention } from './retention.ts';
-import { pendingCount } from './review.ts';
+import { pendingCount, waitingWork } from './review.ts';
 import { iso, isAccepting, listById } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
 import { coverOf } from '../site/cover.ts';
@@ -521,7 +521,9 @@ export async function reviewQueues(db: Db) {
     .orderBy('id')
     .execute();
   const out = [];
-  for (const r of rows) out.push({ ...r, ...(await pendingCount(db, r.id)) });
+  for (const r of rows) {
+    out.push({ ...r, ...(await pendingCount(db, r.id)), ...(await waitingWork(db, r.id)) });
+  }
   return out;
 }
 

@@ -95,6 +95,15 @@ export interface QueueFilter {
   /** One organization's reports, as a set. */
   organization?: number | undefined;
   lane?: 'organization' | 'open_form' | undefined;
+  // ── the work a report holds (owner, 29 October 2026) ──
+  /** Its newest version holds a written account. */
+  written?: boolean | undefined;
+  /** Its newest version holds a link nobody has judged yet. */
+  links?: boolean | undefined;
+  /** Its newest version holds a file nobody has decided on yet. */
+  files?: boolean | undefined;
+  /** Its reporter allows journalists to read what they wrote, now. */
+  sharing?: boolean | undefined;
 }
 
 /**
@@ -127,6 +136,44 @@ function inPlace(place: string) {
 }
 
 /**
+ * The work a report holds, each read over `h` like `organizationOf`. These
+ * replaced the Written accounts, Links and Files waiting pages: a moderator
+ * narrows the queue to what needs a look, rather than visiting a page per
+ * kind of thing. Ids only; nothing is decrypted.
+ */
+const holdsWritten = sql<boolean>`exists (
+  select 1 from report_values wv
+   where wv.report_id = h.current_report_id and wv.kind = 'private_text')`;
+
+/** A link whose group nobody has judged: a judgement covers every copy (links/checks.ts). */
+const holdsUncheckedLink = sql<boolean>`exists (
+  select 1 from report_values lv
+    join link_groups lg on lg.id = lv.group_id
+   where lv.report_id = h.current_report_id and lv.kind = 'private_link'
+     and lg.outcome is null)`;
+
+/**
+ * A file nobody has decided on: the files queue's own rule (files/routes.ts,
+ * `listFileReports`). Keeping one unpublished on purpose is a decision.
+ */
+const holdsUndecidedFile = sql<boolean>`exists (
+  select 1 from report_attachments fa
+    join attachment_heads fah on fah.attachment_id = fa.attachment_id
+   where fa.report_id = h.current_report_id
+     and fah.publication = 'withheld' and fah.dek_destroyed_at is null
+     and not exists (select 1 from attachment_events fe
+                      where fe.attachment_id = fa.attachment_id
+                        and fe.action in ('published', 'withheld', 'refused', 'taken_down', 'erased')))`;
+
+/**
+ * The reporter allows journalists now: the newest row of the permission log
+ * wins and no row means no, as the desk reads it (reportValues/onDesk.ts).
+ */
+const sharingNow = sql<boolean>`coalesce((select p.granted from report_permissions_log p
+   where p.thread_id = h.thread_id and p.permission = 'journalist_sharing'
+   order by p.id desc limit 1), false)`;
+
+/**
  * The queue's rows and every filter but the status, shared by the list and
  * the status buttons' counts, so a count can never disagree with the list
  * its button shows.
@@ -155,6 +202,10 @@ function filtered(db: Kysely<DB>, filter: QueueFilter) {
   }
   if (filter.lane === 'organization') q = q.where('r.third_party', 'is', true);
   if (filter.lane === 'open_form') q = q.where('r.third_party', 'is not', true);
+  if (filter.written) q = q.where(holdsWritten);
+  if (filter.links) q = q.where(holdsUncheckedLink);
+  if (filter.files) q = q.where(holdsUndecidedFile);
+  if (filter.sharing) q = q.where(sharingNow);
 
   return q;
 }

@@ -2,6 +2,10 @@
  * The moderation queue (docs/design/screens/moderation.md section 02). Work
  * through reports without leaving the list, or open one to read it closely.
  *
+ * ONE QUEUE FOR REPORTS (docs/design/moderation-unified.md). Written
+ * accounts, links and files waiting were pages of their own; now they are
+ * filters here (WORK in queries.ts), and the report's page decides all of it.
+ *
  * Waiting reports first by default, oldest first; a moderator's search spans
  * every state, because finding the declined ones is part of the job. Search
  * is applied on Enter or with its own button, never on each keystroke
@@ -29,7 +33,6 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
-import { CheckBox } from '@/mockup/Field.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
@@ -46,6 +49,7 @@ import { ViewingNotice, openBy, useOthersViewing, useViewing } from './viewing.t
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { AnswerLine, SeverityChip, StatusChip, useWide, when } from './parts.tsx';
 import { corroborationQuery, queueQuery, sortOf } from './queries.ts';
+import { WORK } from './queries.ts';
 import type { QueueSearch, QueueSeverity, QueueStatus } from './queries.ts';
 import { SEVERITIES, SEVERITY_WORDS } from './words.ts';
 
@@ -65,7 +69,7 @@ const STATUS_BUTTONS: { value: QueueStatus; label: string; counted: (n: number) 
   },
 ];
 
-/** The filters the Filter panel holds, besides the second-read toggle. */
+/** The filters the Filter panel holds. The work toggles (WORK) sit in their own row. */
 const PANEL_KEYS = [
   'logbook',
   'severity',
@@ -101,8 +105,8 @@ function QueueScreen({ search }: { search: QueueSearch }) {
 
   return (
     <StaffPage
-      title="Reports queue"
-      lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished."
+      title="Reports"
+      lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished. Its written account, links and files are decided on its page."
     >
       {query.data && !query.data.archive_published ? (
         <Problem title="The public archive is switched off.">
@@ -112,6 +116,7 @@ function QueueScreen({ search }: { search: QueueSearch }) {
       ) : null}
 
       <StatusButtons search={search} data={query.data} go={go} />
+      <WorkButtons search={search} data={query.data} go={go} />
       {/* Keyed by the search, so a new search starts the tools afresh. The
           prefix matters: the list below is keyed by the same search, and two
           siblings with one key leave React unable to remove the old one. */}
@@ -155,37 +160,54 @@ function StatusButtons({
   go: (patch: Partial<QueueSearch>) => void;
 }) {
   const status = search.status ?? 'pending';
-  // One row, as the mock-up draws it: the statuses, then "Only second reads"
-  // (not a status: it narrows whichever status is showing).
   return (
     <Seg
       label="Show"
-      options={[
-        ...STATUS_BUTTONS.map((b) => {
-          const n = data?.counts[b.value];
-          return {
-            key: b.value,
-            label: b.label,
-            n,
-            words: n === undefined ? undefined : b.counted(n),
-            pressed: status === b.value,
-            onClick: () => {
-              go({ status: b.value });
-            },
-          };
-        }),
-        {
-          key: 'flagged',
-          label: 'Only second reads',
-          n: data?.open_flags,
-          words:
-            data === undefined ? undefined : `${String(data.open_flags)} waiting for a second read`,
-          pressed: Boolean(search.flagged),
+      options={STATUS_BUTTONS.map((b) => {
+        const n = data?.counts[b.value];
+        return {
+          key: b.value,
+          label: b.label,
+          n,
+          words: n === undefined ? undefined : b.counted(n),
+          pressed: status === b.value,
           onClick: () => {
-            go({ flagged: search.flagged ? undefined : true });
+            go({ status: b.value });
           },
+        };
+      })}
+    />
+  );
+}
+
+/**
+ * What a report holds that needs a look, each a toggle that narrows whichever
+ * status is showing (the status counts above follow it). Any number at once.
+ */
+function WorkButtons({
+  search,
+  data,
+  go,
+}: {
+  search: QueueSearch;
+  data: Queue | undefined;
+  go: (patch: Partial<QueueSearch>) => void;
+}) {
+  return (
+    <Seg
+      label="Only reports that"
+      options={WORK.map((w) => ({
+        key: w.key,
+        label: w.label,
+        // Only second reads has a count of its own, across every status.
+        ...(w.key === 'flagged' && data
+          ? { n: data.open_flags, words: `${String(data.open_flags)} waiting for a second read` }
+          : {}),
+        pressed: Boolean(search[w.key]),
+        onClick: () => {
+          go({ [w.key]: search[w.key] ? undefined : true });
         },
-      ]}
+      }))}
     />
   );
 }
@@ -302,7 +324,7 @@ function Tools({
 export function filterWords(s: QueueSearch, data?: Queue): string[] {
   const out: string[] = [];
   if (s.q) out.push(`matching “${s.q}”`);
-  if (s.flagged) out.push('only second reads');
+  for (const w of WORK) if (s[w.key]) out.push(w.words);
   if (s.logbook) {
     const title = data?.reports.find((r) => r.logbook_slug === s.logbook)?.logbook_title;
     out.push(`logbook: ${title ?? s.logbook}`);
@@ -354,7 +376,6 @@ function FilterPanel({
   const [answerSet, setAnswerSet] = useState(search.answer_set ?? '');
   const [laneChoice, setLane] = useState<'' | 'organization' | 'open_form'>(search.lane ?? '');
   const [organization, setOrganization] = useState(search.organization ?? '');
-  const [flagged, setFlagged] = useState(Boolean(search.flagged));
   const [placeProblem, setPlaceProblem] = useState('');
 
   const logbooks = flood.data?.totals.by_logbook ?? [];
@@ -375,7 +396,6 @@ function FilterPanel({
       answer_set: answerSet || undefined,
       lane: laneChoice || undefined,
       organization: organization || undefined,
-      flagged: flagged || undefined,
     });
     onClose();
   };
@@ -388,7 +408,6 @@ function FilterPanel({
     setAnswerSet('');
     setLane('');
     setOrganization('');
-    setFlagged(false);
     setPlaceProblem('');
   };
 
@@ -531,14 +550,6 @@ function FilterPanel({
           </div>
         </div>
       ) : null}
-      <CheckBox
-        checked={flagged}
-        onChange={(e) => {
-          setFlagged(e.target.checked);
-        }}
-      >
-        Only reports waiting for a second read
-      </CheckBox>
     </>
   );
 
@@ -640,7 +651,9 @@ function QueueList({
 
   const pickable = data.reports.filter((r) => selectable(r) && !needsOwnLook(r));
   const filtered =
-    Boolean(search.q) || Boolean(search.flagged) || PANEL_KEYS.some((k) => Boolean(search[k]));
+    Boolean(search.q) ||
+    WORK.some((w) => Boolean(search[w.key])) ||
+    PANEL_KEYS.some((k) => Boolean(search[k]));
 
   if (data.reports.length === 0) {
     return (

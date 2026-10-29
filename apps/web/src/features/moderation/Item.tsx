@@ -65,7 +65,7 @@ import { ReportFiles } from '../files/staff/ReportFiles.tsx';
 import { evidenceQuery } from '../files/staff/queries.ts';
 import { useMe } from '../identity/session.ts';
 import { ClosedRow } from './ClosedRow.tsx';
-import { ReportWritten } from './Texts.tsx';
+import { ReportWritten } from './Written.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
 import type { Decided, Decision } from './DecideForm.tsx';
 import { AnswerList, StatusChip, waited, when } from './parts.tsx';

@@ -200,6 +200,10 @@ export async function moderationRoutes(
         answerSet: query.answer_set,
         organization: query.organization ? Number(query.organization) : undefined,
         lane: query.lane,
+        written: query.written === 'true',
+        links: query.links === 'true',
+        files: query.files === 'true',
+        sharing: query.sharing === 'true',
       };
       // The counts first: the page asked for is clamped to the pages there
       // are, so a page left over from a longer list shows its last page

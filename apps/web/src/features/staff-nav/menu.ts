@@ -18,6 +18,12 @@
  *     so it adds no area to an Access Manager's menu.
  *   - Site and Rules become Site settings; Help sits at the end.
  *
+ * And of 29 October 2026 (docs/design/moderation-unified.md): Review holds
+ * the two queues, Reports and List entries, and nothing else. Written
+ * accounts, Links and Files waiting became filters on them; Illegal content
+ * notices and the Flood screen, which are not incoming items, moved to Safety
+ * with the link blocklist and erasing a file.
+ *
  * TO ADD A SCREEN, add its line here, in the section it belongs to. A line
  * added to `entries.ts` instead still shows, under "Not sorted yet", until
  * somebody puts it here (entries.ts, `unsorted`).
@@ -86,21 +92,15 @@ export const MENU: readonly MenuSection[] = [
     id: 'review',
     label: 'Review',
     pages: [
+      // A report's page is this entry's: its written account, links and
+      // files are decided there.
       {
         to: '/moderate',
-        label: 'Reports queue',
+        label: 'Reports',
         for: MOD,
         under: ['/moderate/'],
         ...wait('reports'),
       },
-      {
-        to: '/moderate/texts',
-        label: 'Written accounts',
-        for: MOD,
-        under: ['/moderate/texts/'],
-        ...wait('texts'),
-      },
-      { to: '/lists/links', label: 'Links', for: MOD, ...wait('tip_links') },
       {
         to: '/lists/review',
         label: 'List entries',
@@ -108,10 +108,18 @@ export const MENU: readonly MenuSection[] = [
         under: ['/lists/review/'],
         ...wait('list_entries'),
       },
-      // Erasing a file is this page's too: it acts on one report's files.
-      { to: '/files', label: 'Files waiting', for: MOD, under: ['/files/'] },
+    ],
+  },
+  {
+    // Not incoming items: what protects the site and the people in it.
+    id: 'safety',
+    label: 'Safety',
+    pages: [
       { to: '/moderate/illegal-content', label: 'Illegal content notices', for: MOD },
       { to: '/moderate/flood', label: 'Flood screen', for: MOD },
+      { to: '/moderate/blocklist', label: 'Link blocklist', for: MOD },
+      // Administrators': it destroys a file's key. It was a tab of Files waiting.
+      { to: '/files/erase', label: 'Erasing a file', for: ADMIN },
     ],
   },
   {
@@ -213,6 +221,11 @@ export const FOLDED: Readonly<Record<string, string>> = {
   '/settings': '/settings/switches',
   '/settings/development': '/settings/switches',
   '/lists/search': '/lists',
+  // Pages that became filters on the reports queue (moderation-unified.md);
+  // each address now sends you on to the queue, filtered.
+  '/moderate/texts': '/moderate',
+  '/lists/links': '/moderate',
+  '/files': '/moderate',
   // The tabs of a page with one entry.
   '/settings/look': '/settings/name',
   '/moderate/agreement': '/moderate/settings',

@@ -89,6 +89,7 @@ import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
 import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/moderate/agreement'
+import { Route as staffModerateBlocklistRouteImport } from './routes/(staff)/moderate/blocklist'
 import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderate/flood'
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
@@ -530,6 +531,11 @@ const staffModerateAgreementRoute = staffModerateAgreementRouteImport.update({
   path: '/agreement',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
+const staffModerateBlocklistRoute = staffModerateBlocklistRouteImport.update({
+  id: '/blocklist',
+  path: '/blocklist',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
 const staffModerateFloodRoute = staffModerateFloodRouteImport.update({
   id: '/flood',
   path: '/flood',
@@ -813,6 +819,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
@@ -929,6 +936,7 @@ export interface FileRoutesByTo {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
@@ -1052,6 +1060,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/pages': typeof staffLogbooksPagesRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
+  '/(staff)/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
@@ -1176,6 +1185,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/blocklist'
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
@@ -1292,6 +1302,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/blocklist'
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
@@ -1414,6 +1425,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/pages'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/agreement'
+    | '/(staff)/moderate/blocklist'
     | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
@@ -2106,6 +2118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffModerateAgreementRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
+    '/(staff)/moderate/blocklist': {
+      id: '/(staff)/moderate/blocklist'
+      path: '/blocklist'
+      fullPath: '/moderate/blocklist'
+      preLoaderRoute: typeof staffModerateBlocklistRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
     '/(staff)/moderate/flood': {
       id: '/(staff)/moderate/flood'
       path: '/flood'
@@ -2474,6 +2493,7 @@ const staffLogbooksRouteRouteWithChildren =
 interface staffModerateRouteRouteChildren {
   staffModerateThreadIdRoute: typeof staffModerateThreadIdRoute
   staffModerateAgreementRoute: typeof staffModerateAgreementRoute
+  staffModerateBlocklistRoute: typeof staffModerateBlocklistRoute
   staffModerateFloodRoute: typeof staffModerateFloodRoute
   staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
   staffModerateSettingsRoute: typeof staffModerateSettingsRoute
@@ -2485,6 +2505,7 @@ interface staffModerateRouteRouteChildren {
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateThreadIdRoute: staffModerateThreadIdRoute,
   staffModerateAgreementRoute: staffModerateAgreementRoute,
+  staffModerateBlocklistRoute: staffModerateBlocklistRoute,
   staffModerateFloodRoute: staffModerateFloodRoute,
   staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,
   staffModerateSettingsRoute: staffModerateSettingsRoute,
