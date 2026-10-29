@@ -7,7 +7,7 @@
  * sign in as an administrator before each test here.
  */
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { panel } from './panel.ts';
 import { saveChanges } from './save-bar.ts';
@@ -189,6 +189,16 @@ test('a front page button can lead to a page, say what the operator chose, and b
 }, info) => {
   // One project only: both would arrange the one front page at the same time.
   test.skip(info.project.name !== 'chromium', 'arranges the one shared front page');
+  // Put back for the other tests even if a step below fails, so one failure
+  // here does not become every front page test's.
+  try {
+    await frontPageButton(page, browser);
+  } finally {
+    await page.request.delete('/api/admin/home-buttons');
+  }
+});
+
+async function frontPageButton(page: Page, browser: Browser) {
   await page.goto('/logbooks/front-page');
   const rows = page.getByRole('list', { name: 'Buttons, in order' }).getByRole('listitem');
   await expect(rows.first()).toBeVisible();
@@ -198,7 +208,10 @@ test('a front page button can lead to a page, say what the operator chose, and b
   await added.getByLabel('Target').selectOption({ label: 'About this site' });
   await added.getByLabel('Main text').fill('Who runs this');
   await added.getByLabel('Subtext').fill('And how it works');
-  // The site's own board button may be relabelled too.
+  // The site's own board button may be relabelled too. A row shows its
+  // fields once opened with Change.
+  const openBoard = page.getByRole('button', { name: 'Change: “View Live Report Board”' });
+  if (await openBoard.count()) await openBoard.click();
   const board = rows.filter({ has: page.locator('option[value="builtin:board"]:checked') });
   if (await board.count()) await board.first().getByLabel('Main text').fill('The public record');
   await page.getByRole('button', { name: 'Save this order' }).click();
@@ -208,7 +221,8 @@ test('a front page button can lead to a page, say what the operator chose, and b
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
   const visitor = await context.newPage();
   await visitor.goto('/');
-  const ways = visitor.getByRole('list', { name: 'What you can do here' });
+  // The buttons are the headline's row of links (home/HeroBlock.tsx).
+  const ways = visitor.getByRole('main');
   const about = ways.getByRole('link', { name: /Who runs this\s*And how it works/ });
   await expect(about).toHaveAttribute('href', '/about');
   if (await board.count()) {
@@ -224,7 +238,7 @@ test('a front page button can lead to a page, say what the operator chose, and b
   await expect(page.getByRole('main').getByRole('status')).toHaveText(
     'Back to the standard order.',
   );
-});
+}
 
 test('the builder asks no third party for anything', async ({ page }) => {
   const outside: string[] = [];

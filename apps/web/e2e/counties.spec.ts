@@ -26,10 +26,14 @@ function watch(page: Page): string[] {
   return outside;
 }
 
-/** Choose a state, check the county list followed it, then choose a county. */
-async function stateThenCounty(page: Page, label: string) {
+/**
+ * Choose a state, check the county list followed it, then choose a county.
+ * The county box is named as each form words it: a logbook card "County, if
+ * you know it", a list's "County (optional)".
+ */
+async function stateThenCounty(page: Page, label: string, countyName: string) {
   const state = page.getByRole('combobox', { name: 'State' });
-  const county = page.getByRole('combobox', { name: 'County, if you know it' });
+  const county = page.getByRole('combobox', { name: countyName, exact: true });
   await expect(county).toBeDisabled();
   await state.selectOption({ label: 'Texas' });
   await expect(county.getByRole('option', { name: 'Travis County' })).toHaveCount(1);
@@ -60,7 +64,7 @@ test('a logbook card asks the state, then the county', async ({ page }) => {
   await page.goto(`/file/${lb.slug}`);
   await page.getByRole('button', { name: 'Start' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Where', exact: true })).toBeVisible();
-  await stateThenCounty(page, 'the county card');
+  await stateThenCounty(page, 'the county card', 'County, if you know it');
   expect(outside).toEqual([]);
 });
 
@@ -91,9 +95,9 @@ test('the election tips list sends a county as one code', async ({ page, browser
   await v.getByRole('button', { name: 'Start' }).click();
   await v.getByRole('textbox', { name: 'Link' }).fill('https://news.example.org/county');
   await next();
-  await stateThenCounty(v, 'the list’s Where card');
+  await stateThenCounty(v, 'the list’s Where card', 'County (optional)');
   await next();
-  await v.getByLabel('What day was it?').fill('2026-11-03');
+  await v.getByRole('textbox', { name: /^What day was it\?/ }).fill('2026-11-03');
   await next();
   await v.getByRole('radio', { name: 'Long lines or wait times' }).click();
   await next();
