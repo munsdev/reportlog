@@ -470,6 +470,11 @@ async function plantOneRowEach(): Promise<void> {
     .insertInto('organization_intake_link_uses')
     .values({ link_id: link.id, user_id: user.id })
     .execute();
+  // A version of the site's wording, as editing a piece of wording records one.
+  await db
+    .insertInto('site_copy_versions')
+    .values({ key: 'invariants_sweep', body: 'a row for the sweep' })
+    .execute();
 }
 
 /** Run a statement and roll it back whatever happens; resolve to its error, or null. */
@@ -806,6 +811,10 @@ const NOT_STAFF_PREFIXES = [
   '/api/list-mail/',
   '/api/notifications',
   '/api/feedback',
+  // The published standards (platformRoutes.ts): the journalist agreement's
+  // newest text and the moderation standard's version and date, public so
+  // they can be read before applying. Nothing about who accepted.
+  '/api/standards/',
   '/api/forget/',
   '/api/files/',
   '/api/maps',

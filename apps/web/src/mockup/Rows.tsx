@@ -31,6 +31,18 @@ export function Row({
   );
 }
 
+/**
+ * The list item around a row that is a router link. A `role="list"` may hold
+ * only list items, and a link cannot be one without stopping being a link.
+ */
+export function RowItem({ children }: { children?: ReactNode }) {
+  return (
+    <div role="listitem" className="rowitem">
+      {children}
+    </div>
+  );
+}
+
 /** A row that is a link (the mock-up's `a.row`). */
 export function RowLink({
   cols = '1fr auto',

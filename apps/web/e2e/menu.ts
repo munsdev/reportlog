@@ -1,12 +1,13 @@
 /**
  * Getting around, as a person does (docs/design/navigation.md):
  *
- *   - On the PUBLIC site, the Menu button in the header opens the panel
- *     (desktop) or the sheet (phone, below 768px). For somebody with staff
- *     pages it has one staff link, "Your dashboard".
- *   - In the STAFF AREA (features/nav/StaffShell.tsx) the staff pages are in
- *     the sidebar, which on a phone is a drawer behind "Menu" in the
- *     top bar; the person's own links and Sign out are in the account menu.
+ *   - On the PUBLIC site, MENU in the header opens the "Site menu" dialog
+ *     (mockup/SiteMenu.tsx). For somebody with staff pages it has one staff
+ *     link, "Your dashboard".
+ *   - In the STAFF AREA (features/nav/StaffShell.tsx) the staff pages, and
+ *     the person's own pages (My reports, Email updates, ...), are in the
+ *     "Staff areas" sidebar, which below 900px is the "Staff menu" drawer
+ *     behind MENU in the top bar. The account chip is one link.
  *
  * Every browser test that goes somewhere "from the menu" goes through here,
  * so the next change to either shape is one file's change.
@@ -15,14 +16,20 @@ import { expect } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 import { ALL_PAGES } from './navigation-table.ts';
 
+/**
+ * The menu button's name: "MENU", then, when reports wait, the count's words
+ * ("MENU. 3 reports waiting for a moderator."). The same in both frames.
+ */
+export const MENU_BUTTON = /^menu\b/i;
+
 /** The public menu, opened if it is not open already. */
 export async function openMenu(page: Page): Promise<Locator> {
-  const nav = page.getByRole('navigation', { name: 'Main menu' });
-  if (!(await nav.isVisible())) {
-    await page.getByRole('banner').getByRole('button', { name: /Menu$/ }).click();
+  const menu = page.getByRole('dialog', { name: 'Site menu' });
+  if (!(await menu.isVisible())) {
+    await page.getByRole('banner').getByRole('button', { name: MENU_BUTTON }).click();
   }
-  await expect(nav).toBeVisible();
-  return nav;
+  await expect(menu).toBeVisible();
+  return menu;
 }
 
 /** Whether this page is the phone's shape (the sheet; the staff drawer). */
@@ -47,23 +54,28 @@ export async function staffNav(page: Page): Promise<Locator> {
     await menu.getByRole('link', { name: /^Your dashboard/ }).click();
     await expect(page.locator('[data-staff-app]')).toBeVisible();
   }
-  const sidebar = page.getByRole('navigation', { name: 'Your pages' });
-  // The staff sidebar is a drawer below 900px, the mock-up's breakpoint.
+  // The sidebar is the "Staff menu" drawer below 900px, the mock-up's
+  // breakpoint; the desktop sidebar is still in the page, hidden, so the one
+  // that shows is the one asked for.
   if ((page.viewportSize()?.width ?? 1280) < 900) {
-    const button = page.getByRole('banner').getByRole('button', { name: 'Menu' });
+    const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
     if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
+    await expect(page.getByRole('dialog', { name: 'Staff menu' })).toBeVisible();
   }
+  const sidebar = page
+    .getByRole('navigation', { name: 'Staff areas' })
+    .filter({ visible: true })
+    .first();
   await expect(sidebar).toBeVisible();
   return sidebar;
 }
 
-/** The staff area's account menu, opened. */
+/**
+ * Where the person's own pages are in the staff area: the sidebar, since the
+ * redesign replaced the account menu with one link (the account chip).
+ */
 export async function accountMenu(page: Page): Promise<Locator> {
-  const button = page.getByRole('banner').getByRole('button', { name: /^Account:/ });
-  if ((await button.getAttribute('aria-expanded')) !== 'true') await button.click();
-  const panel = page.locator('#staff-account');
-  await expect(panel).toBeVisible();
-  return panel;
+  return staffNav(page);
 }
 
 const STAFF_PAGES = new Set(ALL_PAGES.map((p) => p.label));

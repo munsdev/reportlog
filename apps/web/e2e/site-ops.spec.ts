@@ -10,6 +10,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { AxeResults, RunOptions } from 'axe-core';
 import { ADMIN } from './auth.ts';
+import { MENU_BUTTON } from './menu.ts';
 import { address, everyPage } from './site-walk.ts';
 
 const AXE_SOURCE = readFileSync(
@@ -91,7 +92,7 @@ test.describe('the header', () => {
       await page.goto('/');
       const header = page.locator('header').first();
       // The wordmark and the Menu button, and nothing else in the bar.
-      await expect(header.getByRole('button', { name: /Menu$/ })).toBeVisible();
+      await expect(header.getByRole('button', { name: MENU_BUTTON })).toBeVisible();
       const row = await header.evaluate((el) => {
         const inner = el.firstElementChild;
         // What is drawn in the bar: the closed menu (hidden) takes no room.

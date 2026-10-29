@@ -23,7 +23,7 @@ import { Empty } from '@/mockup/Empty.tsx';
 import { Dl } from '@/mockup/Dl.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
 import { PTabs } from '@/mockup/PTabs.tsx';
-import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { rowCols, RowItem, Rows } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
 import { ToastProvider, useToast } from '../../../components/ui/toast.tsx';
 import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
@@ -225,19 +225,20 @@ export function LogbookLimitsList() {
         ) : (
           <Rows label="Logbooks">
             {query.data.logbooks.map((lb) => (
-              <Link
-                key={lb.id}
-                to="/files/logbooks/$id"
-                params={{ id: String(lb.id) }}
-                className="row"
-                style={rowCols('1fr auto')}
-              >
-                <span className="t">{lb.title}</span>
-                <span className="chips">
-                  <St tone="off">{lb.asks_for_files ? 'Asks for files' : 'No files'}</St>
-                  {lb.files_frozen_at ? <St tone="off">Uploads frozen</St> : null}
-                </span>
-              </Link>
+              <RowItem key={lb.id}>
+                <Link
+                  to="/files/logbooks/$id"
+                  params={{ id: String(lb.id) }}
+                  className="row"
+                  style={rowCols('1fr auto')}
+                >
+                  <span className="t">{lb.title}</span>
+                  <span className="chips">
+                    <St tone="off">{lb.asks_for_files ? 'Asks for files' : 'No files'}</St>
+                    {lb.files_frozen_at ? <St tone="off">Uploads frozen</St> : null}
+                  </span>
+                </Link>
+              </RowItem>
             ))}
           </Rows>
         )

@@ -192,7 +192,7 @@ export function SettingPanel({
           sm
           flat
 
-          aria-label={`Edit ${title}`}
+          aria-label={`Change ${title}`}
           onClick={() => {
             panels.open(id);
           }}

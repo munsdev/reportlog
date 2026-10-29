@@ -37,9 +37,10 @@ test.describe('the shell on a desktop', () => {
     const bar = page.getByRole('banner');
     await expect(bar.getByText('Staff', { exact: true })).toBeVisible();
     await expect(bar.getByRole('link', { name: 'View the public site' })).toBeVisible();
-    await expect(bar.getByRole('button', { name: /^Account:/ })).toBeVisible();
+    // The account chip, one link since the redesign.
+    await expect(bar.getByRole('link', { name: /^Account, / })).toBeVisible();
     await expect(bar.getByRole('button', { name: 'Menu' })).toHaveCount(0);
-    const side = page.getByRole('navigation', { name: 'Your pages' });
+    const side = page.getByRole('navigation', { name: 'Staff areas' });
     await expect(side).toBeVisible();
     const [s, m] = await Promise.all([side.boundingBox(), page.getByRole('main').boundingBox()]);
     // Beside, not above: the sidebar's right edge is left of the page's.
@@ -64,7 +65,7 @@ test.describe('the shell on a phone', () => {
     test.skip(desktop(page.viewportSize()?.width ?? 0), 'a phone test');
     await page.goto('/settings/look');
     const menu = page.getByRole('banner').getByRole('button', { name: 'Menu' });
-    await expect(page.getByRole('navigation', { name: 'Your pages' })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Staff areas' })).toHaveCount(0);
 
     await menu.click();
     const dialog = page.getByRole('dialog', { name: 'Staff menu' });
@@ -170,7 +171,7 @@ for (const [role, gone, kept] of [
         });
       }).toPass({ timeout: 20_000 });
     }
-    const side = page.getByRole('navigation', { name: 'Your pages' });
+    const side = page.getByRole('navigation', { name: 'Staff areas' });
     for (const label of kept)
       await expect(side.getByRole('link', { name: label, exact: true }), label).toBeVisible({
         timeout: 15_000,

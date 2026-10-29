@@ -5,9 +5,10 @@ name: CI
 
 on:
   push:
-    # main, and the branch the rebuild's workstreams merge into, so what is
+    # The three branches servers install from (main live, beta, alpha) and
+    # `test`, the integration branch until alpha replaces it, so what is
     # merged there is tested as merged and not only as separate pull requests.
-    branches: [main, ccr-c9c93698-ev856l]
+    branches: [main, beta, alpha, test]
   pull_request:
 
 concurrency:
@@ -108,10 +109,18 @@ jobs:
         run: |
           "$RUNNER_TEMP/gitleaks" git --no-banner --redact --config .gitleaks.toml --exit-code 1 .
 
+  # IN FOUR SHARDS. The whole suite on one runner took longer than any sane
+  # job limit and was cancelled at it, so nothing after the cut was ever
+  # tested. Each shard runs a quarter of the tests on its own database
+  # (with-fresh-db), and the setup projects they depend on run in each.
   browser:
-    name: Browser tests
+    name: Browser tests (${{ matrix.shard }}/4)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     services:
       postgres:
         image: postgres:16
@@ -136,12 +145,12 @@ jobs:
         run: sudo apt-get update -q && sudo apt-get install -yq --no-install-recommends imagemagick libheif1 ffmpeg poppler-utils
       - run: pnpm --filter @reportlog/api db:migrate
       - run: pnpm --filter @reportlog/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @reportlog/web e2e
+      - run: pnpm --filter @reportlog/web e2e --shard=${{ matrix.shard }}/4
         env:
           CI: 'true'
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces
+          name: playwright-traces-${{ matrix.shard }}
           path: apps/web/test-results/
           retention-days: 7

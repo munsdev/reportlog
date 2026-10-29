@@ -86,3 +86,10 @@ starts with "-----BEGIN OPENSSH PRIVATE KEY-----". The file holds that
 header as a string to compare with, never a key."""
 targetRules = ["private-key"]
 paths = ['''^(legacy/)?scripts/translog-selftest\.mjs$''']
+
+[[allowlists]]
+description = """The upgrade test's recorded database rows and golden answers
+(apps/api/test/upgrade/): one-way hashes of made-up test tokens and match keys
+(token_hash, match_key), from a seeded throwaway database. Not secrets."""
+targetRules = ["generic-api-key"]
+paths = ['''^apps/api/test/upgrade/(rows|golden)\.json$''']

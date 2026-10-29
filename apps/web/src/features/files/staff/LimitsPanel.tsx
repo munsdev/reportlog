@@ -91,7 +91,7 @@ export function LimitsPanel({
               sm
               flat
 
-              aria-label={`Edit ${LIMITS_TITLE}`}
+              aria-label={`Change ${LIMITS_TITLE}`}
               onClick={() => {
                 setOpen(true);
               }}

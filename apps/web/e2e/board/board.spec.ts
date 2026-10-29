@@ -157,9 +157,9 @@ test.describe('the moderation screens', () => {
 
     await page.goto('/settings/switches');
     // A setting panel: Edit, tick, then the Save bar, which names what it saves.
-    await archive.getByRole('button', { name: 'Edit The public archive' }).click();
+    await archive.getByRole('button', { name: 'Change The public archive' }).click();
     await archive.getByRole('checkbox', { name: 'Offer downloads of the whole archive' }).click();
-    const bar = page.getByRole('region', { name: 'Save changes' });
+    const bar = page.getByRole('region', { name: 'Unsaved changes' });
     await expect(bar).toContainText('The public archive');
     await bar.getByRole('button', { name: 'Save' }).click();
     await expect(archive).toContainText('Offered: the board as a spreadsheet');

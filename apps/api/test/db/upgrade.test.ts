@@ -26,7 +26,7 @@
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, inject, it, vi } from 'vitest';
 import { buildApp } from '../../src/app.ts';
 import { currentHeads } from '../../src/chain/heads.ts';
 import { verifyReport } from '../../src/chain/verify.ts';
@@ -57,6 +57,14 @@ const golden = JSON.parse(readFileSync(`${dir}golden.json`, 'utf8')) as {
   urls: string[];
   facts: Facts;
 };
+
+/**
+ * When the golden was recorded: a minute after the newest report in the
+ * fixture arrived (upgrade-fixture.test.ts seeds and records in one run).
+ */
+const RECORDED_AT =
+  Math.max(...(fixtureRows.reports ?? []).map((r) => new Date(String(r.received_at)).getTime())) +
+  60_000;
 
 let throwaway: Throwaway;
 let db: Database;
@@ -161,7 +169,17 @@ describe('after every newer migration', () => {
   });
 
   it('every public route answers as it did', async () => {
-    const now = await collectFacts(app, db, golden.urls);
+    // At the time the golden was recorded. Some answers count over windows
+    // that end now ("filed in the last 24 hours", /api/board/figures), so on
+    // the real clock the same rows give other numbers a day after recording:
+    // a difference in the calendar, not in the upgrade. Only Date is frozen.
+    vi.useFakeTimers({ now: RECORDED_AT, toFake: ['Date'] });
+    let now: Facts;
+    try {
+      now = await collectFacts(app, db, golden.urls);
+    } finally {
+      vi.useRealTimers();
+    }
     const differences: string[] = [];
     for (const u of golden.urls) {
       const was = golden.facts.responses[u];

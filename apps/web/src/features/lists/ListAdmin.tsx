@@ -19,7 +19,7 @@ import { Note } from '@/mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { Empty } from '@/mockup/Empty.tsx';
 import { Btn } from '@/mockup/Btn.tsx';
-import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { rowCols, RowItem, Rows } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
 import { Field, FieldDescription, FieldError, Input, Label } from '@/mockup/Field.tsx';
@@ -98,29 +98,29 @@ export function ListAdmin() {
           <>
             <Rows label="Lists">
               {query.data.lists.map((l) => (
-                <Link
-                  key={l.id}
-                  to="/lists/$id"
-                  params={{ id: l.id }}
-                  aria-label={`Open ${l.title}`}
-                  className="row"
-                  style={rowCols('1fr auto')}
-                >
-                  <span>
-                    <span className="t">{l.title}</span>
-                    <br />
-                    <span className="m">
-                      /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
-                      for review
+                <RowItem key={l.id}>
+                  <Link
+                    to="/lists/$id"
+                    params={{ id: l.id }}
+                    className="row"
+                    style={rowCols('1fr auto')}
+                  >
+                    <span>
+                      <span className="t">{l.title}</span>
+                      <br />
+                      <span className="m">
+                        /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
+                        for review
+                      </span>
                     </span>
-                  </span>
-                  <span className="chips">
-                    <St tone="tag">{VISIBILITY[l.visibility].label}</St>
-                    <St tone={l.accepting ? 'confirmed' : 'off'}>
-                      {l.accepting ? 'Taking entries' : 'Not taking entries'}
-                    </St>
-                  </span>
-                </Link>
+                    <span className="chips">
+                      <St tone="tag">{VISIBILITY[l.visibility].label}</St>
+                      <St tone={l.accepting ? 'confirmed' : 'off'}>
+                        {l.accepting ? 'Taking entries' : 'Not taking entries'}
+                      </St>
+                    </span>
+                  </Link>
+                </RowItem>
               ))}
             </Rows>
             <div className="acts">
