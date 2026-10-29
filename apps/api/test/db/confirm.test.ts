@@ -75,7 +75,7 @@ describe('a report filed through a logbook', () => {
     expect(sent.status).toBe(200);
     expect(sent.body).toEqual({ pending: true });
     const mail = h.mailer.lastTo(email);
-    expect(mail?.subject).toBe('Confirm your report');
+    expect(mail?.subject).toBe('Action needed: confirm your report, or it won’t be filed');
     expect(mail?.text).toMatch(/^https:\/\/reports\.example\.test\/file\/confirm\/[a-f0-9]{64}$/m);
     token = tokenFor(h.mailer, email) ?? '';
     expect(token).toHaveLength(64);

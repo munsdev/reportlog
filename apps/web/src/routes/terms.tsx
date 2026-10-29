@@ -94,7 +94,7 @@ function TermsPage() {
         <CopyText slot="contact_users" />
         {form ? (
           <p>
-            <Link className="btn sm flat" to="/list/$slug" params={{ slug: form.slug }}>
+            <Link className="btn sm flat" to="/$slug" params={{ slug: form.slug }}>
               Write to us
             </Link>
           </p>

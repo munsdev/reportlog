@@ -144,16 +144,19 @@ export const confirmEmail = (
   eraseLink?: string,
   days: number = DEFAULT_LINK_DAYS,
 ) => ({
-  subject: 'Confirm your report',
+  // The action first: a reporter who stops after the first line must know
+  // the report is not filed yet (owner, 29 October 2026).
+  subject: 'Action needed: confirm your report, or it won’t be filed',
   text:
-    `You sent a report to “${logbookTitle}”. To file it, open this link and press “Confirm and file my report”:\n\n` +
+    'Your report is not filed yet.\n\n' +
+    `To file it, open this link and press “Confirm and file my report”:\n\n` +
     `${link}\n\n` +
-    `Nothing is filed until you do. The link works for ${linkLife(days)} to confirm. If you do not use it by then, your report and your address are deleted.\n\n` +
-    'If you did not send this, ignore this email. Nothing happens without the link.' +
+    `Until you do, nothing is filed and nobody sees it. The link works for ${linkLife(days)}. If you don’t use it by then, your report and your email address are deleted.\n\n` +
+    `(This is for your report to “${logbookTitle}”. If you didn’t send it, ignore this email. Nothing happens without the link.)` +
     (eraseLink
-      ? '\n\n' +
-        'Once your report is filed, you can have your email address erased at any time, without an account. ' +
-        `Open this link and press the button; it changes nothing until you do. Your report is not withdrawn:\n\n${eraseLink}`
+      ? '\n\n---\n\n' +
+        'After your report is filed: you can have your email address erased at any time, without an account. ' +
+        `Open this link and press the button. Nothing changes until you do, and your report stays filed:\n\n${eraseLink}`
       : ''),
 });
 

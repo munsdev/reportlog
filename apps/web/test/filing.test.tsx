@@ -259,7 +259,7 @@ describe('the cards', () => {
     await user.click(screen.getByRole('button', { name: 'Send' }));
     expect(await screen.findByRole('heading', { name: /Check your email/ })).toBeInTheDocument();
     expect(screen.getByText(/Thank you\. Have a link\?/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Send a link' })).toHaveAttribute('href', '/list/tips');
+    expect(screen.getByRole('link', { name: 'Send a link' })).toHaveAttribute('href', '/tips');
     const kept = JSON.parse(localStorage.getItem('reportlog:tip-prefill') ?? 'null') as {
       values: Record<string, string>;
     };

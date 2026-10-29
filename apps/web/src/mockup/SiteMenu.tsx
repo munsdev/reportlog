@@ -121,7 +121,7 @@ export function SiteMenu({
           <ul className="menu-list second">
             {contact ? (
               <li>
-                <Link to="/list/$slug" params={{ slug: contact.slug }} onClick={onChoose}>
+                <Link to="/$slug" params={{ slug: contact.slug }} onClick={onChoose}>
                   Contact
                 </Link>
               </li>

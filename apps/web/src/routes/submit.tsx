@@ -82,7 +82,7 @@ function Submit() {
       ? [
           {
             value: `list:${tips.slug}`,
-            to: '/list/$slug' as const,
+            to: '/$slug' as const,
             params: { slug: tips.slug },
             tag: 'List',
             action: 'Send a link',
