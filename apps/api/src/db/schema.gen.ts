@@ -863,6 +863,7 @@ export interface ReporterActions {
 export interface ReportHeads {
   current_report_id: number;
   moderation_status: Generated<string>;
+  revision: Generated<number>;
   thread_id: string;
   updated_at: Generated<Timestamp>;
   withdrawn: Generated<boolean>;
@@ -956,6 +957,12 @@ export interface ReportValues {
   report_id: number;
   value_enc: Buffer;
   value_key: Buffer;
+}
+
+export interface ReportViewers {
+  seen_at: Generated<Timestamp>;
+  thread_id: string;
+  user_id: number;
 }
 
 export interface RoleAudit {
@@ -1282,6 +1289,7 @@ export interface DB {
   report_submissions: ReportSubmissions;
   report_value_erasures: ReportValueErasures;
   report_values: ReportValues;
+  report_viewers: ReportViewers;
   reporter_actions: ReporterActions;
   reports: Reports;
   role_audit: RoleAudit;

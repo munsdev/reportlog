@@ -31,6 +31,8 @@ import {
   fileThread,
   moderationHarness,
   resetModerationSettings,
+  seenMap,
+  seenOf,
   staff,
 } from './moderation-helpers.ts';
 
@@ -119,7 +121,12 @@ describe('a bulk decline sends no email', () => {
     const one = await mod.call({
       method: 'POST',
       url: `/api/moderation/reports/${single.thread}/decision`,
-      payload: { status: 'invalid', reason_code: 'duplicate', comment: 'Checked.' },
+      payload: {
+        status: 'invalid',
+        reason_code: 'duplicate',
+        comment: 'Checked.',
+        seen: await seenOf(h.db, single.thread),
+      },
     });
     expect(one.json()).toEqual({ ok: true, notice: 'sent' });
     expect(h.mailer.lastTo(single.email)).toBeDefined();
@@ -128,7 +135,14 @@ describe('a bulk decline sends no email', () => {
     const bulk = await mod.call({
       method: 'POST',
       url: '/api/moderation/reports/bulk-decline',
-      payload: { thread_ids: rest.map((r) => r.thread), reason_code: 'abusive_or_spam' },
+      payload: {
+        thread_ids: rest.map((r) => r.thread),
+        seen: await seenMap(
+          h.db,
+          rest.map((r) => r.thread),
+        ),
+        reason_code: 'abusive_or_spam',
+      },
     });
     expect(bulk.statusCode, bulk.body).toBe(200);
     expect(bulk.json<{ declined: string[] }>().declined).toHaveLength(2);

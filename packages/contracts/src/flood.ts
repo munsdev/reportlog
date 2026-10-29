@@ -199,6 +199,8 @@ export const bulkDeclineReports = defineRoute({
     comment: z.string().max(2000).optional(),
     /** The queue filter that showed them, kept with the record. */
     filter: z.record(z.string(), z.string()).optional(),
+    /** Required: each report's `seen` as the page showed it; one that changed since is skipped. */
+    seen: z.record(z.string(), z.string()).optional(),
   }),
   response: z.object({
     bulk_id: z.number().int(),

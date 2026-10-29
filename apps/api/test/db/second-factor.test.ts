@@ -823,6 +823,7 @@ describe('step-up before each listed action', () => {
       url: () => '/api/moderation/reports/bulk-decline',
       payload: () => ({
         thread_ids: ['00000000-0000-4000-8000-000000000000'],
+        seen: {},
         reason_code: 'duplicate',
       }),
     },

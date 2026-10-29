@@ -19,6 +19,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';
+import { HttpError } from '../http/errors.ts';
 import { route } from '../http/route.ts';
 import { requireUser, roleGuard } from '../identity/guards.ts';
 import { stepUpGuard } from '../identity/stepUp.ts';
@@ -142,7 +143,14 @@ export async function platformRoutes(app: FastifyInstance, deps: PlatformDeps): 
 
     route(scope, C.batchApproveReports, async ({ request }) => {
       const b = bodyOf<C.BodyOf<typeof C.batchApproveReports>>(C.batchApproveReports, request);
-      return decideBatch(db, b.thread_ids, me(request));
+      if (!b.seen) {
+        throw new HttpError(
+          400,
+          'seen_required',
+          'This page did not say which versions of the reports it showed you. Reload it and try again.',
+        );
+      }
+      return decideBatch(db, b.thread_ids, me(request), b.seen);
     });
 
     route(scope, C.listContentNotices, async () => ({ notices: await listNotices(db) }));

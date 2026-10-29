@@ -156,7 +156,7 @@ export async function publicNotesForMany(
 
 export type WriteNoteResult =
   | { ok: true; noteId: number; versions: number; state: NoteState }
-  | { ok: false; reason: 'body'; message: string };
+  | { ok: false; reason: 'body' | 'changed'; message: string };
 
 /**
  * Write a note, or a new version of one: the same act, appending what the
@@ -164,13 +164,42 @@ export type WriteNoteResult =
  */
 export async function writeNote(
   db: Kysely<DB>,
-  input: { threadId: string; body: unknown; authorEmail: string; revisionReason?: string | null },
+  input: {
+    threadId: string;
+    body: unknown;
+    authorEmail: string;
+    revisionReason?: string | null;
+    /**
+     * How many versions the writer was shown (0: none). When given, a note
+     * that gained a version since is refused rather than written over.
+     */
+    basedOn?: number;
+  },
 ): Promise<WriteNoteResult> {
   const problem = validateBody(input.body);
   if (problem) return { ok: false, reason: 'body', message: problem };
   if (!input.authorEmail) throw new Error('writeNote: an editorial note has to have an author');
   const body = (input.body as string).trim();
   const reason = input.revisionReason?.trim();
+  return writeNoteVersion(db, input, body, reason).catch((e: unknown) => {
+    if (!(e instanceof NoteChanged)) throw e;
+    return {
+      ok: false as const,
+      reason: 'changed' as const,
+      message: `${e.message} wrote a new version of the note after you opened it. Nothing you wrote was published. Look at it again before you revise it.`,
+    };
+  });
+}
+
+/** A note gained a version after its writer was shown it; the message is who wrote that one. */
+class NoteChanged extends Error {}
+
+function writeNoteVersion(
+  db: Kysely<DB>,
+  input: Parameters<typeof writeNote>[1],
+  body: string,
+  reason: string | undefined,
+) {
   return db.transaction().execute(async (trx) => {
     const note = await trx
       .insertInto('editorial_notes')
@@ -178,6 +207,21 @@ export async function writeNote(
       .onConflict((oc) => oc.column('thread_id').doUpdateSet({ updated_at: new Date() }))
       .returning(['id', 'state'])
       .executeTakeFirstOrThrow();
+    // The upsert holds the note's row until commit, so a second writer waits
+    // here and then counts the first one's version.
+    if (input.basedOn !== undefined) {
+      const before = await trx
+        .selectFrom('editorial_note_versions')
+        .select(['author_email', (eb) => eb.fn.countAll<string>().over().as('n')])
+        .where('note_id', '=', note.id)
+        .orderBy('id', 'desc')
+        .limit(1)
+        .executeTakeFirst();
+      if (Number(before?.n ?? 0) !== input.basedOn) {
+        // Thrown, so the upsert above rolls back with it.
+        throw new NoteChanged(before?.author_email ?? 'Somebody');
+      }
+    }
     await trx
       .insertInto('editorial_note_versions')
       .values({

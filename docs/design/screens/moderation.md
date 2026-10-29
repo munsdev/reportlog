@@ -30,6 +30,7 @@ Moderators and administrators, which is what `moderatorGuard` in `apps/api/src/m
 
 - The agreement gate (`AgreementGate audience="moderator"` in `moderate/route.tsx`) still wraps every Moderation page except Agreement and Moderation settings. A moderator meets the agreement only through that gate; the Agreement page is administrators' (section 10).
 - Step-up (decision 50, `docs/plan-e.md`) before: opening a reporter's or tipster's email, pausing intake, the puzzle switch, bulk decline, publishing an agreement. Ordinary decisions never ask again.
+- Nobody overwrites a decision they never saw. Every report the queue hands out carries `seen` (the head's `revision`, which a database trigger moves on every change); decide, take off, put back, batch approve and bulk decline send it back, and the server refuses one whose report moved since (409 `changed`, "maria@… approved it after you opened it. Nothing you sent was recorded."), under the head's row lock. Batch and bulk skip such a report and act on the rest. A note revision sends the version count it was shown (`based_on`) and is refused the same way. `moderation/queue.ts`; `moderation-concurrency.test.ts`.
 - A bulk decline sends no email to anybody (decision 51). A single decline tells the reporter one reason from `REJECTION_REASONS`, in those words, and never the moderator's own note.
 - Declined reports are counted in public by reason only (decision 52). Counts-only logbooks show no single report in public and say "counted", never "public" (decisions 53 and 54).
 
@@ -137,6 +138,12 @@ One column in this order: head, What the reporter said, files, closed rows, The 
 | Who filed it                        | "Restricted. Every look is logged with your reason." | Look…               | step-up, then "Why you need them" (required), then the details and the line "This look was recorded." Shown to moderators and administrators (decision 58) |
 
 Each row opens one at a time with the Save bar (components.md section 08), so a moderator cannot leave two half-written. Every action here records a new row; the closed row then shows the new value and who set it.
+
+**TWO MODERATORS ON ONE REPORT**
+
+While the page (or a queue row's "Decide here") is open it sends a heartbeat every 20 seconds (`markViewing`). Under the head, a `note` alert names the others who have it open: "maria@… has it open too. If you are both deciding it, agree who will." In the queue, a row somebody else has open carries a tag chip, "maria@… has it open", read every 20 seconds without reordering the list. Presence only (`report_viewers`, swept when a heartbeat stops): it is not a record of who read what, and it is not what stops an overwrite (the `seen` check above is).
+
+When a heartbeat says the report moved since the page read it, a `serious` alert says "This report changed after you opened it" with "Show it as it is now". The page does not reload itself: nothing changes under somebody mid-sentence. A refused decision shows the server's sentence and the same button.
 
 **WITHDRAWN BY ITS REPORTER**
 

@@ -47,10 +47,14 @@ test.describe('the board', () => {
     ref = done.confirmation.public_ref;
     const queue = (await (
       await admin.get(`/api/moderation/reports?status=pending&q=${word}`)
-    ).json()) as { reports: { thread_id: string }[] };
+    ).json()) as { reports: { thread_id: string; seen: string }[] };
     const thread = queue.reports[0]?.thread_id ?? '';
     const ok = await admin.post(`/api/moderation/reports/${thread}/decision`, {
-      data: { status: 'valid', comment: 'Approved for the board test.' },
+      data: {
+        status: 'valid',
+        comment: 'Approved for the board test.',
+        seen: queue.reports[0]?.seen ?? '',
+      },
     });
     expect(ok.ok(), await ok.text()).toBe(true);
     await admin.dispose();

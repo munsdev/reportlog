@@ -14,6 +14,7 @@ import type { Database } from '../../src/db/database.ts';
 import { capturingMailer } from '../../src/email/mailer.ts';
 import { startThread } from '../../src/filing/filing.ts';
 import { flagReport } from '../../src/moderation/flags.ts';
+import { seenToken } from '../../src/moderation/queue.ts';
 import { CONTACT_KEY } from './filing-helpers.ts';
 import type { FilingHarness } from './filing-helpers.ts';
 import { GENERAL_DIGEST, testDatabase } from './helpers.ts';
@@ -140,4 +141,27 @@ export async function staff(h: FilingHarness, stem: string, role: string) {
   await seat(h.db, email, role);
   const session = await signIn(h, email);
   return { email, call: as(h, session) };
+}
+
+/**
+ * A report's `seen` as the queue would hand it out: what every moderator act
+ * sends back, so it is refused if the report moved since (queue.ts).
+ */
+export async function seenOf(db: Database, threadId: string): Promise<string> {
+  const row = await db
+    .selectFrom('report_heads as h')
+    .select(seenToken.as('seen'))
+    .where('h.thread_id', '=', threadId)
+    .executeTakeFirstOrThrow();
+  return row.seen;
+}
+
+/** `seenOf` for each, as the queue's batch and bulk calls send it. */
+export async function seenMap(
+  db: Database,
+  threadIds: readonly string[],
+): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  for (const id of threadIds) out[id] = await seenOf(db, id);
+  return out;
 }

@@ -87,6 +87,12 @@ export const QueueItem = z.object({
   organization_id: z.number().int().nullable(),
   /** Reports with the same answers share this, so a flood of copies can be found. */
   answer_set: z.string(),
+  /**
+   * The version of its decision state this was read at. Every act on the
+   * report sends it back, and is refused (409 `changed`) if somebody acted
+   * on the report since: nobody overwrites a decision they never saw.
+   */
+  seen: z.string(),
 });
 export type QueueItem = z.infer<typeof QueueItem>;
 
@@ -249,6 +255,8 @@ export const decideReport = defineRoute({
       .optional(),
     /** Required to decline: the reason from the fixed list that the reporter is emailed (platform.ts). */
     reason_code: z.string().optional(),
+    /** Required: the report's `seen` as the page showed it. */
+    seen: z.string().optional(),
   }),
   response: z.object({
     ok: z.literal(true),
@@ -262,7 +270,8 @@ export const withdrawReport = defineRoute({
   path: '/api/moderation/reports/:threadId/withdraw',
   summary: 'Take a report off the public board, with a reason. Nothing is deleted.',
   params: ThreadParams,
-  body: z.object({ comment: z.string().optional() }),
+  /** `seen` is required, as on a decision. */
+  body: z.object({ comment: z.string().optional(), seen: z.string().optional() }),
   response: Ok,
 });
 
@@ -271,7 +280,12 @@ export const restoreReport = defineRoute({
   path: '/api/moderation/reports/:threadId/restore',
   summary: "Put back a report a moderator withdrew. Never a reporter's own withdrawal.",
   params: ThreadParams,
-  body: z.object({ status: z.string().optional(), comment: z.string().optional() }),
+  /** `seen` is required, as on a decision. */
+  body: z.object({
+    status: z.string().optional(),
+    comment: z.string().optional(),
+    seen: z.string().optional(),
+  }),
   response: Ok,
 });
 
@@ -348,7 +362,12 @@ export const writeReportNote = defineRoute({
   path: '/api/moderation/reports/:threadId/note',
   summary: 'Write a note, or a new version of one. A revision needs a reason.',
   params: ThreadParams,
-  body: z.object({ body: z.string().optional(), revision_reason: z.string().optional() }),
+  body: z.object({
+    body: z.string().optional(),
+    revision_reason: z.string().optional(),
+    /** Required: how many versions the writer was shown (0 for none). Refused (409) if it has more now. */
+    based_on: z.number().int().min(0).optional(),
+  }),
   response: z.object({ ok: z.literal(true), versions: z.number().int() }),
 });
 
@@ -514,5 +533,48 @@ export const getMyReportAccesses = defineRoute({
         accessed_at: Timestamp,
       }),
     ),
+  }),
+});
+
+// ── who has a report open ───────────────────────────────────────────────
+//
+// Presence, so two moderators see each other before both decide one report.
+// Advisory: the `seen` check above is what refuses an overwrite.
+
+/** How often an open report says it is still open. */
+export const VIEWING_HEARTBEAT_MS = 20_000;
+/** How long after its last heartbeat a person still counts as looking. */
+export const VIEWING_WINDOW_MS = 60_000;
+
+const Viewer = z.object({ email: z.string() });
+
+export const markViewing = defineRoute({
+  method: 'POST',
+  path: '/api/moderation/reports/:threadId/viewing',
+  summary:
+    "Say this report is open in front of you; answers with who else has it open and the report's `seen` now.",
+  params: ThreadParams,
+  response: z.object({
+    /** Other staff with it open, never you. */
+    others: z.array(Viewer),
+    /** The report's `seen` now: different from the page's means somebody acted on it. */
+    seen: z.string(),
+  }),
+});
+
+export const stopViewing = defineRoute({
+  method: 'DELETE',
+  path: '/api/moderation/reports/:threadId/viewing',
+  summary: 'Say this report is no longer open in front of you.',
+  params: ThreadParams,
+  response: Ok,
+});
+
+export const listViewing = defineRoute({
+  method: 'GET',
+  path: '/api/moderation/viewing',
+  summary: 'Every report somebody else has open now, for the queue.',
+  response: z.object({
+    viewing: z.array(z.object({ thread_id: z.string(), email: z.string() })),
   }),
 });

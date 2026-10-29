@@ -15,7 +15,13 @@ import type { FilingHarness } from './filing-helpers.ts';
 import { CONTACT_KEY, fileThroughRoutes, threadOf } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address } from './identity-helpers.ts';
-import { moderationHarness, resetModerationSettings, staff } from './moderation-helpers.ts';
+import {
+  moderationHarness,
+  resetModerationSettings,
+  seenMap,
+  seenOf,
+  staff,
+} from './moderation-helpers.ts';
 import { doorPass } from '../door-pass.ts';
 
 type Caller = Awaited<ReturnType<typeof staff>>['call'];
@@ -34,7 +40,7 @@ async function file(what: string) {
 }
 const post = (who: Caller, url: string, payload: Record<string, unknown> = {}) =>
   who({ method: 'POST', url, payload });
-const decision = (
+const decision = async (
   who: Caller,
   thread: string,
   status: string,
@@ -43,6 +49,7 @@ const decision = (
   post(who, `/api/moderation/reports/${thread}/decision`, {
     status,
     comment: 'Checked it.',
+    seen: await seenOf(h.db, thread),
     ...extra,
   });
 
@@ -166,6 +173,7 @@ describe('M2 · batch approval, one record per report', () => {
       .execute();
     const res = await post(mod.call, '/api/moderation/reports/batch-approve', {
       thread_ids: [a.thread, b.thread, w.thread],
+      seen: await seenMap(h.db, [a.thread, b.thread, w.thread]),
     });
     const body = res.json<{ approved: string[]; skipped: { thread_id: string }[] }>();
     expect(body.approved.sort()).toEqual([a.thread, b.thread].sort());

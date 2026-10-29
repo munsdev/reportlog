@@ -28,7 +28,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { HttpError } from '../http/errors.ts';
 import { checkGroup } from '../links/checks.ts';
 import type { LinkKeys } from '../links/keys.ts';
-import { answerSet } from './queue.ts';
+import { answerSet, seenToken } from './queue.ts';
 import { reasonLabel, requireReasonCode } from './rejection.ts';
 import { refusalsSince } from './refusals.ts';
 
@@ -170,8 +170,9 @@ export async function staffTotals(db: Kysely<DB>) {
 
 /**
  * Decline many reports with one reason, in one transaction: every report is
- * declined and logged, or none is. A withdrawn report, or one already
- * declined, is skipped with the reason rather than touched.
+ * declined and logged, or none is. A withdrawn report, one already
+ * declined, or one that changed after the moderator selected it (its `seen`,
+ * queue.ts), is skipped with the reason rather than touched.
  *
  * A bulk decline asks for the second factor again, within 5 minutes
  * (docs/plan-e.md): `stepUpGuard` on its route's scope.
@@ -184,6 +185,8 @@ export async function bulkDecline(
     comment?: string | undefined;
     filter?: Record<string, string> | undefined;
     actor: string;
+    /** Each report's `seen` as the selecting page had it. */
+    seen: Readonly<Record<string, unknown>>;
   },
 ) {
   const code = requireReasonCode(input.reasonCode);
@@ -196,10 +199,16 @@ export async function bulkDecline(
   const ids = [...new Set(input.threadIds)];
   return db.transaction().execute(async (trx) => {
     const heads = await trx
-      .selectFrom('report_heads')
-      .select(['thread_id', 'current_report_id', 'withdrawn', 'moderation_status'])
-      .where('thread_id', 'in', ids)
-      .orderBy('thread_id')
+      .selectFrom('report_heads as h')
+      .select([
+        'h.thread_id',
+        'h.current_report_id',
+        'h.withdrawn',
+        'h.moderation_status',
+        seenToken.as('seen'),
+      ])
+      .where('h.thread_id', 'in', ids)
+      .orderBy('h.thread_id')
       .forUpdate()
       .execute();
     const skipped: { thread_id: string; why: string }[] = [];
@@ -207,6 +216,8 @@ export async function bulkDecline(
     for (const id of ids) {
       const h = heads.find((x) => x.thread_id === id);
       if (!h) skipped.push({ thread_id: id, why: 'There is no report with that reference.' });
+      else if (h.seen !== input.seen[id])
+        skipped.push({ thread_id: id, why: 'It changed after you selected it.' });
       else if (h.withdrawn) skipped.push({ thread_id: id, why: 'It is withdrawn.' });
       else if (h.moderation_status === 'invalid')
         skipped.push({ thread_id: id, why: 'It is already declined.' });

@@ -100,9 +100,17 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 @media (min-width:900px){.nav-links{display:flex}}
 .menu-btn{min-height:44px;min-width:44px;padding:0 12px;background:transparent;border:2px solid var(--on-chrome-muted);color:#fff;border-radius:var(--rl-radius-sm);font-family:var(--rl-font-mono);font-size:.75rem;letter-spacing:.12em;cursor:pointer}
 .menu-btn:hover{border-color:#fff}
-@media (max-width:440px){.wm{font-size:.85rem}.site-head .btn.sm{padding:0 10px;font-size:.72rem}.menu-btn{padding:0 9px}}
-/* Port: with the real display font the phone header (wordmark, main button, MENU) ran past 390px and cut MENU off. */
-@media (max-width:440px){.site-head .wrap{gap:8px}.wm{font-size:.78rem}.site-head .btn.sm{padding:0 8px;font-size:.68rem;letter-spacing:.04em}.menu-btn{padding:0 8px}}
+/* MENU NEVER LEAVES THE BAR. A long site name ("ElectionLogTest") with the
+   main button and the waiting count ran past a phone's width and pushed MENU
+   off the right edge, its count wrapped under it. So: the right side never
+   shrinks, the count stays on MENU's line, the wordmark gives way with an
+   ellipsis, and under 600px the main button goes (it heads the menu, and the
+   front page carries its own). */
+.head-right{flex-shrink:0}
+.menu-btn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.site-head .wm{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:599px){.site-head .head-right > .btn{display:none}}
+@media (max-width:440px){.site-head .wrap{gap:8px}.wm{font-size:.92rem}.menu-btn{padding:0 10px}}
 
 /* ---------- ticker ---------- */
 .ticker{background:var(--ticker-bg);color:var(--ticker-fg)}
@@ -360,8 +368,10 @@ details.tech .in{padding:0 16px 16px;display:grid;gap:10px;font-family:var(--rl-
 /* ---------- footer ---------- */
 .site-foot{background:var(--chrome);color:var(--on-chrome-muted);margin-top:56px}
 .site-foot .wrap{padding-block:34px 28px;display:grid;gap:26px}
+/* On a phone the floating buttons (.fab-dock) sit over the page's last lines: room for them under the footer. */
+@media (max-width:899px){.site-foot .wrap{padding-bottom:calc(28px + 64px + env(safe-area-inset-bottom,0px))}}
 .foot-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:18px;align-items:end}
-.foot-top .wm{font-size:1.5rem}
+.foot-top .wm{font-size:clamp(1.1rem,6vw,1.5rem)}
 .foot-slogan{font-family:var(--rl-font-display);font-weight:var(--d-weight);font-stretch:var(--d-stretch);text-transform:var(--d-case);color:#fff;font-size:clamp(1.25rem,3.4vw,1.9rem);line-height:1}
 .foot-slogan span{color:var(--on-chrome-muted)}
 .foot-cols{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}

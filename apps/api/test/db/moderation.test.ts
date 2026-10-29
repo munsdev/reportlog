@@ -15,7 +15,7 @@ import type { FilingHarness } from './filing-helpers.ts';
 import { fileThroughRoutes, threadOf } from './filing-helpers.ts';
 import { launchedLogbook } from './helpers.ts';
 import { address, as, signIn } from './identity-helpers.ts';
-import { moderationHarness, resetModerationSettings, staff } from './moderation-helpers.ts';
+import { moderationHarness, resetModerationSettings, seenOf, staff } from './moderation-helpers.ts';
 
 type Caller = Awaited<ReturnType<typeof staff>>['call'];
 
@@ -35,7 +35,7 @@ async function file(what: string, email = address('reporter')) {
   return { ref, thread: await threadOf(h.db, ref), email };
 }
 
-const decide = (
+const decide = async (
   who: Caller,
   thread: string,
   status: string,
@@ -45,7 +45,12 @@ const decide = (
     method: 'POST',
     url: `/api/moderation/reports/${thread}/decision`,
     // A decline names the reason the reporter is told, from the fixed list.
-    payload: { status, comment, ...(status === 'invalid' ? { reason_code: 'cannot_assess' } : {}) },
+    payload: {
+      status,
+      comment,
+      ...(status === 'invalid' ? { reason_code: 'cannot_assess' } : {}),
+      seen: await seenOf(h.db, thread),
+    },
   });
 
 beforeAll(async () => {
@@ -208,15 +213,16 @@ describe('withdrawing and restoring', () => {
     const r = await file('An account that will be withdrawn and restored.');
     await decide(mod.call, r.thread, 'valid');
     const url = `/api/moderation/reports/${r.thread}`;
+    const seen = await seenOf(h.db, r.thread);
     expect(
-      (await mod.call({ method: 'POST', url: `${url}/withdraw`, payload: {} })).statusCode,
+      (await mod.call({ method: 'POST', url: `${url}/withdraw`, payload: { seen } })).statusCode,
     ).toBe(400);
     expect(
       (
         await mod.call({
           method: 'POST',
           url: `${url}/withdraw`,
-          payload: { comment: 'Names a private person.' },
+          payload: { comment: 'Names a private person.', seen },
         })
       ).statusCode,
     ).toBe(200);
@@ -224,7 +230,11 @@ describe('withdrawing and restoring', () => {
     const back = await mod.call({
       method: 'POST',
       url: `${url}/restore`,
-      payload: { status: 'pending', comment: 'Redacted on review; look again.' },
+      payload: {
+        status: 'pending',
+        comment: 'Redacted on review; look again.',
+        seen: await seenOf(h.db, r.thread),
+      },
     });
     expect(back.statusCode).toBe(200);
     expect(await onBoard(r.ref)).toBe(false);
@@ -245,7 +255,11 @@ describe('withdrawing and restoring', () => {
     const res = await admin.call({
       method: 'POST',
       url: `/api/moderation/reports/${r.thread}/restore`,
-      payload: { status: 'valid', comment: 'It was a good report.' },
+      payload: {
+        status: 'valid',
+        comment: 'It was a good report.',
+        seen: await seenOf(h.db, r.thread),
+      },
     });
     expect(res.statusCode).toBe(409);
     expect(res.json<{ error: { code: string } }>().error.code).toBe('reporter_withdrew');
@@ -538,19 +552,22 @@ describe('editorial notes through the routes', () => {
     await decide(mod.call, r.thread, 'valid');
     const url = `/api/moderation/reports/${r.thread}/note`;
     const body = 'The county office confirmed the machine was replaced at 10:40.';
-    expect((await mod.call({ method: 'POST', url, payload: { body } })).json()).toEqual({
+    expect(
+      (await mod.call({ method: 'POST', url, payload: { body, based_on: 0 } })).json(),
+    ).toEqual({
       ok: true,
       versions: 1,
     });
     expect(
-      (await mod.call({ method: 'POST', url, payload: { body: `${body} Updated.` } })).statusCode,
+      (await mod.call({ method: 'POST', url, payload: { body: `${body} Updated.`, based_on: 1 } }))
+        .statusCode,
     ).toBe(400);
     expect(
       (
         await mod.call({
           method: 'POST',
           url,
-          payload: { body: `${body} Updated.`, revision_reason: 'New detail.' },
+          payload: { body: `${body} Updated.`, revision_reason: 'New detail.', based_on: 1 },
         })
       ).statusCode,
     ).toBe(200);

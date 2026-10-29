@@ -65,6 +65,7 @@ import {
   writeNote,
 } from './notes.ts';
 import {
+  assertSeen,
   decide,
   historyFor,
   listQueue,
@@ -73,6 +74,7 @@ import {
   restore,
   withdraw,
 } from './queue.ts';
+import { markViewing, othersViewing, stopViewing } from './viewers.ts';
 
 export interface ModerationRouteDeps {
   db: Kysely<DB>;
@@ -173,6 +175,7 @@ export async function moderationRoutes(
       origin: row.origin,
       organization_id: row.organization_id,
       answer_set: row.answer_set,
+      seen: row.seen,
     };
   }
 
@@ -252,6 +255,9 @@ export async function moderationRoutes(
       // A decline names the reason the reporter will be told, from the fixed
       // list; asked before anything changes so a refusal changes nothing.
       const code = b.status === 'invalid' ? requireReasonCode(b.reason_code) : null;
+      // Refused before anything is settled when the report moved since the
+      // page read it; `decide` checks again under the row lock.
+      await assertSeen(db, params.threadId, b.seen);
       // Approving a report that holds undecided words or links decides each
       // first, with its reason (texts/approval.ts). Nothing typed: no extra step.
       if (b.status === 'valid') {
@@ -270,7 +276,7 @@ export async function moderationRoutes(
           );
         }
       }
-      const out = await decide(db, params.threadId, b.status, b.comment, me(request), code);
+      const out = await decide(db, params.threadId, b.status, b.comment, me(request), b.seen, code);
       // Only a NEW decline tells the reporter; declining twice does not email twice.
       const notice =
         code && out.previous !== 'invalid'
@@ -289,15 +295,27 @@ export async function moderationRoutes(
 
     route(scope, C.withdrawReport, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.withdrawReport>>(C.withdrawReport, request);
-      await withdraw(db, params.threadId, b.comment, me(request));
+      await withdraw(db, params.threadId, b.comment, me(request), b.seen);
       return { ok: true as const };
     });
 
     route(scope, C.restoreReport, async ({ params, request }) => {
       const b = bodyOf<C.BodyOf<typeof C.restoreReport>>(C.restoreReport, request);
-      await restore(db, params.threadId, b.status, b.comment, me(request));
+      await restore(db, params.threadId, b.status, b.comment, me(request), b.seen);
       return { ok: true as const };
     });
+
+    // ── who has a report open: presence, never a record (viewers.ts) ──
+    route(scope, C.markViewing, ({ params, request }) =>
+      markViewing(db, params.threadId, requireUser(request).id),
+    );
+    route(scope, C.stopViewing, async ({ params, request }) => {
+      await stopViewing(db, params.threadId, requireUser(request).id);
+      return { ok: true as const };
+    });
+    route(scope, C.listViewing, async ({ request }) => ({
+      viewing: await othersViewing(db, requireUser(request).id),
+    }));
 
     route(scope, C.markReportRead, async ({ params, request }) => ({
       ok: true as const,
@@ -401,12 +419,23 @@ export async function moderationRoutes(
           'A revision needs a reason. This note is already published, and every version stays on the record.',
         );
       }
+      // The versions the writer was shown, checked again under the note's
+      // lock: two moderators revising at once must not both publish.
+      if (typeof b.based_on !== 'number') {
+        throw refuse(
+          400,
+          'seen_required',
+          'This page did not say which version of the note it showed you. Reload it and try again.',
+        );
+      }
       const out = await writeNote(db, {
         threadId: params.threadId,
         body: b.body,
         authorEmail: me(request),
         revisionReason: reason || null,
+        basedOn: b.based_on,
       });
+      if (!out.ok && out.reason === 'changed') throw refuse(409, 'changed', out.message);
       if (!out.ok) throw refuse(400, 'invalid_note', out.message);
       await db
         .insertInto('moderation_log')

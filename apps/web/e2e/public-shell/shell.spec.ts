@@ -144,14 +144,26 @@ for (const size of SIZES) {
       const { context, page, outside } = await visitor(browser, size.viewport);
       await page.goto('/');
       const header = page.getByRole('banner');
-      const file = header.locator('[data-file-action]');
-      await expect(file).toBeVisible();
-      // Straight to the form, not to the page that asks which form.
-      await expect(file).toHaveAttribute('href', /^\/file\//);
-      await expect(header.getByRole('button', { name: /Menu$/ })).toBeVisible();
+      // "MENU" since the redesign: the name is matched whatever its case.
+      const menu = header.getByRole('button', { name: /menu$/i });
+      await expect(menu).toBeVisible();
+      // MENU is always wholly on the bar, never pushed past its edge.
+      const box = await menu.boundingBox();
+      expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(size.viewport.width);
       expect(await noSidewaysScroll(page)).toBe(true);
       // One row, at every width: the bar is as tall as one row.
       expect((await header.boundingBox())?.height ?? 999).toBeLessThan(90);
+
+      // On a phone the bar has no room for the main button: it heads the menu instead.
+      const phone = size.viewport.width < 600;
+      if (phone) {
+        await expect(header.locator('.head-right > [data-file-action]')).toBeHidden();
+        await menu.click();
+      }
+      const file = page.locator('[data-file-action]').filter({ visible: true }).first();
+      await expect(file).toBeVisible();
+      // Straight to the form, not to the page that asks which form.
+      await expect(file).toHaveAttribute('href', /^\/file\//);
 
       await file.click();
       await expect(page).toHaveURL(/\/file\//);
