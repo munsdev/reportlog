@@ -15,6 +15,7 @@ import { axe, describeViolation } from '../a11y.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { signInWithSecondFactor, stepUp } from '../second-factor.ts';
 import { doorFields } from '../door.ts';
+import { panel } from '../panel.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -84,13 +85,12 @@ test('the flood screen shows the last 24 hours and the switches, accessibly', as
   const outside = outsideRequests(page);
   await page.goto('/moderate/flood');
   await expect(page.getByRole('heading', { level: 1, name: 'Flood screen' })).toBeVisible();
-  const hours = page.getByRole('region', { name: 'Submissions per hour, the last 24 hours' });
-  // 24 hours and a header row.
-  await expect(hours.getByRole('row')).toHaveCount(25);
-  await expect(page.getByRole('region', { name: 'Switches' })).toContainText('Intake is open.');
-  await expect(
-    page.getByRole('region', { name: 'Refused at the door, per hour, by check' }),
-  ).toBeVisible();
+  const hours = panel(page, 'Submissions per hour, the last 24 hours');
+  // 24 hours, each row headed by its hour.
+  await expect(hours.getByRole('row')).toHaveCount(24);
+  await expect(hours.getByRole('rowheader')).toHaveCount(24);
+  await expect(panel(page, 'Switches')).toContainText('Intake is open.');
+  await expect(panel(page, 'Refused at the door, per hour, by check')).toBeVisible();
   await noViolations(page);
   expect(outside).toEqual([]);
 });
@@ -121,7 +121,7 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
   await noViolations(page);
   await dialog.getByRole('button', { name: 'Decline 2' }).click();
   await expect(dialog.getByText('Choose the reason.', { exact: false })).toBeVisible();
-  await dialog.getByLabel('The reason').selectOption('abusive_or_spam');
+  await dialog.getByLabel('Reason', { exact: true }).selectOption('abusive_or_spam');
   // A bulk decline asks for the second factor again (plan E, E3).
   await stepUp(page.request);
   await dialog.getByRole('button', { name: 'Decline 2' }).click();
@@ -133,7 +133,7 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
     .getByRole('link', { name: /^Open RL-/ })
     .first()
     .click();
-  await expect(page.getByRole('region', { name: 'The record' })).toContainText(
+  await expect(panel(page, 'The record')).toContainText(
     'It is abusive, or it is spam or an advertisement.',
   );
   expect(outside).toEqual([]);
@@ -156,7 +156,7 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
   expect(listed.ok(), await listed.text()).toBe(true);
 
   await page.goto('/moderate/flood');
-  const switches = page.getByRole('region', { name: 'Switches' });
+  const switches = panel(page, 'Switches');
   try {
     // Pausing asks for the second factor again (plan E, E3); the dialog
     // itself is tested in two-factor.spec.ts.
@@ -174,14 +174,22 @@ test('pause intake: both forms say so, the site shows a notice, the log shows th
     await expect(v.page.getByRole('heading', { level: 1, name: `Tips ${slug}` })).toBeVisible();
     await expect(v.page.getByText(/^(Note: )?Intake is paused$/).first()).toBeVisible();
 
-    // A notice on the site, with when it started.
+    // A notice on the site, in the operator's words. (When it started is on
+    // the flood screen and the public switch log below; the site's notice
+    // dropped its "Paused since" line with the public wording cuts.)
     await v.page.goto('/board');
-    await expect(v.page.getByText(/Paused since/)).toBeVisible();
+    const notice = v.page.locator('[data-copy="intake_paused_notice"]');
+    await expect(notice).toBeVisible();
+    await expect(notice).toContainText('Please try again later.');
     await noViolations(v.page);
 
     // The switch log, public, with its time and never who.
     await v.page.goto('/board/activity');
-    const log = v.page.getByRole('listitem').filter({ hasText: 'Intake paused' });
+    const log = v.page
+      .getByRole('table')
+      .filter({ has: v.page.getByRole('columnheader', { name: 'What' }) })
+      .getByRole('row')
+      .filter({ hasText: 'Intake paused' });
     await expect(log.first()).toBeVisible();
     await expect(log.first().locator('time')).toHaveAttribute('datetime', /\d{4}-\d{2}-\d{2}T/);
     await expect(v.page.locator('main')).not.toContainText('@example');

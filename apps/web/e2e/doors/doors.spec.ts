@@ -104,16 +104,17 @@ test.describe('a list behind the password', () => {
     const v = await visitor(browser);
     await v.page.goto('/');
     await expect(lockHeading(v.page)).toBeVisible();
+    // A list is offered at its own address at the root of the site.
     await expect(v.page.getByRole('link', { name: DOOR.title })).toHaveAttribute(
       'href',
-      `/list/${DOOR.slug}`,
+      `/${DOOR.slug}`,
     );
     await expect(v.page.getByRole('link', { name: SHUT.title })).toHaveCount(0);
     const offered = (await (await v.page.request.get('/api/doors')).json()) as {
       doors: { href: string }[];
     };
-    expect(offered.doors.map((d) => d.href)).toContain(`/list/${DOOR.slug}`);
-    expect(offered.doors.map((d) => d.href)).not.toContain(`/list/${SHUT.slug}`);
+    expect(offered.doors.map((d) => d.href)).toContain(`/${DOOR.slug}`);
+    expect(offered.doors.map((d) => d.href)).not.toContain(`/${SHUT.slug}`);
     await v.context.close();
   });
 
@@ -166,7 +167,7 @@ test.describe('a list behind the password', () => {
     const offered = (await (await v.page.request.get('/api/doors')).json()) as {
       doors: { href: string }[];
     };
-    expect(offered.doors.map((d) => d.href)).not.toContain(`/list/${DOOR.slug}`);
+    expect(offered.doors.map((d) => d.href)).not.toContain(`/${DOOR.slug}`);
     expect(await codeOf(await v.page.request.get(`/api/lists/${DOOR.slug}`))).toBe('locked');
     await v.context.close();
   });
