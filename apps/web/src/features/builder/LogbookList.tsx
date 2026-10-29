@@ -82,7 +82,6 @@ export function LogbookList() {
                 <Link
                   to="/logbooks/$id"
                   params={{ id: l.id }}
-                  aria-label={`Open ${l.title}`}
                   className="row"
                   style={rowCols('1fr auto')}
                 >
