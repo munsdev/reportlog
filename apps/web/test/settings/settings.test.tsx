@@ -2,11 +2,11 @@
  * The site settings screens (settings-and-admin.md §02 to §06, decision 61).
  *
  * THE PROMISES UNDER TEST:
- *   - Look: choosing a look changes the two previews and the line above
- *     them and nothing else, sends nothing, and leaves <html> alone; "Apply
- *     to the site" sends palette and theme together, once, with no step-up;
- *     "Back to what the site shows" puts the previews back;
- *   - the previews are painted by naming the look on their own document;
+ *   - Look: choosing a look changes the preview and the line above it and
+ *     nothing else, sends nothing, and leaves <html> alone; "Apply to the
+ *     site" sends palette and theme together, once, with no step-up; "Back
+ *     to what the site shows" puts the preview back;
+ *   - the preview is the site itself in a frame, told the look by message;
  *   - every setting panel shows what is set before it is opened, and only
  *     one is open at a time;
  *   - a switch sends nothing when its card is chosen, only when its button
@@ -111,13 +111,16 @@ const logbook = (id: number, state: 'draft' | 'open' | 'closed') => ({
   asks_email: true,
 });
 
-/** The two preview frames, by the name each is given. */
-function frames() {
-  return ['Desktop preview', 'Phone preview'].map((name) => {
-    const f = document.querySelector(`iframe[title="${name}"]`);
-    if (!(f instanceof HTMLIFrameElement)) throw new Error(`no ${name}`);
-    return f;
-  });
+/**
+ * The preview frame for a device: the site itself, which is handed the look
+ * by a message (LivePreview.tsx). jsdom does not deliver a message to a frame
+ * with another origin, so what the frame was told is read from the spy.
+ */
+function previewFrame(device: 'desktop' | 'phone' = 'desktop') {
+  const f = document.querySelector(`iframe[title="The page on a ${device}"]`);
+  if (!(f instanceof HTMLIFrameElement) || !f.contentWindow) throw new Error(`no ${device} frame`);
+  const told = vi.spyOn(f.contentWindow, 'postMessage').mockImplementation(() => undefined);
+  return { frame: f, told };
 }
 
 /** The panel around a heading (a panel is a plain section, named by its heading). */
@@ -145,6 +148,7 @@ describe('the look screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch(editorState({ look: { palette: 'newsprint', theme: 'broadsheet' } }));
     wrap(<LookScreen state={editorState()} />);
+    const { told } = previewFrame();
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing Civic.');
     expect(screen.queryByRole('button', { name: 'Apply to the site' })).toBeNull();
 
@@ -152,10 +156,10 @@ describe('the look screen', () => {
     expect(screen.getAllByRole('status')[0]).toHaveTextContent(
       'Preview only. The site is still showing Civic. You are previewing Morning edition.',
     );
-    for (const f of frames()) {
-      expect(f).toHaveAttribute('data-palette', 'newsprint');
-      expect(f).toHaveAttribute('data-theme', 'broadsheet');
-    }
+    expect(told).toHaveBeenLastCalledWith(
+      { type: 'rl-look', look: { palette: 'newsprint', theme: 'broadsheet' } },
+      window.location.origin,
+    );
     // The page the administrator is on does not repaint, and nothing is sent.
     expect(document.documentElement).not.toHaveAttribute('data-palette', 'newsprint');
     expect(writes(sent)).toEqual([]);
@@ -175,10 +179,14 @@ describe('the look screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch();
     wrap(<LookScreen state={editorState()} />);
+    const { told } = previewFrame();
     await user.click(screen.getByRole('radio', { name: 'Green screen' }));
     await user.click(screen.getByRole('button', { name: 'Back to what the site shows' }));
     expect(screen.getByRole('radio', { name: /^Civic\s*On the site$/ })).toBeChecked();
-    for (const f of frames()) expect(f).toHaveAttribute('data-palette', 'flint');
+    expect(told).toHaveBeenLastCalledWith(
+      { type: 'rl-look', look: { palette: 'flint', theme: 'signal' } },
+      window.location.origin,
+    );
     expect(screen.getAllByRole('status')[0]).toHaveTextContent('The site is showing Civic.');
     expect(writes(sent)).toEqual([]);
   });
@@ -213,40 +221,56 @@ describe('the look screen', () => {
     expect(screen.getByRole('option', { name: 'Midnight · dark' })).toBeInTheDocument();
   });
 
-  it('draws the site into each frame, named on the frame’s own document', async () => {
+  it('shows the site itself in the frame, and tells it the look again whenever it says it is listening', () => {
     stubFetch();
     wrap(<LookScreen state={editorState()} />);
-    await waitFor(() => {
-      for (const f of frames()) {
-        const doc = f.contentDocument;
-        expect(doc?.querySelector('h2')).toHaveTextContent('A record of what happened');
-        expect(doc?.documentElement).toHaveAttribute('data-palette', 'flint');
-        expect(doc?.documentElement).toHaveAttribute('data-panel-head', 'plain');
-        expect(doc?.body).toHaveAttribute('inert');
-      }
+    const { frame, told } = previewFrame();
+    // Not a copy of the page: the real front page, so whatever the page
+    // script paints is in the preview too.
+    expect(frame).toHaveAttribute('src', '/');
+    expect(frame.name).toBe('rl-look-preview');
+    told.mockClear();
+    // A navigation inside the frame reloads it; it says so and hears the look again.
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'rl-look-ready' },
+          origin: window.location.origin,
+          source: frame.contentWindow,
+        }),
+      );
     });
-    for (const f of frames()) {
-      expect(f).toHaveAttribute('aria-hidden', 'true');
-      expect(f).toHaveAttribute('tabindex', '-1');
-    }
+    expect(told).toHaveBeenCalledWith(
+      { type: 'rl-look', look: { palette: 'flint', theme: 'signal' } },
+      window.location.origin,
+    );
+    // Only the same origin, and only that frame, is listened to.
+    told.mockClear();
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          data: { type: 'rl-look-ready' },
+          origin: 'https://elsewhere.example',
+          source: frame.contentWindow,
+        }),
+      );
+    });
+    expect(told).not.toHaveBeenCalled();
   });
 
-  it('keeps the frames out of the way on a phone until asked', async () => {
-    narrowScreen();
-    try {
-      const user = userEvent.setup();
-      stubFetch();
-      wrap(<LookScreen state={editorState()} />);
-      const show = screen.getByRole('button', { name: 'Show the desktop preview' });
-      expect(show).toHaveAttribute('aria-expanded', 'false');
-      await user.click(show);
-      expect(screen.getByRole('button', { name: 'Hide the desktop preview' })).toHaveAttribute(
-        'aria-expanded',
-        'true',
-      );
-    } finally {
-      vi.unstubAllGlobals();
-    }
+  it('shows one frame, a desktop or a phone, and switches between them on a press', async () => {
+    const user = userEvent.setup();
+    stubFetch();
+    wrap(<LookScreen state={editorState()} />);
+    const choose = within(screen.getByRole('group', { name: 'Preview on' }));
+    expect(choose.getByRole('button', { name: 'Desktop' })).toHaveAttribute('aria-pressed', 'true');
+    expect(choose.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'false');
+    expect(previewFrame('desktop').frame).toBeInTheDocument();
+    expect(document.querySelector('iframe[title="The page on a phone"]')).toBeNull();
+    await user.click(choose.getByRole('button', { name: 'Phone' }));
+    expect(choose.getByRole('button', { name: 'Phone' })).toHaveAttribute('aria-pressed', 'true');
+    expect(previewFrame('phone').frame).toBeInTheDocument();
+    expect(document.querySelector('iframe[title="The page on a desktop"]')).toBeNull();
   });
 
   it('is one radio group of looks on a desktop, with no bar pinned to the screen', () => {
@@ -352,7 +376,7 @@ describe('the wording screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch();
     wrap(<SlotEditor slot={slot()} />);
-    await user.click(screen.getByRole('button', { name: 'Edit Front page headline' }));
+    await user.click(screen.getByRole('button', { name: 'Change Front page headline' }));
     const box = screen.getByRole('textbox', { name: 'Front page headline' });
     expect(box).toHaveAccessibleDescription(/still the wording the site ships with/);
     await user.clear(box);
@@ -387,7 +411,7 @@ describe('the legal notices screen', () => {
     if (!entry) throw new Error('fixture');
     wrap(<LegalEditor entry={entry} />);
     expect(panelOf('Imprint')).toHaveTextContent('Outline only, not published');
-    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.click(screen.getByRole('button', { name: 'Change Imprint' }));
     expect(
       screen.getByText(/Saving it as it stands would publish the outline/),
     ).toBeInTheDocument();
@@ -400,7 +424,7 @@ describe('the legal notices screen', () => {
     const entry = editorState().legal[1];
     if (!entry) throw new Error('fixture');
     wrap(<LegalEditor entry={entry} />);
-    await user.click(screen.getByRole('button', { name: 'Edit Privacy policy' }));
+    await user.click(screen.getByRole('button', { name: 'Change Privacy policy' }));
     await user.click(screen.getByRole('button', { name: 'Take it down' }));
     expect(sent).toEqual([
       { url: '/api/admin/site/legal/privacy', method: 'PUT', body: { text: '' } },
@@ -418,9 +442,9 @@ describe('the legal notices screen', () => {
         <LegalEditor entry={privacy} />
       </>,
     );
-    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.click(screen.getByRole('button', { name: 'Change Imprint' }));
     await user.type(screen.getByRole('textbox', { name: 'Imprint' }), ' more');
-    await user.click(screen.getByRole('button', { name: 'Edit Privacy policy' }));
+    await user.click(screen.getByRole('button', { name: 'Change Privacy policy' }));
     expect(
       await screen.findByRole('dialog', { name: 'Leave your changes to Imprint?' }),
     ).toBeInTheDocument();

@@ -99,19 +99,19 @@ test.describe('as an administrator', () => {
     await page.goto('/settings/legal');
     const imprint = page.getByRole('region', { name: 'Imprint' });
     const privacy = page.getByRole('region', { name: 'Privacy policy' });
-    await imprint.getByRole('button', { name: 'Edit Imprint' }).click();
+    await imprint.getByRole('button', { name: 'Change Imprint' }).click();
     // The end of the whole text, not of its first line.
     await page.getByRole('textbox', { name: 'Imprint' }).press('ControlOrMeta+End');
     await page.getByRole('textbox', { name: 'Imprint' }).pressSequentially(' x');
 
-    await privacy.getByRole('button', { name: 'Edit Privacy policy' }).click();
+    await privacy.getByRole('button', { name: 'Change Privacy policy' }).click();
     const ask = page.getByRole('dialog', { name: 'Leave your changes to Imprint?' });
     await expect(ask).toBeVisible();
     await ask.getByRole('button', { name: 'Keep editing' }).click();
     await expect(page.getByRole('textbox', { name: 'Imprint' })).toHaveValue(/ x$/);
     await expect(page.getByRole('textbox', { name: 'Privacy policy' })).toHaveCount(0);
 
-    await privacy.getByRole('button', { name: 'Edit Privacy policy' }).click();
+    await privacy.getByRole('button', { name: 'Change Privacy policy' }).click();
     await page
       .getByRole('dialog', { name: 'Leave your changes to Imprint?' })
       .getByRole('button', { name: 'Leave them' })
@@ -124,9 +124,9 @@ test.describe('as an administrator', () => {
     page,
   }) => {
     await page.goto('/settings/legal');
-    await page.getByRole('button', { name: 'Edit Privacy policy' }).click();
-    const bar = page.getByRole('region', { name: 'Save changes' });
-    await expect(bar).toContainText('Saving: Privacy policy');
+    await page.getByRole('button', { name: 'Change Privacy policy' }).click();
+    const bar = page.getByRole('region', { name: 'Unsaved changes' });
+    await expect(bar).toContainText('Changes to Privacy policy are not saved.');
     const box = await bar.boundingBox();
     const viewport = page.viewportSize();
     expect(box && viewport ? Math.round(box.y + box.height) : 0).toBe(viewport?.height);
@@ -134,7 +134,7 @@ test.describe('as an administrator', () => {
     // Escape with nothing changed closes it; with a change, it asks first.
     await page.keyboard.press('Escape');
     await expect(bar).toHaveCount(0);
-    await page.getByRole('button', { name: 'Edit Privacy policy' }).click();
+    await page.getByRole('button', { name: 'Change Privacy policy' }).click();
     await page.getByRole('textbox', { name: 'Privacy policy' }).pressSequentially('x');
     await page.getByRole('textbox', { name: 'Privacy policy' }).blur();
     await page.keyboard.press('Escape');

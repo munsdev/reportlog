@@ -113,8 +113,14 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   tester: [...YOU, 'Feedback'],
 };
 
-export const pageByLabel = (label: string): MenuPage => {
-  const page = ALL_PAGES.find((p) => p.label === label);
+/**
+ * The page a label names in this role's sidebar. Two labels are shared (see
+ * "Written accounts" above): the journalist's is the desk page, everyone
+ * else's the one in a staff area.
+ */
+export const pageByLabel = (label: string, role: MenuRole): MenuPage => {
+  const pages = ALL_PAGES.filter((p) => p.label === label);
+  const page = pages.length > 1 ? pages.find((p) => (role === 'journalist') === !p.area) : pages[0];
   if (!page) throw new Error(`no menu page called ${label}`);
   return page;
 };

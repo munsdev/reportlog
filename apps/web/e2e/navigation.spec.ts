@@ -30,7 +30,7 @@ import { expect, test } from '@playwright/test';
 import type { Browser } from '@playwright/test';
 import { ADMIN, MODERATOR } from './auth.ts';
 import { identityState } from './identity/mail.ts';
-import { accountMenu, isPhone, menuLink, named, openMenu, staffNav } from './menu.ts';
+import { MENU_BUTTON, isPhone, menuLink, named, openMenu, staffNav } from './menu.ts';
 import { ALL_PAGES, MENU_FOR, pageByLabel } from './navigation-table.ts';
 import type { MenuRole } from './navigation-table.ts';
 
@@ -102,7 +102,7 @@ test.describe('the header', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
       const banner = page.getByRole('banner');
-      const button = banner.getByRole('button', { name: /Menu$/ });
+      const button = banner.getByRole('button', { name: MENU_BUTTON });
       await expect(button).toBeVisible();
       for (const state of ['shut', 'open'] as const) {
         if (state === 'open') await button.click();
@@ -137,7 +137,8 @@ test.describe('the staff area’s top bar', () => {
       await page.goto('/settings/look');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       const banner = page.getByRole('banner');
-      await expect(banner.getByRole('button', { name: /^Account:/ })).toBeVisible();
+      // The account chip, one link since the redesign.
+      await expect(banner.getByRole('link', { name: /^Account, / })).toBeVisible();
       const box = await banner.evaluate((el) => ({
         height: el.firstElementChild?.getBoundingClientRect().height ?? 0,
         sideways: document.documentElement.scrollWidth > window.innerWidth,
@@ -146,15 +147,18 @@ test.describe('the staff area’s top bar', () => {
       expect(box.sideways).toBe(false);
       if (width < 900) {
         // The drawer (below the mock-up's 900px): open, Escape closes it, and focus is back on its button.
-        const button = banner.getByRole('button', { name: 'Menu' });
+        const button = banner.getByRole('button', { name: MENU_BUTTON });
         await button.click();
-        await expect(page.getByRole('navigation', { name: 'Your pages' })).toBeVisible();
-        await expect(page.locator('#staff-drawer :focus')).toHaveCount(1);
+        const drawer = page.getByRole('dialog', { name: 'Staff menu' });
+        await expect(drawer.getByRole('navigation', { name: 'Staff areas' })).toBeVisible();
+        await expect(drawer.locator(':focus')).toHaveCount(1);
         await page.keyboard.press('Escape');
-        await expect(page.locator('#staff-drawer')).toHaveCount(0);
+        await expect(drawer).toBeHidden();
         await expect(button).toBeFocused();
       } else {
-        await expect(page.getByRole('navigation', { name: 'Your pages' })).toBeVisible();
+        await expect(
+          page.getByRole('navigation', { name: 'Staff areas' }).filter({ visible: true }),
+        ).toBeVisible();
       }
     });
   }
@@ -167,13 +171,13 @@ test.describe('the Menu button', () => {
 
   test('opens by click and closes by click, Escape, and the scrim', async ({ page }) => {
     await page.goto('/board');
-    const nav = page.getByRole('navigation', { name: 'Main menu' });
-    const button = page.getByRole('banner').getByRole('button', { name: /Menu$/ });
+    const nav = page.getByRole('dialog', { name: 'Site menu' });
+    const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
     await button.click();
     await expect(nav).toBeVisible();
-    const close = page.getByRole('banner').getByRole('button', { name: 'Close' });
-    await expect(close).toHaveAttribute('aria-expanded', 'true');
-    await close.click();
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    // CLOSE is in the menu's own top row since the redesign.
+    await nav.getByRole('button', { name: /^close$/i }).click();
     await expect(nav).toBeHidden();
     await expect(button).toBeFocused();
 
@@ -197,10 +201,10 @@ test.describe('the Menu button', () => {
   for (const key of ['Enter', 'Space'] as const) {
     test(`opens by ${key}, moves focus in, keeps it in, and gives it back`, async ({ page }) => {
       await page.goto('/');
-      const button = page.getByRole('banner').getByRole('button', { name: /Menu$/ });
+      const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
       await button.focus();
       await page.keyboard.press(key);
-      const nav = page.getByRole('navigation', { name: 'Main menu' });
+      const nav = page.getByRole('dialog', { name: 'Site menu' });
       await expect(nav).toBeVisible();
       // Focus moved in, to the menu's first control (checks.md §02). On a
       // phone that may be an area's fold rather than a link.
@@ -209,7 +213,7 @@ test.describe('the Menu button', () => {
       const inside = () =>
         page.evaluate(() => {
           const el = document.activeElement;
-          return Boolean(el?.closest('#site-menu, header'));
+          return Boolean(el?.closest('#menu, header'));
         });
       for (let i = 0; i < 80; i += 1) {
         await page.keyboard.press('Tab');
@@ -252,7 +256,13 @@ for (const role of ROLES) {
     const door = menu.getByRole('link', { name: /^Your dashboard/ });
     await expect(door).toHaveCount(mine.length ? 1 : 0);
     // Everybody signed in has their own pages in the menu (decision 71).
-    const ownPages = new Set(['My reports', 'Email updates', 'Your dashboard', 'Signing in']);
+    const ownPages = new Set([
+      'My reports',
+      'Email updates',
+      'Your account',
+      'Your dashboard',
+      'Signing in',
+    ]);
     for (const p of ALL_PAGES.filter((p) => !ownPages.has(p.label)))
       await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
     if (role === 'visitor') {
@@ -269,7 +279,7 @@ for (const role of ROLES) {
     // The staff area's sidebar: exactly this person's pages.
     const side = await staffNav(page);
     for (const label of mine) {
-      const target = pageByLabel(label);
+      const target = pageByLabel(label, role);
       const link = side.getByRole('link', { name: named(label) });
       await expect(link, label).toBeVisible();
       await expect(link, label).toHaveAttribute(
@@ -287,14 +297,14 @@ for (const role of ROLES) {
     // And they really go there: the first page of each area, and the rest.
     const firsts = new Map<string, string>();
     for (const label of mine) {
-      const key = pageByLabel(label).area ?? label;
+      const key = pageByLabel(label, role).area ?? label;
       if (!firsts.has(key)) firsts.set(key, label);
     }
     for (const label of firsts.values()) {
-      const target = pageByLabel(label);
+      const target = pageByLabel(label, role);
       await (await menuLink(page, label, target.area ? { area: target.area } : {})).click();
       await expect(page).toHaveURL(new RegExp(`${target.href.split('#')[0] ?? ''}/?(#.*)?$`));
-      await expect(page.locator('#staff-drawer')).toHaveCount(0);
+      await expect(page.getByRole('dialog', { name: 'Staff menu' })).toBeHidden();
     }
     await who.context.close();
   });
@@ -327,7 +337,7 @@ for (const role of [
       const { context, page } = await as(browser, role);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto('/');
-      const button = page.getByRole('banner').getByRole('button', { name: /Menu$/ });
+      const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
       if (how === 'keyboard') {
         await button.focus();
         await page.keyboard.press('Enter');
@@ -350,7 +360,7 @@ for (const role of [
         .toEqual({ signedIn: false });
       // Signing out closes the menu once the page knows who it is now; wait
       // for that, or the next line could find the old menu still open.
-      await expect(page.getByRole('navigation', { name: 'Main menu' })).toBeHidden();
+      await expect(page.getByRole('dialog', { name: 'Site menu' })).toBeHidden();
       const nav = await openMenu(page);
       await expect(nav.getByRole('link', { name: 'Sign in' })).toBeVisible();
       await context.close();
@@ -362,10 +372,13 @@ test('signs out from the staff area at 390 wide, by keyboard', async ({ browser 
   const { context, page } = await as(browser, 'moderator');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/moderate/flood');
-  const button = page.getByRole('banner').getByRole('button', { name: /^Account:/ });
+  // Sign out is in the Staff menu drawer at this width (the account chip is
+  // a plain link since the redesign).
+  const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
   await button.focus();
   await page.keyboard.press('Enter');
-  const panel = await accountMenu(page);
+  const panel = page.getByRole('dialog', { name: 'Staff menu' });
+  await expect(panel).toBeVisible();
   const out = panel.getByRole('button', { name: 'Sign out' });
   let found = false;
   for (let i = 0; i < 20 && !found; i += 1) {
@@ -390,7 +403,8 @@ test.describe('the current page', () => {
     await page.goto('/settings/look');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const side = await staffNav(page);
-    await expect(side.getByRole('link', { name: 'Look', exact: true })).toHaveAttribute(
+    // The Look screen is under Name and look (staff-nav/menu.ts, `under`).
+    await expect(side.getByRole('link', { name: 'Name and look', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -416,7 +430,7 @@ test.describe('the waiting count', () => {
 
   test('is the queue’s own count of reports waiting, said in words', async ({ page }) => {
     await page.goto('/');
-    const button = page.getByRole('banner').getByRole('button', { name: /Menu$/ });
+    const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
     await expect(button).toBeVisible();
     // Other tests file reports meanwhile: read the two until they agree.
     await expect(async () => {
@@ -429,15 +443,16 @@ test.describe('the waiting count', () => {
         // A moderator agreement they have not accepted: the queue refuses
         // them, and the button says nothing.
         expect(queue.status()).toBe(403);
-        await expect(button).toHaveAccessibleName(/^Menu$/);
+        await expect(button).toHaveAccessibleName(/^MENU$/);
         return;
       }
       const listed = ((await queue.json()) as { reports: unknown[] }).reports.length;
       expect(waiting.reports).toBe(listed);
-      if (listed === 0) await expect(button).toHaveAccessibleName(/^Menu$/);
+      // The count comes after the word since the redesign (SiteHeader.tsx).
+      if (listed === 0) await expect(button).toHaveAccessibleName(/^MENU$/);
       else
         await expect(button).toHaveAccessibleName(
-          new RegExp(`^${String(listed)} reports? waiting for a moderator\\.\\s*Menu$`),
+          new RegExp(`^MENU\\s*\\.\\s*${String(listed)} reports? waiting for a moderator$`),
         );
     }).toPass({ timeout: 30_000 });
   });

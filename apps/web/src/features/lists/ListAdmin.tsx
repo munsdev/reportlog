@@ -102,7 +102,6 @@ export function ListAdmin() {
                   <Link
                     to="/lists/$id"
                     params={{ id: l.id }}
-                    aria-label={`Open ${l.title}`}
                     className="row"
                     style={rowCols('1fr auto')}
                   >

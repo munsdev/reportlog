@@ -93,8 +93,8 @@ test('a moderator rates a report and links it to another; the queue says so', as
   const severity = page.getByRole('region', { name: 'Severity' });
   await expect(severity).toContainText('Not set.');
   // A closed row: Edit opens it, and the Save bar names what it records.
-  await severity.getByRole('button', { name: 'Edit Severity' }).click();
-  const bar = page.getByRole('region', { name: 'Save changes' });
+  await severity.getByRole('button', { name: 'Change Severity' }).click();
+  const bar = page.getByRole('region', { name: 'Unsaved changes' });
   // Nothing is preselected: saving is a deliberate act.
   await bar.getByRole('button', { name: 'Record the rating' }).click();
   await expect(severity.getByText('Choose a rating, or clear it.')).toBeVisible();
