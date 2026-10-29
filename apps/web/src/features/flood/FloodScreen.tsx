@@ -302,11 +302,15 @@ function Switches() {
       </div>
       {pause.isError ? <Problem>{pause.error.message}</Problem> : null}
       {puzzle.isError ? <Problem>{puzzle.error.message}</Problem> : null}
-      <span className="lbl">Every use</span>
+      <span className="lbl" id="switch-uses">
+        Every use
+      </span>
       {s.uses.length === 0 ? (
         <p className="m">No switch has been used.</p>
       ) : (
-        <div className="code">
+        // Scrolls sideways on a narrow screen, so it takes focus to be scrolled by keyboard.
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+        <div className="code" role="region" aria-labelledby="switch-uses" tabIndex={0}>
           {s.uses
             .slice(0, 20)
             .map((u) => `${when(u.at)} · ${switchWords(u)} · ${u.by}`)

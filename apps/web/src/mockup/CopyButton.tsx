@@ -13,7 +13,7 @@ export function CopyButton({
   label = 'Copy',
 }: {
   text: string;
-  /** For the button's name: "Copy the fingerprint". */
+  /** For the button's name when it reads only "Copy": "Copy the fingerprint". */
   what: string;
   label?: string;
 }) {
@@ -26,7 +26,9 @@ export function CopyButton({
       <button
         className="btn sm flat"
         type="button"
-        aria-label={`Copy ${what}`}
+        // A bare "Copy" says what it copies in its name; a label that already
+        // says ("Copy reference") is the name as it reads (WCAG 2.5.3).
+        aria-label={label === 'Copy' ? `Copy ${what}` : undefined}
         onClick={() => {
           void navigator.clipboard.writeText(text).then(
             () => {

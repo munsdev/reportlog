@@ -9,10 +9,11 @@
  * words" (the owner's call, 28 Oct: the pencil everywhere, no new block
  * pages), and on the legal page the way to the legal notices.
  */
+import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Suspense, lazy, useEffect, useId, useRef, useState } from 'react';
 import { useGateMode } from '../../identity/gateMode.ts';
-import { useMe } from '../../identity/session.ts';
+import { meQuery } from '../../identity/session.ts';
 import { inPreviewFrame } from './override.ts';
 import { usePageEdit } from './pageEdit.ts';
 import { slotsOn } from './pageWords.ts';
@@ -23,7 +24,9 @@ import { setLookEditorOpen } from './state.ts';
 
 export function EditDock() {
   const door = useGateMode() === 'door';
-  const me = useMe().data;
+  // Never asked on a door: who is signed in is behind the password, and a
+  // refused call there makes the gate take the door back (gate.tsx).
+  const me = useQuery({ ...meQuery, enabled: !door }).data;
   const staff = me?.signedIn === true && me.roles.some((r) => r === 'admin' || r === 'owner');
   if (door || inPreviewFrame || !staff) return null;
   return <EditMenu />;

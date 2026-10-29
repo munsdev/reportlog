@@ -992,7 +992,7 @@ function QuestionCard({
                         </>
                       ),
                     })}
-                {...(tiles ? { labelId: partId } : { htmlFor: partId })}
+                {...(tiles ? { labelId: partId } : { htmlFor: partId, labelId: `${partId}-label` })}
                 help={partHelp || undefined}
                 helpId={`${partId}-help`}
               >
@@ -1003,7 +1003,9 @@ function QuestionCard({
                   onChange={(v) => {
                     onChange(part.key, v);
                   }}
-                  labelledBy={box ? headingId : partId}
+                  // A control is named by its own label, never by itself: a
+                  // select named by itself reads out every option.
+                  labelledBy={box ? headingId : tiles ? partId : `${partId}-label`}
                   describedBy={
                     [partHelp ? `${partId}-help` : '', problem ? errorId : '']
                       .filter(Boolean)
