@@ -54,8 +54,12 @@ const PAIRS = [
  * chooser and the bar pinned to the bottom; the bar comes last in the page and
  * is the one in view, so `.last()` is the bar there and the only one on a desktop.
  */
+/** A look's card: a label over a hidden radio, so the label is what a person clicks. */
 function lookRadio(page: Page, name: string | RegExp) {
-  return page.getByRole('radio', { name }).last();
+  return page
+    .locator('label')
+    .filter({ has: page.getByRole('radio', { name }) })
+    .last();
 }
 
 /** Paint a look on <html> in the test, not by saving it, with nothing mid-transition. */
@@ -129,7 +133,8 @@ test.describe('as an administrator', () => {
     await expect(bar).toContainText('Changes to Privacy policy are not saved.');
     const box = await bar.boundingBox();
     const viewport = page.viewportSize();
-    expect(box && viewport ? Math.round(box.y + box.height) : 0).toBe(viewport?.height);
+    // Floating 12px above the foot (site.css .savebar), in view without scrolling.
+    expect(box && viewport ? Math.round(viewport.height - (box.y + box.height)) : -1).toBe(12);
 
     // Escape with nothing changed closes it; with a change, it asks first.
     await page.keyboard.press('Escape');
@@ -154,8 +159,8 @@ test.describe('as an administrator', () => {
     await expect(status).toBeVisible();
     const html = page.locator('html');
     const before = await html.getAttribute('data-palette');
-    const desktop = page.locator('iframe[title="Desktop preview"]');
-    const phone = page.locator('iframe[title="Phone preview"]');
+    // One frame since 28 Oct: the site itself, at a desktop's or a phone's width.
+    const frame = page.locator('.live-preview iframe');
 
     let writes = 0;
     page.on('request', (r) => {
@@ -163,19 +168,17 @@ test.describe('as an administrator', () => {
     });
     await lookRadio(page, 'Green screen').click();
     await expect(status).toContainText('You are previewing Green screen.');
-    // The previews are painted by naming the look on their own document.
-    await expect(phone.contentFrame().locator('html')).toHaveAttribute('data-palette', 'phosphor');
-    await expect(phone.contentFrame().locator('h1')).toHaveText('A record of what happened');
-    if (await desktop.isVisible()) {
-      await expect(desktop.contentFrame().locator('html')).toHaveAttribute('data-theme', 'console');
-    }
+    // The preview is painted by naming the look on its own document.
+    await expect(frame.contentFrame().locator('html')).toHaveAttribute('data-palette', 'phosphor');
+    await expect(frame.contentFrame().locator('html')).toHaveAttribute('data-theme', 'console');
     // The page the administrator is using does not repaint, and nothing is sent.
     expect(await html.getAttribute('data-palette')).toBe(before);
     expect(writes).toBe(0);
 
-    await page.getByRole('button', { name: 'Back to what the site shows' }).click();
+    // Beside the status on a desktop; in the bar at the foot on a phone.
+    await page.getByRole('button', { name: /^Back( to what the site shows)?$/ }).click();
     await expect(status).not.toContainText('previewing');
-    await expect(phone.contentFrame().locator('html')).not.toHaveAttribute(
+    await expect(frame.contentFrame().locator('html')).not.toHaveAttribute(
       'data-palette',
       'phosphor',
     );
@@ -195,16 +198,14 @@ test.describe('as an administrator', () => {
     // Far enough down that the first screen's content has gone.
     await page.mouse.wheel(0, 900);
     await page.waitForTimeout(300);
-    if ((page.viewportSize()?.width ?? 0) >= 1024) {
-      await expect.poll(() => inView('iframe[title="Phone preview"]')).toBe(true);
-      // The status line, and so Apply, stays with the preview.
-      await lookRadio(page, 'Green screen').click();
-      await expect(page.getByRole('button', { name: 'Apply to the site' })).toBeInViewport();
-    } else {
-      const bar = page.getByRole('region', { name: 'Pick a look' });
-      await expect(bar).toBeInViewport();
-      await bar.getByRole('radio', { name: 'Green screen' }).click();
-      await expect(page.getByRole('status').filter({ hasText: /previewing/ })).toHaveCount(1);
+    // The preview is pinned at every width (beside the looks from 1100px,
+    // above them below that).
+    await expect.poll(() => inView('.live-preview iframe')).toBe(true);
+    await lookRadio(page, 'Green screen').click();
+    await expect(page.getByRole('status').filter({ hasText: /previewing/ })).toHaveCount(1);
+    if ((page.viewportSize()?.width ?? 0) < 900) {
+      // On a phone the decision is a bar pinned at the foot.
+      await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeInViewport();
     }
   });
 

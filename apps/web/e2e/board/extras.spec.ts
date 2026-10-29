@@ -36,10 +36,11 @@ test.describe('the transparency log', () => {
     await expect(
       page.getByText('The archive’s daily claim has not reached the transparency log yet.'),
     ).toBeVisible();
-    await expect(page.getByRole('region', { name: 'The last anchors' })).toContainText(
-      'Nothing has been anchored yet.',
-    );
-    const files = page.getByRole('region', { name: 'Complete chain files' });
+    // A panel by its heading: panels are not landmarks since the redesign.
+    const panel = (name: string) =>
+      page.locator('section').filter({ has: page.getByRole('heading', { name, exact: true }) });
+    await expect(panel('The last anchors')).toContainText('Nothing has been anchored yet.');
+    const files = panel('Complete chain files');
     const demo = files.getByRole('link', { name: 'Demo logbook' });
     await expect(demo).toHaveAttribute('href', '/api/admin/chain/demo');
     // The complete chain file asks for the second factor again (plan E, E3);
@@ -59,8 +60,9 @@ test.describe('the press pack', () => {
     const outside = watchOutside(page);
     // The tab is hidden while the pack is empty, so go to the page itself.
     await page.goto('/board/press');
-    await expect(page.getByRole('heading', { level: 2, name: 'Press pack' })).toBeVisible();
-    await expect(page.getByText('Nothing has been published here yet.')).toBeVisible();
+    // The board's frame, then the empty pack saying so.
+    await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Nothing published here yet' })).toBeVisible();
     expect(outside).toEqual([]);
   });
 });

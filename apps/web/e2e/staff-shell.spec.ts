@@ -151,7 +151,8 @@ for (const [role, gone, kept] of [
   [
     'journalist',
     ['Reports queue', 'Logbooks', 'Flood screen'],
-    ['Checked links', 'Your alerts', 'Signing in'],
+    // Signing in folded into Your account (staff-nav/menu.ts FOLDED).
+    ['Checked links', 'Your alerts', 'Your account'],
   ],
 ] as const) {
   test(`${role}: the sidebar shows only their pages`, async ({ browser }) => {

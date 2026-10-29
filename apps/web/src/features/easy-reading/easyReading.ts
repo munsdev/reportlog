@@ -86,3 +86,21 @@ export function easyLook(site: PaintedLook, on: boolean = easyReadingOn()): Pain
     dark,
   };
 }
+
+/**
+ * The palette and theme the page script paints (mockup/siteLook.tsx): the
+ * same choice as easyLook, for a look that is only a palette and a theme.
+ * Without it the script kept painting the site's own fonts inline, over the
+ * attributes Easier reading set.
+ */
+export function easyPair(
+  look: { palette: string; theme: string; dark?: boolean | undefined },
+  on: boolean = easyReadingOn(),
+): { palette: string; theme: string } {
+  if (!on) return { palette: look.palette, theme: look.theme };
+  const dark = look.dark ?? isDarkPalette(look.palette);
+  return {
+    palette: dark ? EASY_READING.darkPalette : EASY_READING.palette,
+    theme: EASY_READING.theme,
+  };
+}

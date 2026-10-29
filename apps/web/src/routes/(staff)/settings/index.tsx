@@ -3,10 +3,9 @@
  * configuration on one page, every panel showing what is set before it is
  * opened (decision 61 brings the old Admin page's summaries back).
  *
- * Three kinds of panel, by how the setting changes:
- *   - a form, opened in place and saved with the Save bar (Publishing);
- *   - a switch that applies at once, answered by a toast (Accepting
- *     reports, the development notice);
+ * Two kinds of panel, by how the setting changes:
+ *   - a switch that applies at once, answered by a toast (Publishing,
+ *     Accepting reports, the development notice);
  *   - a setting with a page of its own, linked with Change.
  */
 import {

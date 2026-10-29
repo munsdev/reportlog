@@ -35,7 +35,13 @@ try {
     await recordCardTexts(db);
     const lb = await db
       .insertInto('logbooks')
-      .values({ slug: arg, title: 'Held values', blurb: 'Made by a browser test.' })
+      // Held values are taken only by a logbook that accepts notes (filing.ts).
+      .values({
+        slug: arg,
+        title: 'Held values',
+        blurb: 'Made by a browser test.',
+        accepts_notes: true,
+      })
       .returning('id')
       .executeTakeFirstOrThrow();
     const questions = [

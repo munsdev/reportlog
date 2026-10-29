@@ -35,8 +35,8 @@ test.describe('signed out', () => {
       page.getByRole('heading', { name: 'Launch it: this is the one-way door' }),
     ).toBeVisible();
     await page.goto('/docs/checking');
-    // The old address lands on the record tab of How to use this.
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('How to use this');
+    // The old address lands on How it works.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('How it works');
     await page.goto('/organizations');
     await expect(
       page.getByRole('heading', { level: 1, name: 'Participating organizations' }),
@@ -86,12 +86,12 @@ test.describe('an administrator', () => {
       .fill('I pressed save on the look screen and nothing happened.');
     await page.getByRole('button', { name: 'File it' }).click();
     await expect(page.getByText(/Filed as #\d+/)).toBeVisible();
-    await expect(page.getByRole('heading', { level: 3, name: title })).toBeVisible();
+    // Listed under What has been filed, a row of a table since the redesign.
+    await expect(page.getByRole('row').filter({ hasText: title })).toBeVisible();
 
     await page.goto('/settings/feedback');
-    const card = page
-      .getByRole('listitem')
-      .filter({ has: page.getByRole('heading', { name: title }) });
+    // A card per issue, headed "#<number> <title>".
+    const card = page.getByRole('article').filter({ hasText: title });
     await card.getByRole('button', { name: 'Open' }).click();
     // Where it was filed from came with it, as the screen's name, not its address.
     await expect(card.getByText('/(staff)/settings')).toBeVisible();

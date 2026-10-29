@@ -66,31 +66,38 @@ test.describe('the board', () => {
     await page.getByRole('link', { name: 'View Live Report Board' }).click();
     await expect(page).toHaveURL(/\/board$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
-    await page.getByLabel('Search the words').fill(word);
+    await page.getByRole('searchbox', { name: 'Search reports' }).fill(word);
     // Nothing changes until the reader asks (decision 59).
     await expect(page.getByRole('status').filter({ hasText: word })).toHaveCount(0);
     await page.getByRole('button', { name: 'Search', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: /^1 report\b/ })).toBeVisible();
     await page.getByRole('link', { name: new RegExp(ref) }).click();
-    await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
-    await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
-    await page.getByRole('link', { name: 'Check this report' }).click();
+    // The heading is what happened, or where; the reference sits beside it.
+    await expect(page).toHaveURL(new RegExp(`/board/${ref}$`));
+    await expect(page.getByRole('main')).toContainText(ref);
+    await expect(page.getByRole('heading', { name: 'What the reporter said' })).toBeAttached();
+    await expect(page.getByRole('main')).toContainText(word);
+    // The check is under Technical details since the redesign.
+    await page.getByText('Technical details').click();
+    await page.getByRole('link', { name: 'Check this report yourself' }).click();
     await expect(page).toHaveURL(new RegExp(`/verify/${ref}$`));
   });
 
   test('offers no built-in date or place filter', async ({ page }) => {
     await page.goto('/board');
-    await page.getByRole('button', { name: /^Filter/ }).click();
-    const form = page.getByRole('form', { name: 'Narrow the board' });
-    await expect(form).toBeVisible();
-    await expect(form.getByLabel(/date|when|where|place/i)).toHaveCount(0);
+    // The redesign keeps one search box and nothing that narrows by time or place.
+    await expect(page.getByRole('searchbox', { name: 'Search reports' })).toBeVisible();
+    await expect(page.getByRole('main').getByLabel(/date|when|where|place/i)).toHaveCount(0);
   });
 
   test('the numbers count published reports only, with the not-a-sample line beside them (decision 36, P3)', async ({
     page,
   }) => {
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Numbers' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(
       page.getByText(/They are not a sample and cannot be read as a rate\./),
     ).toBeVisible();
@@ -109,9 +116,9 @@ test.describe('the board', () => {
     await page.goto('/board');
     await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
     await page.goto(`/board/${ref}`);
-    await expect(page.getByRole('region', { name: 'What the reporter said' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'What the reporter said' })).toBeAttached();
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByText(/They are not a sample/)).toBeVisible();
     expect(outside).toEqual([]);
   });
 });
