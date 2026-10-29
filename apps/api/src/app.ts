@@ -50,6 +50,7 @@ import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { pageAdminRoutes, pageRoutes } from './pages/routes.ts';
 import { headerRoutes } from './site/headerRoutes.ts';
 import { sitebundleRoutes } from './sitebundle/routes.ts';
+import { robotsRoutes } from './site/robots.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
 import { templateRoutes } from './site/templates.ts';
 import { telemetryRoutes } from './telemetry/routes.ts';
@@ -62,6 +63,7 @@ export interface AppDeps {
       Pick<
         Config,
         | 'SITE_ORIGIN'
+        | 'SEARCH_ENGINES'
         | 'TRUST_PROXY'
         | 'CONTACT_KEY'
         | 'CONTACT_KEY_PREVIOUS'
@@ -188,6 +190,7 @@ export async function buildApp({
   publicationRoutes(app);
   verifyRoutes(app, db);
   siteRoutes(app, db);
+  robotsRoutes(app, { db, siteOrigin, searchEngines: config.SEARCH_ENGINES ?? 'on' });
   await lookRoutes(app, db);
   pageRoutes(app, db);
   await pageAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });

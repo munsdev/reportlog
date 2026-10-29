@@ -43,6 +43,11 @@ and `package.json` disagree. How a release is cut is in the README.
 
 **For somebody running a site**
 
+- Search engines find the site's public pages: `/robots.txt` and `/sitemap.xml` now exist (before,
+  both answered with the site's page), and every page says whether it may be indexed. Staff
+  screens, links from emails, single reports and anything behind the site password are kept out.
+  On a test server, set `SEARCH_ENGINES=off` in `/etc/reportlog/reportlog.env` so it never shows
+  up in search results. What is left is in `docs/seo.md`.
 - `www.` (or any other name for the site) can be sent to the site's address: list it in
   `SITE_ALIASES` in `/etc/reportlog/deploy.env` and deploy. Before, a name that pointed at the
   server got no certificate, and anyone who typed it saw a TLS error.

@@ -166,7 +166,7 @@ and the browser suite. None covers another.
 
 In a cloud session, `.claude/hooks/session-start.sh` starts a local Postgres
 and writes `.env`. In this container the browser suite needs
-`CHROMIUM_PATH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome | head -1)`.
+`CHROMIUM_PATH=$(ls -d /opt/pw-browsers/chromium-*/chrome-linux*/chrome | head -1)`.
 
 `pnpm test:db` creates a database beside the one `TEST_DATABASE_URL` names,
 migrates it, runs, and drops it. The database you point it at is never

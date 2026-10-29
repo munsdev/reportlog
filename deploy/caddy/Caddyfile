@@ -37,6 +37,19 @@
 		reverse_proxy 127.0.0.1:3000
 	}
 
+	# For search engines, which ask for these two at the site's root. Built
+	# by the API (apps/api/src/site/robots.ts): both name the site's address
+	# and its logbooks, and both close while the site is behind its password.
+	# Without these the catch-all below answered them with the app's page.
+	handle /robots.txt {
+		rewrite * /api/site/robots.txt
+		reverse_proxy 127.0.0.1:3000
+	}
+	handle /sitemap.xml {
+		rewrite * /api/site/sitemap.xml
+		reverse_proxy 127.0.0.1:3000
+	}
+
 	# The website: static files from the release `current` points at. A
 	# deploy switches the symlink, so nothing here needs reloading for one.
 	handle {

@@ -61,7 +61,8 @@ function render(site: string, admin: number, dist: string, api: number): string 
   let out = SHIPPED;
   for (const [from, to] of swaps) {
     expect(out, from).toContain(from);
-    out = out.replace(from, to);
+    // Every one: the API is proxied from more than one route.
+    out = out.replaceAll(from, to);
   }
   return out;
 }
@@ -89,6 +90,7 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
   let caddy: ChildProcess;
   let api: Server;
   const seenByApi: Record<string, string | string[] | undefined>[] = [];
+  const urlsSeenByApi: string[] = [];
   // Everything Caddy itself writes while it runs, for the log test below.
   let caddyOutput = '';
 
@@ -105,6 +107,7 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
 
     api = createServer((req, res) => {
       seenByApi.push(req.headers);
+      urlsSeenByApi.push(req.url ?? '');
       res
         .writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
         .end('{"ok":true}');
@@ -215,6 +218,18 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     expect(res.headers.get('cache-control')).toBe('no-store');
     const seen = seenByApi.at(-1) ?? {};
     expect(seen['x-forwarded-for']).toBe('127.0.0.1');
+  });
+
+  it('hands robots.txt and the sitemap to the API, which builds them, not to the app', async () => {
+    for (const [path, asked] of [
+      ['/robots.txt', '/api/site/robots.txt'],
+      ['/sitemap.xml', '/api/site/sitemap.xml'],
+    ] as const) {
+      const res = await get(path);
+      expect(res.status, path).toBe(200);
+      expect(await res.text(), path).not.toContain(`/assets/${HASHED}`);
+      expect(urlsSeenByApi.at(-1), path).toBe(asked);
+    }
   });
 
   it('sends the security headers with every kind of answer', async () => {

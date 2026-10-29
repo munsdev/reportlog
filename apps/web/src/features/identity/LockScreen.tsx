@@ -20,6 +20,7 @@ import { DevBadge } from '@/components/ui/dev-badge.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { BrandRuns } from '../../mockup/Wordmark.tsx';
 import { ApiRequestError, call } from '../../lib/api.ts';
+import { useNoIndex } from '../site-pages/searchMeta.tsx';
 
 /** The refusal, in the words the design gives it; anything else as the server said it. */
 function refusal(error: Error): string {
@@ -38,6 +39,8 @@ export function LockScreen({
   const [password, setPassword] = useState('');
   useBodyClass('dark', 'door');
   const field = useRef<HTMLInputElement>(null);
+  // Whatever the address, a crawler here sees only a password field.
+  useNoIndex();
   const doors = useQuery({
     queryKey: ['site-access', 'doors'],
     queryFn: ({ signal }) => call(listDoors, { signal }),

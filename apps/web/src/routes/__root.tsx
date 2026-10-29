@@ -9,6 +9,7 @@ import { useGateMode } from '../features/identity/gateMode.ts';
 import { useMe } from '../features/identity/session.ts';
 import { PauseBanner } from '../features/flood/IntakePaused.tsx';
 import { NotFoundPage } from '../features/site-pages/NotFound.tsx';
+import { SearchMeta } from '../features/site-pages/searchMeta.tsx';
 import { HeaderProgressProvider } from '../features/nav/progress.tsx';
 import { SiteHeader } from '../features/nav/SiteHeader.tsx';
 import { Ticker } from '../features/nav/Ticker.tsx';
@@ -34,6 +35,8 @@ function RootLayout() {
     <HeaderProgressProvider>
       <SiteLook />
       <SiteLookScript />
+      {/* Before the page, so a page that knows better has the last word. */}
+      <SearchMeta />
       <Frame />
       {/* In the corner dock (index.html), under Look. */}
       {/* The bottom row (index.html): notices, the social strip, Edit. */}
