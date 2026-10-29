@@ -133,7 +133,10 @@ export function StaffShell({
                 aria-label={`Account, ${me.email}`}
                 aria-current={pathname === '/account' ? 'page' : undefined}
               >
-                <i>{me.email.slice(0, 1)}</i>
+                {/* The initial is drawn by CSS (site.css, .who-chip i::before), not
+                    written as text: as text it made the visible words "cAccount",
+                    which the name "Account, c@…" does not contain. */}
+                <i aria-hidden="true" data-initial={me.email.slice(0, 1)} />
                 <span>Account</span>
               </Link>
             ) : null}

@@ -149,7 +149,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .btn.sm{min-height:40px;padding:0 14px;font-size:.78rem}
 .btn.lg{min-height:60px;padding:0 26px;font-size:1.05rem}
 .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;box-shadow:none}
-.site-head .btn,.menu .btn,.site-foot .btn{--bb:var(--rl-action);--bf:#0A0F15;border-color:#fff;box-shadow:4px 4px 0 #fff}
+/* The palette's own text colour for its action colour: a fixed near-black was unreadable on a palette whose action colour is dark (1.03:1 in the default look). */
+.site-head .btn,.menu .btn,.site-foot .btn{--bb:var(--rl-action);--bf:var(--rl-on-action);border-color:#fff;box-shadow:4px 4px 0 #fff}
 .site-head .btn.sm{box-shadow:3px 3px 0 #fff}
 .btn-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 
@@ -592,6 +593,8 @@ body.staff{--rl-page-max:1240px}
 .rows{display:grid;border:1.5px solid var(--rl-border);border-radius:var(--rl-radius);overflow:hidden;background:var(--rl-surface)}
 .row{display:grid;gap:4px 14px;padding:12px 14px;border-top:1px solid var(--rl-border);align-items:center;text-decoration:none;color:inherit}
 .row:first-child{border-top:0}
+/* A link row inside its list item (Rows.tsx, RowItem): each is its item's first child, so the rule between rows is put back here. */
+.rowitem + .rowitem > .row{border-top:1px solid var(--rl-border)}
 a.row:hover{background:var(--rl-surface-2)}
 @media (min-width:820px){.row{grid-template-columns:var(--cols,1.4fr 1fr 1fr auto)}}
 .row.head{display:none;background:var(--rl-background-alt);font-family:var(--rl-font-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--rl-text-muted);padding-block:9px}
@@ -653,6 +656,7 @@ a.row:hover{background:var(--rl-surface-2)}
 @media (min-width:900px){.menu-staff{grid-template-columns:repeat(3,1fr)}}
 .who-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border-radius:999px;border:1.5px solid var(--on-chrome-muted);color:#fff;font-size:.8rem;font-weight:600;text-decoration:none}
 .who-chip i{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--rl-brand-on-deep);color:var(--p-chrome);font-style:normal;font-weight:800;font-size:.72rem}
+.who-chip i::before{content:attr(data-initial)}
 @media (max-width:520px){.who-chip span{display:none}}
 
 /* ---------- staff shell ---------- */

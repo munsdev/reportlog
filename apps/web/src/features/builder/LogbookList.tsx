@@ -20,7 +20,7 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { Empty } from '@/mockup/Empty.tsx';
 import { FileDrop } from '@/mockup/FileDrop.tsx';
-import { Rows, rowCols } from '@/mockup/Rows.tsx';
+import { rowCols, RowItem, Rows } from '@/mockup/Rows.tsx';
 import { St } from '@/mockup/St.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
@@ -78,35 +78,38 @@ export function LogbookList() {
         ) : (
           <Rows label="Logbooks">
             {query.data.logbooks.map((l) => (
-              <Link
-                key={l.id}
-                to="/logbooks/$id"
-                params={{ id: l.id }}
-                aria-label={`Open ${l.title}`}
-                className="row"
-                style={rowCols('1fr auto')}
-              >
-                <span>
-                  <span className="t">{l.title}</span>
-                  <br />
-                  <span className="m">
-                    /file/{l.slug} · {l.question_count} question
-                    {l.question_count === 1 ? '' : 's'} ·{' '}
-                    {l.asks_for_files
-                      ? l.files_frozen_at
-                        ? 'files frozen'
-                        : 'asks for files'
-                      : 'no files'}
+              <RowItem key={l.id}>
+                <Link
+                  to="/logbooks/$id"
+                  params={{ id: l.id }}
+                  aria-label={`Open ${l.title}`}
+                  className="row"
+                  style={rowCols('1fr auto')}
+                >
+                  <span>
+                    <span className="t">{l.title}</span>
+                    <br />
+                    <span className="m">
+                      /file/{l.slug} · {l.question_count} question
+                      {l.question_count === 1 ? '' : 's'} ·{' '}
+                      {l.asks_for_files
+                        ? l.files_frozen_at
+                          ? 'files frozen'
+                          : 'asks for files'
+                        : 'no files'}
+                    </span>
+                    <br />
+                    <span className="m">{stateWords(l)}</span>
                   </span>
-                  <br />
-                  <span className="m">{stateWords(l)}</span>
-                </span>
-                <span>
-                  <St tone={l.state === 'open' ? 'confirmed' : l.state === 'draft' ? 'off' : 'tag'}>
-                    {stateLabel[l.state]}
-                  </St>
-                </span>
-              </Link>
+                  <span>
+                    <St
+                      tone={l.state === 'open' ? 'confirmed' : l.state === 'draft' ? 'off' : 'tag'}
+                    >
+                      {stateLabel[l.state]}
+                    </St>
+                  </span>
+                </Link>
+              </RowItem>
             ))}
           </Rows>
         ))}
