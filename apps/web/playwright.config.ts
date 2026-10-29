@@ -22,7 +22,13 @@ const OUTBOX = fileURLToPath(new URL('./e2e/.outbox/', import.meta.url));
 const FILES = fileURLToPath(new URL('./e2e/.files/', import.meta.url));
 // Where the owner's backups and exports are written (Q2). Outside the
 // repository: the server refuses a backup folder inside its own code.
-const COPIES = join(tmpdir(), `reportlog-e2e-copies-${String(process.pid)}`);
+// Kept in the environment so the test workers, which load this file again
+// under other process ids, find the same folder (e2e/updates.spec.ts writes
+// what root would into its state directory).
+const COPIES = (process.env.REPORTLOG_E2E_COPIES ??= join(
+  tmpdir(),
+  `reportlog-e2e-copies-${String(process.pid)}`,
+));
 // Error tracking is ON for the whole run, against a stand-in for Bugsink
 // (e2e/telemetry.spec.ts), so every page's no-third-party check runs with it on.
 

@@ -103,3 +103,26 @@ export async function migrate(
     await client.end();
   }
 }
+
+/**
+ * The migrations this database has applied, in name order; none before the
+ * first migration ran. Root asks this of the running release before it
+ * installs anything (deploy/lib.sh, `older_than_database`), so that no
+ * update installs code older than the database. Reads only.
+ */
+export async function appliedMigrations(connectionString: string): Promise<string[]> {
+  const client = new pg.Client({ connectionString });
+  await client.connect();
+  try {
+    const { rows: table } = await client.query<{ t: string | null }>(
+      "SELECT to_regclass('schema_migrations')::text AS t",
+    );
+    if (!table[0]?.t) return [];
+    const { rows } = await client.query<{ filename: string }>(
+      'SELECT filename FROM schema_migrations ORDER BY filename',
+    );
+    return rows.map((r) => r.filename);
+  } finally {
+    await client.end();
+  }
+}

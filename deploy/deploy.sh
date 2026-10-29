@@ -1,8 +1,15 @@
 #!/bin/bash
 # Deploy a version of ReportLog.
 #
-#   sudo reportlog deploy            the branch named in /etc/reportlog/deploy.env
+#   sudo reportlog deploy            the branch this server follows: the one
+#                                    last installed from on the Updates
+#                                    screen, else DEPLOY_REF in
+#                                    /etc/reportlog/deploy.env
 #   sudo reportlog deploy <ref>      a branch, tag or commit
+#
+# A commit older than the database (one lacking a migration the database has
+# applied) is refused before anything is unpacked. Older code is reached only
+# by rolling back to a release the server keeps.
 #
 # THE ORDER IS THE POINT. Everything that can fail happens before the running
 # release is touched:
@@ -27,9 +34,9 @@ main() {
 
   [ -r "$DEPLOY_ENV" ] || die "$DEPLOY_ENV is missing. Run install.sh first."
   [ -r "$ENV_FILE" ] || die "$ENV_FILE is missing. Run install.sh first."
-  local repo ref sha id dir was was_previous
+  local repo ref sha id dir was was_previous branch
   repo=$(env_value REPO_URL "$DEPLOY_ENV")
-  ref=${1:-$(env_value DEPLOY_REF "$DEPLOY_ENV")}
+  ref=${1:-$(followed_ref)}
   [ -n "$repo" ] || die "REPO_URL is not set in $DEPLOY_ENV."
   [ -n "$ref" ] || die "no ref given and DEPLOY_REF is not set in $DEPLOY_ENV."
 
@@ -46,6 +53,20 @@ main() {
     exit 0
   fi
 
+  # WHICH BRANCH IT CAME FROM, kept beside the release (BRANCH) for the
+  # Updates screen. Told by the Updates request; else the ref named, when it
+  # is a branch; else whichever followed or offered branch points at the
+  # commit. A name that is not a plain branch of the mirror is not recorded.
+  branch=${REPORTLOG_DEPLOY_BRANCH:-}
+  if [ -z "$branch" ] && git -C "$MIRROR" show-ref --verify --quiet "refs/heads/$ref"; then
+    branch=$ref
+  fi
+  [ -n "$branch" ] || branch=$(branch_of_commit "$sha")
+  if ! [[ "$branch" =~ ^[A-Za-z0-9._/-]{1,100}$ ]] \
+    || ! git -C "$MIRROR" show-ref --verify --quiet "refs/heads/$branch"; then
+    branch=""
+  fi
+
   # DEPLOYED BY ITS OWN SCRIPTS. If this version changes the deploy scripts,
   # install them first and start again with them, once: otherwise the old
   # scripts deploy it and the new ones only work from the deploy after. The
@@ -53,8 +74,13 @@ main() {
   if [ -z "${REPORTLOG_TOOLING_RENEWED:-}" ] && ! tooling_matches "$sha"; then
     say "This version changes the deploy scripts: installing them, then starting again"
     renew_tooling "$sha"
-    exec env REPORTLOG_TOOLING_RENEWED=1 "$LIB/deploy.sh" "$sha"
+    exec env REPORTLOG_TOOLING_RENEWED=1 REPORTLOG_DEPLOY_BRANCH="$branch" "$LIB/deploy.sh" "$sha"
   fi
+
+  # NEVER OLDER THAN THE DATABASE (lib.sh, older_than_database). After the
+  # renewal above, so the scripts that ship with this version decide.
+  local refusal
+  if refusal=$(older_than_database "$sha" "$was"); then die "$refusal"; fi
 
   id="$(date -u +%Y%m%dT%H%M%SZ)-${sha:0:12}"
   dir="$RELEASES/$id"
@@ -62,6 +88,7 @@ main() {
   install -d -m 0755 "$dir"
   git -C "$MIRROR" archive "$sha" | tar -x -C "$dir"
   echo "$sha" >"$dir/REVISION"
+  [ -z "$branch" ] || echo "$branch" >"$dir/BRANCH"
 
   say "Installing dependencies and building the website"
   # As the service user, in its build home, so no package's install script
@@ -119,6 +146,7 @@ main() {
 
   install_tooling "$dir"
   prune_releases
+  write_release_facts || true
 
   say "Checking the deployment"
   app_node "$dir/apps/api/src/jobs/cli.ts" doctor || true

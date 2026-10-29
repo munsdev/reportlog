@@ -1,5 +1,7 @@
-# Carries out one request from the admin panel: an update check, or a deploy
-# of exactly the commit the configured DEPLOY_REF points at. Runs root's own
+# Carries out one request from the admin panel: an update check, a deploy of
+# exactly the commit the followed branch (or one of main, beta, alpha) points
+# at, or a rollback to a release this server keeps (deploy/lib.sh,
+# run_update_request). Runs root's own
 # copy of the deploy scripts (/usr/local/lib/reportlog), renewed by every
 # deploy, never anything from a release directly. Root, for the same reason
 # as reportlog-update-check.service: the repository's credentials are root's,

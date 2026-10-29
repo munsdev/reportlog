@@ -46,13 +46,23 @@ and `package.json` disagree. How a release is cut is in the README.
 - `www.` (or any other name for the site) can be sent to the site's address: list it in
   `SITE_ALIASES` in `/etc/reportlog/deploy.env` and deploy. Before, a name that pointed at the
   server got no certificate, and anyone who typed it saw a TLS error.
-- Updates has a hidden button for test servers. Press the "Running ..." line eight times and
-  "Update to test build" appears beside the update button (a refresh hides it again). It asks
-  first, in capital letters, that this is a TEST BUILD that may break things, then installs the
-  newest commit of the branch called `test`. The server reads only the word apply_test from the
-  request; it never takes a branch or commit from it. The server needs one normal deploy of this
-  version before the button works. A "Roll back" button appears beside it and returns the site to
-  the release it ran before (once: after that it stays, and moving forward is an update; no release is named by the request).
+- Updates says what is installed: the version, the commit, when it was installed and which
+  branch it came from (recorded at deploy time). One button, "Check for update", becomes "Install
+  update" once a check finds one, and installing asks first, naming the version and the branch.
+  Roll back appears only while it can be used (one step back, once).
+- Branches: `main` is live, `beta` and `alpha` are for testing. Pressing the installed version
+  eight times adds a branch selector beside the button (a refresh hides it again); a server that
+  does not follow `main` always shows it. Installing from a branch makes the server follow it:
+  every later check, the daily one too, looks there. The same eight presses offer every release
+  the server keeps to go back to, newest first, with its date, commit and branch. The hidden
+  "Update to test build" button is gone: on a server that follows `test`, the selector shows
+  `test` and checks and updates on it as before.
+- Nothing older than the database is installed. A commit that lacks a migration the database has
+  already applied is refused before anything is built, with a sentence saying so, from the screen
+  and from `sudo reportlog deploy` alike. Going back to older code is a rollback, on purpose.
+- The server reads only fixed words from the screen's request: a branch from that list of three,
+  and for a rollback the exact name of a release directory it keeps. Anything else refuses the
+  whole request. The server needs one normal deploy of this version before the new buttons work.
 - The front page's buttons are edited as rows. Each has a Target chosen from a drop-down (your
   logbooks, lists, public maps, the board, alerts, Submit, journalists, report illegal content,
   About, or the social links as a row of icons), Main text and Subtext. Leave the wording blank to

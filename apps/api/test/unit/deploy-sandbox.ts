@@ -197,6 +197,11 @@ esac`,
 case " $* " in
   *" --version "*) echo v22.23.3 ;;
   *migrate-cli.ts*) [ -e "$C/migrate-fails" ] && { echo "20261019000000_new.sql failed: boom"; exit 1; }; echo "Applying 20261019000000_new.sql" ;;
+  # The migrations the database has applied, as the test arranged them.
+  # A release from before the command answers with its usage, and exit 2.
+  *" applied-migrations"*)
+    [ -e "$C/applied-migrations-unknown" ] && { echo "usage: ..."; exit 2; }
+    [ -e "$C/applied-migrations" ] && cat "$C/applied-migrations"; exit 0 ;;
   *" contact-key"*) [ -e "$C/contact-key-differs" ] && { echo "CONTACT_KEY has changed"; exit 1; }; echo "contact key: same" ;;
   *) echo "app: $*" ;;
 esac`,
