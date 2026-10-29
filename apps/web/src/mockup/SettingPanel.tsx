@@ -177,7 +177,7 @@ export function SettingPanel({
   if (isOpen) {
     return (
       <>
-        <Panel title={title} className={className}>
+        <Panel title={title} aria-label={title} className={className}>
           {children}
         </Panel>
         <SaveBar name={title} busy={saving} onSave={() => void save()} onCancel={panels.close} />
@@ -185,7 +185,8 @@ export function SettingPanel({
     );
   }
   return (
-    <Panel title={title} kind="closed" {...(className ? { className } : {})}>
+    // Named, so the panel is a region a screen reader can jump to by its title.
+    <Panel title={title} aria-label={title} kind="closed" {...(className ? { className } : {})}>
       <Dl items={summary} />
       <div className="acts">
         <Btn

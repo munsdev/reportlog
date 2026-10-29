@@ -40,7 +40,7 @@
 import type { MenuWaiting } from '@reportlog/contracts';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/ui/site-footer.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { Wordmark } from '@/mockup/Wordmark.tsx';
@@ -74,14 +74,6 @@ const isNarrow = () =>
 export function useNarrow(): boolean {
   return useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
 }
-
-/** The mock-up's menu-foot buttons: outlined on the dark ground, no shadow. */
-const FOOT_STYLE = {
-  '--bb': 'transparent',
-  '--bf': '#fff',
-  borderColor: '#A9B6C2',
-  boxShadow: 'none',
-} as CSSProperties;
 
 export function StaffShell({
   me,
@@ -118,7 +110,9 @@ export function StaffShell({
       </a>
       <header className="site-head staff-head print:hidden">
         <div className="wrap">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* min-width 0: at 320px the wordmark gives way (an ellipsis) instead of
+              pushing the bar sideways. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <Wordmark to="/home" />
             <span className="badge-staff">{me?.heldRoles.length === 0 ? 'Account' : 'Staff'}</span>
           </div>
@@ -354,23 +348,23 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
       {...open}
     >
       <div className="wrap">
-        {/* Close comes first in the page, so it is where focus lands. */}
+        {/* Close comes first in the page, so it is where focus lands; the
+            stylesheet still draws it on the right (.menu-top, `order`). */}
         <div className="menu-top">
-          <Wordmark to="/home" onClick={onClose} />
           <button className="menu-btn" type="button" onClick={onClose}>
             CLOSE
           </button>
+          <Wordmark to="/home" onClick={onClose} />
         </div>
         {/* The way back to the public site and Sign out come first (the owner's
             call, 27 Oct): at the foot they sat under some forty links. */}
         <div className="menu-foot">
-          <Link className="btn sm flat" to="/" style={FOOT_STYLE} onClick={onClose}>
+          <Link className="btn sm flat on-chrome" to="/" onClick={onClose}>
             View the public site
           </Link>
           <button
-            className="btn sm flat"
+            className="btn sm flat on-chrome"
             type="button"
-            style={FOOT_STYLE}
             disabled={out.isPending}
             onClick={() => {
               out.mutate(undefined, {

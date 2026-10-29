@@ -14,6 +14,8 @@ export interface MenuPage {
   href: string;
   /** The staff area holding it, or none for the groups by who you are (You, the desk, the organization). */
   area?: string;
+  /** Where following it ends up, when the page sends you on (a redirect). */
+  lands?: RegExp;
 }
 
 export const ALL_PAGES: readonly MenuPage[] = [
@@ -30,7 +32,8 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { label: 'Members', href: '/intake/members' },
-  { label: 'Directory listing', href: '/intake/listing' },
+  // Sends a coordinator on to their own organization's listing page.
+  { label: 'Directory listing', href: '/intake/listing', lands: /\/organizations\/\d+\/listing$/ },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
   { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
   { area: 'Review', label: 'Links', href: '/lists/links' },
@@ -113,8 +116,14 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
   tester: [...YOU, 'Feedback'],
 };
 
-export const pageByLabel = (label: string): MenuPage => {
-  const page = ALL_PAGES.find((p) => p.label === label);
+/**
+ * The page a label names in this role's sidebar. Two labels are shared (see
+ * "Written accounts" above): the journalist's is the desk page, everyone
+ * else's the one in a staff area.
+ */
+export const pageByLabel = (label: string, role: MenuRole): MenuPage => {
+  const pages = ALL_PAGES.filter((p) => p.label === label);
+  const page = pages.length > 1 ? pages.find((p) => (role === 'journalist') === !p.area) : pages[0];
   if (!page) throw new Error(`no menu page called ${label}`);
   return page;
 };

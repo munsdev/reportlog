@@ -68,7 +68,7 @@ export function ClosedRow({
 
   if (isOpen) {
     return (
-      <section className="panel" id={id}>
+      <section className="panel" id={id} aria-label={title}>
         <h2>{title}</h2>
         {children}
         {onSave ? (
@@ -90,7 +90,8 @@ export function ClosedRow({
     );
   }
   return (
-    <section className="panel closed" id={id}>
+    // Named, so each row is a region a screen reader can jump to.
+    <section className="panel closed" id={id} aria-label={title}>
       <div className="closed-head">
         <h2>{title}</h2>
       </div>

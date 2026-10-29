@@ -10,7 +10,7 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import type { AxeResults, RunOptions } from 'axe-core';
 import { ADMIN } from './auth.ts';
-import { MENU_BUTTON } from './menu.ts';
+import { MENU_BUTTON, staffNav } from './menu.ts';
 import { address, everyPage } from './site-walk.ts';
 
 const AXE_SOURCE = readFileSync(
@@ -49,7 +49,11 @@ test('the front page still offers the way in when its buttons cannot be fetched'
 }) => {
   await page.route('**/api/home-buttons', (route) => route.abort());
   await page.goto('/');
-  const buttons = page.getByRole('list', { name: 'What you can do here' }).getByRole('link');
+  const buttons = page
+    // The front page's buttons sit in its first band, the one its heading names.
+    .getByRole('region')
+    .filter({ has: page.getByRole('heading', { level: 1 }) })
+    .getByRole('link');
   // The query retries before it gives up, so allow for that.
   // The board's button may carry its count after the words.
   await expect(buttons).toHaveText(['Submit a Report', /^View Live Report Board/], {
@@ -121,24 +125,39 @@ test.describe('the prose pages on a phone', () => {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       const m = await page.evaluate(() => {
-        const main = document.querySelector('main');
-        const box = main?.getBoundingClientRect();
-        const wide = [...document.querySelectorAll('main *')].filter(
-          // A table or code block in its own scroller may be wider; the page may not.
+        // A table, a code block or a row of tabs in its own sideways scroller
+        // may be wider; the page may not. Recognised by its computed style,
+        // not a class name, since the redesign has several.
+        const inScroller = (el: Element) => {
+          for (let up = el.parentElement; up; up = up.parentElement) {
+            const x = getComputedStyle(up).overflowX;
+            if (x === 'auto' || x === 'scroll') return true;
+          }
+          return false;
+        };
+        const shown = [...document.querySelectorAll('main *')].filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        const wide = shown.filter(
+          (el) => el.getBoundingClientRect().right > window.innerWidth + 1 && !inScroller(el),
+        );
+        // The margin a reader sees: where the words start, wherever the
+        // padding sits (the redesign puts it on .wrap, not on main).
+        const words = shown.filter(
           (el) =>
-            el.getBoundingClientRect().right > window.innerWidth + 1 &&
-            !el.closest('.overflow-x-auto'),
+            !inScroller(el) &&
+            [...el.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim()),
         );
         return {
           scroll: document.documentElement.scrollWidth - window.innerWidth,
-          padLeft: main ? parseFloat(getComputedStyle(main).paddingLeft) : 0,
-          mainWidth: box?.width ?? 0,
-          wide: wide.slice(0, 3).map((e) => e.tagName + '.' + e.className),
+          left: Math.min(...words.map((el) => el.getBoundingClientRect().left)),
+          wide: wide.slice(0, 3).map((e) => `${e.tagName}.${e.getAttribute('class') ?? ''}`),
         };
       });
       expect(m.wide).toEqual([]);
       expect(m.scroll).toBeLessThanOrEqual(0);
-      expect(m.padLeft).toBeGreaterThanOrEqual(16);
+      expect(m.left).toBeGreaterThanOrEqual(16);
     });
   }
 });
@@ -235,7 +254,12 @@ test.describe('the site’s own controls', () => {
             const style = getComputedStyle(el);
             const box = el.getBoundingClientRect();
             const clipped = style.clipPath.includes('inset(50%');
+            // The mock-up's single tick box (site.css .check, .qsel) is the
+            // real input, drawn at 24px in the site's ink: its own, not the
+            // browser's. A radio or a file input is always a card or a button.
+            const drawn = el.type === 'checkbox' && style.accentColor !== 'auto' && box.width >= 23;
             return (
+              !drawn &&
               style.opacity !== '0' &&
               style.visibility !== 'hidden' &&
               box.width > 2 &&
@@ -313,15 +337,16 @@ test.describe('an organization’s own listing switch', () => {
     ).toBeVisible();
     await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
     await expect(page.getByText('Today its number of members would be 3.')).toBeVisible();
-    // Two choice cards and the panel's own Save; nothing changes until Save.
-    await page.getByRole('radio', { name: 'Listed', exact: true }).check();
+    // One switch and the page's own Save; nothing changes until Save.
+    const sw = page.getByRole('switch', { name: 'Listed in the directory' });
+    await sw.click();
     await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText(/Harbour Group is listed in .*since/)).toBeVisible();
     await expect(
       page.getByRole('status').filter({ hasText: 'listed in the directory now' }),
     ).toBeVisible();
-    await page.getByRole('radio', { name: 'Not listed' }).check();
+    await sw.click();
     await page.getByRole('button', { name: 'Save' }).click();
     await expect(page.getByText('Harbour Group is not listed')).toBeVisible();
   });
@@ -346,7 +371,7 @@ test.describe('the front page editor', () => {
       asked = d.message();
       void d.dismiss();
     });
-    await page.getByRole('link', { name: '← All logbooks' }).click();
+    await (await staffNav(page)).getByRole('link', { name: 'Logbooks', exact: true }).click();
     await expect
       .poll(() => asked)
       .toMatch(/changes to the front page’s buttons that are not saved/);
@@ -361,7 +386,7 @@ test.describe('the front page editor', () => {
     page.on('dialog', () => {
       throw new Error('asked although nothing was changed');
     });
-    await page.getByRole('link', { name: '← All logbooks' }).click();
+    await (await staffNav(page)).getByRole('link', { name: 'Logbooks', exact: true }).click();
     await expect(page).toHaveURL(/\/logbooks$/);
   });
 });

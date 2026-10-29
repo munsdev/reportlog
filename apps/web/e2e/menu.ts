@@ -67,7 +67,20 @@ export async function staffNav(page: Page): Promise<Locator> {
     .filter({ visible: true })
     .first();
   await expect(sidebar).toBeVisible();
+  await openGroups(sidebar);
   return sidebar;
+}
+
+/**
+ * The sidebar's groups fold (`<details>`); only the current page's is open.
+ * A person opens a group to reach a page in it: so does this, every one.
+ */
+export async function openGroups(sidebar: Locator): Promise<void> {
+  const shut = sidebar.locator('details:not([open]) > summary');
+  for (let n = await shut.count(); n > 0; n = await shut.count()) {
+    await shut.first().click();
+    await expect(shut).toHaveCount(n - 1);
+  }
 }
 
 /**
@@ -151,8 +164,15 @@ export async function tabLink(page: Page, row: string, name: string): Promise<Lo
 /** Sign out from the account menu or the public menu, and see the visitor's menu come back. */
 export async function signOut(page: Page): Promise<void> {
   if (await inStaffArea(page)) {
-    const panel = await accountMenu(page);
-    await panel.getByRole('button', { name: 'Sign out' }).click();
+    // Beside the sections, not among them: at the foot of the desktop sidebar,
+    // or at the top of the phone's drawer.
+    await accountMenu(page);
+    await page
+      .getByRole('complementary', { name: 'Staff areas' })
+      .or(page.getByRole('dialog', { name: 'Staff menu' }))
+      .filter({ visible: true })
+      .getByRole('button', { name: 'Sign out' })
+      .click();
     await expect(page.locator('[data-staff-app]')).toHaveCount(0);
   } else {
     const nav = await openMenu(page);

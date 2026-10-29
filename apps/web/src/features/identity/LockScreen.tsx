@@ -69,19 +69,13 @@ export function LockScreen({
             <BrandRuns parts={site.name_parts} />
           </span>
         ) : null}
-        <h1 className="eyebrow" style={{ color: '#DCE3E9' }}>
-          This site needs a password
-        </h1>
+        <h1 className="eyebrow">This site needs a password</h1>
         {site?.intro ? (
           // The operator's own words: plain text with their line breaks, never HTML.
-          <p data-copy="lock_intro" style={{ whiteSpace: 'pre-wrap' }}>
-            {site.intro}
-          </p>
+          <p data-copy="lock_intro">{site.intro}</p>
         ) : null}
         <div className="field">
-          <label htmlFor="site-password" style={{ color: '#fff' }}>
-            Site password
-          </label>
+          <label htmlFor="site-password">Site password</label>
           <input
             ref={field}
             className="input"
@@ -91,38 +85,29 @@ export function LockScreen({
             value={password}
             aria-invalid={unlock.isError || undefined}
             aria-describedby={unlock.isError ? 'site-password-error' : undefined}
-            style={{ background: '#0A0F15', color: '#fff', borderColor: '#A9B6C2' }}
             onChange={(e) => {
               setPassword(e.target.value);
             }}
           />
         </div>
         {unlock.isError ? (
-          <p id="site-password-error" role="alert" style={{ color: '#fff', fontWeight: 700 }}>
+          <p id="site-password-error" role="alert">
             {refusal(unlock.error)}
           </p>
         ) : null}
-        <button
-          className="btn go lg"
-          type="submit"
-          disabled={unlock.isPending}
-          style={{ borderColor: '#fff', boxShadow: '4px 4px 0 #fff', width: '100%' }}
-        >
+        <button className="btn go lg" type="submit" disabled={unlock.isPending}>
           {unlock.isPending ? 'Checking…' : 'Continue'}
         </button>
         {doors.data && doors.data.doors.length > 0 ? (
-          <nav
-            aria-labelledby="doors-heading"
-            style={{ borderTop: '1px solid #34414F', paddingTop: 14, display: 'grid', gap: 6 }}
-          >
-            <h2 id="doors-heading" className="eyebrow" style={{ color: '#A9B6C2' }}>
+          <nav aria-labelledby="doors-heading">
+            <h2 id="doors-heading" className="eyebrow">
               Open without the password
             </h2>
             {doors.data.doors.map((d) => (
               // A plain link, not the router's: following it loads the page
               // fresh, through the gate, like a link somebody was sent. A
               // list's title already says what it takes ("Send a link").
-              <a key={d.href} href={d.href} style={{ color: '#fff' }}>
+              <a key={d.href} href={d.href}>
                 {d.kind === 'logbook' ? `File a report: ${d.title}` : d.title}
               </a>
             ))}

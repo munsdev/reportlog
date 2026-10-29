@@ -65,7 +65,7 @@ test.beforeAll(async ({ playwright }) => {
 async function checksHold(page: Page) {
   await page.goto(`/verify/${ref}`);
   await page.getByText('Technical details').click();
-  const checks = page.getByRole('list', { name: 'Checks' }).getByRole('listitem');
+  const checks = page.getByRole('list', { name: 'What was checked' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
 }

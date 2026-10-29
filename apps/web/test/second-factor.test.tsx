@@ -115,10 +115,11 @@ describe('a staff screen, for a role holder without a second factor', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText('The queue')).not.toBeInTheDocument();
     expect(screen.queryByText('Not for this account')).not.toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'An authenticator app' })).toHaveAccessibleDescription(
-      'A six-digit code from an app on your phone',
-    );
-    expect(screen.getByRole('radio', { name: 'A passkey' })).toBeInTheDocument();
+    // The note is part of the choice card's label, so it is in the name too.
+    expect(
+      screen.getByRole('radio', { name: /^An authenticator app/ }).closest('label'),
+    ).toHaveTextContent('A six-digit code from an app on your phone');
+    expect(screen.getByRole('radio', { name: /^A passkey/ })).toBeInTheDocument();
     // Choosing moves nothing; Next does.
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
@@ -170,7 +171,7 @@ describe('a staff screen, for a role holder without a second factor', () => {
       </StaffOnly>,
     );
     const user = userEvent.setup();
-    await user.click(await screen.findByRole('radio', { name: 'An authenticator app' }));
+    await user.click(await screen.findByRole('radio', { name: /^An authenticator app/ }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     const qr = await screen.findByRole('img', {
       name: 'QR code to add this site to your authenticator app',

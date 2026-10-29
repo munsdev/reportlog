@@ -34,7 +34,7 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
 
   if (me.heldRoles.includes('owner')) {
     return (
-      <Panel title="Delete your account" kind="danger">
+      <Panel title="Delete your account" aria-label="Delete your account" kind="danger">
         <p>
           You hold the owner’s seat, so your account cannot be deleted: a deployment always has one
           owner.{' '}
@@ -49,7 +49,7 @@ export function DeleteAccount({ me }: { me: SignedInMe }) {
 
   const matches = typed.trim().toLowerCase() === me.email;
   return (
-    <Panel title="Delete your account" kind="danger">
+    <Panel title="Delete your account" aria-label="Delete your account" kind="danger">
       <p>
         This deletes your address from this site, signs you out everywhere, and removes your second
         factor, your place in any organization, and your email updates. Signing in again later with

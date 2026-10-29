@@ -113,7 +113,7 @@ describe('the lock screen', () => {
       '/api/doors': { doors: [] },
     });
     lockScreen();
-    expect(await screen.findByRole('button', { name: 'Under active development' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Notices: 1' })).toBeVisible();
     await settle();
     expect(asked().sort()).toEqual(['/api/doors', '/api/site-access/status']);
   });
@@ -125,7 +125,7 @@ describe('the lock screen', () => {
     });
     lockScreen();
     expect(await screen.findByText('Harbour')).toBeVisible();
-    expect(screen.queryByRole('button', { name: 'Under active development' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Notices: 1' })).toBeNull();
   });
 });
 
@@ -164,6 +164,11 @@ describe('the development badge on a door', () => {
   ]);
 
   it('shows from the password check’s answer, and the door asks nothing beyond it', async () => {
+    // The root layout puts the badge in the corner dock, which index.html
+    // carries and a test document does not.
+    const slot = document.createElement('div');
+    slot.id = 'fab-notice';
+    document.body.append(slot);
     const asked = server({
       '/api/site-access/status': {
         locked: true,
@@ -186,8 +191,9 @@ describe('the development badge on a door', () => {
       </QueryClientProvider>,
     );
     expect(await screen.findByText('the page behind the door')).toBeInTheDocument();
-    expect(await screen.findByRole('button', { name: 'Under active development' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Notices: 1' })).toBeVisible();
     await settle();
     expect(asked()).toEqual(['/api/site-access/status']);
+    slot.remove();
   });
 });

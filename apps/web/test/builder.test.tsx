@@ -76,7 +76,7 @@ describe('the question form', () => {
 
   it('will not offer "an answer is needed" after launch, and says why', () => {
     render(<QuestionForm earlier={[]} launched submitLabel="Add" onSubmit={vi.fn()} />);
-    expect(screen.getByLabelText('An answer is needed')).toBeDisabled();
+    expect(screen.getByLabelText(/^An answer is needed/)).toBeDisabled();
     expect(screen.getByText(/reports already filed never answered it/)).toBeInTheDocument();
   });
 

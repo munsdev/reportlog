@@ -106,16 +106,16 @@ describe('signing in', () => {
     serve({ 'POST /api/auth/code': { ok: true } });
     const user = userEvent.setup();
     wrap(<SignInForm onSignedIn={() => undefined} />);
-    await user.type(await screen.findByLabelText('Your email address'), 'you@example.org');
-    await user.click(screen.getByRole('button', { name: 'Send me a code' }));
+    await user.type(await screen.findByLabelText('Email'), 'you@example.org');
+    await user.click(screen.getByRole('button', { name: 'Send code' }));
     const code = await screen.findByLabelText('The code from the email');
     expect(code).toHaveAttribute('inputmode', 'numeric');
     expect(code).toHaveAttribute('autocomplete', 'one-time-code');
-    expect(code.className).toMatch(/font-mono/);
+    expect(code.className).toMatch(/\bmono\b/);
     expect(screen.getByText('you@example.org')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Use a different address' }));
     // The address is kept, to correct rather than retype.
-    expect(screen.getByLabelText('Your email address')).toHaveValue('you@example.org');
+    expect(screen.getByLabelText('Email')).toHaveValue('you@example.org');
   });
 
   it('the second step says who is signed in, and "Start again" signs out', async () => {
@@ -138,7 +138,7 @@ describe('signing in', () => {
     expect(screen.getByText('Sign in · step 2 of 2')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Continue' })).toBeInTheDocument();
     expect(screen.getByText('mod@example.org')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Start again' }));
+    await user.click(screen.getByRole('link', { name: 'Not you? Start again' }));
     await waitFor(() => {
       expect(sent.some((s) => s.method === 'POST' && s.url === '/api/auth/sign-out')).toBe(true);
     });
@@ -194,7 +194,7 @@ describe('the security page', () => {
     );
     expect(screen.queryByText('Work laptop')).toBeNull();
     await user.click(screen.getByRole('button', { name: 'Change Passkeys' }));
-    expect(screen.getByText('Work laptop')).toBeInTheDocument();
+    expect(screen.getByRole('cell', { name: 'Work laptop' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Change Recovery codes' }));
     // Opening another closes the first.
     expect(screen.queryByText('Work laptop')).toBeNull();
@@ -210,7 +210,9 @@ describe('the security page', () => {
     const user = userEvent.setup();
     wrap(<SecurityPage />);
     await user.click(await screen.findByRole('button', { name: 'Change Passkeys' }));
-    await user.click(screen.getByRole('button', { name: 'Remove Work laptop' }));
+    // The passkey's name sits in a screen-reader-only span after "Remove"; the
+    // space between them is whitespace jsdom does not count in a name.
+    await user.click(screen.getByRole('button', { name: /^Remove\s?Work laptop$/ }));
     const ask = await screen.findByRole('dialog', { name: 'Remove this passkey?' });
     expect(within(ask).getByText(/You can add it again later/)).toBeInTheDocument();
     expect(sent.filter((s) => s.method !== 'GET')).toEqual([]);
@@ -226,7 +228,8 @@ describe('the security page', () => {
     const user = userEvent.setup();
     wrap(<SecurityPage />);
     await user.click(await screen.findByRole('button', { name: 'Change Passkeys' }));
-    expect(screen.queryByRole('button', { name: 'Remove Work laptop' })).toBeNull();
+    expect(screen.getByText('Work laptop')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Remove\s?Work laptop$/ })).toBeNull();
     expect(
       screen.getByText(
         'This is your only way to sign in, so it cannot be removed. Add another first.',
@@ -257,21 +260,21 @@ describe('my reports', () => {
   };
 
   it('a chip per state, never teal, and a declined report is not marked serious', () => {
-    expect(stateChip(base)).toEqual({ tone: 'open', label: 'Waiting' });
+    expect(stateChip(base)).toEqual({ kind: 'wait', label: 'Waiting' });
     expect(stateChip({ ...base, moderation_status: 'valid' })).toEqual({
-      tone: 'tag',
+      kind: '',
       label: 'Public',
     });
     expect(stateChip({ ...base, moderation_status: 'valid', may_publish: false })).toEqual({
-      tone: 'tag',
+      kind: '',
       label: 'Not published',
     });
     expect(stateChip({ ...base, moderation_status: 'invalid' })).toEqual({
-      tone: 'tag',
+      kind: '',
       label: 'Declined',
     });
     expect(stateChip({ ...base, withdrawn: true })).toEqual({
-      tone: 'tag',
+      kind: '',
       label: 'Off the board',
     });
   });
@@ -290,14 +293,14 @@ describe('the logbook list', () => {
     const [make] = screen.getAllByRole('button', { name: 'Make a logbook' });
     if (!make) throw new Error('no Make a logbook button');
     await user.click(make);
-    expect(await screen.findByRole('region', { name: 'Make a logbook' })).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: 'Start from nothing' })).toBeChecked();
+    expect(await screen.findByRole('heading', { name: 'Make a logbook' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /^Start from nothing/ })).toBeChecked();
     // The site-wide switch is not here any more; the page points to it.
     expect(screen.getByRole('link', { name: 'Site settings' })).toHaveAttribute(
       'href',
       '/settings',
     );
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
-    expect(screen.queryByRole('region', { name: 'Make a logbook' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Make a logbook' })).toBeNull();
   });
 });

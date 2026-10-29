@@ -195,34 +195,34 @@ describe('the footer', () => {
 describe('the development badge', () => {
   it('is not shown while the notice is off', async () => {
     await inRouter(() => <DevBadge />);
-    expect(screen.queryByRole('button', { name: /active development/ })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Notices/ })).toBeNull();
   });
 
   it('is shown while it is on, and explains itself in a dialog', async () => {
     const user = userEvent.setup();
     const until = new Date(Date.now() + 3_600_000).toISOString();
     await inRouter(() => <DevBadge />, site({ dev_mode_until: until }));
-    await user.click(await screen.findByRole('button', { name: 'Under active development' }));
-    expect(
-      screen.getByRole('dialog', { name: 'This site is under active development' }),
-    ).toHaveTextContent('You may run into pages that look broken');
+    await user.click(await screen.findByRole('button', { name: 'Notices: 1' }));
+    const dialog = screen.getByRole('dialog', { name: 'Notices' });
+    expect(within(dialog).getByText('This site is under active development')).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('You may run into pages that look broken');
   });
 
   it('takes itself down when the window ends, without asking the server again', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const until = new Date(Date.now() + 5_000).toISOString();
     await inRouter(() => <DevBadge />, site({ dev_mode_until: until }));
-    expect(await screen.findByRole('button', { name: 'Under active development' })).toBeVisible();
+    expect(await screen.findByRole('button', { name: 'Notices: 1' })).toBeVisible();
     await act(async () => {
       await vi.advanceTimersByTimeAsync(6_000);
     });
-    expect(screen.queryByRole('button', { name: 'Under active development' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Notices: 1' })).toBeNull();
   });
 
   it('wears no status colour: it is a notice, not a verdict', async () => {
     const until = new Date(Date.now() + 3_600_000).toISOString();
     await inRouter(() => <DevBadge />, site({ dev_mode_until: until }));
-    const badge = await screen.findByRole('button', { name: 'Under active development' });
+    const badge = await screen.findByRole('button', { name: 'Notices: 1' });
     expect(badge.outerHTML).not.toMatch(/confirmed|serious|caution|seal|verify|action/);
   });
 });
