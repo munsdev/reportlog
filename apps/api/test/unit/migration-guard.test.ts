@@ -25,6 +25,8 @@ const EXCEPTIONS: Readonly<Record<string, string>> = {
     'Adds the kinds desk_text and desk_tip_text to the CHECKs on contact_access_log, re-stating its thread and report checks to admit them, and one new check tying text_item_id to those kinds. Every old kind keeps passing every old check, so no existing row is touched or rejected and an older release writes only old kinds; the same shape as 20261019200151 and 20261020112918, which the baseline already holds. Reviewed by the integrator, 27 October 2026.',
   '20261027085705_text_reasons_and_reads.sql':
     'Adds the kind text_read to the CHECKs on contact_access_log and re-states its thread and report checks to admit it, plus one new check tying read_ref to that kind. Every old kind keeps passing every old check, so no existing row is touched or rejected and an older release writes only old kinds; the same shape as 20261027071500. Also adds two nullable reason columns, which is not a DROP.',
+  '20261028122015_list_placements.sql':
+    'Adds on_get_involved (default false) and marks every list that already exists, so Get involved shows on the day it arrives exactly what it showed before (it listed every public list). The UPDATE sets only the column this file adds, on rows that existed before it; nothing an older release reads changes. Approved by the owner, 29 October 2026.',
 };
 
 const DIR = fileURLToPath(new URL('../../migrations/', import.meta.url));
