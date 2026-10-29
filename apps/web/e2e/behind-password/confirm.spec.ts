@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { referenceLine } from '../reference.ts';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -70,8 +71,8 @@ test('a reporter without the password files, and confirms from the email', async
   await next();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   const before = countTo(email);
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(heading(page, 'Check your email')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(heading(page, 'Check your email to finish')).toBeVisible();
   // A door page asks for nothing it may not have, so the lock never came back.
   await expect(lockHeading(page)).toHaveCount(0);
   await context.close();
@@ -83,7 +84,7 @@ test('a reporter without the password files, and confirms from the email', async
   await expect(heading(inbox.page, 'Confirm your report')).toBeVisible();
   await inbox.page.getByRole('button', { name: 'Confirm and file my report' }).click();
   await expect(heading(inbox.page, 'Your report is filed')).toBeVisible();
-  await expect(inbox.page.getByText(/Its reference is RL-/)).toBeVisible();
+  await expect(referenceLine(inbox.page)).toBeVisible();
   // On a door the page offers nothing that leads behind the password.
   await expect(inbox.page.getByRole('link', { name: 'Check it has not been changed' })).toHaveCount(
     0,

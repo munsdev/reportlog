@@ -17,6 +17,8 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { photoWithLocation, signedIn } from '../files/helpers.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { panel } from '../panel.ts';
+import { saveChanges } from '../save-bar.ts';
 import { doorFields } from '../door.ts';
 
 test.describe.configure({ mode: 'serial' });
@@ -75,13 +77,18 @@ test('a reporter without the password follows the evidence link from the email a
   const made = await admin.post('/api/admin/logbooks', { data: { title: `In front ${run()}` } });
   expect(made.ok(), await made.text()).toBe(true);
   const lb = (await made.json()) as { id: number; slug: string };
-  const add = async (data: Record<string, unknown>) =>
-    (
-      (await (
-        await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data })
-      ).json()) as { key: string }
-    ).key;
-  const what = await add({ kind: 'long_text', label: 'What happened?', required: true });
+  // A logbook asks for words only as a held note (isPublishedFreeText), and
+  // asks that only where the operator turned notes on.
+  const notes = await admin.patch(`/api/admin/logbooks/${String(lb.id)}`, {
+    data: { accepts_notes: true },
+  });
+  expect(notes.ok(), await notes.text()).toBe(true);
+  const add = async (data: Record<string, unknown>) => {
+    const r = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data });
+    expect(r.ok(), await r.text()).toBe(true);
+    return ((await r.json()) as { key: string }).key;
+  };
+  const what = await add({ kind: 'private_text', label: 'What happened?', required: true });
   const has = await add({ kind: 'evidence_declaration', label: 'Do you have photos of it?' });
   const launched = await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`);
   expect(launched.ok(), await launched.text()).toBe(true);
@@ -190,16 +197,13 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   const settings = await staff.newPage();
   await settings.goto('/settings/words');
   const slot = 'Your own words on the password screen';
-  const form = settings.getByRole('region', { name: slot });
-  await form.getByRole('button', { name: `Edit ${slot}` }).click();
+  const form = panel(settings, slot);
+  await form.getByRole('button', { name: `Change ${slot}` }).click();
   const box = settings.getByRole('textbox', { name: slot });
   await box.fill('Run by the harbour residents.\nAsk at the office for the password.');
   // Numbers are for the pages behind the password, never this one.
   await expect(form.getByRole('button', { name: 'Insert a number' })).toHaveCount(0);
-  await settings
-    .getByRole('region', { name: 'Save changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(settings);
   await expect(settings.getByText('Saved. The page shows it now.')).toBeVisible();
   await staff.close();
   expect((await admin.put('/api/admin/site/name', { data: { name: 'Harbour Watch' } })).ok()).toBe(
@@ -217,7 +221,16 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   await expect(page.locator('[data-copy="lock_intro"]')).toHaveText(
     'Run by the harbour residents.\nAsk at the office for the password.',
   );
-  await expect(page.getByRole('button', { name: 'Under active development' })).toBeVisible();
+  // The development notice is the one notice behind the corner's "!".
+  const notices = page.getByRole('button', { name: 'Notices: 1' });
+  await expect(notices).toBeVisible();
+  await notices.click();
+  await expect(
+    page
+      .getByRole('dialog', { name: 'Notices' })
+      .getByText('This site is under active development'),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
   // Nothing of the board, and nothing behind the gate was asked to draw this.
   await expect(page.getByRole('heading', { name: 'Reports', level: 1 })).toHaveCount(0);
   await page.waitForLoadState('networkidle');
@@ -238,7 +251,16 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   try {
     await page.goto('/file/demo');
     await expect(page.getByRole('heading', { level: 1, name: 'Demo logbook' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Under active development' })).toBeVisible();
+    // The development notice is the one notice behind the corner's "!".
+    const notices = page.getByRole('button', { name: 'Notices: 1' });
+    await expect(notices).toBeVisible();
+    await notices.click();
+    await expect(
+      page
+        .getByRole('dialog', { name: 'Notices' })
+        .getByText('This site is under active development'),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
     await expect(lockHeading(page)).toHaveCount(0);
   } finally {
     execFileSync(

@@ -163,7 +163,7 @@ test('an administrator finds what somebody wrote, and after they erase it, finds
   await v.page.getByRole('button', { name: 'Next' }).click();
   await v.page.getByRole('textbox', { name: /Anything we should know/ }).fill(words);
   await v.page.getByRole('button', { name: 'Next' }).click();
-  await v.page.getByLabel(/Your email address/).fill(email);
+  await v.page.getByRole('textbox', { name: /^Email/ }).fill(email);
   // A form sent faster than it can be read is taken for a script.
   await v.page.waitForTimeout(2600);
   const before = countTo(email);
@@ -181,7 +181,8 @@ test('an administrator finds what somebody wrote, and after they erase it, finds
     await page.getByRole('button', { name: 'Find' }).click();
   };
   await search(email);
-  const found = page.getByRole('list', { name: 'Entries' }).getByRole('listitem');
+  // Each entry found is a panel of its own under "Entries found".
+  const found = page.getByRole('region', { name: 'Entries found' }).getByRole('article');
   await expect(found).toHaveCount(1);
   await expect(found.getByText(words)).toBeVisible();
   await expect(found.getByText(email)).toBeVisible();
@@ -208,5 +209,7 @@ test('an administrator finds what somebody wrote, and after they erase it, finds
   await expect(
     page.getByText(`Nothing on any list has “${words}” in it.`, { exact: false }),
   ).toBeVisible();
-  await expect(page.getByRole('list', { name: 'Entries' })).toHaveCount(0);
+  await expect(
+    page.getByRole('region', { name: 'Entries found' }).getByRole('article'),
+  ).toHaveCount(0);
 });

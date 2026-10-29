@@ -7,8 +7,10 @@
  * sign in as an administrator before each test here.
  */
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { panel } from './panel.ts';
+import { saveChanges } from './save-bar.ts';
 
 // The builder is for administrators: every test here is signed in as one.
 test.use({ storageState: ADMIN });
@@ -30,12 +32,14 @@ async function addQuestion(
   label: string,
   extra?: (p: Page) => Promise<void>,
 ) {
-  const panel = page.getByRole('region', { name: 'Questions' });
-  await panel.getByLabel('Kind of question').selectOption({ label: kind });
-  await panel.getByLabel('The question, as the reporter will read it').last().fill(label);
+  const questions = panel(page, 'Questions');
+  await questions.getByLabel('Kind of question').selectOption({ label: kind });
+  await questions.getByLabel('The question, as the reporter will read it').last().fill(label);
   if (extra) await extra(page);
-  await panel.getByRole('button', { name: 'Add the question' }).click();
-  await expect(panel.getByRole('list', { name: 'The questions, in order' })).toContainText(label);
+  await questions.getByRole('button', { name: 'Add the question' }).click();
+  await expect(questions.getByRole('list', { name: 'The questions, in order' })).toContainText(
+    label,
+  );
 }
 
 test('an operator builds a logbook, launches it, and the questions are fixed afterwards', async ({
@@ -46,28 +50,32 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await expect(page.getByText('Draft: still being written')).toBeVisible();
 
   await addQuestion(page, 'Yes or no', 'Were you hurt?', async (p) => {
-    await p
-      .getByRole('region', { name: 'Questions' })
-      .getByLabel('An answer is needed')
-      .last()
-      .check();
+    await panel(p, 'Questions').getByLabel('An answer is needed').last().check();
   });
-  await addQuestion(page, 'Short text', 'How were you hurt?', async (p) => {
-    const panel = p.getByRole('region', { name: 'Questions' });
-    await panel
+  // A logbook asks for words only as an attached note (isPublishedFreeText).
+  await addQuestion(page, 'Attached note (never published)', 'How were you hurt?', async (p) => {
+    const questions = panel(p, 'Questions');
+    await questions
       .getByLabel('Ask it', { exact: true })
       .selectOption({ label: 'Only depending on “Were you hurt?”' });
-    await panel.getByLabel('Yes', { exact: true }).check();
+    await questions.getByLabel('Yes', { exact: true }).check();
   });
   const list = page.getByRole('list', { name: 'The questions, in order' });
   await expect(list).toContainText('Asked only when “Were you hurt?” is yes.');
+  // A note is asked only where the operator lets reporters attach one.
+  await page.getByRole('button', { name: 'Change Notes and links from reporters' }).click();
+  await page.getByRole('checkbox', { name: /^Reporters may attach a note or link/ }).check();
+  await saveChanges(page);
+  await expect(panel(page, 'Notes and links from reporters').getByRole('definition')).toHaveText(
+    'Yes',
+  );
 
   // A question cannot be moved in front of the one it depends on, and the
   // screen says why rather than doing nothing.
   await page.getByRole('button', { name: 'Move up: “How were you hurt?”' }).click();
   await expect(page.getByRole('alert')).toContainText('in front of the one it depends on');
 
-  const launch = page.getByRole('region', { name: 'Launch' });
+  const launch = panel(page, 'Launch');
   const go = launch.getByRole('button', { name: 'Launch this logbook' });
   await expect(go).toBeDisabled();
   await launch.getByLabel(/Type the title/).fill(title);
@@ -77,19 +85,20 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   await expect(page.getByText(/^Open, and taking reports/)).toBeVisible();
   await expect(page.getByRole('button', { name: /^Move/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Remove/ })).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Delete this draft' })).toHaveCount(0);
+  await expect(panel(page, 'Delete this draft')).toHaveCount(0);
 
   // THE ONE OPENING: a new optional question, and only optional.
-  const panel = page.getByRole('region', { name: 'Questions' });
-  await expect(panel.getByLabel('An answer is needed')).toBeDisabled();
-  await addQuestion(page, 'Long text', 'Anything else?');
+  const questions = panel(page, 'Questions');
+  await expect(questions.getByLabel('An answer is needed')).toBeDisabled();
+  await addQuestion(page, 'Attached note (never published)', 'Anything else?');
   await expect(list.getByRole('listitem')).toHaveCount(3);
 
   // REWORDING IS ALLOWED (ruling 48): the words change, the key does not.
   await list.getByRole('button', { name: 'Reword “Were you hurt?”' }).click();
   await list.getByLabel('The question, as the reporter will read it').fill('Were you hurt at all?');
   await list.getByRole('button', { name: 'Save the wording' }).click();
-  await expect(list.getByText('1. Were you hurt at all?')).toBeVisible();
+  // Its place, then its new words.
+  await expect(list.getByRole('listitem').first()).toContainText(/^1Were you hurt at all\?/);
 
   // The public form now exists, and has the condition on it.
   const slug = (await page.locator('[data-filing-address]').innerText()).replace('/file/', '');
@@ -123,7 +132,7 @@ test('a logbook made from a starting point arrives as a draft with its questions
   ).toHaveCount(11);
 
   // A draft can be deleted, by typing its title.
-  const del = page.getByRole('region', { name: 'Delete this draft' });
+  const del = panel(page, 'Delete this draft');
   await del.getByLabel(/Type the title/).fill('Log how voting went');
   await del.getByRole('button', { name: 'Delete this draft' }).click();
   await expect(page).toHaveURL(/\/logbooks$/);
@@ -131,11 +140,11 @@ test('a logbook made from a starting point arrives as a draft with its questions
 
 test('a refusal from the server is said on the screen, in a sentence', async ({ page }, info) => {
   await makeDraft(page, unique('Choices', info.project.name));
-  const panel = page.getByRole('region', { name: 'Questions' });
-  await panel.getByLabel('Kind of question').selectOption({ label: 'Choose one' });
-  await panel.getByLabel('The question, as the reporter will read it').fill('Pick one');
-  await panel.getByRole('button', { name: 'Add the question' }).click();
-  await expect(panel.getByRole('alert')).toContainText(
+  const questions = panel(page, 'Questions');
+  await questions.getByLabel('Kind of question').selectOption({ label: 'Choose one' });
+  await questions.getByLabel('The question, as the reporter will read it').fill('Pick one');
+  await questions.getByRole('button', { name: 'Add the question' }).click();
+  await expect(questions.getByRole('alert')).toContainText(
     'A list of choices needs at least one choice',
   );
 });
@@ -150,15 +159,18 @@ test('the front page is arranged by order, and the first button is the main one'
   // refuses an arrangement naming a logbook that closed while it was edited.
   await expect(async () => {
     await page.goto('/logbooks/front-page');
-    await expect(rows.first()).toContainText('(the main button)');
+    await expect(rows.first()).toContainText('· highlighted');
     expect(await rows.count()).toBeGreaterThan(1);
-    second = (await rows.nth(1).locator('p.font-semibold').innerText()).trim();
+    // The button's words, in bold above what it leads to.
+    second = (await rows.nth(1).locator('b').first().innerText()).trim();
 
     await page.getByRole('button', { name: `Move up: “${second}”` }).click();
     await expect(rows.first()).toContainText(second);
-    await expect(rows.first()).toContainText('(the main button)');
+    await expect(rows.first()).toContainText('· highlighted');
     await page.getByRole('button', { name: 'Save this order' }).click();
-    await expect(page.getByRole('status')).toHaveText('Saved.', { timeout: 2000 });
+    await expect(page.getByRole('main').getByRole('status')).toHaveText('Saved.', {
+      timeout: 2000,
+    });
 
     const res = await page.request.get('/api/home-buttons');
     const { buttons } = (await res.json()) as { buttons: { label: string; accent: boolean }[] };
@@ -166,7 +178,9 @@ test('the front page is arranged by order, and the first button is the main one'
   }).toPass({ timeout: 20_000 });
 
   await page.getByRole('button', { name: 'Go back to the standard order' }).click();
-  await expect(page.getByRole('status')).toHaveText('Back to the standard order.');
+  await expect(page.getByRole('main').getByRole('status')).toHaveText(
+    'Back to the standard order.',
+  );
 });
 
 test('a front page button can lead to a page, say what the operator chose, and be removed again', async ({
@@ -175,6 +189,16 @@ test('a front page button can lead to a page, say what the operator chose, and b
 }, info) => {
   // One project only: both would arrange the one front page at the same time.
   test.skip(info.project.name !== 'chromium', 'arranges the one shared front page');
+  // Put back for the other tests even if a step below fails, so one failure
+  // here does not become every front page test's.
+  try {
+    await frontPageButton(page, browser);
+  } finally {
+    await page.request.delete('/api/admin/home-buttons');
+  }
+});
+
+async function frontPageButton(page: Page, browser: Browser) {
   await page.goto('/logbooks/front-page');
   const rows = page.getByRole('list', { name: 'Buttons, in order' }).getByRole('listitem');
   await expect(rows.first()).toBeVisible();
@@ -184,17 +208,21 @@ test('a front page button can lead to a page, say what the operator chose, and b
   await added.getByLabel('Target').selectOption({ label: 'About this site' });
   await added.getByLabel('Main text').fill('Who runs this');
   await added.getByLabel('Subtext').fill('And how it works');
-  // The site's own board button may be relabelled too.
+  // The site's own board button may be relabelled too. A row shows its
+  // fields once opened with Change.
+  const openBoard = page.getByRole('button', { name: 'Change: “View Live Report Board”' });
+  if (await openBoard.count()) await openBoard.click();
   const board = rows.filter({ has: page.locator('option[value="builtin:board"]:checked') });
   if (await board.count()) await board.first().getByLabel('Main text').fill('The public record');
   await page.getByRole('button', { name: 'Save this order' }).click();
-  await expect(page.getByRole('status')).toHaveText('Saved.');
+  await expect(page.getByRole('main').getByRole('status')).toHaveText('Saved.');
 
   // A visitor sees exactly that, and the link goes where the target said.
   const context = await browser.newContext({ storageState: { cookies: [], origins: [] } });
   const visitor = await context.newPage();
   await visitor.goto('/');
-  const ways = visitor.getByRole('list', { name: 'What you can do here' });
+  // The buttons are the headline's row of links (home/HeroBlock.tsx).
+  const ways = visitor.getByRole('main');
   const about = ways.getByRole('link', { name: /Who runs this\s*And how it works/ });
   await expect(about).toHaveAttribute('href', '/about');
   if (await board.count()) {
@@ -207,8 +235,10 @@ test('a front page button can lead to a page, say what the operator chose, and b
 
   // Put it back for the other tests.
   await page.getByRole('button', { name: 'Go back to the standard order' }).click();
-  await expect(page.getByRole('status')).toHaveText('Back to the standard order.');
-});
+  await expect(page.getByRole('main').getByRole('status')).toHaveText(
+    'Back to the standard order.',
+  );
+}
 
 test('the builder asks no third party for anything', async ({ page }) => {
   const outside: string[] = [];

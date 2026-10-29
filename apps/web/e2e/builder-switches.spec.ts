@@ -10,6 +10,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { panel } from './panel.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -27,10 +28,12 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
 
   // A logbook with no upload question has nothing to freeze.
-  await expect(page.getByRole('region', { name: 'Files' })).toHaveCount(0);
+  await expect(panel(page, 'Files')).toHaveCount(0);
 
-  const questions = page.getByRole('region', { name: 'Questions' });
-  await questions.getByLabel('Kind of question').selectOption({ label: 'Long text' });
+  const questions = panel(page, 'Questions');
+  await questions
+    .getByLabel('Kind of question')
+    .selectOption({ label: 'Attached note (never published)' });
   await questions.getByLabel('The question, as the reporter will read it').fill('What happened?');
   await questions.getByRole('button', { name: 'Add the question' }).click();
   // Wait for each question to land: the form resets after an add, and a
@@ -47,14 +50,14 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
     'Any photos?',
   );
 
-  const launch = page.getByRole('region', { name: 'Launch' });
+  const launch = panel(page, 'Launch');
   await launch.getByLabel(/Type the title/).fill(title);
   await launch.getByRole('button', { name: 'Launch this logbook' }).click();
   await expect(page.getByText(/^Open, and taking reports/)).toBeVisible();
   const slug = (await page.locator('[data-filing-address]').innerText()).replace('/file/', '');
 
   // THE FREEZE: asked first, then frozen, and the form stops offering files.
-  const files = page.getByRole('region', { name: 'Files' });
+  const files = panel(page, 'Files');
   await files.getByRole('button', { name: 'Freeze uploads…' }).click();
   await expect(files.getByText('Freeze uploads on this logbook?')).toBeVisible();
   await files.getByRole('button', { name: 'Freeze uploads', exact: true }).click();
@@ -70,28 +73,23 @@ test('an operator freezes a launched logbook’s uploads, and opens it outside t
   expect(await thawed.json()).toMatchObject({ enabled: true });
 
   // WITHOUT THE PASSWORD: the choice is saved and shown after a reload.
-  const outside = page.getByRole('region', { name: 'Without the site password' });
+  const outside = panel(page, 'Without the site password');
   const who = outside.getByLabel('Who can file without the password');
   await expect(who).toHaveValue('closed');
   await who.selectOption('link');
   await expect(outside.getByText(/Anybody with the address of its form/)).toBeVisible();
   await page.reload();
   await expect(
-    page
-      .getByRole('region', { name: 'Without the site password' })
-      .getByLabel('Who can file without the password'),
+    panel(page, 'Without the site password').getByLabel('Who can file without the password'),
   ).toHaveValue('link');
 
   // Put back: a launched logbook open outside opens the filing calls for the
   // whole site, and the password tests that run after this one expect none.
-  await page
-    .getByRole('region', { name: 'Without the site password' })
+  await panel(page, 'Without the site password')
     .getByLabel('Who can file without the password')
     .selectOption('closed');
   await expect(
-    page
-      .getByRole('region', { name: 'Without the site password' })
-      .getByText(/Filing needs the site password/),
+    panel(page, 'Without the site password').getByText(/Filing needs the site password/),
   ).toBeVisible();
 });
 
@@ -100,11 +98,14 @@ test('the settings overview says whether the site is taking reports at all, and 
 }) => {
   await page.goto('/logbooks');
   await page.getByRole('link', { name: 'Site settings' }).click();
-  const panel = page.getByRole('region', { name: 'Accepting reports' });
-  await expect(panel).toContainText(/Accepting(Yes|No)/);
-  await expect(panel).toContainText(/Logbooks open\d+ of \d+/);
-  // One of the two cards is chosen: what the site does now.
-  await expect(panel.getByRole('radio', { checked: true })).toHaveCount(1);
+  const accepting = panel(page, 'Accepting reports');
+  await expect(accepting).toContainText(/Paused by the flood screen(Yes|No)/);
+  await expect(accepting).toContainText(/Logbooks open\d+ of \d+/);
+  // The switch says what the site does now: on or off, never neither.
+  await expect(accepting.getByRole('switch', { name: 'Taking new reports' })).toHaveAttribute(
+    'aria-checked',
+    /^(true|false)$/,
+  );
 });
 
 test('the builder’s switches ask no third party for anything', async ({ page }) => {
@@ -116,6 +117,6 @@ test('the builder’s switches ask no third party for anything', async ({ page }
   await page.goto('/logbooks');
   await expect(page.getByRole('heading', { level: 1, name: 'Logbooks' })).toBeVisible();
   await page.goto('/settings');
-  await expect(page.getByRole('region', { name: 'Accepting reports' })).toBeVisible();
+  await expect(panel(page, 'Accepting reports')).toBeVisible();
   expect(outside).toEqual([]);
 });

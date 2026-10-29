@@ -17,6 +17,10 @@ const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() *
 const chooser = (page: Page) =>
   page.getByRole('heading', { level: 1, name: 'What are you reporting?' });
 
+/** The answers on the card: each a link named by what it opens and what pressing it does. */
+const answers = (page: Page) =>
+  page.getByRole('main').getByRole('link', { name: /(File a report|Send a link)$/ });
+
 /** This page alone is told these are the logbooks open now. */
 async function onlyOpen(page: Page, logbooks: { slug: string; title: string; blurb: string }[]) {
   await page.route(
@@ -59,7 +63,7 @@ test('several open logbooks: each is offered, with what it is for, and opens its
     expect(r.ok(), await r.text()).toBe(true);
     const lb = (await r.json()) as { id: number; slug: string };
     const q = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, {
-      data: { kind: 'long_text', label: 'What happened?', required: true },
+      data: { kind: 'private_text', label: 'What happened?', required: true },
     });
     expect(q.ok(), await q.text()).toBe(true);
     expect((await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`)).ok()).toBe(true);
@@ -94,7 +98,11 @@ test('several open logbooks: each is offered, with what it is for, and opens its
 async function openLists(page: Page, lists: { slug: string; title: string; blurb: string }[]) {
   await page.route(
     (url) => url.pathname === '/api/lists',
-    (route) => route.fulfill({ json: { lists } }),
+    // Shaped as the API answers, or the page refuses the answer.
+    (route) =>
+      route.fulfill({
+        json: { lists: lists.map((l) => ({ ...l, on_get_involved: false, is_contact: false })) },
+      }),
   );
 }
 
@@ -128,9 +136,7 @@ test('a link or tip is the other answer, and goes to the tip form', async ({ pag
   await onlyOpen(page, [{ slug: 'demo', title: 'I was at a polling place', blurb: '' }]);
   await openLists(page, [{ slug: 'tips', title: 'Send a link', blurb: 'A post or video.' }]);
   await page.goto('/submit');
-  await expect(
-    page.getByRole('list', { name: 'What are you reporting?' }).getByRole('link'),
-  ).toHaveCount(2);
+  await expect(answers(page)).toHaveCount(2);
   await expectAccessible(page, '/submit with the tip answer');
   await page
     .getByRole('link', { name: /Send a link/ })
@@ -145,7 +151,7 @@ test('nothing open: it says so, rather than showing an empty list', async ({ pag
   await expect(chooser(page)).toBeVisible();
   await expect(page.getByText('Nothing is taking reports at the moment.')).toBeVisible();
   // No answers to choose from; the page still links to the front page and the board.
-  await expect(page.getByRole('list', { name: 'What are you reporting?' })).toHaveCount(0);
+  await expect(answers(page)).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'The board' })).toBeVisible();
   await expectAccessible(page, '/submit with nothing open');
 });
@@ -221,7 +227,7 @@ test('E5: the tip form starts with the filed report’s state and time, and send
     .getByRole('button', { name: /next|continue/i })
     .first()
     .click();
-  await expect(page.getByLabel('About when')).toHaveValue('07:30');
+  await expect(page.getByRole('textbox', { name: /^About when/ })).toHaveValue('07:30');
   await page
     .getByRole('button', { name: /^(send|file|submit)/i })
     .first()

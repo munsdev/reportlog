@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { saveChanges } from './save-bar.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -23,13 +24,10 @@ async function makeTipList(page: Page, project: string): Promise<string> {
   await page.getByLabel('Title (optional)').fill(`Links ${slug}`);
   await page.getByLabel('Web address (optional)').fill(slug);
   await page.getByRole('button', { name: 'Make the list' }).click();
-  await page.getByRole('button', { name: 'Edit Settings' }).click();
+  await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page
-    .getByRole('region', { name: 'Save changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
-  await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
+  await saveChanges(page);
+  await expect(page.getByRole('button', { name: 'Change Settings' })).toBeVisible();
   return slug;
 }
 
@@ -50,7 +48,9 @@ async function sendTip(browser: Browser, slug: string, link: string): Promise<vo
   await v.getByRole('button', { name: 'Next' }).click();
   // The optional words, skipped. The Tip List always asks for an address.
   await v.getByRole('button', { name: 'Next' }).click();
-  await v.getByLabel(/Your email address/).fill(`tipster-${String(Date.now())}@example.org`);
+  await v
+    .getByRole('textbox', { name: /^Email/ })
+    .fill(`tipster-${String(Date.now())}@example.org`);
   await v.waitForTimeout(2600);
   await v.getByRole('button', { name: 'Send' }).click();
   await expect(v.getByRole('heading', { name: 'Sent. Thank you.' })).toBeVisible();
@@ -79,7 +79,7 @@ test('a moderator checks a link as text, comments for journalists, and erases an
   await expect(page.getByRole('link', { name: 'jugendschutz.net' })).toBeVisible();
 
   const card = (url: string) =>
-    page.getByRole('list', { name: 'Links' }).getByRole('listitem').filter({ hasText: url });
+    page.getByRole('main').getByRole('article').filter({ hasText: url });
   await expect(card(good)).toBeVisible();
   // K6: text, never an anchor, so nothing on the page can open or prefetch it.
   await expect(page.locator(`a[href*="${tag}"]`)).toHaveCount(0);
@@ -99,7 +99,7 @@ test('a moderator checks a link as text, comments for journalists, and erases an
   await card(good).getByRole('button', { name: 'Save the comment' }).click();
   await expect(card(good).getByText('Saved.')).toBeVisible();
   await card(good).getByRole('button', { name: 'Show the history' }).click();
-  await expect(card(good).getByRole('list', { name: 'History' })).toContainText('comment');
+  await expect(card(good).getByRole('group', { name: 'History' })).toContainText('comment');
 
   await page
     .getByRole('group', { name: 'Show links that are' })

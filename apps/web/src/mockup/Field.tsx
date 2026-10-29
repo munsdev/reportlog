@@ -9,7 +9,8 @@
  *   </Field>
  *
  * (the label, help and control are named by the caller; `labelId` names a
- * group of answer tiles that has no single box to point a label at), or, where
+ * group of answer tiles that has no single box to point a label at, or is the
+ * label's own id for a control that points at it with aria-labelledby), or, where
  * a form is built from several controls with state of their own, wired by ids
  * so a screen reader announces the pieces as one thing:
  *
@@ -128,7 +129,9 @@ export function Field({
       <div className={cn('field', className)} {...props}>
         {label ? (
           htmlFor ? (
-            <label htmlFor={htmlFor}>{label}</label>
+            <label htmlFor={htmlFor} id={labelId}>
+              {label}
+            </label>
           ) : (
             <span className="lbl" id={labelId}>
               {label}

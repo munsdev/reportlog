@@ -11,6 +11,8 @@ import type { Browser, Page } from '@playwright/test';
 import { axe, describeViolation } from '../a11y.ts';
 import { identityState } from '../identity/mail.ts';
 import { signInWithSecondFactor } from '../second-factor.ts';
+import { panel } from '../panel.ts';
+import { saveBar } from '../save-bar.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -35,23 +37,30 @@ test('an administrator sets the minimum time on a form, and nobody else can', as
   try {
     await page.goto('/settings');
     // The overview says what is set before anything is opened.
-    const summary = page.getByRole('region', { name: 'Report and tip forms' });
+    const summary = panel(page, 'Report and tip forms');
     await expect(summary).toContainText('Not checked');
     await summary.getByRole('link', { name: 'Change Report and tip forms' }).click();
     await expect(
       page.getByRole('heading', { level: 1, name: 'Report and tip forms' }),
     ).toBeVisible();
-    const box = page.getByLabel('Minimum time on a form, in seconds');
-    await expect(box).toHaveValue('0');
-    const bar = page.getByRole('region', { name: 'Save changes' });
-    // Nothing to save, so no Save bar.
-    await expect(bar).toHaveCount(0);
-    // Where the rest of the door is set, named on the page.
-    await expect(
-      page.getByRole('main').getByRole('link', { name: 'flood screen', exact: true }),
-    ).toHaveAttribute('href', '/moderate/flood');
+    // The minimum time is set on the flood screen, with the other defences
+    // against a flood, and this page names where.
+    const elsewhere = page.getByRole('main').getByRole('link', {
+      name: 'The puzzle, the minimum time on a form, and pausing intake',
+      exact: true,
+    });
+    await expect(elsewhere).toHaveAttribute('href', '/moderate/flood');
     const found = await axe(page);
     expect(found.violations.map(describeViolation)).toEqual([]);
+    await elsewhere.click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Flood screen' })).toBeVisible();
+    const box = page.getByLabel('Minimum time on a form, in seconds');
+    await expect(box).toHaveValue('0');
+    const bar = saveBar(page);
+    // Nothing to save, so no Save bar.
+    await expect(bar).toHaveCount(0);
+    const there = await axe(page);
+    expect(there.violations.map(describeViolation)).toEqual([]);
 
     await box.fill('three');
     await expect(page.getByText('Write a whole number of seconds from 0 to 600.')).toBeVisible();
@@ -61,7 +70,7 @@ test('an administrator sets the minimum time on a form, and nobody else can', as
       min_form_seconds: 0,
     });
     await box.fill('4');
-    await expect(bar).toContainText('Saving: Minimum time on a form');
+    await expect(bar).toContainText('Changes to Minimum time on a form are not saved.');
     await bar.getByRole('button', { name: 'Save' }).click();
     await expect(
       page.getByText('Saved. Forms are checked with the new time from now.'),
