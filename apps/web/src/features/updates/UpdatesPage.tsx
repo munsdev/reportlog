@@ -29,7 +29,6 @@ import { Btn } from '@/mockup/Btn.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Note } from '../../mockup/Note.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 
 const busy = (d: UpdatesView | undefined) => d?.waiting === true || d?.last?.state === 'running';
@@ -54,6 +53,53 @@ const LAST_WORDS: Record<string, string> = {
   failed: 'Did not finish. The site is still running the version it had before.',
   refused: 'Not started',
 };
+
+/** What the one button reads while a request runs, by what it asked for. */
+const BUSY_LABEL: Record<string, string> = {
+  check: 'Checking…',
+  apply: 'Installing…',
+  rollback: 'Going back…',
+};
+
+/**
+ * The line beside the button: where things stand, in a few words. One place
+ * for it, so a person never reads "checking" in one panel and an old answer
+ * in another.
+ */
+function statusLine(
+  d: UpdatesView,
+  o: { running: string | null; ref: string; checkedHere: boolean; offer: string | null },
+): { text: string; tone: 'go' | 'bad' | 'plain' } {
+  if (o.running === 'apply')
+    return {
+      text: 'Installing. The site stays up on this version until the new one is ready.',
+      tone: 'plain',
+    };
+  if (o.running === 'rollback') return { text: 'Going back to the older version.', tone: 'plain' };
+  if (o.running) return { text: `Checking ${o.ref} for an update.`, tone: 'plain' };
+  if (d.last?.state === 'failed' && d.last.action !== 'check')
+    return {
+      text: `The last ${LAST_NAMES[d.last.action] ?? 'request'} did not finish. The site is still running the version it had before.`,
+      tone: 'bad',
+    };
+  if (d.last?.state === 'refused' && d.last.action !== 'check')
+    return {
+      text: 'The server did not start the last request. What it said is below.',
+      tone: 'bad',
+    };
+  if (d.fetch_failed && o.checkedHere)
+    return { text: `Check failed. ${d.fetch_failed}`, tone: 'bad' };
+  if (!d.checked_at) return { text: 'Not checked yet.', tone: 'plain' };
+  if (!o.checkedHere) return { text: `Not checked against ${o.ref} yet.`, tone: 'plain' };
+  if (o.offer)
+    return {
+      text: `Update available: ${d.available_version ?? 'a newer version'} on ${o.ref}.`,
+      tone: 'go',
+    };
+  if (d.ahead > 0 && d.behind === 0)
+    return { text: `No update needed. This site is ahead of ${o.ref}.`, tone: 'plain' };
+  return { text: `No update needed. This is the newest version on ${o.ref}.`, tone: 'plain' };
+}
 
 /** How many presses of the installed version show the branch and release choices. */
 const TAPS_TO_CHOOSE = 8;
@@ -100,6 +146,20 @@ export function UpdatesPage() {
   const points = d?.release_points ?? [];
   const point = points.find((r) => r.id === release) ?? points[0] ?? null;
   const off = busy(d) || ask.isPending;
+  // What is under way, if anything: the request in flight, or the one the
+  // server is running (or about to pick up).
+  // Until the server starts on it, what this page asked for says what it is
+  // (the mutation keeps what it last sent).
+  const running = ask.isPending
+    ? ask.variables.action
+    : busy(d)
+      ? d?.last?.state === 'running'
+        ? d.last.action
+        : (ask.variables?.action ?? 'check')
+      : null;
+  const status = d
+    ? statusLine(d, { running, ref, checkedHere, offer })
+    : { text: '', tone: 'plain' as const };
   return (
     <StaffPage
       title="Updates"
@@ -150,18 +210,14 @@ export function UpdatesPage() {
             />
           </Panel>
 
-          <Panel title={offer ? 'An update is available' : 'Updates'}>
-            {d.fetch_failed && checkedHere ? <p className="error">{d.fetch_failed}</p> : null}
-            {!d.checked_at ? (
-              <p>No check has run on this server yet.</p>
-            ) : !checkedHere ? (
-              <p>Press Check for update to see what {ref} offers.</p>
-            ) : offer ? (
+          <Panel title="Updates">
+            {offer && !running ? (
               <>
-                <p>
-                  {d.available_version ?? 'A newer version'} on {ref}
-                  {d.behind ? `, ${String(d.behind)} changes newer than this site` : ''}.
-                </p>
+                {d.behind ? (
+                  <p>
+                    {String(d.behind)} {d.behind === 1 ? 'change' : 'changes'} newer than this site.
+                  </p>
+                ) : null}
                 {d.releases.map((r) => (
                   <div key={r.version}>
                     <p>
@@ -184,11 +240,7 @@ export function UpdatesPage() {
                   new one is ready, and goes back to it by itself if the new one does not start.
                 </p>
               </>
-            ) : d.ahead > 0 && d.behind === 0 ? (
-              <p>This site is ahead of {ref}: there is nothing newer there to install.</p>
-            ) : (
-              <p>This site is running the newest version on {ref}.</p>
-            )}
+            ) : null}
             <div className="acts">
               {choosing ? (
                 <label className="select">
@@ -230,8 +282,16 @@ export function UpdatesPage() {
                   }
                 }}
               >
-                {offer ? 'Install update' : 'Check for update'}
+                {running
+                  ? (BUSY_LABEL[running] ?? 'Working…')
+                  : offer
+                    ? 'Install update'
+                    : 'Check for update'}
               </Btn>
+              {/* Where things stand, beside the button that changes it. */}
+              <p role="status" className={`update-status ${status.tone}`}>
+                {status.text}
+              </p>
             </div>
           </Panel>
 
@@ -356,14 +416,15 @@ export function UpdatesPage() {
           />
 
           <ErrorLine error={ask.error} />
-          {d.waiting ? <Note>Asked. The server picks it up within a few seconds.</Note> : null}
-          {d.last ? (
-            <Panel title={`Last ${LAST_NAMES[d.last.action] ?? 'check'}`}>
-              <p role="status">
-                {LAST_WORDS[d.last.state] ?? d.last.state} · {when(d.last.at)}
-              </p>
-              {d.last.log ? <div className="code">{d.last.log}</div> : null}
-            </Panel>
+          {d.last?.log && !running ? (
+            // The details behind the status line: what the server printed.
+            <details className="tech">
+              <summary>
+                What the server said: last {LAST_NAMES[d.last.action] ?? 'check'},{' '}
+                {(LAST_WORDS[d.last.state] ?? d.last.state).toLowerCase()} · {when(d.last.at)}
+              </summary>
+              <div className="code">{d.last.log}</div>
+            </details>
           ) : null}
         </>
       ) : null}

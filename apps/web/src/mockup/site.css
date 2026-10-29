@@ -881,3 +881,7 @@ body.rl-look-editing .fab-dock,.rl-preview .fab-dock{display:none}
 .sec-head .num{display:none}
 .sec-head p{grid-column:1}
 .le-body{overflow-x:hidden}.le-body select,.le-body .input{width:100%;max-width:100%;min-width:0}.le-body > *{min-width:0}
+/* The Updates screen's one status line, beside its one button. */
+.update-status{margin:0;align-self:center}
+.update-status.go{color:var(--rl-confirmed);font-weight:600}
+.update-status.bad{color:var(--rl-serious);font-weight:600}
