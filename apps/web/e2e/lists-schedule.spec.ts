@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { saveChanges } from './save-bar.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -35,10 +36,7 @@ async function edit(page: Page) {
 }
 
 async function save(page: Page) {
-  await page
-    .getByRole('region', { name: 'Save changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
 }
 
 test('opening times on the editor screen decide when the form takes entries', async ({

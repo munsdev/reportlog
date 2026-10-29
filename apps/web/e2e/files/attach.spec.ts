@@ -86,8 +86,8 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
   await expect(page.getByText('IMG_0042.jpg')).toBeVisible();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   const before = countTo(email);
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(heading(page, 'Check your email')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(heading(page, 'Check your email to finish')).toBeVisible();
   await context.close();
 
   // The link, followed in a fresh browser, as the reporter would.

@@ -261,9 +261,9 @@ test.describe('a logbook behind the password', () => {
 
     filingState('outside', 'demo', 'closed');
     try {
-      await v.page.getByRole('button', { name: 'Send report' }).click();
+      await v.page.getByRole('button', { name: 'Send', exact: true }).click();
       await expect(lockHeading(v.page)).toBeVisible();
-      await expect(heading(v.page, 'Check your email')).toHaveCount(0);
+      await expect(heading(v.page, 'Check your email to finish')).toHaveCount(0);
     } finally {
       filingState('outside', 'demo', 'door');
     }

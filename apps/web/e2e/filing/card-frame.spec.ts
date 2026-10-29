@@ -9,7 +9,7 @@
  *   - Back, on the page or in the browser, returns to the card before with
  *     its answer kept;
  *   - a question whose "only if" does not hold is never sent, not even empty;
- *   - the tab names the question and where it is, "(n of m)";
+ *   - the tab names the question and where it is, "(question n)";
  *   - on a phone Back and Next are fixed to the bottom of the screen, and the
  *     last choice can be scrolled clear of them;
  *   - the review says "Not answered" for an optional question left blank;
@@ -83,7 +83,11 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
   await expect(heading(page, title)).toBeVisible();
   await expect(page.getByText('If someone needs help right now')).toBeVisible();
   await expect(page.locator('[data-copy="help_now"]')).not.toBeEmpty();
-  await expect(page.getByText('A moderator reads it before anything is public.')).toBeVisible();
+  await expect(
+    page.getByRole('listitem').filter({
+      hasText: /^A moderator reads it\.\s*Nothing is public before that\.$/,
+    }),
+  ).toBeVisible();
   // No progress yet, on the page or for the header.
   await expect(page.getByRole('progressbar')).toHaveCount(0);
   await expect(page.locator('html')).not.toHaveAttribute('data-filing-progress', /.*/);
@@ -93,7 +97,8 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
 
   // THE FIRST QUESTION: the tab says where it is; Next is never disabled.
   await expect(heading(page, 'How did it go?')).toBeFocused();
-  await expect(page).toHaveTitle(/^How did it go\? \(1 of \d+\) · /);
+  // Which question it is, and no total (CardFrame.tsx: a total that falls reads as a trap).
+  await expect(page).toHaveTitle(/^How did it go\? \(question 1\) · /);
   await expect(page.locator('html')).toHaveAttribute('data-filing-progress', '');
   await expect(next(page)).toBeEnabled();
   await next(page).click();
@@ -147,7 +152,7 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
   await next(page).click();
   await expect(heading(page, 'Did anybody else see it?')).toBeVisible();
   // Optional, and left blank.
-  await expect(page.getByText('Optional.', { exact: true })).toBeVisible();
+  await expect(page.getByText(/^Question \d+ · optional$/)).toBeVisible();
   await next(page).click();
   await page.getByRole('radio', { name: 'Yes, it may be published' }).check();
   await next(page).click();
@@ -159,17 +164,17 @@ test('the card frame: the opening card, errors that take focus, Back that keeps 
   await expect(review.getByText('Not answered', { exact: true })).toBeVisible();
   await expect(review.getByText('What went wrong?')).toHaveCount(0);
   await expect(
-    review.getByText('This report can’t be changed or withdrawn after you send it.'),
+    review.getByText('This report can’t be changed or taken down after you send it.'),
   ).toBeVisible();
   await expectAccessible(page, 'the review card');
   // No statement ticked: said above the button, and focused.
-  await page.getByRole('button', { name: 'Send report' }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   const unticked = page.getByRole('alert').filter({ hasText: 'Tick the statement above' });
   await expect(unticked).toBeFocused();
   expect(sent).toHaveLength(0);
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).click();
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeFocused({
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'It’s on the record' })).toBeFocused({
     timeout: 30_000,
   });
 
@@ -197,13 +202,13 @@ test('the bare /verify form and the entry card ask no other host', async ({ page
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await page.goto('/verify');
-  await expect(heading(page, 'Check a report')).toBeVisible();
+  await expect(heading(page, 'Has it changed?')).toBeVisible();
   await expectAccessible(page, '/verify');
-  await page.getByLabel('Report reference').fill('RL-NOT-REAL');
-  await page.getByLabel('Report reference').press('Enter');
+  await page.getByRole('textbox', { name: 'Reference' }).fill('RL-NOT-REAL');
+  await page.getByRole('textbox', { name: 'Reference' }).press('Enter');
   await expect(page).toHaveURL(/\/verify\/RL-NOT-REAL$/);
   await expect(page.getByRole('alert')).toContainText('There is no report with that reference.');
   // The field again, so a second check does not go back to the front page.
-  await expect(page.getByLabel('Report reference')).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Reference' })).toBeVisible();
   expect(outside).toEqual([]);
 });

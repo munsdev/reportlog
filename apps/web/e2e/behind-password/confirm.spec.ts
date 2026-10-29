@@ -70,8 +70,8 @@ test('a reporter without the password files, and confirms from the email', async
   await next();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
   const before = countTo(email);
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(heading(page, 'Check your email')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(heading(page, 'Check your email to finish')).toBeVisible();
   // A door page asks for nothing it may not have, so the lock never came back.
   await expect(lockHeading(page)).toHaveCount(0);
   await context.close();

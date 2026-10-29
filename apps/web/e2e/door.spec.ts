@@ -81,7 +81,7 @@ test('the puzzle is solved in the page; a refusal is one plain sentence, and sen
   await expect(hidden).toHaveAttribute('tabindex', '-1');
   await expect(hidden).toHaveAttribute('autocomplete', 'off');
   await hidden.fill('http://spam.example', { force: true });
-  const send = v.getByRole('button', { name: 'Send report' });
+  const send = v.getByRole('button', { name: 'Send', exact: true });
   // Enabled once the puzzle is solved, in the background.
   await expect(send).toBeEnabled({ timeout: 30_000 });
   await send.click();

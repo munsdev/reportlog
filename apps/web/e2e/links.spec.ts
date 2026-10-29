@@ -8,6 +8,7 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { saveChanges } from './save-bar.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -25,10 +26,7 @@ async function makeTipList(page: Page, project: string): Promise<string> {
   await page.getByRole('button', { name: 'Make the list' }).click();
   await page.getByRole('button', { name: 'Edit Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page
-    .getByRole('region', { name: 'Save changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByRole('button', { name: 'Edit Settings' })).toBeVisible();
   return slug;
 }

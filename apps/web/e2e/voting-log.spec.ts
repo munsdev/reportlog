@@ -84,7 +84,7 @@ async function finish(page: Page) {
 async function send(page: Page) {
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).click();
   // Send waits for the puzzle, solved in the background in this page.
-  await page.getByRole('button', { name: 'Send report' }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
   await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeVisible();
   await expect(page.getByText(/A moderator reads it before anything is public/)).toBeVisible();
