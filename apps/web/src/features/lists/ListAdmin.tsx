@@ -109,8 +109,8 @@ export function ListAdmin() {
                       <span className="t">{l.title}</span>
                       <br />
                       <span className="m">
-                        /{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
-                        for review
+                        /{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting for
+                        review
                       </span>
                     </span>
                     <span className="chips">
