@@ -56,7 +56,7 @@ function GetInvolvedPage() {
                 <div className="card" key={l.slug}>
                   <h3>{l.title}</h3>
                   {l.blurb ? <p>{l.blurb}</p> : null}
-                  <Link className="btn sm flat" to="/list/$slug" params={{ slug: l.slug }}>
+                  <Link className="btn sm flat" to="/$slug" params={{ slug: l.slug }}>
                     Start
                   </Link>
                 </div>

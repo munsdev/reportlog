@@ -83,7 +83,7 @@ export function TipOffer() {
     <div className="card plain">
       <h3>Saw it online too?</h3>
       <p>Thank you. Have a link? Send it as a tip.</p>
-      <BtnLink sm flat href="/list/tips">
+      <BtnLink sm flat href="/tips">
         Send a link
       </BtnLink>
     </div>

@@ -133,7 +133,7 @@ function Editor({ list }: { list: ListAdminDetail }) {
         ← All lists
       </Link>
       <p className="mono">
-        The form is at <a href={`/list/${list.slug}`}>/list/{list.slug}</a>
+        The form is at <a href={`/${list.slug}`}>/{list.slug}</a>
       </p>
       <SettingPanels>
         {/* One panel per row: two columns of cards read badly (the owner, 28 Oct). */}

@@ -71,7 +71,7 @@ export function SiteFooter() {
             {contact ? (
               <>
                 <br />
-                <Link to="/list/$slug" params={{ slug: contact.slug }}>
+                <Link to="/$slug" params={{ slug: contact.slug }}>
                   Contact
                 </Link>
               </>

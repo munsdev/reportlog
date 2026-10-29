@@ -1,5 +1,5 @@
 /**
- * A list's form, one question per card: what somebody sees at /list/:slug.
+ * A list's form, one question per card: what somebody sees at /:slug (and the older /list/:slug).
  *
  * AN ENTRY IS NOT A REPORT. There is no consent card and no question about
  * publication, because nothing anybody writes here is published: at most, a

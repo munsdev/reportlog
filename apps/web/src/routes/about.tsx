@@ -54,7 +54,7 @@ function AboutPage() {
                 <p>For questions about the project or a report you filed{contact ? ':' : '.'}</p>
                 <CopyText slot="contact_users" />
                 {form ? (
-                  <Link className="btn sm flat" to="/list/$slug" params={{ slug: form.slug }}>
+                  <Link className="btn sm flat" to="/$slug" params={{ slug: form.slug }}>
                     Write to us
                   </Link>
                 ) : null}

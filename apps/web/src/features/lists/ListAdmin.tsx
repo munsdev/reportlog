@@ -109,7 +109,7 @@ export function ListAdmin() {
                       <span className="t">{l.title}</span>
                       <br />
                       <span className="m">
-                        /list/{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
+                        /{l.slug} · {String(l.received)} received · {String(l.waiting)} waiting
                         for review
                       </span>
                     </span>
@@ -256,7 +256,7 @@ function NewList({ onCancel }: { onCancel: () => void }) {
               <Field>
                 <Label optional>Web address</Label>
                 <FieldDescription>
-                  {`The form will be at /list/${slug.trim() || (chosen?.slug ?? '…')}. Lowercase letters, numbers and hyphens.`}
+                  {`The form will be at /${slug.trim() || (chosen?.slug ?? '…')}. Lowercase letters, numbers and hyphens.`}
                 </FieldDescription>
                 <Input
                   value={slug}
