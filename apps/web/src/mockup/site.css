@@ -889,3 +889,20 @@ body.rl-look-editing .fab-dock,.rl-preview .fab-dock{display:none}
 .update-status{margin:0;align-self:center}
 .update-status.go{color:var(--rl-confirmed);font-weight:600}
 .update-status.bad{color:var(--rl-serious);font-weight:600}
+
+/* ---------- the report under moderation: read on the left, decide on the right, secondary acts a line each ---------- */
+@media (min-width:900px){.grid2.report-grid{grid-template-columns:minmax(0,1fr) minmax(320px,26rem)}}
+.code.wrap{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:visible}
+.item-rows{display:grid;gap:10px;min-width:0}
+.item-rows > .panel{min-width:0}
+.item-rows > .panel:not(.closed){max-width:760px}
+.panel.closed .dl{border-top:0}
+.panel.closed .dl > div{grid-template-columns:minmax(0,1fr);padding:2px 0;border-bottom:0}
+.panel.closed .dl dd{overflow-wrap:anywhere}
+@media (min-width:900px){
+  .item-rows > .panel.closed{grid-template-columns:minmax(11rem,15rem) minmax(0,1fr) auto;align-items:center;column-gap:18px;row-gap:4px;padding:10px 16px}
+  .item-rows > .panel.closed > *{grid-column:2;min-width:0}
+  .item-rows > .panel.closed > .closed-head{grid-column:1;grid-row:1}
+  .item-rows > .panel.closed > .acts{grid-column:3;grid-row:1;justify-content:flex-end}
+  .item-rows > .panel.closed > .dl:first-of-type,.item-rows > .panel.closed > :nth-child(2){grid-row:1}
+}
