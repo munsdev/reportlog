@@ -198,7 +198,7 @@ test('the lock screen shows the site’s name and the operator’s paragraph, an
   await settings.goto('/settings/words');
   const slot = 'Your own words on the password screen';
   const form = panel(settings, slot);
-  await form.getByRole('button', { name: `Edit ${slot}` }).click();
+  await form.getByRole('button', { name: `Change ${slot}` }).click();
   const box = settings.getByRole('textbox', { name: slot });
   await box.fill('Run by the harbour residents.\nAsk at the office for the password.');
   // Numbers are for the pages behind the password, never this one.

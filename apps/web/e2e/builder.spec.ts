@@ -63,7 +63,7 @@ test('an operator builds a logbook, launches it, and the questions are fixed aft
   const list = page.getByRole('list', { name: 'The questions, in order' });
   await expect(list).toContainText('Asked only when “Were you hurt?” is yes.');
   // A note is asked only where the operator lets reporters attach one.
-  await page.getByRole('button', { name: 'Edit Notes and links from reporters' }).click();
+  await page.getByRole('button', { name: 'Change Notes and links from reporters' }).click();
   await page.getByRole('checkbox', { name: /^Reporters may attach a note or link/ }).check();
   await saveChanges(page);
   await expect(panel(page, 'Notes and links from reporters').getByRole('definition')).toHaveText(

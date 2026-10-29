@@ -16,7 +16,6 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { goViaMenu, tabLink } from '../menu.ts';
-import { openStaffSection } from '../staff-section.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 import { doorFields } from '../door.ts';
@@ -237,12 +236,11 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await admin.dispose();
 
   await page.goto('/');
-  await openStaffSection(page, 'Site settings');
   await goViaMenu(page, 'File limits', { area: 'Site settings' });
   await expect(page.getByRole('heading', { level: 1, name: 'File limits' })).toBeVisible();
   // The limits show what is set before they are opened.
   await expect(page.getByText('Largest photo', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
+  await page.getByRole('button', { name: 'Change How big, how long, how many' }).click();
   await expect(page.getByLabel('Largest photo (MB)')).toBeVisible();
 
   await (await tabLink(page, 'Sections', 'Each logbook')).click();
@@ -250,7 +248,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await expect(
     page.getByRole('heading', { level: 1, name: `File limits: ${title}` }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
+  await page.getByRole('button', { name: 'Change How big, how long, how many' }).click();
   const files = page.getByLabel('Most files on one report (files)');
   await expect(files).toHaveValue('');
   await files.fill('500');
@@ -263,7 +261,7 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   // It holds, shown closed with the site's number beside it, and the filing form reads it.
   await page.reload();
   await expect(page.getByText(/^2 files/)).toBeVisible();
-  await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
+  await page.getByRole('button', { name: 'Change How big, how long, how many' }).click();
   await expect(page.getByLabel('Most files on one report (files)')).toHaveValue('2');
   await expect(page.getByText('Set on this logbook: 2 files.')).toBeVisible();
   const config = (await (

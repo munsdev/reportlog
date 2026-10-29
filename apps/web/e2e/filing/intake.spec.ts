@@ -15,7 +15,6 @@ import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
 import { panel } from '../panel.ts';
 import { passSecondFactor } from '../second-factor.ts';
 import { goViaMenu } from '../menu.ts';
-import { openStaffSection } from '../staff-section.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const filingState = (...args: string[]) =>
@@ -54,7 +53,6 @@ test('a coordinator stages accounts, fixes what is missing, files them and corre
 
   // Reached from the menu, which shows it by organization membership.
   await page.goto('/');
-  await openStaffSection(page, 'Your organization');
   await goViaMenu(page, 'Filing for an organization');
   await expect(
     page.getByRole('heading', { level: 1, name: 'Filing for an organization' }),
