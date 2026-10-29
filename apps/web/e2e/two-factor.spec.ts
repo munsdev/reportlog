@@ -38,7 +38,7 @@ async function emailCode(page: Page, email: string) {
   await page.goto('/access/sign-in');
   const before = countTo(email);
   await page.getByLabel('Email', { exact: true }).fill(email);
-  await page.getByRole('button', { name: 'Send me a code' }).click();
+  await page.getByRole('button', { name: 'Send code' }).click();
   await page.getByLabel('The code from the email').fill(codeIn(await lastMessageTo(email, before)));
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
@@ -142,8 +142,12 @@ test('an administrator is asked for the factor again before granting a role', as
   identityState('stale-step-up', email);
   await page.goto('/access');
   await page.getByLabel('Their email address').fill(subject);
-  await page.getByRole('checkbox', { name: 'Moderator' }).click();
-  await page.getByRole('button', { name: 'Save' }).click();
+  // A choice tile: a label over a hidden tick box.
+  await page
+    .locator('label')
+    .filter({ has: page.getByRole('checkbox', { name: 'Moderator', exact: true }) })
+    .click();
+  await page.getByRole('button', { name: 'Give the role' }).click();
 
   const dialog = page.getByRole('dialog', { name: 'Confirm it is you' });
   await expect(dialog).toBeVisible();
@@ -153,7 +157,7 @@ test('an administrator is asked for the factor again before granting a role', as
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('alert')).toContainText('Confirm it is you first');
 
-  await page.getByRole('button', { name: 'Save' }).click();
+  await page.getByRole('button', { name: 'Give the role' }).click();
   await expect(dialog).toBeVisible();
   await dialog.getByLabel('Code from your authenticator app').fill(totp(secret, 30_000));
   await dialog.getByRole('button', { name: 'Confirm' }).click();
@@ -195,7 +199,7 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
     await page.goto(`${LOCAL}/access/sign-in`);
     const before = countTo(email);
     await page.getByLabel('Email', { exact: true }).fill(email);
-    await page.getByRole('button', { name: 'Send me a code' }).click();
+    await page.getByRole('button', { name: 'Send code' }).click();
     await page
       .getByLabel('The code from the email')
       .fill(codeIn(await lastMessageTo(email, before)));

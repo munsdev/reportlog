@@ -303,7 +303,9 @@ for (const role of ROLES) {
     for (const label of firsts.values()) {
       const target = pageByLabel(label, role);
       await (await menuLink(page, label, target.area ? { area: target.area } : {})).click();
-      await expect(page).toHaveURL(new RegExp(`${target.href.split('#')[0] ?? ''}/?(#.*)?$`));
+      await expect(page).toHaveURL(
+        target.lands ?? new RegExp(`${target.href.split('#')[0] ?? ''}/?(#.*)?$`),
+      );
       await expect(page.getByRole('dialog', { name: 'Staff menu' })).toBeHidden();
     }
     await who.context.close();

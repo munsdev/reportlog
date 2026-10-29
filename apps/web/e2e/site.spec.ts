@@ -17,7 +17,11 @@ test('the front page has one main button, and checking a report still works from
 }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  const buttons = page.getByRole('list', { name: 'What you can do here' }).getByRole('link');
+  const buttons = page
+    // The front page's buttons sit in its first band, the one its heading names.
+    .getByRole('region')
+    .filter({ has: page.getByRole('heading', { level: 1 }) })
+    .getByRole('link');
   await expect(buttons.first()).toBeVisible();
   // Only the first wears the action colour.
   const action = await page.evaluate(() =>
@@ -42,7 +46,7 @@ test('the legal page says plainly what has not been published', async ({ page })
   // The dev database is the operator's; on a fresh one nothing is published,
   // and on any database the outline is never what the page shows.
   await expect(page.getByText('outline to complete')).toHaveCount(0);
-  await page.getByRole('main').getByRole('link', { name: 'moderation standard' }).click();
+  await page.getByRole('main').getByRole('link', { name: 'moderation standard' }).first().click();
   await expect(page).toHaveURL(/\/standards$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Standards' })).toBeVisible();
   await expect(page.getByRole('heading', { level: 2, name: 'Moderation standard' })).toBeVisible();
@@ -50,7 +54,7 @@ test('the legal page says plainly what has not been published', async ({ page })
 
 test('the footer reaches the legal page', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('link', { name: 'Imprint and privacy' }).click();
+  await page.getByRole('contentinfo').getByRole('link', { name: 'Imprint & privacy' }).click();
   await expect(page).toHaveURL(/\/legal$/);
 });
 
@@ -84,7 +88,9 @@ async function wearLook(page: Page, look: Record<string, string>) {
     await page.route(path, async (route) => {
       const real = await route.fetch();
       const body = (await real.json()) as Record<string, unknown>;
-      await route.fulfill({ json: { ...body, look } });
+      // Over the real look, so the look packs the page script paints from stay.
+      const real_look = (body.look ?? {}) as Record<string, unknown>;
+      await route.fulfill({ json: { ...body, look: { ...real_look, ...look } } });
     });
   }
 }
@@ -103,12 +109,17 @@ test('an operator’s palette and theme repaint every screen, through the styles
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'docket');
   await expect(page.locator('html')).toHaveAttribute('data-panel-head', 'rule');
   // The heading first: read before the page has drawn it, the fallback to
-  // <body> reports no text-transform, which failed about one run in four.
+  // <body> reports the wrong font.
   await expect(page.locator('h1')).toBeVisible();
   const look = await page.evaluate(() => {
     const html = getComputedStyle(document.documentElement);
     const h1 = getComputedStyle(document.querySelector('h1') ?? document.body);
-    return { bg: html.backgroundColor, font: h1.fontFamily, transform: h1.textTransform };
+    return {
+      bg: html.backgroundColor,
+      font: h1.fontFamily,
+      // The theme's display case, which the mock-up's display headings wear.
+      transform: html.getPropertyValue('--d-case').trim(),
+    };
   });
   expect(look.bg).toBe('rgb(18, 26, 36)');
   expect(look.font).toMatch(/Courier Prime/);

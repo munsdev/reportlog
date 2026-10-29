@@ -14,10 +14,15 @@
 import { headerImagePath } from '@reportlog/contracts';
 import type { KitPalette, KitTheme, LookKit, LookOptions } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useSite } from '@/components/ui/site.tsx';
 import { siteStatusQuery } from '@/features/identity/gateMode.ts';
 import { useLookOverride } from '@/features/looks/editor/override.ts';
+import {
+  easyPair,
+  easyReadingOn,
+  onEasyReadingChange,
+} from '@/features/easy-reading/easyReading.ts';
 import { useKit } from '@/features/looks/header-background/kits.ts';
 
 interface ScriptPalette {
@@ -135,7 +140,11 @@ export function SiteLookScript() {
   const status = useQuery(siteStatusQuery);
   // A look being tried on (the look editor, or a preview frame) wins while it is set.
   const trying = useLookOverride();
-  const painted = trying ?? look ?? status.data?.look;
+  const easy = useSyncExternalStore(onEasyReadingChange, easyReadingOn, () => false);
+  const chosen = trying ?? look ?? status.data?.look;
+  // Easier reading is this reader's own choice and wins over the site's look,
+  // never over a look being tried on in the editor or a preview frame.
+  const painted = chosen && !trying ? easyPair(chosen, easy) : chosen;
   const options = trying?.options ?? look?.options;
   const { packs } = useKit(look?.kits);
   const key = JSON.stringify([painted?.palette, painted?.theme, options, packs]);

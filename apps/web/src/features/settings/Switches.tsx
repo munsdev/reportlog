@@ -203,7 +203,7 @@ export function DevNoticePanel({ state }: { state: DevMode }) {
   });
   const hours = String(state.default_hours);
   return (
-    <Panel title="Development notice">
+    <Panel title="Development notice" aria-label="Development notice">
       <Switch
         label={state.active && state.until ? `On until ${when(state.until)}` : 'Off'}
         help={`Shows “Under active development” in a corner of every page. A release turns it on by itself for ${hours} hours.`}

@@ -243,7 +243,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
 
 function Said({ r }: { r: QueueItem }) {
   return (
-    <Panel title="What the reporter said">
+    <Panel title="What the reporter said" aria-label="What the reporter said">
       <AnswerList slug={r.logbook_slug} answers={r.answers} />
       <p className="m">
         Filed {when(r.received_at)}
@@ -1076,7 +1076,7 @@ function WhoFiledRow({ r }: { r: QueueItem }) {
     />
   );
   return (
-    <section className="panel closed" id="who-filed">
+    <section className="panel closed" id="who-filed" aria-label="Who filed it">
       <div className="closed-head">
         <h2>Who filed it</h2>
       </div>
@@ -1162,7 +1162,7 @@ function TheRecord({ r, history }: { r: QueueItem; history: History }) {
     ),
   ];
   return (
-    <Panel title="The record">
+    <Panel title="The record" aria-label="The record">
       <div className="code">{lines.join('\n')}</div>
     </Panel>
   );

@@ -14,6 +14,8 @@ export interface MenuPage {
   href: string;
   /** The staff area holding it, or none for the groups by who you are (You, the desk, the organization). */
   area?: string;
+  /** Where following it ends up, when the page sends you on (a redirect). */
+  lands?: RegExp;
 }
 
 export const ALL_PAGES: readonly MenuPage[] = [
@@ -30,7 +32,8 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { label: 'Members', href: '/intake/members' },
-  { label: 'Directory listing', href: '/intake/listing' },
+  // Sends a coordinator on to their own organization's listing page.
+  { label: 'Directory listing', href: '/intake/listing', lands: /\/organizations\/\d+\/listing$/ },
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
   { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
   { area: 'Review', label: 'Links', href: '/lists/links' },

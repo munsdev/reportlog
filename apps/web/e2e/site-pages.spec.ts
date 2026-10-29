@@ -25,11 +25,12 @@ test.describe('signed out', () => {
   }) => {
     const outside = outsideRequests(page);
     const pages = [
-      ['/about', /^About /],
-      ['/how', 'How to use this'],
+      // About's heading is the operator's own words.
+      ['/about', /\S/],
+      ['/how', 'How it works'],
       ['/standards', 'Standards'],
-      // The public API moved into How to use this, under For developers.
-      ['/public-api', 'How to use this'],
+      // The public API moved into How it works, under For developers.
+      ['/public-api', 'How it works'],
     ] as const;
     for (const [path, heading] of pages) {
       await page.goto(path);
@@ -43,17 +44,18 @@ test.describe('signed out', () => {
     page,
   }) => {
     await page.goto('/about');
-    await expect(page.locator('#what').locator('[data-copy="about_archive"]')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'What this is', exact: true })).toBeVisible();
+    await expect(page.locator('[data-copy="about_archive"]')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'About the software' })).toHaveCount(0);
   });
 
   test('the footer credits the software, and reaches every new page', async ({ page }) => {
     await page.goto('/');
     const footer = page.getByRole('contentinfo');
-    await expect(footer.getByText(/Powered by ReportLog/)).toBeVisible();
+    await expect(footer.locator('[data-attribution]')).toHaveText(/^Powered by ReportLog/);
     for (const [link, heading] of [
-      ['About', /^About /],
-      ['How to use', 'How to use this'],
+      ['About', /\S/],
+      ['How it works', 'How it works'],
       ['Standards', 'Standards'],
     ] as const) {
       await footer.getByRole('link', { name: link, exact: true }).click();
@@ -78,27 +80,30 @@ test.describe('an administrator', () => {
   }) => {
     await page.goto('/settings/development');
     const panel = page.getByRole('region', { name: 'Development notice' });
-    await expect(panel.getByRole('radio', { name: 'Off now' })).toBeChecked();
-    // Choosing the card does nothing by itself; the button applies it, and a toast says so.
-    await panel.getByRole('radio', { name: /^On for 6 hours from now/ }).click();
-    await panel.getByRole('button', { name: 'Turn it on' }).click();
+    // A switch, not a form: it applies when pressed, and a toast says so.
+    const sw = panel.getByRole('switch');
+    await expect(sw).not.toBeChecked();
+    await sw.click();
     await expect(page.getByText(/The development notice is now on, until/)).toBeVisible();
-    await expect(panel).toContainText(/ShowingYes, until/);
+    await expect(panel).toContainText(/The notice is showing until/);
 
     await page.goto('/');
-    const badge = page.getByRole('button', { name: 'Under active development' });
+    // One round "!" for every notice there is (owner, 28 Oct).
+    const badge = page.getByRole('button', { name: 'Notices: 1' });
     await expect(badge).toBeVisible();
     await badge.click();
     await expect(
-      page.getByRole('dialog', { name: 'This site is under active development' }),
+      page
+        .getByRole('dialog', { name: 'Notices' })
+        .getByRole('heading', { name: 'This site is under active development' }),
     ).toBeVisible();
     await page.keyboard.press('Escape');
 
     await page.goto('/settings/development');
-    await panel.getByRole('radio', { name: 'Off now' }).click();
-    await panel.getByRole('button', { name: 'Turn it off' }).click();
+    await expect(sw).toBeChecked();
+    await sw.click();
     await expect(page.getByText('The development notice is now off.')).toBeVisible();
-    await expect(panel).toContainText('ShowingNo');
+    await expect(panel).toContainText('The notice is not showing.');
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(badge).toHaveCount(0);
@@ -118,9 +123,10 @@ test.describe('an administrator', () => {
     await card.getByLabel('Which number').selectOption({ label: 'Reports filed ever' });
     await card.getByRole('button', { name: 'Insert it' }).click();
     await expect(box).toHaveValue('Reports filed so far: {{ [reports.filed.all] }}');
-    // Beside the editor, the piece where it sits, with the placeholder as its number.
-    await expect(card.getByRole('figure')).toContainText(/Reports filed so far: \d[\d,]*/);
-    await expect(bar).toContainText(`Saving: ${slot}`);
+    // Beside the editor, the piece where it sits, with the placeholder as its
+    // number (hidden from screen readers: the field holds the same words).
+    await expect(card.locator('.panel.quiet')).toContainText(/Reports filed so far: \d[\d,]*/);
+    await expect(bar).toContainText(`Changes to ${slot} are not saved.`);
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Saved. The page shows it now.')).toBeVisible();
 
@@ -146,13 +152,12 @@ test.describe('an administrator', () => {
     page,
   }) => {
     await page.goto('/settings/social');
-    const row = page.getByRole('group', { name: 'Bluesky' });
-    const show = row.getByRole('checkbox', { name: 'Show on the site' });
+    // A panel per platform; the switch is off until there is an address.
+    const row = page.locator('[data-platform="bluesky"]');
+    const show = row.getByRole('switch', { name: 'Show on the site' });
     await expect(show).toBeDisabled();
     await row.getByLabel('Address on Bluesky').fill('@munich.bsky.social');
-    await expect(
-      row.getByText('Links to https://bsky.app/profile/munich.bsky.social'),
-    ).toBeVisible();
+    await expect(row.getByText('Links to bsky.app/profile/munich.bsky.social')).toBeVisible();
     await show.click();
     const bar = page.getByRole('region', { name: 'Unsaved changes' });
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
@@ -160,41 +165,43 @@ test.describe('an administrator', () => {
 
     const outside = outsideRequests(page);
     await page.goto('/');
-    const footer = page.getByRole('navigation', { name: 'Follow us elsewhere' });
-    const mark = footer.getByRole('link', { name: /on Bluesky$/ });
+    const mark = page.getByRole('contentinfo').getByRole('link', { name: /on Bluesky$/ });
     await expect(mark).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
     await expect(mark).toHaveAttribute('rel', /noreferrer/);
+    // The front page's "Follow along" band links it too.
     await expect(
-      page.getByRole('main').getByRole('link', { name: 'Bluesky', exact: true }),
+      page.getByRole('main').locator('[data-follow-band] a[data-social="bluesky"]'),
     ).toBeVisible();
     await page.waitForLoadState('networkidle');
     expect(outside).toEqual([]);
 
-    // The floating button: off until asked, then on the chosen pages only.
-    await expect(page.getByRole('button', { name: 'Follow us' })).toHaveCount(0);
+    // The floating strip: off until asked, then on the chosen pages only.
+    const strip = page.locator('[data-follow-us]');
+    await expect(strip).toHaveCount(0);
     await page.goto('/settings/social');
-    const floating = page.getByRole('group', { name: 'Floating “Follow us” button' });
-    await floating.getByRole('checkbox', { name: 'Show the button' }).click();
-    await floating.getByRole('checkbox', { name: 'The maps' }).click();
+    const placements = page.locator('[data-placements]');
+    await placements.getByRole('switch', { name: 'Floating “Follow us” button' }).click();
+    // A tick box is a label over a hidden input, so the label is what is clicked.
+    await placements.locator('label').filter({ hasText: 'The maps' }).click();
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Saved. 1 account is shown.')).toBeVisible();
     await page.goto('/');
-    await page.getByRole('button', { name: 'Follow us' }).click();
-    await expect(
-      page.getByRole('group', { name: 'Follow us' }).getByRole('link', { name: 'Bluesky' }),
-    ).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
+    await expect(strip.getByRole('link', { name: /on Bluesky$/ })).toHaveAttribute(
+      'href',
+      'https://bsky.app/profile/munich.bsky.social',
+    );
     await page.goto('/about');
-    await expect(page.getByRole('button', { name: 'Follow us' })).toBeVisible();
+    await expect(strip).toBeVisible();
     // Never on a filing form, whatever is chosen.
     await page.goto('/submit');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Follow us' })).toHaveCount(0);
+    await expect(strip).toHaveCount(0);
     await page.waitForLoadState('networkidle');
     expect(outside).toEqual([]);
 
     // Put it back, so other tests see a site with no accounts.
     await page.goto('/settings/social');
-    await floating.getByRole('checkbox', { name: 'Show the button' }).click();
+    await placements.getByRole('switch', { name: 'Floating “Follow us” button' }).click();
     await row.getByLabel('Address on Bluesky').fill('');
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Saved. No account is shown.')).toBeVisible();
@@ -206,26 +213,30 @@ test.describe('an administrator', () => {
   test('is warned before leaving a settings screen with unsaved changes, by the panel’s name', async ({
     page,
   }) => {
-    // The overview's one form: Publishing, opened and changed but not saved.
-    await page.goto('/settings');
-    const publishing = page.getByRole('region', { name: 'Publishing' });
-    await publishing.getByRole('button', { name: 'Change Publishing' }).click();
-    const off = publishing.getByRole('radio', { name: 'Off' });
-    const on = publishing.getByRole('radio', { name: 'On' });
-    await ((await on.isChecked()) ? off : on).click();
+    // A form opened in place and changed but not saved. (Publishing on the
+    // overview became a switch that applies at once, so it has nothing to lose.)
+    await page.goto('/settings/legal');
+    await page.getByRole('button', { name: 'Change Privacy policy' }).click();
+    await page.getByRole('textbox', { name: 'Privacy policy' }).pressSequentially('x');
 
     let asked = '';
     page.once('dialog', (d) => {
       asked = d.message();
       void d.dismiss();
     });
-    await page.getByRole('link', { name: 'Change This site’s name' }).click();
-    await expect.poll(() => asked).toMatch(/changes to Publishing that are not saved/);
-    await expect(page).toHaveURL(/\/settings$/);
+    await page
+      .getByRole('navigation', { name: 'Staff areas' })
+      .getByRole('link', { name: 'Name and look', exact: true })
+      .click();
+    await expect.poll(() => asked).toMatch(/changes to Privacy policy that are not saved/);
+    await expect(page).toHaveURL(/\/settings\/legal$/);
 
     page.once('dialog', (d) => void d.accept());
-    await page.getByRole('link', { name: 'Change This site’s name' }).click();
-    await expect(page).toHaveURL(/\/settings\/name$/);
+    await page
+      .getByRole('navigation', { name: 'Staff areas' })
+      .getByRole('link', { name: 'Name and look', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/settings\/(name|look)$/);
   });
 
   test('is warned before leaving the Look screen with a look previewed and not applied', async ({
@@ -235,7 +246,12 @@ test.describe('an administrator', () => {
     await page.goto('/settings');
     await page.getByRole('link', { name: 'Change How this site looks' }).click();
     await expect(page).toHaveURL(/\/settings\/look$/);
-    await page.getByRole('radio', { name: 'Green screen' }).click();
+    // A look's card is a label over a hidden radio.
+    await page
+      .locator('label')
+      .filter({ has: page.getByRole('radio', { name: 'Green screen' }) })
+      .last()
+      .click();
     let asked = '';
     page.once('dialog', (d) => {
       asked = d.message();

@@ -64,21 +64,22 @@ async function search(page: Page, words: string) {
 const rowOf = (page: Page, has: Locator) =>
   page.getByRole('list', { name: 'Reports' }).getByRole('listitem').filter({ has });
 
-/** On a phone the report page decides from a bar at the foot; on a desktop, its Decide panel. */
+/** A choice card: a label over a hidden radio, so the label is what a person clicks. */
+const card = (scope: Locator, name: string) =>
+  scope.locator('label').filter({ has: scope.getByRole('radio', { name, exact: true }) });
+
+/** Below 900px the report page decides from a bar at the foot; wider, from its Decide form. */
 async function decideOnReportPage(page: Page, choice: 'Approve' | 'Decline', note: string) {
-  const phone = (page.viewportSize()?.width ?? 1280) < 1024;
+  const sheet = page.getByRole('button', { name: `${choice}…`, exact: true });
   let form: Locator;
-  if (phone) {
-    await page
-      .getByRole('region', { name: 'Decide' })
-      .getByRole('button', { name: `${choice}…` })
-      .click();
-    form = page.getByRole('dialog');
+  if (await sheet.isVisible()) {
+    await sheet.click();
+    form = page.getByRole('dialog', { name: /^Decide RL-/ });
     // The sheet opens with that choice already made.
-    await expect(form.getByRole('radio', { name: choice })).toBeChecked();
+    await expect(form.getByRole('radio', { name: choice, exact: true })).toBeChecked();
   } else {
-    form = page.getByRole('region', { name: 'Decide' });
-    await form.getByRole('radio', { name: choice }).click();
+    form = page.getByRole('form', { name: /^Decide RL-/ });
+    await card(form, choice).click();
   }
   await form.getByLabel(/^Note for the record \(never sent\)/).fill(note);
   await form.getByRole('button', { name: 'Record the decision' }).click();
@@ -118,7 +119,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   await goViaMenu(page, 'Reports queue', { area: 'Review' });
   await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await expect(
-    page.getByRole('group', { name: 'Show reports that are' }).getByRole('button', {
+    page.getByRole('group', { name: 'Show' }).getByRole('button', {
       name: /^Waiting/,
     }),
   ).toHaveAttribute('aria-pressed', 'true');
@@ -131,27 +132,29 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
   const second = page.getByRole('region', { name: 'Second read' });
   await expect(second).toContainText('threatened');
-  await second.getByRole('button', { name: 'Clear Second read' }).click();
+  await second.getByRole('button', { name: 'Give the second read' }).click();
   const bar = page.getByRole('region', { name: 'Unsaved changes' });
   await bar.getByRole('button', { name: 'I have read it' }).click();
   await expect(second).toBeHidden();
 
   // Who filed it: closing it without a reason writes nothing and shows nothing.
   const who = page.getByRole('region', { name: 'Who filed it' });
-  await expect(who).toContainText('Restricted. Every look is logged with your reason.');
-  await who.getByRole('button', { name: 'Look… Who filed it' }).click();
-  await bar.getByRole('button', { name: 'Open the details' }).click();
-  await expect(who.getByText(/Say why you need them/)).toBeVisible();
-  await bar.getByRole('button', { name: 'Cancel' }).click();
-  await expect(who).toContainText('Restricted. Every look is logged with your reason.');
+  const restricted = 'Restricted. Every look is logged with your reason';
+  await expect(who).toContainText(restricted);
+  await who.getByRole('button', { name: 'Open the details…' }).click();
+  const why = page.getByRole('dialog', { name: 'Why do you need to see who filed it?' });
+  await why.getByRole('button', { name: 'Open the details' }).click();
+  await expect(why.getByText(/Say why you need them/)).toBeVisible();
+  await why.getByRole('button', { name: 'Cancel' }).click();
+  await expect(who).toContainText(restricted);
   await expect(who).not.toContainText(email);
 
   // Then with a reason, which the reporter will see. It asks for the second
   // factor again (plan E, E3).
-  await who.getByRole('button', { name: 'Look… Who filed it' }).click();
-  await who.getByLabel('Why you need them').fill('To ask which door of the hall it was.');
+  await who.getByRole('button', { name: 'Open the details…' }).click();
+  await why.getByLabel('Your reason').fill('To ask which door of the hall it was.');
   await stepUp(page.request);
-  await bar.getByRole('button', { name: 'Open the details' }).click();
+  await why.getByRole('button', { name: 'Open the details' }).click();
   await expect(who).toContainText(email);
   await expect(who).toContainText('This look was recorded.');
 
@@ -164,11 +167,12 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
 
   // On the board, without any of moderation's workings.
   await page.goto('/board');
-  await page.getByLabel('Search the words').fill(word);
+  await page.getByRole('searchbox', { name: 'Search reports' }).fill(word);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`q=${word}`));
   await page.getByRole('link', { name: /RL-[A-Z0-9-]+/ }).click();
-  await expect(page.getByRole('region', { name: 'What the reporter said' })).toContainText(word);
+  await expect(page.getByRole('heading', { name: 'What the reporter said' })).toBeAttached();
+  await expect(page.locator('main')).toContainText(word);
   await expect(page.locator('main')).not.toContainText('second read');
   await expect(page.locator('main')).not.toContainText(email);
 
@@ -179,8 +183,8 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   const tab = await reporter.newPage();
   await tab.goto('/access/sign-in?next=/mine');
   const before = countTo(email);
-  await tab.getByLabel('Your email address').fill(email);
-  await tab.getByRole('button', { name: 'Send me a code' }).click();
+  await tab.getByLabel('Email', { exact: true }).fill(email);
+  await tab.getByRole('button', { name: 'Send code' }).click();
   await tab.getByLabel('The code from the email').fill(codeIn(await lastMessageTo(email, before)));
   await tab.getByRole('button', { name: 'Sign in' }).click();
   await tab.getByRole('link', { name: /^Open RL-/ }).click();
@@ -221,7 +225,7 @@ test('deciding in the queue and on the report page record the same decision row'
   await decideHere.click();
   await expect(decideHere).toHaveAttribute('aria-expanded', 'true');
   const form = firstRow.getByRole('form', { name: `Decide ${firstRef}` });
-  await form.getByRole('radio', { name: 'Approve' }).click();
+  await card(form, 'Approve').click();
   await form.getByLabel(/^Note for the record \(never sent\)/).fill('Checked against the photos.');
   await form.getByRole('button', { name: 'Record the decision' }).click();
 
@@ -280,7 +284,7 @@ test('a bulk decline takes one reason from the fixed list and emails nobody', as
   // One reason, from the fixed list, and nothing goes without it.
   await dialog.getByRole('button', { name: 'Decline 2' }).click();
   await expect(dialog.getByText(/Choose the reason/)).toBeVisible();
-  await dialog.getByLabel('The reason').selectOption('abusive_or_spam');
+  await dialog.getByLabel('Reason', { exact: true }).selectOption('abusive_or_spam');
   await stepUp(page.request);
   await dialog.getByRole('button', { name: 'Decline 2' }).click();
   await expect(page.getByText('Declined 2. Nobody was emailed.')).toBeVisible();
@@ -326,7 +330,7 @@ test('two on one report: each sees the other, and a stale decision is refused, n
 
   // The page's own Decide form, beside the report on a desktop and under it on a phone.
   const form = page.getByRole('form', { name: /^Decide RL-/ }).first();
-  await form.getByRole('radio', { name: 'Decline' }).check();
+  await card(form, 'Decline').click();
   await form.getByLabel('The reason the reporter is told').selectOption('duplicate');
   await form.getByLabel(/^Note for the record/).fill('Decided second, without knowing.');
   await form.getByRole('button', { name: 'Record the decision' }).click();
