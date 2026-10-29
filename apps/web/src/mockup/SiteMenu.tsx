@@ -36,13 +36,6 @@ export const MAIN_LINKS = [
 export const isHere = (pathname: string, to: string): boolean =>
   pathname === to || pathname.startsWith(`${to}/`);
 
-const GHOST = {
-  '--bb': 'transparent',
-  '--bf': '#fff',
-  borderColor: '#A9B6C2',
-  boxShadow: 'none',
-} as React.CSSProperties;
-
 export function SiteMenu({
   open,
   me,
@@ -191,7 +184,7 @@ export function SiteMenu({
           </ul>
         </nav>
         <div className="menu-foot">
-          <EasierReadingButton className="btn sm flat ghost" style={GHOST} />
+          <EasierReadingButton className="btn sm flat ghost on-chrome" />
           {me ? (
             <>
               <span className="mono" style={{ color: 'var(--on-chrome-muted)', fontSize: '.8rem' }}>
@@ -211,9 +204,8 @@ export function SiteMenu({
                 ) : null}
               </Link>
               <button
-                className="btn sm flat ghost"
+                className="btn sm flat ghost on-chrome"
                 type="button"
-                style={GHOST}
                 disabled={out.isPending}
                 onClick={() => {
                   out.mutate(undefined, {
@@ -228,12 +220,7 @@ export function SiteMenu({
               </button>
             </>
           ) : (
-            <Link
-              className="btn sm flat ghost"
-              style={GHOST}
-              to="/access/sign-in"
-              onClick={onChoose}
-            >
+            <Link className="btn sm flat ghost on-chrome" to="/access/sign-in" onClick={onChoose}>
               Sign in
             </Link>
           )}

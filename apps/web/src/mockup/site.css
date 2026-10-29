@@ -159,6 +159,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed;box-shadow:none}
 /* The palette's own text colour for its action colour: a fixed near-black was unreadable on a palette whose action colour is dark (1.03:1 in the default look). */
 .site-head .btn,.menu .btn,.site-foot .btn{--bb:var(--rl-action);--bf:var(--rl-on-action);border-color:#fff;box-shadow:4px 4px 0 #fff}
+/* An outlined button on the dark chrome (the menus' foot): no fill, no shadow. */
+.btn.on-chrome,.menu .btn.on-chrome,.site-head .btn.on-chrome{--bb:transparent;--bf:#fff;border-color:#A9B6C2;box-shadow:none}
 .site-head .btn.sm{box-shadow:3px 3px 0 #fff}
 .btn-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 
@@ -446,6 +448,14 @@ body.door{display:grid;place-items:center;min-height:100vh;background:var(--chro
 .door-box{display:grid;gap:18px;width:min(420px,92vw);padding:28px;border:3px solid #fff;border-radius:var(--rl-radius);background:#121A24;color:#fff}
 .door-box .wm{font-size:1.6rem}
 .door-box p{color:#DCE3E9}
+.door-box .eyebrow{color:#DCE3E9}
+.door-box [data-copy]{white-space:pre-wrap}
+.door-box label,.door-box a{color:#fff}
+.door-box .input{background:#0A0F15;color:#fff;border-color:#A9B6C2}
+.door-box [role=alert]{color:#fff;font-weight:700}
+.door-box .btn.go{border-color:#fff;box-shadow:4px 4px 0 #fff;width:100%}
+.door-box nav{display:grid;gap:6px;border-top:1px solid #34414F;padding-top:14px}
+.door-box nav .eyebrow{color:#A9B6C2}
 
 /* 404 */
 .oops{padding-block:60px 20px;display:grid;gap:18px}

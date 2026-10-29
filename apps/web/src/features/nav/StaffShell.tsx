@@ -40,7 +40,7 @@
 import type { MenuWaiting } from '@reportlog/contracts';
 import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/ui/site-footer.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { Wordmark } from '@/mockup/Wordmark.tsx';
@@ -74,14 +74,6 @@ const isNarrow = () =>
 export function useNarrow(): boolean {
   return useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
 }
-
-/** The mock-up's menu-foot buttons: outlined on the dark ground, no shadow. */
-const FOOT_STYLE = {
-  '--bb': 'transparent',
-  '--bf': '#fff',
-  borderColor: '#A9B6C2',
-  boxShadow: 'none',
-} as CSSProperties;
 
 export function StaffShell({
   me,
@@ -367,13 +359,12 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
         {/* The way back to the public site and Sign out come first (the owner's
             call, 27 Oct): at the foot they sat under some forty links. */}
         <div className="menu-foot">
-          <Link className="btn sm flat" to="/" style={FOOT_STYLE} onClick={onClose}>
+          <Link className="btn sm flat on-chrome" to="/" onClick={onClose}>
             View the public site
           </Link>
           <button
-            className="btn sm flat"
+            className="btn sm flat on-chrome"
             type="button"
-            style={FOOT_STYLE}
             disabled={out.isPending}
             onClick={() => {
               out.mutate(undefined, {
