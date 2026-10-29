@@ -144,7 +144,8 @@ for (const size of SIZES) {
       const { context, page, outside } = await visitor(browser, size.viewport);
       await page.goto('/');
       const header = page.getByRole('banner');
-      const menu = header.getByRole('button', { name: /Menu$/ });
+      // "MENU" since the redesign: the name is matched whatever its case.
+      const menu = header.getByRole('button', { name: /menu$/i });
       await expect(menu).toBeVisible();
       // MENU is always wholly on the bar, never pushed past its edge.
       const box = await menu.boundingBox();
