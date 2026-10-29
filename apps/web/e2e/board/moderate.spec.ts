@@ -132,7 +132,7 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   const second = page.getByRole('region', { name: 'Second read' });
   await expect(second).toContainText('threatened');
   await second.getByRole('button', { name: 'Clear Second read' }).click();
-  const bar = page.getByRole('region', { name: 'Save changes' });
+  const bar = page.getByRole('region', { name: 'Unsaved changes' });
   await bar.getByRole('button', { name: 'I have read it' }).click();
   await expect(second).toBeHidden();
 

@@ -110,8 +110,8 @@ test.describe('an administrator', () => {
     await page.goto('/settings/words');
     const slot = 'Your own words on the how-to page';
     const card = page.getByRole('region', { name: slot });
-    const bar = page.getByRole('region', { name: 'Save changes' });
-    await card.getByRole('button', { name: `Edit ${slot}` }).click();
+    const bar = page.getByRole('region', { name: 'Unsaved changes' });
+    await card.getByRole('button', { name: `Change ${slot}` }).click();
     const box = page.getByRole('textbox', { name: slot });
     await box.fill('Reports filed so far: ');
     await card.getByRole('button', { name: 'Insert a number' }).click();
@@ -131,7 +131,7 @@ test.describe('an administrator', () => {
 
     // A placeholder that would not work is refused, in words, beside the field.
     await page.goto('/settings/words');
-    await card.getByRole('button', { name: `Edit ${slot}` }).click();
+    await card.getByRole('button', { name: `Change ${slot}` }).click();
     await box.fill('{{ [no.such.figure] }}');
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(card.getByText(/no figure called \[no\.such\.figure\]/)).toBeVisible();
@@ -154,7 +154,7 @@ test.describe('an administrator', () => {
       row.getByText('Links to https://bsky.app/profile/munich.bsky.social'),
     ).toBeVisible();
     await show.click();
-    const bar = page.getByRole('region', { name: 'Save changes' });
+    const bar = page.getByRole('region', { name: 'Unsaved changes' });
     await bar.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Saved. 1 account is shown.')).toBeVisible();
 
@@ -209,7 +209,7 @@ test.describe('an administrator', () => {
     // The overview's one form: Publishing, opened and changed but not saved.
     await page.goto('/settings');
     const publishing = page.getByRole('region', { name: 'Publishing' });
-    await publishing.getByRole('button', { name: 'Edit Publishing' }).click();
+    await publishing.getByRole('button', { name: 'Change Publishing' }).click();
     const off = publishing.getByRole('radio', { name: 'Off' });
     const on = publishing.getByRole('radio', { name: 'On' });
     await ((await on.isChecked()) ? off : on).click();

@@ -20,6 +20,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Browser, BrowserContext, Locator, Page } from '@playwright/test';
 import { codeIn, countTo, identityState, lastMessageTo } from '../identity/mail.ts';
 import { passSecondFactor } from '../second-factor.ts';
+import { MENU_BUTTON } from '../menu.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
 const run = Date.now().toString(36);
@@ -177,9 +178,9 @@ for (const size of SIZES) {
       await setSocial(LINKS, ALL);
       const { context, page, outside } = await visitor(browser, size.viewport);
       await page.goto('/');
-      const button = page.getByRole('banner').getByRole('button', { name: /Menu$/ });
+      const button = page.getByRole('banner').getByRole('button', { name: MENU_BUTTON });
       await button.click();
-      const nav = page.getByRole('navigation', { name: 'Main menu' });
+      const nav = page.getByRole('dialog', { name: 'Site menu' });
       await expect(nav).toBeVisible();
       // Focus has moved inside.
       await expect(nav.locator(':focus')).toHaveCount(1);
@@ -276,7 +277,7 @@ for (const size of SIZES) {
       const { context, page } = await visitor(browser, size.viewport);
       const seen = async () => {
         await page.goto('/');
-        await page.getByRole('banner').getByRole('button', { name: /Menu$/ }).click();
+        await page.getByRole('banner').getByRole('button', { name: MENU_BUTTON }).click();
         return {
           band: await page.locator('[data-follow-band]').count(),
           menu: await page.locator('[data-menu-follow]').count(),
