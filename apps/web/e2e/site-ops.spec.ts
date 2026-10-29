@@ -121,24 +121,39 @@ test.describe('the prose pages on a phone', () => {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       const m = await page.evaluate(() => {
-        const main = document.querySelector('main');
-        const box = main?.getBoundingClientRect();
-        const wide = [...document.querySelectorAll('main *')].filter(
-          // A table or code block in its own scroller may be wider; the page may not.
+        // A table, a code block or a row of tabs in its own sideways scroller
+        // may be wider; the page may not. Recognised by its computed style,
+        // not a class name, since the redesign has several.
+        const inScroller = (el: Element) => {
+          for (let up = el.parentElement; up; up = up.parentElement) {
+            const x = getComputedStyle(up).overflowX;
+            if (x === 'auto' || x === 'scroll') return true;
+          }
+          return false;
+        };
+        const shown = [...document.querySelectorAll('main *')].filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width > 0 && r.height > 0;
+        });
+        const wide = shown.filter(
+          (el) => el.getBoundingClientRect().right > window.innerWidth + 1 && !inScroller(el),
+        );
+        // The margin a reader sees: where the words start, wherever the
+        // padding sits (the redesign puts it on .wrap, not on main).
+        const words = shown.filter(
           (el) =>
-            el.getBoundingClientRect().right > window.innerWidth + 1 &&
-            !el.closest('.overflow-x-auto'),
+            !inScroller(el) &&
+            [...el.childNodes].some((n) => n.nodeType === 3 && (n.textContent ?? '').trim()),
         );
         return {
           scroll: document.documentElement.scrollWidth - window.innerWidth,
-          padLeft: main ? parseFloat(getComputedStyle(main).paddingLeft) : 0,
-          mainWidth: box?.width ?? 0,
-          wide: wide.slice(0, 3).map((e) => e.tagName + '.' + e.className),
+          left: Math.min(...words.map((el) => el.getBoundingClientRect().left)),
+          wide: wide.slice(0, 3).map((e) => `${e.tagName}.${e.getAttribute('class') ?? ''}`),
         };
       });
       expect(m.wide).toEqual([]);
       expect(m.scroll).toBeLessThanOrEqual(0);
-      expect(m.padLeft).toBeGreaterThanOrEqual(16);
+      expect(m.left).toBeGreaterThanOrEqual(16);
     });
   }
 });

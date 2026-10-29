@@ -14,7 +14,7 @@ test('a person deletes their own account and is signed out', async ({ page }, in
   await expect(page.getByRole('heading', { name: 'Sign in first' })).toBeVisible();
   await page.getByRole('link', { name: 'Sign in' }).last().click();
   const before = countTo(email);
-  await page.getByLabel('Your email address').fill(email);
+  await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Send me a code' }).click();
   await page.getByLabel('The code from the email').fill(codeIn(await lastMessageTo(email, before)));
   await page.getByRole('button', { name: 'Sign in' }).click();

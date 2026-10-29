@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { ADMIN, MODERATOR } from './auth.ts';
 import { identityState } from './identity/mail.ts';
 import { ALL_PAGES, MENU_FOR, pageByLabel } from './navigation-table.ts';
+import { openGroups } from './menu.ts';
 
 const API = fileURLToPath(new URL('../../api/', import.meta.url));
 const desktop = (width: number) => width >= 900;
@@ -42,17 +43,18 @@ test.describe('the shell on a desktop', () => {
     await expect(bar.getByRole('button', { name: 'Menu' })).toHaveCount(0);
     const side = page.getByRole('navigation', { name: 'Staff areas' });
     await expect(side).toBeVisible();
+    await openGroups(side);
     const [s, m] = await Promise.all([side.boundingBox(), page.getByRole('main').boundingBox()]);
     // Beside, not above: the sidebar's right edge is left of the page's.
     expect((s?.x ?? 0) + (s?.width ?? 0)).toBeLessThanOrEqual(m?.x ?? 0);
     await expect(side.locator('[aria-current="page"]')).toHaveCount(1);
-    await expect(side.getByRole('link', { name: 'Look', exact: true })).toHaveAttribute(
+    await expect(side.getByRole('link', { name: 'Name and look', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
     // The mock-up's groups, in its order.
-    const labels = await side.locator('p[id^="staff-area-"]').allTextContents();
-    expect(labels.slice(0, 4)).toEqual(['You', 'Review', 'Content', 'Site']);
+    const labels = await side.locator('summary h3').allTextContents();
+    expect(labels.slice(0, 4)).toEqual(['You', 'Review', 'Content', 'Site settings']);
   });
 });
 
@@ -143,7 +145,7 @@ async function sidebarFor(browser: Browser, email: string, role: string) {
 for (const [role, gone, kept] of [
   [
     'moderator',
-    ['Logbooks', 'Site settings', 'Look', 'People and roles', 'Checked links'],
+    ['Logbooks', 'Name and look', 'People', 'Checked links'],
     ['Reports queue', 'Flood screen'],
   ],
   [
@@ -171,7 +173,11 @@ for (const [role, gone, kept] of [
         });
       }).toPass({ timeout: 20_000 });
     }
-    const side = page.getByRole('navigation', { name: 'Staff areas' });
+    const side = page
+      .getByRole('navigation', { name: 'Staff areas' })
+      .filter({ visible: true })
+      .first();
+    await openGroups(side);
     for (const label of kept)
       await expect(side.getByRole('link', { name: label, exact: true }), label).toBeVisible({
         timeout: 15_000,
@@ -192,7 +198,7 @@ test.describe('every staff page, in the shell', () => {
   }) => {
     test.setTimeout(240_000);
     for (const label of MENU_FOR.admin) {
-      const { href } = pageByLabel(label);
+      const { href } = pageByLabel(label, 'admin');
       const [path = href, hash] = href.split('#');
       await page.goto(hash ? `${path}#${hash}` : path);
       await expect(page.locator('[data-staff-app]'), label).toBeVisible();
@@ -210,7 +216,7 @@ test.describe('every staff page, in the shell', () => {
     const context = await browser.newContext({ storageState: MODERATOR });
     const page = await context.newPage();
     for (const label of MENU_FOR.moderator) {
-      const { href } = pageByLabel(label);
+      const { href } = pageByLabel(label, 'moderator');
       await page.goto(href);
       await expect(page.locator('[data-staff-app]'), label).toBeVisible();
       await expect(page.getByRole('heading', { level: 1 }).first(), label).toBeVisible();

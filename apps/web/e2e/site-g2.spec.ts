@@ -53,20 +53,20 @@ test.describe('an administrator', () => {
   test('reaches the staff screens from the menu', async ({ page }) => {
     await page.goto('/');
     for (const [area, name] of [
-      ['People', 'People and roles'],
+      ['People', 'People'],
       ['Content', 'Logbooks'],
       ['Content', 'Lists'],
       ['Review', 'List entries'],
-      ['Site', 'Name'],
+      ['Site settings', 'Name and look'],
     ] as const) {
       await expect(await menuLink(page, name, { area })).toBeVisible();
     }
     await expect(await menuLink(page, 'Feedback')).toBeVisible();
     await goViaMenu(page, 'Logbooks', { area: 'Content' });
     await expect(page).toHaveURL(/\/logbooks$/);
-    await goViaMenu(page, 'Name', { area: 'Site' });
+    await goViaMenu(page, 'Name and look', { area: 'Site settings' });
     await expect(page).toHaveURL(/\/settings\/name$/);
-    await expect(await menuLink(page, 'Name', { area: 'Site' })).toHaveAttribute(
+    await expect(await menuLink(page, 'Name and look', { area: 'Site settings' })).toHaveAttribute(
       'aria-current',
       'page',
     );

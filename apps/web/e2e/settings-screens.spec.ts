@@ -126,7 +126,7 @@ test.describe('as an administrator', () => {
     await page.goto('/settings/legal');
     await page.getByRole('button', { name: 'Change Privacy policy' }).click();
     const bar = page.getByRole('region', { name: 'Unsaved changes' });
-    await expect(bar).toContainText('Saving: Privacy policy');
+    await expect(bar).toContainText('Changes to Privacy policy are not saved.');
     const box = await bar.boundingBox();
     const viewport = page.viewportSize();
     expect(box && viewport ? Math.round(box.y + box.height) : 0).toBe(viewport?.height);

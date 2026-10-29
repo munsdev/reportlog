@@ -37,7 +37,7 @@ function watchOutside(page: Page): string[] {
 async function emailCode(page: Page, email: string) {
   await page.goto('/access/sign-in');
   const before = countTo(email);
-  await page.getByLabel('Your email address').fill(email);
+  await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByRole('button', { name: 'Send me a code' }).click();
   await page.getByLabel('The code from the email').fill(codeIn(await lastMessageTo(email, before)));
   await page.getByRole('button', { name: 'Sign in' }).click();
@@ -194,7 +194,7 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
   const signIn = async () => {
     await page.goto(`${LOCAL}/access/sign-in`);
     const before = countTo(email);
-    await page.getByLabel('Your email address').fill(email);
+    await page.getByLabel('Email', { exact: true }).fill(email);
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page
       .getByLabel('The code from the email')

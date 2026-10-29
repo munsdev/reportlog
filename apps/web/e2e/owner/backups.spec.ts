@@ -130,7 +130,7 @@ test('the owner’s staff sidebar reaches every page the owner may open, and no 
   await page.goto('/');
   const mine = MENU_FOR.owner;
   for (const label of mine) {
-    const target = pageByLabel(label);
+    const target = pageByLabel(label, 'owner');
     const link = await menuLink(page, label, target.area ? { area: target.area } : {});
     await expect(link, label).toBeVisible();
   }

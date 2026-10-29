@@ -256,7 +256,13 @@ for (const role of ROLES) {
     const door = menu.getByRole('link', { name: /^Your dashboard/ });
     await expect(door).toHaveCount(mine.length ? 1 : 0);
     // Everybody signed in has their own pages in the menu (decision 71).
-    const ownPages = new Set(['My reports', 'Email updates', 'Your dashboard', 'Signing in']);
+    const ownPages = new Set([
+      'My reports',
+      'Email updates',
+      'Your account',
+      'Your dashboard',
+      'Signing in',
+    ]);
     for (const p of ALL_PAGES.filter((p) => !ownPages.has(p.label)))
       await expect(menu.getByRole('link', { name: named(p.label) }), p.label).toHaveCount(0);
     if (role === 'visitor') {
@@ -273,7 +279,7 @@ for (const role of ROLES) {
     // The staff area's sidebar: exactly this person's pages.
     const side = await staffNav(page);
     for (const label of mine) {
-      const target = pageByLabel(label);
+      const target = pageByLabel(label, role);
       const link = side.getByRole('link', { name: named(label) });
       await expect(link, label).toBeVisible();
       await expect(link, label).toHaveAttribute(
@@ -291,11 +297,11 @@ for (const role of ROLES) {
     // And they really go there: the first page of each area, and the rest.
     const firsts = new Map<string, string>();
     for (const label of mine) {
-      const key = pageByLabel(label).area ?? label;
+      const key = pageByLabel(label, role).area ?? label;
       if (!firsts.has(key)) firsts.set(key, label);
     }
     for (const label of firsts.values()) {
-      const target = pageByLabel(label);
+      const target = pageByLabel(label, role);
       await (await menuLink(page, label, target.area ? { area: target.area } : {})).click();
       await expect(page).toHaveURL(new RegExp(`${target.href.split('#')[0] ?? ''}/?(#.*)?$`));
       await expect(page.getByRole('dialog', { name: 'Staff menu' })).toBeHidden();
@@ -397,7 +403,8 @@ test.describe('the current page', () => {
     await page.goto('/settings/look');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     const side = await staffNav(page);
-    await expect(side.getByRole('link', { name: 'Look', exact: true })).toHaveAttribute(
+    // The Look screen is under Name and look (staff-nav/menu.ts, `under`).
+    await expect(side.getByRole('link', { name: 'Name and look', exact: true })).toHaveAttribute(
       'aria-current',
       'page',
     );
@@ -445,7 +452,7 @@ test.describe('the waiting count', () => {
       if (listed === 0) await expect(button).toHaveAccessibleName(/^MENU$/);
       else
         await expect(button).toHaveAccessibleName(
-          new RegExp(`^MENU\\.\\s*${String(listed)} reports? waiting for a moderator$`),
+          new RegExp(`^MENU\\s*\\.\\s*${String(listed)} reports? waiting for a moderator$`),
         );
     }).toPass({ timeout: 30_000 });
   });

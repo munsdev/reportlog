@@ -118,7 +118,9 @@ export function StaffShell({
       </a>
       <header className="site-head staff-head print:hidden">
         <div className="wrap">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* min-width 0: at 320px the wordmark gives way (an ellipsis) instead of
+              pushing the bar sideways. */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <Wordmark to="/home" />
             <span className="badge-staff">{me?.heldRoles.length === 0 ? 'Account' : 'Staff'}</span>
           </div>
@@ -354,12 +356,13 @@ function Drawer({ onClose, children }: { onClose: () => void; children: ReactNod
       {...open}
     >
       <div className="wrap">
-        {/* Close comes first in the page, so it is where focus lands. */}
+        {/* Close comes first in the page, so it is where focus lands; the
+            stylesheet still draws it on the right (.menu-top, `order`). */}
         <div className="menu-top">
-          <Wordmark to="/home" onClick={onClose} />
           <button className="menu-btn" type="button" onClick={onClose}>
             CLOSE
           </button>
+          <Wordmark to="/home" onClick={onClose} />
         </div>
         {/* The way back to the public site and Sign out come first (the owner's
             call, 27 Oct): at the foot they sat under some forty links. */}

@@ -108,7 +108,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
    front page carries its own). */
 .head-right{flex-shrink:0}
 .menu-btn{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
-.site-head .wm{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.site-head .wm{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;line-height:44px}
+/* 44px, the smallest target a thumb is asked to hit (site-ops.spec.ts). */
+.site-head .btn.sm{min-height:44px}
 @media (max-width:599px){.site-head .head-right > .btn{display:none}}
 @media (max-width:440px){.site-head .wrap{gap:8px}.wm{font-size:.92rem}.menu-btn{padding:0 10px}}
 
@@ -123,6 +125,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .menu[open]{display:block}
 .menu .wrap{display:grid;gap:22px;padding-block:14px 32px}
 .menu-top{display:flex;justify-content:space-between;align-items:center;min-height:64px}
+.menu-top > .menu-btn:first-child{order:2}
 .menu-list{list-style:none;padding:0;margin:0;display:grid;gap:4px}
 .menu-list a{display:flex;align-items:center;min-height:56px;padding:0 14px;border-radius:var(--rl-radius-sm);text-decoration:none;font-family:var(--rl-font-display);font-weight:var(--h-weight);font-stretch:var(--h-stretch);font-size:1.5rem;text-transform:var(--d-case)}
 .menu-list a:hover{background:var(--chrome-2)}
@@ -257,7 +260,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .search{flex:1 1 260px;display:flex;align-items:center;gap:8px;background:var(--rl-surface);border:2px solid var(--rl-border);border-radius:var(--rl-radius-sm);padding:0 6px 0 12px;min-height:48px}
 .search input{flex:1;min-width:0;border:0;background:transparent;font:inherit;color:var(--rl-text);min-height:44px}
 .search input::placeholder{color:var(--rl-text-muted)}
-.search .btn{min-height:36px}
+.search .btn{min-height:44px}
 .select{min-height:48px;display:inline-flex;align-items:center;gap:8px;padding:0 12px;background:var(--rl-surface);border:2px solid var(--rl-border);border-radius:var(--rl-radius-sm);font-family:var(--rl-font-mono);font-size:.8rem;letter-spacing:.04em;color:var(--rl-text)}
 .select select{border:0;background:transparent;font:inherit;color:inherit;min-height:44px}
 .rlist{display:grid;gap:14px;padding-top:10px}
@@ -661,6 +664,7 @@ a.row:hover{background:var(--rl-surface-2)}
 
 /* ---------- staff shell ---------- */
 .badge-staff{font-family:var(--rl-font-mono);font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:5px;background:var(--rl-brand-on-deep);color:var(--p-chrome)}
+.badge-staff{flex-shrink:0}
 .nav-public{display:none;color:var(--on-chrome-muted);font-size:.88rem;font-weight:600;text-decoration:none;min-height:44px;align-items:center;padding:0 8px}
 .nav-public:hover{color:#fff}
 @media (min-width:900px){.nav-public{display:inline-flex}.staff .sb-open{display:none}}

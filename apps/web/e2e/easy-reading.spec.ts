@@ -12,14 +12,15 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 const footerSwitch = (page: Page) =>
-  page.getByRole('contentinfo').getByRole('switch', { name: 'Easier reading' });
+  // A toggle button since the redesign (mockup/EasierReading.tsx): pressed is on.
+  page.getByRole('contentinfo').getByRole('button', { name: /^Easier reading/ });
 
 test('on for this browser: High contrast with Commons, kept across a reload', async ({ page }) => {
   await page.goto('/');
   const html = page.locator('html');
-  await expect(footerSwitch(page)).toHaveAttribute('aria-checked', 'false');
+  await expect(footerSwitch(page)).toHaveAttribute('aria-pressed', 'false');
   await footerSwitch(page).click();
-  await expect(footerSwitch(page)).toHaveAttribute('aria-checked', 'true');
+  await expect(footerSwitch(page)).toHaveAttribute('aria-pressed', 'true');
   await expect(html).toHaveAttribute('data-palette', 'contrast');
   await expect(html).toHaveAttribute('data-theme', 'commons');
   await expect(html).toHaveAttribute('data-texture', 'none');
@@ -28,7 +29,7 @@ test('on for this browser: High contrast with Commons, kept across a reload', as
 
   await page.reload();
   await expect(html).toHaveAttribute('data-palette', 'contrast');
-  await expect(footerSwitch(page)).toHaveAttribute('aria-checked', 'true');
+  await expect(footerSwitch(page)).toHaveAttribute('aria-pressed', 'true');
 
   // Off again brings the site's own look back.
   await footerSwitch(page).click();
@@ -43,7 +44,7 @@ test('another browser is not touched', async ({ page, browser }) => {
   const other = await browser.newContext();
   const elsewhere = await other.newPage();
   await elsewhere.goto('/');
-  await expect(footerSwitch(elsewhere)).toHaveAttribute('aria-checked', 'false');
+  await expect(footerSwitch(elsewhere)).toHaveAttribute('aria-pressed', 'false');
   await expect(elsewhere.locator('html')).not.toHaveAttribute('data-palette', 'contrast');
   await other.close();
 });
