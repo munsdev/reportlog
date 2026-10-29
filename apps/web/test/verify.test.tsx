@@ -42,7 +42,8 @@ function verification(): Verification {
   };
 }
 
-const checks = () => within(screen.getByRole('list', { name: 'Checks' })).getAllByRole('listitem');
+const checks = () =>
+  within(screen.getByRole('list', { name: 'What was checked' })).getAllByRole('listitem');
 
 describe('the verification result', () => {
   it('shows every check holding, including the one recomputed in the browser', () => {
@@ -56,7 +57,7 @@ describe('the verification result', () => {
     // The server claims everything is fine, but the bytes it shows were edited.
     v.canonical_json = (v.canonical_json ?? '').replace('Something happened', 'Something else');
     render(<VerifyResult v={v} />);
-    expect(screen.getByText('Checked again in your browser').closest('li')).toHaveTextContent(
+    expect(screen.getByText(/^Checked again in your browser/).closest('li')).toHaveTextContent(
       /Fails:/,
     );
   });
@@ -79,7 +80,7 @@ describe('the verification result', () => {
     delete v.canonical_json;
     v.link.recorded = 'f'.repeat(64);
     render(<VerifyResult v={v} />);
-    expect(screen.getByText('Checked again in your browser').closest('li')).toHaveTextContent(
+    expect(screen.getByText(/^Checked again in your browser/).closest('li')).toHaveTextContent(
       /Fails:/,
     );
   });

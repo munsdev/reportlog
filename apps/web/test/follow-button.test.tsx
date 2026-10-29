@@ -1,11 +1,11 @@
 /**
- * The floating "Follow us" button: where it is drawn, and where it never is.
+ * The floating "Follow us" strip: where it is drawn, and where it never is.
  *
  * THE PROMISES UNDER TEST:
  *   - it is drawn only on a page the administrator chose, and only while an
  *     account is shown;
- *   - it opens on a press, lists the accounts as plain links, and closes on
- *     Escape;
+ *   - it is one plain link per account, straight to it, with nothing to open
+ *     (the owner's call of 28 Oct, in place of a menu);
  *   - NEVER on a form, a list form or a staff screen, whatever the setting;
  *   - on a door it draws nothing and asks the server nothing.
  */
@@ -20,7 +20,6 @@ import {
   createRouter,
 } from '@tanstack/react-router';
 import { act, render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FollowButton } from '../src/components/ui/follow-button.tsx';
 import { GateContext } from '../src/features/identity/gateMode.ts';
@@ -74,27 +73,16 @@ async function at(
   return fetchMock;
 }
 
-const button = () => screen.queryByRole('button', { name: 'Follow us' });
+const button = () => screen.queryByRole('navigation', { name: 'Follow Munich Archive' });
 
 describe('the Follow us button', () => {
-  it('is drawn on a chosen page, opens on a press, and closes on Escape', async () => {
-    const user = userEvent.setup();
+  it('is drawn on a chosen page, as a plain link per account with no referrer', async () => {
     await at('/about');
-    const b = button();
-    expect(b).toBeInTheDocument();
-    expect(b).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.queryByRole('link', { name: 'Bluesky' })).not.toBeInTheDocument();
-
-    if (!b) throw new Error('no button');
-    await user.click(b);
-    const link = screen.getByRole('link', { name: 'Bluesky' });
+    expect(button()).toBeInTheDocument();
+    const link = screen.getByRole('link', { name: 'Munich Archive on Bluesky' });
     expect(link).toHaveAttribute('href', 'https://bsky.app/profile/munich.bsky.social');
     expect(link).toHaveAttribute('rel', expect.stringContaining('noreferrer'));
-    expect(b).toHaveAttribute('aria-expanded', 'true');
-
-    await user.keyboard('{Escape}');
-    expect(screen.queryByRole('link', { name: 'Bluesky' })).not.toBeInTheDocument();
-    expect(b).toHaveFocus();
+    expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
   });
 
   it('is drawn on the front page, and not on a public page that was not chosen', async () => {

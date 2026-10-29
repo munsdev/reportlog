@@ -103,19 +103,23 @@ describe('the page wording', () => {
       }
     };
     // Routes and features: some slots sit in a feature's page (the board,
-    // the directory). Read either as `copy.key` or through <CopyText>, or,
+    // the directory). Read either as `copy.key` (or `copy?.key`) or through <CopyText>, or,
     // for the lock screen's paragraph, which arrives on the password check
     // rather than with the wording, drawn with its `data-copy` marker.
     walk(`${import.meta.dirname}/../../src/routes`);
     walk(`${import.meta.dirname}/../../src/features`);
     // Read by the server, which sends it as the sentence of a refusal at the
     // door (apps/api/src/door/index.ts); a page shows it as any error.
-    const SERVER_READ: readonly string[] = ['refusal_message'];
+    // `home_intro` is put in the front page's intro block by the server
+    // (apps/api/src/pages/defaults.ts), and the page draws the block's text.
+    const SERVER_READ: readonly string[] = ['refusal_message', 'home_intro'];
     for (const key of COPY_KEYS.filter((k) => !SERVER_READ.includes(k))) {
       expect(
         files.some(
           (f) =>
+            // `copy?.key` where the wording may not have arrived yet.
             f.includes(`copy.${key}`) ||
+            f.includes(`copy?.${key}`) ||
             f.includes(`<CopyText slot="${key}"`) ||
             f.includes(`data-copy="${key}"`),
         ),
