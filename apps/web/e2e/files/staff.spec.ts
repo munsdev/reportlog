@@ -16,6 +16,7 @@ import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
 import { goViaMenu, tabLink } from '../menu.ts';
+import { openStaffSection } from '../staff-section.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
 import { doorFields } from '../door.ts';
@@ -40,13 +41,18 @@ async function logbookWithFiles(admin: APIRequestContext, title: string) {
     id: number;
     slug: string;
   };
-  const add = async (data: Record<string, unknown>) =>
-    (
-      (await (
-        await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data })
-      ).json()) as { key: string }
-    ).key;
-  const what = await add({ kind: 'long_text', label: 'What happened?', required: true });
+  const add = async (data: Record<string, unknown>) => {
+    const r = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data });
+    expect(r.ok(), await r.text()).toBe(true);
+    return ((await r.json()) as { key: string }).key;
+  };
+  // A logbook may not ask free text (isPublishedFreeText): what happened is a choice.
+  const what = await add({
+    kind: 'choice_one',
+    label: 'What happened?',
+    required: true,
+    settings: { options: ['The queue was turned away.', 'Something else'] },
+  });
   const has = await add({ kind: 'evidence_declaration', label: 'Do you have photos of it?' });
   await add({ kind: 'file', label: 'Photos' });
   expect((await admin.post(`/api/admin/logbooks/${String(lb.id)}/launch`)).ok()).toBe(true);
@@ -142,15 +148,20 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   await page.goto('/');
   await goViaMenu(page, 'Files waiting', { area: 'Review' });
   await expect(page.getByRole('heading', { level: 1, name: 'Files waiting' })).toBeVisible();
-  await page
-    .getByRole('list', { name: 'Reports with files waiting' })
-    .getByRole('link', { name: new RegExp(ref) })
-    .click();
-  await expect(page.getByRole('heading', { level: 1, name: `Files of ${ref}` })).toBeVisible();
+  // Each report waiting is a panel; Open goes to the report itself, where
+  // its files are (FilesQueue.tsx).
+  await page.getByRole('link', { name: `Open ${ref}` }).click();
+  await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
   await expect(page.getByText('The reporter allows their files to be published')).toBeVisible();
+  // A file is published only on a report whose text is (moderation is the
+  // floor): the report is approved first, on the same page.
+  const decide = page.getByRole('form', { name: `Decide ${ref}` });
+  await decide.getByRole('radio', { name: 'Approve' }).check();
+  await decide.getByRole('button', { name: 'Record the decision' }).click();
+  await expect(page.getByText('Approve the report first')).toHaveCount(0);
 
   // The copy that would be published, from this site, really an image.
-  await page.getByRole('button', { name: 'Show the copy that would be published' }).click();
+  await page.getByText('Show the copy that would be published', { exact: true }).click();
   const img = page.getByRole('img', { name: /would be published/ });
   await expect(img).toBeVisible();
   await expect
@@ -169,12 +180,9 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   await dialog.getByLabel('Why publish it?').fill('It shows the queue the report describes');
   await dialog.getByRole('button', { name: 'Publish this file' }).click();
   await expect(dialog).toHaveCount(0);
+  // The file's chip, in its heading.
   await expect(
-    page
-      .getByRole('list', { name: 'Files on this report' })
-      .getByText('Published', { exact: true })
-      // The file's chip; its record below says Published too.
-      .first(),
+    page.getByRole('heading', { level: 3, name: 'File 1: queue.jpg Published' }),
   ).toBeVisible();
   await expect(page.getByText('“A queue outside a polling station door”')).toBeVisible();
 
@@ -195,6 +203,8 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
 
   // Asking for evidence, in the moderator's words, reaches the reporter.
   before = countTo(reporterEmail);
+  // A closed row beside the report until opened.
+  await page.getByRole('button', { name: 'Ask for evidence', exact: true }).click();
   await page.getByRole('button', { name: 'Ask for evidence…' }).click();
   dialog = page.getByRole('dialog');
   await dialog
@@ -227,16 +237,19 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
   await admin.dispose();
 
   await page.goto('/');
-  await goViaMenu(page, 'File limits', { area: 'Rules' });
-  await expect(page.getByRole('heading', { level: 1, name: 'Files: the site' })).toBeVisible();
+  await openStaffSection(page, 'Site settings');
+  await goViaMenu(page, 'File limits', { area: 'Site settings' });
+  await expect(page.getByRole('heading', { level: 1, name: 'File limits' })).toBeVisible();
   // The limits show what is set before they are opened.
   await expect(page.getByText('Largest photo', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
   await expect(page.getByLabel('Largest photo (MB)')).toBeVisible();
 
-  await (await tabLink(page, 'File settings', 'Each logbook')).click();
+  await (await tabLink(page, 'Sections', 'Each logbook')).click();
   await page.getByRole('link', { name: new RegExp(title) }).click();
-  await expect(page.getByRole('heading', { level: 1, name: `Files: ${title}` })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: `File limits: ${title}` }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Edit How big, how long, how many' }).click();
   const files = page.getByLabel('Most files on one report (files)');
   await expect(files).toHaveValue('');
