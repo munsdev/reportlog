@@ -294,7 +294,7 @@ describe('inserting a number', () => {
       </QueryClientProvider>,
     );
     await user.click(
-      screen.getByRole('button', { name: 'Edit Your own words on the how-to page' }),
+      screen.getByRole('button', { name: 'Change Your own words on the how-to page' }),
     );
     expect(rec.sent).toEqual([]);
     await user.click(screen.getByRole('button', { name: 'Insert a number' }));
@@ -390,7 +390,7 @@ describe('unsaved changes', () => {
         <Link to="/about">Leave</Link>
       </UnsavedChangesGuard>
     ));
-    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.click(screen.getByRole('button', { name: 'Change Imprint' }));
     await user.type(screen.getByRole('textbox', { name: 'Imprint' }), ' more');
     await user.click(screen.getByRole('link', { name: 'Leave' }));
     expect(ask).toHaveBeenCalledWith(

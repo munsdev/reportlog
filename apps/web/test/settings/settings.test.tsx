@@ -352,7 +352,7 @@ describe('the wording screen', () => {
     const user = userEvent.setup();
     const sent = stubFetch();
     wrap(<SlotEditor slot={slot()} />);
-    await user.click(screen.getByRole('button', { name: 'Edit Front page headline' }));
+    await user.click(screen.getByRole('button', { name: 'Change Front page headline' }));
     const box = screen.getByRole('textbox', { name: 'Front page headline' });
     expect(box).toHaveAccessibleDescription(/still the wording the site ships with/);
     await user.clear(box);
@@ -387,7 +387,7 @@ describe('the legal notices screen', () => {
     if (!entry) throw new Error('fixture');
     wrap(<LegalEditor entry={entry} />);
     expect(panelOf('Imprint')).toHaveTextContent('Outline only, not published');
-    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.click(screen.getByRole('button', { name: 'Change Imprint' }));
     expect(
       screen.getByText(/Saving it as it stands would publish the outline/),
     ).toBeInTheDocument();
@@ -400,7 +400,7 @@ describe('the legal notices screen', () => {
     const entry = editorState().legal[1];
     if (!entry) throw new Error('fixture');
     wrap(<LegalEditor entry={entry} />);
-    await user.click(screen.getByRole('button', { name: 'Edit Privacy policy' }));
+    await user.click(screen.getByRole('button', { name: 'Change Privacy policy' }));
     await user.click(screen.getByRole('button', { name: 'Take it down' }));
     expect(sent).toEqual([
       { url: '/api/admin/site/legal/privacy', method: 'PUT', body: { text: '' } },
@@ -418,9 +418,9 @@ describe('the legal notices screen', () => {
         <LegalEditor entry={privacy} />
       </>,
     );
-    await user.click(screen.getByRole('button', { name: 'Edit Imprint' }));
+    await user.click(screen.getByRole('button', { name: 'Change Imprint' }));
     await user.type(screen.getByRole('textbox', { name: 'Imprint' }), ' more');
-    await user.click(screen.getByRole('button', { name: 'Edit Privacy policy' }));
+    await user.click(screen.getByRole('button', { name: 'Change Privacy policy' }));
     expect(
       await screen.findByRole('dialog', { name: 'Leave your changes to Imprint?' }),
     ).toBeInTheDocument();

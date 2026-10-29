@@ -54,18 +54,18 @@ function page() {
 }
 
 describe('a setting panel', () => {
-  it('closed, shows what it is set to now and an Edit button', () => {
+  it('closed, shows what it is set to now and a Change button', () => {
     page();
     const panel = panelOf('Accepting reports');
     expect(panel).toHaveTextContent('Accepting reportsYes');
-    expect(screen.getByRole('button', { name: 'Edit Accepting reports' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change Accepting reports' })).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
   it('open, shows its form and a Save bar naming it, and saving closes it', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
+    await user.click(screen.getByRole('button', { name: 'Change Accepting reports' }));
     const box = screen.getByRole('textbox', { name: 'Accepting reports answer' });
     expect(screen.getByRole('region', { name: 'Unsaved changes' })).toHaveTextContent(
       'Changes to Accepting reports are not saved.',
@@ -80,8 +80,8 @@ describe('a setting panel', () => {
   it('only one is open at a time: opening another with nothing changed just moves', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
-    await user.click(screen.getByRole('button', { name: 'Edit Publishing' }));
+    await user.click(screen.getByRole('button', { name: 'Change Accepting reports' }));
+    await user.click(screen.getByRole('button', { name: 'Change Publishing' }));
     expect(screen.getAllByRole('textbox')).toHaveLength(1);
     expect(screen.getByRole('textbox', { name: 'Publishing answer' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -90,16 +90,16 @@ describe('a setting panel', () => {
   it('opening another with changes asks first, naming the open one', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
+    await user.click(screen.getByRole('button', { name: 'Change Accepting reports' }));
     await user.type(screen.getByRole('textbox'), '!');
-    await user.click(screen.getByRole('button', { name: 'Edit Publishing' }));
+    await user.click(screen.getByRole('button', { name: 'Change Publishing' }));
     expect(
       screen.getByRole('dialog', { name: 'Leave your changes to Accepting reports?' }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(screen.getByRole('textbox', { name: 'Accepting reports answer' })).toHaveValue('Yes!');
 
-    await user.click(screen.getByRole('button', { name: 'Edit Publishing' }));
+    await user.click(screen.getByRole('button', { name: 'Change Publishing' }));
     await user.click(screen.getByRole('button', { name: 'Leave them' }));
     expect(screen.getByRole('textbox', { name: 'Publishing answer' })).toBeInTheDocument();
     expect(panelOf('Accepting reports')).toHaveTextContent('Accepting reportsYes');
@@ -108,7 +108,7 @@ describe('a setting panel', () => {
   it('Escape with changes asks too, and Escape in the question only closes the question', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
+    await user.click(screen.getByRole('button', { name: 'Change Accepting reports' }));
     await user.type(screen.getByRole('textbox'), '!');
     await user.keyboard('{Escape}');
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe('a setting panel', () => {
   it('Cancel with nothing changed closes without asking', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Accepting reports' }));
+    await user.click(screen.getByRole('button', { name: 'Change Accepting reports' }));
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
@@ -129,7 +129,7 @@ describe('a setting panel', () => {
   it('a save that fails keeps the panel open on its form', async () => {
     const user = userEvent.setup();
     page();
-    await user.click(screen.getByRole('button', { name: 'Edit Broken' }));
+    await user.click(screen.getByRole('button', { name: 'Change Broken' }));
     await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(screen.getByRole('textbox', { name: 'Broken answer' })).toBeInTheDocument();
   });

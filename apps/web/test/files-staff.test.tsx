@@ -345,7 +345,7 @@ describe('limits', () => {
     );
     expect(screen.queryByLabelText('Largest photo (MB)')).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Edit How big, how long, how many' }));
+    await user.click(screen.getByRole('button', { name: 'Change How big, how long, how many' }));
     await user.click(screen.getByRole('button', { name: 'Save the limits' }));
     expect(onSave).toHaveBeenCalledTimes(1);
     // Saved: closed again, and said in a toast.
