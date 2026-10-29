@@ -12,6 +12,7 @@
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { saveChanges } from './save-bar.ts';
 import { countTo, lastMessageTo, linkIn } from './identity/mail.ts';
 
 test.use({ storageState: ADMIN });
@@ -33,10 +34,7 @@ async function makeTipList(page: Page, project: string): Promise<{ slug: string;
   await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
   await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page
-    .getByRole('region', { name: 'Unsaved changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByRole('button', { name: 'Change Settings' })).toBeVisible();
   return { slug, title };
 }
@@ -62,10 +60,11 @@ test('a visitor sends a tip; the emailed link erases what they wrote, and only w
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
   await v.goto(`/list/${slug}`);
+  // Said before the first question, among what the list does with what is sent.
+  await expect(v.getByRole('term').filter({ hasText: /^Published\?$/ })).toBeVisible();
   await expect(
-    v.getByText('Nothing you send here is published. A moderator reads it.'),
+    v.getByRole('definition').filter({ hasText: /^No\. Nothing sent here is published\.$/ }),
   ).toBeVisible();
-  await expect(v.getByText(/Nothing you send here is published/)).toBeVisible();
   await v.getByRole('button', { name: 'Start' }).click();
 
   await v
@@ -79,7 +78,7 @@ test('a visitor sends a tip; the emailed link erases what they wrote, and only w
   await v.getByRole('textbox', { name: /Anything we should know/ }).fill(words);
   await v.getByRole('button', { name: 'Next' }).click();
   await expect(v.getByText(/Needed, because you wrote something/)).toBeVisible();
-  await v.getByLabel(/Your email address/).fill(email);
+  await v.getByRole('textbox', { name: /^Email/ }).fill(email);
   // A form sent faster than it can be read is taken for a script and quietly
   // dropped (MIN_FILL_MS on the server). A person takes longer than this.
   await v.waitForTimeout(2600);
@@ -131,10 +130,7 @@ test('an address named to receive entries agrees by its emailed link, and not by
   await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByRole('checkbox', { name: 'Email each new entry' }).click();
   await page.getByLabel('Send them to (optional)').fill(to);
-  await page
-    .getByRole('region', { name: 'Unsaved changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByText(/A link was emailed to the new address/)).toBeVisible();
 
   const mail = await lastMessageTo(to, before);
@@ -146,6 +142,8 @@ test('an address named to receive entries agrees by its emailed link, and not by
   await page.goto(link);
   await expect(page.getByRole('heading', { name: 'Receive new entries by email' })).toBeVisible();
   await page.goto(editor);
+  // Where the entries go is said beside the address, in the open settings.
+  await page.getByRole('button', { name: 'Change Settings' }).click();
   await expect(page.getByText(`Waiting for ${to} to agree`, { exact: false })).toBeVisible();
 
   await page.goto(link);
@@ -153,6 +151,7 @@ test('an address named to receive entries agrees by its emailed link, and not by
   await expect(page.getByRole('heading', { name: 'Done' })).toBeVisible();
   await expect(page.getByText(to)).toBeVisible();
   await page.goto(editor);
+  await page.getByRole('button', { name: 'Change Settings' }).click();
   await expect(page.getByText(`Going to ${to}.`)).toBeVisible();
 });
 
@@ -163,10 +162,7 @@ test('a moderator approves the entries ticked on screen, and a published count m
   const { slug } = await makeTipList(page, info.project.name);
   await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByRole('checkbox', { name: 'Publish the counts' }).click();
-  await page
-    .getByRole('region', { name: 'Unsaved changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByRole('button', { name: 'Change Settings' })).toBeVisible();
 
   // Two entries with nothing personal in them: a link and two choices need
@@ -196,14 +192,17 @@ test('a moderator approves the entries ticked on screen, and a published count m
 
   await page.goto('/lists/review');
   await page.getByRole('link', { name: new RegExp(slug.replace(/-/g, '.')) }).click();
+  // Each entry waiting is a panel of its own, with a box to tick.
   const entries = page
-    .getByRole('list', { name: 'Entries' })
-    .getByRole('listitem')
+    .getByRole('main')
+    .getByRole('article')
     .filter({
-      has: page.getByRole('checkbox'),
+      has: page.getByRole('checkbox', { name: /^Select entry/ }),
     });
   await expect(entries).toHaveCount(2);
-  const approve = page.getByRole('button', { name: 'Approve selected' });
+  const approve = page
+    .getByRole('region', { name: 'Selected entries' })
+    .getByRole('button', { name: 'Approve selected' });
   await expect(approve).toBeDisabled();
   await entries.first().getByRole('checkbox').click();
   await approve.click();
@@ -229,12 +228,8 @@ test('a contact list that writes back says so on the form, and a reviewer can sh
   // The contact starting point comes with the switch on.
   await page.getByRole('button', { name: 'Change Settings' }).click();
   await expect(page.getByRole('checkbox', { name: 'We’ll write back' })).toBeChecked();
-  await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page
-    .getByRole('region', { name: 'Unsaved changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByRole('button', { name: 'Change Settings' })).toBeVisible();
 
   const email = `${unique('writer', info.project.name)}@example.org`;
@@ -246,7 +241,7 @@ test('a contact list that writes back says so on the form, and a reviewer can sh
   await v.getByRole('textbox', { name: 'Your message' }).fill('Please reply to me');
   await v.getByRole('button', { name: 'Next' }).click();
   await expect(v.getByText(/The team will use this address to write back to you/)).toBeVisible();
-  await v.getByLabel(/Your email address/).fill(email);
+  await v.getByRole('textbox', { name: /^Email/ }).fill(email);
   // Faster than a person could read it is taken for a script (MIN_FILL_MS).
   await v.waitForTimeout(2600);
   await v.getByRole('button', { name: 'Send' }).click();
@@ -255,7 +250,7 @@ test('a contact list that writes back says so on the form, and a reviewer can sh
 
   await page.goto('/lists/review');
   await page.getByRole('link', { name: new RegExp(slug.replace(/-/g, '.')) }).click();
-  const entry = page.getByRole('list', { name: 'Entries' }).getByRole('listitem').first();
+  const entry = page.getByRole('main').getByRole('article').first();
   // Nothing about the address is on the page until it is asked for.
   await expect(entry).not.toContainText(email);
   await entry.getByRole('button', { name: /^Show address for entry/ }).click();

@@ -6,6 +6,7 @@
  */
 import { expect, test } from '@playwright/test';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { shownReference } from '../reference.ts';
 import { doorFields } from '../door.ts';
 
 test('the link in the confirmation email erases the address only when the button is pressed, and does not withdraw the report', async ({
@@ -42,8 +43,7 @@ test('the link in the confirmation email erases the address only when the button
   await page.goto(linkIn(mail));
   await page.getByRole('button', { name: 'Confirm and file my report' }).click();
   await expect(page.getByRole('heading', { name: 'Your report is filed' })).toBeVisible();
-  const ref = (await page.getByText(/Its reference is RL-/).textContent())?.match(/RL-\S+/)?.[0];
-  expect(ref).toBeTruthy();
+  const ref = await shownReference(page);
 
   // FOLLOW THE ERASE LINK OUT OF THE EMAIL. Looking at it changes nothing.
   const erase = /https?:\/\/\S+\/file\/erase\/[0-9a-f]{64}/.exec(mail.text)?.[0];
@@ -68,8 +68,11 @@ test('the link in the confirmation email erases the address only when the button
   ).toBeVisible();
 
   // The report is still there and not withdrawn: the verify page still checks it.
-  await page.goto(`/verify/${ref ?? ''}`);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText(ref ?? '');
+  await page.goto(`/verify/${ref}`);
+  await expect(
+    page.getByRole('heading', { level: 2, name: 'This report has not been changed' }),
+  ).toBeVisible();
+  await expect(page.getByText(ref, { exact: true })).toBeVisible();
   expect(outside).toEqual([]);
   await context.close();
 });

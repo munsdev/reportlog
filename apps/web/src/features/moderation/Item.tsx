@@ -14,8 +14,9 @@
  * access_log row before anything is shown. Closing the row without a reason
  * sends nothing, so it writes nothing and shows nothing.
  *
- * On a desktop two columns, the Decide panel heading the right one; on a phone
- * one column and a bar at the foot with Approve… and Decline…, each opening
+ * On a desktop two columns, the report on the left and the Decide panel alone
+ * on the right, sticky; the closed rows run full width beneath, a line each.
+ * On a phone one column and a bar at the foot with Approve… and Decline…, each opening
  * the same Decide form in a sheet with that choice made.
  */
 import { roleSatisfies } from '@reportlog/access';
@@ -161,7 +162,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
         {r.threat_open ? <span className="st bad">Threat to safety</span> : null}
       </div>
       <ViewingNotice threadId={threadId} others={viewing.others} changed={viewing.changed} />
-      <div className="grid2">
+      <div className="grid2 report-grid">
         <div className="col">
           <Said r={r} />
           <ReportWritten threadId={r.thread_id} />
@@ -186,8 +187,12 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
               onDecided(d, r.public_ref);
             }}
           />
-          <Rows r={r} a={assessment} history={history} />
         </div>
+      </div>
+      {/* The secondary acts, one compact line each, under both columns where
+          there is room for the label, the current value and the button. */}
+      <div className="item-rows">
+        <Rows r={r} a={assessment} history={history} />
       </div>
       {!r.withdrawn && panels.openId === null ? (
         <div className="phone-decide">
@@ -1163,7 +1168,7 @@ function TheRecord({ r, history }: { r: QueueItem; history: History }) {
   ];
   return (
     <Panel title="The record" aria-label="The record">
-      <div className="code">{lines.join('\n')}</div>
+      <div className="code wrap">{lines.join('\n')}</div>
     </Panel>
   );
 }

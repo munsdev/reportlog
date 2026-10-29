@@ -20,6 +20,7 @@ import { signedIn } from '../files/helpers.ts';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { expectAccessible } from './axe.ts';
 import { doorFields } from '../door.ts';
+import { panel } from '../panel.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
@@ -123,7 +124,7 @@ async function myReportWithPublishedFiles(
     },
   );
   await page.goto(`/mine/${thread}`);
-  const allow = page.getByRole('region', { name: 'What you allow' });
+  const allow = panel(page, 'What you allow');
   await expect(allow).toBeVisible();
   return { allow, posted };
 }
@@ -137,7 +138,7 @@ test('switching off file publication asks first while files are published, and "
     playwright,
     info.project.use.baseURL ?? 'http://127.0.0.1:4173',
   );
-  const files = allow.getByRole('checkbox', { name: 'The files I attached may be published' });
+  const files = allow.getByRole('switch', { name: 'The files I attached may be published' });
   await expect(files).toBeChecked();
 
   // Asked, and kept: nothing written, the box as it was.
@@ -190,7 +191,7 @@ test('a write the server refuses leaves the box as it was, and says so', async (
     info.project.use.baseURL ?? 'http://127.0.0.1:4173',
     'contact_passing',
   );
-  const passing = allow.getByRole('checkbox', { name: /pass my contact details/ });
+  const passing = allow.getByRole('switch', { name: /pass my contact details/ });
   await expect(passing).not.toBeChecked();
   await passing.click();
   await expect(allow.getByRole('status')).toHaveText('That could not be saved. Try again.');

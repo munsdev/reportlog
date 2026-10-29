@@ -11,6 +11,7 @@ import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
 import { doorFields } from './door.ts';
+import { saveChanges } from './save-bar.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -28,10 +29,7 @@ async function makeTipList(page: Page, project: string): Promise<string> {
   await page.getByRole('button', { name: 'Make the list' }).click();
   await page.getByRole('button', { name: 'Change Settings' }).click();
   await page.getByLabel('Who can see it').selectOption({ label: 'Listed' });
-  await page
-    .getByRole('region', { name: 'Unsaved changes' })
-    .getByRole('button', { name: 'Save', exact: true })
-    .click();
+  await saveChanges(page);
   await expect(page.getByRole('button', { name: 'Change Settings' })).toBeVisible();
   return slug;
 }
@@ -108,13 +106,9 @@ test('a moderator judges a link as text on its entry, comments for journalists, 
   await only.getByRole('button', { name: 'Has links to check' }).click();
   await expect(page).toHaveURL(/links=true/);
 
-  // The entry rows themselves, not the list of links inside each.
+  // Each entry is a panel of its own (the links inside it are a list).
   const entry = (url: string) =>
-    page
-      .getByRole('list', { name: 'Entries' })
-      .getByRole('listitem')
-      .filter({ hasText: url })
-      .and(page.locator('article'));
+    page.getByRole('main').getByRole('article').filter({ hasText: url });
   await expect(entry(good)).toBeVisible();
   await expect(entry(bad)).toBeVisible();
   // K6: text, never an anchor, so nothing on the page can open or prefetch it.

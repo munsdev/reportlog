@@ -327,6 +327,8 @@ function Arrange({ data, onDone }: { data: HomeButtonsAdmin; onDone: (notice: st
 
               onClick={() => {
                 setRows((now) => [...now, { id: next, target: '', label: '', sub: '' }]);
+                // Open for wording: choosing its target must not close it.
+                setEditing(next);
                 setNext((n) => n + 1);
               }}
             >

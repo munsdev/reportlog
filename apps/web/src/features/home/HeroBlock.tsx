@@ -18,6 +18,7 @@
  */
 import { blockText } from '@reportlog/contracts';
 import type { Block, HomeButton } from '@reportlog/contracts';
+import { cn } from '@/lib/utils.ts';
 import { hrefOf } from './buttons.tsx';
 import { Markdown } from '../pages/Markdown.tsx';
 
@@ -47,10 +48,15 @@ function Buttons({ buttons, quiet }: { buttons: readonly HomeButton[]; quiet: bo
       {drawn.map(({ b, href }, i) => (
         <a
           key={`${b.kind}:${b.ref}`}
-          className={quiet ? 'btn sm flat' : `btn ${i === 0 ? 'go' : 'ghost'} lg`}
+          className={cn(
+            quiet ? 'btn sm flat' : `btn ${i === 0 ? 'go' : 'ghost'} lg`,
+            b.blurb && 'two-line',
+          )}
           href={href}
         >
           {b.label}
+          {/* The second line: the operator's Subtext, else the target's own blurb. */}
+          {b.blurb ? <span className="sub">{b.blurb}</span> : null}
         </a>
       ))}
     </div>

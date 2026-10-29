@@ -84,10 +84,14 @@ async function finish(page: Page) {
 async function send(page: Page) {
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).click();
   // Send waits for the puzzle, solved in the background in this page.
-  await page.getByRole('button', { name: 'Send report' }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   // Sealed on arrival: nothing to confirm, and no reference handed out.
-  await expect(page.getByRole('heading', { level: 1, name: /is on the record/ })).toBeVisible();
-  await expect(page.getByText(/A moderator reads it before anything is public/)).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'It’s on the record' })).toBeVisible();
+  await expect(
+    page.getByRole('listitem').filter({
+      hasText: /^A moderator reads it next\.\s*Nothing is public before that\.$/,
+    }),
+  ).toBeVisible();
   await expect(page.getByText(/Thank you\. Have a link\?/)).toBeVisible();
   await expect(page.getByRole('link', { name: 'Send a link' })).toHaveAttribute(
     'href',
@@ -357,14 +361,28 @@ test('the entry card: what do you want to do, and its two answers', async ({ pag
   await page.route(
     (url) => url.pathname === '/api/lists',
     (route) =>
-      route.fulfill({ json: { lists: [{ slug: 'tips', title: 'Send a link', blurb: null }] } }),
+      // Shaped as the API answers, or the page refuses the answer.
+      route.fulfill({
+        json: {
+          lists: [
+            {
+              slug: 'tips',
+              title: 'Send a link',
+              blurb: null,
+              on_get_involved: false,
+              is_contact: false,
+            },
+          ],
+        },
+      }),
   );
   await copy(page, { submit_question: 'What do you want to do?' });
   const outside = watch(page);
   await page.goto('/submit');
   await heading(page, 'What do you want to do?');
+  // The answers: each a link named by what it opens and what pressing it does.
   await expect(
-    page.getByRole('list', { name: 'What do you want to do?' }).getByRole('link'),
+    page.getByRole('main').getByRole('link', { name: /(File a report|Send a link)$/ }),
   ).toHaveCount(2);
   await expect(page.getByRole('link', { name: /Log how voting went/ })).toBeVisible();
   await expectAccessible(page, 'the entry card');

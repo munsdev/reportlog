@@ -11,7 +11,9 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
+import { heldTextOf } from '../held.ts';
 import { countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
+import { referenceLine, shownReference } from '../reference.ts';
 
 const run = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1000))}`;
 
@@ -19,15 +21,22 @@ async function launchedLogbook(admin: APIRequestContext, title: string) {
   const made = await admin.post('/api/admin/logbooks', { data: { title } });
   expect(made.ok(), await made.text()).toBe(true);
   const lb = (await made.json()) as { id: number; slug: string };
+  // The note questions are asked only where the operator turned notes on.
+  const notes = await admin.patch(`/api/admin/logbooks/${String(lb.id)}`, {
+    data: { accepts_notes: true },
+  });
+  expect(notes.ok(), await notes.text()).toBe(true);
   const add = async (data: Record<string, unknown>) => {
     const r = await admin.post(`/api/admin/logbooks/${String(lb.id)}/fields`, { data });
     expect(r.ok(), await r.text()).toBe(true);
     return (await r.json()) as { key: string };
   };
-  await add({ kind: 'long_text', label: 'What happened?', required: true });
+  // A logbook asks for words only as a note held apart from the report
+  // (isPublishedFreeText): the API refuses the plain text kinds.
+  await add({ kind: 'private_text', label: 'What happened?', required: true });
   const seen = await add({ kind: 'yes_no', label: 'Did anybody else see it?', required: true });
   await add({
-    kind: 'short_text',
+    kind: 'private_text',
     label: 'Who saw it?',
     shown_when: { field: seen.key, in: ['yes'] },
   });
@@ -71,7 +80,7 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await next();
   await expect(page.getByText('An answer is needed here.')).toBeVisible();
   await page
-    .getByRole('textbox', { name: 'What happened?' })
+    .getByRole('textbox', { name: 'What happened' })
     .fill('The doors were locked at eight.');
   await next();
 
@@ -84,7 +93,7 @@ test('a reporter files a report card by card, and confirms it from the email', a
 
   // The question that answer turned on is the NEXT card.
   await expect(heading(page, 'Who saw it?')).toBeVisible();
-  await expect(page.getByText('Optional.')).toBeVisible();
+  await expect(page.getByText('Optional', { exact: true })).toBeVisible();
   // Changing the answer turns it off again.
   await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('radio', { name: 'No' }).click();
@@ -98,9 +107,14 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await page.getByRole('radio', { name: 'Yes, it may be published' }).click();
   await next();
 
-  await expect(heading(page, 'Where can we reach you?')).toBeVisible();
+  // Something was written, so sharing it is asked, and the address is needed.
+  await expect(heading(page, 'Can vetted journalists read what you wrote?')).toBeVisible();
+  await page.getByRole('radio', { name: 'No, keep it for the moderators only' }).click();
+  await next();
+
+  await expect(heading(page, 'Your email address')).toBeVisible();
   const email = `reporter-${run()}@example.org`;
-  await page.getByLabel('Your email address').fill(email);
+  await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await next();
 
   // Check your answers: only what was asked, each one changeable.
@@ -108,20 +122,18 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await expect(page.getByText('The doors were locked at eight.')).toBeVisible();
   await expect(page.getByText('Who saw it?')).toHaveCount(0);
   await page.getByRole('button', { name: 'Change: What happened?' }).click();
-  await page
-    .getByRole('textbox', { name: 'What happened?' })
-    .fill('The doors were locked at nine.');
+  await page.getByRole('textbox', { name: 'What happened' }).fill('The doors were locked at nine.');
   await next();
   // Straight back to the review, not through every card again.
   await expect(heading(page, 'Check your answers')).toBeVisible();
   await expect(page.getByText('The doors were locked at nine.')).toBeVisible();
 
   const before = countTo(email);
-  await page.getByRole('button', { name: 'Send report' }).click();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('Tick the statement above to send the report.')).toBeVisible();
   await page.getByRole('checkbox', { name: /I confirm this report is accurate/ }).check();
-  await page.getByRole('button', { name: 'Send report' }).click();
-  await expect(heading(page, 'Check your email')).toBeVisible();
+  await page.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(heading(page, 'Check your email to finish')).toBeVisible();
   await expect(page.getByText(`We have sent a link to ${email}`)).toBeVisible();
   expect(outside).toEqual([]);
   await context.close();
@@ -143,20 +155,18 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await expect(heading(inbox, 'Confirm your report')).toBeVisible();
   await inbox.getByRole('button', { name: 'Confirm and file my report' }).click();
   await expect(heading(inbox, 'Your report is filed')).toBeVisible();
-  const refText = await inbox.getByText(/Its reference is RL-/).textContent();
-  const ref = /RL-\S+/.exec(refText ?? '')?.[0] ?? '';
-  expect(ref).toMatch(/^RL-/);
+  const ref = await shownReference(inbox);
 
   // The link keeps working, and shows where the report stands.
   await inbox.goto(link);
   await expect(heading(inbox, 'Your report is filed')).toBeVisible();
-  await expect(inbox.getByText(`Its reference is ${ref}`)).toBeVisible();
+  await expect(referenceLine(inbox)).toHaveText(ref);
 
   // And the report it filed is sealed and verifies, with the answer given.
   // The confirmation page no longer links to the check; the reference is the way in.
   await inbox.goto(`/verify/${ref}`);
   await inbox.getByText('Technical details').click();
-  const checks = inbox.getByRole('list', { name: 'Checks' }).getByRole('listitem');
+  const checks = inbox.getByRole('list', { name: 'What was checked' }).getByRole('listitem');
   await expect(checks).toHaveCount(4);
   for (const item of await checks.all()) await expect(item).toContainText('Holds:');
   // Not published, so the page shows its fingerprints and none of its words
@@ -169,7 +179,12 @@ test('a reporter files a report card by card, and confirms it from the email', a
   const sealed = (await (await staff.get(`/api/reports/${ref}/verify`)).json()) as {
     canonical_json?: string;
   };
-  expect(sealed.canonical_json).toContain('The doors were locked at nine.');
+  // The note is held apart from the report and sealed as its fingerprint, so
+  // the words are not in the sealed bytes; the corrected words are what the
+  // report holds, as a moderator opening it reads them.
+  expect(sealed.canonical_json).toContain('text_fingerprints');
+  expect(sealed.canonical_json).not.toContain('The doors were locked');
+  expect(await heldTextOf(staff, ref)).toBe('The doors were locked at nine.');
   await staff.dispose();
   await reader.close();
 });

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import { ADMIN } from './auth.ts';
+import { panel } from './panel.ts';
 
 test.use({ storageState: ADMIN });
 
@@ -59,7 +60,7 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   const title = `Where it happened ${slug}`;
 
   await page.goto('/maps');
-  await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
 
   // Which question places the fixture logbook's reports.
   await page.getByLabel(lb.title).selectOption('where');
@@ -79,7 +80,8 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
   await expect(page.getByRole('button', { name: 'Make the map' })).toHaveCount(0);
   expect(failed).toEqual([]);
 
-  const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
+  // Each map is a panel of its own, titled with its title.
+  const card = panel(page, title);
   await expect(card).toContainText('Off');
   await card.getByRole('button', { name: 'Change' }).click();
   const form = card.getByRole('form', { name: `Change ${title}` });
@@ -136,7 +138,7 @@ test('an administrator makes a map, turns it on, and a reader sees it without an
 
   // Tidy: a map holds no reports, so deleting it takes nothing else.
   await page.goto('/maps');
-  const again = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
+  const again = panel(page, title);
   await again.getByRole('button', { name: 'Change' }).click();
   await again.getByRole('button', { name: 'Delete the map' }).click();
   await again.getByRole('button', { name: 'Yes, delete this map' }).click();
@@ -217,7 +219,7 @@ test('the staff screen says "No maps yet." when there are none, and draws no map
     return route.fulfill({ json: { maps: [], slots: body.slots } });
   });
   await page.goto('/maps');
-  await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Maps' })).toBeVisible();
   await expect(page.getByText('No maps yet', { exact: true })).toBeVisible();
   await page.unrouteAll({ behavior: 'wait' });
 
@@ -230,7 +232,7 @@ test('the staff screen says "No maps yet." when there are none, and draws no map
   const { id } = (await made.json()) as { id: number };
   try {
     await page.reload();
-    const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
+    const card = panel(page, `Words ${slug}`);
     await expect(card).toContainText('an area shows its number at 4 reports or more');
     await expect(card).not.toContainText(/threshold 4/);
     // The editor's preview is words too: nothing on this screen draws a map.
@@ -257,7 +259,7 @@ test('the map editor warns before unsaved changes are lost, and not after they a
   });
   try {
     await page.goto('/maps');
-    const card = page.getByRole('listitem').filter({ hasText: `/maps/${slug}` });
+    const card = panel(page, title);
     await card.getByRole('button', { name: 'Change' }).click();
     const form = card.getByRole('form', { name: `Change ${title}` });
 
