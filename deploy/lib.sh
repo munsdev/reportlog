@@ -255,12 +255,19 @@ install_units() {
 # The Caddyfile a release carries, with this server's domain written in.
 # Validated before it replaces the running one; reloaded only if it changed.
 install_caddyfile() {
-  local release=$1 origin domain acme bugsink tmp
+  local release=$1 origin domain acme aliases bugsink tmp
   origin=$(env_value SITE_ORIGIN)
   [ -n "$origin" ] || die "SITE_ORIGIN is not set in $ENV_FILE. Caddy needs the domain."
   domain=${origin#*://}
   domain=${domain%%/*}
   acme=$(env_value ACME_EMAIL "$DEPLOY_ENV")
+  # Spaces or commas between names; Caddy wants "a, b". Checked here because
+  # each name goes into sed and then into the Caddyfile as it is.
+  aliases=$(env_value SITE_ALIASES "$DEPLOY_ENV" | tr ',' ' ' | xargs)
+  aliases=${aliases// /, }
+  if [ -n "$aliases" ] && ! [[ "$aliases" =~ ^[A-Za-z0-9.-]+(,\ [A-Za-z0-9.-]+)*$ ]]; then
+    die "SITE_ALIASES in $DEPLOY_ENV is not a list of domain names: $aliases"
+  fi
 
   bugsink=$(env_value BUGSINK_DOMAIN "$DEPLOY_ENV")
 
@@ -268,6 +275,16 @@ install_caddyfile() {
   sed -e "s|@SITE_DOMAIN@|$domain|" \
     -e "s|@ACME_EMAIL_LINE@|${acme:+email $acme}|" \
     "$release/deploy/caddy/Caddyfile" >"$tmp"
+  # The site's other names, redirected to it. From the release, so an older
+  # release without the template keeps serving the one name it knew.
+  if [ -n "$aliases" ]; then
+    if [ -r "$release/deploy/caddy/aliases.caddy" ]; then
+      { echo; sed -e "s|@SITE_ALIASES@|$aliases|" -e "s|@SITE_DOMAIN@|$domain|" \
+        "$release/deploy/caddy/aliases.caddy"; } >>"$tmp"
+    else
+      note "WARNING: SITE_ALIASES is set but this release cannot redirect them."
+    fi
+  fi
   # Bugsink's site, on its own domain, when this server runs it. Taken from
   # what install-bugsink.sh installed, not from the release, so a rollback to
   # a release older than Bugsink does not take its site down.

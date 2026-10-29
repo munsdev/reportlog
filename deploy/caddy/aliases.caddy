@@ -1,0 +1,21 @@
+# Other names for the site (www.<domain>, say), each sent to the one address
+# in SITE_ORIGIN. Appended to the rendered /etc/caddy/Caddyfile by
+# deploy/lib.sh when SITE_ALIASES is set in /etc/reportlog/deploy.env.
+#
+# A name whose DNS points here but which has no site block gets no
+# certificate: the visitor sees a TLS error, not a redirect. Caddy obtains one
+# for every name listed here, so each must already point at this server.
+#
+# Only a redirect, never the site itself: a report link, a sign-in cookie and
+# every email's links name one origin, and a second one would split them.
+# NO ACCESS LOG, as for the site.
+@SITE_ALIASES@ {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	redir https://@SITE_DOMAIN@{uri} permanent
+}

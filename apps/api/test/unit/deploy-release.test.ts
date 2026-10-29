@@ -203,6 +203,45 @@ describe('a first deploy', () => {
     expect(s.read('/etc/caddy/Caddyfile')).not.toMatch(/^\s*email\b/m);
   });
 
+  it('redirects the names in SITE_ALIASES to the site, so www. gets a certificate', () => {
+    const s = server();
+    writeFileSync(
+      s.at('/etc/reportlog/deploy.env'),
+      `REPO_URL=${s.upstream}\nDEPLOY_REF=main\nSITE_ALIASES="www.reports.example.org, old.example.org"\n`,
+    );
+    s.commit('v1');
+    expect(s.reportlog('deploy').status).toBe(0);
+    const caddy = s.read('/etc/caddy/Caddyfile');
+    expect(caddy).toMatch(/^www\.reports\.example\.org, old\.example\.org \{$/m);
+    expect(caddy).toMatch(/^\tredir https:\/\/reports\.example\.org\{uri\} permanent$/m);
+    expect(caddy).not.toContain('@SITE_ALIASES@');
+    // The site itself is still served under its own name, once.
+    expect(caddy.match(/^reports\.example\.org \{$/gm)).toHaveLength(1);
+  });
+
+  it('adds no other names when SITE_ALIASES is empty', () => {
+    const s = server();
+    s.commit('v1');
+    expect(s.reportlog('deploy').status).toBe(0);
+    expect(s.read('/etc/caddy/Caddyfile')).not.toMatch(/\bredir\b/);
+  });
+
+  it('refuses a SITE_ALIASES that is not a list of names, and switches nothing', () => {
+    const s = server();
+    s.commit('v1');
+    expect(s.reportlog('deploy').status).toBe(0);
+    const before = s.read('/etc/caddy/Caddyfile');
+    writeFileSync(
+      s.at('/etc/reportlog/deploy.env'),
+      `REPO_URL=${s.upstream}\nDEPLOY_REF=main\nSITE_ALIASES=www.example.org { respond hi }\n`,
+    );
+    s.commit('v2');
+    const res = s.reportlog('deploy');
+    expect(res.status).not.toBe(0);
+    expect(res.out).toContain('SITE_ALIASES');
+    expect(s.read('/etc/caddy/Caddyfile')).toBe(before);
+  });
+
   it('checks health on the PORT the settings name', () => {
     const s = server();
     s.commit('v1');
