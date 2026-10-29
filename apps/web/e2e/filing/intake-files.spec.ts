@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { ADMIN } from '../auth.ts';
 import { filesState, photoWithLocation } from '../files/helpers.ts';
 import { codeIn, countTo, lastMessageTo } from '../identity/mail.ts';
+import { panel } from '../panel.ts';
 import { passSecondFactor } from '../second-factor.ts';
 
 const API = fileURLToPath(new URL('../../../api/', import.meta.url));
@@ -76,7 +77,7 @@ test('a photo attached to an account is filed with it, and nothing else is conta
   await expect(dialog).toBeHidden();
 
   // Opened again, the file is still on the account.
-  const accounts = page.getByRole('region', { name: 'Accounts' });
+  const accounts = page.getByRole('list', { name: 'Accounts' });
   await accounts.getByRole('button', { name: 'Change account 1' }).click();
   await expect(
     page.getByRole('dialog', { name: 'Account 1' }).getByRole('list', { name: 'Your files' }),
@@ -86,7 +87,7 @@ test('a photo attached to an account is filed with it, and nothing else is conta
     .getByRole('button', { name: 'Cancel' })
     .click();
 
-  const check = page.getByRole('region', { name: 'Before filing' });
+  const check = panel(page, 'Before filing');
   await expect(check).toContainText('1 ready to file');
   await check.getByRole('button', { name: 'File the ready accounts' }).click();
   const attest = page.getByRole('dialog', { name: 'File this batch' });
@@ -94,9 +95,9 @@ test('a photo attached to an account is filed with it, and nothing else is conta
   await attest.getByRole('button', { name: 'File them' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Filed 1 account' })).toBeVisible();
 
-  const ref = /RL-[A-Z0-9-]+/.exec(
-    (await accounts.getByText(/Filed as RL-/).textContent()) ?? '',
-  )?.[0];
+  // The filed account shows its reference on a line of its own, beside "Filed".
+  const filed = accounts.getByRole('listitem').filter({ hasText: /Filed\s*RL-/ });
+  const ref = (await filed.getByText(/^RL-[A-Z0-9-]+$/).textContent())?.trim();
   expect(ref).toBeTruthy();
   // The sealed fields come whole to staff only: verifying an unpublished
   // report shows anybody else its fingerprints alone (decisions.md §1).
