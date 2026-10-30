@@ -280,7 +280,9 @@ describe('the staff screens in the route tree', () => {
       server(NO_ROLE);
       open(address(path));
       // The desk (decision 80) offers an account without the role a way to ask, not a refusal.
-      await refusedBehindADoor(path.startsWith('/desk') ? 'Journalist desk' : 'Not for this account');
+      await refusedBehindADoor(
+        path.startsWith('/desk') ? 'Journalist desk' : 'Not for this account',
+      );
     });
   });
 });
