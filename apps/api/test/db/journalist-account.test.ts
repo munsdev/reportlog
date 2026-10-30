@@ -257,8 +257,8 @@ describe('who decides, and what the person sees', () => {
     const a = await account('mgr-approve');
     await apply(a.call);
     expect((await decide(manager, (await need(a.email)).id, 'approve')).statusCode).toBe(200);
-    const row = await requestOf(a.email);
-    expect((await decide(manager, row!.id, 'revoke')).statusCode).toBe(200);
+    const row = await need(a.email);
+    expect((await decide(manager, row.id, 'revoke')).statusCode).toBe(200);
     expect(await roleOf(h.db, a.email)).toBe('user');
     expect(await me(a.call)).toMatchObject({ desk: 'ended' });
     expect(h.mailer.lastTo(a.email)?.subject).toBe('Your desk access has ended');
