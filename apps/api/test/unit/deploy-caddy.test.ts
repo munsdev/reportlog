@@ -61,7 +61,8 @@ function render(site: string, admin: number, dist: string, api: number): string 
   let out = SHIPPED;
   for (const [from, to] of swaps) {
     expect(out, from).toContain(from);
-    out = out.replace(from, to);
+    // Every one: the API is proxied from more than one route.
+    out = out.replaceAll(from, to);
   }
   return out;
 }
@@ -77,9 +78,31 @@ describe('the shipped Caddyfile, read as text', () => {
   });
 
   it('has one catch-all route for the website (S3), so a new page needs no Caddy change', () => {
-    expect(directives.filter((l) => l.startsWith('try_files'))).toEqual([
-      'try_files {path} /index.html',
+    // A file is served as it is; anything else goes to the API, which answers
+    // with the app's page and a head written for that address. No try_files:
+    // a fall back to index.html would be the page with no head.
+    expect(directives.filter((l) => l.startsWith('try_files'))).toEqual([]);
+    expect(directives.filter((l) => l.startsWith('rewrite * /api/site/page'))).toEqual([
+      'rewrite * /api/site/page{http.request.uri.path}',
     ]);
+  });
+
+  it('sets the web policy after the API has answered, so the API’s own never wins', () => {
+    // A proxied header replaces one set before it; `>` sets it afterwards.
+    for (const name of [
+      'Content-Security-Policy',
+      'X-Frame-Options',
+      'Cross-Origin-Opener-Policy',
+    ]) {
+      expect(
+        directives.filter((l) => l.startsWith(`header >${name} `)),
+        name,
+      ).toHaveLength(1);
+      expect(
+        directives.filter((l) => l.startsWith(`header ${name} `)),
+        name,
+      ).toEqual([]);
+    }
   });
 });
 
@@ -89,6 +112,7 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
   let caddy: ChildProcess;
   let api: Server;
   const seenByApi: Record<string, string | string[] | undefined>[] = [];
+  const urlsSeenByApi: string[] = [];
   // Everything Caddy itself writes while it runs, for the log test below.
   let caddyOutput = '';
 
@@ -105,6 +129,22 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
 
     api = createServer((req, res) => {
       seenByApi.push(req.headers);
+      urlsSeenByApi.push(req.url ?? '');
+      // The page route answers HTML, with its own policy that Caddy must
+      // replace (the real one forbids framing; the web's allows its own).
+      if (req.url?.startsWith('/api/site/page/')) {
+        res
+          .writeHead(req.url.includes('/gone') ? 404 : 200, {
+            'content-type': 'text/html; charset=utf-8',
+            'cache-control': 'no-cache',
+            'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
+            'x-frame-options': 'DENY',
+          })
+          .end(
+            `<!doctype html><title>a head</title><script type="module" src="/assets/${HASHED}"></script>`,
+          );
+        return;
+      }
       res
         .writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' })
         .end('{"ok":true}');
@@ -184,11 +224,11 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     expect(await page.text()).toContain(`/assets/${HASHED}`);
   });
 
-  it('lets asking again be cheap: an unchanged page answers 304', async () => {
-    const first = await get('/');
+  it('lets asking again be cheap: an unchanged file answers 304', async () => {
+    const first = await get('/index.html');
     const etag = first.headers.get('etag');
     expect(etag).toBeTruthy();
-    const again = await get('/', { 'if-none-match': String(etag) });
+    const again = await get('/index.html', { 'if-none-match': String(etag) });
     expect(again.status).toBe(304);
   });
 
@@ -217,8 +257,51 @@ describe.skipIf(!hasCaddy)('the Caddyfile, in Caddy', () => {
     expect(seen['x-forwarded-for']).toBe('127.0.0.1');
   });
 
+  it('hands robots.txt and the sitemap to the API, which builds them, not to the app', async () => {
+    for (const [path, asked] of [
+      ['/robots.txt', '/api/site/robots.txt'],
+      ['/sitemap.xml', '/api/site/sitemap.xml'],
+    ] as const) {
+      const res = await get(path);
+      expect(res.status, path).toBe(200);
+      expect(await res.text(), path).not.toContain(`/assets/${HASHED}`);
+      expect(urlsSeenByApi.at(-1), path).toBe(asked);
+    }
+  });
+
+  it('hands an address that is not a file to the API, with the path in the address', async () => {
+    for (const [path, asked] of [
+      ['/', '/api/site/page/'],
+      // The query rides along; the API reads only the path.
+      ['/logbooks/noise?x=1', '/api/site/page/logbooks/noise?x=1'],
+      ['/docs/', '/api/site/page/docs/'],
+    ] as const) {
+      const res = await get(path);
+      expect(res.status, path).toBe(200);
+      expect(urlsSeenByApi.at(-1), path).toBe(asked);
+    }
+    // A file is still a file, and never reaches the API.
+    const before = urlsSeenByApi.length;
+    expect((await get('/favicon.svg')).status).toBe(200);
+    expect(urlsSeenByApi.length).toBe(before);
+  });
+
+  it("passes the API's status through, so an unknown address is a real 404 with the page", async () => {
+    const res = await get('/gone-for-good');
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain(`/assets/${HASHED}`);
+  });
+
+  it("answers a page from the API with the web's policy, not the API's", async () => {
+    const res = await get('/some-logbook');
+    expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'self'");
+    expect(res.headers.get('content-security-policy')).not.toContain("default-src 'none'");
+    expect(res.headers.get('x-frame-options')).toBe('SAMEORIGIN');
+    expect(res.headers.get('cache-control')).toBe('no-cache');
+  });
+
   it('sends the security headers with every kind of answer', async () => {
-    for (const path of ['/', `/assets/${HASHED}`, '/assets/gone.js']) {
+    for (const path of ['/', '/index.html', `/assets/${HASHED}`, '/assets/gone.js']) {
       const res = await get(path);
       expect(res.headers.get('content-security-policy'), path).toContain("default-src 'self'");
       expect(res.headers.get('x-content-type-options'), path).toBe('nosniff');

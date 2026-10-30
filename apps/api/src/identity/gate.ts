@@ -62,6 +62,17 @@ export const IN_FRONT: readonly string[] = [
   // lock screen and a door wear the site's look (decision 60). Colours and
   // type, by hash; nothing the password protects.
   'GET /api/looks/:pack/:file',
+  // For search engines (site/robots.ts), which never have the password. Each
+  // answers "nothing here" while the site is behind it.
+  'GET /api/site/robots.txt',
+  'GET /api/site/sitemap.xml',
+  // The shared-link picture (site/shareImage.ts): it draws only the plain
+  // name the lock screen already shows.
+  'GET /api/site/share.png',
+  // The page itself, head written (site/pageHead.ts): Caddy asks it for every
+  // address that is not a file, before anybody has typed a password. Behind one
+  // it answers a generic head for every address and reveals nothing else.
+  'GET /api/site/page/*',
 ];
 
 /**

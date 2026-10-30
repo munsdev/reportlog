@@ -34,6 +34,12 @@ const ConfigSchema = z.object({
     .transform((s) => s.replace(/\/+$/, ''))
     .default('http://127.0.0.1:5173'),
   /**
+   * Whether search engines are invited in (site/robots.ts). `off` on a test
+   * server, so it never competes with the real site in search results. A
+   * site behind its password is closed to them either way.
+   */
+  SEARCH_ENGINES: z.enum(['on', 'off']).default('on'),
+  /**
    * A directory to write outgoing email into instead of sending it. For the
    * browser tests only, which need to read what a person would have been sent.
    */

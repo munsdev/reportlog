@@ -392,6 +392,7 @@ backups, are explained in their own sections above.
 | `DOOR_REQUESTS_PER_MINUTE`                                                       | Requests of any kind one address may make per minute (600), so reading stays fast in a flood.      |
 | `FILING_CONFIRMS_PER_CLIENT`                                                     | How many times one visitor may open or use confirmation links in 15 minutes.                       |
 | `SITE_ORIGIN`                                                                    | The address people reach the site at. Every email link and Caddy's certificate use it.             |
+| `SEARCH_ENGINES`                                                                 | `on` (unset) or `off`. Off on a test server: robots.txt then asks every search engine to stay out. |
 | `ATTACHMENTS_ENABLED`                                                            | Whether files are taken until an administrator says otherwise. `install.sh` writes `false`.        |
 | `CLAMAV_ENABLED`                                                                 | Scan each file with ClamAV first (needs `clamd`).                                                  |
 | `FILES_DIR`, `FILES_INLINE_WORKER`                                               | Development only: where disk storage keeps files, and running the media worker inside the server.  |

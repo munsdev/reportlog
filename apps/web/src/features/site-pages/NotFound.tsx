@@ -14,11 +14,14 @@ import { MockPage } from '../../mockup/Band.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { usePageTitle } from '../../mockup/usePageTitle.ts';
 import { useMainAction } from '../nav/Menu.tsx';
+import { useNoIndex } from './searchMeta.tsx';
 
 export function NotFoundPage() {
   const { label, href } = useMainAction();
   useBodyClass('dark');
   usePageTitle('Page not found');
+  // The address may look like a page that could be indexed (/<slug>).
+  useNoIndex();
   return (
     <MockPage>
       <div className="wrap oops">

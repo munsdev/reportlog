@@ -37,6 +37,19 @@
 		reverse_proxy 127.0.0.1:3000
 	}
 
+	# For search engines, which ask for these two at the site's root. Built
+	# by the API (apps/api/src/site/robots.ts): both name the site's address
+	# and its logbooks, and both close while the site is behind its password.
+	# Without these the catch-all below answered them with the app's page.
+	handle /robots.txt {
+		rewrite * /api/site/robots.txt
+		reverse_proxy 127.0.0.1:3000
+	}
+	handle /sitemap.xml {
+		rewrite * /api/site/sitemap.xml
+		reverse_proxy 127.0.0.1:3000
+	}
+
 	# The website: static files from the release `current` points at. A
 	# deploy switches the symlink, so nothing here needs reloading for one.
 	handle {
@@ -46,9 +59,14 @@
 		# site loads nothing from anywhere else, so there is nothing to allow.
 		# Framed by itself only: the look editor shows the real page in a frame
 		# at a phone's or a desktop's width. No other site may frame it.
-		header Content-Security-Policy "default-src 'self'; base-uri 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
-		header X-Frame-Options SAMEORIGIN
-		header Cross-Origin-Opener-Policy same-origin
+		#
+		# Written with `>`, which sets the header once the answer is made: the
+		# page below comes from the API, whose own policy (no framing at all)
+		# would otherwise win over this one, because a proxied header replaces
+		# one set before it.
+		header >Content-Security-Policy "default-src 'self'; base-uri 'self'; font-src 'self' data:; form-action 'self'; frame-ancestors 'self'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; connect-src 'self'"
+		header >X-Frame-Options SAMEORIGIN
+		header >Cross-Origin-Opener-Policy same-origin
 
 		# Vite puts a content hash in every asset's name, so an asset never
 		# changes under its name and may be kept for a year. Everything else
@@ -72,11 +90,26 @@
 			file_server
 		}
 
-		# A single-page app: any other path that is not a file is a route.
-		handle {
+		# A single-page app: any other path that is not a file is a route, and
+		# the API answers it with the app's page and a head written for that
+		# address (apps/api/src/site/pageHead.ts): a title, a description and
+		# share tags a link preview can read without running the page, and a
+		# real 404 for an address that is clearly nothing. The path rides in
+		# the address, not the query, so a visitor's own query cannot clash.
+		#
+		# A directory is not a file: "/" and "/docs/" are routes, not an index.
+		@static {
+			file
+			not path */
+		}
+		handle @static {
 			header Cache-Control "no-cache"
-			try_files {path} /index.html
 			file_server
+		}
+		handle {
+			header >Cache-Control "no-cache"
+			rewrite * /api/site/page{http.request.uri.path}
+			reverse_proxy 127.0.0.1:3000
 		}
 	}
 }
