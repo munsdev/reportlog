@@ -8,8 +8,9 @@
 
 /**
  * `journalist` is a vetted reader of the desk (plan D, J7 to J13). It outranks
- * nothing, satisfies no staff scope and grants nothing; only the owner makes
- * or removes one.
+ * nothing, satisfies no staff scope and grants nothing. The owner, an
+ * administrator or an Access Manager makes or removes one (decision 80), and
+ * only by deciding an access request.
  */
 export const SYSTEM_ROLES = [
   'user',
@@ -80,13 +81,15 @@ export function canHoldTogether(roles: Held): boolean {
  * THE OWNER'S SEAT IS UNGRANTABLE: 'owner' appears in no row, its own
  * included, so no grant can produce one. The seat moves only by the
  * two-party handover or the setup wizard. A journalist is vetted by the
- * owner and nobody else, so 'journalist' is in the owner's row only. Exported so tests read the real
- * table instead of a copy.
+ * owner, an administrator or an Access Manager (decision 80), so 'journalist'
+ * is in those three rows. The role is still only ever made by approving a
+ * request (`setSystemRole` refuses a direct grant). Exported so tests read the
+ * real table instead of a copy.
  */
 export const MAY_GRANT: Readonly<Record<SystemRole, readonly SystemRole[]>> = {
   owner: ['user', 'moderator', 'access_manager', 'admin', 'journalist'],
-  admin: ['user', 'moderator', 'access_manager'],
-  access_manager: ['user', 'moderator'],
+  admin: ['user', 'moderator', 'access_manager', 'journalist'],
+  access_manager: ['user', 'moderator', 'journalist'],
   moderator: [],
   user: [],
   journalist: [],
@@ -100,12 +103,15 @@ export function canGrantSystemRole(actor: Held, target: SystemRole): boolean {
  * Who may change one role somebody already holds (`subject` is that role, not
  * the person: roles are granted and revoked one at a time). The owner's seat
  * is untouchable through this path, by anybody including themselves; only the
- * owner may change an administrator or a journalist (revoking one is the
- * owner's, J13).
+ * owner may change an administrator. A journalist may be changed by the owner,
+ * an administrator or an Access Manager (decision 80; revoking one is J13).
  */
 export function canChangeSubject(actor: Held, subject: SystemRole): boolean {
   if (subject === 'owner') return false;
-  if (subject === 'admin' || subject === 'journalist') return asList(actor).includes('owner');
+  if (subject === 'admin') return asList(actor).includes('owner');
+  if (subject === 'journalist') {
+    return roleSatisfies(actor, 'admin') || asList(actor).includes('access_manager');
+  }
   if (subject === 'access_manager') return roleSatisfies(actor, 'admin');
   return true;
 }

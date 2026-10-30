@@ -417,7 +417,7 @@ async function settingsOf(
  * the next window now, as confirming does: a resumed subscriber is not sent
  * the backlog of the weeks they had them off.
  */
-async function writeSettings(
+export async function writeSettings(
   db: Kysely<DB>,
   ring: ContactKeyring,
   id: number,

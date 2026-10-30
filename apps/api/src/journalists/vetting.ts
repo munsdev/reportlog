@@ -3,15 +3,16 @@
  *
  * THE ONLY FILE IN THIS FOLDER THAT GRANTS ANYTHING. Being on the alert list
  * grants nothing (list.ts); an access request grants nothing either, until
- * the owner presses Approve. There is no automatic approval, no timer and no
- * other path: `setSystemRole` refuses 'journalist' (identity/accessRoutes.ts),
- * and @reportlog/access lets only the owner grant or change the role.
+ * the owner, an administrator or an Access Manager presses Approve (decision
+ * 80). There is no automatic approval, no timer and no other path:
+ * `setSystemRole` refuses to grant 'journalist' (identity/accessRoutes.ts).
  *
  * WHAT A REQUEST HOLDS. Outlet, role, links to published work, and an
  * optional press card number and issuer: text and links only. It is
  * encrypted under the subscriber's own key, beside the name and address it
- * belongs to. A rejected request is DELETED, and the person stays on the
- * alert list. An approval is recorded with who and when, here and in the
+ * belongs to. A rejected request stays as a row marked 'rejected' with what
+ * they wrote wiped, so the person can see it was not approved and may apply
+ * again (decision 80); they stay on the alert list. An approval is recorded with who and when, here and in the
  * append-only role_audit.
  *
  * REVOKING (J13) sets the account back to no role. The role is read from the
@@ -23,8 +24,9 @@ import { placeLabel } from '@reportlog/fields';
 import type { SystemRole } from '@reportlog/access';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
-import { emailDigests, openWithDek } from '../filing/contactKeys.ts';
+import { emailDigests, openWithDek, wrapDek } from '../filing/contactKeys.ts';
 import { HttpError } from '../http/errors.ts';
+import { hasAccepted, newestText } from '../moderation/agreement.ts';
 import { partlyHidden } from '../identity/digestStop.ts';
 import { addressFrom } from '../identity/http.ts';
 import { changeSystemRole, recordRoleChange } from '../identity/roles.ts';
@@ -50,34 +52,46 @@ export function accessLinkEmail(link: string): { subject: string; text: string }
       'To ask, open this link and fill in the form:',
       link,
       '',
-      'The owner of this site reads every request. Nothing is approved automatically.',
+      'The people who run this site read every request. Nothing is approved automatically.',
       'If it was not you, ignore this email.',
     ].join('\n'),
   };
 }
 
-export function approvedEmail(desk: string): { subject: string; text: string } {
+export function approvedEmail(
+  desk: string,
+  agreementAccepted = false,
+): { subject: string; text: string } {
   return {
     subject: 'Your access to the journalist desk was approved',
     text: [
-      'The owner of this site approved your request for access to the journalist desk.',
+      'Your request for access to the journalist desk was approved.',
       '',
-      'What happens next:',
-      '1. Open the link below and type this email address. We email you a sign-in code.',
-      '2. Type the code. (A second factor is optional for journalists, and you can add one under Account and security.)',
-      '3. Read and accept the journalist agreement. It is the first thing you see.',
-      '4. The journalist desk opens.',
+      agreementAccepted
+        ? 'You have already accepted the journalist agreement, so the desk opens when you sign in.'
+        : 'When you sign in, the first thing you see is the journalist agreement. Read and accept it, and the desk opens.',
       '',
+      'Open the desk. If you are asked, type this email address and then the six-digit code we send you:',
       desk,
+      '',
+      'A second factor is optional for journalists, and you can add one under Account and security.',
     ].join('\n'),
   };
 }
 
+export const endedEmail = () => ({
+  subject: 'Your desk access has ended',
+  text: [
+    'Your access to the journalist desk has ended.',
+    'You are still on the alert list if you were on it. You can ask for desk access again from your account.',
+  ].join('\n'),
+});
+
 export const rejectedEmail = () => ({
   subject: 'Your request for access to the journalist desk',
   text: [
-    'The owner of this site did not approve your request for access to the journalist desk.',
-    'What you sent has been deleted. You are still on the alert list.',
+    'Your request for access to the journalist desk was not approved.',
+    'What you wrote in it has been deleted. You are still on the alert list, and you can ask again from your account.',
   ].join('\n'),
 });
 
@@ -187,6 +201,8 @@ export async function requestsForOwner(deps: ListDeps): Promise<AccessRequestVie
     // A request made while signing up waits for the address to be confirmed
     // (owner decision 69): until then it may not even be theirs.
     .where('s.status', '=', 'active')
+    // A rejected request holds nothing to show: its words were wiped.
+    .where('q.status', '<>', 'rejected')
     // Waiting first, then the approved, then the revoked.
     .orderBy((eb) =>
       eb
@@ -239,8 +255,8 @@ async function requestRow(db: Kysely<DB>, id: number) {
 const notWaiting = () =>
   new HttpError(409, 'not_waiting', 'That request is not waiting for a decision any more.');
 
-/** Only the owner reaches this (the route's scope). Recorded with who and when. */
-export async function approve(deps: ListDeps, id: number, owner: string): Promise<void> {
+/** Only a decider reaches this (the route's scope). Recorded with who and when. */
+export async function approve(deps: ListDeps, id: number, by: string): Promise<void> {
   const row = await requestRow(deps.db, id);
   if (row.status !== 'pending') throw notWaiting();
   const email = openWithDek(dekOf(deps.ring, row.dek_wrapped), row.email_enc);
@@ -270,13 +286,13 @@ export async function approve(deps: ListDeps, id: number, owner: string): Promis
       .executeTakeFirstOrThrow();
     const done = await trx
       .updateTable('journalist_access_requests')
-      .set({ status: 'approved', decided_at: new Date(), decided_by: owner, user_id: user.id })
+      .set({ status: 'approved', decided_at: new Date(), decided_by: by, user_id: user.id })
       .where('id', '=', id)
       .where('status', '=', 'pending')
       .executeTakeFirst();
     if (!done.numUpdatedRows) throw notWaiting();
     await recordRoleChange(trx, {
-      actorEmail: owner,
+      actorEmail: by,
       subjectEmail: email,
       axis: 'system',
       action: 'grant',
@@ -284,22 +300,34 @@ export async function approve(deps: ListDeps, id: number, owner: string): Promis
     });
   });
   // After the commit: a failed email does not undo an approval.
+  const newest = await newestText(deps.db, 'journalist');
+  const accepted = newest !== undefined && (await hasAccepted(deps.db, 'journalist', email));
   await deps.mailer
-    .send({ to: email, ...approvedEmail(deskSignInLinkFor(deps.siteOrigin)) })
+    .send({ to: email, ...approvedEmail(deskLinkFor(deps.siteOrigin), accepted) })
     .catch(() => undefined);
 }
 
-/** The request is deleted; the subscription stays. */
-export async function reject(deps: ListDeps, id: number): Promise<void> {
+/**
+ * The request stays as "not approved" and what it said is wiped; the
+ * subscription stays (decision 80). The person may apply again.
+ */
+export async function reject(deps: ListDeps, id: number, by: string): Promise<void> {
   const row = await requestRow(deps.db, id);
   if (row.status !== 'pending') throw notWaiting();
-  const email = openWithDek(dekOf(deps.ring, row.dek_wrapped), row.email_enc);
-  const gone = await deps.db
-    .deleteFrom('journalist_access_requests')
+  const dek = dekOf(deps.ring, row.dek_wrapped);
+  const email = openWithDek(dek, row.email_enc);
+  const done = await deps.db
+    .updateTable('journalist_access_requests')
+    .set({
+      status: 'rejected',
+      decided_at: new Date(),
+      decided_by: by,
+      details_enc: wrapDek(dek, Buffer.from('{}', 'utf8')),
+    })
     .where('id', '=', id)
     .where('status', '=', 'pending')
     .executeTakeFirst();
-  if (!gone.numDeletedRows) throw notWaiting();
+  if (!done.numUpdatedRows) throw notWaiting();
   await deps.mailer.send({ to: email, ...rejectedEmail() }).catch(() => undefined);
 }
 
@@ -307,7 +335,7 @@ export async function reject(deps: ListDeps, id: number): Promise<void> {
 export async function revoke(
   deps: ListDeps,
   id: number,
-  owner: { email: string; roles: readonly SystemRole[] },
+  actor: { email: string; roles: readonly SystemRole[] },
 ): Promise<void> {
   const row = await requestRow(deps.db, id);
   if (row.status !== 'approved') {
@@ -326,7 +354,7 @@ export async function revoke(
   // The same path every role change takes, so the revoke is in role_audit.
   if (current?.roles.includes('journalist')) {
     const out = await changeSystemRole(deps.db, {
-      actor: owner,
+      actor,
       email,
       role: 'journalist',
       action: 'revoke',
@@ -335,7 +363,8 @@ export async function revoke(
   }
   await deps.db
     .updateTable('journalist_access_requests')
-    .set({ status: 'revoked', revoked_at: new Date(), revoked_by: owner.email })
+    .set({ status: 'revoked', revoked_at: new Date(), revoked_by: actor.email })
     .where('id', '=', id)
     .execute();
+  await deps.mailer.send({ to: email, ...endedEmail() }).catch(() => undefined);
 }

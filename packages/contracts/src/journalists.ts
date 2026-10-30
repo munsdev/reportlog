@@ -225,7 +225,7 @@ export const describeAccessLink = defineRoute({
 export const requestAccess = defineRoute({
   method: 'POST',
   path: '/api/journalists/access/:token',
-  summary: 'Send an access request to the owner. Nothing is approved automatically.',
+  summary: 'Send an access request to those who decide. Nothing is approved automatically.',
   params: LinkParams,
   body: AccessRequestBody,
   response: AccessLink,
@@ -240,6 +240,66 @@ export const requestAccessFromSettings = defineRoute({
   params: LinkParams,
   body: AccessRequestBody,
   response: AlertSettings,
+});
+
+// ── A signed-in account (decision 80) ────────────────────────────────────
+//
+// Signing in already proves the address, so an account joins the alerts and
+// asks for the desk without a confirmation link. The subscriber is always the
+// ACCOUNT's own address, never one sent in the request.
+
+/**
+ * Where an account stands on the desk. `staff` is an account holding a staff
+ * role: a journalist cannot also be staff (decision 70), so it cannot apply.
+ * `not_approved` is a rejected request, `ended` an approved one taken away.
+ */
+export const DeskStatus = z.enum(['none', 'pending', 'approved', 'not_approved', 'ended', 'staff']);
+export type DeskStatus = z.infer<typeof DeskStatus>;
+
+export const MyJournalist = z.object({
+  /** Whether the account's address is on the alert list. */
+  listed: z.boolean(),
+  alerts: z.enum(['on', 'off']),
+  /** Place codes, as `AlertSettings.states`. */
+  states: z.array(z.string()),
+  desk: DeskStatus,
+  /** When a waiting request was sent. */
+  requested_at: z.string().nullable(),
+  /** Whether the owner has published a journalist agreement; applying needs one. */
+  agreement: z.boolean(),
+});
+export type MyJournalist = z.infer<typeof MyJournalist>;
+
+export const getMyJournalist = defineRoute({
+  method: 'GET',
+  path: '/api/journalists/me',
+  summary: 'The signed-in account’s alert settings and where its request for the desk stands.',
+  response: MyJournalist,
+});
+
+export const changeMyAlerts = defineRoute({
+  method: 'POST',
+  path: '/api/journalists/me/alerts',
+  summary:
+    'Join the alert list, or change the states and on/off, as the signed-in account. No confirmation link; the account’s own address gets an email saying the alerts changed.',
+  body: AlertSettingsBody,
+  response: MyJournalist,
+});
+
+export const ApplyBody = AccessRequestBody.extend({
+  name: z.string().trim().min(1).max(120),
+  /** The digest of the journalist agreement that was on screen when they accepted it. */
+  agreement_digest: z.string().min(1).max(128),
+});
+export type ApplyBody = z.infer<typeof ApplyBody>;
+
+export const applyForDesk = defineRoute({
+  method: 'POST',
+  path: '/api/journalists/me/apply',
+  summary:
+    'Ask for desk access as the signed-in account, accepting the journalist agreement in the same step. Nothing is approved automatically.',
+  body: ApplyBody,
+  response: MyJournalist,
 });
 
 // ── J7b, J7, J13: the owner's queue ──────────────────────────────────────
@@ -269,7 +329,7 @@ export type AccessRequestView = z.infer<typeof AccessRequestView>;
 export const listAccessRequests = defineRoute({
   method: 'GET',
   path: '/api/owner/journalists',
-  summary: 'Access requests waiting, and journalists approved or revoked. The owner only.',
+  summary: 'Access requests waiting, and journalists approved or revoked. The owner, administrators and Access Managers.',
   response: z.object({ requests: z.array(AccessRequestView) }),
 });
 
@@ -286,7 +346,7 @@ export const approveAccessRequest = defineRoute({
 export const rejectAccessRequest = defineRoute({
   method: 'POST',
   path: '/api/owner/journalists/:id/reject',
-  summary: 'Reject a request. What it said is deleted; the person stays on the alert list.',
+  summary: 'Reject a request. What it said is wiped and it reads “not approved”; the person stays on the alert list.',
   params: RequestParams,
   response: z.object({ ok: z.literal(true) }),
 });

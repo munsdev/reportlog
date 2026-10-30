@@ -5,9 +5,11 @@
  * not depend on a password the person may not have. Opening either changes
  * nothing; only the POST does. The access request link is another such link.
  *
- * Two signed-in scopes, each guarded once, so a route added to one later
- * cannot forget to ask: the owner's queue (`roleGuard(['owner'])`) and the
- * desk (`deskGuard`: the journalist role and the accepted agreement).
+ * Three signed-in scopes, each guarded once, so a route added to one later
+ * cannot forget to ask: any signed-in account's own alerts and request
+ * (`requireUser`, decision 80), the queue of those who decide
+ * (`roleGuard(['admin', 'access_manager'])`, which the owner satisfies) and
+ * the desk (`deskGuard`: the journalist role and the accepted agreement).
  */
 import * as C from '@reportlog/contracts';
 import type { FastifyInstance } from 'fastify';
@@ -22,6 +24,7 @@ import { requireUser, roleGuard } from '../identity/guards.ts';
 import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
+import { applyMine, changeMine, mine } from './account.ts';
 import { deskGuard, deskLinkPage, deskSourcePage, deskTextPage } from './desk.ts';
 import {
   applyConfirm,
@@ -136,9 +139,31 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
     submitRequest(listDeps(), params.token, bodyOf(C.requestAccess, request)),
   );
 
-  // ── J7b, J7, J13: the owner's queue ─────────────────────────────────────
+  // ── Decision 80: a signed-in account, for its own address only ──────────
+  // Not a door call and needs no role. Emails go out here, so bound them.
+  const perAccount = limiter({ max: 20, windowMs: 60 * 60 * 1000 });
+  void app.register((account, _opts, done) => {
+    account.addHook('preHandler', (request) => {
+      requireUser(request);
+      return Promise.resolve();
+    });
+    route(account, C.getMyJournalist, ({ request }) => mine(listDeps(), requireUser(request)));
+    route(account, C.changeMyAlerts, ({ request }) => {
+      const user = requireUser(request);
+      perAccount.take(user.email);
+      return changeMine(listDeps(), user, bodyOf(C.changeMyAlerts, request));
+    });
+    route(account, C.applyForDesk, ({ request }) => {
+      const user = requireUser(request);
+      perAccount.take(user.email);
+      return applyMine(listDeps(), user, bodyOf(C.applyForDesk, request));
+    });
+    done();
+  });
+
+  // ── J7b, J7, J13: the queue, for the owner, administrators and Access Managers ──
   void app.register((owner, _opts, done) => {
-    owner.addHook('preHandler', roleGuard(['owner']));
+    owner.addHook('preHandler', roleGuard(['admin', 'access_manager']));
     route(owner, C.listAccessRequests, async () => ({
       requests: await requestsForOwner(listDeps()),
     }));
@@ -150,14 +175,14 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
         await approve(listDeps(), Number(params.id), requireUser(request).email);
         return { ok: true as const };
       });
-      route(decide, C.rejectAccessRequest, async ({ params }) => {
-        await reject(listDeps(), Number(params.id));
+      route(decide, C.rejectAccessRequest, async ({ params, request }) => {
+        await reject(listDeps(), Number(params.id), requireUser(request).email);
         return { ok: true as const };
       });
       route(decide, C.revokeJournalist, async ({ params, request }) => {
         await revoke(listDeps(), Number(params.id), {
           email: requireUser(request).email,
-          roles: ['owner'],
+          roles: requireUser(request).roles,
         });
         return { ok: true as const };
       });

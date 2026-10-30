@@ -270,10 +270,10 @@ describe('K7 · an unvetted journalist reads nothing', () => {
   });
 });
 
-describe('J7b and J7 · only the owner approves, and the approval is recorded', () => {
-  it('nobody but the owner sees the queue or decides', async () => {
+describe('J7b and J7 · only those who decide see the queue, and the approval is recorded', () => {
+  it('moderators and plain accounts neither see the queue nor decide (decision 80)', async () => {
     const id = await requestId(journalist);
-    for (const role of ['admin', 'access_manager', 'moderator', 'user'] as const) {
+    for (const role of ['moderator', 'user'] as const) {
       const email = address(`desk-${role}`);
       await seat(h.db, email, role);
       const call = as(h, await signIn(h, email));
@@ -323,9 +323,7 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
     expect(audit).toContainEqual(
       expect.objectContaining({ action: 'grant', detail: 'journalist', actor_email: owner.email }),
     );
-    expect(h.mailer.lastTo(journalist)?.text).toContain(
-      'https://reports.example.test/access/sign-in?next=%2Fdesk',
-    );
+    expect(h.mailer.lastTo(journalist)?.text).toContain('https://reports.example.test/desk');
     // Twice is refused, not repeated.
     const again = await owner.call({
       method: 'POST',
@@ -334,7 +332,7 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
     expect(again.statusCode).toBe(409);
   });
 
-  it('rejecting deletes what was sent, and the person stays subscribed', async () => {
+  it('rejecting wipes what was sent and keeps "not approved"; the person stays subscribed', async () => {
     const other = address('rejected');
     await subscribe(other);
     const token = await askLink(other);
@@ -349,13 +347,13 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
       url: `/api/owner/journalists/${String(id)}/reject`,
     });
     expect(r.statusCode).toBe(200);
-    expect(
-      await h.db
-        .selectFrom('journalist_access_requests')
-        .select('id')
-        .where('id', '=', id)
-        .execute(),
-    ).toEqual([]);
+    const row = await h.db
+      .selectFrom('journalist_access_requests')
+      .selectAll()
+      .where('id', '=', id)
+      .executeTakeFirstOrThrow();
+    expect(row).toMatchObject({ status: 'rejected', decided_by: owner.email });
+    expect(row.details_enc.toString('utf8')).not.toContain('OUTLET-IN-THE-CLEAR');
     const sub = await h.db
       .selectFrom('journalist_subscribers')
       .select('status')
@@ -363,6 +361,15 @@ describe('J7b and J7 · only the owner approves, and the approval is recorded', 
       .executeTakeFirst();
     expect(sub?.status).toBe('active');
     expect(await roleOf(h.db, other)).toBeUndefined();
+    // It is not in the queue any more, and the emailed link lets them ask again.
+    const queue = await owner.call({ method: 'GET', url: '/api/owner/journalists' });
+    expect(queue.body).not.toContain(`"id":${String(id)},`);
+    const again = await h.app.inject({
+      method: 'POST',
+      url: `/api/journalists/access/${await askLink(other)}`,
+      payload: REQUEST,
+    });
+    expect(again.json()).toMatchObject({ state: 'pending' });
   });
 });
 

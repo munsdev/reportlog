@@ -60,7 +60,7 @@ function notPermittedMessage(role: string): string {
   }
   if (role === 'admin') return 'Only the owner can appoint an administrator.';
   if (role === 'journalist') {
-    return 'Only the owner can make somebody a journalist, by approving their access request.';
+    return 'A journalist is made only by approving their request for desk access. Open Journalists under Access and approve it there.';
   }
   if (role === 'owner') {
     return 'The owner’s seat is not granted. It is handed over, and the person receiving it has to accept.';

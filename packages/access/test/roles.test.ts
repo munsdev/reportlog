@@ -45,15 +45,15 @@ describe('rank', () => {
 });
 
 describe('the journalist role', () => {
-  it('is a system role that only the owner grants or changes', () => {
+  // Decision 80 widened this from the owner alone: a deliberate rule change.
+  it('is a system role that the owner, administrators and Access Managers grant or change', () => {
     expect(SYSTEM_ROLES).toContain('journalist');
+    const deciders = ['owner', 'admin', 'access_manager'];
     for (const role of SYSTEM_ROLES) {
-      expect(canGrantSystemRole(role, 'journalist')).toBe(role === 'owner');
-      expect(canChangeSubject(role, 'journalist')).toBe(role === 'owner');
-    }
-    expect(MAY_GRANT.owner).toContain('journalist');
-    for (const role of SYSTEM_ROLES) {
-      if (role !== 'owner') expect(MAY_GRANT[role]).not.toContain('journalist');
+      expect(canGrantSystemRole(role, 'journalist')).toBe(deciders.includes(role));
+      expect(canChangeSubject(role, 'journalist')).toBe(deciders.includes(role));
+      if (deciders.includes(role)) expect(MAY_GRANT[role]).toContain('journalist');
+      else expect(MAY_GRANT[role]).not.toContain('journalist');
     }
   });
 
