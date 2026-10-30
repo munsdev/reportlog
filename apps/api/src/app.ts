@@ -50,8 +50,10 @@ import { sitePeopleRoutes } from './site/peopleRoutes.ts';
 import { pageAdminRoutes, pageRoutes } from './pages/routes.ts';
 import { headerRoutes } from './site/headerRoutes.ts';
 import { sitebundleRoutes } from './sitebundle/routes.ts';
+import { pageHeadRoutes } from './site/pageHead.ts';
 import { robotsRoutes } from './site/robots.ts';
 import { siteAdminRoutes, siteRoutes } from './site/routes.ts';
+import { shareImageRoutes } from './site/shareImage.ts';
 import { templateRoutes } from './site/templates.ts';
 import { telemetryRoutes } from './telemetry/routes.ts';
 import { offTracker } from './telemetry/tracker.ts';
@@ -109,6 +111,8 @@ export interface AppDeps {
   statsTtlMs?: number;
   /** How long one heat map computation serves every reader. Tests pass 0. */
   mapCacheMs?: number;
+  /** The website's index.html, for the page head route. Tests pass a small one. */
+  pageTemplate?: string;
 }
 
 export async function buildApp({
@@ -120,6 +124,7 @@ export async function buildApp({
   lists,
   statsTtlMs,
   mapCacheMs,
+  pageTemplate,
 }: AppDeps): Promise<FastifyInstance> {
   const hops = config.TRUST_PROXY ?? 0;
   const app = Fastify({
@@ -191,6 +196,13 @@ export async function buildApp({
   verifyRoutes(app, db);
   siteRoutes(app, db);
   robotsRoutes(app, { db, siteOrigin, searchEngines: config.SEARCH_ENGINES ?? 'on' });
+  shareImageRoutes(app, db);
+  pageHeadRoutes(app, {
+    db,
+    siteOrigin,
+    searchEngines: config.SEARCH_ENGINES ?? 'on',
+    ...(pageTemplate === undefined ? {} : { template: pageTemplate }),
+  });
   await lookRoutes(app, db);
   pageRoutes(app, db);
   await pageAdminRoutes(app, db, { requireAdmin: roleGuard(['admin']) });

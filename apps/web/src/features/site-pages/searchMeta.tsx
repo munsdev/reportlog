@@ -9,9 +9,10 @@
  * staff screen included, says noindex. robots.txt keeps crawlers off the
  * addresses that carry a token; this covers the rest.
  *
- * Set from the page script because the page is drawn here: a crawler that
- * does not run it reads index.html, which names no page. Writing the head
- * on the server is a separate piece of work (docs/seo.md).
+ * The server writes the same head for the first answer (apps/api/src/site/
+ * pageHead.ts), which is what a crawler or link preview that does not run
+ * this script reads. This keeps it right while somebody moves about the
+ * page without loading it again.
  */
 import { indexable, plainPath } from '@reportlog/contracts';
 import { useLocation } from '@tanstack/react-router';

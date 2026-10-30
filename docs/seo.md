@@ -20,6 +20,22 @@ shared link, what is built, and what is left. Written 29 October 2026.
   `/board?q=...` is not a thousand copies of the board.
 - **A default description** in `apps/web/index.html`, true of every
   deployment.
+- **The page's head written on the server** (`apps/api/src/site/pageHead.ts`).
+  Caddy serves a real file as it is and hands every other address to
+  `GET /api/site/page/<path>`, which answers `index.html` with a title, a
+  description, the canonical address, the robots tag and `og:`/`twitter:`
+  tags for that address, and a real 404 where the address is clearly nothing
+  (no such logbook, list or map at `/<slug>`, `/maps/<slug>`, or published
+  report at `/board/<ref>`; everything else is 200). The fixed pages'
+  wording is the `PAGES` table in that file; logbooks, lists and maps use
+  their own title and blurb, the front page the operator's headline and
+  lede. Behind the site password it says only the site's name and noindex,
+  and always 200. The share image is `og:image` (`/api/site/share.png`).
+  The page script still sets the head while somebody moves about.
+- **The share image** (`apps/api/src/site/shareImage.ts`): 1200×630, the
+  site's name on its palette beside the icon, drawn by ImageMagick (DejaVu
+  Sans Bold) and kept in memory until the name or palette changes. Without
+  ImageMagick it answers the 512px icon.
 
 ## To do on a server
 
@@ -30,30 +46,18 @@ shared link, what is built, and what is left. Written 29 October 2026.
   Bing Webmaster Tools, verified by a DNS record (nothing on the page), then
   submit `https://<site>/sitemap.xml`.
 
-## Waiting on a decision
+## Decisions
 
-- **Should a single report (`/board/RL-...`) be indexed?** Not yet. Indexing
-  makes a reporter's published words findable by searching for them, for
-  good, which sits on DPIA risk 1. Adding them to `indexable` and the
-  sitemap is the whole change.
+- **A single report (`/board/RL-...`) is not indexed** (the owner, 30
+  October). Indexing would make a reporter's published words findable by
+  searching for them, for good (DPIA risk 1). Its page says noindex and the
+  server writes no words of it into the head.
 - **The project site** (`apps/site`) asks not to be indexed (`INDEXED` in
   `apps/site/src/layout.ts`, decided 23 October). Flipping it is the change.
 
 ## Left, each more than 30 to 50 minutes
 
-1. **The page's head written on the server (1.5 to 2 hours).** Today every
-   address answers the same `index.html`; the title, the noindex and the
-   canonical address are set by the page script, which Google runs and a
-   link-preview bot (social media, chat apps) does not. Serve `index.html`
-   through the API for page addresses, with the site's name, a per-page
-   title and description, the canonical address and `og:`/`twitter:` tags
-   filled in. The same change gives an unknown address a real 404 status
-   instead of 200 with "That page isn't here" on it. Touches the Caddyfile's
-   catch-all (and its test, `apps/api/test/unit/deploy-caddy.test.ts`).
-2. **A share image (1 hour, with the above).** A 1200×630 card in the site's
-   name and colours, served from the site itself, for `og:image`. Without
-   item 1 nothing reads it.
-3. **Report images sized for the page (1 to 1.5 hours).** The media worker
+1. **Report images sized for the page (1 to 1.5 hours).** The media worker
    (`apps/api/src/files/media.ts`) re-encodes every photo with ImageMagick
    but appears to keep its full size, so the board serves phone photos at
    full resolution. Cap the published copy (about 1600 px) with a smaller
@@ -62,11 +66,7 @@ shared link, what is built, and what is left. Written 29 October 2026.
    `apps/web/src/features/files/PublishedFiles.tsx`, so the page does not
    jump as pictures load. Files already published stay as they are unless
    re-processed.
-4. **A description per public page (30 to 45 minutes).** Each public page
-   sets its title; none sets a description, so search results show whatever
-   text the engine picks. Small once item 1 exists, since that is where it
-   matters most.
-5. **Load only the fonts in use (about an hour).** 28 font files ship; a page
+2. **Load only the fonts in use (about an hour).** 28 font files ship; a page
    should preload only the one or two the site's look uses.
 
 ## Noticed on the way
