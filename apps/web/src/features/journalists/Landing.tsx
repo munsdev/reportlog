@@ -12,9 +12,13 @@ import { SecHead } from '../../mockup/SecHead.tsx';
 import { Card, TwoCol } from '../../mockup/TwoCol.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { FollowBand } from '../follow/FollowBand.tsx';
+import { useMe } from '../identity/session.ts';
+import { AccountAlerts, DeskCard } from './Account.tsx';
 
 export function JournalistsLanding() {
   useBodyClass('light');
+  const me = useMe();
+  const signedIn = me.data?.signedIn === true;
   return (
     <MockPage>
       <Band
@@ -55,21 +59,31 @@ export function JournalistsLanding() {
               One email when new approved reports appear in the states you choose. Counts only, no
               characterization. Anyone can join.
             </SecHead>
-            <div className="btn-row">
-              <Link className="btn go" to="/journalists/alerts">
-                Sign up for alerts
-              </Link>
-            </div>
+            {me.isPending ? null : signedIn ? (
+              <AccountAlerts />
+            ) : (
+              <div className="btn-row">
+                <Link className="btn go" to="/journalists/alerts">
+                  Sign up for alerts
+                </Link>
+                <Link className="btn ghost" to="/access/sign-in" search={{ next: '/journalists' }}>
+                  Sign in
+                </Link>
+              </div>
+            )}
           </section>
           <section aria-labelledby="a2">
             <SecHead num="02" id="a2" title="Desk access">
               The journalist desk lists links moderators have checked, and the sources they cite on
-              published reports. The owner reads every request; nothing is approved automatically.
+              published reports. People who run this site read every request; nothing is approved automatically.
             </SecHead>
+            {signedIn ? <DeskCard /> : null}
             <div className="btn-row">
-              <Link className="btn" to="/journalists/alerts" search={{ access: '1' }}>
-                Apply for desk access
-              </Link>
+              {me.isPending || signedIn ? null : (
+                <Link className="btn" to="/journalists/alerts" search={{ access: '1' }}>
+                  Apply for desk access
+                </Link>
+              )}
               <Link className="btn ghost" to="/standards" search={{ tab: 'journalists' }}>
                 Read the journalist standard
               </Link>

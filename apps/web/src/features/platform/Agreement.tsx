@@ -52,6 +52,15 @@ export function AgreementGate({
   if (state.isPending) return <p role="status">Loading…</p>;
   if (state.isError) return <Note tone="serious">{state.error.message}</Note>;
   const { current, accepted } = state.data;
+  // Nothing published: moderators carry on (a fresh install must moderate), but the
+  // journalist desk stays shut, as the server's `deskClosed` does.
+  if (!current && audience === 'journalist') {
+    return (
+      <StaffPage title="The desk opens once the agreement is published" width="prose">
+        <p>The owner has not published the journalist agreement yet. Come back once it is.</p>
+      </StaffPage>
+    );
+  }
   if (!current || accepted) return children;
   return (
     <StaffPage

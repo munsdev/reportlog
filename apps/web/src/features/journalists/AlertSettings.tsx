@@ -39,7 +39,7 @@ import { StatesPicker } from './StatesPicker.tsx';
 
 type Open = Extract<AlertSettings, { state: 'open' }>;
 
-function SettingsForm({
+export function SettingsForm({
   initial,
   saving,
   error,

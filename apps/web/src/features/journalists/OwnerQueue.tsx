@@ -1,9 +1,10 @@
 /**
- * The owner's journalist queue (J7b, J7, J13): /access/journalists.
+ * The journalist queue (J7b, J7, J13): /access/journalists.
  *
- * The owner alone sees requests and decides each one; nothing is approved
- * automatically. Rejecting deletes what the person sent and leaves them on
- * the alert list, and asks first, because it cannot be undone. Revoking
+ * The owner, administrators and Access Managers see requests and decide each
+ * one (decision 80); nothing is approved automatically. Rejecting wipes what
+ * the person sent, leaves them on the alert list and shows them "not approved"
+ * so they may ask again, and asks first, because the words cannot be got back. Revoking
  * takes effect on the journalist's next request.
  * The journalist agreement (J8) is published on /access/journalists/agreement,
  * the second of the page's own tabs (settings-and-admin.md §12).
@@ -25,6 +26,7 @@ import type { ReactNode } from 'react';
 import { PTabs } from '@/mockup/PTabs.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { useMe } from '../identity/session.ts';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Dl } from '../../mockup/Dl.tsx';
@@ -39,6 +41,9 @@ const KEY = ['owner', 'journalists'] as const;
 /** The page's own two tabs: the requests and the agreement they accept. */
 export function JournalistTabs() {
   const { pathname } = useLocation();
+  const me = useMe();
+  // Publishing the agreement stays the owner's (decision 80): the others have one tab, so none.
+  if (!me.data?.signedIn || !me.data.roles.includes('owner')) return null;
   const agreement = pathname.replace(/\/+$/, '').endsWith('/agreement');
   return (
     <PTabs
@@ -62,7 +67,7 @@ export function OwnerQueuePage() {
   return (
     <StaffPage
       title="Journalist requests"
-      lede="Journalists who asked for the desk. Approving lets them see checked links and sources. Only you decide, one at a time."
+      lede="Journalists who asked for the desk. Approving lets them see checked links and sources. Owners, administrators and Access Managers decide, one at a time."
     >
       <JournalistTabs />
       {requests.isPending ? <p role="status">Loading…</p> : null}
@@ -74,8 +79,8 @@ export function OwnerQueuePage() {
             waiting.map((r) => <RequestCard key={r.id} r={r} />)
           ) : (
             <Empty title="No requests are waiting">
-              A journalist on the alert list asks from the link they are emailed; their request
-              appears here.
+              A signed-in person asks from the Journalists page, or from the link in an alert
+              email; their request appears here.
             </Empty>
           )}
           <h2 className="h-sec">Approved and revoked</h2>
@@ -223,7 +228,7 @@ function RequestCard({ r }: { r: AccessRequestView }) {
                 setAsking(true);
               }}
             >
-              Reject and delete
+              Reject
             </Btn>
           </div>
         ) : null}
@@ -234,7 +239,7 @@ function RequestCard({ r }: { r: AccessRequestView }) {
           setAsking(false);
         }}
         title={`Reject the request from ${r.name}?`}
-        text="This deletes what they sent: their outlet, role, what they said about themselves and press card. It cannot be undone. They stay on the alert list and can ask again."
+        text="This wipes what they sent: their outlet, role, what they said about themselves and press card. It cannot be undone. They are told it was not approved, stay on the alert list and can ask again."
         buttons={
           <>
             <Btn
@@ -257,7 +262,7 @@ function RequestCard({ r }: { r: AccessRequestView }) {
                 act.mutate('reject');
               }}
             >
-              Reject and delete
+              Reject
             </Btn>
           </>
         }

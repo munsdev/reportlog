@@ -27,8 +27,41 @@ import { PublicPage } from '../site-pages/PublicPage.tsx';
 import { call } from '../../lib/api.ts';
 import { AccessFields, accessBody, EMPTY_ACCESS } from './AccessFields.tsx';
 import { StatesPicker } from './StatesPicker.tsx';
+import { useMe } from '../identity/session.ts';
+import { AccountAlerts, DeskCard } from './Account.tsx';
 
+/**
+ * Signed in, the page is the account's own (decision 80): alert settings with
+ * no name or address, and the desk card. Signed out, it is the sign-up form
+ * below, with signing in offered as the easier way.
+ */
 export function SignupPage({ askForAccess = false }: { askForAccess?: boolean }) {
+  const me = useMe();
+  if (me.isPending) {
+    return (
+      <PublicPage title="Alerts and desk access" width="prose">
+        <p role="status">Loading…</p>
+      </PublicPage>
+    );
+  }
+  if (me.data?.signedIn) {
+    return (
+      <PublicPage
+        title="Alerts and desk access"
+        width="prose"
+        lede="You are signed in, so there is nothing to retype and no link to confirm. An email when new approved reports appear in the states you choose. It says how many, and nothing more."
+      >
+        <div className="form-stack">
+          <AccountAlerts />
+          <DeskCard />
+        </div>
+      </PublicPage>
+    );
+  }
+  return <SignupForm askForAccess={askForAccess} />;
+}
+
+function SignupForm({ askForAccess }: { askForAccess: boolean }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [alerts, setAlerts] = useState(true);
@@ -75,6 +108,18 @@ export function SignupPage({ askForAccess = false }: { askForAccess?: boolean })
       width="prose"
       lede="An email when new approved reports appear in the states you cover. It says how many, and nothing more. Journalists can ask for access to the journalist desk here too."
     >
+      <Panel kind="quiet">
+        <p>
+          <b>Have an account? Sign in instead.</b>
+        </p>
+        <p className="muted">
+          It is the easier way: you type no name or address, there is no link to confirm, and you
+          can see where a request for the desk stands.{' '}
+          <Link to="/access/sign-in" search={{ next: '/journalists/alerts' }}>
+            Sign in
+          </Link>
+        </p>
+      </Panel>
       <form
         className="form-stack"
         onSubmit={(e) => {

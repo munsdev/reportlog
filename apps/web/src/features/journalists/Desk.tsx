@@ -35,6 +35,24 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
 import { DeskAlerts, deskQuery } from './AlertSettings.tsx';
+import { DeskCard } from './Account.tsx';
+
+/**
+ * What a signed-in account without the role finds at the desk (decision 80):
+ * where its request stands, or the one form to make it, instead of a refusal.
+ */
+function DeskApplication() {
+  const siteName = plainSiteName(useSite().data);
+  return (
+    <StaffPage
+      eyebrow={`${siteName} · Journalist desk`}
+      title="Journalist desk"
+      lede="Vetted journalists read the links moderators have checked. Ask for access here."
+    >
+      <DeskCard />
+    </StaffPage>
+  );
+}
 
 /**
  * What every section shares: the role, the agreement before anything is
@@ -58,7 +76,7 @@ function DeskSection({
 }) {
   const siteName = plainSiteName(useSite().data);
   return (
-    <StaffOnly needs="journalist">
+    <StaffOnly needs="journalist" otherwise={<DeskApplication />}>
       <AgreementGate audience="journalist">
         <StaffPage eyebrow={`${siteName} · Journalist desk`} title={title} lede={lede}>
           {warn ? (

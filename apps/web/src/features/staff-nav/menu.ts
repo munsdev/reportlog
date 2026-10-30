@@ -160,7 +160,7 @@ export const MENU: readonly MenuSection[] = [
       {
         to: '/access/journalists',
         label: 'Journalists',
-        for: ['owner'],
+        for: GRANTERS,
         under: ['/access/journalists/'],
       },
       { to: '/people/ownership', label: 'Ownership', for: GRANTERS },

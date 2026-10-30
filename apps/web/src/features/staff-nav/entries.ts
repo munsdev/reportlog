@@ -150,7 +150,7 @@ export const STAFF_AREAS: readonly StaffArea[] = [
       // live there too and belong to nobody's area.
       { to: '/access', label: 'People and roles', for: GRANTERS },
       { to: '/access/orgs', label: 'Organizations', for: GRANTERS, under: ['/access/orgs/'] },
-      { to: '/access/journalists', label: 'Journalist requests', for: ['owner'] },
+      { to: '/access/journalists', label: 'Journalist requests', for: GRANTERS },
       // It had no menu entry before; its route admits these two (OnlyFor).
       { to: '/feedback/testers', label: 'Testers', for: GRANTERS },
       { to: '/access/roster', label: 'Who is doing what', for: GRANTERS },

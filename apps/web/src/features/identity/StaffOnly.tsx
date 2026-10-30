@@ -29,9 +29,12 @@ const WHO: Partial<Record<SystemRole, string>> = {
 export function StaffOnly({
   needs,
   children,
+  otherwise,
 }: {
   needs: SystemRole | readonly SystemRole[];
   children: ReactNode;
+  /** Shown to a signed-in account without the role, instead of the plain refusal. */
+  otherwise?: ReactNode;
 }) {
   const roles: readonly SystemRole[] = typeof needs === 'string' ? [needs] : needs;
   const me = useMe();
@@ -45,6 +48,7 @@ export function StaffOnly({
   }
   const acting = me.data.roles;
   if (!roles.some((r) => roleSatisfies(acting, r))) {
+    if (otherwise) return otherwise;
     return (
       <section className="form-stack">
         <h1 className="h-page">Not for this account</h1>

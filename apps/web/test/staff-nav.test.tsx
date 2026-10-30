@@ -79,7 +79,8 @@ describe('who sees which section and page (menu.ts)', () => {
     ]);
     expect(admin['Site settings']?.[0]).toBe('Switches');
     expect(admin['Site settings']).not.toContain('Import and export');
-    expect(admin.People).toEqual(['People', 'Organizations', 'Ownership']);
+    // Decision 80: administrators and Access Managers decide journalist requests too.
+    expect(admin.People).toEqual(['People', 'Organizations', 'Journalists', 'Ownership']);
     expect(admin['Records and system']).toEqual([
       'Transparency log',
       'Who opened protected data',
@@ -98,7 +99,7 @@ describe('who sees which section and page (menu.ts)', () => {
     expect(admin.Help).toEqual(['Guides', 'Feedback']);
   });
 
-  it('the owner satisfies administrator, plus backups, the bundle and vetting journalists', () => {
+  it('the owner satisfies administrator, plus backups and the bundle', () => {
     const owner = shape(as('owner'));
     expect(owner['Records and system']).toContain('Backups and exports');
     expect(owner['Site settings']).toContain('Import and export');
@@ -115,7 +116,7 @@ describe('who sees which section and page (menu.ts)', () => {
   it('an Access Manager sees People, with no extra area for ownership, and feedback and guides', () => {
     expect(shape(as('access_manager'))).toEqual({
       You: YOU,
-      People: ['People', 'Organizations', 'Ownership'],
+      People: ['People', 'Organizations', 'Journalists', 'Ownership'],
       Help: ['Guides', 'Feedback'],
     });
   });
