@@ -107,9 +107,9 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
       'Guides',
     ),
   ],
-  admin: STAFF_ONLY('Import and export', 'Journalists', 'Backups and exports'),
+  admin: STAFF_ONLY('Import and export', 'Backups and exports'),
   owner: STAFF_ONLY(),
-  access_manager: [...YOU, ...pick('People', 'Organizations', 'Ownership', 'Guides', 'Feedback')],
+  access_manager: [...YOU, ...pick('People', 'Organizations', 'Journalists', 'Ownership', 'Guides', 'Feedback')],
   journalist: [...YOU, ...DESK],
   // Volunteer links and Members are for an organization's managers.
   coordinator: [...YOU, 'Filing for an organization', 'Directory listing'],

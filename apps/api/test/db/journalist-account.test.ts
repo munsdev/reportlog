@@ -56,7 +56,7 @@ const requestOf = async (email: string) =>
   h.db
     .selectFrom('journalist_access_requests as q')
     .innerJoin('journalist_subscribers as s', 's.id', 'q.subscriber_id')
-    .select(['q.id', 'q.status', 'q.details_enc'])
+    .select(['q.id', 'q.status', 'q.details_enc', 'q.rejected_at'])
     .where('s.email_hmac', '=', emailDigest(ring, email))
     .executeTakeFirst();
 
@@ -282,7 +282,7 @@ describe('who decides, and what the person sees', () => {
     expect((await decide(owner, row.id, 'reject')).statusCode).toBe(200);
     expect(await me(a.call)).toMatchObject({ desk: 'not_approved', listed: true });
     const after = await need(a.email);
-    expect(after.status).toBe('rejected');
+    expect(after.rejected_at).toBeInstanceOf(Date);
     expect(after.details_enc.toString('utf8')).not.toContain(FORM.outlet);
     expect(h.mailer.lastTo(a.email)?.subject).toContain('journalist desk');
     expect((await apply(a.call)).json<MyJournalist>().desk).toBe('pending');

@@ -172,11 +172,11 @@ describe('the journalist queue', () => {
     expect(within(card).getByText('https://deskdaily.example.org/by/pat').tagName).toBe('LI');
     expect(within(card).queryByRole('link')).toBeNull();
 
-    await user.click(within(card).getByRole('button', { name: 'Reject and delete' }));
+    await user.click(within(card).getByRole('button', { name: 'Reject' }));
     const dialog = await screen.findByRole('dialog', {
       name: 'Reject the request from Pat Reporter?',
     });
-    expect(dialog).toHaveTextContent('They stay on the alert list');
+    expect(dialog).toHaveTextContent('stay on the alert list');
     expect(sent.filter((s) => s.method === 'POST')).toEqual([]);
     await user.click(within(dialog).getByRole('button', { name: 'Keep the request' }));
     expect(sent.filter((s) => s.method === 'POST')).toEqual([]);

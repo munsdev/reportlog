@@ -409,6 +409,7 @@ export interface JournalistAccessRequests {
   decided_by: string | null;
   details_enc: Buffer;
   id: Generated<number>;
+  rejected_at: Timestamp | null;
   revoked_at: Timestamp | null;
   revoked_by: string | null;
   status: Generated<string>;

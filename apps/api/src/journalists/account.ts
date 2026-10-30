@@ -42,7 +42,6 @@ const seal = (dek: Buffer, text: string) => wrapDek(dek, Buffer.from(text, 'utf8
 const DESK_OF_REQUEST: Record<string, DeskStatus> = {
   pending: 'pending',
   approved: 'approved',
-  rejected: 'not_approved',
   revoked: 'ended',
 };
 
@@ -53,12 +52,23 @@ export async function mine(deps: ListDeps, user: SignedIn): Promise<MyJournalist
   const row = await db
     .selectFrom('journalist_subscribers as s')
     .leftJoin('journalist_access_requests as q', 'q.subscriber_id', 's.id')
-    .select(['s.states', 's.alerts_paused_at', 'q.status as request', 'q.created_at as requested'])
+    .select([
+      's.states',
+      's.alerts_paused_at',
+      'q.status as request',
+      'q.rejected_at',
+      'q.created_at as requested',
+    ])
     .where('s.email_hmac', 'in', emailDigests(ring, user.email))
     .where('s.status', '=', 'active')
     .executeTakeFirst();
   const staff = isStaff(user);
-  const desk: DeskStatus = staff ? 'staff' : (DESK_OF_REQUEST[row?.request ?? ''] ?? 'none');
+  // A rejection is an ended request that was never approved.
+  const desk: DeskStatus = staff
+    ? 'staff'
+    : row?.rejected_at
+      ? 'not_approved'
+      : (DESK_OF_REQUEST[row?.request ?? ''] ?? 'none');
   return {
     listed: row !== undefined,
     alerts: row && !row.alerts_paused_at ? 'on' : 'off',

@@ -202,7 +202,7 @@ export async function requestsForOwner(deps: ListDeps): Promise<AccessRequestVie
     // (owner decision 69): until then it may not even be theirs.
     .where('s.status', '=', 'active')
     // A rejected request holds nothing to show: its words were wiped.
-    .where('q.status', '<>', 'rejected')
+    .where('q.rejected_at', 'is', null)
     // Waiting first, then the approved, then the revoked.
     .orderBy((eb) =>
       eb
@@ -319,9 +319,13 @@ export async function reject(deps: ListDeps, id: number, by: string): Promise<vo
   const done = await deps.db
     .updateTable('journalist_access_requests')
     .set({
-      status: 'rejected',
+      // Ended before it was approved: 'revoked' with `rejected_at` (migration 20261030120000).
+      status: 'revoked',
       decided_at: new Date(),
       decided_by: by,
+      revoked_at: new Date(),
+      revoked_by: by,
+      rejected_at: new Date(),
       details_enc: wrapDek(dek, Buffer.from('{}', 'utf8')),
     })
     .where('id', '=', id)

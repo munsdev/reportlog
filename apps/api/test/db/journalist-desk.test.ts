@@ -352,7 +352,8 @@ describe('J7b and J7 · only those who decide see the queue, and the approval is
       .selectAll()
       .where('id', '=', id)
       .executeTakeFirstOrThrow();
-    expect(row).toMatchObject({ status: 'rejected', decided_by: owner.email });
+    expect(row).toMatchObject({ status: 'revoked', decided_by: owner.email });
+    expect(row.rejected_at).toBeInstanceOf(Date);
     expect(row.details_enc.toString('utf8')).not.toContain('OUTLET-IN-THE-CLEAR');
     const sub = await h.db
       .selectFrom('journalist_subscribers')

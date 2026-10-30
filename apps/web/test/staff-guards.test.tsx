@@ -279,7 +279,8 @@ describe('the staff screens in the route tree', () => {
     it('signed in with no role, shows "Not for this account" behind a door', async () => {
       server(NO_ROLE);
       open(address(path));
-      await refusedBehindADoor('Not for this account');
+      // The desk (decision 80) offers an account without the role a way to ask, not a refusal.
+      await refusedBehindADoor(path.startsWith('/desk') ? 'Journalist desk' : 'Not for this account');
     });
   });
 });

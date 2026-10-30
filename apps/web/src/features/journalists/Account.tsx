@@ -20,6 +20,7 @@ import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/r
 import { Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
+import { CheckOption, Choices } from '@/mockup/Choice.tsx';
 import { Field } from '@/mockup/Qcard.tsx';
 import { ErrorNote, Note, Waiting } from '@/mockup/Note.tsx';
 import { call } from '../../lib/api.ts';
@@ -174,7 +175,7 @@ function ApplyForm() {
   if (!current) return <p>Applications open once the journalist agreement is published.</p>;
   return (
     <form
-      style={{ display: 'grid', gap: 18 }}
+      className="form-stack"
       onSubmit={(e) => {
         e.preventDefault();
         if (!accepted) {
@@ -206,22 +207,21 @@ function ApplyForm() {
         <h3 id="apply-agreement">The journalist agreement</h3>
         <p className="muted">Version {String(current.version)}.</p>
         <div className="paper">
-          <p style={{ whiteSpace: 'pre-wrap' }} data-agreement-text>
+          <p className="whitespace-pre-wrap" data-agreement-text>
             {current.body}
           </p>
         </div>
       </div>
-      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <input
-          type="checkbox"
+      <Choices role="group" aria-label="The agreement">
+        <CheckOption
+          label="I have read the journalist agreement and I accept it."
           checked={accepted}
-          onChange={(e) => {
+          onCheckedChange={(on) => {
             setUnticked(false);
-            setAccepted(e.target.checked);
+            setAccepted(on === true);
           }}
         />
-        <span>I have read the journalist agreement and I accept it.</span>
-      </label>
+      </Choices>
       {unticked ? <Note tone="serious">Tick the box to accept the agreement.</Note> : null}
       <ErrorNote error={apply.error} />
       <div className="btn-row">

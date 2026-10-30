@@ -1,0 +1,11 @@
+-- "Not approved" stays visible to the person who asked (decision 80).
+--
+-- A rejected request used to be DELETED, so the applicant's page read as if
+-- they had never asked. It now stays as a row, and what they wrote is wiped
+-- (the application replaces details_enc with an empty document); only the
+-- fact and the time of the decision are kept. A rejection is a request ended
+-- by a decider before it was approved: status 'revoked', as an ended one is,
+-- with this column set to say it was never approved. Nullable, so every
+-- request that exists reads as before. Applying again replaces the row, as it
+-- does after a revoke (request.ts, writeRequest).
+ALTER TABLE journalist_access_requests ADD COLUMN rejected_at timestamptz;
