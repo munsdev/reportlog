@@ -75,7 +75,8 @@ export function JournalistsLanding() {
           <section aria-labelledby="a2">
             <SecHead num="02" id="a2" title="Desk access">
               The journalist desk lists links moderators have checked, and the sources they cite on
-              published reports. People who run this site read every request; nothing is approved automatically.
+              published reports. People who run this site read every request; nothing is approved
+              automatically.
             </SecHead>
             {signedIn ? <DeskCard /> : null}
             <div className="btn-row">

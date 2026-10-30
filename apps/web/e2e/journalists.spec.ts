@@ -74,6 +74,11 @@ test('signing up, confirming from the email, an alert, and stopping, changing an
     'href',
     '/legal',
   );
+  // Decision 80: signing in is offered as the easier way, and the form below is unchanged.
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveAttribute(
+    'href',
+    /\/access\/sign-in\?next=%2Fjournalists%2Falerts/,
+  );
   await noViolations(page);
   await page.getByLabel('Your name').fill('Pat Reporter');
   await page.getByLabel('Your email address').fill(EMAIL);

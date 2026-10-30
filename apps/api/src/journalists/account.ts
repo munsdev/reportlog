@@ -13,12 +13,7 @@
  * acceptance; the deciders are told that one is waiting, and nothing about who.
  */
 import { STAFF_ROLES } from '@reportlog/access';
-import type {
-  AlertSettingsBody,
-  ApplyBody,
-  DeskStatus,
-  MyJournalist,
-} from '@reportlog/contracts';
+import type { AlertSettingsBody, ApplyBody, DeskStatus, MyJournalist } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
 import { sql, type Kysely } from 'kysely';
 import { randomBytes } from 'node:crypto';
@@ -124,7 +119,12 @@ async function ensureSubscriber(
       .where('id', '=', row.id)
       .execute();
   }
-  if (!row) throw new HttpError(409, 'try_again', 'Something else changed this at the same time. Try again.');
+  if (!row)
+    throw new HttpError(
+      409,
+      'try_again',
+      'Something else changed this at the same time. Try again.',
+    );
   return { id: row.id, dek: dekOf(ring, row.dek_wrapped) };
 }
 
@@ -278,7 +278,8 @@ export async function applyMine(
   // After the commit: a failed email does not undo a request.
   await sendQuietly(deps.mailer, user.email, requestReceivedEmail());
   const queue = `${deps.siteOrigin}/access/journalists`;
-  for (const to of await deciders(db)) await sendQuietly(deps.mailer, to, requestWaitingEmail(queue));
+  for (const to of await deciders(db))
+    await sendQuietly(deps.mailer, to, requestWaitingEmail(queue));
   return mine(deps, user);
 }
 

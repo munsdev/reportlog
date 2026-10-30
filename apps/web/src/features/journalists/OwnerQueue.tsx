@@ -79,8 +79,8 @@ export function OwnerQueuePage() {
             waiting.map((r) => <RequestCard key={r.id} r={r} />)
           ) : (
             <Empty title="No requests are waiting">
-              A signed-in person asks from the Journalists page, or from the link in an alert
-              email; their request appears here.
+              A signed-in person asks from the Journalists page, or from the link in an alert email;
+              their request appears here.
             </Empty>
           )}
           <h2 className="h-sec">Approved and revoked</h2>

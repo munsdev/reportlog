@@ -36,9 +36,9 @@ const me = async (call: ReturnType<typeof as>) =>
   (await call({ method: 'GET', url: '/api/journalists/me' })).json<MyJournalist>();
 
 const agreementDigest = async (call: ReturnType<typeof as>) =>
-  (
-    await call({ method: 'GET', url: '/api/agreement/journalist' })
-  ).json<{ current: { digest: string } }>().current.digest;
+  (await call({ method: 'GET', url: '/api/agreement/journalist' })).json<{
+    current: { digest: string };
+  }>().current.digest;
 
 const apply = async (call: ReturnType<typeof as>, extra: Record<string, unknown> = {}) =>
   call({
@@ -182,7 +182,9 @@ describe('applying for the desk from an account', () => {
 
     const state = await a.call({ method: 'GET', url: '/api/agreement/journalist' });
     expect(state.json<{ accepted: boolean }>().accepted).toBe(true);
-    expect(h.mailer.lastTo(a.email)?.subject).toBe('Your request for the journalist desk was received');
+    expect(h.mailer.lastTo(a.email)?.subject).toBe(
+      'Your request for the journalist desk was received',
+    );
     for (const who of [owner, admin, manager]) {
       const mail = h.mailer.lastTo(who.email);
       expect(mail?.subject).toBe('A journalist desk request is waiting');
@@ -295,7 +297,9 @@ describe('who decides, and what the person sees', () => {
     const plain = await account('plainx');
     for (const who of [{ call: as(h, await signIn(h, mod.email)) }, plain]) {
       expect((await decide(who, id, 'approve')).statusCode).toBe(403);
-      expect((await who.call({ method: 'GET', url: '/api/owner/journalists' })).statusCode).toBe(403);
+      expect((await who.call({ method: 'GET', url: '/api/owner/journalists' })).statusCode).toBe(
+        403,
+      );
     }
   });
 

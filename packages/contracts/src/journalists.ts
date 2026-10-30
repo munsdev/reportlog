@@ -329,7 +329,8 @@ export type AccessRequestView = z.infer<typeof AccessRequestView>;
 export const listAccessRequests = defineRoute({
   method: 'GET',
   path: '/api/owner/journalists',
-  summary: 'Access requests waiting, and journalists approved or revoked. The owner, administrators and Access Managers.',
+  summary:
+    'Access requests waiting, and journalists approved or revoked. The owner, administrators and Access Managers.',
   response: z.object({ requests: z.array(AccessRequestView) }),
 });
 
@@ -346,7 +347,8 @@ export const approveAccessRequest = defineRoute({
 export const rejectAccessRequest = defineRoute({
   method: 'POST',
   path: '/api/owner/journalists/:id/reject',
-  summary: 'Reject a request. What it said is wiped and it reads “not approved”; the person stays on the alert list.',
+  summary:
+    'Reject a request. What it said is wiped and it reads “not approved”; the person stays on the alert list.',
   params: RequestParams,
   response: z.object({ ok: z.literal(true) }),
 });
