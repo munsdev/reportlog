@@ -60,6 +60,12 @@ const requestOf = async (email: string) =>
     .where('s.email_hmac', '=', emailDigest(ring, email))
     .executeTakeFirst();
 
+const need = async (email: string) => {
+  const row = await requestOf(email);
+  if (!row) throw new Error(`no request for ${email}`);
+  return row;
+};
+
 const decide = (who: { call: ReturnType<typeof as> }, id: number, what: string) =>
   who.call({ method: 'POST', url: `/api/owner/journalists/${String(id)}/${what}` });
 
@@ -234,7 +240,7 @@ describe('who decides, and what the person sees', () => {
   it('an administrator approves; the account becomes a journalist and the email links to the desk', async () => {
     const a = await account('approved-by-admin');
     await apply(a.call);
-    const id = (await requestOf(a.email))!.id;
+    const id = (await need(a.email)).id;
     const r = await decide(admin, id, 'approve');
     expect(r.statusCode, r.body).toBe(200);
     expect(await roleOf(h.db, a.email)).toBe('journalist');
@@ -250,7 +256,7 @@ describe('who decides, and what the person sees', () => {
   it('an access manager approves, rejects and ends', async () => {
     const a = await account('mgr-approve');
     await apply(a.call);
-    expect((await decide(manager, (await requestOf(a.email))!.id, 'approve')).statusCode).toBe(200);
+    expect((await decide(manager, (await need(a.email)).id, 'approve')).statusCode).toBe(200);
     const row = await requestOf(a.email);
     expect((await decide(manager, row!.id, 'revoke')).statusCode).toBe(200);
     expect(await roleOf(h.db, a.email)).toBe('user');
@@ -266,22 +272,22 @@ describe('who decides, and what the person sees', () => {
 
     const b = await account('mgr-reject');
     await apply(b.call);
-    expect((await decide(manager, (await requestOf(b.email))!.id, 'reject')).statusCode).toBe(200);
+    expect((await decide(manager, (await need(b.email)).id, 'reject')).statusCode).toBe(200);
   });
 
   it('rejected reads "not approved", wipes what was written, and may be asked again', async () => {
     const a = await account('rejected');
     await apply(a.call);
-    const row = (await requestOf(a.email))!;
+    const row = await need(a.email);
     expect((await decide(owner, row.id, 'reject')).statusCode).toBe(200);
     expect(await me(a.call)).toMatchObject({ desk: 'not_approved', listed: true });
-    const after = (await requestOf(a.email))!;
+    const after = await need(a.email);
     expect(after.status).toBe('rejected');
     expect(after.details_enc.toString('utf8')).not.toContain(FORM.outlet);
     expect(h.mailer.lastTo(a.email)?.subject).toContain('journalist desk');
     expect((await apply(a.call)).json<MyJournalist>().desk).toBe('pending');
     // And an ended one may too.
-    const id = (await requestOf(a.email))!.id;
+    const id = (await need(a.email)).id;
     await decide(owner, id, 'approve');
     await decide(owner, id, 'revoke');
     expect((await me(a.call)).desk).toBe('ended');
@@ -291,7 +297,7 @@ describe('who decides, and what the person sees', () => {
   it('a moderator, a journalist and a plain account may not decide', async () => {
     const a = await account('victim');
     await apply(a.call);
-    const id = (await requestOf(a.email))!.id;
+    const id = (await need(a.email)).id;
     const mod = await account('modx');
     await seat(h.db, mod.email, 'moderator');
     const plain = await account('plainx');

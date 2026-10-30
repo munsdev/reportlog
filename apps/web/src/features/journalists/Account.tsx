@@ -205,7 +205,7 @@ function ApplyForm() {
       <div>
         <h3 id="apply-agreement">The journalist agreement</h3>
         <p className="muted">Version {String(current.version)}.</p>
-        <div className="paper" role="region" aria-labelledby="apply-agreement" tabIndex={0}>
+        <div className="paper">
           <p style={{ whiteSpace: 'pre-wrap' }} data-agreement-text>
             {current.body}
           </p>
