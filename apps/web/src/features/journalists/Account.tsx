@@ -56,7 +56,8 @@ export function AccountAlerts() {
           state: 'open',
           address: '',
           states: s.states,
-          alerts: s.alerts,
+          // Not on the list yet: alerts start ticked, as on the sign-up form.
+          alerts: s.listed ? s.alerts : 'on',
           desk: 'none',
         }}
         saving={save.isPending}

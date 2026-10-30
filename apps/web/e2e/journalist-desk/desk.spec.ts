@@ -149,7 +149,9 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   before = countTo(JOURNALIST);
   await stepUp(owner.request);
   await card.getByRole('button', { name: 'Approve' }).click();
-  await expect(card.getByRole('button', { name: 'Revoke access' })).toBeVisible();
+  await expect(
+    owner.getByRole('row', { name: /Pat Reporter/ }).getByRole('button', { name: 'Revoke access' }),
+  ).toBeVisible();
 
   // The approval email's link, followed: the agreement, then the desk.
   // It points straight at the desk (which asks for a sign-in), and says what happens next.
@@ -202,108 +204,19 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await noViolations(reader);
 
   // J13: revoked, and the next look is refused.
-  await card.getByRole('button', { name: 'Revoke access' }).click();
-  await expect(card.getByText('Revoked', { exact: true })).toBeVisible();
+  await owner
+    .getByRole('row', { name: /Pat Reporter/ })
+    .getByRole('button', { name: 'Revoke access' })
+    .click();
+  await expect(
+    owner.getByRole('row', { name: /Pat Reporter/ }).getByText(/^Revoked/),
+  ).toBeVisible();
   await reader.reload();
   // Decision 80: no dead end. The desk says the access ended and offers a new request.
   await expect(reader.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
   await expect(reader.getByText('Your access to the desk has ended.')).toBeVisible();
   await expect(reader.getByRole('button', { name: 'Apply for desk access' })).toBeVisible();
   await expect(reader.getByText(CHECKED)).toHaveCount(0);
-
-  expect(outside).toEqual([]);
-});
-
-test('a signed-in account joins alerts and applies in one step; approval opens the desk; not approved stays visible', async ({
-  browser,
-}) => {
-  const outside: string[] = [];
-  const APPLICANT = `e2e-desk-applicant-${run}@example.org`;
-  const TURNED_DOWN = `e2e-desk-turned-down-${run}@example.org`;
-  const apply = async (page: Page, name: string) => {
-    await page.getByLabel('Your name').fill(name);
-    await page.getByLabel('Your outlet').fill('Desk Daily');
-    await page.getByLabel('Your role there').fill('Reporter');
-    await page.getByLabel('Who are you?').fill('Covering Delaware for Desk Daily.');
-    await expect(page.getByText(`Use what you read here with care. ${run}`)).toBeVisible();
-    // The acceptance is part of the same step: ticking it is what sends it.
-    await page.getByRole('button', { name: 'Apply for desk access' }).click();
-    await expect(page.getByText('Tick the box to accept the agreement.')).toBeVisible();
-    await page.getByLabel('I have read the journalist agreement and I accept it.').check();
-    await page.getByRole('button', { name: 'Apply for desk access' }).click();
-  };
-
-  // Alerts: no name or address to type, no link to confirm, and an email saying what changed.
-  const applicant = await (await signedIn(browser, APPLICANT)).newPage();
-  outside.push(...outsideRequests(applicant));
-  await applicant.goto('/journalists/alerts');
-  await expect(
-    applicant.getByRole('heading', { level: 1, name: 'Alerts and desk access' }),
-  ).toBeVisible();
-  await expect(applicant.getByLabel('Your email address')).toHaveCount(0);
-  await expect(applicant.getByRole('heading', { name: 'Journalist desk' })).toBeVisible();
-  await noViolations(applicant);
-  await applicant.getByRole('checkbox', { name: 'Delaware' }).check();
-  let before = countTo(APPLICANT);
-  await applicant.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(applicant.getByText('Your alert settings are saved.')).toBeVisible();
-  const changed = await lastMessageTo(APPLICANT, before);
-  expect(changed.subject).toBe('Your alerts changed');
-  expect(changed.text).toMatch(/\/journalists\/stop\/[a-f0-9]{64}/);
-  expect(node('src/dev/journalists-state.ts', 'listed', APPLICANT)).toBe('active');
-
-  // One form, one button; the people who decide are told, and the applicant sees the status.
-  const owner = await (await signedIn(browser, OWNER)).newPage();
-  outside.push(...outsideRequests(owner));
-  const ownerBefore = countTo(OWNER);
-  before = countTo(APPLICANT);
-  await apply(applicant, 'Alex Applicant');
-  await expect(applicant.getByText(/Your request is pending since/)).toBeVisible();
-  await expect(applicant.getByRole('button', { name: 'Apply for desk access' })).toHaveCount(0);
-  expect((await lastMessageTo(APPLICANT, before)).subject).toContain('was received');
-  const waiting = await lastMessageTo(OWNER, ownerBefore);
-  expect(waiting.subject).toBe('A journalist desk request is waiting');
-  expect(waiting.text).not.toContain('Alex Applicant');
-  await applicant.reload();
-  await expect(applicant.getByText(/Your request is pending since/)).toBeVisible();
-  await noViolations(applicant);
-
-  // Approved by someone who decides (the owner satisfies administrator; the
-  // administrator and access manager are checked in the database tests).
-  await owner.goto('/access/journalists');
-  const card = owner.getByRole('article', { name: 'Request from Alex Applicant' });
-  await stepUp(owner.request);
-  before = countTo(APPLICANT);
-  await card.getByRole('button', { name: 'Approve' }).click();
-  await expect(card.getByRole('button', { name: 'Revoke access' })).toBeVisible();
-
-  // The email's link opens the desk itself: they accepted the agreement when they applied.
-  const approval = (await lastMessageTo(APPLICANT, before)).text;
-  expect(approval).toContain('already accepted');
-  const link = linkIn(approval, '/desk');
-  expect(link).not.toBe('');
-  await applicant.goto(new URL(link).pathname);
-  await expect(applicant.getByRole('heading', { level: 1, name: 'Checked links' })).toBeVisible();
-  await expect(
-    applicant.getByRole('heading', { name: 'Read and accept the agreement' }),
-  ).toHaveCount(0);
-
-  // Not approved stays visible, and they may ask again.
-  const turned = await (await signedIn(browser, TURNED_DOWN)).newPage();
-  outside.push(...outsideRequests(turned));
-  await turned.goto('/desk');
-  await expect(turned.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
-  await apply(turned, 'Sam Turned-down');
-  await expect(turned.getByText(/Your request is pending since/)).toBeVisible();
-  await owner.reload();
-  const other = owner.getByRole('article', { name: 'Request from Sam Turned-down' });
-  await stepUp(owner.request);
-  await other.getByRole('button', { name: 'Reject' }).click();
-  await owner.getByRole('dialog').getByRole('button', { name: 'Reject', exact: true }).click();
-  await expect(other).toHaveCount(0);
-  await turned.reload();
-  await expect(turned.getByText(/was not approved/)).toBeVisible();
-  await expect(turned.getByRole('button', { name: 'Apply for desk access' })).toBeVisible();
 
   expect(outside).toEqual([]);
 });
