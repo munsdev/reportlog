@@ -32,10 +32,22 @@ shared link, what is built, and what is left. Written 29 October 2026.
   lede. Behind the site password it says only the site's name and noindex,
   and always 200. The share image is `og:image` (`/api/site/share.png`).
   The page script still sets the head while somebody moves about.
-- **The share image** (`apps/api/src/site/shareImage.ts`): 1200×630, the
-  site's name on its palette beside the icon, drawn by ImageMagick (DejaVu
-  Sans Bold) and kept in memory until the name or palette changes. Without
-  ImageMagick it answers the 512px icon.
+- **The share cards** (`apps/api/src/site/shareImage.ts`, the owner's
+  approved design of 30 October): 1200×630, near-black with the band of
+  stripes and stars (`apps/api/assets/share/ground.png`) and the wordmark in
+  the site's own runs. The front page's card is the hero's own headline, its
+  second line outlined, and its slogan in a white bar. Every other page's is
+  its name and sentence from the head, with the hero's eyebrow in the corner
+  and an amber rule along the foot. Behind the password, or for an address
+  that is nothing, the wordmark alone. Each page's head names its own card
+  (`/api/site/share.png?path=/board`). Drawn by ImageMagick with the site's
+  faces as TTF (`apps/api/assets/share/fonts/`, Archivo fixed at width 125
+  and weight 800, the widest and heaviest the site's variable Archivo has),
+  kept in memory by what is drawn; without ImageMagick, the plain ground.
+- **The icons** (`apps/web/public/icons/`, `apps/web/public/favicon.ico`): the
+  owner's EL mark on the amber button tile. The browser tab's is the tile
+  alone, edge to edge; the home-screen and manifest icons have the white
+  border and hard shadow. The project site copies the same files.
 
 ## To do on a server
 

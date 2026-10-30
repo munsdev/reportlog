@@ -351,7 +351,6 @@ export function pageHeadRoutes(app: FastifyInstance, deps: PageHeadDeps): void {
     const asked = `/${request.params['*']}`;
     const settings = await siteAccessSettings(db);
     const siteName = plainName(resolveSiteName((await readSettings(db)).site_name));
-    const imageUrl = `${siteOrigin}${SHARE_IMAGE_PATH}`;
     const behindPassword = gateApplies(settings);
 
     // A path that is not a path (control characters, absurd length) gets the
@@ -359,9 +358,13 @@ export function pageHeadRoutes(app: FastifyInstance, deps: PageHeadDeps): void {
     const sane = asked.length <= 300 && !/\p{Cc}/u.test(asked);
     const verdict = behindPassword || !sane ? GENERIC : await judge(db, asked);
 
+    // Each page's own card (site/shareImage.ts), drawn from the same words as
+    // this head; the plain one where nothing particular is known.
+    const plainImage = `${siteOrigin}${SHARE_IMAGE_PATH}`;
     let tags: HeadTags;
     if (verdict.page) {
       const path = verdict.page.path;
+      const imageUrl = `${plainImage}?path=${encodeURIComponent(path)}`;
       const index = deps.searchEngines === 'on' && indexable(path);
       tags = {
         siteName,
@@ -372,7 +375,7 @@ export function pageHeadRoutes(app: FastifyInstance, deps: PageHeadDeps): void {
         imageUrl,
       };
     } else {
-      tags = { siteName, page: null, description: GENERIC_DESCRIPTION, imageUrl };
+      tags = { siteName, page: null, description: GENERIC_DESCRIPTION, imageUrl: plainImage };
     }
 
     const body = fillHead(template(), headHtml(tags));

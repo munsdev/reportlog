@@ -18,7 +18,31 @@ afterAll(async () => {
   await db.destroy();
 });
 
+const SIZE = async (url: string) => {
+  const res = await app.inject({ method: 'GET', url });
+  expect(res.statusCode, url).toBe(200);
+  expect(res.headers['content-type'], url).toBe('image/png');
+  const png = res.rawPayload;
+  return [png.readUInt32BE(16), png.readUInt32BE(20), png.length] as const;
+};
+
 describe('GET /api/site/share.png', () => {
+  it('draws a card for a page, the front page, and any address, all 1200 by 630', async () => {
+    const seen = new Set<number>();
+    for (const url of [
+      '/api/site/share.png?path=%2Fterms',
+      '/api/site/share.png?path=%2F',
+      '/api/site/share.png?path=%2Fno-such-thing-at-all',
+      '/api/site/share.png?path=not-a-path',
+    ]) {
+      const [w, h, bytes] = await SIZE(url);
+      expect([w, h], url).toEqual([1200, 630]);
+      seen.add(bytes);
+    }
+    // A page's card and the plain one are different pictures.
+    expect(seen.size).toBeGreaterThan(1);
+  });
+
   it('is a 1200 by 630 PNG that caches for an hour', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/site/share.png' });
     expect(res.statusCode).toBe(200);

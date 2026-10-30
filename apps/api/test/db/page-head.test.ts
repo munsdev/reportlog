@@ -72,7 +72,10 @@ describe('a public page', () => {
     expect(res.body).toContain(`<link rel="canonical" href="${SITE}/terms" />`);
     expect(res.body).toContain(`property="og:url" content="${SITE}/terms"`);
     expect(res.body).toContain('property="og:type" content="website"');
-    expect(res.body).toContain(`property="og:image" content="${SITE}/api/site/share.png"`);
+    // Its own card, drawn from the same words (site/shareImage.ts).
+    expect(res.body).toContain(
+      `property="og:image" content="${SITE}/api/site/share.png?path=%2Fterms"`,
+    );
     expect(res.body).toContain('property="og:image:width" content="1200"');
     expect(res.body).toContain('property="og:image:height" content="630"');
     expect(res.body).toContain('name="twitter:card" content="summary_large_image"');

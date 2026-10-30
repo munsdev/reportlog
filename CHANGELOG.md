@@ -52,6 +52,9 @@ and `package.json` disagree. How a release is cut is in the README.
   sentence about it and a picture with the site's name, instead of a bare "ReportLog". An address
   that is nothing at all (no such logbook, map or published report) now answers "not found" to
   search engines too, not only on the page.
+- A new icon: EL on the site's amber button, in the browser tab, on phone home screens and in the
+  app's manifest. The shield is gone. Shared links show a card in the site's own poster style: the
+  front page's headline and slogan, or the page's name and its sentence.
 - `www.` (or any other name for the site) can be sent to the site's address: list it in
   `SITE_ALIASES` in `/etc/reportlog/deploy.env` and deploy. Before, a name that pointed at the
   server got no certificate, and anyone who typed it saw a TLS error.
