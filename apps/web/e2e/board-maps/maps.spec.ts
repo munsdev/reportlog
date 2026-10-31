@@ -90,25 +90,26 @@ test('a map in each of the board’s slots, no count under the threshold, and no
     page.getByRole('figure').filter({ hasText: made[slot]?.title ?? '' });
 
   try {
-    // Above the report board: before the filters.
+    // Beside the report list, under the filters (decision 82).
     await page.goto('/board');
     await expect(page.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
     const above = mapOf('board_reports');
     await expect(above.getByRole('img')).toBeVisible();
-    await expect(page.getByRole('search', { name: 'Search the board' })).toBeVisible();
+    await expect(page.getByRole('search', { name: 'Search reports' })).toBeVisible();
     const order = await page.evaluate(
       ([title]) => {
         const fig = [...document.querySelectorAll('figure')].find((f) =>
           f.textContent.includes(title ?? ''),
         );
-        const form = document.querySelector('form[aria-label="Search the board"]');
+        const form = document.querySelector('form[aria-label="Search reports"]');
         return fig && form
           ? Boolean(fig.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING)
           : null;
       },
       [made.board_reports?.title],
     );
-    expect(order).toBe(true);
+    // The filters come first now: the map is not before them.
+    expect(order).toBe(false);
     // Only that slot's map is here.
     await expect(mapOf('board_tab')).toHaveCount(0);
     await expect(mapOf('board_numbers')).toHaveCount(0);
@@ -116,19 +117,49 @@ test('a map in each of the board’s slots, no count under the threshold, and no
     // Arizona is counted; Nevada (2, under 3) says only that it is under the threshold.
     await above.locator('path[data-code="US-AZ"]').click();
     await expect(above).toContainText('4 published reports');
+    // Clicking Arizona narrows the list beside it to Arizona, and the address says so.
+    await expect(page).toHaveURL(/place=US-AZ/);
+    const list = page.locator('section[aria-label="Reports"]');
+    await expect(list).toContainText(/4 reports/);
+    await expect(
+      page.getByRole('button', { name: 'Remove the filter Place: Arizona' }),
+    ).toBeVisible();
+    // On a desktop the map is two thirds of the width and the list the third beside it.
+    const mapBox = await above.boundingBox();
+    const listBox = await list.boundingBox();
+    expect(mapBox && listBox && listBox.x > mapBox.x + mapBox.width - 1).toBe(true);
+    expect(mapBox && listBox && mapBox.width > listBox.width * 1.6).toBe(true);
+    // Nevada is under the threshold: the card says so, and the list is not narrowed to it.
     await above.locator('path[data-code="US-NV"]').click();
     await expect(above).toContainText(/Fewer than 3 published reports/);
+    await expect(page).not.toHaveURL(/place=/);
+    await expect(page.getByRole('button', { name: /Remove the filter Place/ })).toHaveCount(0);
+    // Arizona again, then clearing the filter from its tag lets go of the map too.
+    await above.locator('path[data-code="US-AZ"]').click();
+    await expect(page).toHaveURL(/place=US-AZ/);
+    await page.getByRole('button', { name: 'Remove the filter Place: Arizona' }).click();
+    await expect(page).not.toHaveURL(/place=/);
+    await expect(above.locator('path[data-selected="true"]')).toHaveCount(0);
+    // A link naming an area under its threshold is no filter and selects nothing.
+    await page.goto('/board?place=US-NV');
+    // The server sends no list and no count for it: only the sentence.
+    await expect(page.getByText(/Fewer than 3/).first()).toBeVisible();
+    await expect(page.locator('section[aria-label="Reports"]')).toHaveCount(0);
+    await expect(above.locator('path[data-selected="true"]')).toHaveCount(0);
 
     // The board's own Maps page, reached from the board.
     await page.getByRole('link', { name: 'Maps', exact: true }).click();
     await expect(page).toHaveURL(/\/board\/maps$/);
-    await expect(page.getByRole('heading', { level: 2, name: 'Maps' })).toBeVisible();
+    await expect(page.getByText(/Where published reports say things happened/)).toBeVisible();
     await expect(mapOf('board_tab').getByRole('img')).toBeVisible();
     await expect(mapOf('board_reports')).toHaveCount(0);
 
     // With the numbers, below the counts.
     await page.goto('/board/numbers');
-    await expect(page.getByRole('heading', { level: 2, name: 'By the numbers' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Numbers', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
     await expect(mapOf('board_numbers').getByRole('img')).toBeVisible();
     await expect(mapOf('board_reports')).toHaveCount(0);
 
@@ -147,7 +178,7 @@ test('a map in each of the board’s slots, no count under the threshold, and no
 
   // With none placed, the board has no Maps button and its Maps page says so.
   await page.goto('/board');
-  await expect(page.getByRole('search', { name: 'Search the board' })).toBeVisible();
+  await expect(page.getByRole('search', { name: 'Search reports' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Maps', exact: true })).toHaveCount(0);
   await page.goto('/board/maps');
   await expect(page.getByText('There are no maps on the board.')).toBeVisible();

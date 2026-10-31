@@ -22,6 +22,8 @@ export interface BoardSearch {
   f?: Record<string, string> | undefined;
   /** Journalists only: keep reports in the states they chose for alerts. */
   mine?: boolean | undefined;
+  /** An area clicked on the map: `US-AZ`, `US-AZ-04013` or a country code. */
+  place?: string | undefined;
 }
 
 export const boardMetaQuery = queryOptions({
@@ -36,6 +38,7 @@ export const boardReportsQuery = (s: BoardSearch) =>
       const query: Record<string, string> = {};
       if (s.q) query.q = s.q;
       if (s.logbook) query.logbook = s.logbook;
+      if (s.place) query.place = s.place;
       if (s.page && s.page > 1) query.page = String(s.page);
       for (const [k, v] of Object.entries(s.f ?? {})) if (v) query[`a.${k}`] = v;
       return call(listBoardReports, { query, signal });
@@ -68,6 +71,7 @@ export const deskReportsQuery = (s: BoardSearch) =>
       const query: Record<string, string> = {};
       if (s.q) query.q = s.q;
       if (s.logbook) query.logbook = s.logbook;
+      if (s.place) query.place = s.place;
       if (s.page && s.page > 1) query.page = String(s.page);
       if (s.mine) query.mine = 'true';
       for (const [k, v] of Object.entries(s.f ?? {})) if (v) query[`a.${k}`] = v;

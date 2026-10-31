@@ -252,4 +252,51 @@ describe('counties shown on their own', () => {
     // A county under the threshold was never sent, so nothing draws it.
     expect(root.querySelector('path[data-code="US-AZ-04019"]')).toBeNull();
   });
+
+  // Decision 82: a page narrows its list to the area clicked, under the map's own rules.
+  it('tells a page about a counted area it is clicked on, and about nothing it has no count for', () => {
+    const heard: (string | null)[] = [];
+    const { container } = render(
+      <HeatMapView
+        map={payload()}
+        outlines={outlines}
+        chosen={null}
+        onChosen={(code) => heard.push(code)}
+      />,
+    );
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    tap(pathFor(root, 'US-CA'));
+    expect(heard.at(-1)).toBe('US-CA');
+    // Under its threshold: the readout may say "fewer than 3", but the page hears nothing.
+    tap(pathFor(root, 'US-NV'));
+    expect(heard.at(-1)).toBeNull();
+    // And an area with nothing counted selects nothing.
+    tap(pathFor(root, 'US-TX'));
+    expect(heard.at(-1)).toBeNull();
+  });
+
+  it('draws the area the page holds, and lets go when the page does', () => {
+    const { container, rerender } = render(
+      <HeatMapView map={payload()} outlines={outlines} chosen="US-AZ" onChosen={() => undefined} />,
+    );
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    expect(within(root).getByRole('heading', { name: 'Arizona' })).toBeTruthy();
+    expect(root.querySelector('path[data-selected="true"]')).not.toBeNull();
+    rerender(
+      <HeatMapView map={payload()} outlines={outlines} chosen={null} onChosen={() => undefined} />,
+    );
+    expect(within(root).queryByRole('heading', { name: 'Arizona' })).toBeNull();
+    expect(root.querySelector('path[data-selected="true"]')).toBeNull();
+  });
+
+  it('keeps a link naming an area under its threshold from drawing it', () => {
+    const { container } = render(
+      <HeatMapView map={payload()} outlines={outlines} chosen="US-NV" onChosen={() => undefined} />,
+    );
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    expect(root.querySelector('[aria-pressed="true"]')).toBeNull();
+  });
 });

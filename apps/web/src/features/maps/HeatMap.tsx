@@ -50,11 +50,16 @@ export function HeatMap({
   slug,
   start,
   showTitle = true,
+  chosen,
+  onChosen,
 }: {
   slug: string;
   start?: MapStart;
   /** False where the page's own heading already names the map. */
   showTitle?: boolean;
+  /** The area a page narrows its list to (the board's `place`), kept in step with the map. */
+  chosen?: string | null;
+  onChosen?: (code: string | null) => void;
 }) {
   const data = useQuery(mapQuery(slug));
   const outlines = useQuery(outlinesQuery());
@@ -68,6 +73,8 @@ export function HeatMap({
       outlinesFailed={outlines.isError}
       showTitle={showTitle}
       {...(start ? { start } : {})}
+      {...(chosen !== undefined ? { chosen } : {})}
+      {...(onChosen ? { onChosen } : {})}
     />
   );
 }
@@ -79,12 +86,16 @@ export function HeatMapView({
   outlinesFailed = false,
   start,
   showTitle = true,
+  chosen,
+  onChosen,
 }: {
   map: PublishedMap;
   outlines: Outlines | null;
   outlinesFailed?: boolean;
   start?: MapStart;
   showTitle?: boolean;
+  chosen?: string | null;
+  onChosen?: (code: string | null) => void;
 }) {
   const firstPlane = map.planes.find((p) => p === start?.plane) ?? map.planes[0] ?? 'us';
   const [plane, setPlane] = useState<MapPlane>(firstPlane);
@@ -94,11 +105,29 @@ export function HeatMapView({
   // A link naming an area UNDER THE THRESHOLD selects nothing: a URL is the
   // one input a reader controls completely, and selecting such an area would
   // draw a readout for a place whose count was deliberately not sent.
-  const [selected, setSelected] = useState<string | null>(() =>
+  const [picked, setPicked] = useState<string | null>(() =>
     start?.area && Object.hasOwn(map.areas, start.area) && onPlane(firstPlane, start.area)
       ? start.area
       : null,
   );
+  /* A PAGE ONLY HEARS OF AN AREA THAT HAS A COUNT: a state or a county the
+     server sent. One under its threshold is picked here (its readout says
+     "fewer than N") but a list is never narrowed to it: that list's length
+     would be the count that was withheld. */
+  const counted = (code: string | null): code is string =>
+    code !== null && (Object.hasOwn(map.areas, code) || Object.hasOwn(map.counties, code));
+  // With a page holding the choice (the board's address), what it holds is what is drawn,
+  // unless the reader has just picked an area with no count, which only the map shows.
+  const selected =
+    onChosen && !(picked !== null && !counted(picked))
+      ? chosen && counted(chosen) && onPlane(plane, chosen)
+        ? chosen
+        : null
+      : picked;
+  const setSelected = (code: string | null) => {
+    setPicked(code);
+    onChosen?.(counted(code) ? code : null);
+  };
   const suppressed = useMemo(() => new Set(map.suppressed.areas), [map.suppressed.areas]);
   const k = map.threshold;
 

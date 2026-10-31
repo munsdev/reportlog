@@ -17,6 +17,7 @@
  */
 import type { BoardLogbook, DeskReport, FormQuestion, PublicReport } from '@reportlog/contracts';
 import { BOARD_CSV_PATH } from '@reportlog/contracts';
+import { placeLabel } from '@reportlog/fields';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -26,6 +27,7 @@ import { Empty } from '../../mockup/Empty.tsx';
 import { Note } from '../../mockup/Note.tsx';
 import { Pager } from '@/mockup/Pager.tsx';
 import { MapSlot } from '../maps/MapSlot.tsx';
+import { placedMapsQuery } from '../maps/queries.ts';
 import { useMainAction } from '../nav/Menu.tsx';
 import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
@@ -47,6 +49,7 @@ function searchWith(search: BoardSearch, change: Partial<BoardSearch>): BoardSea
   if (!next.logbook) delete next.logbook;
   if (!next.f || !Object.keys(next.f).length) delete next.f;
   if (!next.mine) delete next.mine;
+  if (!next.place) delete next.place;
   return next;
 }
 
@@ -62,6 +65,16 @@ export function BoardPage({ search }: { search: BoardSearch }) {
   const meta = useQuery(boardMetaQuery);
   const reports = useQuery(boardReportsQuery(search));
   const access = useJournalistAccess();
+  const navigate = useNavigate();
+  const placed = useQuery(placedMapsQuery());
+  const hasMap = (placed.data?.maps ?? []).some(
+    (m) => m.slot === 'board_reports' || m.also_slots.includes('board_reports'),
+  );
+  // The map names an area; the address carries it, so a narrowed board can be shared.
+  const choose = (code: string | null) => {
+    if ((code ?? undefined) === search.place) return;
+    void navigate({ to: '/board', search: searchWith(search, { place: code ?? undefined }) });
+  };
   const chosen = meta.data?.published
     ? meta.data.logbooks.find((l) => l.slug === search.logbook)
     : undefined;
@@ -99,7 +112,6 @@ export function BoardPage({ search }: { search: BoardSearch }) {
       {meta.data && !meta.data.published ? <PublishingPaused /> : null}
       {meta.data?.published ? (
         <>
-          <MapSlot slot="board_reports" />
           <Narrowing
             // A new address means new starting values for the controls.
             key={JSON.stringify(search)}
@@ -107,20 +119,35 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             search={search}
             journalist={access === 'yes'}
           />
-          {chosen?.counts_only ? (
-            // Counted, never listed: its counts in place of the list.
-            <CountsOnlyPanel slug={chosen.slug} title={chosen.title} />
-          ) : (
-            <Results search={search} logbooks={meta.data.logbooks} journalist={access === 'yes'} />
-          )}
-          {csv ? (
-            <div className="btn-row" style={{ paddingBlock: 12 }}>
-              <a className="btn sm flat" href={csv} download>
-                Download these (CSV)
-              </a>
+          {/* The map above the list on a phone; two thirds beside it on a desktop (decision 82).
+              Clicking an area narrows the list to it, under the same thresholds as any count. */}
+          <div className={hasMap ? 'grid gap-6 lg:grid-cols-3 lg:items-start' : undefined}>
+            {hasMap ? (
+              <div className="lg:col-span-2">
+                <MapSlot slot="board_reports" chosen={search.place ?? null} onChosen={choose} />
+              </div>
+            ) : null}
+            <div>
+              {chosen?.counts_only ? (
+                // Counted, never listed: its counts in place of the list.
+                <CountsOnlyPanel slug={chosen.slug} title={chosen.title} />
+              ) : (
+                <Results
+                  search={search}
+                  logbooks={meta.data.logbooks}
+                  journalist={access === 'yes'}
+                />
+              )}
+              {csv ? (
+                <div className="btn-row" style={{ paddingBlock: 12 }}>
+                  <a className="btn sm flat" href={csv} download>
+                    Download these (CSV)
+                  </a>
+                </div>
+              ) : null}
+              {chosen ? null : <CountedNotShown logbooks={meta.data.logbooks} />}
             </div>
-          ) : null}
-          {chosen ? null : <CountedNotShown logbooks={meta.data.logbooks} />}
+          </div>
         </>
       ) : null}
     </BoardFrame>
@@ -169,6 +196,13 @@ function activeFilters(
       words: `Logbook: ${lb?.title ?? search.logbook}`,
       // An answer filter belongs to its logbook, so it goes with it.
       without: searchWith(search, { logbook: undefined, f: undefined }),
+    });
+  }
+  if (search.place) {
+    out.push({
+      key: 'place',
+      words: `Place: ${placeLabel(search.place)}`,
+      without: searchWith(search, { place: undefined }),
     });
   }
   if (search.mine) {
