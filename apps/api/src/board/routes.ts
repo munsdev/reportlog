@@ -39,6 +39,8 @@ export interface BoardRouteDeps {
 
 const noReport = () => notFound('There is no published report with that reference.');
 
+const PLACE = /^[A-Z]{2}(-[A-Z0-9]{1,3})?(-\d{5})?$/;
+
 /** The board's query, with `a.<key>` entries split out as answer filters. */
 export function boardQuery(raw: Record<string, unknown>): BoardQuery {
   const answers: Record<string, string> = {};
@@ -50,6 +52,8 @@ export function boardQuery(raw: Record<string, unknown>): BoardQuery {
     q: text(raw.q),
     logbook: text(raw.logbook),
     sort: raw.sort === 'oldest' ? 'oldest' : 'newest',
+    // A place a map can name, nothing else: the one input a reader controls completely.
+    place: typeof raw.place === 'string' && PLACE.test(raw.place) ? raw.place : undefined,
     page: raw.page === undefined ? undefined : Number(raw.page),
     answers,
   };

@@ -18,6 +18,7 @@
  * Never served here: contact details, review flags, moderation reasons, who
  * moderated, and an editorial note's author.
  */
+import { MIN_AREA_FLOOR } from '@reportlog/contracts';
 import type { FormQuestion } from '@reportlog/contracts';
 import type { Kysely, RawBuilder } from 'kysely';
 import { sql } from 'kysely';
@@ -139,6 +140,13 @@ export interface BoardQuery {
    * alert states (decision 72, 81), never from a request.
    */
   states?: readonly string[] | undefined;
+  /**
+   * A place the reader clicked on a map: `US-AZ` (with every county in it),
+   * `US-AZ-04013`, or a country. Only the place question a heat map reads, and
+   * only with the map's own thresholds (decision 82), never from a question
+   * nobody offered.
+   */
+  place?: string | undefined;
 }
 
 const refuse = (message: string) => new HttpError(400, 'invalid_filter', message);
@@ -177,6 +185,30 @@ function inStates(states: readonly string[]): RawBuilder<boolean> {
   )`;
 }
 
+/** A county is a state's code and five digits of FIPS; anything shorter is a state or a country. */
+const isCounty = (place: string) => /-\d{5}$/.test(place);
+
+/**
+ * In this place, by the question a heat map reads (`map_place_questions`), the
+ * same one the map counts by. A state holds every county in it by prefix. A
+ * question written as a postal code is read as the map reads it; one written
+ * as bare FIPS has no state of its own, so it is not matched here (the map
+ * places it by a table this query does not have).
+ */
+function inPlace(place: string): RawBuilder<boolean> {
+  const value = sql`(CASE f.settings ->> 'code'
+    WHEN 'postal' THEN 'US-' || (r.answers ->> q.field_key)
+    ELSE r.answers ->> q.field_key END)`;
+  const match = isCounty(place)
+    ? sql<boolean>`${value} = ${place}`
+    : sql<boolean>`(${value} = ${place} OR ${value} LIKE ${`${place}-%`})`;
+  return sql<boolean>`EXISTS (
+    SELECT 1 FROM map_place_questions q
+    JOIN logbook_fields f ON f.logbook_id = q.logbook_id AND f.key = q.field_key
+    WHERE q.logbook_id = r.logbook_id AND ${match}
+  )`;
+}
+
 /** Every narrowing the board allows, as one condition. */
 function narrowing(query: BoardQuery, answers: [string, string][]): RawBuilder<boolean> {
   const parts: RawBuilder<boolean>[] = [sql<boolean>`true`];
@@ -185,6 +217,7 @@ function narrowing(query: BoardQuery, answers: [string, string][]): RawBuilder<b
   if (query.logbook) parts.push(sql<boolean>`l.slug = ${query.logbook}`);
   for (const [key, value] of answers) parts.push(answerMatches(key, value));
   if (query.states) parts.push(inStates(query.states));
+  if (query.place) parts.push(inPlace(query.place));
   return sql<boolean>`(${sql.join(parts, sql` AND `)})`;
 }
 
@@ -202,7 +235,7 @@ async function placeThreshold(
   db: Kysely<DB>,
   query: BoardQuery,
   answers: [string, string][],
-): Promise<number | null> {
+): Promise<number | 'never' | null> {
   // NARROWED BY STATE IS NARROWED BY PLACE. A journalist's "My states" must not
   // hand over the count a heat map withholds for a thin area, so the highest
   // threshold any map keeps applies to it, whichever logbook it falls in.
@@ -210,11 +243,45 @@ async function placeThreshold(
     const thresholds = [...(await placeGuards(db)).values()].map((g) => g.threshold);
     return thresholds.length ? Math.max(...thresholds) : null;
   }
+  // A CLICKED PLACE IS A PLACE. It keeps the highest threshold any map keeps,
+  // and a county the highest county threshold: `'never'` where no map shows
+  // counties at all, so a county is never counted on its own.
+  if (query.place) return placeFilterThreshold(db, query.place);
   if (!answers.length || !query.logbook) return null;
   const lb = await logbookBySlug(db, query.logbook);
   if (!lb) return null;
   const guard = (await placeGuards(db)).get(lb.id);
   return guard && answers.some(([k]) => k === guard.key) ? guard.threshold : null;
+}
+
+/** The highest threshold any map keeps on a place question, or 0 when none does. */
+async function stateThreshold(db: Kysely<DB>): Promise<number> {
+  return Math.max(0, ...[...(await placeGuards(db)).values()].map((g) => g.threshold));
+}
+
+/**
+ * The count a clicked place must reach before the board says anything about it.
+ * A state or country: the map's own threshold. A county: the map's county
+ * threshold, which is never below the map's own (maps/aggregate.ts); with no map
+ * showing counties there is none, and the county is withheld whatever it holds.
+ */
+async function placeFilterThreshold(
+  db: Kysely<DB>,
+  place: string,
+): Promise<number | 'never' | null> {
+  const states = await stateThreshold(db);
+  if (!isCounty(place)) return states || null;
+  const maps = await db.selectFrom('heat_maps').select(['min_area', 'county_min']).execute();
+  const county = maps
+    .filter((m) => m.county_min !== null)
+    .map((m) =>
+      Math.max(
+        MIN_AREA_FLOOR,
+        Math.trunc(m.min_area) || MIN_AREA_FLOOR,
+        Math.trunc(m.county_min ?? 0),
+      ),
+    );
+  return county.length ? Math.max(states, ...county) : 'never';
 }
 
 /**
@@ -234,6 +301,7 @@ async function countUnlessThin(
     .executeTakeFirst();
   const total = Number(counted?.n ?? 0);
   const threshold = total > 0 ? await placeThreshold(db, query, answers) : null;
+  if (threshold === 'never') return { withheld: await stateThreshold(db) };
   return threshold !== null && total < threshold ? { withheld: threshold } : { total };
 }
 

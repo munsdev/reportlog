@@ -155,6 +155,48 @@ const breakdown = async (url: string, slug: string) => {
   return { text: r.text, where: by[slug]?.by_question.where };
 };
 
+describe('decision 82 · a place clicked on a map keeps the same thresholds', () => {
+  it('a place at the threshold or over lists its reports, and says how many', async () => {
+    const r = await get('/api/board/reports?place=IT');
+    expect(r.body.total).toBe(k);
+    expect(r.body.reports).toHaveLength(k);
+  });
+
+  it('a place under the threshold sends no reports and no count', async () => {
+    for (const area of ['DE', 'FR']) {
+      const r = await get(`/api/board/reports?place=${area}`);
+      expect(r.body).toMatchObject({ published: true, withheld: true, threshold: k });
+      // The other logbook's German report is not counted: no map reads its question.
+      expect(r.text).not.toMatch(/"total"|"reports"|RL-/);
+    }
+  });
+
+  it('narrowing further inside a large place cannot single out a thin one', async () => {
+    const r = await get('/api/board/reports?place=IT&q=number%200');
+    expect(r.body.withheld).toBe(true);
+    expect(r.text).not.toMatch(/"total"/);
+  });
+
+  it('a county is withheld while no map shows counties, whatever it holds', async () => {
+    // Nothing filed there: nothing to withhold, as the map says "none counted".
+    const none = await get('/api/board/reports?place=US-AZ-04013');
+    expect(none.body).toMatchObject({ published: true, total: 0, reports: [] });
+  });
+
+  it('only a place a map can name is read; anything else is no filter at all', async () => {
+    const all = await get('/api/board/reports');
+    for (const junk of ['<script>', 'us-az', 'IT%27%20OR%201%3D1', 'US-AZ-123']) {
+      const r = await get(`/api/board/reports?place=${junk}`);
+      expect(r.body.total, junk).toBe(all.body.total);
+    }
+  });
+
+  it('the spreadsheet withholds the same rows', async () => {
+    const thin = await h.app.inject({ method: 'GET', url: '/api/board/reports.csv?place=DE' });
+    expect(thin.body.trim().split('\n')).toHaveLength(1);
+  });
+});
+
 describe('the numbers', () => {
   for (const url of ['/api/board/stats', '/api/v1/stats']) {
     it(`${url}: a thin area is named without its count, and two thin areas only as a sum`, async () => {
