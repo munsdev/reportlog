@@ -9,6 +9,7 @@ import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod
 import { pressRoutes } from './board/press.ts';
 import { journalistRoutes } from './journalists/routes.ts';
 import { boardRoutes } from './board/routes.ts';
+import { journalistReportRoutes } from './board/journalistReports.ts';
 import type { Config } from './config.ts';
 import type { Database } from './db/database.ts';
 import { stderrMailer } from './email/mailer.ts';
@@ -276,6 +277,11 @@ export async function buildApp({
     linkKeys,
   });
   boardRoutes(app, { db, siteOrigin, ...(statsTtlMs === undefined ? {} : { statsTtlMs }) });
+  journalistReportRoutes(app, {
+    db,
+    contactKey: config.CONTACT_KEY,
+    previousContactKey: config.CONTACT_KEY_PREVIOUS,
+  });
   pressRoutes(app, { dir: config.PRESS_DIR });
   anchorRoutes(app, {
     db,

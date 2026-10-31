@@ -25,10 +25,7 @@ import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { applyMine, changeMine, mine } from './account.ts';
-import { boardQuery } from '../board/routes.ts';
-import { boardPage } from '../board/board.ts';
-import { json } from '../moderation/json.ts';
-import { deskExtras, deskGuard, deskLinkPage, deskSourcePage, deskTextPage } from './desk.ts';
+import { deskGuard, deskLinkPage, deskSourcePage, deskTextPage } from './desk.ts';
 import {
   applyConfirm,
   deskStates,
@@ -244,28 +241,6 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
         await filterOf(query, email),
       );
     });
-    // The journalists' reports list (decision 81): the board's own list, with
-    // "My states" from the account and each report's Sources and note.
-    route(desk, C.deskReports, async ({ query, request }) => {
-      const user = requireUser(request);
-      const states =
-        query.mine === 'true' ? await deskStates(deps.db, needRing(), user.email) : undefined;
-      const page = await boardPage(deps.db, {
-        ...boardQuery(query),
-        ...(states ? { states } : {}),
-      });
-      if (!page.published || 'withheld' in page) return json(page);
-      const extras = await deskExtras(
-        deps.db,
-        user.email,
-        page.reports.map((r) => r.public_ref),
-      );
-      return json({ ...page, extras });
-    });
-    route(desk, C.deskReportExtras, async ({ params, request }) => ({
-      extras:
-        (await deskExtras(deps.db, requireUser(request).email, [params.ref]))[params.ref] ?? null,
-    }));
     // Their own alerts only: found by the signed-in account's address.
     route(desk, C.deskAlertSettings, ({ request }) =>
       deskSettings(deps.db, needRing(), requireUser(request).email),
