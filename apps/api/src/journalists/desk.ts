@@ -557,8 +557,28 @@ export async function deskSourcePage(
     .limit(DESK_PAGE_SIZE)
     .execute();
   const pages = pagesOf(Number(n));
-  if (!rows.length) return { page, pages, reports: [] };
+  return { page, pages, reports: await describeNotes(db, reader, rows) };
+}
 
+interface NoteRow {
+  note_id: number;
+  state: string;
+  thread_id: string;
+  current_report_id: number | null;
+  public_ref: string;
+}
+
+/**
+ * The Sources and the published note for these notes, each shown report
+ * written to the access log first (J12). Neither query selects an author's
+ * or a moderator's address.
+ */
+async function describeNotes(
+  db: Kysely<DB>,
+  reader: string,
+  rows: readonly NoteRow[],
+): Promise<DeskReport[]> {
+  if (!rows.length) return [];
   await db
     .insertInto('contact_access_log')
     .values(
@@ -589,23 +609,57 @@ export async function deskSourcePage(
     .orderBy('id')
     .execute();
   const body = new Map(bodies.map((b) => [b.note_id, b.body]));
-  return {
-    page,
-    pages,
-    reports: rows.map((r) => ({
-      reference: r.public_ref,
-      // A note under review or withdrawn is not shown, as on the board.
-      note: r.state === 'published' ? (body.get(r.note_id) ?? null) : null,
-      sources: sources
-        .filter((s) => s.note_id === r.note_id)
-        .map((s) => ({
-          title: s.title,
-          publisher: s.publisher,
-          published_on: s.published_on ? toDay(s.published_on) : null,
-          url: s.url,
-        })),
-    })),
-  };
+  return rows.map((r) => ({
+    reference: r.public_ref,
+    // A note under review or withdrawn is not shown, as on the board.
+    note: r.state === 'published' ? (body.get(r.note_id) ?? null) : null,
+    sources: sources
+      .filter((s) => s.note_id === r.note_id)
+      .map((s) => ({
+        title: s.title,
+        publisher: s.publisher,
+        published_on: s.published_on ? toDay(s.published_on) : null,
+        url: s.url,
+      })),
+  }));
+}
+
+/**
+ * What the journalist's reports list adds to published reports (decision 81):
+ * the moderators' Sources and note, for the references on the page. A report
+ * with nothing to add has no entry. Only published reports are looked up, and
+ * each one shown is in the access log, as on the Sources list it replaces.
+ */
+export async function deskExtras(
+  db: Kysely<DB>,
+  reader: string,
+  refs: readonly string[],
+): Promise<Record<string, DeskReport>> {
+  if (!refs.length) return {};
+  const rows = await db
+    .selectFrom('editorial_notes as n')
+    .innerJoin('report_heads as h', 'h.thread_id', 'n.thread_id')
+    .innerJoin('reports as r', 'r.id', 'h.current_report_id')
+    .select(['n.id as note_id', 'n.state', 'n.thread_id', 'h.current_report_id', 'r.public_ref'])
+    .where('h.current_report_id', 'in', publishedReportIds(db))
+    .where('r.public_ref', 'in', refs)
+    .where((eb) =>
+      eb.or([
+        eb.exists(
+          eb
+            .selectFrom('editorial_note_links as x')
+            .select('x.id')
+            .whereRef('x.note_id', '=', 'n.id')
+            .where('x.removed_at', 'is', null),
+        ),
+        eb('n.state', '=', 'published'),
+      ]),
+    )
+    .execute();
+  const shown = await describeNotes(db, reader, rows);
+  return Object.fromEntries(
+    shown.filter((s) => s.note !== null || s.sources.length > 0).map((s) => [s.reference, s]),
+  );
 }
 
 const toDay = (d: Date | string) =>

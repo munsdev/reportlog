@@ -23,12 +23,8 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'My reports', href: '/mine' },
   { label: 'Email updates', href: '/notifications' },
   { label: 'Your account', href: '/account' },
-  { label: 'Checked links', href: '/desk' },
-  // Review has a "Written accounts" too: same words, a different page and a
-  // different reader, so anything that looks one up must go by address.
-  { label: 'Written accounts', href: '/desk/texts' },
-  { label: 'Sources', href: '/desk/sources' },
-  { label: 'Your alerts', href: '/desk/alerts' },
+  // The journalists' own page (decision 81): their alerts and where their request stands.
+  { label: 'Alerts and access', href: '/journalists/alerts' },
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { label: 'Members', href: '/intake/members' },
@@ -79,13 +75,13 @@ export type MenuRole =
 
 const pick = (...labels: string[]) => labels;
 const YOU = ['Your dashboard', 'My reports', 'Email updates', 'Your account'];
-const DESK = ['Checked links', 'Written accounts', 'Sources', 'Your alerts'];
+const DESK = ['Alerts and access'];
 /** Everything but the journalist desk and the organization's pages. */
 const STAFF_ONLY = (...gone: string[]) => {
   const not = new Set(
-    ALL_PAGES.filter(
-      (p) => p.href === '/desk' || p.href.startsWith('/desk/') || p.href.startsWith('/intake'),
-    ).map((p) => p.href),
+    ALL_PAGES.filter((p) => p.href === '/journalists/alerts' || p.href.startsWith('/intake')).map(
+      (p) => p.href,
+    ),
   );
   return ALL_PAGES.filter((p) => !not.has(p.href) && !gone.includes(p.label)).map((p) => p.label);
 };
@@ -121,8 +117,8 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
 
 /**
  * The page a label names in this role's sidebar. Two labels are shared (see
- * "Written accounts" above): the journalist's is the desk page, everyone
- * else's the one in a staff area.
+ * "Written accounts" in Review): the journalist's is the page outside the
+ * staff areas, everyone else's the one in a staff area.
  */
 export const pageByLabel = (label: string, role: MenuRole): MenuPage => {
   const pages = ALL_PAGES.filter((p) => p.label === label);

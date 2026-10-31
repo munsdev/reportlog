@@ -60,7 +60,7 @@ export const FROZEN_INLINE_STYLES: Readonly<Record<string, number>> = {
   'features/intake/IntakeHome.tsx': 1,
   'features/journalists/AccessPages.tsx': 2,
   'features/journalists/AlertSettings.tsx': 3,
-  'features/journalists/Desk.tsx': 2,
+  'features/journalists/Desk.tsx': 1,
   'features/journalists/Landing.tsx': 1,
   'features/journalists/SignupPage.tsx': 2,
   'features/journalists/StatesPicker.tsx': 1,

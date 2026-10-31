@@ -23,7 +23,7 @@ import type { LoadedList } from '../../src/lists/rows.ts';
 import { addLink, writeNote } from '../../src/moderation/notes.ts';
 import { setPermission } from '../../src/permissions/log.ts';
 import { checkText, redactText } from '../../src/moderation/texts/items.ts';
-import { fileReport, launchedLogbook, uniqueSlug } from './helpers.ts';
+import { QUESTIONS, fileReport, launchedLogbook, uniqueSlug } from './helpers.ts';
 import { HELD_QUESTIONS, fileHeld, textRef } from './written-helpers.ts';
 import { address, as, roleOf, seat, signIn } from './identity-helpers.ts';
 import type { Harness } from './identity-helpers.ts';
@@ -577,6 +577,71 @@ describe('J9 to J12 · the desk', () => {
     // mine=false is the whole list.
     const all = await call({ method: 'GET', url: '/api/desk/links?mine=false' });
     expect(all.json<{ links: unknown[] }>().links).toHaveLength(1);
+  });
+
+  it('decision 81 · the reports list is the board’s, with Sources and notes, search, and My states', async () => {
+    const list = async (qs = '') =>
+      (await call({ method: 'GET', url: `/api/desk/reports${qs}` })).json<{
+        published: true;
+        reports: { public_ref: string }[];
+        total: number;
+        extras: Record<string, { note: string | null; sources: { url: string }[] }>;
+      }>();
+    // The board's own list, plus the moderators' note and Sources on the report.
+    const all = await list();
+    expect(all.reports.map((r) => r.public_ref)).toContain(reference);
+    expect(all.extras[reference]).toMatchObject({ note: NOTE, sources: [{ url: SOURCE }] });
+    // Nothing unpublished: the second report's Sources never appear.
+    expect(JSON.stringify(all)).not.toContain(HIDDEN_SOURCE);
+    // The public board says none of it.
+    const board = await h.app.inject({ method: 'GET', url: '/api/board/reports' });
+    expect(board.body).not.toContain(SOURCE);
+    expect(board.body).not.toContain('extras');
+    // Search is the board's search.
+    expect((await list(`?q=${reference}`)).reports.map((r) => r.public_ref)).toEqual([reference]);
+    expect((await list('?q=nothing-like-this-at-all')).reports).toEqual([]);
+    // My states: this report's logbook asks no place, so it falls out...
+    expect((await list('?mine=true')).reports).toEqual([]);
+    // ...and a report from a county in Arizona stays in. They chose Arizona.
+    const located = await launchedLogbook(h.db, [
+      ...QUESTIONS,
+      {
+        key: 'where',
+        kind: 'location',
+        label: 'Where',
+        settings: { scope: 'us', depth: 'county' },
+      },
+    ]);
+    const { row } = await fileReport(
+      h.db,
+      located,
+      { what: 'Something happened at the polls.', where: 'US-AZ-04013' },
+      {
+        questions: [
+          ...QUESTIONS,
+          {
+            key: 'where',
+            kind: 'location',
+            label: 'Where',
+            settings: { scope: 'us', depth: 'county' },
+          },
+        ],
+      },
+    );
+    await h.db
+      .insertInto('report_heads')
+      .values({ thread_id: row.thread_id, current_report_id: row.id, moderation_status: 'valid' })
+      .execute();
+    const mine = await list('?mine=true');
+    expect(mine.reports.map((r) => r.public_ref)).toEqual([row.public_ref]);
+    // Their extras are looked up by reference, for the report page.
+    const one = await call({ method: 'GET', url: `/api/desk/reports/${reference}` });
+    expect(one.json()).toMatchObject({ extras: { note: NOTE } });
+    const none = await call({ method: 'GET', url: `/api/desk/reports/${row.public_ref}` });
+    expect(none.json()).toEqual({ extras: null });
+    // Everyone else is refused, and so is a stranger.
+    expect((await h.app.inject({ method: 'GET', url: '/api/desk/reports' })).statusCode).toBe(401);
+    expect((await admin.call({ method: 'GET', url: '/api/desk/reports' })).statusCode).toBe(403);
   });
 
   it('J12 · every link and every report shown is in the access log, under the journalist', async () => {

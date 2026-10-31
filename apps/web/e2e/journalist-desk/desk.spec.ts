@@ -167,7 +167,10 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   ).toBeVisible();
   await noViolations(reader);
   await reader.getByRole('button', { name: 'I have read this and I accept it' }).click();
-  await expect(reader.getByRole('heading', { level: 1, name: 'Checked links' })).toBeVisible();
+  // Decision 81: no desk to go to. They land on the board, and the Links tab is theirs.
+  await expect(reader).toHaveURL(/\/board$/);
+  await reader.getByRole('navigation', { name: 'Report views' }).getByRole('link', { name: 'Links' }).click();
+  await expect(reader.getByText(/Links from the tip line and from reports/)).toBeVisible();
   const entry = reader.locator('[data-desk-link]').filter({ hasText: CHECKED });
   await expect(entry).toBeVisible();
   await expect(entry.getByText(COMMENT)).toBeVisible();
@@ -176,25 +179,18 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await expect(reader.locator(`a[href*="checked-${run}"]`)).toHaveCount(0);
   await noViolations(reader);
 
-  // Decision 47: their own alerts, changed from the desk with no email. Off keeps the desk.
-  await reader
-    .getByRole('navigation')
-    .getByRole('link', { name: 'Your alerts', exact: true })
-    .first()
-    .click();
-  await expect(reader.getByRole('heading', { level: 1, name: 'Your alerts' })).toBeVisible();
-  const alerts = reader.getByRole('region', { name: 'Your alerts' });
-  await expect(alerts.getByRole('radio', { name: 'Send me alerts' })).toBeChecked();
-  await alerts.getByRole('radio', { name: /Turn alerts off for now/ }).click();
-  await alerts.getByRole('checkbox', { name: 'Nevada' }).click();
-  await alerts.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(alerts.getByText('Your alert settings are saved.')).toBeVisible();
+  // Decision 47: their own alerts, changed from their account page with no email. Off keeps access.
+  await reader.goto('/journalists/alerts');
+  await expect(reader.getByRole('radio', { name: 'Send me alerts' })).toBeChecked();
+  await reader.getByRole('radio', { name: /Turn alerts off for now/ }).click();
+  await reader.getByRole('checkbox', { name: 'Nevada' }).click();
+  await reader.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(reader.getByText('Your alert settings are saved.')).toBeVisible();
   expect(node('src/dev/journalists-state.ts', 'listed', JOURNALIST)).toBe('paused');
   await reader.reload();
-  await expect(reader.getByRole('heading', { level: 1, name: 'Your alerts' })).toBeVisible();
-  await expect(alerts.getByRole('radio', { name: /Turn alerts off for now/ })).toBeChecked();
-  await expect(alerts.getByRole('checkbox', { name: 'Nevada' })).toBeChecked();
-  await reader.goto('/desk');
+  await expect(reader.getByRole('radio', { name: /Turn alerts off for now/ })).toBeChecked();
+  await expect(reader.getByRole('checkbox', { name: 'Nevada' })).toBeChecked();
+  await reader.goto('/board/links');
   await expect(entry).toBeVisible();
   // Decision 72: a search applies when asked for, and finds the link by its words.
   await reader.getByRole('searchbox', { name: 'Search' }).fill('no-such-words-here');
@@ -213,7 +209,7 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   ).toBeVisible();
   await reader.reload();
   // Decision 80: no dead end. The desk says the access ended and offers a new request.
-  await expect(reader.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
+  await expect(reader.getByRole('heading', { level: 1, name: 'Journalist access' })).toBeVisible();
   await expect(reader.getByText('Your access to the desk has ended.')).toBeVisible();
   await expect(reader.getByRole('button', { name: 'Apply for desk access' })).toBeVisible();
   await expect(reader.getByText(CHECKED)).toHaveCount(0);

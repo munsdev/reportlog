@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { DeskAlertsPage } from '../../features/journalists/Desk.tsx';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 
+// Gone with the desk (decision 81); an old bookmark or email still lands somewhere that works.
 export const Route = createFileRoute('/desk/alerts')({
-  component: DeskAlertsPage,
+  beforeLoad: () => {
+    throw redirect({ to: '/journalists/alerts', replace: true });
+  },
 });

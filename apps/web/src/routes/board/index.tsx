@@ -12,6 +12,7 @@ export const Route = createFileRoute('/board/')({
     if (q) out.q = q;
     const logbook = text(s.logbook, 63);
     if (logbook) out.logbook = logbook;
+    if (s.mine === true || s.mine === 'true') out.mine = true;
     const page = Number(s.page);
     if (Number.isInteger(page) && page > 1) out.page = page;
     if (s.f && typeof s.f === 'object') {

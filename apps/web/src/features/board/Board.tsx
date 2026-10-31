@@ -15,7 +15,7 @@
  *
  * SORT is newest first, fixed, as the API serves it: there is no sort button.
  */
-import type { BoardLogbook, FormQuestion, PublicReport } from '@reportlog/contracts';
+import type { BoardLogbook, DeskReport, FormQuestion, PublicReport } from '@reportlog/contracts';
 import { BOARD_CSV_PATH } from '@reportlog/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -29,7 +29,10 @@ import { MapSlot } from '../maps/MapSlot.tsx';
 import { useMainAction } from '../nav/Menu.tsx';
 import { CountsOnlyPanel } from './Activity.tsx';
 import { BoardFrame } from './BoardFrame.tsx';
-import { boardMetaQuery, boardReportsQuery } from './queries.ts';
+import { useJournalistAccess } from '../journalists/access.ts';
+import { myJournalistQuery } from '../journalists/Account.tsx';
+import { JournalistExtras } from './JournalistExtras.tsx';
+import { boardMetaQuery, boardReportsQuery, deskReportsQuery } from './queries.ts';
 import type { BoardSearch } from './queries.ts';
 import { useReportParts } from './ReportAnswers.tsx';
 
@@ -43,6 +46,7 @@ function searchWith(search: BoardSearch, change: Partial<BoardSearch>): BoardSea
   if (!next.q) delete next.q;
   if (!next.logbook) delete next.logbook;
   if (!next.f || !Object.keys(next.f).length) delete next.f;
+  if (!next.mine) delete next.mine;
   return next;
 }
 
@@ -57,6 +61,7 @@ function csvHref(search: BoardSearch): string {
 export function BoardPage({ search }: { search: BoardSearch }) {
   const meta = useQuery(boardMetaQuery);
   const reports = useQuery(boardReportsQuery(search));
+  const access = useJournalistAccess();
   const chosen = meta.data?.published
     ? meta.data.logbooks.find((l) => l.slug === search.logbook)
     : undefined;
@@ -74,6 +79,15 @@ export function BoardPage({ search }: { search: BoardSearch }) {
   return (
     <BoardFrame title="Reports" list>
       <CopyText slot="board_intro" />
+      {access === 'agreement' ? (
+        <Note>
+          <span>
+            <b>You have journalist access.</b> Read and accept the journalist agreement to see the
+            moderators’ Sources on reports and to search by your states.{' '}
+            <Link to="/desk">Read the agreement</Link>
+          </span>
+        </Note>
+      ) : null}
       {meta.isPending ? <p role="status">Reading the reports…</p> : null}
       {meta.isError ? (
         <Note warn>
@@ -91,12 +105,13 @@ export function BoardPage({ search }: { search: BoardSearch }) {
             key={JSON.stringify(search)}
             logbooks={meta.data.logbooks}
             search={search}
+            journalist={access === 'yes'}
           />
           {chosen?.counts_only ? (
             // Counted, never listed: its counts in place of the list.
             <CountsOnlyPanel slug={chosen.slug} title={chosen.title} />
           ) : (
-            <Results search={search} logbooks={meta.data.logbooks} />
+            <Results search={search} logbooks={meta.data.logbooks} journalist={access === 'yes'} />
           )}
           {csv ? (
             <div className="btn-row" style={{ paddingBlock: 12 }}>
@@ -156,6 +171,9 @@ function activeFilters(
       without: searchWith(search, { logbook: undefined, f: undefined }),
     });
   }
+  if (search.mine) {
+    out.push({ key: 'mine', words: 'My states', without: searchWith(search, { mine: undefined }) });
+  }
   for (const [k, v] of Object.entries(search.f ?? {})) {
     const q = lb?.filters.find((x) => x.key === k);
     const label = optionsOf(q)?.find((o) => o.value === v)?.label ?? v;
@@ -175,8 +193,19 @@ function activeFilters(
  * question its maker allowed. A question of free kind (a date, a number) is
  * a small field that applies on Enter.
  */
-function Narrowing({ logbooks, search }: { logbooks: BoardLogbook[]; search: BoardSearch }) {
+function Narrowing({
+  logbooks,
+  search,
+  journalist,
+}: {
+  logbooks: BoardLogbook[];
+  search: BoardSearch;
+  journalist: boolean;
+}) {
   const navigate = useNavigate();
+  // "My states" is offered to a journalist who chose some for alerts (decision 72, 81).
+  const mine = useQuery({ ...myJournalistQuery, enabled: journalist });
+  const hasStates = journalist && (mine.data?.states.length ?? 0) > 0;
   const [q, setQ] = useState(search.q ?? '');
   const on = activeFilters(search, logbooks);
   const chosen = logbooks.find((l) => l.slug === search.logbook);
@@ -232,6 +261,18 @@ function Narrowing({ logbooks, search }: { logbooks: BoardLogbook[]; search: Boa
                 </option>
               ))}
             </select>
+          </label>
+        ) : null}
+        {hasStates ? (
+          <label className="select">
+            <input
+              type="checkbox"
+              checked={Boolean(search.mine)}
+              onChange={(e) => {
+                go(searchWith(search, { mine: e.target.checked || undefined }));
+              }}
+            />{' '}
+            My states
           </label>
         ) : null}
         {chosen?.filters.map((question) => (
@@ -363,10 +404,21 @@ function optionsOf(q: FormQuestion | undefined): { value: string; label: string 
 
 // ── the list ────────────────────────────────────────────────────────────
 
-function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLogbook[] }) {
+function Results({
+  search,
+  logbooks,
+  journalist,
+}: {
+  search: BoardSearch;
+  logbooks: BoardLogbook[];
+  journalist: boolean;
+}) {
   const navigate = useNavigate();
   const main = useMainAction();
-  const query = useQuery(boardReportsQuery(search));
+  // A journalist's list is the same list, read where the Sources can be added.
+  const pub = useQuery({ ...boardReportsQuery(search), enabled: !journalist });
+  const desk = useQuery({ ...deskReportsQuery(search), enabled: journalist });
+  const query = journalist ? desk : pub;
   if (query.isPending) return <p role="status">Reading the reports…</p>;
   if (query.isError) {
     return (
@@ -387,6 +439,8 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
       </Note>
     );
   const { reports, total, page, page_size: size } = query.data;
+  // Only the journalists' list carries `extras`; the public one never does.
+  const extras = (query.data as { extras?: Record<string, DeskReport> }).extras ?? {};
   const filters = activeFilters(search, logbooks).length;
   const narrowed = Boolean(search.q) || filters > 0;
   const pages = Math.max(1, Math.ceil(total / size));
@@ -439,11 +493,10 @@ function Results({ search, logbooks }: { search: BoardSearch; logbooks: BoardLog
       ) : (
         <div className="rlist">
           {reports.map((r) => (
-            <ReportCard
-              key={r.public_ref}
-              r={r}
-              logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title}
-            />
+            <div key={r.public_ref} className="grid gap-2">
+              <ReportCard r={r} logbookTitle={titles.get(r.logbook_slug) ?? r.logbook_title} />
+              <JournalistExtras extras={extras[r.public_ref]} />
+            </div>
           ))}
         </div>
       )}

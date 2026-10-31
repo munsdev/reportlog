@@ -40,7 +40,7 @@ export interface BoardRouteDeps {
 const noReport = () => notFound('There is no published report with that reference.');
 
 /** The board's query, with `a.<key>` entries split out as answer filters. */
-function boardQuery(raw: Record<string, unknown>): BoardQuery {
+export function boardQuery(raw: Record<string, unknown>): BoardQuery {
   const answers: Record<string, string> = {};
   for (const [k, v] of Object.entries(raw)) {
     if (k.startsWith('a.') && typeof v === 'string') answers[k.slice(2)] = v;

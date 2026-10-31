@@ -87,7 +87,7 @@ export function DeskCard() {
   const s = state.data;
   return (
     <section className="panel" aria-labelledby="desk-card">
-      <h2 id="desk-card">Journalist desk</h2>
+      <h2 id="desk-card">Journalist access</h2>
       <DeskBody s={s} />
     </section>
   );
@@ -114,10 +114,13 @@ function DeskBody({ s }: { s: MyJournalist }) {
     case 'approved':
       return (
         <>
-          <p role="status">You have access to the journalist desk.</p>
+          <p role="status">
+            You have journalist access. The reports list shows the moderators’ Sources, and you can
+            search it by your states.
+          </p>
           <div className="btn-row">
-            <Link className="btn go" to="/desk">
-              Open the desk
+            <Link className="btn go" to="/board">
+              Open the reports list
             </Link>
           </div>
         </>

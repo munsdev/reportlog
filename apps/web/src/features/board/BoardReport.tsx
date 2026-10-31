@@ -17,7 +17,9 @@ import { Card, TwoCol } from '../../mockup/TwoCol.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { usePageTitle } from '../../mockup/usePageTitle.ts';
 import { PublishedFiles } from '../files/PublishedFiles.tsx';
-import { boardReportQuery } from './queries.ts';
+import { useJournalistAccess } from '../journalists/access.ts';
+import { JournalistExtras } from './JournalistExtras.tsx';
+import { boardReportQuery, deskReportExtrasQuery } from './queries.ts';
 import { ReportAnswers, useReportParts } from './ReportAnswers.tsx';
 import { ReportTags } from './Board.tsx';
 
@@ -111,6 +113,9 @@ function PublishedReport({ r }: { r: PublicReport }) {
     timeStyle: 'short',
   });
   const citation = `Report ${r.public_ref}, filed ${filedAt}. ${address}`;
+  // A journalist's extras (decision 81): asked only of one who may see them.
+  const access = useJournalistAccess();
+  const extras = useQuery(deskReportExtrasQuery(r.public_ref, access === 'yes'));
   return (
     <Shell
       eyebrow={`Published report · ${where ?? r.logbook_title}`}
@@ -147,7 +152,10 @@ function PublishedReport({ r }: { r: PublicReport }) {
           </>
         }
       >
-        <ReportBody r={r} />
+        <div className="grid gap-[22px]">
+          <ReportBody r={r} />
+          <JournalistExtras extras={extras.data?.extras} />
+        </div>
       </TwoCol>
     </Shell>
   );

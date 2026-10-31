@@ -110,7 +110,7 @@ test('a signed-in account joins alerts and applies in one step; approval opens t
     applicant.getByRole('heading', { level: 1, name: 'Alerts and desk access' }),
   ).toBeVisible();
   await expect(applicant.getByLabel('Your email address')).toHaveCount(0);
-  await expect(applicant.getByRole('heading', { name: 'Journalist desk' })).toBeVisible();
+  await expect(applicant.getByRole('heading', { name: 'Journalist access' })).toBeVisible();
   await noViolations(applicant);
   await applicant.getByRole('checkbox', { name: 'Delaware' }).check();
   let before = countTo(APPLICANT);
@@ -156,7 +156,17 @@ test('a signed-in account joins alerts and applies in one step; approval opens t
   const link = linkIn(approval, '/desk');
   expect(link).not.toBe('');
   await applicant.goto(new URL(link).pathname);
-  await expect(applicant.getByRole('heading', { level: 1, name: 'Checked links' })).toBeVisible();
+  // Decision 81: they land on the board like anyone, with the journalists' extras on it.
+  await expect(applicant).toHaveURL(/\/board$/);
+  await expect(applicant.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
+  await expect(
+    applicant.getByRole('navigation', { name: 'Report views' }).getByRole('link', { name: 'Links' }),
+  ).toBeVisible();
+  // Search is the board's; "My states" is theirs, because they chose Delaware for alerts.
+  await expect(applicant.getByRole('searchbox', { name: 'Search reports' })).toBeVisible();
+  await applicant.getByRole('checkbox', { name: 'My states' }).check();
+  await expect(applicant).toHaveURL(/mine=true/);
+  await expect(applicant.getByRole('button', { name: 'Remove the filter My states' })).toBeVisible();
   await expect(
     applicant.getByRole('heading', { name: 'Read and accept the agreement' }),
   ).toHaveCount(0);
@@ -165,7 +175,7 @@ test('a signed-in account joins alerts and applies in one step; approval opens t
   const turned = await (await signedIn(browser, TURNED_DOWN)).newPage();
   outside.push(...outsideRequests(turned));
   await turned.goto('/desk');
-  await expect(turned.getByRole('heading', { level: 1, name: 'Journalist desk' })).toBeVisible();
+  await expect(turned.getByRole('heading', { level: 1, name: 'Journalist access' })).toBeVisible();
   await apply(turned, 'Sam Turned-down');
   await expect(turned.getByText(/Your request is pending since/)).toBeVisible();
   await owner.reload();

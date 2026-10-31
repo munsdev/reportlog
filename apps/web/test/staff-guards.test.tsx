@@ -81,10 +81,8 @@ const OPEN_IN_STAFF = {
 const STAFF_ELSEWHERE = [
   '/feedback/',
   '/feedback/testers',
+  // The journalists' door (decision 81): the role and the agreement, then the board.
   '/desk/',
-  '/desk/texts',
-  '/desk/sources',
-  '/desk/alerts',
 ] as const;
 
 /** Every other page: for anybody, or for any signed-in person (not staff). */
@@ -107,6 +105,13 @@ const OPEN = [
   // Plan E (PE3): arrivals, declines and the switch log, public.
   '/board/activity',
   '/board/press',
+  // Journalists' tabs (decision 81): they send anybody else to the door above.
+  '/board/links',
+  '/board/accounts',
+  // Gone with the desk: each only sends an old address on.
+  '/desk/texts',
+  '/desk/sources',
+  '/desk/alerts',
   '/board/',
   '/docs/checking',
   '/docs/first-logbook',
@@ -281,7 +286,7 @@ describe('the staff screens in the route tree', () => {
       open(address(path));
       // The desk (decision 80) offers an account without the role a way to ask, not a refusal.
       await refusedBehindADoor(
-        path.startsWith('/desk') ? 'Journalist desk' : 'Not for this account',
+        path.startsWith('/desk') ? 'Journalist access' : 'Not for this account',
       );
     });
   });

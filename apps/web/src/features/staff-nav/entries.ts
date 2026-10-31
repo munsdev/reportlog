@@ -225,14 +225,9 @@ export const STAFF_GROUPS: readonly StaffGroup[] = [
   },
   {
     id: 'desk',
-    label: 'Journalist desk',
-    // Account is the "You" group's own entry, so it is not named twice here.
-    pages: [
-      { to: '/desk', label: 'Checked links', for: ['journalist'] },
-      { to: '/desk/texts', label: 'Written accounts', for: ['journalist'] },
-      { to: '/desk/sources', label: 'Sources', for: ['journalist'] },
-      { to: '/desk/alerts', label: 'Your alerts', for: ['journalist'] },
-    ],
+    label: 'For journalists',
+    // Not a desk (decision 81): the board, with more on it, and their alerts.
+    pages: [{ to: '/journalists/alerts', label: 'Alerts and access', for: ['journalist'] }],
   },
   {
     id: 'organization',

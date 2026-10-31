@@ -133,6 +133,12 @@ export interface BoardQuery {
   page?: number | undefined;
   /** Question key → answer, only for questions an operator marked as filters. */
   answers?: Record<string, string> | undefined;
+  /**
+   * Place codes (`US-AZ`) the report must be in. NOT a public filter: only the
+   * journalist reports list sets it, from the signed-in journalist's own
+   * alert states (decision 72, 81), never from a request.
+   */
+  states?: readonly string[] | undefined;
 }
 
 const refuse = (message: string) => new HttpError(400, 'invalid_filter', message);
@@ -155,6 +161,22 @@ async function answerFilters(db: Kysely<DB>, query: BoardQuery) {
   return entries;
 }
 
+/**
+ * In one of these states, by any location question the report's logbook asks
+ * (a county rolls up to its state; a bare FIPS has no state of its own, so it
+ * is left out). The same rule as the alert job's and the desk's.
+ */
+function inStates(states: readonly string[]): RawBuilder<boolean> {
+  return sql<boolean>`EXISTS (
+    SELECT 1 FROM logbook_fields f
+    WHERE f.logbook_id = r.logbook_id AND f.kind = 'location'
+      AND (CASE f.settings ->> 'code'
+        WHEN 'postal' THEN 'US-' || (r.answers ->> f.key)
+        WHEN 'fips' THEN NULL
+        ELSE regexp_replace(r.answers ->> f.key, '-[0-9]{5}$', '') END) = ANY(${[...states]}::text[])
+  )`;
+}
+
 /** Every narrowing the board allows, as one condition. */
 function narrowing(query: BoardQuery, answers: [string, string][]): RawBuilder<boolean> {
   const parts: RawBuilder<boolean>[] = [sql<boolean>`true`];
@@ -162,6 +184,7 @@ function narrowing(query: BoardQuery, answers: [string, string][]): RawBuilder<b
   if (search) parts.push(searchMatches(search));
   if (query.logbook) parts.push(sql<boolean>`l.slug = ${query.logbook}`);
   for (const [key, value] of answers) parts.push(answerMatches(key, value));
+  if (query.states) parts.push(inStates(query.states));
   return sql<boolean>`(${sql.join(parts, sql` AND `)})`;
 }
 
@@ -180,6 +203,13 @@ async function placeThreshold(
   query: BoardQuery,
   answers: [string, string][],
 ): Promise<number | null> {
+  // NARROWED BY STATE IS NARROWED BY PLACE. A journalist's "My states" must not
+  // hand over the count a heat map withholds for a thin area, so the highest
+  // threshold any map keeps applies to it, whichever logbook it falls in.
+  if (query.states) {
+    const thresholds = [...(await placeGuards(db)).values()].map((g) => g.threshold);
+    return thresholds.length ? Math.max(...thresholds) : null;
+  }
   if (!answers.length || !query.logbook) return null;
   const lb = await logbookBySlug(db, query.logbook);
   if (!lb) return null;

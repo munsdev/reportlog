@@ -8,6 +8,7 @@
  * not public; only the owner approving a request does.
  */
 import { z } from 'zod';
+import { BoardQuery, PublicReport, PublicationOff } from './board.ts';
 import { defineRoute } from './route.ts';
 
 /** What a request for desk access says, apart from the outlet it is made from. */
@@ -456,4 +457,48 @@ export const deskTexts = defineRoute({
     'Written accounts a moderator checked and the reporter allows journalists to read, a page at a time. Vetted journalists only.',
   query: PageQuery,
   response: z.object({ ...Page, texts: z.array(DeskText) }),
+});
+
+// ── The journalists' reports list (decision 81) ──────────────────────────
+//
+// The board's list with more on it, for a journalist: the same query (words,
+// logbook, the operator's filters, page) plus "My states", and each report's
+// Sources and note beside it. Not a second list: the same function reads it.
+
+export const DeskReportsQuery = BoardQuery.and(
+  z.object({ mine: z.enum(['true', 'false']).optional() }),
+);
+
+export const deskReports = defineRoute({
+  method: 'GET',
+  path: '/api/desk/reports',
+  summary:
+    'Published reports as the board lists them, with the moderators’ Sources and notes, and the journalist’s own “My states”. Vetted journalists only.',
+  query: DeskReportsQuery,
+  response: z.union([
+    z.object({
+      published: z.literal(true),
+      reports: z.array(PublicReport),
+      total: z.number().int(),
+      page: z.number().int(),
+      page_size: z.number().int(),
+      /** By public reference; a report with nothing to add has no entry. */
+      extras: z.record(z.string(), DeskReport),
+    }),
+    z.object({
+      published: z.literal(true),
+      withheld: z.literal(true),
+      threshold: z.number().int(),
+      reason: z.string(),
+    }),
+    PublicationOff,
+  ]),
+});
+
+export const deskReportExtras = defineRoute({
+  method: 'GET',
+  path: '/api/desk/reports/:ref',
+  summary: 'The moderators’ Sources and note on one published report. Vetted journalists only.',
+  params: z.object({ ref: z.string().max(40) }),
+  response: z.object({ extras: DeskReport.nullable() }),
 });

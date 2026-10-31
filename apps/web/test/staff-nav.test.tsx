@@ -121,10 +121,10 @@ describe('who sees which section and page (menu.ts)', () => {
     });
   });
 
-  it('a journalist sees the desk and no staff area', () => {
+  it('a journalist sees their alerts and access, and no staff area', () => {
     expect(shape(as('journalist'))).toEqual({
       You: YOU,
-      'Journalist desk': ['Checked links', 'Written accounts', 'Sources', 'Your alerts'],
+      'For journalists': ['Alerts and access'],
     });
   });
 

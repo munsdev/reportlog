@@ -15,10 +15,18 @@ import { Link, useRouterState } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Band, MockPage } from '../../mockup/Band.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
+import { useJournalistAccess } from '../journalists/access.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
 import { pressQuery } from './queries.ts';
 
-type BoardPath = '/board' | '/board/numbers' | '/board/maps' | '/board/activity' | '/board/press';
+type BoardPath =
+  | '/board'
+  | '/board/numbers'
+  | '/board/maps'
+  | '/board/activity'
+  | '/board/press'
+  | '/board/links'
+  | '/board/accounts';
 
 const TABS: readonly { to: BoardPath; label: string }[] = [
   { to: '/board', label: 'List' },
@@ -26,6 +34,9 @@ const TABS: readonly { to: BoardPath; label: string }[] = [
   { to: '/board/numbers', label: 'Numbers' },
   { to: '/board/activity', label: 'Activity' },
   { to: '/board/press', label: 'Press pack' },
+  // Journalists only (decision 81): the same layout, with these in it.
+  { to: '/board/links', label: 'Links' },
+  { to: '/board/accounts', label: 'Written accounts' },
 ];
 
 export function BoardTabs() {
@@ -36,8 +47,12 @@ export function BoardTabs() {
   // Nor a Press pack tab with nothing in the pack.
   const press = useQuery(pressQuery).data;
   const hasPress = press?.state === 'ready' && press.files.length > 0;
+  const journalist = useJournalistAccess() === 'yes';
   const tabs = TABS.filter(
-    (t) => (t.to !== '/board/maps' || hasMaps) && (t.to !== '/board/press' || hasPress),
+    (t) =>
+      (t.to !== '/board/maps' || hasMaps) &&
+      (t.to !== '/board/press' || hasPress) &&
+      ((t.to !== '/board/links' && t.to !== '/board/accounts') || journalist),
   );
   return (
     <nav className="tabs" aria-label="Report views">

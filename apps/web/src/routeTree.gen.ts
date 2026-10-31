@@ -35,7 +35,9 @@ import { Route as staffUpdatesRouteImport } from './routes/(staff)/updates'
 import { Route as staffWhoOpenedWhatRouteImport } from './routes/(staff)/who-opened-what'
 import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
+import { Route as BoardAccountsRouteImport } from './routes/board/accounts'
 import { Route as BoardActivityRouteImport } from './routes/board/activity'
+import { Route as BoardLinksRouteImport } from './routes/board/links'
 import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
 import { Route as BoardPressRouteImport } from './routes/board/press'
@@ -260,9 +262,19 @@ const BoardRefRoute = BoardRefRouteImport.update({
   path: '/board/$ref',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoardAccountsRoute = BoardAccountsRouteImport.update({
+  id: '/board/accounts',
+  path: '/board/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardActivityRoute = BoardActivityRouteImport.update({
   id: '/board/activity',
   path: '/board/activity',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BoardLinksRoute = BoardLinksRouteImport.update({
+  id: '/board/links',
+  path: '/board/links',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BoardMapsRoute = BoardMapsRouteImport.update({
@@ -765,7 +777,9 @@ export interface FileRoutesByFullPath {
   '/updates': typeof staffUpdatesRoute
   '/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -881,7 +895,9 @@ export interface FileRoutesByTo {
   '/updates': typeof staffUpdatesRoute
   '/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -1004,7 +1020,9 @@ export interface FileRoutesById {
   '/(staff)/updates': typeof staffUpdatesRoute
   '/(staff)/who-opened-what': typeof staffWhoOpenedWhatRoute
   '/board/$ref': typeof BoardRefRoute
+  '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
   '/board/press': typeof BoardPressRoute
@@ -1128,7 +1146,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/who-opened-what'
     | '/board/$ref'
+    | '/board/accounts'
     | '/board/activity'
+    | '/board/links'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -1244,7 +1264,9 @@ export interface FileRouteTypes {
     | '/updates'
     | '/who-opened-what'
     | '/board/$ref'
+    | '/board/accounts'
     | '/board/activity'
+    | '/board/links'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -1366,7 +1388,9 @@ export interface FileRouteTypes {
     | '/(staff)/updates'
     | '/(staff)/who-opened-what'
     | '/board/$ref'
+    | '/board/accounts'
     | '/board/activity'
+    | '/board/links'
     | '/board/maps'
     | '/board/numbers'
     | '/board/press'
@@ -1489,7 +1513,9 @@ export interface RootRouteChildren {
   staffUpdatesRoute: typeof staffUpdatesRoute
   staffWhoOpenedWhatRoute: typeof staffWhoOpenedWhatRoute
   BoardRefRoute: typeof BoardRefRoute
+  BoardAccountsRoute: typeof BoardAccountsRoute
   BoardActivityRoute: typeof BoardActivityRoute
+  BoardLinksRoute: typeof BoardLinksRoute
   BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
   BoardPressRoute: typeof BoardPressRoute
@@ -1728,11 +1754,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardRefRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/board/accounts': {
+      id: '/board/accounts'
+      path: '/board/accounts'
+      fullPath: '/board/accounts'
+      preLoaderRoute: typeof BoardAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/board/activity': {
       id: '/board/activity'
       path: '/board/activity'
       fullPath: '/board/activity'
       preLoaderRoute: typeof BoardActivityRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/board/links': {
+      id: '/board/links'
+      path: '/board/links'
+      fullPath: '/board/links'
+      preLoaderRoute: typeof BoardLinksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/board/maps': {
@@ -2555,7 +2595,9 @@ const rootRouteChildren: RootRouteChildren = {
   staffUpdatesRoute: staffUpdatesRoute,
   staffWhoOpenedWhatRoute: staffWhoOpenedWhatRoute,
   BoardRefRoute: BoardRefRoute,
+  BoardAccountsRoute: BoardAccountsRoute,
   BoardActivityRoute: BoardActivityRoute,
+  BoardLinksRoute: BoardLinksRoute,
   BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
   BoardPressRoute: BoardPressRoute,

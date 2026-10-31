@@ -1,13 +1,13 @@
 /**
- * The journalist desk (J9 to J11): a panel of sections, as the moderator's is.
- * /desk is the checked links, /desk/sources the moderators' Sources links on
- * published reports, /desk/alerts the journalist's own alert settings
- * (decision 47). The sidebar's "Journalist desk" group (staff-nav/entries.ts)
- * reaches each, and Account is the account page every signed-in person has.
+ * What a journalist adds to the board (decision 81, J9 to J11). There is no
+ * desk to go to: /desk is a door (DeskDoor), the reports list carries the
+ * moderators' Sources and notes, and the board has two more tabs for the
+ * lists below, laid out like the reports: the checked links and the written
+ * accounts.
  *
  * For a vetted journalist who has accepted the journalist agreement (the
- * gate below, then the server's own guard on every call). Read-only, a page
- * at a time, with nothing to download. Each list has a search box and, for a
+ * gate, then the server's own guard on every call). Read-only, a page at a
+ * time, with nothing to download. Each list has a search box and, for a
  * journalist who chose alert states, a "My states" tick, and those are the
  * only filters (decision 72). They apply when the button is pressed, never
  * as the reader types, so the list does not change under them.
@@ -16,9 +16,9 @@
  * journalist copies it into a browser on purpose. Every page shown is in the
  * access log (J12).
  */
-import { DESK_PAGE_SIZE, deskLinks, deskSources, deskTexts } from '@reportlog/contracts';
+import { DESK_PAGE_SIZE, deskLinks, deskTexts } from '@reportlog/contracts';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, Navigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
@@ -45,9 +45,9 @@ function DeskApplication() {
   const siteName = plainSiteName(useSite().data);
   return (
     <StaffPage
-      eyebrow={`${siteName} · Journalist desk`}
-      title="Journalist desk"
-      lede="Vetted journalists read the links moderators have checked. Ask for access here."
+      eyebrow={`${siteName} · Journalist access`}
+      title="Journalist access"
+      lede="Vetted journalists see more on the reports list: the moderators’ Sources and notes, the checked links, and search by their states. Ask for access here."
     >
       <DeskCard />
     </StaffPage>
@@ -55,98 +55,17 @@ function DeskApplication() {
 }
 
 /**
- * What every section shares: the role, the agreement before anything is
- * shown, the page, and the notes that apply to the whole desk.
+ * /desk is only the door now (decision 81): the role, the agreement before
+ * anything is shown, and then the reports list, where a journalist's extras
+ * are. An account without the role finds where its request stands instead.
  */
-function DeskSection({
-  title,
-  lede,
-  warn = true,
-  notice,
-  footer = 'Every page you open here is recorded in the access log.',
-  children,
-}: {
-  title: string;
-  lede: string;
-  warn?: boolean;
-  /** A different "before you use it" note, for a page that is not about links. */
-  notice?: { title: string; body: string };
-  footer?: string;
-  children: ReactNode;
-}) {
-  const siteName = plainSiteName(useSite().data);
+export function DeskDoor() {
   return (
     <StaffOnly needs="journalist" otherwise={<DeskApplication />}>
       <AgreementGate audience="journalist">
-        <StaffPage eyebrow={`${siteName} · Journalist desk`} title={title} lede={lede}>
-          {warn ? (
-            <Note warn>
-              <b>Before you use a link</b> A moderator checked each link, but did not verify what it
-              shows. Treat it as a lead, not as a fact. Copying one is your choice: this site never
-              opens it.
-            </Note>
-          ) : null}
-          {notice ? (
-            <Note warn>
-              <b>{notice.title}</b> {notice.body}
-            </Note>
-          ) : null}
-          {children}
-          <p className="m">{footer}</p>
-        </StaffPage>
+        <Navigate to="/board" replace />
       </AgreementGate>
     </StaffOnly>
-  );
-}
-
-export function DeskLinksPage() {
-  return (
-    <DeskSection
-      title="Checked links"
-      lede="Links from the tip line and from reports that a moderator has checked. Read only; nothing here is public."
-    >
-      <CheckedLinks />
-    </DeskSection>
-  );
-}
-
-export function DeskTextsPage() {
-  return (
-    <DeskSection
-      title="Written accounts"
-      lede="Notes a moderator wrote from reporters' accounts, shared with the reporters' permission."
-      warn={false}
-      notice={{
-        title: 'Before you use one',
-        body: "Written by a moderator from a reporter's account. The reporter's own words are shown only where quoted. A note is not a verified fact, and reporters can take it back.",
-      }}
-      footer="Every page you open here is recorded in the access log. If a reporter erases or stops sharing an account, it disappears from here."
-    >
-      <Texts />
-    </DeskSection>
-  );
-}
-
-export function DeskSourcesPage() {
-  return (
-    <DeskSection
-      title="Sources on published reports"
-      lede="The sources moderators cite on published reports. Read only; nothing here is public."
-    >
-      <Sources />
-    </DeskSection>
-  );
-}
-
-export function DeskAlertsPage() {
-  return (
-    <DeskSection
-      title="Your alerts"
-      lede="Which states you get an email about, and whether alerts are on."
-      warn={false}
-    >
-      <DeskAlerts />
-    </DeskSection>
   );
 }
 
@@ -214,7 +133,7 @@ function useDeskFilter(onApply: () => void): { applied: Applied; box: ReactNode 
  * embedded browsers; the text stays selectable either way, and the button
  * says when it could not copy.
  */
-function CopyableLink({ url }: { url: string }) {
+export function CopyableLink({ url }: { url: string }) {
   const [said, setSaid] = useState<string | null>(null);
   return (
     <div className="copybox">
@@ -246,7 +165,7 @@ function CopyableLink({ url }: { url: string }) {
   );
 }
 
-function CheckedLinks() {
+export function CheckedLinks() {
   const [page, setPage] = useState(1);
   const { applied, box } = useDeskFilter(() => {
     setPage(1);
@@ -321,7 +240,7 @@ function CheckedLinks() {
   );
 }
 
-function Texts() {
+export function Texts() {
   const [page, setPage] = useState(1);
   const { applied, box } = useDeskFilter(() => {
     setPage(1);
@@ -369,58 +288,6 @@ function Texts() {
           label="Written accounts pages"
           onPage={setPage}
         />
-      ) : null}
-    </>
-  );
-}
-
-function Sources() {
-  const [page, setPage] = useState(1);
-  const { applied, box } = useDeskFilter(() => {
-    setPage(1);
-  });
-  const query = {
-    page,
-    ...(applied.q ? { q: applied.q } : {}),
-    ...(applied.mine ? { mine: 'true' as const } : {}),
-  };
-  const q = useQuery({
-    queryKey: ['desk', 'sources', query],
-    queryFn: ({ signal }) => call(deskSources, { query, signal }),
-    placeholderData: keepPreviousData,
-    retry: false,
-  });
-  return (
-    <>
-      {box}
-      <ErrorLine error={q.error} />
-      {q.data && !q.data.reports.length ? (
-        <Empty title={applied.q || applied.mine ? 'Nothing matches' : 'No sources yet'}>
-          {applied.q || applied.mine
-            ? 'No source matches that search. A report with no place on it is left out of My states.'
-            : 'When a moderator cites a source on a published report, it appears here.'}
-        </Empty>
-      ) : null}
-      {q.data?.reports.map((r) => (
-        <Panel as="article" key={r.reference}>
-          <Link className="mono" to="/board/$ref" params={{ ref: r.reference }}>
-            {r.reference}
-          </Link>
-          {r.note ? <p style={{ whiteSpace: 'pre-wrap' }}>{r.note}</p> : null}
-          {r.sources.map((s) => (
-            <div key={s.url}>
-              <p className="m">
-                {s.title}
-                {s.publisher ? `, ${s.publisher}` : ''}
-                {s.published_on ? `, ${s.published_on}` : ''}
-              </p>
-              <CopyableLink url={s.url} />
-            </div>
-          ))}
-        </Panel>
-      ))}
-      {q.data ? (
-        <Pager page={q.data.page} pages={q.data.pages} label="Sources pages" onPage={setPage} />
       ) : null}
     </>
   );
