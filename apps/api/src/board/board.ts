@@ -235,7 +235,7 @@ async function placeThreshold(
   db: Kysely<DB>,
   query: BoardQuery,
   answers: [string, string][],
-): Promise<number | 'never' | null> {
+): Promise<number | { never: number } | null> {
   // NARROWED BY STATE IS NARROWED BY PLACE. A journalist's "My states" must not
   // hand over the count a heat map withholds for a thin area, so the highest
   // threshold any map keeps applies to it, whichever logbook it falls in.
@@ -246,7 +246,7 @@ async function placeThreshold(
   // A CLICKED PLACE IS A PLACE. It keeps the highest threshold any map keeps,
   // and a county the highest county threshold: `'never'` where no map shows
   // counties at all, so a county is never counted on its own.
-  if (query.place) return placeFilterThreshold(db, query.place);
+  if (query.place) return placeFilterThreshold(db, query.place, query.logbook);
   if (!answers.length || !query.logbook) return null;
   const lb = await logbookBySlug(db, query.logbook);
   if (!lb) return null;
@@ -254,26 +254,39 @@ async function placeThreshold(
   return guard && answers.some(([k]) => k === guard.key) ? guard.threshold : null;
 }
 
-/** The highest threshold any map keeps on a place question, or 0 when none does. */
-async function stateThreshold(db: Kysely<DB>): Promise<number> {
-  return Math.max(0, ...[...(await placeGuards(db)).values()].map((g) => g.threshold));
-}
-
 /**
  * The count a clicked place must reach before the board says anything about it.
- * A state or country: the map's own threshold. A county: the map's county
- * threshold, which is never below the map's own (maps/aggregate.ts); with no map
- * showing counties there is none, and the county is withheld whatever it holds.
+ * A state or country: the threshold of the map reading the logbook's place
+ * question (the highest, across the logbooks a click spans, when none is
+ * chosen). A county: the map's county threshold, never below the map's own
+ * (maps/aggregate.ts); `{ never }` where no map shows counties, so a county is
+ * withheld whatever it holds.
  */
 async function placeFilterThreshold(
   db: Kysely<DB>,
   place: string,
-): Promise<number | 'never' | null> {
-  const states = await stateThreshold(db);
+  logbookSlug: string | undefined,
+): Promise<number | { never: number } | null> {
+  const guards = await placeGuards(db);
+  let ids = [...guards.keys()];
+  if (logbookSlug) {
+    const lb = await logbookBySlug(db, logbookSlug);
+    ids = lb && guards.has(lb.id) ? [lb.id] : [];
+  }
+  if (!ids.length) return null;
+  const states = Math.max(0, ...ids.map((id) => guards.get(id)?.threshold ?? 0));
   if (!isCounty(place)) return states || null;
-  const maps = await db.selectFrom('heat_maps').select(['min_area', 'county_min']).execute();
+  const maps = await db
+    .selectFrom('heat_maps')
+    .select(['min_area', 'county_min', 'logbook_ids'])
+    .execute();
   const county = maps
-    .filter((m) => m.county_min !== null)
+    .filter(
+      (m) =>
+        m.county_min !== null &&
+        // EMPTY logbook_ids MEANS EVERY LOGBOOK, as on the map itself.
+        (!m.logbook_ids.length || ids.some((id) => m.logbook_ids.map(Number).includes(id))),
+    )
     .map((m) =>
       Math.max(
         MIN_AREA_FLOOR,
@@ -281,7 +294,7 @@ async function placeFilterThreshold(
         Math.trunc(m.county_min ?? 0),
       ),
     );
-  return county.length ? Math.max(states, ...county) : 'never';
+  return county.length ? Math.max(states, ...county) : { never: states };
 }
 
 /**
@@ -301,7 +314,7 @@ async function countUnlessThin(
     .executeTakeFirst();
   const total = Number(counted?.n ?? 0);
   const threshold = total > 0 ? await placeThreshold(db, query, answers) : null;
-  if (threshold === 'never') return { withheld: await stateThreshold(db) };
+  if (threshold !== null && typeof threshold === 'object') return { withheld: threshold.never };
   return threshold !== null && total < threshold ? { withheld: threshold } : { total };
 }
 

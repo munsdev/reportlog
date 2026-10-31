@@ -157,14 +157,14 @@ const breakdown = async (url: string, slug: string) => {
 
 describe('decision 82 · a place clicked on a map keeps the same thresholds', () => {
   it('a place at the threshold or over lists its reports, and says how many', async () => {
-    const r = await get('/api/board/reports?place=IT');
+    const r = await get(`/api/board/reports?logbook=${lb.slug}&place=IT`);
     expect(r.body.total).toBe(k);
     expect(r.body.reports).toHaveLength(k);
   });
 
   it('a place under the threshold sends no reports and no count', async () => {
     for (const area of ['DE', 'FR']) {
-      const r = await get(`/api/board/reports?place=${area}`);
+      const r = await get(`/api/board/reports?logbook=${lb.slug}&place=${area}`);
       expect(r.body).toMatchObject({ published: true, withheld: true, threshold: k });
       // The other logbook's German report is not counted: no map reads its question.
       expect(r.text).not.toMatch(/"total"|"reports"|RL-/);
@@ -172,14 +172,14 @@ describe('decision 82 · a place clicked on a map keeps the same thresholds', ()
   });
 
   it('narrowing further inside a large place cannot single out a thin one', async () => {
-    const r = await get('/api/board/reports?place=IT&q=number%200');
+    const r = await get(`/api/board/reports?logbook=${lb.slug}&place=IT&q=number%200`);
     expect(r.body.withheld).toBe(true);
     expect(r.text).not.toMatch(/"total"/);
   });
 
   it('a county is withheld while no map shows counties, whatever it holds', async () => {
     // Nothing filed there: nothing to withhold, as the map says "none counted".
-    const none = await get('/api/board/reports?place=US-AZ-04013');
+    const none = await get(`/api/board/reports?logbook=${lb.slug}&place=US-AZ-04013`);
     expect(none.body).toMatchObject({ published: true, total: 0, reports: [] });
   });
 
@@ -192,7 +192,10 @@ describe('decision 82 · a place clicked on a map keeps the same thresholds', ()
   });
 
   it('the spreadsheet withholds the same rows', async () => {
-    const thin = await h.app.inject({ method: 'GET', url: '/api/board/reports.csv?place=DE' });
+    const thin = await h.app.inject({
+      method: 'GET',
+      url: `/api/board/reports.csv?logbook=${lb.slug}&place=DE`,
+    });
     expect(thin.body.trim().split('\n')).toHaveLength(1);
   });
 });

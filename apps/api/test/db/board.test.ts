@@ -259,9 +259,15 @@ describe('NOTHING IS FILTERABLE UNLESS AN OPERATOR SAID SO', () => {
     expect((await get('/api/board/reports?a.station=Station%207')).status).toBe(400);
   });
 
-  it('there is no date or place parameter to pass, and an unknown one narrows nothing', async () => {
+  it('there is no date parameter to pass, and an unknown one narrows nothing', async () => {
     const all = await refs('');
-    expect(await refs('&from=2026-11-01&to=2026-11-02&place=DE&date=2026-11-03')).toEqual(all);
+    expect(await refs('&from=2026-11-01&to=2026-11-02&where=DE&date=2026-11-03')).toEqual(all);
+  });
+
+  // Decision 82: a place clicked on a map is the one built-in place filter. It reads only the
+  // place question a heat map reads, so on a logbook no map reads it finds nothing, not something.
+  it('a place only narrows by a question a map reads', async () => {
+    expect(await refs('&place=DE')).toEqual([]);
   });
 });
 
