@@ -169,7 +169,10 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
   await reader.getByRole('button', { name: 'I have read this and I accept it' }).click();
   // Decision 81: no desk to go to. They land on the board, and the Links tab is theirs.
   await expect(reader).toHaveURL(/\/board$/);
-  await reader.getByRole('navigation', { name: 'Report views' }).getByRole('link', { name: 'Links' }).click();
+  await reader
+    .getByRole('navigation', { name: 'Report views' })
+    .getByRole('link', { name: 'Links' })
+    .click();
   await expect(reader.getByText(/Links from the tip line and from reports/)).toBeVisible();
   const entry = reader.locator('[data-desk-link]').filter({ hasText: CHECKED });
   await expect(entry).toBeVisible();

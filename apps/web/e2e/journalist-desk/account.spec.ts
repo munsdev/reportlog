@@ -160,13 +160,17 @@ test('a signed-in account joins alerts and applies in one step; approval opens t
   await expect(applicant).toHaveURL(/\/board$/);
   await expect(applicant.getByRole('heading', { level: 1, name: 'Reports' })).toBeVisible();
   await expect(
-    applicant.getByRole('navigation', { name: 'Report views' }).getByRole('link', { name: 'Links' }),
+    applicant
+      .getByRole('navigation', { name: 'Report views' })
+      .getByRole('link', { name: 'Links' }),
   ).toBeVisible();
   // Search is the board's; "My states" is theirs, because they chose Delaware for alerts.
   await expect(applicant.getByRole('searchbox', { name: 'Search reports' })).toBeVisible();
   await applicant.getByRole('checkbox', { name: 'My states' }).check();
   await expect(applicant).toHaveURL(/mine=true/);
-  await expect(applicant.getByRole('button', { name: 'Remove the filter My states' })).toBeVisible();
+  await expect(
+    applicant.getByRole('button', { name: 'Remove the filter My states' }),
+  ).toBeVisible();
   await expect(
     applicant.getByRole('heading', { name: 'Read and accept the agreement' }),
   ).toHaveCount(0);
