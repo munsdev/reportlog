@@ -226,6 +226,15 @@ const grouped = (secret: string) => secret.replace(/(.{4})/g, '$1 ').trim();
 
 // ── proving it ───────────────────────────────────────────────────────────
 
+/** The browser found no passkey it could use, or the person cancelled. */
+class PasskeyUnavailable extends Error {
+  constructor() {
+    super(
+      'This device could not use your passkey. A passkey usually works only on the device where you made it. Type a code from your authenticator app or one of your recovery codes below, or sign in on that device instead.',
+    );
+  }
+}
+
 /**
  * A code from the app, a recovery code, or a passkey. The same for
  * finishing signing in and for a step-up: the server decides which by what
@@ -258,7 +267,15 @@ export function ProveIt({
     mutationFn: async () => {
       // WebAuthn's own JSON, passed on as the server made it (contracts/twoFactor.ts).
       const optionsJSON = (await call(passkeyChallenge)) as PublicKeyCredentialRequestOptionsJSON;
-      const response = await startAuthentication({ optionsJSON });
+      let response: Awaited<ReturnType<typeof startAuthentication>>;
+      try {
+        response = await startAuthentication({ optionsJSON });
+      } catch {
+        // The browser's own failure says nothing a person can act on, and
+        // the commonest cause is a passkey made on another device (a laptop's
+        // Windows Hello, say), which a phone cannot reach. Say what to do.
+        throw new PasskeyUnavailable();
+      }
       return call(verifyPasskey, { body: { response: { ...response } } });
     },
     onSuccess: proved,
@@ -319,7 +336,7 @@ export function ProveIt({
         </Field>
         {error ? (
           <p id={errorId} role="alert" className="error">
-            {messageOf(error)}
+            {error instanceof PasskeyUnavailable ? error.message : messageOf(error)}
           </p>
         ) : null}
         <div>
