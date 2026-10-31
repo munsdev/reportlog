@@ -18,7 +18,7 @@
  */
 import { DESK_PAGE_SIZE, deskLinks, deskTexts } from '@reportlog/contracts';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { Link, Navigate } from '@tanstack/react-router';
+import { Navigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
@@ -29,12 +29,11 @@ import { CheckBox } from '@/mockup/Field.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
 import { Empty } from '../../mockup/Empty.tsx';
 import { ErrorLine } from '../../mockup/ErrorLine.tsx';
-import { Note } from '../../mockup/Note.tsx';
 import { Pager } from '../../mockup/Pager.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { StaffOnly } from '../identity/StaffOnly.tsx';
 import { AgreementGate } from '../platform/Agreement.tsx';
-import { DeskAlerts, deskQuery } from './AlertSettings.tsx';
+import { deskQuery } from './AlertSettings.tsx';
 import { DeskCard } from './Account.tsx';
 
 /**
