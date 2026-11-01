@@ -63,6 +63,62 @@ async function put(
     .execute();
 }
 
+/** A severity as a request sent it: one of the four, or null to clear. Refused otherwise. */
+export function severityOf(severity: unknown): Severity | null {
+  if (severity !== null && !SEVERITIES.includes(severity as Severity)) {
+    throw refuse(
+      400,
+      'invalid_severity',
+      'A severity is a procedural note, an irregularity, serious, or systemic; or none, to clear it.',
+    );
+  }
+  return severity as Severity | null;
+}
+
+/** A severity that must be one of the four: a rating given while approving, which never clears. */
+export function requireSeverity(severity: unknown): Severity {
+  const value = severity === null ? undefined : severityOf(severity);
+  if (!value) {
+    throw refuse(
+      400,
+      'invalid_severity',
+      'A severity is a procedural note, an irregularity, serious, or systemic.',
+    );
+  }
+  return value;
+}
+
+/** A rating's reason, checked the same way wherever a rating is written. */
+export const severityReasonOf = reasonOf;
+
+/**
+ * Write a rating and its log row inside a transaction the caller holds,
+ * with the thread's head already locked. Shared by `setSeverity` and by an
+ * approval that rates in the same step (queue.ts `decide`), so both leave
+ * exactly the same record.
+ */
+export async function writeSeverity(
+  trx: Transaction<DB>,
+  threadId: string,
+  reportId: number,
+  value: Severity | null,
+  why: string,
+  actor: string,
+): Promise<void> {
+  await put(trx, threadId, { severity: value });
+  await trx
+    .insertInto('moderation_log')
+    .values({
+      thread_id: threadId,
+      report_id: reportId,
+      action: 'severity',
+      new_status: value ?? 'none',
+      actor_email: actor,
+      comment: why,
+    })
+    .execute();
+}
+
 /**
  * Rate a report, or clear the rating (`null`). Only a value somebody chose is
  * ever stored: there is no default severity.
@@ -74,29 +130,11 @@ export async function setSeverity(
   comment: unknown,
   actor: string,
 ): Promise<Severity | null> {
-  if (severity !== null && !SEVERITIES.includes(severity as Severity)) {
-    throw refuse(
-      400,
-      'invalid_severity',
-      'A severity is a procedural note, an irregularity, serious, or systemic; or none, to clear it.',
-    );
-  }
+  const value = severityOf(severity);
   const why = reasonOf(comment);
-  const value = severity as Severity | null;
   await db.transaction().execute(async (trx) => {
     const head = await headOf(trx, threadId);
-    await put(trx, threadId, { severity: value });
-    await trx
-      .insertInto('moderation_log')
-      .values({
-        thread_id: threadId,
-        report_id: head.current_report_id,
-        action: 'severity',
-        new_status: value ?? 'none',
-        actor_email: actor,
-        comment: why,
-      })
-      .execute();
+    await writeSeverity(trx, threadId, head.current_report_id, value, why, actor);
   });
   return value;
 }

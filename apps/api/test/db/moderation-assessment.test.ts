@@ -169,6 +169,100 @@ describe('severity', () => {
   });
 });
 
+describe('rating while approving', () => {
+  const decide = async (t: Thread, payload: Record<string, unknown>) =>
+    mod.call({
+      method: 'POST',
+      url: `/api/moderation/reports/${t.threadId}/decision`,
+      payload: { seen: await seenOf(h.db, t.threadId), ...payload },
+    });
+  const statusOf = async (t: Thread) =>
+    (
+      await h.db
+        .selectFrom('report_heads')
+        .select('moderation_status')
+        .where('thread_id', '=', t.threadId)
+        .executeTakeFirstOrThrow()
+    ).moderation_status;
+  const unrated = async () =>
+    (await mod.call({ method: 'GET', url: '/api/moderation/reports' })).json<{ unrated: number }>()
+      .unrated;
+
+  it('records the decision and the rating together, each logged as on its own', async () => {
+    const t = await file('Approved and rated in one step.');
+    const res = await decide(t, {
+      status: 'valid',
+      severity: 'serious',
+      severity_comment: 'Voters were sent away.',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(await statusOf(t)).toBe('valid');
+    expect((await item(t)).assessment.severity).toBe('serious');
+    expect(await logOf(t)).toEqual([
+      {
+        action: 'severity',
+        new_status: 'serious',
+        actor_email: mod.email,
+        comment: 'Voters were sent away.',
+      },
+    ]);
+  });
+
+  it('stays optional: approving without one leaves the report unrated', async () => {
+    const t = await file('Approved, rating left for later.');
+    expect((await decide(t, { status: 'valid' })).statusCode).toBe(200);
+    expect(await statusOf(t)).toBe('valid');
+    expect((await item(t)).assessment.severity).toBeNull();
+    expect(await logOf(t)).toHaveLength(0);
+  });
+
+  it('refuses a bad rating or a missing reason BEFORE anything changes', async () => {
+    const t = await file('A rating refused at approval.');
+    for (const bad of [
+      { severity: 'serious' },
+      { severity: 'serious', severity_comment: '   ' },
+      { severity: 'catastrophic', severity_comment: 'Bad.' },
+      { severity: 'none', severity_comment: 'Clearing is the Severity row’s.' },
+    ]) {
+      expect((await decide(t, { status: 'valid', ...bad })).statusCode).toBe(400);
+    }
+    expect(await statusOf(t)).toBe('pending');
+    expect((await item(t)).assessment.severity).toBeNull();
+  });
+
+  it('a refused decision leaves no rating behind', async () => {
+    const t = await file('Somebody else decided it after this page was opened.');
+    const stale = await seenOf(h.db, t.threadId);
+    expect((await decide(t, { status: 'unknown' })).statusCode).toBe(200);
+    const res = await mod.call({
+      method: 'POST',
+      url: `/api/moderation/reports/${t.threadId}/decision`,
+      payload: { status: 'valid', seen: stale, severity: 'note', severity_comment: 'Fine.' },
+    });
+    expect(res.statusCode).toBe(409);
+    expect(await statusOf(t)).toBe('unknown');
+    expect((await item(t)).assessment.severity).toBeNull();
+    expect(await logOf(t)).toHaveLength(0);
+  });
+
+  it('counts approved reports nobody rated, as the "Not rated" list shows them', async () => {
+    const before = await unrated();
+    const left = await file('Approved and left unrated.');
+    await decide(left, { status: 'valid' });
+    const rated = await file('Approved and rated.');
+    await decide(rated, { status: 'valid', severity: 'note', severity_comment: 'Minor.' });
+    await file('Still waiting: not counted.');
+    expect(await unrated()).toBe(before + 1);
+    const list = (
+      await mod.call({ method: 'GET', url: '/api/moderation/reports?status=valid&severity=none' })
+    ).json<{ reports: { public_ref: string }[]; total: number }>();
+    expect(list.total).toBe(before + 1);
+    expect(list.reports.map((r) => r.public_ref)).toContain(left.publicRef);
+    await rate(left, { severity: 'irregularity', comment: 'Rated later.' });
+    expect(await unrated()).toBe(before);
+  });
+});
+
 describe('incidents and corroboration', () => {
   it('links two reports into an incident, and a third joins it', async () => {
     const a = await file('The doors opened an hour late.');

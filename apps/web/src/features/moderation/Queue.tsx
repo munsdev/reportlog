@@ -102,7 +102,7 @@ function QueueScreen({ search }: { search: QueueSearch }) {
   return (
     <StaffPage
       title="Reports queue"
-      lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished."
+      lede="Read each report against the moderation standard. Approving publishes it; declining keeps it in the record, unpublished. Rate each approved report’s severity, when approving or later: “Not rated” lists the ones still to do."
     >
       {query.data && !query.data.archive_published ? (
         <Problem title="The public archive is switched off.">
@@ -156,7 +156,10 @@ function StatusButtons({
 }) {
   const status = search.status ?? 'pending';
   // One row, as the mock-up draws it: the statuses, then "Only second reads"
-  // (not a status: it narrows whichever status is showing).
+  // (not a status: it narrows whichever status is showing), then "Not rated",
+  // which is Approved with the severity filter at "none": the rating still
+  // to do, kept in sight, since approving no longer has to wait for it.
+  const unratedOn = status === 'valid' && search.severity === 'none';
   return (
     <Seg
       label="Show"
@@ -183,6 +186,17 @@ function StatusButtons({
           pressed: Boolean(search.flagged),
           onClick: () => {
             go({ flagged: search.flagged ? undefined : true });
+          },
+        },
+        {
+          key: 'unrated',
+          label: 'Not rated',
+          n: data?.unrated,
+          words:
+            data === undefined ? undefined : `${String(data.unrated)} approved and not rated yet`,
+          pressed: unratedOn,
+          onClick: () => {
+            go(unratedOn ? { severity: undefined } : { status: 'valid', severity: 'none' });
           },
         },
       ]}
@@ -910,13 +924,15 @@ function SelectionBar({
     mutationFn: () =>
       call(batchApproveReports, { body: { thread_ids: ids.slice(0, MAX_BATCH), seen } }),
     onSuccess: async (out) => {
+      // A batch cannot rate: say where the ratings are waiting.
+      const rate = out.approved.length ? ' Rate them under “Not rated”.' : '';
       onDone(
-        `Approved ${String(out.approved.length)}.`,
+        `Approved ${String(out.approved.length)}.${rate}`,
         out.skipped.length ? (
           <Note>
             <span>
-              <b>{`Approved ${String(out.approved.length)}.`}</b> Left alone:{' '}
-              {out.skipped.map((x) => x.why).join(' ')}
+              <b>{`Approved ${String(out.approved.length)}.`}</b>
+              {rate} Left alone: {out.skipped.map((x) => x.why).join(' ')}
             </span>
           </Note>
         ) : null,
