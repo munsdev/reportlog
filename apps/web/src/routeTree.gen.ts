@@ -109,6 +109,7 @@ import { Route as staffSettingsSocialRouteImport } from './routes/(staff)/settin
 import { Route as staffSettingsStartingPointsRouteImport } from './routes/(staff)/settings/starting-points'
 import { Route as staffSettingsSwitchesRouteImport } from './routes/(staff)/settings/switches'
 import { Route as staffSettingsWordsRouteImport } from './routes/(staff)/settings/words'
+import { Route as FileSlugPaperRouteImport } from './routes/file/$slug_.paper'
 import { Route as FileConfirmTokenRouteImport } from './routes/file/confirm/$token'
 import { Route as FileEraseTokenRouteImport } from './routes/file/erase/$token'
 import { Route as IllegalContentStatusTokenRouteImport } from './routes/illegal-content/status.$token'
@@ -116,6 +117,7 @@ import { Route as JournalistsAccessTokenRouteImport } from './routes/journalists
 import { Route as JournalistsConfirmTokenRouteImport } from './routes/journalists_.confirm.$token'
 import { Route as JournalistsSettingsTokenRouteImport } from './routes/journalists_.settings.$token'
 import { Route as JournalistsStopTokenRouteImport } from './routes/journalists_.stop.$token'
+import { Route as ListSlugPaperRouteImport } from './routes/list/$slug_.paper'
 import { Route as MineDeclarationThreadIdRouteImport } from './routes/mine/declaration.$threadId'
 import { Route as NotificationsStopTokenRouteImport } from './routes/notifications_.stop.$token'
 import { Route as OrganizationsIdListingRouteImport } from './routes/organizations/$id.listing'
@@ -635,6 +637,11 @@ const staffSettingsWordsRoute = staffSettingsWordsRouteImport.update({
   path: '/words',
   getParentRoute: () => staffSettingsRouteRoute,
 } as any)
+const FileSlugPaperRoute = FileSlugPaperRouteImport.update({
+  id: '/file/$slug_/paper',
+  path: '/file/$slug/paper',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FileConfirmTokenRoute = FileConfirmTokenRouteImport.update({
   id: '/file/confirm/$token',
   path: '/file/confirm/$token',
@@ -670,6 +677,11 @@ const JournalistsSettingsTokenRoute =
 const JournalistsStopTokenRoute = JournalistsStopTokenRouteImport.update({
   id: '/journalists_/stop/$token',
   path: '/journalists/stop/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ListSlugPaperRoute = ListSlugPaperRouteImport.update({
+  id: '/list/$slug_/paper',
+  path: '/list/$slug/paper',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MineDeclarationThreadIdRoute = MineDeclarationThreadIdRouteImport.update({
@@ -843,6 +855,7 @@ export interface FileRoutesByFullPath {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/switches': typeof staffSettingsSwitchesRoute
   '/settings/words': typeof staffSettingsWordsRoute
+  '/file/$slug/paper': typeof FileSlugPaperRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
@@ -850,6 +863,7 @@ export interface FileRoutesByFullPath {
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
+  '/list/$slug/paper': typeof ListSlugPaperRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -961,6 +975,7 @@ export interface FileRoutesByTo {
   '/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/settings/switches': typeof staffSettingsSwitchesRoute
   '/settings/words': typeof staffSettingsWordsRoute
+  '/file/$slug/paper': typeof FileSlugPaperRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
@@ -968,6 +983,7 @@ export interface FileRoutesByTo {
   '/journalists/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists/stop/$token': typeof JournalistsStopTokenRoute
+  '/list/$slug/paper': typeof ListSlugPaperRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -1086,6 +1102,7 @@ export interface FileRoutesById {
   '/(staff)/settings/starting-points': typeof staffSettingsStartingPointsRoute
   '/(staff)/settings/switches': typeof staffSettingsSwitchesRoute
   '/(staff)/settings/words': typeof staffSettingsWordsRoute
+  '/file/$slug_/paper': typeof FileSlugPaperRoute
   '/file/confirm/$token': typeof FileConfirmTokenRoute
   '/file/erase/$token': typeof FileEraseTokenRoute
   '/illegal-content/status/$token': typeof IllegalContentStatusTokenRoute
@@ -1093,6 +1110,7 @@ export interface FileRoutesById {
   '/journalists_/confirm/$token': typeof JournalistsConfirmTokenRoute
   '/journalists_/settings/$token': typeof JournalistsSettingsTokenRoute
   '/journalists_/stop/$token': typeof JournalistsStopTokenRoute
+  '/list/$slug_/paper': typeof ListSlugPaperRoute
   '/mine/declaration/$threadId': typeof MineDeclarationThreadIdRoute
   '/notifications_/stop/$token': typeof NotificationsStopTokenRoute
   '/organizations/$id/listing': typeof OrganizationsIdListingRoute
@@ -1212,6 +1230,7 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/switches'
     | '/settings/words'
+    | '/file/$slug/paper'
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
@@ -1219,6 +1238,7 @@ export interface FileRouteTypes {
     | '/journalists/confirm/$token'
     | '/journalists/settings/$token'
     | '/journalists/stop/$token'
+    | '/list/$slug/paper'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -1330,6 +1350,7 @@ export interface FileRouteTypes {
     | '/settings/starting-points'
     | '/settings/switches'
     | '/settings/words'
+    | '/file/$slug/paper'
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
@@ -1337,6 +1358,7 @@ export interface FileRouteTypes {
     | '/journalists/confirm/$token'
     | '/journalists/settings/$token'
     | '/journalists/stop/$token'
+    | '/list/$slug/paper'
     | '/mine/declaration/$threadId'
     | '/notifications/stop/$token'
     | '/organizations/$id/listing'
@@ -1454,6 +1476,7 @@ export interface FileRouteTypes {
     | '/(staff)/settings/starting-points'
     | '/(staff)/settings/switches'
     | '/(staff)/settings/words'
+    | '/file/$slug_/paper'
     | '/file/confirm/$token'
     | '/file/erase/$token'
     | '/illegal-content/status/$token'
@@ -1461,6 +1484,7 @@ export interface FileRouteTypes {
     | '/journalists_/confirm/$token'
     | '/journalists_/settings/$token'
     | '/journalists_/stop/$token'
+    | '/list/$slug_/paper'
     | '/mine/declaration/$threadId'
     | '/notifications_/stop/$token'
     | '/organizations/$id/listing'
@@ -1550,6 +1574,7 @@ export interface RootRouteChildren {
   staffAccessSignInRoute: typeof staffAccessSignInRoute
   staffPeopleHistoryRoute: typeof staffPeopleHistoryRoute
   staffPeopleOwnershipRoute: typeof staffPeopleOwnershipRoute
+  FileSlugPaperRoute: typeof FileSlugPaperRoute
   FileConfirmTokenRoute: typeof FileConfirmTokenRoute
   FileEraseTokenRoute: typeof FileEraseTokenRoute
   IllegalContentStatusTokenRoute: typeof IllegalContentStatusTokenRoute
@@ -1557,6 +1582,7 @@ export interface RootRouteChildren {
   JournalistsConfirmTokenRoute: typeof JournalistsConfirmTokenRoute
   JournalistsSettingsTokenRoute: typeof JournalistsSettingsTokenRoute
   JournalistsStopTokenRoute: typeof JournalistsStopTokenRoute
+  ListSlugPaperRoute: typeof ListSlugPaperRoute
   MineDeclarationThreadIdRoute: typeof MineDeclarationThreadIdRoute
   NotificationsStopTokenRoute: typeof NotificationsStopTokenRoute
   OrganizationsIdListingRoute: typeof OrganizationsIdListingRoute
@@ -2272,6 +2298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffSettingsWordsRouteImport
       parentRoute: typeof staffSettingsRouteRoute
     }
+    '/file/$slug_/paper': {
+      id: '/file/$slug_/paper'
+      path: '/file/$slug/paper'
+      fullPath: '/file/$slug/paper'
+      preLoaderRoute: typeof FileSlugPaperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/file/confirm/$token': {
       id: '/file/confirm/$token'
       path: '/file/confirm/$token'
@@ -2319,6 +2352,13 @@ declare module '@tanstack/react-router' {
       path: '/journalists/stop/$token'
       fullPath: '/journalists/stop/$token'
       preLoaderRoute: typeof JournalistsStopTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/list/$slug_/paper': {
+      id: '/list/$slug_/paper'
+      path: '/list/$slug/paper'
+      fullPath: '/list/$slug/paper'
+      preLoaderRoute: typeof ListSlugPaperRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mine/declaration/$threadId': {
@@ -2632,6 +2672,7 @@ const rootRouteChildren: RootRouteChildren = {
   staffAccessSignInRoute: staffAccessSignInRoute,
   staffPeopleHistoryRoute: staffPeopleHistoryRoute,
   staffPeopleOwnershipRoute: staffPeopleOwnershipRoute,
+  FileSlugPaperRoute: FileSlugPaperRoute,
   FileConfirmTokenRoute: FileConfirmTokenRoute,
   FileEraseTokenRoute: FileEraseTokenRoute,
   IllegalContentStatusTokenRoute: IllegalContentStatusTokenRoute,
@@ -2639,6 +2680,7 @@ const rootRouteChildren: RootRouteChildren = {
   JournalistsConfirmTokenRoute: JournalistsConfirmTokenRoute,
   JournalistsSettingsTokenRoute: JournalistsSettingsTokenRoute,
   JournalistsStopTokenRoute: JournalistsStopTokenRoute,
+  ListSlugPaperRoute: ListSlugPaperRoute,
   MineDeclarationThreadIdRoute: MineDeclarationThreadIdRoute,
   NotificationsStopTokenRoute: NotificationsStopTokenRoute,
   OrganizationsIdListingRoute: OrganizationsIdListingRoute,

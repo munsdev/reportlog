@@ -8,6 +8,7 @@
  */
 import type { Cover as CoverWords } from '@reportlog/contracts';
 import { Btn } from '@/mockup/Btn.tsx';
+import { PaperLink } from '@/features/paper/PaperLink.tsx';
 import { useFocusOnMount } from './CardFrame.tsx';
 import { HelpNow, type CtaProps } from './HelpNow.tsx';
 
@@ -55,6 +56,7 @@ export function Cover({
   site,
   facts,
   onStart,
+  paperHref,
 }: {
   kind: CoverKind;
   title: string;
@@ -66,6 +68,8 @@ export function Cover({
   facts?: readonly CoverFact[] | undefined;
   /** A list's Start lives in its card bar, so it passes nothing. */
   onStart?: (() => void) | undefined;
+  /** The paper copy's address, for the small line under Start. */
+  paperHref?: string | undefined;
 }) {
   const heading = useFocusOnMount<HTMLHeadingElement>();
   const eyebrow = orElse(cover?.eyebrow, kind === 'logbook' ? 'File a report' : '');
@@ -126,6 +130,7 @@ export function Cover({
               {orElse(cover?.button_label, 'Start')}
             </Btn>
           ) : null}
+          {paperHref ? <PaperLink href={paperHref} /> : null}
         </div>
       </div>
     </div>

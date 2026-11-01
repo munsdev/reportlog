@@ -48,6 +48,8 @@ export const DOOR_PATHS: readonly RegExp[] = [
   // confirmation link, its token guarding it (decisions.md §4).
   /^\/evidence\/[^/]+$/,
   /^\/list\/[a-z0-9][a-z0-9-]{0,62}$/,
+  // A form's paper copy (features/paper/): it reads only what its form reads.
+  /^\/(file|list)\/[a-z0-9][a-z0-9-]{0,62}\/paper$/,
   // The same forms at the root (routes/$slug.tsx). Pages the site has never match a
   // door's slug: the server refuses a slug that names one (RESERVED_SLUGS).
   ROOT_FORM,

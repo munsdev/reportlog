@@ -118,6 +118,9 @@ const OPEN = [
   '/docs/',
   '/evidence/$token',
   '/file/$slug',
+  // A form's paper copy: the same questions as the form, open as it is.
+  '/file/$slug_/paper',
+  '/list/$slug_/paper',
   '/file/confirm/$token',
   '/file/erase/$token',
   '/illegal-content/',

@@ -1,0 +1,264 @@
+/*
+ * The paper copy of a form (PaperForm.tsx). On screen: the controls, then
+ * the sheet drawn at its printed width. Printed: the sheet alone (the site's
+ * `data-print-only` rule hides the rest), black on white, in the site's own
+ * faces, at --paper-scale of its body size, which the page sets to the
+ * largest size that fits one page.
+ *
+ * The sheet's width is a printed page's: Letter or A4 with half-inch margins
+ * both take 7.27in, so one layout serves both.
+ */
+@page {
+  margin: 0.5in;
+}
+
+.paper-page {
+  max-width: 7.27in;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.paper-controls {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.paper-prefill {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--rl-border);
+  padding: 12px;
+}
+.paper-prefill label {
+  display: grid;
+  gap: 4px;
+}
+.paper-prefill input {
+  border: 1px solid var(--rl-border);
+  padding: 6px 8px;
+  font: inherit;
+}
+
+.paper-sheet {
+  --paper-scale: 1;
+  /* Always the printed width, a phone included, so it is measured as it prints. */
+  width: 7.27in;
+  box-sizing: border-box;
+  background: white;
+  color: black;
+  font-family: var(--rl-font-sans, sans-serif);
+  font-size: calc(10.5pt * var(--paper-scale));
+  line-height: 1.3;
+}
+
+/* On screen the sheet sits on a page edge, scrolling sideways on a phone. */
+.paper-frame {
+  overflow-x: auto;
+  background: white;
+  border: 1px solid silver;
+  padding: 0.5in;
+}
+.paper-page {
+  max-width: calc(7.27in + 1in + 2px);
+}
+
+/* ---- the sheet's parts ---- */
+.pf-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1em;
+  border-bottom: 3px solid black;
+  padding-bottom: 0.4em;
+  margin-bottom: 0.5em;
+}
+.pf-eyebrow {
+  font-family: var(--rl-font-mono, monospace);
+  font-size: 0.75em;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.pf-title {
+  font-family: var(--rl-font-display, sans-serif);
+  font-size: 1.7em;
+  line-height: 1.1;
+  margin: 0;
+}
+.pf-online {
+  font-family: var(--rl-font-mono, monospace);
+  font-size: 0.75em;
+  text-align: right;
+  margin: 0;
+}
+.pf-blurb,
+.pf-how {
+  margin: 0 0 0.5em;
+}
+.pf-how {
+  font-size: 0.9em;
+}
+
+/* The cards, two columns: a short card takes one, every other card both. */
+.pf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1.5em;
+}
+.pf-grid > .pf-card {
+  grid-column: 1 / -1;
+}
+.pf-grid > .pf-card.pf-half {
+  grid-column: auto;
+}
+.pf-terms p {
+  font-size: 0.8em;
+  margin: 0.1em 0 0;
+}
+
+/* A card: the questions the online form shows together. Never split. */
+.pf-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  border-top: 1px solid black;
+  padding: 0.4em 0 0.45em;
+}
+.pf-card-head {
+  font-family: var(--rl-font-display, sans-serif);
+  font-size: 1.05em;
+  margin: 0 0 0.2em;
+}
+.pf-question + .pf-question {
+  margin-top: 0.45em;
+}
+.pf-q {
+  font-weight: 700;
+  margin: 0;
+}
+.pf-n {
+  font-family: var(--rl-font-mono, monospace);
+}
+.pf-req {
+  font-weight: 400;
+}
+.pf-help,
+.pf-hint,
+.pf-only {
+  font-size: 0.88em;
+  margin: 0.1em 0 0;
+}
+.pf-only {
+  font-style: italic;
+}
+.pf-aside {
+  font-size: 0.9em;
+}
+
+/* Answers. */
+.pf-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2em;
+}
+.pf-blank {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 0.5em;
+  margin-top: 0.15em;
+}
+.pf-blank.pf-short {
+  max-width: 45%;
+}
+.pf-label {
+  font-size: 0.88em;
+  white-space: nowrap;
+}
+.pf-line {
+  display: block;
+  flex: 1;
+  min-width: 6em;
+  height: 1.5em;
+  border-bottom: 1px solid black;
+}
+.pf-written {
+  display: inline-block;
+  padding-top: 0.35em;
+  font-size: 1.05em;
+}
+.pf-hint-under {
+  flex-basis: 100%;
+  font-size: 0.75em;
+  color: dimgray;
+}
+.pf-lines {
+  display: grid;
+}
+.pf-options {
+  list-style: none;
+  margin: 0.2em 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11em, 1fr));
+  gap: 0.15em 1em;
+}
+.pf-options li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4em;
+}
+.pf-box {
+  flex: none;
+  display: inline-block;
+  width: 0.9em;
+  height: 0.9em;
+  margin-top: 0.15em;
+  border: 1.2px solid black;
+}
+.pf-box.pf-round {
+  border-radius: 50%;
+}
+.pf-tick {
+  display: flex;
+  gap: 0.4em;
+}
+
+.pf-office {
+  margin-top: 0.4em;
+  border: 1px dashed black;
+  padding: 0.4em 0.6em;
+}
+.pf-office-head {
+  font-size: 0.8em;
+  margin: 0 0 0.2em;
+}
+.pf-office-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1em;
+}
+
+.pf-foot {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5em;
+  font-family: var(--rl-font-mono, monospace);
+  font-size: 0.7em;
+}
+
+@media print {
+  /* Gone, not hidden: hidden, they would still push a blank page out. */
+  .paper-controls {
+    display: none;
+  }
+  .paper-page {
+    padding: 0;
+    max-width: none;
+  }
+  .paper-frame {
+    border: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
