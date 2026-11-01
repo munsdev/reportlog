@@ -582,7 +582,6 @@ function Cards({
             cover={cover}
             site={siteCta}
             onStart={next}
-            paperHref={`/file/${slug}/paper`}
           />
         </>
       ) : (

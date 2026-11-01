@@ -26,7 +26,6 @@ import type { ListForm as Form, ListFormQuestion } from '@reportlog/contracts';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCardTitle, useFocusOnMount } from '../form/CardFrame.tsx';
 import { resolveCta } from '../form/Cover.tsx';
-import { PaperLink } from '../paper/PaperLink.tsx';
 import { HelpNow } from '../form/HelpNow.tsx';
 import { inputLimits, kindHelp } from '../form/QuestionControl.tsx';
 import { DoorPuzzle, Honeypot, doorStatus, useDoor, useSendWhenReady } from '../door/useDoor.tsx';
@@ -523,7 +522,6 @@ function Intro({ form, onStart }: { form: Form; onStart: () => void }) {
             <button className="btn go lg" type="button" onClick={onStart}>
               {label}
             </button>
-            <PaperLink href={`/list/${form.slug}/paper`} />
           </div>
         </div>
       </div>
