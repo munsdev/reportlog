@@ -73,7 +73,7 @@ export function OrganizationsPage() {
   return (
     <StaffPage
       title="Organizations"
-      lede="Groups whose members file through their own links and see their reports first."
+      lede="Groups whose coordinators file accounts under the group's name. Moderators see their reports first."
     >
       <ErrorLine error={orgs.error} />
       {orgs.isPending ? <p role="status">Reading the organizations…</p> : null}

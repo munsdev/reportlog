@@ -75,7 +75,7 @@ export const MENU: readonly MenuSection[] = [
       // An organization's own pages, which name it in their address: these go
       // on to it, or ask which (intake/OrganizationJump.tsx).
       { to: '/intake/members', label: 'Members', for: ['org_manager'] },
-      { to: '/intake/listing', label: 'Directory listing', for: ['organization'] },
+      { to: '/intake/listing', label: 'Directory listing', for: ['org_manager'] },
     ],
   },
   {

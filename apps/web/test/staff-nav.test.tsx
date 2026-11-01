@@ -140,7 +140,6 @@ describe('who sees which section and page (menu.ts)', () => {
     });
     expect(shape(member('coordinator'))['Your organization']).toEqual([
       'Filing for an organization',
-      'Directory listing',
     ]);
     expect(shape(member('manager'))['Your organization']).toEqual([
       'Filing for an organization',

@@ -252,7 +252,11 @@ function Said({ r }: { r: QueueItem }) {
       <AnswerList slug={r.logbook_slug} answers={r.answers} />
       <p className="m">
         Filed {when(r.received_at)}
-        {r.versions > 1 ? `, version ${String(r.versions)} (corrected by its reporter)` : ''}
+        {r.versions > 1
+          ? `, version ${String(r.versions)} (corrected by ${
+              r.filed_via ? `a coordinator for ${r.filed_via}` : 'its reporter'
+            })`
+          : ''}
         {r.filed_via ? `, through ${r.filed_via}` : ''}.{' '}
         {r.may_publish
           ? 'Publication: the reporter allows publishing.'

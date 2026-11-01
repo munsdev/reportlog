@@ -183,17 +183,23 @@ export function HomePage() {
                   <li>
                     <Link to="/intake">Intake</Link>
                   </li>
-                  <li>
-                    <Link to="/intake/links">Volunteer links</Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/organizations/$id/listing"
-                      params={{ id: String(m.organization_id) }}
-                    >
-                      Directory listing
-                    </Link>
-                  </li>
+                  {/* Volunteer links and the listing are a manager's: the server
+                      refuses a coordinator both. */}
+                  {m.role === 'manager' ? (
+                    <>
+                      <li>
+                        <Link to="/intake/links">Volunteer links</Link>
+                      </li>
+                      <li>
+                        <Link
+                          to="/organizations/$id/listing"
+                          params={{ id: String(m.organization_id) }}
+                        >
+                          Directory listing
+                        </Link>
+                      </li>
+                    </>
+                  ) : null}
                   {/* The server admits a manager of this organization only. */}
                   {m.role === 'manager' ? (
                     <li>

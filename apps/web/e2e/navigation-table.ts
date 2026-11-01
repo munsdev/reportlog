@@ -110,8 +110,8 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
     ...pick('People', 'Organizations', 'Journalists', 'Ownership', 'Guides', 'Feedback'),
   ],
   journalist: [...YOU, ...DESK],
-  // Volunteer links and Members are for an organization's managers.
-  coordinator: [...YOU, 'Filing for an organization', 'Directory listing'],
+  // Volunteer links, Members and Directory listing are for an organization's managers.
+  coordinator: [...YOU, 'Filing for an organization'],
   tester: [...YOU, 'Feedback'],
 };
 

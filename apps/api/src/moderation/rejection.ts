@@ -60,7 +60,20 @@ export function rejectionEmail(input: {
   logbookTitle: string;
   reason: string;
   termsUrl: string;
+  /** Set when a coordinator filed it: the address is theirs, not the reporter's. */
+  filedForOrganization?: string;
 }) {
+  if (input.filedForOrganization !== undefined) {
+    const org = input.filedForOrganization || 'your organization';
+    return {
+      subject: `An account you filed for ${org} (${input.publicRef}) was declined`,
+      text:
+        `We reviewed the account you filed for ${org} (${input.publicRef}) to “${input.logbookTitle}” and decided not to publish it.\n\n` +
+        `The reason: ${input.reason}\n\n` +
+        'The account has not been published. It stays in the archive’s sealed record, unchanged, and nobody can read it on the public board.\n\n' +
+        `This decision follows our terms of use, which say what we publish and what we hold back, and how to ask us to look again: ${input.termsUrl}\n`,
+    };
+  }
   return {
     subject: `About your report ${input.publicRef}`,
     text:
@@ -119,6 +132,9 @@ export async function sendRejectionNotice(
           logbookTitle: row.title,
           reason: reasonLabel(input.reasonCode) ?? '',
           termsUrl: `${deps.siteOrigin}/terms`,
+          ...(contact.filed_by === 'coordinator'
+            ? { filedForOrganization: contact.organization ?? '' }
+            : {}),
         }),
       });
       return 'sent';
