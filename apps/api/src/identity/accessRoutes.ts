@@ -47,7 +47,7 @@ import {
 const ROLE_REFUSALS = {
   self: 'You cannot change your own roles.',
   'cannot-combine':
-    'A journalist cannot also be staff. A journalist reads the desk of checked links and has no staff role, so the two are never held by one person.',
+    'A journalist cannot also be staff. A journalist reads checked links and written accounts on the board and has no staff role, so the two are never held by one person.',
   'unknown-role': 'There is no such role.',
   'bad-email': 'Enter a valid email address.',
   'protected-subject':
@@ -60,7 +60,7 @@ function notPermittedMessage(role: string): string {
   }
   if (role === 'admin') return 'Only the owner can appoint an administrator.';
   if (role === 'journalist') {
-    return 'A journalist is made only by approving their request for desk access. Open Journalists under Access and approve it there.';
+    return 'A journalist is made only by approving their request for desk access. Open Journalists under People and approve it there.';
   }
   if (role === 'owner') {
     return 'The owner’s seat is not granted. It is handed over, and the person receiving it has to accept.';
@@ -80,9 +80,38 @@ export const handoverCodeEmail = (to: string, code: string) => ({
     'administrators afterwards, and only they can hand the seat on again.',
 });
 
+const ROLE_NAMES: Record<string, [string, string]> = {
+  owner: ['an', 'owner'],
+  admin: ['an', 'administrator'],
+  access_manager: ['an', 'Access Manager'],
+  moderator: ['a', 'moderator'],
+};
+
+/**
+ * The email somebody gets when they are given a staff role: what it is, and
+ * the one thing to do next. Their first sign-in sets up a second factor
+ * (decision 50), so it says so, rather than surprising them with it.
+ */
+export const roleGrantedEmail = (role: string, siteOrigin: string) => {
+  const [article, name] = ROLE_NAMES[role] ?? ['a', role];
+  return {
+    subject: `You have been made ${article} ${name} on this site`,
+    text: [
+      `You have been given the ${name} role.`,
+      '',
+      'To start, sign in with this email address. We email you a code; there is no password.',
+      `${siteOrigin}/access/sign-in`,
+      '',
+      'The first time, you will be asked to set up a second step: an authenticator app or a passkey. Keep the recovery codes it gives you somewhere safe.',
+      '',
+      'If you did not expect this, you can ignore this email.',
+    ].join('\n'),
+  };
+};
+
 export function accessRoutes(
   app: FastifyInstance,
-  { db, mailer }: { db: Kysely<DB>; mailer: Mailer },
+  { db, mailer, siteOrigin }: { db: Kysely<DB>; mailer: Mailer; siteOrigin: string },
 ): void {
   const handoverCodes = limiter({ max: 5, windowMs: 60 * 60 * 1000 });
 
@@ -100,7 +129,16 @@ export function accessRoutes(
         throw notAllowed(notPermittedMessage(role));
       }
       const out = await changeSystemRole(db, { actor, email, role, action });
-      if (out.ok) return { ok: true as const, unchanged: out.unchanged, roles: out.roles };
+      if (out.ok) {
+        // Somebody given a staff role used to learn it only if the granter
+        // told them. After the commit, and a failed email undoes nothing.
+        if (action === 'grant' && !out.unchanged) {
+          await mailer
+            .send({ to: email.trim().toLowerCase(), ...roleGrantedEmail(role, siteOrigin) })
+            .catch(() => undefined);
+        }
+        return { ok: true as const, unchanged: out.unchanged, roles: out.roles };
+      }
       if (out.reason === 'not-permitted') throw notAllowed(notPermittedMessage(role));
       throw refused(
         out.reason === 'unknown-role' || out.reason === 'bad-email' ? 400 : 403,

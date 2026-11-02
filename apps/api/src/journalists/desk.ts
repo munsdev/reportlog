@@ -88,7 +88,7 @@ export const accessEnded = () =>
   new HttpError(
     403,
     'desk_access_ended',
-    'Your journalist access has ended. To read the desk again, join the alert list and ask for access.',
+    'Your journalist access has ended. To have it back, ask again from Journalists after you sign in.',
   );
 
 /**

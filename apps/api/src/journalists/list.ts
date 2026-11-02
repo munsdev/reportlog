@@ -132,7 +132,7 @@ export function confirmationEmail(
       '',
       ...(asksAccess
         ? [
-            'Pressing it also sends your request for access to the journalist desk to the owner of this site, who reads every request.',
+            'Pressing it also sends your request for access to the journalist desk to the people who run this site, who read every request.',
             '',
           ]
         : []),

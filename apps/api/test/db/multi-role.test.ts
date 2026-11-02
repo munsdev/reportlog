@@ -46,6 +46,17 @@ describe('several staff roles at once', () => {
     });
   });
 
+  it('tells the person by email, once per role actually given, with where to sign in', async () => {
+    const told = h.mailer.messages.filter(
+      (m) => m.to === person && m.subject.startsWith('You have been made'),
+    );
+    expect(told.map((m) => m.subject)).toEqual([
+      'You have been made a moderator on this site',
+      'You have been made an Access Manager on this site',
+    ]);
+    expect(told[0]?.text).toContain('/access/sign-in');
+  });
+
   it('lets the person act with both, and shows both on their account', async () => {
     const me = await as(h, await signIn(h, person))({ method: 'GET', url: '/api/auth/me' });
     expect(me.json()).toMatchObject({

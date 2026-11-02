@@ -263,7 +263,7 @@ function DeskSection({
         </p>
       ) : desk === 'pending' ? (
         <p role="status">
-          Your request for access is with the owner. You will get an email when they decide.
+          Your request for access is waiting for a decision. You will get an email when it is made.
         </p>
       ) : open ? (
         <form
@@ -281,7 +281,7 @@ function DeskSection({
           <ErrorNote error={error} />
           <div>
             <button className="btn sm flat go" type="submit" disabled={sending}>
-              {sending ? 'Sending…' : 'Send my request to the owner'}
+              {sending ? 'Sending…' : 'Send my request'}
             </button>
           </div>
         </form>

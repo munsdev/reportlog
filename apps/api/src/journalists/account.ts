@@ -32,7 +32,9 @@ import {
   writeSettings,
   type ListDeps,
 } from './list.ts';
-import { writeRequest } from './request.ts';
+import { tellDeciders, writeRequest } from './request.ts';
+
+export { deciders, requestWaitingEmail } from './request.ts';
 
 const isStaff = (user: SignedIn) =>
   user.roles.some((r) => (STAFF_ROLES as readonly string[]).includes(r));
@@ -206,23 +208,6 @@ export const requestReceivedEmail = () => ({
   ].join('\n'),
 });
 
-export const requestWaitingEmail = (queue: string) => ({
-  subject: 'A journalist desk request is waiting',
-  text: ['A request for access to the journalist desk is waiting for a decision.', '', queue].join(
-    '\n',
-  ),
-});
-
-/** Everyone who may decide: the owner, administrators and Access Managers. */
-export async function deciders(db: Kysely<DB>): Promise<string[]> {
-  const rows = await db
-    .selectFrom('users')
-    .select('email')
-    .where(sql<boolean>`roles && ARRAY['owner', 'admin', 'access_manager']::text[]`)
-    .execute();
-  return rows.map((r) => r.email);
-}
-
 /**
  * Ask for the desk as the signed-in account: one step that includes accepting
  * the journalist agreement. Refused for staff, with no agreement published,
@@ -287,9 +272,7 @@ export async function applyMine(
   });
   // After the commit: a failed email does not undo a request.
   await sendQuietly(deps.mailer, user.email, requestReceivedEmail());
-  const queue = `${deps.siteOrigin}/access/journalists`;
-  for (const to of await deciders(db))
-    await sendQuietly(deps.mailer, to, requestWaitingEmail(queue));
+  await tellDeciders(deps);
   return mine(deps, user);
 }
 

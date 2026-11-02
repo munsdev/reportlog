@@ -227,7 +227,7 @@ test('one sign-up asks for desk access with alerts off, and the page behind an a
     link.getByRole('heading', { level: 1, name: 'You are on the alert list' }),
   ).toBeVisible();
   await expect(
-    link.getByText(/request for access to the journalist desk is with the owner/),
+    link.getByText(/request for access to the journalist desk is waiting for a decision/),
   ).toBeVisible();
   await noViolations(link);
   // On the list, with alerts off from the start.
@@ -262,8 +262,8 @@ test('one sign-up asks for desk access with alerts off, and the page behind an a
   await desk.getByLabel('Your role there').fill('Editor');
   await desk.getByLabel('Who are you?').fill('Alex, editing the Valley Paper.');
   await noViolations(changing);
-  await desk.getByRole('button', { name: 'Send my request to the owner' }).click();
-  await expect(desk.getByText('Your request for access is with the owner.')).toBeVisible();
+  await desk.getByRole('button', { name: 'Send my request' }).click();
+  await expect(desk.getByText('Your request for access is waiting for a decision.')).toBeVisible();
   await noViolations(changing);
   // Still getting alerts: asking for the desk changed nothing else.
   expect(devState('listed', reader)).toBe('active');

@@ -94,8 +94,8 @@ function SignupForm({ askForAccess }: { askForAccess: boolean }) {
         </p>
         {asking ? (
           <p>
-            Pressing it also sends your request for desk access to the owner. If the address is
-            already on the list, we have sent it a link to the request form instead.
+            Pressing it also sends your request for desk access to the people who run this site. If
+            the address is already on the list, we have sent it a link to the request form instead.
           </p>
         ) : null}
         <FollowBand placement="after_tip" />

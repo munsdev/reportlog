@@ -236,6 +236,47 @@ describe('applying for the desk from an account', () => {
   });
 });
 
+describe('a request made while signed out reaches the deciders too', () => {
+  const tokenIn = (kind: string, text: string) =>
+    new RegExp(`/journalists/${kind}/([a-f0-9]{64})`).exec(text)?.[1] ?? '';
+  const waitingFor = (email: string) =>
+    h.mailer.messages.filter(
+      (m) => m.to === email && m.subject === 'A journalist desk request is waiting',
+    ).length;
+
+  it('the sign-up form: told once, when the address is confirmed and the request joins the queue', async () => {
+    const email = address('signed-out-asks');
+    const before = waitingFor(owner.email);
+    const r = await h.app.inject({
+      method: 'POST',
+      url: '/api/journalists/signup',
+      remoteAddress: '203.0.113.201',
+      payload: {
+        name: 'Pat',
+        outlet: 'Desk Daily',
+        email,
+        alerts: 'off',
+        states: [],
+        access: { role: 'Reporter', about: 'Courts.' },
+      },
+    });
+    expect(r.statusCode, r.body).toBe(200);
+    // Not yet: an unconfirmed request is not in the queue.
+    expect(waitingFor(owner.email)).toBe(before);
+    const token = tokenIn('confirm', h.mailer.lastTo(email)?.text ?? '');
+    const url = `/api/journalists/confirm/${token}`;
+    expect((await h.app.inject({ method: 'POST', url })).statusCode).toBe(200);
+    for (const who of [owner, admin, manager]) {
+      expect(h.mailer.lastTo(who.email)?.text).not.toContain(email);
+    }
+    expect(waitingFor(owner.email)).toBe(before + 1);
+    expect(waitingFor(manager.email)).toBeGreaterThan(0);
+    // The link used twice tells nobody twice.
+    await h.app.inject({ method: 'POST', url });
+    expect(waitingFor(owner.email)).toBe(before + 1);
+  });
+});
+
 describe('who decides, and what the person sees', () => {
   it('an administrator approves; the account becomes a journalist and the email links to the desk', async () => {
     const a = await account('approved-by-admin');

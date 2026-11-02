@@ -25,6 +25,7 @@ import { stepUpGuard } from '../identity/stepUp.ts';
 import { limiter } from '../identity/limiter.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { applyMine, changeMine, mine } from './account.ts';
+import { tellDeciders } from './request.ts';
 import { deskGuard, deskLinkPage, deskSourcePage, deskTextPage } from './desk.ts';
 import {
   applyConfirm,
@@ -100,7 +101,14 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
   route(app, C.describeAlertConfirm, ({ params }) =>
     describeConfirm(deps.db, needRing(), params.token),
   );
-  route(app, C.confirmAlerts, ({ params }) => applyConfirm(deps.db, needRing(), params.token));
+  // A request made with the sign-up reaches the queue when its address is
+  // confirmed, so that is when the deciders are told (decision 80).
+  route(app, C.confirmAlerts, async ({ params }) => {
+    const before = await describeConfirm(deps.db, needRing(), params.token);
+    const after = await applyConfirm(deps.db, needRing(), params.token);
+    if (before.state === 'pending' && before.desk === 'pending') await tellDeciders(deps);
+    return after;
+  });
   route(app, C.describeAlertStop, ({ params }) => describeStop(deps.db, needRing(), params.token));
   route(app, C.stopAlerts, ({ params }) => applyStop(deps.db, needRing(), params.token));
   route(app, C.describeAlertSettings, ({ params }) =>
@@ -109,14 +117,22 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
   route(app, C.changeAlertSettings, ({ params, request }) =>
     changeSettings(deps.db, needRing(), params.token, bodyOf(C.changeAlertSettings, request)),
   );
-  route(app, C.requestAccessFromSettings, ({ params, request }) =>
-    requestFromSettings(
+  route(app, C.requestAccessFromSettings, async ({ params, request }) => {
+    const before = await describeSettings(deps.db, needRing(), params.token);
+    const after = await requestFromSettings(
       deps.db,
       needRing(),
       params.token,
       bodyOf(C.requestAccessFromSettings, request),
-    ),
-  );
+    );
+    const newlyAsked =
+      before.state === 'open' &&
+      before.desk === 'none' &&
+      after.state === 'open' &&
+      after.desk === 'pending';
+    if (newlyAsked) await tellDeciders(deps);
+    return after;
+  });
   route(app, C.leaveAlertList, ({ params }) => removeByLink(deps.db, params.token));
 
   const listDeps = () => ({
@@ -135,9 +151,12 @@ export function journalistRoutes(app: FastifyInstance, deps: JournalistRouteDeps
     return { ok: true as const };
   });
   route(app, C.describeAccessLink, ({ params }) => describeAccess(listDeps(), params.token));
-  route(app, C.requestAccess, ({ params, request }) =>
-    submitRequest(listDeps(), params.token, bodyOf(C.requestAccess, request)),
-  );
+  route(app, C.requestAccess, async ({ params, request }) => {
+    const before = await describeAccess(listDeps(), params.token);
+    const after = await submitRequest(listDeps(), params.token, bodyOf(C.requestAccess, request));
+    if (before.state === 'open' && after.state === 'pending') await tellDeciders(deps);
+    return after;
+  });
 
   // ── Decision 80: a signed-in account, for its own address only ──────────
   // Not a door call and needs no role. Emails go out here, so bound them.

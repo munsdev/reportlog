@@ -86,8 +86,8 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
         </p>
         {s.desk === 'pending' ? (
           <p>
-            Your request for access to the journalist desk is with the owner. You will get an email
-            when they decide.
+            Your request for access to the journalist desk is waiting for a decision. You will get
+            an email when it is made.
           </p>
         ) : s.desk === 'approved' ? null : (
           <p>
@@ -140,8 +140,8 @@ export function AlertLinkPage({ kind, token }: { kind: Kind; token: string }) {
       )}
       {joining && s.desk === 'pending' ? (
         <p>
-          Joining also sends your request for access to the journalist desk to the owner, who reads
-          every request.
+          Joining also sends your request for access to the journalist desk to the people who run
+          this site, who read every request.
         </p>
       ) : null}
       <p>

@@ -38,8 +38,8 @@ export function AskAccessPage() {
   return (
     <TokenPage title="Ask for access to the journalist desk">
       <p>
-        Vetted journalists can read links that moderators have checked. The owner of this site reads
-        every request; nothing is approved automatically.
+        Vetted journalists can read links that moderators have checked. The people who run this site
+        read every request; nothing is approved automatically.
       </p>
       <form
         style={{ display: 'grid', gap: 18 }}
@@ -123,7 +123,7 @@ export function AccessLinkPage({ token }: { token: string }) {
   }
   if (s.state === 'pending') {
     return (
-      <TokenPage title="Your request is with the owner">
+      <TokenPage title="Your request is waiting for a decision">
         <p role="status">
           The request for {s.address} is waiting. You will get an email when the owner decides.
         </p>
@@ -160,7 +160,7 @@ export function AccessLinkPage({ token }: { token: string }) {
         <ErrorNote error={send.error} />
         <div>
           <button className="btn sm flat go" type="submit" disabled={send.isPending}>
-            {send.isPending ? 'Sending…' : 'Send my request to the owner'}
+            {send.isPending ? 'Sending…' : 'Send my request'}
           </button>
         </div>
         <p className="m">

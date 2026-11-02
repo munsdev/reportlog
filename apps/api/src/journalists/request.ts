@@ -7,8 +7,9 @@
  * Writing one grants nothing. Only the owner approving it does (vetting.ts).
  */
 import type { AccessRequestBody, DeskAccess } from '@reportlog/contracts';
-import type { Kysely, Transaction } from 'kysely';
+import { sql, type Kysely, type Transaction } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
+import type { Mailer } from '../email/mailer.ts';
 import { wrapDek } from '../filing/contactKeys.ts';
 
 /** What `details_enc` holds, encrypted under the subscriber's own key. */
@@ -66,4 +67,41 @@ export async function deskOf(db: Kysely<DB>, subscriberId: number): Promise<Desk
     .where('subscriber_id', '=', subscriberId)
     .executeTakeFirst();
   return deskFrom(row?.status);
+}
+
+export const requestWaitingEmail = (queue: string) => ({
+  subject: 'A journalist desk request is waiting',
+  text: ['A request for access to the journalist desk is waiting for a decision.', '', queue].join(
+    '\n',
+  ),
+});
+
+/** Everyone who may decide: the owner, administrators and Access Managers. */
+export async function deciders(db: Kysely<DB>): Promise<string[]> {
+  const rows = await db
+    .selectFrom('users')
+    .select('email')
+    .where(sql<boolean>`roles && ARRAY['owner', 'admin', 'access_manager']::text[]`)
+    .execute();
+  return rows.map((r) => r.email);
+}
+
+/**
+ * Tell everyone who may decide that a request has reached the queue (decision
+ * 80), with no applicant details. Called once a request becomes visible in the
+ * queue, from whichever path put it there: the signed-in account, the alerts
+ * sign-up once its address is confirmed, the emailed request link, or the
+ * change page behind every alert. Only the first path used to tell anybody, so
+ * a request made while signed out could sit unseen. A failed email does not
+ * undo the request.
+ */
+export async function tellDeciders(deps: {
+  db: Kysely<DB>;
+  mailer: Mailer;
+  siteOrigin: string;
+}): Promise<void> {
+  const message = requestWaitingEmail(`${deps.siteOrigin}/access/journalists`);
+  for (const to of await deciders(deps.db)) {
+    await deps.mailer.send({ to, ...message }).catch(() => undefined);
+  }
 }

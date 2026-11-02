@@ -126,9 +126,9 @@ test('a journalist asks, the owner approves, the desk shows checked links, and r
     .getByLabel('Who are you?')
     .fill('Pat, covering Vermont for Desk Daily. https://deskdaily.example.org/by/pat');
   await link.getByLabel('Press card number (optional)').fill('PC-777');
-  await link.getByRole('button', { name: 'Send my request to the owner' }).click();
+  await link.getByRole('button', { name: 'Send my request' }).click();
   await expect(
-    link.getByRole('heading', { level: 1, name: 'Your request is with the owner' }),
+    link.getByRole('heading', { level: 1, name: 'Your request is waiting for a decision' }),
   ).toBeVisible();
 
   // J7b, J7: the owner's queue, and the agreement the desk waits for (J8).
