@@ -822,6 +822,10 @@ const NOT_STAFF_PREFIXES = [
   '/api/uploads',
   '/api/evidence/',
   '/api/board',
+  // Coverage (decision 84): the public list, the map counts and the cards,
+  // and a journalist's own articles under /mine behind deskGuard. Deciding
+  // on an article is under /api/moderation/, staff.
+  '/api/coverage',
   '/api/v1',
   '/api/chain/',
   '/api/press',
