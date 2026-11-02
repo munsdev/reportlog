@@ -56,7 +56,10 @@ export const MENU: readonly MenuSection[] = [
     id: 'desk',
     label: 'For journalists',
     // Not a desk (decision 81): the board, with more on it, and their alerts.
-    pages: [{ to: '/journalists/alerts', label: 'Alerts and access', for: ['journalist'] }],
+    pages: [
+      { to: '/journalists/alerts', label: 'Alerts and access', for: ['journalist'] },
+      { to: '/journalists/coverage', label: 'Your coverage', for: ['journalist'] },
+    ],
   },
   {
     id: 'organization',
@@ -97,6 +100,7 @@ export const MENU: readonly MenuSection[] = [
         ...wait('texts'),
       },
       { to: '/lists/links', label: 'Links', for: MOD, ...wait('tip_links') },
+      { to: '/moderate/coverage', label: 'Coverage', for: MOD, ...wait('coverage') },
       {
         to: '/lists/review',
         label: 'List entries',

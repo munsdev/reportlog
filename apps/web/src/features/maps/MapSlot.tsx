@@ -16,8 +16,11 @@ export function MapSlot({
   slot,
   chosen,
   onChosen,
+  startLayer,
 }: {
   slot: MapSlotId;
+  /** Which layer each map opens on (the board's Coverage tab opens on coverage). */
+  startLayer?: 'reports' | 'coverage';
   /** A page that narrows its list by the area clicked (the board). */
   chosen?: string | null;
   onChosen?: (code: string | null) => void;
@@ -35,6 +38,7 @@ export function MapSlot({
           slug={m.slug}
           {...(chosen !== undefined ? { chosen } : {})}
           {...(onChosen ? { onChosen } : {})}
+          {...(startLayer ? { startLayer } : {})}
         />
       ))}
     </section>

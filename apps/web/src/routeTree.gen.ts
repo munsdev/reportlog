@@ -37,6 +37,7 @@ import { Route as BoardIndexRouteImport } from './routes/board/index'
 import { Route as BoardRefRouteImport } from './routes/board/$ref'
 import { Route as BoardAccountsRouteImport } from './routes/board/accounts'
 import { Route as BoardActivityRouteImport } from './routes/board/activity'
+import { Route as BoardCoverageRouteImport } from './routes/board/coverage'
 import { Route as BoardLinksRouteImport } from './routes/board/links'
 import { Route as BoardMapsRouteImport } from './routes/board/maps'
 import { Route as BoardNumbersRouteImport } from './routes/board/numbers'
@@ -56,6 +57,7 @@ import { Route as FileSlugRouteImport } from './routes/file/$slug'
 import { Route as IllegalContentIndexRouteImport } from './routes/illegal-content/index'
 import { Route as JournalistsAccessRouteImport } from './routes/journalists_.access'
 import { Route as JournalistsAlertsRouteImport } from './routes/journalists_.alerts'
+import { Route as JournalistsCoverageRouteImport } from './routes/journalists_.coverage'
 import { Route as ListSlugRouteImport } from './routes/list/$slug'
 import { Route as MapSlugRouteImport } from './routes/map/$slug'
 import { Route as MapsSlugRouteImport } from './routes/maps/$slug'
@@ -91,6 +93,7 @@ import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
 import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/moderate/agreement'
+import { Route as staffModerateCoverageRouteImport } from './routes/(staff)/moderate/coverage'
 import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderate/flood'
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
 import { Route as staffModerateSettingsRouteImport } from './routes/(staff)/moderate/settings'
@@ -272,6 +275,11 @@ const BoardActivityRoute = BoardActivityRouteImport.update({
   path: '/board/activity',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BoardCoverageRoute = BoardCoverageRouteImport.update({
+  id: '/board/coverage',
+  path: '/board/coverage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BoardLinksRoute = BoardLinksRouteImport.update({
   id: '/board/links',
   path: '/board/links',
@@ -365,6 +373,11 @@ const JournalistsAccessRoute = JournalistsAccessRouteImport.update({
 const JournalistsAlertsRoute = JournalistsAlertsRouteImport.update({
   id: '/journalists_/alerts',
   path: '/journalists/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const JournalistsCoverageRoute = JournalistsCoverageRouteImport.update({
+  id: '/journalists_/coverage',
+  path: '/journalists/coverage',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ListSlugRoute = ListSlugRouteImport.update({
@@ -540,6 +553,11 @@ const staffModerateThreadIdRoute = staffModerateThreadIdRouteImport.update({
 const staffModerateAgreementRoute = staffModerateAgreementRouteImport.update({
   id: '/agreement',
   path: '/agreement',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
+const staffModerateCoverageRoute = staffModerateCoverageRouteImport.update({
+  id: '/coverage',
+  path: '/coverage',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
 const staffModerateFloodRoute = staffModerateFloodRouteImport.update({
@@ -779,6 +797,7 @@ export interface FileRoutesByFullPath {
   '/board/$ref': typeof BoardRefRoute
   '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/coverage': typeof BoardCoverageRoute
   '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
@@ -794,6 +813,7 @@ export interface FileRoutesByFullPath {
   '/file/$slug': typeof FileSlugRoute
   '/journalists/access': typeof JournalistsAccessRoute
   '/journalists/alerts': typeof JournalistsAlertsRoute
+  '/journalists/coverage': typeof JournalistsCoverageRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/maps/$slug': typeof MapsSlugRoute
@@ -827,6 +847,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/coverage': typeof staffModerateCoverageRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
@@ -897,6 +918,7 @@ export interface FileRoutesByTo {
   '/board/$ref': typeof BoardRefRoute
   '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/coverage': typeof BoardCoverageRoute
   '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
@@ -912,6 +934,7 @@ export interface FileRoutesByTo {
   '/file/$slug': typeof FileSlugRoute
   '/journalists/access': typeof JournalistsAccessRoute
   '/journalists/alerts': typeof JournalistsAlertsRoute
+  '/journalists/coverage': typeof JournalistsCoverageRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/maps/$slug': typeof MapsSlugRoute
@@ -945,6 +968,7 @@ export interface FileRoutesByTo {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/coverage': typeof staffModerateCoverageRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/moderate/settings': typeof staffModerateSettingsRoute
@@ -1022,6 +1046,7 @@ export interface FileRoutesById {
   '/board/$ref': typeof BoardRefRoute
   '/board/accounts': typeof BoardAccountsRoute
   '/board/activity': typeof BoardActivityRoute
+  '/board/coverage': typeof BoardCoverageRoute
   '/board/links': typeof BoardLinksRoute
   '/board/maps': typeof BoardMapsRoute
   '/board/numbers': typeof BoardNumbersRoute
@@ -1037,6 +1062,7 @@ export interface FileRoutesById {
   '/file/$slug': typeof FileSlugRoute
   '/journalists_/access': typeof JournalistsAccessRoute
   '/journalists_/alerts': typeof JournalistsAlertsRoute
+  '/journalists_/coverage': typeof JournalistsCoverageRoute
   '/list/$slug': typeof ListSlugRoute
   '/map/$slug': typeof MapSlugRoute
   '/maps/$slug': typeof MapsSlugRoute
@@ -1070,6 +1096,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/pages': typeof staffLogbooksPagesRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
+  '/(staff)/moderate/coverage': typeof staffModerateCoverageRoute
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
   '/(staff)/moderate/settings': typeof staffModerateSettingsRoute
@@ -1148,6 +1175,7 @@ export interface FileRouteTypes {
     | '/board/$ref'
     | '/board/accounts'
     | '/board/activity'
+    | '/board/coverage'
     | '/board/links'
     | '/board/maps'
     | '/board/numbers'
@@ -1163,6 +1191,7 @@ export interface FileRouteTypes {
     | '/file/$slug'
     | '/journalists/access'
     | '/journalists/alerts'
+    | '/journalists/coverage'
     | '/list/$slug'
     | '/map/$slug'
     | '/maps/$slug'
@@ -1196,6 +1225,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/coverage'
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
@@ -1266,6 +1296,7 @@ export interface FileRouteTypes {
     | '/board/$ref'
     | '/board/accounts'
     | '/board/activity'
+    | '/board/coverage'
     | '/board/links'
     | '/board/maps'
     | '/board/numbers'
@@ -1281,6 +1312,7 @@ export interface FileRouteTypes {
     | '/file/$slug'
     | '/journalists/access'
     | '/journalists/alerts'
+    | '/journalists/coverage'
     | '/list/$slug'
     | '/map/$slug'
     | '/maps/$slug'
@@ -1314,6 +1346,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/coverage'
     | '/moderate/flood'
     | '/moderate/illegal-content'
     | '/moderate/settings'
@@ -1390,6 +1423,7 @@ export interface FileRouteTypes {
     | '/board/$ref'
     | '/board/accounts'
     | '/board/activity'
+    | '/board/coverage'
     | '/board/links'
     | '/board/maps'
     | '/board/numbers'
@@ -1405,6 +1439,7 @@ export interface FileRouteTypes {
     | '/file/$slug'
     | '/journalists_/access'
     | '/journalists_/alerts'
+    | '/journalists_/coverage'
     | '/list/$slug'
     | '/map/$slug'
     | '/maps/$slug'
@@ -1438,6 +1473,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/pages'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/agreement'
+    | '/(staff)/moderate/coverage'
     | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
     | '/(staff)/moderate/settings'
@@ -1515,6 +1551,7 @@ export interface RootRouteChildren {
   BoardRefRoute: typeof BoardRefRoute
   BoardAccountsRoute: typeof BoardAccountsRoute
   BoardActivityRoute: typeof BoardActivityRoute
+  BoardCoverageRoute: typeof BoardCoverageRoute
   BoardLinksRoute: typeof BoardLinksRoute
   BoardMapsRoute: typeof BoardMapsRoute
   BoardNumbersRoute: typeof BoardNumbersRoute
@@ -1530,6 +1567,7 @@ export interface RootRouteChildren {
   FileSlugRoute: typeof FileSlugRoute
   JournalistsAccessRoute: typeof JournalistsAccessRoute
   JournalistsAlertsRoute: typeof JournalistsAlertsRoute
+  JournalistsCoverageRoute: typeof JournalistsCoverageRoute
   ListSlugRoute: typeof ListSlugRoute
   MapSlugRoute: typeof MapSlugRoute
   MapsSlugRoute: typeof MapsSlugRoute
@@ -1768,6 +1806,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BoardActivityRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/board/coverage': {
+      id: '/board/coverage'
+      path: '/board/coverage'
+      fullPath: '/board/coverage'
+      preLoaderRoute: typeof BoardCoverageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/board/links': {
       id: '/board/links'
       path: '/board/links'
@@ -1899,6 +1944,13 @@ declare module '@tanstack/react-router' {
       path: '/journalists/alerts'
       fullPath: '/journalists/alerts'
       preLoaderRoute: typeof JournalistsAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/journalists_/coverage': {
+      id: '/journalists_/coverage'
+      path: '/journalists/coverage'
+      fullPath: '/journalists/coverage'
+      preLoaderRoute: typeof JournalistsCoverageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/list/$slug': {
@@ -2144,6 +2196,13 @@ declare module '@tanstack/react-router' {
       path: '/agreement'
       fullPath: '/moderate/agreement'
       preLoaderRoute: typeof staffModerateAgreementRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
+    '/(staff)/moderate/coverage': {
+      id: '/(staff)/moderate/coverage'
+      path: '/coverage'
+      fullPath: '/moderate/coverage'
+      preLoaderRoute: typeof staffModerateCoverageRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
     '/(staff)/moderate/flood': {
@@ -2514,6 +2573,7 @@ const staffLogbooksRouteRouteWithChildren =
 interface staffModerateRouteRouteChildren {
   staffModerateThreadIdRoute: typeof staffModerateThreadIdRoute
   staffModerateAgreementRoute: typeof staffModerateAgreementRoute
+  staffModerateCoverageRoute: typeof staffModerateCoverageRoute
   staffModerateFloodRoute: typeof staffModerateFloodRoute
   staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
   staffModerateSettingsRoute: typeof staffModerateSettingsRoute
@@ -2525,6 +2585,7 @@ interface staffModerateRouteRouteChildren {
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateThreadIdRoute: staffModerateThreadIdRoute,
   staffModerateAgreementRoute: staffModerateAgreementRoute,
+  staffModerateCoverageRoute: staffModerateCoverageRoute,
   staffModerateFloodRoute: staffModerateFloodRoute,
   staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,
   staffModerateSettingsRoute: staffModerateSettingsRoute,
@@ -2597,6 +2658,7 @@ const rootRouteChildren: RootRouteChildren = {
   BoardRefRoute: BoardRefRoute,
   BoardAccountsRoute: BoardAccountsRoute,
   BoardActivityRoute: BoardActivityRoute,
+  BoardCoverageRoute: BoardCoverageRoute,
   BoardLinksRoute: BoardLinksRoute,
   BoardMapsRoute: BoardMapsRoute,
   BoardNumbersRoute: BoardNumbersRoute,
@@ -2612,6 +2674,7 @@ const rootRouteChildren: RootRouteChildren = {
   FileSlugRoute: FileSlugRoute,
   JournalistsAccessRoute: JournalistsAccessRoute,
   JournalistsAlertsRoute: JournalistsAlertsRoute,
+  JournalistsCoverageRoute: JournalistsCoverageRoute,
   ListSlugRoute: ListSlugRoute,
   MapSlugRoute: MapSlugRoute,
   MapsSlugRoute: MapsSlugRoute,

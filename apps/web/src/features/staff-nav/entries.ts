@@ -75,6 +75,7 @@ export const STAFF_AREAS: readonly StaffArea[] = [
         waiting: 'texts',
       },
       { to: '/lists/links', label: 'Links', for: MOD, waiting: 'tip_links' },
+      { to: '/moderate/coverage', label: 'Coverage', for: MOD, waiting: 'coverage' },
       {
         to: '/lists/review',
         label: 'List entries',

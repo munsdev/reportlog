@@ -108,6 +108,8 @@ const OPEN = [
   // Journalists' tabs (decision 81): they send anybody else to the door above.
   '/board/links',
   '/board/accounts',
+  // Coverage (decision 84): the public list of approved articles.
+  '/board/coverage',
   // Gone with the desk: each only sends an old address on.
   '/desk/texts',
   '/desk/sources',
@@ -142,6 +144,8 @@ const OPEN = [
   '/notifications_/stop/$token',
   '/journalists',
   '/journalists_/alerts',
+  // A journalist's linked articles: it checks for itself, and sends anybody else to the door.
+  '/journalists_/coverage',
   '/journalists_/confirm/$token',
   '/journalists_/stop/$token',
   '/journalists_/settings/$token',

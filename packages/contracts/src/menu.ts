@@ -21,6 +21,8 @@ export const MenuWaiting = z.object({
   tip_links: Count.optional(),
   /** Written accounts (report text and tip descriptions) nobody has checked yet. */
   texts: Count.optional(),
+  /** Articles journalists linked that no moderator has decided yet (decision 84). */
+  coverage: Count.optional(),
   /** Feedback issues still open (new, investigating, in progress, waiting on the tester). */
   feedback: Count.optional(),
 });

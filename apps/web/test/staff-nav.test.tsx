@@ -57,6 +57,7 @@ describe('who sees which section and page (menu.ts)', () => {
         'Reports queue',
         'Written accounts',
         'Links',
+        'Coverage',
         'List entries',
         'Files waiting',
         'Illegal content notices',
@@ -124,7 +125,7 @@ describe('who sees which section and page (menu.ts)', () => {
   it('a journalist sees their alerts and access, and no staff area', () => {
     expect(shape(as('journalist'))).toEqual({
       You: YOU,
-      'For journalists': ['Alerts and access'],
+      'For journalists': ['Alerts and access', 'Your coverage'],
     });
   });
 

@@ -17,6 +17,7 @@ import { Band, MockPage } from '../../mockup/Band.tsx';
 import { useBodyClass } from '../../mockup/useBodyClass.ts';
 import { useJournalistAccess } from '../journalists/access.ts';
 import { placedMapsQuery } from '../maps/queries.ts';
+import { coverageCountsQuery } from '../articles/queries.ts';
 import { pressQuery } from './queries.ts';
 
 type BoardPath =
@@ -25,6 +26,7 @@ type BoardPath =
   | '/board/maps'
   | '/board/activity'
   | '/board/press'
+  | '/board/coverage'
   | '/board/links'
   | '/board/accounts';
 
@@ -34,6 +36,8 @@ const TABS: readonly { to: BoardPath; label: string }[] = [
   { to: '/board/numbers', label: 'Numbers' },
   { to: '/board/activity', label: 'Activity' },
   { to: '/board/press', label: 'Press pack' },
+  // News articles journalists linked (decision 84); public, shown once there is one.
+  { to: '/board/coverage', label: 'Coverage' },
   // Journalists only (decision 81): the same layout, with these in it.
   { to: '/board/links', label: 'Links' },
   { to: '/board/accounts', label: 'Written accounts' },
@@ -48,10 +52,13 @@ export function BoardTabs() {
   const press = useQuery(pressQuery).data;
   const hasPress = press?.state === 'ready' && press.files.length > 0;
   const journalist = useJournalistAccess() === 'yes';
+  // Nor a Coverage tab before any article is on it.
+  const hasCoverage = (useQuery(coverageCountsQuery).data?.total ?? 0) > 0;
   const tabs = TABS.filter(
     (t) =>
       (t.to !== '/board/maps' || hasMaps) &&
       (t.to !== '/board/press' || hasPress) &&
+      (t.to !== '/board/coverage' || hasCoverage || path === '/board/coverage') &&
       ((t.to !== '/board/links' && t.to !== '/board/accounts') || journalist),
   );
   return (

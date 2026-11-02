@@ -43,6 +43,8 @@ import { floodRoutes } from './moderation/floodRoutes.ts';
 import { eraseLinkRoutes } from './identity/eraseLink.ts';
 import { mapRoutes } from './maps/routes.ts';
 import { menuRoutes } from './menu/routes.ts';
+import { coverageRoutes } from './articles/routes.ts';
+import type { FetchOptions } from './articles/preview.ts';
 import { healthRoutes } from './routes/health.ts';
 import { publicationRoutes } from './routes/publication.ts';
 import { verifyRoutes } from './routes/verify.ts';
@@ -114,6 +116,8 @@ export interface AppDeps {
   mapCacheMs?: number;
   /** The website's index.html, for the page head route. Tests pass a small one. */
   pageTemplate?: string;
+  /** How coverage cards read an article's page. Tests point it at their own server. */
+  coverageFetch?: FetchOptions;
 }
 
 export async function buildApp({
@@ -126,6 +130,7 @@ export async function buildApp({
   statsTtlMs,
   mapCacheMs,
   pageTemplate,
+  coverageFetch,
 }: AppDeps): Promise<FastifyInstance> {
   const hops = config.TRUST_PROXY ?? 0;
   const app = Fastify({
@@ -291,5 +296,6 @@ export async function buildApp({
   copyRoutes(app, { db, config });
   updateRoutes(app, { stateDir: config.STATE_DIR ?? '/var/lib/reportlog' });
   await menuRoutes(app, { db });
+  await coverageRoutes(app, { db, ...(coverageFetch ? { fetchOptions: coverageFetch } : {}) });
   return app;
 }

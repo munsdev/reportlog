@@ -26,6 +26,7 @@ import { mayUseTracker } from '../feedback/routes.ts';
 import type { SignedIn } from '../identity/sessions.ts';
 import { hasAccepted } from '../moderation/agreement.ts';
 import { waitingCount } from '../moderation/texts/items.ts';
+import { waitingCount as coverageWaiting } from '../articles/coverage.ts';
 
 const moderates = (user: SignedIn) =>
   roleSatisfies(user.roles, 'moderator') || roleSatisfies(user.roles, 'admin');
@@ -89,6 +90,8 @@ export async function waitingFor(db: Database, user: SignedIn): Promise<MenuWait
     ...(agreed ? { list_entries: await listEntriesWaiting(db) } : {}),
     ...(mod ? { tip_links: await tipLinksWaiting(db) } : {}),
     ...(agreed ? { texts: await waitingCount(db) } : {}),
+    // Articles journalists linked: the same moderators as the coverage queue (moderatorGuard).
+    ...(agreed ? { coverage: await coverageWaiting(db) } : {}),
     ...(mayUseTracker(user) ? { feedback: await feedbackOpen(db) } : {}),
   };
 }

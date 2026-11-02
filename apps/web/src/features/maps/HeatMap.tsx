@@ -29,6 +29,8 @@ import { pathOf } from './outlines.ts';
 import type { CountyOutlines } from './counties.ts';
 import { loadCountyOutlines } from './counties.ts';
 import { mapQuery, outlinesQuery } from './queries.ts';
+import { coverageCountsQuery } from '../articles/queries.ts';
+import { coverageAsMap, LayerSwitch, Unmapped, type Layer } from '../articles/layer.tsx';
 import { BELOW, ENDS, NO_DATA, SCALES, binner, colourOf } from './scale.ts';
 
 export interface MapStart {
@@ -52,6 +54,7 @@ export function HeatMap({
   showTitle = true,
   chosen,
   onChosen,
+  startLayer = 'reports',
 }: {
   slug: string;
   start?: MapStart;
@@ -60,22 +63,35 @@ export function HeatMap({
   /** The area a page narrows its list to (the board's `place`), kept in step with the map. */
   chosen?: string | null;
   onChosen?: (code: string | null) => void;
+  /** Which layer it opens on: reports, or news coverage (decision 84). */
+  startLayer?: Layer;
 }) {
   const data = useQuery(mapQuery(slug));
   const outlines = useQuery(outlinesQuery());
+  // The coverage layer is offered only once there is something on it.
+  const coverage = useQuery(coverageCountsQuery);
+  const [layer, setLayer] = useState<Layer>(startLayer);
   if (data.isPending) return <p role="status">Loading the map…</p>;
   if (data.isError) return <Note tone="serious">{data.error.message}</Note>;
   if (!data.data.published) return <Note>{data.data.reason}</Note>;
+  const counts = coverage.data && coverage.data.total > 0 ? coverage.data : null;
+  const onCoverage = layer === 'coverage' && counts !== null;
   return (
-    <HeatMapView
-      map={data.data}
-      outlines={outlines.data ?? null}
-      outlinesFailed={outlines.isError}
-      showTitle={showTitle}
-      {...(start ? { start } : {})}
-      {...(chosen !== undefined ? { chosen } : {})}
-      {...(onChosen ? { onChosen } : {})}
-    />
+    <div className="grid gap-3">
+      {counts ? <LayerSwitch value={layer} onChange={setLayer} /> : null}
+      <HeatMapView
+        // A new layer starts its own view: a plane or area picked on one means nothing on the other.
+        key={onCoverage ? 'coverage' : 'reports'}
+        map={onCoverage ? coverageAsMap(data.data, counts) : data.data}
+        outlines={outlines.data ?? null}
+        outlinesFailed={outlines.isError}
+        showTitle={showTitle}
+        {...(start ? { start } : {})}
+        {...(chosen !== undefined ? { chosen } : {})}
+        {...(onChosen ? { onChosen } : {})}
+      />
+      {onCoverage ? <Unmapped counts={counts} /> : null}
+    </div>
   );
 }
 

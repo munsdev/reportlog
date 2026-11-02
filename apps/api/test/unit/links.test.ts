@@ -45,9 +45,12 @@ describe('K6 and X1 · the server never requests a submitted link', () => {
       .filter((p) => NETWORK.some((re) => re.test(code(p))))
       .map((p) => relative(SRC, p))
       .sort();
-    // The doctor checks this site's own health; nothing else opens a socket
-    // itself. A new entry here is a new outbound request: decide it, then add it.
-    expect(callers).toEqual(['jobs/doctor.ts']);
+    // The doctor checks this site's own health. The coverage card reader is
+    // the one decided exception (decision 84): an article a journalist linked,
+    // read through its own guards (articles/preview.ts) and never a tip's or a
+    // report's link. Nothing else opens a socket itself. A new entry here is a
+    // new outbound request: decide it, then add it.
+    expect(callers).toEqual(['articles/preview.ts', 'jobs/doctor.ts']);
   });
 
   it('the links and lists modules reach no network code at all, not even a mailer', () => {

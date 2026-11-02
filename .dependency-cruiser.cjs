@@ -82,6 +82,15 @@ module.exports = {
       to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
     },
     {
+      name: 'articles-never-reach-the-chain',
+      comment:
+        'An article a journalist linked is their published work, not a report (decision 84). ' +
+        'Nothing under articles may reach the sealing code or the chain.',
+      severity: 'error',
+      from: { path: '^apps/api/src/articles/' },
+      to: { path: '^(packages/seal/|apps/api/src/chain/)', reachable: true },
+    },
+    {
       name: 'journalist-screens-never-reach-the-seal',
       comment:
         'The desk and the access request screens show checked links and text, never a sealed ' +

@@ -31,3 +31,4 @@ export * from './pages.ts';
 export * from './texts.ts';
 export * from './sitebundle.ts';
 export * from './robots.ts';
+export * from './coverage.ts';

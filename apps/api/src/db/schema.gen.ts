@@ -192,6 +192,34 @@ export interface CoordinatorActions {
   thread_id: string;
 }
 
+export interface CoverageArticlePlaces {
+  article_id: number;
+  code: string;
+}
+
+export interface CoverageArticles {
+  created_at: Generated<Timestamp>;
+  happened_on: string | null;
+  host: string;
+  id: Generated<number>;
+  international: Generated<boolean>;
+  listed: Generated<boolean>;
+  national: Generated<boolean>;
+  review_note: string | null;
+  review_state: Generated<string>;
+  reviewed_at: Timestamp | null;
+  reviewed_by: string | null;
+  url: string;
+  user_id: number;
+}
+
+export interface CoverageBylines {
+  name: string;
+  outlet: string | null;
+  updated_at: Generated<Timestamp>;
+  user_id: number;
+}
+
 export interface DecisionNotices {
   actor_email: string;
   created_at: Generated<Timestamp>;
@@ -1219,6 +1247,9 @@ export interface DB {
   content_notice_events: ContentNoticeEvents;
   content_notices: ContentNotices;
   coordinator_actions: CoordinatorActions;
+  coverage_article_places: CoverageArticlePlaces;
+  coverage_articles: CoverageArticles;
+  coverage_bylines: CoverageBylines;
   decision_notices: DecisionNotices;
   digest_stop_links: DigestStopLinks;
   digest_subscriptions: DigestSubscriptions;

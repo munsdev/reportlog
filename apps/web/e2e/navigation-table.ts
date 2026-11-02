@@ -25,6 +25,8 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { label: 'Your account', href: '/account' },
   // The journalists' own page (decision 81): their alerts and where their request stands.
   { label: 'Alerts and access', href: '/journalists/alerts' },
+  // Their linked articles (decision 84).
+  { label: 'Your coverage', href: '/journalists/coverage' },
   { label: 'Filing for an organization', href: '/intake' },
   { label: 'Volunteer links', href: '/intake/links' },
   { label: 'Members', href: '/intake/members' },
@@ -33,6 +35,7 @@ export const ALL_PAGES: readonly MenuPage[] = [
   { area: 'Review', label: 'Reports queue', href: '/moderate' },
   { area: 'Review', label: 'Written accounts', href: '/moderate/texts' },
   { area: 'Review', label: 'Links', href: '/lists/links' },
+  { area: 'Review', label: 'Coverage', href: '/moderate/coverage' },
   { area: 'Review', label: 'List entries', href: '/lists/review' },
   { area: 'Review', label: 'Files waiting', href: '/files' },
   { area: 'Review', label: 'Illegal content notices', href: '/moderate/illegal-content' },
@@ -75,11 +78,11 @@ export type MenuRole =
 
 const pick = (...labels: string[]) => labels;
 const YOU = ['Your dashboard', 'My reports', 'Email updates', 'Your account'];
-const DESK = ['Alerts and access'];
+const DESK = ['Alerts and access', 'Your coverage'];
 /** Everything but the journalist desk and the organization's pages. */
 const STAFF_ONLY = (...gone: string[]) => {
   const not = new Set(
-    ALL_PAGES.filter((p) => p.href === '/journalists/alerts' || p.href.startsWith('/intake')).map(
+    ALL_PAGES.filter((p) => p.href.startsWith('/journalists/') || p.href.startsWith('/intake')).map(
       (p) => p.href,
     ),
   );
@@ -96,6 +99,7 @@ export const MENU_FOR: Readonly<Record<MenuRole, readonly string[]>> = {
       'Reports queue',
       'Written accounts',
       'Links',
+      'Coverage',
       'List entries',
       'Files waiting',
       'Illegal content notices',
