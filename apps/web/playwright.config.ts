@@ -168,6 +168,9 @@ export default defineConfig({
       name: 'journalist-desk',
       testMatch: /journalist-desk\/.*\.spec\.ts$/,
       dependencies: ['owner'],
+      // One file at a time: each takes the owner's seat and gives it back, and
+      // two doing that side by side hand it to each other mid-test.
+      workers: 1,
       use: {
         ...devices['Desktop Chrome'],
         ...(chromium ? { launchOptions: { executablePath: chromium } } : {}),

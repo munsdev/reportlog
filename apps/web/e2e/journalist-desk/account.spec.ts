@@ -4,6 +4,9 @@
  * agreement, is approved by someone who decides, and the email's link opens
  * the desk; a rejected request reads "not approved" and may be made again.
  *
+ * Then coverage (decision 84): a journalist links an article, a moderator
+ * approves it, and it is on the public Coverage tab.
+ *
  * Its own file, in the desk's project (it takes the owner's seat and gives it
  * back, and publishes a journalist agreement, which nothing can take back).
  */
@@ -191,6 +194,132 @@ test('a signed-in account joins alerts and applies in one step; approval opens t
   await turned.reload();
   await expect(turned.getByText(/was not approved/)).toBeVisible();
   await expect(turned.getByRole('button', { name: 'Apply for desk access' })).toBeVisible();
+
+  expect(outside).toEqual([]);
+});
+
+// Coverage (decision 84): its own journalist and an article on the reserved
+// `.invalid` domain, so the server's read of the page fails at once and the
+// card shows the address itself. Here, not in a file of its own, because it
+// needs the owner's seat this file holds, and files run side by side.
+const COV_JOURNALIST = `e2e-cov-journalist-${run}@example.org`;
+const ARTICLE = `https://news-${run}.invalid/2026/11/03/lines`;
+
+/** Accept an agreement if the page asks for one (another test may have published it). */
+async function acceptIfAsked(page: Page) {
+  const box = page.getByLabel('I have read this and I accept it');
+  if (await box.isVisible().catch(() => false)) {
+    await box.check();
+    await page.getByRole('button', { name: /accept/i }).click();
+  }
+}
+
+test('a journalist links an article; a moderator approves it; it is on the public Coverage tab', async ({
+  browser,
+}) => {
+  const outside: string[] = [];
+  const owner = await (await signedIn(browser, OWNER)).newPage();
+  outside.push(...outsideRequests(owner));
+
+  // A journalist agreement to accept, published here so this test stands alone.
+  await owner.goto('/access/journalists/agreement');
+  await owner.getByLabel('The new version').fill(`Coverage agreement ${run}`);
+  await stepUp(owner.request);
+  await owner.getByRole('button', { name: 'Publish this version' }).click();
+  await expect(owner.getByText('Published.')).toBeVisible();
+
+  // Apply from the account, and be approved.
+  const journalist = await (await signedIn(browser, COV_JOURNALIST)).newPage();
+  outside.push(...outsideRequests(journalist));
+  await journalist.goto('/journalists/alerts');
+  await journalist.getByLabel('Your name').fill('Casey Columnist');
+  await journalist.getByLabel('Your outlet').fill('Coverage Daily');
+  await journalist.getByLabel('Your role there').fill('Reporter');
+  await journalist.getByLabel('Who are you?').fill('Elections reporter.');
+  await journalist.getByLabel('I have read the journalist agreement and I accept it.').check();
+  await journalist.getByRole('button', { name: 'Apply for desk access' }).click();
+  await expect(journalist.getByText(/Your request is pending since/)).toBeVisible();
+  await owner.goto('/access/journalists');
+  await stepUp(owner.request);
+  await owner
+    .getByRole('article', { name: 'Request from Casey Columnist' })
+    .getByRole('button', { name: 'Approve' })
+    .click();
+  await expect(
+    owner
+      .getByRole('row', { name: /Casey Columnist/ })
+      .getByRole('button', { name: 'Revoke access' }),
+  ).toBeVisible();
+
+  // The profile: a byline, then an article in Delaware and nationally.
+  await journalist.goto('/journalists/coverage');
+  await expect(journalist.getByRole('heading', { level: 1, name: 'Your coverage' })).toBeVisible();
+  await noViolations(journalist);
+  await journalist.getByLabel('Name', { exact: true }).fill('Casey Columnist');
+  await journalist.getByLabel('Outlet').fill('Coverage Daily');
+  await journalist.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(journalist.getByText('Saved.')).toBeVisible();
+
+  await journalist.getByLabel('Address of the article').fill(ARTICLE);
+  await journalist.getByLabel('When did it happen?').fill('2026-11-03');
+  await journalist.getByRole('checkbox', { name: /National: the United States/ }).check();
+  await journalist.getByLabel('State', { exact: true }).selectOption({ label: 'Delaware' });
+  await journalist.getByRole('button', { name: 'Add' }).first().click();
+  await expect(journalist.getByRole('list', { name: 'Places added' })).toContainText('Delaware');
+  await journalist.getByRole('button', { name: 'Link it' }).click();
+  await expect(journalist.getByText('Linked. It is waiting for a moderator.')).toBeVisible();
+  const mine = journalist.getByRole('article').filter({ hasText: ARTICLE });
+  await expect(mine).toContainText('Waiting for a moderator');
+  await expect(mine).toContainText('National · Delaware');
+
+  // Not public while it waits.
+  const reader = await (await browser.newContext()).newPage();
+  outside.push(...outsideRequests(reader));
+  await reader.goto('/board/coverage');
+  await expect(reader.getByText(ARTICLE)).toHaveCount(0);
+
+  // The moderator's queue: the owner satisfies administrator, whom the queue admits.
+  await owner.goto('/moderate/coverage');
+  await acceptIfAsked(owner);
+  await expect(owner.getByRole('heading', { level: 1, name: 'Coverage' })).toBeVisible();
+  // The innermost article: the staff page's own frame is one too.
+  const queued = owner.getByRole('article').filter({ hasText: ARTICLE }).last();
+  await expect(queued).toContainText('Linked by Casey Columnist, Coverage Daily');
+  await noViolations(owner);
+  await queued.getByRole('button', { name: 'Approve', exact: true }).click();
+  await expect(owner.getByText(ARTICLE)).toHaveCount(0);
+
+  // Public now: on the Coverage tab, and narrowed by a place in the address.
+  await reader.goto('/board/coverage');
+  await expect(
+    reader
+      .getByRole('navigation', { name: 'Report views' })
+      .getByRole('link', { name: 'Coverage' }),
+  ).toBeVisible();
+  const card = reader.getByRole('article').filter({ hasText: ARTICLE });
+  await expect(card).toContainText('Linked by Casey Columnist, Coverage Daily');
+  await expect(card.getByRole('link', { name: ARTICLE })).toHaveAttribute(
+    'rel',
+    'noopener noreferrer nofollow',
+  );
+  await noViolations(reader);
+  await reader.goto('/board/coverage?place=US-DE');
+  await expect(reader.getByRole('article').filter({ hasText: ARTICLE })).toBeVisible();
+  await reader.goto('/board/coverage?place=US-TX');
+  await expect(reader.getByText('No articles about this place yet.')).toBeVisible();
+
+  // The author keeps it to the profile: it leaves the public list at once.
+  await journalist.reload();
+  await journalist
+    .getByRole('article')
+    .filter({ hasText: ARTICLE })
+    .getByRole('button', { name: 'Keep it to my profile' })
+    .click();
+  await expect(journalist.getByRole('article').filter({ hasText: ARTICLE })).toContainText(
+    'On your profile only.',
+  );
+  await reader.goto('/board/coverage');
+  await expect(reader.getByText(ARTICLE)).toHaveCount(0);
 
   expect(outside).toEqual([]);
 });
