@@ -26,7 +26,7 @@
  * two figures can never disagree.
  */
 import { NOT_A_SAMPLE } from '@reportlog/contracts';
-import { placeLabel } from '@reportlog/fields';
+import { placeCodeOf, placeLabel } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { filterableFields, launchedLogbooks } from '../logbooks/logbooks.ts';
@@ -37,8 +37,13 @@ export const STATS_NOTE =
   'Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.';
 
 /** One answer as the words a count is listed under. */
-export function answerText(kind: string, v: unknown): string {
-  if (kind === 'location' && typeof v === 'string') return placeLabel(v);
+export function answerText(kind: string, v: unknown, settings?: Record<string, unknown>): string {
+  // READ THROUGH THE QUESTION'S OWN CODE FIRST. A state sealed by postal code
+  // is `NC`, and NC read as a bare code is New Caledonia: every state whose
+  // two letters are also a country's was named as that country on the board
+  // (CA Canada, IN India, KY Cayman Is.), and the rest showed bare letters.
+  if (kind === 'location' && typeof v === 'string')
+    return placeLabel(placeCodeOf(v, settings) ?? v);
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
   if (typeof v === 'string' || typeof v === 'number') return String(v);
   return JSON.stringify(v);
@@ -90,7 +95,7 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
         // A multiple choice counts once under each choice ticked: "how many
         // reports mention this", which is why these can add up to more.
         for (const one of Array.isArray(v) ? (v as unknown[]) : [v]) {
-          const k = answerText(f.kind, one);
+          const k = answerText(f.kind, one, f.settings);
           counts[k] = (counts[k] ?? 0) + 1;
         }
       }
