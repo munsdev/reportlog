@@ -32,7 +32,13 @@ const heldState = (...args: string[]) =>
 const baseURL = 'http://127.0.0.1:4173';
 const SCREENS = fileURLToPath(new URL('../../../docs/screens/moderation-83/', import.meta.url));
 const shot = async (page: Page, name: string) => {
-  if (process.env.SCREENS) await page.screenshot({ path: `${SCREENS}${name}.png`, fullPage: true });
+  if (!process.env.SCREENS) return;
+  // A tall window rather than a full-page capture, which draws the sticky
+  // staff bar across the middle of the page.
+  const was = page.viewportSize();
+  await page.setViewportSize({ width: 1280, height: 1800 });
+  await page.screenshot({ path: `${SCREENS}${name}.png` });
+  if (was) await page.setViewportSize(was);
 };
 
 let slug = '';
