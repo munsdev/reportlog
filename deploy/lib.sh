@@ -293,6 +293,13 @@ install_caddyfile() {
       note "WARNING: SITE_ALIASES is set but this release cannot redirect them."
     fi
   fi
+  # Other sites on this server: an app installed beside ReportLog (the team
+  # hub, say) puts its own site blocks in /etc/caddy/sites/*.caddy. They are
+  # imported, never copied in, so this file stays ReportLog's and every deploy
+  # can rewrite it without taking the other site down. A glob that matches
+  # nothing is valid, so a server with no other site is unaffected. Such a
+  # file must hold site blocks only: the global options block is this one's.
+  printf '\n# Other sites on this server (deploy/README.md, "Other sites on the same server").\nimport /etc/caddy/sites/*.caddy\n' >>"$tmp"
   # Bugsink's site, on its own domain, when this server runs it. Taken from
   # what install-bugsink.sh installed, not from the release, so a rollback to
   # a release older than Bugsink does not take its site down.

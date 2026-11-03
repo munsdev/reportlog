@@ -737,3 +737,12 @@ what each proves):
 - the storage check, against moto (`deploy-storage-check.test.ts`);
 - the doctor's migration check, against real databases in each drift state
   (`apps/api/test/db/deploy-schema-drift.test.ts`).
+
+## Other sites on the same server
+
+Every deploy rewrites `/etc/caddy/Caddyfile`, so another app on this server
+must never edit it. Instead the rendered file ends with
+`import /etc/caddy/sites/*.caddy`: another app drops its own file there
+(site blocks only, no global options block, and its own port, not 3000) and
+reloads Caddy. ReportLog never writes to `/etc/caddy/sites/`. The team hub's
+installer uses this when it finds ReportLog already installed.
