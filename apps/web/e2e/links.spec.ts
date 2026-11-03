@@ -85,15 +85,16 @@ test('a moderator judges a link as text on its entry, comments for journalists, 
     if (host !== '127.0.0.1' && host !== 'localhost') outside.push(r.url());
   });
 
-  // The Links page became a filter (moderation-unified.md): its address
-  // still works, and lands on the reports queue, narrowed to links to check.
+  // The Links page became a filter (moderation-unified.md, decision 83): its
+  // address still works, and lands on the reports queue, narrowed to the
+  // reports with attachments to review.
   await page.goto('/lists/links');
-  await expect(page).toHaveURL(/\/moderate\?links=true$/);
+  await expect(page).toHaveURL(/\/moderate\?attachments=true$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await expect(
     page
       .getByRole('group', { name: 'Only reports that' })
-      .getByRole('button', { name: /^Has links to check/ }),
+      .getByRole('button', { name: /^Has attachments to review/ }),
   ).toHaveAttribute('aria-pressed', 'true');
 
   // A list's entries are judged on its review page, the entries' hub.

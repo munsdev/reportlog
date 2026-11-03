@@ -151,7 +151,7 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
   await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await page
     .getByRole('group', { name: 'Only reports that' })
-    .getByRole('button', { name: /^Has files to check/ })
+    .getByRole('button', { name: /^Has attachments to review/ })
     .click();
   await page.getByRole('link', { name: `Open ${ref}` }).click();
   await expect(page.getByRole('heading', { level: 1, name: ref })).toBeVisible();
@@ -277,9 +277,9 @@ test('an administrator sets a logbook’s own limits over the site’s, and open
 
   // The queue names administrators as well as moderators, as moderation
   // does. (Admin still does not imply moderator: the screen names both.) Its
-  // old address lands on the reports queue, narrowed to files to check.
+  // old address lands on the reports queue, narrowed to attachments to review.
   await page.goto('/files');
-  await expect(page).toHaveURL(/\/moderate\?files=true$/);
+  await expect(page).toHaveURL(/\/moderate\?attachments=true$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Reports queue' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Not for this account' })).toHaveCount(0);
   expect(outside).toEqual([]);

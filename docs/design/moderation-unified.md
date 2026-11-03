@@ -2,26 +2,32 @@
 
 ## Where this stands
 
-Paused on 29 October 2026 to save tokens. Everything below is pushed to
-`claude/moderation-unified`, with `origin/test` merged in (the report-page
-layout from `claude/moderator-layout` included).
+**Built, to decision 83** (3 November 2026, branch `claude/moderation-83`,
+commit `1fc1f78`). The paused branch was merged onto `alpha` and then changed
+where decision 83 (`docs/decisions.md`, row 83) differs from what follows.
+Decision 83 wins wherever the two disagree; the sections below say so where
+they were rewritten.
 
-**Done.** Both queues, their filters, both hubs (written account, link
-verdicts, files, decision), the old addresses redirected, the Safety group,
-the server additions, and unit, database and browser tests for them.
-`pnpm check` and `pnpm test:db` passed on the last full run. In the browser
-specs touched, the four failures left are outside this work:
-`board/moderate.spec.ts:106` (the reporter's "Who looked at your details")
-and `staff-shell.spec.ts:64` (the phone menu dialog).
+**What decision 83 changed here.**
 
-**Half done.** `e2e/files/staff.spec.ts` is updated for the filtered queue
-but never reaches those steps: on `test` it already fails when it files its
-report ("an answer the form did not ask for").
+- Approving a report puts it on the counts, the board and the maps, and
+  nothing more. Its attachments (a written account, a link, a file) each
+  carry their own status: **Waiting**, **Shown to journalists** (a file:
+  **Published**) or **Kept back**. Approving never decides one. Declining a
+  report keeps all of them back.
+- Batch approval approves every report, those holding attachments included.
+  The "needs its own look" skip is gone, and so is the rule that every link
+  is judged before approval (`texts/approval.ts` removed; `decideReport`
+  takes no `written` list).
+- The Reports queue has one work filter, **Has attachments to review**
+  (`attachments=true`), beside "Needs a second read" and "Not rated". It
+  replaced "Has a written account", "Has links to check", "Has files to
+  check" and "Can go to journalists".
+- "Leave it" and "Write a note" ask for no reason, and the server no longer
+  requires one (`optionalWhyOf` in `moderation/texts/items.ts`). "Illegal"
+  still does.
 
-**Next.** The owner's three open questions (end of this file): batch approval
-of reports holding a written account, whether the server should stop asking
-a reason for "Leave it" and "Write a note", and whether an unjudged link must
-still be judged at approval. Then a PR from this branch to `test`.
+Screens: `docs/screens/moderation-83/`.
 
 29 October 2026 · branch `claude/moderation-unified` · the owner's decision of
 the same day:
@@ -55,15 +61,18 @@ Every tab that used to be its own page becomes a filter on a queue. They
 narrow whichever state is showing (Waiting, Approved, …), and the state
 buttons count under them, as the second-read toggle always did.
 
-**Reports** (`listQueue`, new query keys, all `'true'` or absent):
+**Reports** (`listQueue`, query keys `'true'` or absent). Decision 83: one
+work filter, as the owner asked.
 
-| Filter                | Key       | Means                                                                              |
-| --------------------- | --------- | ---------------------------------------------------------------------------------- |
-| Has a written account | `written` | the newest version holds a written account                                         |
-| Has links to check    | `links`   | the newest version holds a link nobody has judged yet                              |
-| Has files to check    | `files`   | the newest version holds a file nobody has decided on (the old Files waiting rule) |
-| Can go to journalists | `sharing` | the reporter allows journalists now (`journalist_sharing`, newest row wins)        |
-| Needs a second read   | `flagged` | as before                                                                          |
+| Filter                    | Key           | Means                                                                                                                                                                              |
+| ------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Has attachments to review | `attachments` | the newest version holds a written account or link nobody has decided, while the reporter allows journalists (`journalist_sharing`, newest row wins), or a file nobody has decided |
+| Needs a second read       | `flagged`     | as before                                                                                                                                                                          |
+
+Each queue row also says how many attachments it holds to review
+(`attachments_waiting`). A written account or link the reporter did not share
+waits on nobody: no journalist will read it, so there is nothing to decide.
+If the reporter allows it later, it waits from then.
 
 **List entries** (`getReviewBatch`, new query keys `links` and `written`):
 
@@ -81,28 +90,28 @@ CLAUDE.md says nothing is filterable unless an operator said so. These are
 filters on staff work queues, not on public data, and the owner asked for
 them (29 October 2026). The code says so where they are defined.
 
-## Journalist sharing is part of the decision
+## Attachments are decided on their own (decision 83)
 
-- Shown only when the reporter allowed it. In the Decide form, when approving
-  a report whose written account has no decision yet, each such account gets
-  three choices: **Leave it with the report (staff only)** (chosen already),
-  **Write a note for journalists** (a box for the note), **Illegal: erase it
-  now** (a category, a tick, and a reason). Ignoring it is leaving it.
-- When the reporter did not allow sharing, nothing waits on the moderator: the
-  Decide form does not ask, and the account is left with the report when the
-  report is approved. Its panel on the report page offers **Erase as illegal…**
-  and nothing else.
-- Only "Illegal" asks for a reason. The server still records a reason with
-  every decision on a written account (`whyOf`, 10 to 500 characters), and
-  that check stays: for "Leave it" and "Write a note" the page sends a fixed
-  sentence that says what was done ("Left with the report, for staff only.",
-  "Wrote a note for journalists."). The server is not changed.
-- Links keep their own verdict (passes, withheld, illegal). A link still
-  unjudged when its report is approved is judged in the Decide form, with no
-  reason asked (the same fixed sentence goes on the record).
+The report page has an **Attachments** section under what the reporter said:
+each written account, each link and the files, each with its status chip.
+Nothing about them is in the Decide form; approving says, in one line, that
+the attachments still waiting stay hidden until they are reviewed.
+
+- A written account the reporter allowed journalists to read offers
+  **Write a note for journalists** and **Leave it with the report (staff
+  only)**, neither asking a reason, and **Erase as illegal…**, which asks a
+  category, a reason and a tick. One the reporter did not allow shows
+  "Kept back" and offers only erasing.
+- A link keeps its own verdict (passes, withheld, illegal), judged once for
+  every copy, with no reason asked.
+- A file keeps workstream F's decision (published, kept unpublished,
+  refused), under the reporter's own permission.
+- An attachment reaches journalists only where the reporter allowed it
+  (`reportValues/onDesk.ts`), and never from a declined or withdrawn report.
+  Nothing reaches anybody without a moderator's decision on it.
 - The note editor (the original beside the note, "Quote selection") and the
-  second moderator's review of a note move from `/moderate/texts/$ref` into the
-  written account's panel, so they appear in both hubs.
+  second moderator's review of a note are in the written account's panel,
+  so they appear in both hubs.
 
 ## Links: check once, without a tab
 
@@ -120,12 +129,12 @@ The blocklist moves to its own page (below).
 | Old page                                   | Becomes                                                                     |
 | ------------------------------------------ | --------------------------------------------------------------------------- |
 | Reports queue `/moderate`                  | **Reports**, with the new filters                                           |
-| Written accounts `/moderate/texts`         | redirects to `/moderate?written=true`; page removed                         |
+| Written accounts `/moderate/texts`         | redirects to `/moderate?attachments=true`; page removed                     |
 | A note `/moderate/texts/$ref`              | redirects to the report's page (a tip's: to List entries); page removed     |
-| Links `/lists/links`                       | redirects to `/moderate?links=true`; page removed, blocklist moved          |
+| Links `/lists/links`                       | redirects to `/moderate?attachments=true`; page removed, blocklist moved    |
 | List entries `/lists/review`               | **List entries**: each list with what waits, and links to the filtered page |
 | A list's review `/lists/review/$id`        | the entries hub, with state and filters                                     |
-| Files waiting `/files`                     | redirects to `/moderate?files=true`; page removed                           |
+| Files waiting `/files`                     | redirects to `/moderate?attachments=true`; page removed                     |
 | A report's files `/files/$ref`             | redirects to the report's page, where its files and evidence already are    |
 | Illegal content notices, Flood screen      | out of Review, into a new **Safety** group                                  |
 | (new) Link blocklist `/moderate/blocklist` | the blocklist from the Links page, in Safety                                |
@@ -136,11 +145,13 @@ The blocklist moves to its own page (below).
 
 ## Server changes
 
-Additive only. No migration.
+No migration.
 
-1. `listQueue` takes `written`, `links`, `files`, `sharing`
-   (`packages/contracts/src/moderation.ts`, `apps/api/src/moderation/queue.ts`).
-   The status counts honour them, as they honour every other filter.
+1. `listQueue` takes `attachments`, and each item carries
+   `attachments_waiting` (`packages/contracts/src/moderation.ts`,
+   `apps/api/src/moderation/queue.ts`). The status counts honour it, as they
+   honour every other filter. `decideReport` no longer takes `written`, and
+   `decideBatch` no longer skips a report holding attachments.
 2. `getReviewBatch` takes `links` and `written`, and each `ReviewEntry`
    carries its tip descriptions as `texts` (ref, question, outcome), so the
    hub can open, note and erase them through the existing text routes
@@ -152,10 +163,11 @@ Every guard stays: the consent ceiling (`NOT_SHARED`, the desk's live read of
 `journalist_sharing`), the illegal erasure's category, the logged opening of
 words, the agreement gate, the moderator scope and its second factor.
 
-## Open questions for the owner
+## The owner's answers (decision 83, 1 November 2026)
 
-- Batch approval still skips a report holding a written account or link with
-  no decision ("needs its own look"). Approving those in a batch would need
-  the server to treat "left with the report" as the default; not done here.
-- Should the server stop asking a reason for "Leave it" and "Write a note",
-  instead of the page sending a fixed sentence?
+- Batch approval of reports holding attachments: yes. Approving decides no
+  attachment, so there is nothing to skip.
+- A reason for "Leave it" and "Write a note": no longer asked, by the page
+  or the server.
+- An unjudged link at approval: no longer judged then. It waits for its own
+  verdict.
