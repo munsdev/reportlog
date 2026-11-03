@@ -41,8 +41,55 @@ and `package.json` disagree. How a release is cut is in the README.
   form, turn alerts off without losing the desk, and change your states from the link in every
   alert.
 
+**For journalists**
+
+- Signed in, you join the alerts and ask for journalist access in one step on Journalists, with
+  the agreement on the same screen. No confirmation link: signing in already proved your address.
+  You see where your request stands (waiting since a date, approved, not approved, ended), and a
+  request that was not approved or has ended may be made again.
+- There is no separate desk any more. With access, the board itself shows the moderators' sources
+  and notes on each report, a "My states" filter for the states you chose for alerts, and two more
+  tabs: Links (the checked links) and Written accounts.
+- New: Your coverage. Link articles you wrote about events like the ones reported here, say when
+  they happened and where (National, International, states, counties or countries), and set the
+  name and outlet you are credited under. A moderator looks at each one first. Then, if you chose
+  to show it, it is on the board's new Coverage tab and on the maps. You can keep any article to
+  your own profile, or remove it, at any time.
+- A request made from the sign-up form, an emailed link or the change page now reaches the people
+  who decide straight away. Before, only a request made while signed in told anybody.
+
+**For everybody reading the board**
+
+- The map sits beside the reports. Click a state or a county and the list narrows to it; the
+  address keeps the place, so a narrowed board can be shared. A place too thin to count narrows
+  nothing, as on the map.
+- A new Coverage tab lists news articles journalists linked, each approved by a moderator, with
+  the page's own title and summary. The maps can show them too: "News coverage", beside "Reports".
+  The article's own site is never asked for anything by your browser; the summary is read by this
+  site's server when it is shown, and not kept.
+
+**For moderators**
+
+- When you approve a report nobody has rated, you can rate its severity in the same step. A new
+  "Not rated" button in the queue lists approved reports nobody has rated yet.
+- A new Coverage queue under Review: articles journalists linked, with a count in the menu.
+  Approve, or don't, with an optional note to the journalist.
+- A coordinator's correction now reads "corrected by a coordinator for" their organization, and
+  a declined report from an organization is emailed to the coordinator in words meant for them.
+
 **For somebody running a site**
 
+- Somebody given a staff role on People is now emailed: what the role is, where to sign in, and
+  that a second step comes first. Before, they learned only if you told them.
+- Administrators and Access Managers may approve, reject and end journalist access, and everyone
+  who may decide is emailed when a request waits, with no details of who asked. Publishing the
+  journalist agreement stays the owner's.
+- A passkey that cannot be used on this device now says what to do instead.
+- In an organization, the managers' own pages (Volunteer links, Directory listing) are shown only
+  to its managers.
+- Coverage cards are the one place this site's server reads a page somebody linked (decision 84):
+  only a journalist's own article, only over http or https to a public address, a few seconds and
+  the page's head at most. Links in tips and reports are still never opened.
 - Search engines find the site's public pages: `/robots.txt` and `/sitemap.xml` now exist (before,
   both answered with the site's page), and every page says whether it may be indexed. Staff
   screens, links from emails, single reports and anything behind the site password are kept out.

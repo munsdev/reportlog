@@ -197,6 +197,10 @@ The header area of every staff page shows a slim `deep` strip under the bar: "In
 
 Head with lede "Links are never published. A link that passes may be shared with vetted journalists." A status button row like the queue's (Waiting, Passed, Withheld, Blocked), the count line, then one raised row per link group: the address in mono with its site in bold, the type the tipster chose, arrived time, then the check form inline: Pass / Withhold / "This may be illegal" as choice cards; for illegal, "Why it is illegal" and "Stop it coming back" (block this address or this site); "Comment for journalists" (optional). The existing "If a link may be illegal" guidance is a `deep` panel at the top, collapsible after the first read (remembered per browser). The block list sits under the queue as its own panel with "Block" (address or site), Why, and each entry's "Take off" with "Why take it off". Opening a tipster's email is a step-up, logged like Tier B.
 
+**COVERAGE, `/moderate/coverage` (decision 84)**
+
+`CoverageQueue.tsx`, under Review with a waiting count. Head "Coverage", lede: check that each is an article about the kind of thing this site records, in the places it names; approving shows it where its author chose. A pressed-button row: Waiting (with its count), Approved, Not approved. One card per article, oldest first, as the public list draws it, plus a line saying whether its author wants it public, who decided it, an optional "Note to the journalist", and two small buttons: "Approve" and "Do not approve" (on an approved one, "Take it down"). No reason is required. Nothing about an article is public until it is approved.
+
 ---
 
 ### 07

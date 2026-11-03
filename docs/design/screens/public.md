@@ -187,6 +187,14 @@ Each placed map in the operator's order, as on the front page: the plane toggle 
 
 Tables, not charts, as built: arrivals by hour for the last two weeks, by day, by place, by where reports came from; per logbook "declined, by reason" from the fixed list; "The flood switches, every time they were used" with their times and never who. Counts only; nothing names a report. Each table has a caption and scrolls sideways inside its own box on a phone.
 
+**COVERAGE** (`/board/coverage`, decision 84)
+
+News articles journalists linked, each approved by a moderator and listed by its author. The lede says they are the journalists' work, not reports, and the site does not vouch for them. The same layout as the reports list: the board's maps beside the list (two thirds and one third on a desktop, above it on a phone), opening on the "News coverage" layer; a place clicked narrows the list and goes in the address as `place`, with "In Delaware · Show everywhere" above the list. Each article is a card: the page's own publisher as the tag, its title as a plain link (`rel="noopener noreferrer nofollow"`), its summary, then where, when and "Linked by" in mono. The card's words are read by the server and never stored; until they arrive, or if the page could not be read, the card shows the address itself. No picture. "Newer" and "Older" below. The tab is hidden until there is an article.
+
+**THE MAPS' COVERAGE LAYER**
+
+Every heat map, once there is a listed article, offers "Show on the map: Reports · News coverage" above its own toggles. Coverage is drawn by the same map from its own counts, never added into the reports': unit "articles", no threshold (an article names no reporter), volume only. National and international articles have no area; a line under the map says how many.
+
 **PRESS PACK** (`/board/press`)
 
 The operator's built documents as a list of rows: title, kind and size in mono, a secondary "Download" button. A listed file that is missing shows "Listed in the pack, but the file is missing." in its row, not hidden. No pack: `EmptyState` "Nothing published here yet".

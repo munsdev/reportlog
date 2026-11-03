@@ -4,7 +4,8 @@
  * every alert (list.ts, owner decision 69). Its own file so those two do not
  * import each other.
  *
- * Writing one grants nothing. Only the owner approving it does (vetting.ts).
+ * Writing one grants nothing. Only somebody who decides approving it does
+ * (vetting.ts): the owner, an administrator or an Access Manager (decision 80).
  */
 import type { AccessRequestBody, DeskAccess } from '@reportlog/contracts';
 import { sql, type Kysely, type Transaction } from 'kysely';

@@ -14,9 +14,10 @@
  * `severity`), and needs its own reason, as on the Severity row. Approving in
  * a batch cannot rate; the queue's "Not rated" button lists what is left.
  *
- * THE NOTE IS REQUIRED. The design drew it as optional; the server keeps
- * every decision with a written reason (queue.ts, `reasonOf`), and that rule
- * has its own test. So the form asks for it, and says it is never sent.
+ * THE NOTE IS OPTIONAL (decision 64). Written, it goes on the record and is
+ * never sent to the reporter; left empty it is stored as none. Only taking a
+ * report off the board, or putting it back, still needs a reason
+ * (queue.ts, `reasonOf`).
  */
 import {
   REJECTION_REASONS,
