@@ -464,6 +464,8 @@ export function listRoutes(app: FastifyInstance, deps: ListRouteDeps): void {
         limit: Number(query.limit ?? 100),
         knownHosts: settings.knownHosts,
         keys: keys ? await keys() : null,
+        links: query.links === 'true',
+        written: query.written === 'true',
       });
       return {
         list: { id: list.id, slug: list.slug, title: list.title, write_back: list.write_back },

@@ -50,8 +50,6 @@ import {
   severityReasonOf,
 } from './assessment.ts';
 import { openFlagCount } from './flags.ts';
-import { settleWritten } from './texts/approval.ts';
-import type { LinkKeys } from '../links/keys.ts';
 import { json } from './json.ts';
 import {
   DEFAULT_REVIEW_KEYWORDS,
@@ -91,8 +89,6 @@ export interface ModerationRouteDeps {
   /** For the email a decline sends (rejection.ts). */
   mailer: Mailer;
   siteOrigin: string;
-  /** The keys written accounts and links are opened with; needed to decide them on approval. */
-  linkKeys?: (() => Promise<LinkKeys>) | null | undefined;
 }
 
 /** The request body, already validated against the contract by Fastify. */
@@ -169,7 +165,7 @@ export async function moderationRoutes(
       review_terms: row.needs_review ? (row.flag_terms ?? []) : [],
       notes_enabled: row.notes_enabled,
       has_note: row.has_note,
-      has_undecided_written: row.has_undecided_written,
+      attachments_waiting: row.attachments_waiting,
       has_contact: row.has_contact,
       file_count: row.file_count,
       published_files: row.published_files,
@@ -207,6 +203,7 @@ export async function moderationRoutes(
         answerSet: query.answer_set,
         organization: query.organization ? Number(query.organization) : undefined,
         lane: query.lane,
+        attachments: query.attachments === 'true',
       };
       // The counts first: the page asked for is clamped to the pages there
       // are, so a page left over from a longer list shows its last page
@@ -278,24 +275,6 @@ export async function moderationRoutes(
       // Refused before anything is settled when the report moved since the
       // page read it; `decide` checks again under the row lock.
       await assertSeen(db, params.threadId, b.seen);
-      // Approving a report that holds undecided words or links decides each
-      // first, with its reason (texts/approval.ts). Nothing typed: no extra step.
-      if (b.status === 'valid') {
-        const head = await db
-          .selectFrom('report_heads')
-          .select('current_report_id')
-          .where('thread_id', '=', params.threadId)
-          .executeTakeFirst();
-        if (head) {
-          await settleWritten(
-            db,
-            deps.linkKeys ?? null,
-            head.current_report_id,
-            b.written,
-            me(request),
-          );
-        }
-      }
       const out = await decide(
         db,
         params.threadId,

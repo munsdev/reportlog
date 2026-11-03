@@ -205,6 +205,8 @@ export interface EntryLink {
   host: string | null;
   group_id: number;
   outcome: Outcome | null;
+  /** The group's comment for journalists. */
+  comment: string | null;
 }
 
 /** The links of a page of entries, for a moderator reviewing a list. */
@@ -225,6 +227,7 @@ export async function linksForEntries(
       'l.value_key',
       'l.group_id',
       'g.outcome',
+      'g.comment',
     ])
     .where('l.entry_id', 'in', [...entryIds])
     .orderBy('l.id')
@@ -239,6 +242,7 @@ export async function linksForEntries(
       host: hostOf(url),
       group_id: r.group_id,
       outcome: r.outcome as Outcome | null,
+      comment: r.comment,
     };
   });
 }

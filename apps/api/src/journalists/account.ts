@@ -15,7 +15,7 @@
 import { STAFF_ROLES } from '@reportlog/access';
 import type { AlertSettingsBody, ApplyBody, DeskStatus, MyJournalist } from '@reportlog/contracts';
 import { placeLabel } from '@reportlog/fields';
-import { sql, type Kysely } from 'kysely';
+import { type Kysely } from 'kysely';
 import { randomBytes } from 'node:crypto';
 import type { DB } from '../db/schema.gen.ts';
 import type { Mailer } from '../email/mailer.ts';

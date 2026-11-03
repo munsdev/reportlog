@@ -11,10 +11,14 @@
  * the reporter's sealed `may_publish` is the ceiling; the operator's archive
  * switch sits beside both (board/publication.ts).
  *
- * FILES ARE A SECOND DECISION, made per file in workstream F's
- * files/publication.ts, under the same ceiling (the reporter's permission).
- * A published file is shown only while its report's text is public, so the
- * text can be public without its files and never the reverse.
+ * ATTACHMENTS ARE A SECOND DECISION (decision 83). Approving a report puts
+ * it on the counts, the board and the maps, and nothing more. Each written
+ * account and link is decided on its own (moderation/texts, links/checks.ts)
+ * and each file per file in workstream F's files/publication.ts, under the
+ * same ceiling (the reporter's permission). Declining a report keeps all of
+ * them back (reportValues/onDesk.ts; a file is shown only while its report's
+ * text is public), so the text can be public without its attachments and
+ * never the reverse.
  *
  * Every decision is written to moderation_log in the same transaction as the
  * change, with the version it was about.
@@ -37,7 +41,6 @@ import { permissionsForMany } from '../permissions/log.ts';
 import type { Severity } from './assessment.ts';
 import { writeSeverity } from './assessment.ts';
 import { clearFlag } from './flags.ts';
-import { WRITTEN_SKIP_WHY, holdsUndecided, undecidedWritten } from './texts/approval.ts';
 
 export const DECISIONS = ['valid', 'invalid', 'unknown'] as const;
 export type Decision = (typeof DECISIONS)[number];
@@ -96,6 +99,9 @@ export interface QueueFilter {
   /** One organization's reports, as a set. */
   organization?: number | undefined;
   lane?: 'organization' | 'open_form' | undefined;
+  // ── decision 83 ──
+  /** Its newest version holds an attachment nobody has decided (`attachmentsWaiting`). */
+  attachments?: boolean | undefined;
 }
 
 /**
@@ -128,6 +134,47 @@ function inPlace(place: string) {
 }
 
 /**
+ * ATTACHMENTS TO REVIEW (decision 83), read over `h` like `organizationOf`.
+ * Approving a report puts it on the counts, the board and the maps and
+ * nothing more; each attachment (a written account, a link, a file) is
+ * decided on its own. This counts the ones still waiting on a moderator, for
+ * the queue's one work filter and the row's "attachments to review". Ids
+ * only; nothing is decrypted.
+ *
+ * A written account or link waits only while the reporter lets journalists
+ * read it (`sharingNow`): otherwise nobody outside moderation ever will, so
+ * nothing waits on a moderator. If the reporter allows it later, it waits
+ * from then. A link's verdict is its group's, once for every copy
+ * (links/checks.ts), so an address another report settled does not wait.
+ */
+const sharingNow = sql<boolean>`coalesce((select p.granted from report_permissions_log p
+   where p.thread_id = h.thread_id and p.permission = 'journalist_sharing'
+   order by p.id desc limit 1), false)`;
+
+const undecidedWritten = sql<number>`(select count(*) from report_values wv
+   where wv.report_id = h.current_report_id
+     and ((wv.kind = 'private_text'
+           and not exists (select 1 from text_items wt
+                            where wt.fingerprint = wv.fingerprint and wt.outcome is not null))
+       or (wv.kind = 'private_link'
+           and exists (select 1 from link_groups wg
+                        where wg.id = wv.group_id and wg.outcome is null))))`;
+
+/**
+ * A file nobody has decided on: the old files queue's rule (files/routes.ts,
+ * `listFileReports`). Keeping one unpublished on purpose is a decision.
+ */
+const undecidedFiles = sql<number>`(select count(*) from report_attachments fa
+    join attachment_heads fah on fah.attachment_id = fa.attachment_id
+   where fa.report_id = h.current_report_id
+     and fah.publication = 'withheld' and fah.dek_destroyed_at is null
+     and not exists (select 1 from attachment_events fe
+                      where fe.attachment_id = fa.attachment_id
+                        and fe.action in ('published', 'withheld', 'refused', 'taken_down', 'erased')))`;
+
+export const attachmentsWaiting = sql<string>`((case when ${sharingNow} then ${undecidedWritten} else 0 end) + ${undecidedFiles})`;
+
+/**
  * The queue's rows and every filter but the status, shared by the list and
  * the status buttons' counts, so a count can never disagree with the list
  * its button shows.
@@ -156,6 +203,7 @@ function filtered(db: Kysely<DB>, filter: QueueFilter) {
   }
   if (filter.lane === 'organization') q = q.where('r.third_party', 'is', true);
   if (filter.lane === 'open_form') q = q.where('r.third_party', 'is not', true);
+  if (filter.attachments) q = q.where(sql<boolean>`${attachmentsWaiting} > 0`);
 
   return q;
 }
@@ -283,19 +331,7 @@ export async function listQueue(
       .as('versions'),
     answerSet.as('answer_set'),
     organizationOf.as('organization_id'),
-    // Holds a written account or link nobody has decided yet: it cannot be
-    // approved in a batch (approval.ts). Ids only; nothing is decrypted.
-    sql<boolean>`exists (
-      select 1 from report_values wv
-       where wv.report_id = h.current_report_id
-         and ((wv.kind = 'private_text'
-               and not exists (select 1 from text_items wt
-                                where wt.fingerprint = wv.fingerprint and wt.outcome is not null))
-           or (wv.kind = 'private_link'
-               and exists (select 1 from link_groups wg
-                            where wg.id = wv.group_id and wg.outcome is null))))`.as(
-      'has_undecided_written',
-    ),
+    attachmentsWaiting.as('attachments_waiting'),
     seenToken.as('seen'),
   ]);
 
@@ -334,7 +370,7 @@ export async function listQueue(
     reporter_withdrew: Boolean(r.reporter_withdrew),
     origin: r.third_party === true ? ('organization' as const) : ('open_form' as const),
     organization_id: r.organization_id,
-    has_undecided_written: r.has_undecided_written,
+    attachments_waiting: Number(r.attachments_waiting),
   }));
 }
 
@@ -420,8 +456,7 @@ async function whatChanged(trx: Transaction<DB>, threadId: string): Promise<stri
 }
 
 /**
- * The same check, before a route does anything else it would have to undo:
- * approval settles undecided written accounts first (texts/approval.ts).
+ * The same check, before a route does anything else it would have to undo.
  * The act itself checks again under its own lock.
  */
 export async function assertSeen(db: Kysely<DB>, threadId: string, seen: unknown): Promise<void> {
@@ -536,8 +571,9 @@ export const BATCH_REASON = 'Approved in a batch.';
  * the comment. No reason is asked: the moderator has read them, and the
  * reason for approving is the standard.
  *
- * A report holding a written account or link nobody has decided yet is
- * skipped too: those need their own look, with a reason.
+ * A report holding attachments is approved like any other (decision 83):
+ * approving puts it on the counts, the board and the maps, and decides none
+ * of its attachments, which keep waiting for their own look.
  *
  * A report that cannot be approved here is skipped with the reason, never
  * approved anyway: one withdrawn report must not stop the other ninety-nine,
@@ -562,10 +598,6 @@ export async function decideBatch(
         if (head.withdrawn) throw refuse(409, 'withdrawn', 'It is withdrawn.');
         if (head.moderation_status === 'valid')
           throw refuse(409, 'already', 'It is already approved.');
-        // Words and links are decided on their own, with a reason (approval.ts).
-        if (holdsUndecided(await undecidedWritten(trx, head.current_report_id))) {
-          throw refuse(409, 'written_needs_look', WRITTEN_SKIP_WHY);
-        }
         await trx
           .updateTable('report_heads')
           .set({ moderation_status: 'valid', updated_at: new Date() })

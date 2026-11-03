@@ -31,14 +31,13 @@ import { RadioGroup, RadioOption } from '@/mockup/Choice.tsx';
 import { StaffPage } from '@/features/nav/StaffPage.tsx';
 import { call } from '../../../lib/api.ts';
 import { AskDialog } from './AskDialog.tsx';
-import { FilesTabs } from './FilesTabs.tsx';
 import { LimitsPanel } from './LimitsPanel.tsx';
 import { fileSettingsQuery, logbookLimitsQuery } from './queries.ts';
 import { PUBLICATION, describeFile } from './words.ts';
 
 /**
  * File limits' own tabs: the site's limits and each logbook's. Erasing a
- * file is a tab of Files waiting (FilesTabs.tsx).
+ * file is its own page, in the Safety group of the menu (staff-nav/menu.ts).
  */
 export function FileAdminSections() {
   const { pathname } = useLocation();
@@ -302,7 +301,7 @@ export function EraseFilePage() {
   });
   const problem = ref.trim() ? null : 'Type a report’s reference first.';
   return (
-    <StaffPage title="Files waiting" tabs={<FilesTabs />}>
+    <StaffPage title="Erasing a file">
       <Panel kind="deep" title="What erasing does">
         <p>
           Erasing destroys the key the file was locked with, so nobody can ever open it again, this

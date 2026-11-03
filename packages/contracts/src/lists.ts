@@ -474,6 +474,10 @@ export const ReviewQueue = z.object({
   title: z.string(),
   waiting: z.number().int(),
   oldest: Timestamp.nullable(),
+  /** Of the waiting entries, how many hold a link nobody has judged yet. */
+  with_links: z.number().int(),
+  /** Of the waiting entries, how many hold a written account (a tip description). */
+  with_written: z.number().int(),
 });
 
 export const listReviewQueues = defineRoute({
@@ -495,6 +499,8 @@ export const ReviewLink = z.object({
   outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
   /** What kind of link the tip said it is, in words; only where its form asked. */
   kind: z.string().optional(),
+  /** The group's comment for journalists, edited beside the verdict. */
+  comment: z.string().nullable(),
 });
 
 export const ReviewEntry = z.object({
@@ -508,6 +514,18 @@ export const ReviewEntry = z.object({
   has_email: z.boolean(),
   erased: z.boolean(),
   links: z.array(ReviewLink),
+  /**
+   * Its tip descriptions, each named by the `ref` the written-account routes
+   * take (texts.ts), and their decision. Never the words: those are in
+   * `erasable_answers`, and the note editor opens them through `openText`.
+   */
+  texts: z.array(
+    z.object({
+      ref: z.string(),
+      field_key: z.string(),
+      outcome: z.enum(['redacted', 'withheld']).nullable(),
+    }),
+  ),
 });
 export type ReviewEntry = z.infer<typeof ReviewEntry>;
 
@@ -541,6 +559,12 @@ export const getReviewBatch = defineRoute({
   query: z.object({
     state: ReviewState.optional(),
     limit: z.coerce.number().int().optional(),
+    // The review page's filters (owner, 29 October 2026). Staff work filters
+    // on a staff queue, not filters on public data.
+    /** Only entries holding a link nobody has judged yet. */
+    links: z.enum(['true', 'false']).optional(),
+    /** Only entries holding a written account (a tip description). */
+    written: z.enum(['true', 'false']).optional(),
   }),
   response: ReviewBatch,
 });

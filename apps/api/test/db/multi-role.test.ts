@@ -46,7 +46,7 @@ describe('several staff roles at once', () => {
     });
   });
 
-  it('tells the person by email, once per role actually given, with where to sign in', async () => {
+  it('tells the person by email, once per role actually given, with where to sign in', () => {
     const told = h.mailer.messages.filter(
       (m) => m.to === person && m.subject.startsWith('You have been made'),
     );

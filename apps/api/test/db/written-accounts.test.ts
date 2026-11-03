@@ -401,10 +401,10 @@ describe('W4 · over HTTP', () => {
 describe('N2 · reasons, readings and approval', () => {
   const WHY = 'Reads as a plain account of events.';
 
-  it('every text decision needs a reason of 10 to 500 characters, kept in the history', async () => {
+  it('a reason, when given, is 10 to 500 characters and kept in the history', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} a` } }, { share: true });
     const ref = await textRef(h.db, t.reportId);
-    for (const why of [undefined, '', 'short', 'x'.repeat(501)]) {
+    for (const why of ['short', 'x'.repeat(501)]) {
       await expect(
         checkText(h.db, keys, ref, { outcome: 'withheld', reason: undefined, why, actor: MOD }),
       ).rejects.toMatchObject({ code: 'why_needed' });
@@ -421,6 +421,47 @@ describe('N2 · reasons, readings and approval', () => {
     const d = await detail(h.db, keys, ref);
     expect(d.history.at(-1)).toMatchObject({ kind: 'withheld', by: MOD, reason: WHY });
     expect(d.item.text).toBeNull();
+  });
+
+  it('"Leave it" and "Write a note" need no reason; "Illegal" still does (decision 83)', async () => {
+    const left = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} a2` } }, { share: true });
+    const leftRef = await textRef(h.db, left.reportId);
+    for (const why of [undefined, '', '   ']) {
+      await checkText(h.db, keys, leftRef, {
+        outcome: 'withheld',
+        reason: undefined,
+        why,
+        actor: MOD,
+      });
+    }
+    expect((await detail(h.db, keys, leftRef)).history.at(-1)).toMatchObject({
+      kind: 'withheld',
+      reason: null,
+    });
+
+    const noted = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} a3` } }, { share: true });
+    const notedRef = await textRef(h.db, noted.reportId);
+    await redactText(h.db, keys, notedRef, { body: COPY, why: undefined, actor: MOD });
+    expect((await detail(h.db, keys, notedRef)).item.outcome).toBe('redacted');
+
+    await expect(
+      checkText(h.db, keys, leftRef, {
+        outcome: 'illegal',
+        reason: 'other-illegal',
+        why: undefined,
+        actor: MOD,
+      }),
+    ).rejects.toMatchObject({ code: 'why_needed' });
+
+    // Over HTTP too: the routes take no reason for these two.
+    const mod = await staff(h, 'texts-no-why', 'moderator');
+    const third = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} a4` } }, { share: true });
+    const r = await mod.call({
+      method: 'POST',
+      url: `/api/moderation/texts/${await textRef(h.db, third.reportId)}/redact`,
+      payload: { body: COPY },
+    });
+    expect(r.statusCode, r.body).toBe(200);
   });
 
   it('opening the words writes the access log first, once per press, for each person', async () => {
@@ -455,7 +496,7 @@ describe('N2 · reasons, readings and approval', () => {
     expect(JSON.stringify([...read.values()])).not.toContain(WHY);
   });
 
-  it('a report holding an undecided account is skipped in a batch and needs decisions to approve', async () => {
+  it('approving decides no attachment, alone or in a batch (decision 83)', async () => {
     const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} d` } }, { share: true });
     const plain = await fileHeld(h.db, keys, lb, {}, { share: true });
     const out = await decideBatch(
@@ -464,49 +505,42 @@ describe('N2 · reasons, readings and approval', () => {
       MOD,
       await seenMap(h.db, [t.threadId, plain.threadId]),
     );
-    expect(out.approved).toEqual([plain.threadId]);
-    expect(out.skipped).toEqual([
-      { thread_id: t.threadId, why: 'It has a written account, which needs its own look.' },
-    ]);
-    const mod = await staff(h, 'texts-approve', 'moderator');
-    const url = `/api/moderation/reports/${t.threadId}/decision`;
-    const seen = await seenOf(h.db, t.threadId);
-    const refused = await mod.call({ method: 'POST', url, payload: { status: 'valid', seen } });
-    expect(refused.statusCode).toBe(409);
+    // Both approved: one holding an account nobody decided is not skipped.
+    expect(out.approved.sort()).toEqual([t.threadId, plain.threadId].sort());
+    expect(out.skipped).toEqual([]);
     const ref = await textRef(h.db, t.reportId);
-    const noReason = await mod.call({
-      method: 'POST',
-      url,
-      payload: {
-        status: 'valid',
-        seen,
-        written: [{ ref, outcome: 'redacted', note: COPY, why: 'no' }],
-      },
-    });
-    expect(noReason.statusCode).toBe(400);
+    // And the account is still waiting: approving decided nothing about it.
+    expect((await detail(h.db, keys, ref)).item.outcome).toBeNull();
+    expect((await clearedTexts(h.db)).filter((c) => c.reportId === t.reportId)).toHaveLength(0);
+
+    // A single approval is the same: no step for the words, nothing decided.
+    const mod = await staff(h, 'texts-approve', 'moderator');
+    const one = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} e` } }, { share: true });
     const ok = await mod.call({
       method: 'POST',
-      url,
-      payload: {
-        status: 'valid',
-        seen,
-        written: [{ ref, outcome: 'redacted', note: COPY, why: WHY }],
-      },
+      url: `/api/moderation/reports/${one.threadId}/decision`,
+      payload: { status: 'valid', seen: await seenOf(h.db, one.threadId) },
     });
     expect(ok.statusCode, ok.body).toBe(200);
-    const head = await h.db
-      .selectFrom('report_heads')
-      .select('moderation_status')
-      .where('thread_id', '=', t.threadId)
-      .executeTakeFirstOrThrow();
-    expect(head.moderation_status).toBe('valid');
-    // Nothing typed: approves with no extra step.
-    const bare = await fileHeld(h.db, keys, lb, {}, { share: true });
-    const bareOk = await mod.call({
+    expect((await detail(h.db, keys, await textRef(h.db, one.reportId))).item.outcome).toBeNull();
+  });
+
+  it('declining a report keeps its attachments back, whatever they were decided as', async () => {
+    const t = await fileHeld(h.db, keys, lb, { text: { what: `${TEXT} f` } }, { share: true });
+    const ref = await textRef(h.db, t.reportId);
+    await redactText(h.db, keys, ref, { body: COPY, why: undefined, actor: MOD });
+    expect((await clearedTexts(h.db)).filter((c) => c.reportId === t.reportId)).toHaveLength(1);
+    const mod = await staff(h, 'texts-decline', 'moderator');
+    const r = await mod.call({
       method: 'POST',
-      url: `/api/moderation/reports/${bare.threadId}/decision`,
-      payload: { status: 'valid', seen: await seenOf(h.db, bare.threadId) },
+      url: `/api/moderation/reports/${t.threadId}/decision`,
+      payload: {
+        status: 'invalid',
+        reason_code: 'duplicate',
+        seen: await seenOf(h.db, t.threadId),
+      },
     });
-    expect(bareOk.statusCode, bareOk.body).toBe(200);
+    expect(r.statusCode, r.body).toBe(200);
+    expect((await clearedTexts(h.db)).filter((c) => c.reportId === t.reportId)).toHaveLength(0);
   });
 });

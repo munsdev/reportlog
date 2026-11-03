@@ -54,7 +54,7 @@ test.describe('the shell on a desktop', () => {
     );
     // The mock-up's groups, in its order.
     const labels = await side.locator('summary h3').allTextContents();
-    expect(labels.slice(0, 4)).toEqual(['You', 'Review', 'Content', 'Site settings']);
+    expect(labels.slice(0, 4)).toEqual(['You', 'Review', 'Safety', 'Content']);
   });
 });
 

@@ -2,8 +2,8 @@
  * One report's files, for a moderator: each file's re-encoded copy, its
  * record, and the decision on it.
  *
- * BUILT TO BE DROPPED INTO THE MODERATION SCREEN (workstream D1) as well as
- * standing on its own at /files/:ref:
+ * ON THE REPORT'S OWN PAGE (moderation/Item.tsx), where everything about a
+ * report is decided; /files/:ref sends you there (moderation-unified.md):
  *
  *   <ReportFiles threadId={thread} reportPublic={isPublic} />
  *

@@ -68,14 +68,11 @@ export const STAFF_AREAS: readonly StaffArea[] = [
         waiting: 'reports',
       },
       {
-        to: '/moderate/texts',
-        label: 'Written accounts',
+        to: '/moderate/coverage',
+        label: 'Coverage',
         for: MOD,
-        under: ['/moderate/texts/'],
-        waiting: 'texts',
+        waiting: 'coverage',
       },
-      { to: '/lists/links', label: 'Links', for: MOD, waiting: 'tip_links' },
-      { to: '/moderate/coverage', label: 'Coverage', for: MOD, waiting: 'coverage' },
       {
         to: '/lists/review',
         label: 'List entries',
@@ -83,7 +80,6 @@ export const STAFF_AREAS: readonly StaffArea[] = [
         under: ['/lists/review/'],
         waiting: 'list_entries',
       },
-      { to: '/files', label: 'Files', for: MOD, under: ['/files/'] },
       {
         to: '/moderate/illegal-content',
         label: 'Illegal content notices',

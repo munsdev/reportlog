@@ -66,7 +66,7 @@ import { ReportFiles } from '../files/staff/ReportFiles.tsx';
 import { evidenceQuery } from '../files/staff/queries.ts';
 import { useMe } from '../identity/session.ts';
 import { ClosedRow } from './ClosedRow.tsx';
-import { ReportWritten } from './Texts.tsx';
+import { Attachments } from './Written.tsx';
 import { DECIDED_WORDS, DecideForm, NOTICE_WORDS } from './DecideForm.tsx';
 import type { Decided, Decision } from './DecideForm.tsx';
 import { AnswerList, StatusChip, waited, when } from './parts.tsx';
@@ -165,14 +165,19 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
       <div className="grid2 report-grid">
         <div className="col">
           <Said r={r} />
-          <ReportWritten threadId={r.thread_id} />
-          {r.file_count > 0 ? (
-            <ReportFiles
-              threadId={r.thread_id}
-              reportPublic={r.public}
-              reportApproved={r.moderation_status === 'valid'}
-            />
-          ) : null}
+          <Attachments
+            threadId={r.thread_id}
+            declined={r.moderation_status === 'invalid'}
+            files={
+              r.file_count > 0 ? (
+                <ReportFiles
+                  threadId={r.thread_id}
+                  reportPublic={r.public}
+                  reportApproved={r.moderation_status === 'valid'}
+                />
+              ) : null
+            }
+          />
           <TheRecord r={r} history={history} />
         </div>
         {/* The mock-up's `.decide`: sticky beside the report on a desktop, and

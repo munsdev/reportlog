@@ -164,3 +164,28 @@ export function waited(iso: string, now = Date.now()): string {
   if (hours < 48) return hours === 1 ? '1 hour' : `${String(hours)} hours`;
   return `${String(Math.round(hours / 24))} days`;
 }
+
+/**
+ * Where one attachment stands (decision 83): a written account, a link or a
+ * file each carries its own status, apart from the report's. Approving the
+ * report never changes it. A file is published on the board rather than
+ * shown to journalists, so its "shown" says so.
+ */
+export type AttachmentState = 'waiting' | 'shown' | 'kept';
+
+export function AttachmentChip({
+  state,
+  file = false,
+}: {
+  state: AttachmentState;
+  file?: boolean;
+}) {
+  switch (state) {
+    case 'waiting':
+      return <Chip kind="wait">Waiting</Chip>;
+    case 'shown':
+      return <Chip kind="ok">{file ? 'Published' : 'Shown to journalists'}</Chip>;
+    default:
+      return <Chip kind="off">Kept back</Chip>;
+  }
+}

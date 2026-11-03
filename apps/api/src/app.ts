@@ -262,7 +262,6 @@ export async function buildApp({
     publicRefPrefix: config.PUBLIC_REF_PREFIX,
     mailer: mail,
     siteOrigin,
-    linkKeys,
   });
   textRoutes(app, {
     db,

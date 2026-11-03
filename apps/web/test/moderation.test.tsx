@@ -49,7 +49,7 @@ const REPORT: QueueItem = {
   review_terms: [],
   notes_enabled: false,
   has_note: false,
-  has_undecided_written: false,
+  attachments_waiting: 0,
   has_contact: true,
   file_count: 0,
   published_files: 0,
@@ -153,12 +153,35 @@ describe('the queue', () => {
       'aria-pressed',
       'false',
     );
-    // Second read is not a status: it narrows whichever one is showing, so it
-    // is not pressed with Waiting and has its own pressed state.
-    expect(within(group).getByRole('button', { name: /^Only second reads/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    // The work a report holds is not a status: each narrows whichever one is
+    // showing, in a row of its own, none pressed until asked.
+    const work = screen.getByRole('group', { name: 'Only reports that' });
+    for (const name of [/^Has attachments to review/, /^Needs a second read/])
+      expect(within(work).getByRole('button', { name })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('narrows to the reports holding a kind of work, in the address', async () => {
+    serve({ 'GET /api/moderation/reports': QUEUE });
+    const router = wrap(<QueuePage search={{}} />);
+    const user = userEvent.setup();
+    const work = await screen.findByRole('group', { name: 'Only reports that' });
+    await user.click(within(work).getByRole('button', { name: /^Has attachments to review/ }));
+    await waitFor(() => {
+      expect(router.state.location.search).toMatchObject({ attachments: true });
+    });
+  });
+
+  it('asks the server for the work filters in force, and shows them pressed', async () => {
+    const sent = serve({ 'GET /api/moderation/reports': QUEUE });
+    wrap(<QueuePage search={{ attachments: true }} />);
+    const work = await screen.findByRole('group', { name: 'Only reports that' });
+    expect(
+      within(work).getByRole('button', { name: /^Has attachments to review/ }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    await waitFor(() => {
+      expect(sent.some((x) => /[?&]attachments=true/.test(x.url))).toBe(true);
+    });
+    expect(sent.some((x) => /[?&]flagged=/.test(x.url))).toBe(false);
   });
 
   it('searches on Enter, never on each keystroke (decision 59)', async () => {
@@ -179,10 +202,17 @@ describe('the queue', () => {
 
   it('names every filter in force, in words', () => {
     expect(
-      filterWords({ q: 'hall', flagged: true, severity: 'serious', lane: 'organization' }),
+      filterWords({
+        q: 'hall',
+        flagged: true,
+        attachments: true,
+        severity: 'serious',
+        lane: 'organization',
+      }),
     ).toEqual([
       'matching “hall”',
-      'only second reads',
+      'with attachments to review',
+      'waiting for a second read',
       'rated: Serious',
       'filed by an organization',
     ]);
@@ -460,5 +490,119 @@ describe('two moderators on one report', () => {
     expect(await within(second).findByText('maria@example.org has it open')).toBeInTheDocument();
     const first = rows.find((r) => r.textContent.includes('RL-4HT8-0QNC'));
     expect(first).not.toHaveTextContent('has it open');
+  });
+});
+
+describe('attachments are reviewed apart from the report (decision 83)', () => {
+  const text = (ref: string, shared: boolean, outcome: 'redacted' | 'withheld' | null) => ({
+    ref,
+    source: 'report' as const,
+    text: null,
+    length: 120,
+    outcome,
+    checked_at: null,
+    checked_by: null,
+    shared,
+    reference: REPORT.public_ref,
+    thread_id: THREAD,
+    place: null,
+    form_title: 'Election incidents',
+    answers_public: false,
+    received_at: REPORT.received_at,
+    redaction: null,
+  });
+  const WRITTEN = {
+    texts: [text('report-1', true, null), text('report-2', true, 'redacted')],
+    links: [
+      {
+        group_id: 9,
+        ref: 'link-3',
+        outcome: 'withheld',
+        comment: null,
+        also_tips: 0,
+        also_reports: 0,
+      },
+    ],
+    erased: [],
+    shared: true,
+  };
+  const HOLDING = { ...ITEM, report: { ...REPORT, attachments_waiting: 1 } };
+
+  it('shows each attachment with its own status', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const section = await screen.findByRole('region', { name: 'Attachments' });
+    expect(within(section).getByText(/shows none of these to anybody/)).toBeVisible();
+    const [waiting, noted] = within(section).getAllByRole('region', { name: /^Written account/ });
+    if (!waiting || !noted) throw new Error('two accounts');
+    expect(within(waiting).getByText('Waiting')).toBeVisible();
+    expect(within(noted).getByText('Shown to journalists')).toBeVisible();
+    expect(within(section).getByText('Kept back')).toBeVisible();
+  });
+
+  it('a declined report keeps every attachment back', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: {
+        ...HOLDING,
+        report: { ...HOLDING.report, moderation_status: 'invalid' },
+      },
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const section = await screen.findByRole('region', { name: 'Attachments' });
+    expect(within(section).getAllByText('Kept back')).toHaveLength(3);
+    expect(within(section).queryByText('Waiting')).toBeNull();
+  });
+
+  it('"Leave it" sends no reason', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+      'POST /api/moderation/texts/report-1/check': { outcome: 'withheld', erased: false },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const [waiting] = await screen.findAllByRole('region', { name: /^Written account/ });
+    if (!waiting) throw new Error('no account');
+    await user.click(
+      within(waiting).getByRole('button', { name: 'Leave it with the report (staff only)' }),
+    );
+    await waitFor(() => {
+      expect(sent.filter((s) => s.url.endsWith('/check'))).toHaveLength(1);
+    });
+    expect(sent.find((s) => s.url.endsWith('/check'))?.body).toEqual({ outcome: 'withheld' });
+  });
+
+  it('approving asks nothing about attachments and says they stay hidden', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+      [`POST /api/moderation/reports/${THREAD}/decision`]: { ok: true, notice: 'none' },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    expect(within(form).getByText(/reviewed on their own and stay hidden/)).toBeVisible();
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    await waitFor(() => {
+      expect(sent.filter(isAct)).toHaveLength(1);
+    });
+    expect(sent.find(isAct)?.body).toEqual({ status: 'valid', seen: REPORT.seen });
+  });
+
+  it('a report holding attachments can be picked for a batch, and says how many wait', async () => {
+    serve({
+      'GET /api/moderation/reports': {
+        ...QUEUE,
+        reports: [{ ...REPORT, attachments_waiting: 2 }, SECOND],
+      },
+    });
+    wrap(<QueuePage search={{}} />);
+    expect(await screen.findByText('2 attachments to review')).toBeVisible();
+    expect(screen.getByRole('checkbox', { name: 'Select RL-4HT8-0QNC' })).toBeEnabled();
   });
 });

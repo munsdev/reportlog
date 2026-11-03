@@ -98,7 +98,7 @@ export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
   const groups = groupIds.length
     ? await db
         .selectFrom('link_groups')
-        .select(['id', 'outcome'])
+        .select(['id', 'outcome', 'comment'])
         .where('id', 'in', groupIds)
         .execute()
     : [];
@@ -127,6 +127,7 @@ export async function reportWritten(db: Db, keys: LinkKeys, threadId: string) {
       group_id: h.group_id,
       ref: `link-${String(h.id)}`,
       outcome: (g?.outcome ?? null) as 'checked' | 'withheld' | 'illegal' | null,
+      comment: g?.comment ?? null,
       also_tips: alsoTips,
       also_reports: alsoReports,
     });

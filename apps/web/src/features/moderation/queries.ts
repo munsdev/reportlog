@@ -33,9 +33,28 @@ export interface QueueSearch {
   answer_set?: string | undefined;
   organization?: string | undefined;
   lane?: 'organization' | 'open_form' | undefined;
+  // The work a report holds: what used to be pages of their own (WORK below).
+  attachments?: boolean | undefined;
   /** 1-based. */
   page?: number | undefined;
 }
+
+/**
+ * The queue's work filters, in the order the page shows them. "Has
+ * attachments to review" (decision 83) replaced the Written accounts, Links
+ * and Files waiting pages, and the three filters that followed them: one
+ * filter, as the owner asked. "Needs a second read" sits beside it. Filters
+ * on a staff work queue, not on public data, so they are not the operator's
+ * to choose as the board's are.
+ */
+export const WORK = [
+  {
+    key: 'attachments',
+    label: 'Has attachments to review',
+    words: 'with attachments to review',
+  },
+  { key: 'flagged', label: 'Needs a second read', words: 'waiting for a second read' },
+] as const satisfies readonly { key: keyof QueueSearch; label: string; words: string }[];
 
 /**
  * The order the queue is read in: what was asked, or oldest first while
@@ -64,6 +83,7 @@ export const queueQuery = (s: QueueSearch) =>
           ...(s.answer_set ? { answer_set: s.answer_set } : {}),
           ...(s.organization ? { organization: s.organization } : {}),
           ...(s.lane ? { lane: s.lane } : {}),
+          ...(s.attachments ? { attachments: 'true' as const } : {}),
           ...(s.page && s.page > 1 ? { page: String(s.page) } : {}),
         },
         signal,
@@ -137,7 +157,7 @@ export function parseQueueSearch(s: Record<string, unknown>): QueueSearch {
   const out: QueueSearch = {};
   if (STATUSES.includes(s.status as QueueStatus)) out.status = s.status as QueueStatus;
   if (typeof s.q === 'string' && s.q) out.q = s.q.slice(0, 200);
-  if (s.flagged === true || s.flagged === 'true') out.flagged = true;
+  for (const { key } of WORK) if (s[key] === true || s[key] === 'true') out[key] = true;
   if (typeof s.logbook === 'string' && s.logbook) out.logbook = s.logbook.slice(0, 63);
   if (SEVERITY_FILTERS.includes(s.severity as QueueSeverity)) {
     out.severity = s.severity as QueueSeverity;

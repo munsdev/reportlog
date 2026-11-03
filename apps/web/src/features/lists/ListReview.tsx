@@ -1,6 +1,9 @@
 /**
- * Review, in bulk: what is waiting on each list, and a page of one list's
- * entries to approve or reject together.
+ * List entries, one of the two moderation queues (docs/design/moderation-unified.md):
+ * what is waiting on each list, and a page of one list's entries to approve
+ * or reject together. That page is the hub for entries: each entry's links
+ * are judged and its written account decided on it, where the Links and
+ * Written accounts pages used to do it.
  *
  * NOTHING IS COUNTED PUBLICLY UNTIL A MODERATOR APPROVES IT. The difference
  * from a logbook is the unit of review, so the page shows what makes skimming
@@ -18,7 +21,7 @@
 import { revealListAddress, reviewListEntries, triageListEntries } from '@reportlog/contracts';
 import type { ReviewBatch, ReviewState, TriageState } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Chip } from '../../mockup/Chip.tsx';
@@ -28,8 +31,25 @@ import { Panel } from '@/mockup/Panel.tsx';
 import { Seg } from '../../mockup/Seg.tsx';
 import { StaffPage } from '../nav/StaffPage.tsx';
 import { call } from '../../lib/api.ts';
+import { LinkVerdict } from '../moderation/LinkVerdict.tsx';
+import { WrittenPanel } from '../moderation/Written.tsx';
 import { reviewBatchQuery, reviewQueuesQuery } from './queries.ts';
-import { LINK_OUTCOME, REVIEW, TRIAGE, said } from './words.ts';
+import type { ReviewSearch } from './queries.ts';
+import { REVIEW, TRIAGE, said } from './words.ts';
+
+/**
+ * The review page's filters: what used to be the Links and Written accounts
+ * pages (owner, 29 October 2026). Filters on a staff work queue, not on public
+ * data, so they are not the operator's to choose as the board's are. A tip
+ * always allows journalists and entries have no second read, so those two of
+ * the reports queue's filters are not here.
+ */
+const ENTRY_WORK = [
+  { key: 'links', label: 'Has links to check' },
+  { key: 'written', label: 'Has a written account' },
+] as const;
+
+const entries = (n: number) => `${String(n)} ${n === 1 ? 'entry' : 'entries'}`;
 
 export function ReviewQueues() {
   const query = useQuery(reviewQueuesQuery());
@@ -37,12 +57,7 @@ export function ReviewQueues() {
   return (
     <StaffPage
       title="List entries"
-      lede="Entries sent to lists. Nothing here is published, and nothing on a list is sealed or counted publicly until it is approved here. Entries are read a page at a time and approved together."
-      actions={
-        <Link className="btn sm flat" to="/lists/links">
-          Tip links
-        </Link>
-      }
+      lede="Entries sent to lists. Nothing here is published, and nothing on a list is counted publicly until it is approved. Open a list to read its entries a page at a time, judge their links and decide their written accounts."
     >
       {query.isPending ? <p role="status">Reading the lists…</p> : null}
       {query.isError ? <Problem>{query.error.message}</Problem> : null}
@@ -57,9 +72,7 @@ export function ReviewQueues() {
             {q.title}{' '}
             <span className="n">
               <span aria-hidden="true">{q.waiting}</span>
-              <span className="sr-only">
-                {`${String(q.waiting)} ${q.waiting === 1 ? 'entry' : 'entries'} waiting`}
-              </span>
+              <span className="sr-only">{`${entries(q.waiting)} waiting`}</span>
             </span>
           </h2>
           {q.oldest ? (
@@ -74,21 +87,45 @@ export function ReviewQueues() {
             >
               Open
             </Link>
+            {q.with_links ? (
+              <Link
+                className="btn sm flat ghost"
+                to="/lists/review/$id"
+                params={{ id: q.id }}
+                search={{ links: true }}
+              >
+                {`${entries(q.with_links)} with links to check`}
+              </Link>
+            ) : null}
+            {q.with_written ? (
+              <Link
+                className="btn sm flat ghost"
+                to="/lists/review/$id"
+                params={{ id: q.id }}
+                search={{ written: true }}
+              >
+                {`${entries(q.with_written)} with a written account`}
+              </Link>
+            ) : null}
           </div>
         </article>
       ))}
-      {query.data?.queues.length ? (
-        <p className="muted">
-          The tip line’s links are checked on <Link to="/lists/links">Tip links</Link>.
-        </p>
-      ) : null}
     </StaffPage>
   );
 }
 
-export function ReviewPage({ id }: { id: number }) {
-  const [state, setState] = useState<ReviewState>('received');
-  const query = useQuery(reviewBatchQuery(id, state));
+export function ReviewPage({ id, search = {} }: { id: number; search?: ReviewSearch }) {
+  const navigate = useNavigate();
+  const state = search.state ?? 'received';
+  const query = useQuery(reviewBatchQuery(id, search));
+  const go = (patch: Partial<ReviewSearch>) => {
+    const next = { ...search, ...patch };
+    void navigate({
+      to: '/lists/review/$id',
+      params: { id },
+      search: Object.fromEntries(Object.entries(next).filter(([, v]) => v !== undefined)),
+    });
+  };
   return (
     <StaffPage
       title={query.data ? `Review: ${query.data.list.title}` : 'Review'}
@@ -105,13 +142,30 @@ export function ReviewPage({ id }: { id: number }) {
           label: REVIEW[s],
           pressed: state === s,
           onClick: () => {
-            setState(s);
+            go({ state: s === 'received' ? undefined : s });
+          },
+        }))}
+      />
+      <Seg
+        label="Only entries that"
+        options={ENTRY_WORK.map((w) => ({
+          key: w.key,
+          label: w.label,
+          pressed: Boolean(search[w.key]),
+          onClick: () => {
+            go({ [w.key]: search[w.key] ? undefined : true });
           },
         }))}
       />
       {query.isPending ? <p role="status">Reading the entries…</p> : null}
       {query.isError ? <Problem>{query.error.message}</Problem> : null}
-      {query.data ? <Batch key={`${String(id)}-${state}`} batch={query.data} /> : null}
+      {query.data ? (
+        <Batch
+          key={JSON.stringify([id, search])}
+          batch={query.data}
+          filtered={ENTRY_WORK.some((w) => Boolean(search[w.key]))}
+        />
+      ) : null}
     </StaffPage>
   );
 }
@@ -168,7 +222,7 @@ export function ShowAddress({ listId, entryId }: { listId: number; entryId: numb
   );
 }
 
-function Batch({ batch }: { batch: ReviewBatch }) {
+function Batch({ batch, filtered }: { batch: ReviewBatch; filtered: boolean }) {
   const qc = useQueryClient();
   const [ticked, setTicked] = useState<number[]>([]);
   const [triage, setTriage] = useState<TriageState>('triaged');
@@ -214,9 +268,11 @@ function Batch({ batch }: { batch: ReviewBatch }) {
   if (!batch.entries.length) {
     return (
       <Empty title="Nothing here">
-        {batch.state === 'received'
-          ? 'No entry on this list is waiting.'
-          : 'No entry on this list has been given this answer.'}
+        {filtered
+          ? 'No entry here matches these filters. Turn one off to see more.'
+          : batch.state === 'received'
+            ? 'No entry on this list is waiting.'
+            : 'No entry on this list has been given this answer.'}
       </Empty>
     );
   }
@@ -262,18 +318,20 @@ function Batch({ batch }: { batch: ReviewBatch }) {
               Entry {String(e.id)}, {new Date(e.created_at).toLocaleString()}
             </p>
             {e.links.length ? (
-              // Checked one address at a time, for every tip that sent it.
+              // Judged one address at a time, for every tip and report that
+              // sent it: a verdict here is the same verdict everywhere.
               <ul className="qlist" aria-label="Links">
                 {e.links.map((l) => (
-                  <li key={`${l.field_key}-${l.url}`}>
-                    <b>
-                      {l.host}
-                      {l.known_host ? '' : ' (unfamiliar site)'}
-                    </b>{' '}
-                    <span className="m">· {LINK_OUTCOME[l.outcome ?? 'unchecked']}</span>
-                    <span className="m" style={{ display: 'block', wordBreak: 'break-all' }}>
-                      {l.url}
+                  <li key={`${l.field_key}-${l.url}`} className="col">
+                    <span>
+                      <b>
+                        {l.host}
+                        {l.known_host ? '' : ' (unfamiliar site)'}
+                      </b>
+                      {l.kind ? <span className="m"> · {l.kind}</span> : null}
                     </span>
+                    <span className="m mono block break-all">{l.url}</span>
+                    <LinkVerdict link={l} />
                   </li>
                 ))}
               </ul>
@@ -284,10 +342,21 @@ function Batch({ batch }: { batch: ReviewBatch }) {
                 .map(([k, v]) => (
                   <div key={k}>
                     <dt>{labels.get(k) ?? k}</dt>
-                    <dd style={{ whiteSpace: 'pre-wrap' }}>{said(v)}</dd>
+                    <dd className="whitespace-pre-wrap">{said(v)}</dd>
                   </div>
                 ))}
             </dl>
+            {e.texts.map((t) => (
+              <WrittenPanel
+                key={t.ref}
+                textRef={t.ref}
+                shared
+                outcome={t.outcome}
+                on="entry"
+                reveal={false}
+                title={`Written account · ${labels.get(t.field_key) ?? t.field_key} · not published`}
+              />
+            ))}
             {batch.list.write_back && e.has_email && !e.erased ? (
               <ShowAddress listId={batch.list.id} entryId={e.id} />
             ) : null}

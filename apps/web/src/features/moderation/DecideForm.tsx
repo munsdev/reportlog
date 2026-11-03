@@ -14,90 +14,28 @@
  * `severity`), and needs its own reason, as on the Severity row. Approving in
  * a batch cannot rate; the queue's "Not rated" button lists what is left.
  *
+ * APPROVING DECIDES NO ATTACHMENT (decision 83). It puts the report on the
+ * counts, the board and the maps, and nothing more: its written accounts,
+ * links and files keep their own status and are reviewed on the report page.
+ * So nothing here asks about them, and a report holding them approves like
+ * any other, alone or in a batch.
+ *
  * THE NOTE IS OPTIONAL (decision 64). Written, it goes on the record and is
  * never sent to the reporter; left empty it is stored as none. Only taking a
  * report off the board, or putting it back, still needs a reason
  * (queue.ts, `reasonOf`).
  */
-import {
-  REJECTION_REASONS,
-  TEXT_ERASE_REASONS,
-  decideReport,
-  getReportWritten,
-} from '@reportlog/contracts';
+import { REJECTION_REASONS, decideReport } from '@reportlog/contracts';
 import type { QueueItem } from '@reportlog/contracts';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { ComponentProps, ReactNode } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import { Choice, Choices } from '@/mockup/Choice.tsx';
-import { Field, FieldDescription, Input, Label, Select, Textarea } from '@/mockup/Field.tsx';
+import { Field, FieldDescription, Label } from '@/mockup/Field.tsx';
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
 import { ChangedProblem, isChanged } from './viewing.tsx';
 import { SEVERITIES, SEVERITY_WORDS } from './words.ts';
-
-/** The mock-up's labelled controls, one line each. */
-function SelectField({
-  label,
-  help,
-  children,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & ComponentProps<'select'>) {
-  return (
-    <Field>
-      <Label>{label}</Label>
-      {help ? <FieldDescription>{help}</FieldDescription> : null}
-      <Select {...rest}>{children}</Select>
-    </Field>
-  );
-}
-function TextField({
-  label,
-  help,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & ComponentProps<'input'>) {
-  return (
-    <Field>
-      <Label>{label}</Label>
-      {help ? <FieldDescription>{help}</FieldDescription> : null}
-      <Input {...rest} />
-    </Field>
-  );
-}
-function AreaField({
-  label,
-  help,
-  ...rest
-}: { label: ReactNode; help?: ReactNode } & ComponentProps<'textarea'>) {
-  return (
-    <Field>
-      <Label>{label}</Label>
-      {help ? <FieldDescription>{help}</FieldDescription> : null}
-      <Textarea {...rest} />
-    </Field>
-  );
-}
-
-const WHY_MIN = 10;
-const WHY_MAX = 500;
-
-interface WrittenChoice {
-  outcome: string;
-  why: string;
-  reason: string;
-  /** The note for journalists, when the choice is to write one. */
-  note: string;
-}
-const EMPTY_CHOICE: WrittenChoice = { outcome: '', why: '', reason: '', note: '' };
-const ERASE_WORDS: Record<(typeof TEXT_ERASE_REASONS)[number], string> = {
-  'child-sexual-abuse': 'Child sexual abuse material',
-  'terrorist-content': 'Terrorist content',
-  'non-consensual-intimate-imagery': 'Intimate images shared without consent',
-  'incitement-or-threats': 'Incitement or threats',
-  'other-illegal': 'Other illegal content',
-  'personal-data': 'Personal data that must not be kept',
-};
 
 export type Decision = 'valid' | 'invalid' | 'unknown';
 
@@ -132,10 +70,7 @@ export function DecideForm({
   title,
   bare = false,
 }: {
-  report: Pick<
-    QueueItem,
-    'thread_id' | 'public_ref' | 'has_undecided_written' | 'seen' | 'severity'
-  >;
+  report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'attachments_waiting' | 'seen' | 'severity'>;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
   initial?: Decision | undefined;
   onDecided?: (d: Decided) => void;
@@ -155,7 +90,6 @@ export function DecideForm({
   const [choice, setChoice] = useState<Decision | ''>(initial ?? '');
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
-  const [written, setWritten] = useState<Record<string, WrittenChoice>>({});
   const [severity, setSeverity] = useState('');
   const [severityWhy, setSeverityWhy] = useState('');
   const [problems, setProblems] = useState<{
@@ -163,7 +97,6 @@ export function DecideForm({
     severityWhy?: string | undefined;
     reason?: string | undefined;
     note?: string | undefined;
-    written?: string | undefined;
   }>({});
   const choiceRef = useRef<HTMLDivElement>(null);
   const reasonRef = useRef<HTMLSelectElement>(null);
@@ -190,40 +123,6 @@ export function DecideForm({
     choiceRef.current?.querySelector<HTMLElement>('input[type="radio"]')?.focus();
   }, [focusOnOpen]);
 
-  // Approving a report that holds a written account or link nobody has
-  // decided asks for a decision on each, with a reason, in this same step.
-  const needsWritten = choice === 'valid' && report.has_undecided_written;
-  const panel = useQuery({
-    queryKey: ['written', report.thread_id],
-    queryFn: ({ signal }) =>
-      call(getReportWritten, { params: { threadId: report.thread_id }, signal }),
-    enabled: needsWritten,
-  });
-  const undecided = needsWritten
-    ? [
-        ...(panel.data?.texts ?? [])
-          .filter((t) => t.outcome === null)
-          .map((t) => ({ ref: t.ref, name: 'Written account', shared: t.shared })),
-        ...(panel.data?.links ?? [])
-          .filter((l) => l.outcome === null && l.group_id !== null)
-          .map((l) => ({ ref: l.ref, name: 'Link', shared: panel.data?.shared ?? false })),
-      ]
-    : [];
-  const choiceOf = (ref: string) => written[ref] ?? EMPTY_CHOICE;
-  const setChoiceOf = (ref: string, patch: Partial<WrittenChoice>) => {
-    setWritten((w) => ({ ...w, [ref]: { ...(w[ref] ?? EMPTY_CHOICE), ...patch } }));
-  };
-  const writtenReady = undecided.every((u) => {
-    const c = choiceOf(u.ref);
-    return (
-      c.outcome !== '' &&
-      c.why.trim().length >= WHY_MIN &&
-      c.why.trim().length <= WHY_MAX &&
-      (c.outcome !== 'redacted' || c.note.trim() !== '') &&
-      (c.outcome !== 'illegal' || c.reason !== '')
-    );
-  });
-
   const decide = useMutation({
     mutationFn: (status: Decision) =>
       call(decideReport, {
@@ -236,20 +135,6 @@ export function DecideForm({
           seen: report.seen,
           ...(status === 'valid' && rating
             ? { severity: rating, severity_comment: severityWhy.trim() }
-            : {}),
-          ...(status === 'valid' && undecided.length
-            ? {
-                written: undecided.map((u) => {
-                  const c = choiceOf(u.ref);
-                  return {
-                    ref: u.ref,
-                    outcome: c.outcome,
-                    why: c.why.trim(),
-                    ...(c.outcome === 'illegal' ? { reason: c.reason } : {}),
-                    ...(c.outcome === 'redacted' ? { note: c.note.trim() } : {}),
-                  };
-                }),
-              }
             : {}),
         },
       }),
@@ -291,14 +176,6 @@ export function DecideForm({
     }
     if (found.note) {
       noteRef.current?.focus();
-      return;
-    }
-    if (needsWritten && (panel.isPending || !writtenReady)) {
-      setProblems((p) => ({
-        ...p,
-        written:
-          'Decide each written account and link below, with a reason of 10 to 500 characters.',
-      }));
       return;
     }
     if (choice) decide.mutate(choice);
@@ -422,94 +299,14 @@ export function DecideForm({
           ) : null}
         </>
       ) : null}
-      {needsWritten ? (
-        <div className="panel quiet" role="group" aria-labelledby={`${id}-written`}>
-          <h2 id={`${id}-written`}>Written accounts and links</h2>
-          <p className="sub">
-            This report holds words or links nobody has decided yet. Decide each one, with a reason.
-            Open them on the report page first if you need to read them.
-          </p>
-          {panel.isPending ? <p role="status">Reading what the report holds…</p> : null}
-          {panel.isError ? <Problem>{panel.error.message}</Problem> : null}
-          {undecided.map((u) => {
-            const c = choiceOf(u.ref);
-            // A link keeps its own three (a link is not prose). A written
-            // account is kept internal, given a note a moderator writes, or
-            // erased: its words are never passed on as they were written.
-            const isLink = u.name === 'Link';
-            const options = [
-              ...(u.shared
-                ? [
-                    isLink
-                      ? ['checked', 'Checked: journalists may read it']
-                      : ['redacted', 'Write a note for journalists'],
-                  ]
-                : []),
-              [
-                'withheld',
-                isLink ? 'Withheld: nobody outside moderation reads it' : 'Keep internal',
-              ],
-              ['illegal', 'Illegal: erase it now'],
-            ];
-            return (
-              <div key={u.ref} className="col">
-                <SelectField
-                  label={`${u.name}: your decision`}
-                  value={c.outcome}
-                  onChange={(e) => {
-                    setChoiceOf(u.ref, { outcome: e.target.value });
-                  }}
-                >
-                  <option value="">Choose one</option>
-                  {options.map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
-                    </option>
-                  ))}
-                </SelectField>
-                {c.outcome === 'illegal' ? (
-                  <SelectField
-                    label="Why it is illegal"
-                    value={c.reason}
-                    onChange={(e) => {
-                      setChoiceOf(u.ref, { reason: e.target.value });
-                    }}
-                  >
-                    <option value="">Choose one</option>
-                    {TEXT_ERASE_REASONS.filter(
-                      (r) => u.name !== 'Link' || r !== 'personal-data',
-                    ).map((r) => (
-                      <option key={r} value={r}>
-                        {ERASE_WORDS[r]}
-                      </option>
-                    ))}
-                  </SelectField>
-                ) : null}
-                {c.outcome === 'redacted' ? (
-                  <AreaField
-                    label={`${u.name}: note for journalists`}
-                    help="Write it in your own words. Put anything you quote in quotation marks."
-                    rows={4}
-                    value={c.note}
-                    onChange={(e) => {
-                      setChoiceOf(u.ref, { note: e.target.value });
-                    }}
-                  />
-                ) : null}
-                <TextField
-                  label={`${u.name}: why (for the record)`}
-                  help="10 to 500 characters. Only staff can read it."
-                  value={c.why}
-                  maxLength={WHY_MAX}
-                  onChange={(e) => {
-                    setChoiceOf(u.ref, { why: e.target.value });
-                  }}
-                />
-              </div>
-            );
-          })}
-          <Err>{problems.written}</Err>
-        </div>
+      {choice === 'valid' && report.attachments_waiting > 0 ? (
+        <p className="m">
+          Approving puts it on the counts, the board and the maps. Its{' '}
+          {report.attachments_waiting === 1
+            ? 'attachment still waiting is'
+            : `${String(report.attachments_waiting)} attachments still waiting are`}{' '}
+          reviewed on their own and stay hidden until then.
+        </p>
       ) : null}
       <Field controlId={`${id}-note`}>
         <Label>Note for the record (never sent)</Label>

@@ -154,7 +154,10 @@ export const checkText = defineRoute({
     outcome: z.string(),
     /** Required for "illegal": one of TEXT_ERASE_REASONS. */
     reason: z.string().optional(),
-    /** Why, 10 to 500 characters. Required. Internal: staff see it in the history, nobody else. */
+    /**
+     * Why, 10 to 500 characters. Required for "illegal" only; optional for
+     * "withheld" (Leave it, decision 83). Internal: staff see it in the history, nobody else.
+     */
     why: z.string().optional(),
   }),
   response: z.object({ outcome: TextOutcome, erased: z.boolean() }),
@@ -178,8 +181,8 @@ export const redactText = defineRoute({
   body: z.object({
     /** The note, in the moderator's words. Quoted parts are in quotation marks. */
     body: z.string(),
-    /** Why, for the record (10 to 500 characters). Never shown to a journalist. */
-    why: z.string(),
+    /** Why, for the record (10 to 500 characters), optional (decision 83). Never shown to a journalist. */
+    why: z.string().optional(),
   }),
   response: z.object({ outcome: z.literal('redacted') }),
 });
@@ -202,6 +205,8 @@ export const ReportLinkPanel = z.object({
   /** Names the link for `openText`; the address itself is not in this list. */
   ref: z.string(),
   outcome: z.enum(['checked', 'withheld', 'illegal']).nullable(),
+  /** The group's comment for journalists, edited beside the verdict. */
+  comment: z.string().nullable(),
   /** Tips and other reports that sent the same address, besides this one. */
   also_tips: z.number().int(),
   also_reports: z.number().int(),

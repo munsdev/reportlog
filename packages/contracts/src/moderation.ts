@@ -59,8 +59,13 @@ export const QueueItem = z.object({
   review_terms: z.array(z.string()),
   notes_enabled: z.boolean(),
   has_note: z.boolean(),
-  /** Holds a written account or link nobody has decided: no batch approval, its own look. */
-  has_undecided_written: z.boolean(),
+  /**
+   * Attachments still to review (decision 83): a written account or link the
+   * reporter lets journalists read and nobody has decided, and files nobody
+   * has decided. Approving the report never decides them, so it is shown,
+   * never a reason to hold the approval back.
+   */
+  attachments_waiting: z.number().int(),
   has_contact: z.boolean(),
   file_count: z.number().int(),
   /** How many of this version's files a moderator has published (workstream F's decision, per file). */
@@ -126,6 +131,12 @@ export const listQueue = defineRoute({
       .regex(/^[1-9]\d{0,15}$/)
       .optional(),
     lane: z.enum(['organization', 'open_form']).optional(),
+    // "Has attachments to review" (decision 83): the one work filter, in
+    // place of the Written accounts, Links and Files waiting pages. A staff
+    // work filter on a staff queue, not a filter on public data, so it is
+    // not the operator's to choose (CLAUDE.md, "nothing is filterable").
+    /** Its newest version holds an attachment nobody has decided (`attachments_waiting` > 0). */
+    attachments: z.enum(['true', 'false']).optional(),
     /** 1-based, QUEUE_PAGE_SIZE reports to a page. */
     page: z
       .string()
@@ -240,24 +251,6 @@ export const decideReport = defineRoute({
   body: z.object({
     status: z.string().optional(),
     comment: z.string().optional(),
-    /**
-     * Approving a report that holds written accounts or links nobody has
-     * decided: one decision for each, with a reason (10 to 500 characters).
-     * `ref` is the item's ref from the report's written panel.
-     */
-    written: z
-      .array(
-        z.object({
-          ref: z.string(),
-          outcome: z.string(),
-          why: z.string(),
-          /** "illegal" only. */
-          reason: z.string().optional(),
-          /** A text decided "redacted": the note for journalists, written by the moderator. */
-          note: z.string().optional(),
-        }),
-      )
-      .optional(),
     /** Required to decline: the reason from the fixed list that the reporter is emailed (platform.ts). */
     reason_code: z.string().optional(),
     /** Required: the report's `seen` as the page showed it. */

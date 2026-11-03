@@ -93,6 +93,7 @@ import { Route as staffMapsIndexRouteImport } from './routes/(staff)/maps/index'
 import { Route as staffModerateIndexRouteImport } from './routes/(staff)/moderate/index'
 import { Route as staffModerateThreadIdRouteImport } from './routes/(staff)/moderate/$threadId'
 import { Route as staffModerateAgreementRouteImport } from './routes/(staff)/moderate/agreement'
+import { Route as staffModerateBlocklistRouteImport } from './routes/(staff)/moderate/blocklist'
 import { Route as staffModerateCoverageRouteImport } from './routes/(staff)/moderate/coverage'
 import { Route as staffModerateFloodRouteImport } from './routes/(staff)/moderate/flood'
 import { Route as staffModerateIllegalContentRouteImport } from './routes/(staff)/moderate/illegal-content'
@@ -555,6 +556,11 @@ const staffModerateAgreementRoute = staffModerateAgreementRouteImport.update({
   path: '/agreement',
   getParentRoute: () => staffModerateRouteRoute,
 } as any)
+const staffModerateBlocklistRoute = staffModerateBlocklistRouteImport.update({
+  id: '/blocklist',
+  path: '/blocklist',
+  getParentRoute: () => staffModerateRouteRoute,
+} as any)
 const staffModerateCoverageRoute = staffModerateCoverageRouteImport.update({
   id: '/coverage',
   path: '/coverage',
@@ -847,6 +853,7 @@ export interface FileRoutesByFullPath {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/moderate/coverage': typeof staffModerateCoverageRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
@@ -968,6 +975,7 @@ export interface FileRoutesByTo {
   '/logbooks/pages': typeof staffLogbooksPagesRoute
   '/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/moderate/agreement': typeof staffModerateAgreementRoute
+  '/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/moderate/coverage': typeof staffModerateCoverageRoute
   '/moderate/flood': typeof staffModerateFloodRoute
   '/moderate/illegal-content': typeof staffModerateIllegalContentRoute
@@ -1096,6 +1104,7 @@ export interface FileRoutesById {
   '/(staff)/logbooks/pages': typeof staffLogbooksPagesRoute
   '/(staff)/moderate/$threadId': typeof staffModerateThreadIdRoute
   '/(staff)/moderate/agreement': typeof staffModerateAgreementRoute
+  '/(staff)/moderate/blocklist': typeof staffModerateBlocklistRoute
   '/(staff)/moderate/coverage': typeof staffModerateCoverageRoute
   '/(staff)/moderate/flood': typeof staffModerateFloodRoute
   '/(staff)/moderate/illegal-content': typeof staffModerateIllegalContentRoute
@@ -1225,6 +1234,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/blocklist'
     | '/moderate/coverage'
     | '/moderate/flood'
     | '/moderate/illegal-content'
@@ -1346,6 +1356,7 @@ export interface FileRouteTypes {
     | '/logbooks/pages'
     | '/moderate/$threadId'
     | '/moderate/agreement'
+    | '/moderate/blocklist'
     | '/moderate/coverage'
     | '/moderate/flood'
     | '/moderate/illegal-content'
@@ -1473,6 +1484,7 @@ export interface FileRouteTypes {
     | '/(staff)/logbooks/pages'
     | '/(staff)/moderate/$threadId'
     | '/(staff)/moderate/agreement'
+    | '/(staff)/moderate/blocklist'
     | '/(staff)/moderate/coverage'
     | '/(staff)/moderate/flood'
     | '/(staff)/moderate/illegal-content'
@@ -2198,6 +2210,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof staffModerateAgreementRouteImport
       parentRoute: typeof staffModerateRouteRoute
     }
+    '/(staff)/moderate/blocklist': {
+      id: '/(staff)/moderate/blocklist'
+      path: '/blocklist'
+      fullPath: '/moderate/blocklist'
+      preLoaderRoute: typeof staffModerateBlocklistRouteImport
+      parentRoute: typeof staffModerateRouteRoute
+    }
     '/(staff)/moderate/coverage': {
       id: '/(staff)/moderate/coverage'
       path: '/coverage'
@@ -2573,6 +2592,7 @@ const staffLogbooksRouteRouteWithChildren =
 interface staffModerateRouteRouteChildren {
   staffModerateThreadIdRoute: typeof staffModerateThreadIdRoute
   staffModerateAgreementRoute: typeof staffModerateAgreementRoute
+  staffModerateBlocklistRoute: typeof staffModerateBlocklistRoute
   staffModerateCoverageRoute: typeof staffModerateCoverageRoute
   staffModerateFloodRoute: typeof staffModerateFloodRoute
   staffModerateIllegalContentRoute: typeof staffModerateIllegalContentRoute
@@ -2585,6 +2605,7 @@ interface staffModerateRouteRouteChildren {
 const staffModerateRouteRouteChildren: staffModerateRouteRouteChildren = {
   staffModerateThreadIdRoute: staffModerateThreadIdRoute,
   staffModerateAgreementRoute: staffModerateAgreementRoute,
+  staffModerateBlocklistRoute: staffModerateBlocklistRoute,
   staffModerateCoverageRoute: staffModerateCoverageRoute,
   staffModerateFloodRoute: staffModerateFloodRoute,
   staffModerateIllegalContentRoute: staffModerateIllegalContentRoute,

@@ -66,7 +66,8 @@ const rowOf = (page: Page, has: Locator) =>
 
 /** A choice card: a label over a hidden radio, so the label is what a person clicks. */
 const card = (scope: Locator, name: string) =>
-  scope.locator('label').filter({ has: scope.getByRole('radio', { name, exact: true }) });
+  // `has` is looked for inside each label, so it starts from the page, not the scope.
+  scope.locator('label').filter({ has: scope.page().getByRole('radio', { name, exact: true }) });
 
 /** Below 900px the report page decides from a bar at the foot; wider, from its Decide form. */
 async function decideOnReportPage(page: Page, choice: 'Approve' | 'Decline', note: string) {

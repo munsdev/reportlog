@@ -16,7 +16,7 @@ import {
 import type { ArticleBody, MyArticle, MyCoverage } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Btn } from '@/mockup/Btn.tsx';
 import { Chip } from '@/mockup/Chip.tsx';
 import { CheckBox, TextField } from '@/mockup/Field.tsx';
@@ -168,9 +168,6 @@ function AddArticle({ onSaved }: { onSaved: (d: MyCoverage) => void }) {
       setSent(true);
     },
   });
-  useEffect(() => {
-    if (url) setSent(false);
-  }, [url]);
   const nowhere = !where.national && !where.international && where.places.length === 0;
   return (
     <form
@@ -193,6 +190,8 @@ function AddArticle({ onSaved }: { onSaved: (d: MyCoverage) => void }) {
         value={url}
         onChange={(e) => {
           setUrl(e.target.value);
+          // Typing a new address puts the last "Linked" away.
+          if (e.target.value) setSent(false);
         }}
       />
       <TextField

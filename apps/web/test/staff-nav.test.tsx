@@ -53,16 +53,9 @@ describe('who sees which section and page (menu.ts)', () => {
   it('a moderator sees Review without the administrator’s pages, and the guides', () => {
     expect(shape(as('moderator'))).toEqual({
       You: YOU,
-      Review: [
-        'Reports queue',
-        'Written accounts',
-        'Links',
-        'Coverage',
-        'List entries',
-        'Files waiting',
-        'Illegal content notices',
-        'Flood screen',
-      ],
+      // Two queues and Coverage (moderation-unified.md); what is not an incoming item is Safety.
+      Review: ['Reports queue', 'Coverage', 'List entries'],
+      Safety: ['Illegal content notices', 'Flood screen', 'Link blocklist'],
       Help: ['Guides'],
     });
   });
@@ -72,6 +65,7 @@ describe('who sees which section and page (menu.ts)', () => {
     expect(HEADINGS(as('admin'))).toEqual([
       'You',
       'Review',
+      'Safety',
       'Content',
       'Site settings',
       'People',
@@ -175,13 +169,17 @@ describe('which page an address is', () => {
     ['/moderate', 'Reports queue'],
     ['/moderate/', 'Reports queue'],
     ['/moderate/3f0e2a3c-1111-4b4b-8c8c-000000000000', 'Reports queue'],
+    // Pages that became filters on the queue send you on to it.
+    ['/moderate/texts', 'Reports queue'],
+    ['/moderate/texts/report-12', 'Reports queue'],
+    ['/moderate/blocklist', 'Link blocklist'],
     ['/moderate/flood', 'Flood screen'],
     ['/moderate/settings', 'Moderation rules'],
     ['/lists/review/12', 'List entries'],
     ['/lists/12', 'Lists'],
-    ['/lists/links', 'Links'],
-    ['/files/RL-ABCD', 'Files waiting'],
-    ['/files/erase', 'Files waiting'],
+    ['/lists/links', 'Reports queue'],
+    ['/files', 'Reports queue'],
+    ['/files/erase', 'Erasing a file'],
     ['/files/settings', 'File limits'],
     ['/files/logbooks/3', 'File limits'],
     ['/access/orgs/4', 'Organizations'],
@@ -630,7 +628,7 @@ describe('the staff area', () => {
       within(side)
         .getAllByRole('heading', { level: 3 })
         .map((h) => h.textContent),
-    ).toEqual(['You', 'Review', 'Help']);
+    ).toEqual(['You', 'Review', 'Safety', 'Help']);
     expect(within(side).queryByRole('link', { name: 'Look' })).toBeNull();
     expect(within(side).getByRole('link', { name: 'Reports queue' })).toHaveAttribute(
       'aria-current',

@@ -22,6 +22,7 @@ import type { ReviewState, TriageState } from './policy.ts';
 import { refuse } from './refusals.ts';
 import { fieldsOf } from './rows.ts';
 import type { Db, LoadedList } from './rows.ts';
+import { refOf } from '../moderation/texts/ref.ts';
 import { openValue } from '../links/keys.ts';
 import type { LinkKeys } from '../links/keys.ts';
 import { linksForEntries } from '../links/reads.ts';
@@ -47,7 +48,11 @@ export interface ReviewEntry {
     outcome: Outcome | null;
     /** What kind of link the tip said it is, in words, where its form asked. */
     kind?: string;
+    /** The group's comment for journalists, edited beside the verdict. */
+    comment: string | null;
   }[];
+  /** Its tip descriptions, named for the written-account routes. Never the words. */
+  texts: { ref: string; field_key: string; outcome: 'redacted' | 'withheld' | null }[];
 }
 
 /**
@@ -56,6 +61,43 @@ export interface ReviewEntry {
  */
 export interface Clusters {
   busiest_minutes: { minute: string; count: number }[];
+}
+
+/**
+ * The work an entry holds, for the review page's filters (owner, 29 October
+ * 2026): staff filters on a staff queue, not filters on public data. Read
+ * over `list_entries`.
+ *
+ * A written account is a tip description: a long answer still held, on a
+ * list that asks for a link. The same rule as the written-account candidates
+ * (moderation/texts/items.ts, CANDIDATES), so the filter finds what the hub
+ * offers to check.
+ */
+const holdsUncheckedLink = sql<boolean>`exists (
+  select 1 from links fl join link_groups fg on fg.id = fl.group_id
+   where fl.entry_id = list_entries.id and fg.outcome is null)`;
+const holdsWritten = sql<boolean>`(list_entries.erasable_answers is not null and exists (
+  select 1 from list_fields tf
+   where tf.list_id = list_entries.list_id and tf.kind = 'long_text'
+     and jsonb_exists(list_entries.erasable_answers, tf.key))
+  and exists (select 1 from list_fields uf
+               where uf.list_id = list_entries.list_id and uf.kind = 'url'))`;
+
+/** How many waiting entries hold each kind of work, for the lists overview. */
+export async function waitingWork(
+  db: Db,
+  listId: number,
+): Promise<{ with_links: number; with_written: number }> {
+  const r = await db
+    .selectFrom('list_entries')
+    .select([
+      sql<string>`count(*) filter (where ${holdsUncheckedLink})`.as('links'),
+      sql<string>`count(*) filter (where ${holdsWritten})`.as('written'),
+    ])
+    .where('list_id', '=', listId)
+    .where('review_state', '=', 'received')
+    .executeTakeFirstOrThrow();
+  return { with_links: Number(r.links), with_written: Number(r.written) };
 }
 
 const asAnswers = (v: unknown): Answers =>
@@ -74,17 +116,25 @@ export async function reviewBatch(
     limit = 100,
     knownHosts = [],
     keys = null,
+    links: onlyLinks = false,
+    written: onlyWritten = false,
   }: {
     state?: ReviewState;
     limit?: number;
     knownHosts?: readonly string[];
     /** Without them the links are not shown; none can have been taken either. */
     keys?: LinkKeys | null;
+    /** Only entries holding a link nobody has judged yet. */
+    links?: boolean;
+    /** Only entries holding a tip description. */
+    written?: boolean;
   } = {},
 ): Promise<{ entries: ReviewEntry[]; clusters: Clusters }> {
   const size = Math.min(Math.max(Math.floor(limit) || 100, 1), 500);
-  const rows = await db
-    .selectFrom('list_entries')
+  let q = db.selectFrom('list_entries');
+  if (onlyLinks) q = q.where(holdsUncheckedLink);
+  if (onlyWritten) q = q.where(holdsWritten);
+  const rows = await q
     .select([
       'id',
       'created_at',
@@ -112,6 +162,23 @@ export async function reviewBatch(
           ?.settings.link_types?.find((t) => t.code === l.link_type)?.label ?? l.link_type)
       : undefined;
   const known = new Set(knownHosts.map((h) => h.trim().toLowerCase()));
+  // Tip descriptions: only on a list that asks for a link, as CANDIDATES says.
+  const textKeys = fields.some((f) => f.kind === 'url')
+    ? fields.filter((f) => f.kind === 'long_text').map((f) => f.key)
+    : [];
+  const decided =
+    textKeys.length && ids.length
+      ? await db
+          .selectFrom('text_items')
+          .select(['entry_id', 'field_key', 'outcome'])
+          .where('entry_id', 'in', ids)
+          .execute()
+      : [];
+  const outcomeOf = (entryId: number, key: string) => {
+    const o = decided.find((d) => d.entry_id === entryId && d.field_key === key)?.outcome;
+    // An old `checked` (the retired "as written") is read as waiting (texts/items.ts).
+    return o === 'redacted' || o === 'withheld' ? o : null;
+  };
 
   const entries: ReviewEntry[] = rows.map((r) => ({
     id: r.id,
@@ -136,8 +203,16 @@ export async function reviewBatch(
           group_id: l.group_id,
           outcome: l.outcome,
           ...(kind ? { kind } : {}),
+          comment: l.comment,
         };
       }),
+    texts: textKeys
+      .filter((k) => r.erasable_answers !== null && k in asAnswers(r.erasable_answers))
+      .map((k) => ({
+        ref: refOf({ source: 'tip', entryId: r.id, fieldKey: k }),
+        field_key: k,
+        outcome: outcomeOf(r.id, k),
+      })),
   }));
   return { entries, clusters: clustersIn(entries) };
 }

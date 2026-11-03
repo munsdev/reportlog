@@ -82,6 +82,22 @@ export function whyOf(raw: unknown): string {
   return why;
 }
 
+/**
+ * The reason for "Leave it" (kept internal) and "Write a note" (decision 83):
+ * optional. Given, it is checked as `whyOf` checks one; left empty, none is
+ * recorded (`text_checks.reason` is nullable). Only "Illegal" still asks.
+ */
+export function optionalWhyOf(raw: unknown): string | null {
+  const why = typeof raw === 'string' ? raw.trim() : '';
+  return why ? whyOf(why) : null;
+}
+
+/**
+ * What a note's own row records when the moderator gave no reason: the
+ * column predates decision 83 and asks for words, and these say what was done.
+ */
+const NOTE_NO_WHY = 'A note for journalists, written without a reason.';
+
 export const NOT_SHARED = refuse(
   409,
   'not_shared',
@@ -453,7 +469,8 @@ export async function checkText(
   if (outcome === 'illegal' && !isEraseReason(input.reason)) {
     throw refuse(400, 'reason_needed', 'Pick why it is illegal. It is recorded with the erasure.');
   }
-  const why = whyOf(input.why);
+  // "Leave it" needs no reason (decision 83); "Illegal" erases, so it still does.
+  const why = outcome === 'illegal' ? whyOf(input.why) : optionalWhyOf(input.why);
   const subject = await resolve(db, keys, rawRef);
   return db.transaction().execute(async (trx) => {
     const item = await ensureItem(trx, subject);
@@ -513,7 +530,7 @@ export async function redactText(
   if (body.length > MAX_REDACTED) {
     throw refuse(400, 'copy_too_long', `Keep the note under ${String(MAX_REDACTED)} characters.`);
   }
-  const why = whyOf(input.why);
+  const why = optionalWhyOf(input.why);
   const subject = await resolve(db, keys, rawRef);
   // The note is the moderator's own writing. Pasting the whole account in is
   // the one-click pass-through the owner ruled out.
@@ -542,7 +559,7 @@ export async function redactText(
         item_id: item.id,
         body_enc: sealed.enc,
         body_key: sealed.key,
-        reason: why,
+        reason: why ?? NOTE_NO_WHY,
         redacted_by: input.actor,
       })
       .execute();
