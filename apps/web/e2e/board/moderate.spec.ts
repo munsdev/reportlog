@@ -18,6 +18,7 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Locator, Page } from '@playwright/test';
 import { ADMIN, MODERATOR } from '../auth.ts';
+import { openMore } from '../more.ts';
 import { codeIn, countTo, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { doorFields } from '../door.ts';
 import { goViaMenu } from '../menu.ts';
@@ -139,6 +140,8 @@ test('a moderator reads, opens, approves; the board shows it; the reporter sees 
   await expect(second).toBeHidden();
 
   // Who filed it: closing it without a reason writes nothing and shows nothing.
+  // It is with the less-used actions, under More.
+  await openMore(page);
   const who = page.getByRole('region', { name: 'Who filed it' });
   const restricted = 'Restricted. Every look is logged with your reason';
   await expect(who).toContainText(restricted);

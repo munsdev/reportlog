@@ -113,3 +113,7 @@ details.more > .in {
   gap: 10px;
   padding: 0 18px 18px;
 }
+
+/* On a phone the decision follows the report in the page's own flow: it
+   must not stay stuck to the screen over the attachments below it. */
+@media (max-width:899px){.report-page > .rp-decide{position:static;max-height:none;overflow:visible}}

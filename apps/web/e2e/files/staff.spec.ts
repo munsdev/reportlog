@@ -15,6 +15,7 @@
 import { expect, test } from '@playwright/test';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { ADMIN } from '../auth.ts';
+import { openMore } from '../more.ts';
 import { goViaMenu, tabLink } from '../menu.ts';
 import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.ts';
 import { photoWithLocation, signedIn } from './helpers.ts';
@@ -206,7 +207,8 @@ test('a moderator publishes a photo the reporter allowed, opens the original wit
 
   // Asking for evidence, in the moderator's words, reaches the reporter.
   before = countTo(reporterEmail);
-  // A closed row beside the report until opened.
+  // A closed row under More until opened.
+  await openMore(page);
   await page.getByRole('button', { name: 'Ask for evidence', exact: true }).click();
   await page.getByRole('button', { name: 'Ask for evidence…' }).click();
   dialog = page.getByRole('dialog');

@@ -16,6 +16,7 @@ import { countTo, identityState, lastMessageTo, linkIn } from '../identity/mail.
 import { signInWithSecondFactor, stepUp } from '../second-factor.ts';
 import { doorFields } from '../door.ts';
 import { panel } from '../panel.ts';
+import { openMore } from '../more.ts';
 
 const unique = () => `${Date.now().toString(36)}${String(Math.floor(Math.random() * 1e6))}`;
 
@@ -133,6 +134,7 @@ test('a bulk decline from the queue declines what the filter shows, with one rea
     .getByRole('link', { name: /^Open RL-/ })
     .first()
     .click();
+  await openMore(page);
   await expect(panel(page, 'The record')).toContainText(
     'It is abusive, or it is spam or an advertisement.',
   );

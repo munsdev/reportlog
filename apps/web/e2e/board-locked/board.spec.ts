@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
 import { MODERATOR } from '../auth.ts';
+import { openMore } from '../more.ts';
 import { identityState } from '../identity/mail.ts';
 
 test.describe.configure({ mode: 'serial' });
@@ -90,6 +91,8 @@ test('a moderator rates a report and links it to another; the queue says so', as
   const page = v.page;
   await page.goto(`/moderate?status=all&q=${first}`);
   await page.getByRole('link', { name: `Open ${first}` }).click();
+  // Severity and the same incident are under More, with the record.
+  await openMore(page);
   const severity = page.getByRole('region', { name: 'Severity' });
   await expect(severity).toContainText('Not set.');
   // A closed row: Edit opens it, and the Save bar names what it records.

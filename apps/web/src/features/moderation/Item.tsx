@@ -185,6 +185,8 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
           />
         </div>
         <div className="rp-att col">
+          {/* Work this report asks for, so it is not folded away under More. */}
+          {r.needs_review ? <SecondReadRow r={r} /> : null}
           <Attachments
             threadId={r.thread_id}
             declined={r.moderation_status === 'invalid'}
@@ -383,7 +385,6 @@ function More({ r, a, history }: { r: QueueItem; a: Assessment; history: History
     'severity',
     'threat to safety',
     'same incident',
-    ...(r.needs_review ? ['second read'] : []),
     'evidence',
     ...(r.notes_enabled ? ['editorial note'] : []),
     ...(r.reporter_withdrew ? [] : ['the board']),
@@ -420,7 +421,6 @@ function Rows({ r, a, history }: { r: QueueItem; a: Assessment; history: History
       <SeverityRow r={r} a={a} history={history} />
       <ThreatRow r={r} />
       <IncidentRow r={r} a={a} />
-      {r.needs_review ? <SecondReadRow r={r} /> : null}
       <EvidenceRow r={r} />
       {r.notes_enabled ? <NoteRow r={r} /> : null}
       {r.reporter_withdrew ? null : <BoardRow r={r} />}
