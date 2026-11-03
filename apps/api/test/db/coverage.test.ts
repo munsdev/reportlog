@@ -328,7 +328,10 @@ describe('nothing is public until a moderator approves it', () => {
   });
 
   it('a public card for an approved, listed one, without signing in', async () => {
-    const id = (await publicList()).articles[0]?.id ?? 0;
+    // By address, not by place in the list: the order depends on today's date.
+    // This one is http, which the test's own page serves.
+    const id =
+      (await publicList()).articles.find((a) => a.url.startsWith('http://news.example/'))?.id ?? 0;
     const r = await h.app.inject({ method: 'GET', url: `/api/coverage/${String(id)}/card` });
     expect(r.statusCode).toBe(200);
     expect(r.json()).toMatchObject({ found: true });
