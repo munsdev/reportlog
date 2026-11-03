@@ -135,6 +135,11 @@ export const listQueue = defineRoute({
   response: z.object({
     reports: z.array(QueueItem),
     open_flags: z.number().int(),
+    /**
+     * Approved reports, not withdrawn, that nobody has rated: the "Not rated"
+     * button's count. Like `open_flags`, under no other filter.
+     */
+    unrated: z.number().int(),
     archive_published: z.boolean(),
     /**
      * How many reports each status button would show under the same
@@ -257,6 +262,14 @@ export const decideReport = defineRoute({
     reason_code: z.string().optional(),
     /** Required: the report's `seen` as the page showed it. */
     seen: z.string().optional(),
+    /**
+     * Optional: rate the report in the same step (note, irregularity,
+     * serious, systemic), with `severity_comment` as the reason, which is
+     * then required. Written in the decision's own transaction, exactly as
+     * `setReportSeverity` writes it. Clearing a rating is that route's.
+     */
+    severity: z.string().optional(),
+    severity_comment: z.string().optional(),
   }),
   response: z.object({
     ok: z.literal(true),

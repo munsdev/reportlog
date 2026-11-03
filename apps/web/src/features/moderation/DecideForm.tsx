@@ -7,6 +7,13 @@
  * of the mock-up's `.choice` rows; the reason the reporter is told appears under Decline, below
  * the answer just given, never above or around it.
  *
+ * RATING IS OFFERED AT APPROVAL, NEVER ASKED FOR. Choosing Approve on a
+ * report nobody has rated shows the severity choice under it, starting on
+ * "Not now" so nothing slides through as a default. A rating chosen here goes
+ * with the decision in one request and one transaction (`decideReport`'s
+ * `severity`), and needs its own reason, as on the Severity row. Approving in
+ * a batch cannot rate; the queue's "Not rated" button lists what is left.
+ *
  * THE NOTE IS REQUIRED. The design drew it as optional; the server keeps
  * every decision with a written reason (queue.ts, `reasonOf`), and that rule
  * has its own test. So the form asks for it, and says it is never sent.
@@ -27,6 +34,7 @@ import { Field, FieldDescription, Input, Label, Select, Textarea } from '@/mocku
 import { Err, Problem } from '../../mockup/Notice.tsx';
 import { call } from '../../lib/api.ts';
 import { ChangedProblem, isChanged } from './viewing.tsx';
+import { SEVERITIES, SEVERITY_WORDS } from './words.ts';
 
 /** The mock-up's labelled controls, one line each. */
 function SelectField({
@@ -123,7 +131,10 @@ export function DecideForm({
   title,
   bare = false,
 }: {
-  report: Pick<QueueItem, 'thread_id' | 'public_ref' | 'has_undecided_written' | 'seen'>;
+  report: Pick<
+    QueueItem,
+    'thread_id' | 'public_ref' | 'has_undecided_written' | 'seen' | 'severity'
+  >;
   /** A choice already made, by the phone bar's Approve… or Decline…. */
   initial?: Decision | undefined;
   onDecided?: (d: Decided) => void;
@@ -144,8 +155,11 @@ export function DecideForm({
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');
   const [written, setWritten] = useState<Record<string, WrittenChoice>>({});
+  const [severity, setSeverity] = useState('');
+  const [severityWhy, setSeverityWhy] = useState('');
   const [problems, setProblems] = useState<{
     choice?: string | undefined;
+    severityWhy?: string | undefined;
     reason?: string | undefined;
     note?: string | undefined;
     written?: string | undefined;
@@ -153,8 +167,19 @@ export function DecideForm({
   const choiceRef = useRef<HTMLDivElement>(null);
   const reasonRef = useRef<HTMLSelectElement>(null);
   const noteRef = useRef<HTMLTextAreaElement>(null);
+  const severityWhyRef = useRef<HTMLTextAreaElement>(null);
 
-  const dirty = choice !== (initial ?? '') || reason !== '' || note.trim() !== '';
+  // Offered only when approving a report nobody has rated: changing a rating
+  // is the Severity row's, where the current one is shown beside it.
+  const offerRating = choice === 'valid' && report.severity === null;
+  const rating = offerRating ? severity : '';
+
+  const dirty =
+    choice !== (initial ?? '') ||
+    reason !== '' ||
+    note.trim() !== '' ||
+    severity !== '' ||
+    severityWhy.trim() !== '';
   useEffect(() => {
     onDirty?.(dirty);
   }, [dirty, onDirty]);
@@ -208,6 +233,9 @@ export function DecideForm({
           ...(status === 'invalid' ? { reason_code: reason } : {}),
           // The version this page showed: refused if somebody acted on it since.
           seen: report.seen,
+          ...(status === 'valid' && rating
+            ? { severity: rating, severity_comment: severityWhy.trim() }
+            : {}),
           ...(status === 'valid' && undecided.length
             ? {
                 written: undecided.map((u) => {
@@ -227,6 +255,8 @@ export function DecideForm({
     onSuccess: async (out, status) => {
       setNote('');
       setReason('');
+      setSeverity('');
+      setSeverityWhy('');
       onDirty?.(false);
       onDecided?.({ status, notice: out.notice });
       await qc.invalidateQueries({ queryKey: ['moderation'] });
@@ -240,6 +270,11 @@ export function DecideForm({
     if (choice === 'invalid' && !reason) found.reason = 'Choose the reason the reporter is told.';
     // The note is optional (decision 64); only its length is checked.
     if (note.trim().length > 2000) found.note = 'Keep the note under 2000 characters.';
+    if (rating && !severityWhy.trim()) {
+      found.severityWhy = 'Say why this rating, or set the rating back to "Not now".';
+    } else if (severityWhy.trim().length > 2000) {
+      found.severityWhy = 'Keep the reason under 2000 characters.';
+    }
     setProblems(found);
     if (found.choice) {
       choiceRef.current?.querySelector<HTMLElement>('input[type="radio"]')?.focus();
@@ -247,6 +282,10 @@ export function DecideForm({
     }
     if (found.reason) {
       reasonRef.current?.focus();
+      return;
+    }
+    if (found.severityWhy) {
+      severityWhyRef.current?.focus();
       return;
     }
     if (found.note) {
@@ -330,6 +369,56 @@ export function DecideForm({
             </select>
           </Field>
           <Err>{problems.reason}</Err>
+        </>
+      ) : null}
+      {offerRating ? (
+        <>
+          <Field controlId={`${id}-severity`}>
+            <Label>Rate its severity (optional)</Label>
+            <FieldDescription>
+              A moderator’s judgement, kept beside the report and never part of what was sealed.
+              Staff only. You can rate it later on the Severity row instead.
+            </FieldDescription>
+            <select
+              id={`${id}-severity`}
+              className="sel"
+              value={severity}
+              onChange={(e) => {
+                setSeverity(e.target.value);
+                setProblems((p) => ({ ...p, severityWhy: undefined }));
+              }}
+            >
+              <option value="">Not now</option>
+              {SEVERITIES.map((k) => (
+                <option key={k} value={k}>
+                  {SEVERITY_WORDS[k]?.label} ({SEVERITY_WORDS[k]?.hint})
+                </option>
+              ))}
+            </select>
+          </Field>
+          {severity ? (
+            <>
+              <Field controlId={`${id}-severity-why`}>
+                <Label>Why this rating</Label>
+                <FieldDescription>
+                  Kept on the record with your name. Not shown publicly.
+                </FieldDescription>
+                <textarea
+                  ref={severityWhyRef}
+                  id={`${id}-severity-why`}
+                  className="textarea"
+                  rows={2}
+                  value={severityWhy}
+                  maxLength={2000}
+                  onChange={(e) => {
+                    setSeverityWhy(e.target.value);
+                    setProblems((p) => ({ ...p, severityWhy: undefined }));
+                  }}
+                />
+              </Field>
+              <Err>{problems.severityWhy}</Err>
+            </>
+          ) : null}
         </>
       ) : null}
       {needsWritten ? (

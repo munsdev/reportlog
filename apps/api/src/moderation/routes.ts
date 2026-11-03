@@ -41,7 +41,14 @@ import {
   recentAccesses,
   recordAuditRead,
 } from './accessLog.ts';
-import { assessmentOf, corroborationSummary, linkIncident, setSeverity } from './assessment.ts';
+import {
+  assessmentOf,
+  corroborationSummary,
+  linkIncident,
+  requireSeverity,
+  setSeverity,
+  severityReasonOf,
+} from './assessment.ts';
 import { openFlagCount } from './flags.ts';
 import { settleWritten } from './texts/approval.ts';
 import type { LinkKeys } from '../links/keys.ts';
@@ -215,6 +222,9 @@ export async function moderationRoutes(
       return {
         reports: rows.map((r) => present(r, archive, threats)),
         open_flags: await openFlagCount(db),
+        // Approved with nobody's rating, through the queue's own filter, so
+        // the "Not rated" count is exactly the list that button opens.
+        unrated: (await queueCounts(db, { severity: 'none' })).valid,
         archive_published: archive,
         counts,
         total,
@@ -255,6 +265,16 @@ export async function moderationRoutes(
       // A decline names the reason the reporter will be told, from the fixed
       // list; asked before anything changes so a refusal changes nothing.
       const code = b.status === 'invalid' ? requireReasonCode(b.reason_code) : null;
+      // A rating given in the same step (optional), checked as the Severity
+      // route checks one, before anything changes. Clearing is not offered
+      // here: that is the Severity route's, with its own reason.
+      const rating =
+        b.severity === undefined
+          ? null
+          : {
+              severity: requireSeverity(b.severity),
+              why: severityReasonOf(b.severity_comment),
+            };
       // Refused before anything is settled when the report moved since the
       // page read it; `decide` checks again under the row lock.
       await assertSeen(db, params.threadId, b.seen);
@@ -276,7 +296,16 @@ export async function moderationRoutes(
           );
         }
       }
-      const out = await decide(db, params.threadId, b.status, b.comment, me(request), b.seen, code);
+      const out = await decide(
+        db,
+        params.threadId,
+        b.status,
+        b.comment,
+        me(request),
+        b.seen,
+        code,
+        rating,
+      );
       // Only a NEW decline tells the reporter; declining twice does not email twice.
       const notice =
         code && out.previous !== 'invalid'

@@ -35,6 +35,7 @@ import type { DB } from '../db/schema.gen.ts';
 import { HttpError, notFound } from '../http/errors.ts';
 import { permissionsForMany } from '../permissions/log.ts';
 import type { Severity } from './assessment.ts';
+import { writeSeverity } from './assessment.ts';
 import { clearFlag } from './flags.ts';
 import { WRITTEN_SKIP_WHY, holdsUndecided, undecidedWritten } from './texts/approval.ts';
 
@@ -481,6 +482,13 @@ export async function decide(
   seen: unknown,
   /** A decline's reason from the fixed list, kept on the decision (public counts by reason). */
   reasonCode: string | null = null,
+  /**
+   * A rating given in the same step, already checked (assessment.ts
+   * `severityOf`, `severityReasonOf`). Written in this transaction, so a
+   * refused decision leaves no rating behind and an accepted one cannot lose
+   * it. Never part of the seal, like every rating.
+   */
+  rating: { severity: Severity; why: string } | null = null,
 ): Promise<{ previous: string; report_id: number }> {
   if (!DECISIONS.includes(status as Decision)) {
     throw refuse(400, 'invalid_status', 'A decision is approve, decline or unclear.');
@@ -504,6 +512,16 @@ export async function decide(
       comment: why,
       reason_code: status === 'invalid' ? reasonCode : null,
     });
+    if (rating) {
+      await writeSeverity(
+        trx,
+        threadId,
+        head.current_report_id,
+        rating.severity,
+        rating.why,
+        actor,
+      );
+    }
     return { previous: head.moderation_status, report_id: head.current_report_id };
   });
 }

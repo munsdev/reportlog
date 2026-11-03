@@ -56,6 +56,8 @@ A row of secondary buttons with `aria-pressed`, one per value of `QueueStatusFil
 
 **SECOND READ IS NOT A STATUS**
 
+"Not rated" follows it, set apart the same way: Approved with the severity filter at "none", with the queue response's `unrated` as its count. A batch approval cannot rate, so its toast points here.
+
 "Waiting for a second read" is the separate `flagged` filter and combines with any status. It is a separate toggle button after the status row, visually set apart by a gap and a different label ("Only second reads", `aria-pressed`), with `open_flags` as its count. It never sits among the status buttons.
 
 **SEARCH, FILTER, SORT**
@@ -119,6 +121,7 @@ One column in this order: head, What the reporter said, files, closed rows, The 
 
 - Three choice cards, one question: Approve ("Publishes the text. Files only if the reporter allowed it."), Decline ("The reporter is told one reason from the list."), Unclear for now ("Stays out of the public archive; you or another moderator decide later."). The choice is the first thing on the form, so the reason field appearing under Decline is a change below the answer just given, not above or around it. (The one-question rule binds filing cards; staff forms follow it as closely as this.)
 - When Decline is chosen: "The reason the reporter is told", a select of `REJECTION_REASONS`, with the help "They are emailed this reason and a link to the terms, if their address can still be read. They are never sent what you write below."
+- When Approve is chosen on a report nobody has rated: "Rate its severity (optional)", a select starting on "Not now" with the four severities, and, once one is chosen, "Why this rating" (required then). Sent with the decision as `severity` and `severity_comment` and written in the decision's own transaction, logged exactly as the Severity row logs it. Not offered on a report already rated: changing a rating is the Severity row's. Added 2026-11-01, on the owner's instruction, after twenty reports were approved and none rated: rating had lived only in a closed row nobody was asked to open.
 - "Note for the record (never sent)", optional, "Kept on the record with your name. Not shown publicly."
 - "Record the decision" (primary, `lg`, full width of the panel). Busy: "Recording…".
 - After success: a `quiet` alert with a tick, "Done. Recorded." plus the server's notice words. Not teal: today's `tone="confirmed"` success alert in `Item.tsx` changes to the success style in components.md section 09.

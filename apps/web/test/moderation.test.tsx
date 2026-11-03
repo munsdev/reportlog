@@ -69,6 +69,7 @@ const SECOND: QueueItem = { ...REPORT, thread_id: OTHER, public_ref: 'RL-7K2M-4Q
 const QUEUE = {
   reports: [REPORT, SECOND],
   open_flags: 2,
+  unrated: 0,
   archive_published: true,
   counts: { all: 31, pending: 7, valid: 19, invalid: 3, unknown: 1, withdrawn: 1 },
   total: 7,
@@ -272,6 +273,57 @@ describe('deciding', () => {
       reason_code: 'duplicate',
       seen: REPORT.seen,
     });
+  });
+});
+
+describe('rating while approving', () => {
+  it('is offered under Approve on an unrated report, optional, and needs a reason once chosen', async () => {
+    const sent = serve({
+      [`GET /api/moderation/reports/${THREAD}`]: ITEM,
+      [`POST /api/moderation/reports/${THREAD}/decision`]: { ok: true, notice: 'none' },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    expect(within(form).queryByLabelText('Rate its severity (optional)')).toBeNull();
+    await user.click(within(form).getByRole('radio', { name: 'Decline' }));
+    expect(within(form).queryByLabelText('Rate its severity (optional)')).toBeNull();
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    const rating = within(form).getByLabelText('Rate its severity (optional)');
+    // Starts on "Not now": nothing is rated by default.
+    expect(rating).toHaveValue('');
+    await user.selectOptions(rating, 'serious');
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    expect(
+      within(form).getByText('Say why this rating, or set the rating back to "Not now".'),
+    ).toBeInTheDocument();
+    expect(sent.filter(isAct)).toHaveLength(0);
+    await user.type(within(form).getByLabelText('Why this rating'), 'People were turned away.');
+    await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
+    await waitFor(() => {
+      expect(sent.filter(isAct)).toHaveLength(1);
+    });
+    expect(sent.find(isAct)?.body).toEqual({
+      status: 'valid',
+      seen: REPORT.seen,
+      severity: 'serious',
+      severity_comment: 'People were turned away.',
+    });
+  });
+
+  it('is not offered on a report already rated: changing it is the Severity row’s', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: {
+        ...ITEM,
+        report: { ...REPORT, severity: 'note' },
+        assessment: { ...ITEM.assessment, severity: 'note' },
+      },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
+    await user.click(within(form).getByRole('radio', { name: 'Approve' }));
+    expect(within(form).queryByLabelText('Rate its severity (optional)')).toBeNull();
   });
 });
 
