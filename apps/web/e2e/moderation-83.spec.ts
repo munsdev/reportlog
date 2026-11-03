@@ -38,6 +38,9 @@ const shot = async (page: Page, name: string) => {
   // staff bar across the middle of the page.
   const was = page.viewportSize();
   await page.setViewportSize({ width: 1280, height: 1800 });
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
   await page.screenshot({ path: `${SCREENS}${name}.png` });
   if (was) await page.setViewportSize(was);
 };
