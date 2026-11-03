@@ -252,4 +252,41 @@ describe('counties shown on their own', () => {
     // A county under the threshold was never sent, so nothing draws it.
     expect(root.querySelector('path[data-code="US-AZ-04019"]')).toBeNull();
   });
+
+  it('outlines a county over its state and never fills it with a shade of its own', async () => {
+    // The live map on election night: dark states, counties of one report
+    // each. Filled on their own scale, the fewest wore the palest step and
+    // every one read as a white hole in its state.
+    const { setCountyLoader } = await import('../../src/features/maps/counties.ts');
+    const countiesText = (await import('../../src/features/maps/counties.json?raw')).default;
+    setCountyLoader(() => Promise.resolve(JSON.parse(countiesText)));
+    const { container } = render(
+      <HeatMapView
+        map={payload({
+          threshold: 1,
+          county_threshold: 1,
+          areas: { 'US-TX': area(6), 'US-AZ': area(1) },
+          suppressed: { areas: [], reports: null },
+          counties: { 'US-TX-48201': area(3), 'US-TX-48453': area(1), 'US-TX-48029': area(1) },
+        })}
+        outlines={outlines}
+      />,
+    );
+    const [root] = roots(container);
+    if (!root) throw new Error('no map');
+    await expect.poll(() => root.querySelector('path[data-code="US-TX-48453"]')).not.toBeNull();
+    expect(pathFor(root, 'US-TX').getAttribute('fill')).toBe(SCALES.volume[4]);
+    const shades = new Set<string>([...SCALES.volume, ...SCALES.outcome, NO_DATA, BELOW]);
+    for (const code of ['US-TX-48201', 'US-TX-48453', 'US-TX-48029']) {
+      const fill = pathFor(root, code).getAttribute('fill') ?? '';
+      expect(shades.has(fill), `${code} is filled ${fill}`).toBe(false);
+      expect(pathFor(root, code).textContent).toMatch(/: \d published reports?$/);
+    }
+    // Still a way in: tapping a county selects it and the readout says its number.
+    tap(pathFor(root, 'US-TX-48201'));
+    expect(pathFor(root, 'US-TX-48201').getAttribute('data-selected')).toBe('true');
+    expect(within(root).getByRole('heading', { level: 3 }).nextElementSibling).toHaveTextContent(
+      /^3 published reports$/,
+    );
+  });
 });

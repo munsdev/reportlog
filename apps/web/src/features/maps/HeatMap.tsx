@@ -121,10 +121,6 @@ export function HeatMapView({
       live = false;
     };
   }, [plane, countyEntries.length, countyOutlines]);
-  const countyStep = binner(
-    view,
-    countyEntries.map(([, a]) => a),
-  );
 
   const status = (code: string): Status => {
     const c = map.counties[code];
@@ -143,9 +139,7 @@ export function HeatMapView({
     const s = status(code);
     if (s.kind === 'below') return BELOW;
     if (s.kind === 'none') return NO_DATA;
-    // A county on its own scale: its counts are a state's small change, and
-    // on the state scale every county would be the palest shade.
-    return colourOf(view, (code in map.counties ? countyStep : step)(s.a));
+    return colourOf(view, step(s.a));
   };
 
   const units = (n: number) => `${String(n)} ${n === 1 ? map.unit.one : map.unit.many}`;
@@ -479,22 +473,41 @@ function Stage({
             </path>
           ),
         )}
-        {/* COUNTIES OVER THEIR STATES, with a hairline so a county reads as
-            a piece of the state it sits in. */}
-        {overlay.map((o) => (
-          <path
-            key={o.code}
-            d={o.d}
-            data-code={o.code}
-            {...(o.code === selected ? { 'data-selected': 'true' } : {})}
-            fill={fill(o.code)}
-            stroke={o.code === selected ? 'var(--rl-text)' : 'var(--rl-surface)'}
-            strokeWidth={o.code === selected ? 2.5 : 0.4}
-            vectorEffect="non-scaling-stroke"
-          >
-            <title>{tip(o.code)}</title>
-          </path>
-        ))}
+        {/* COUNTIES OVER THEIR STATES, OUTLINED AND NEVER FILLED. A county is
+            part of its state's count, so on any ramp it is lighter than the
+            state around it, and on a ramp of its own the fewest (usually one
+            report) is the palest step: filled, every county read as a white
+            hole punched in its state (election night, 2026). The state's
+            colour shows through; the outline is a dark line under a light
+            one so it shows on the palest and the darkest step, in either
+            theme. The county's number is in its tooltip, the readout and the
+            list. `transparent`, not `none`, so a tap inside still finds it. */}
+        {overlay.map((o) => {
+          const on = o.code === selected;
+          return (
+            <g key={o.code}>
+              <path
+                d={o.d}
+                fill="none"
+                stroke="var(--rl-text)"
+                strokeWidth={on ? 3.5 : 1.6}
+                vectorEffect="non-scaling-stroke"
+                aria-hidden="true"
+              />
+              <path
+                d={o.d}
+                data-code={o.code}
+                {...(on ? { 'data-selected': 'true' } : {})}
+                fill="transparent"
+                stroke="var(--rl-surface)"
+                strokeWidth={on ? 1.5 : 0.7}
+                vectorEffect="non-scaling-stroke"
+              >
+                <title>{tip(o.code)}</title>
+              </path>
+            </g>
+          );
+        })}
         {/* THE SELECTED OUTLINE IS DRAWN LAST, so its thicker stroke is on
             top: drawn in order, every neighbour would paint over half of it. */}
         {paths
