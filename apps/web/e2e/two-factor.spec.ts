@@ -173,10 +173,15 @@ test('an administrator is asked for the factor again before granting a role', as
 // test opens the site there.
 const LOCAL = 'http://localhost:4173';
 
-async function virtualAuthenticator(page: Page): Promise<CDPSession> {
+async function virtualAuthenticator(page: Page): Promise<{ cdp: CDPSession; id: string }> {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('WebAuthn.enable');
-  await cdp.send('WebAuthn.addVirtualAuthenticator', {
+  return { cdp, id: await addAuthenticator(cdp) };
+}
+
+/** Another device: an authenticator that holds none of this person's passkeys. */
+async function addAuthenticator(cdp: CDPSession): Promise<string> {
+  const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', {
     options: {
       protocol: 'ctap2',
       transport: 'internal',
@@ -186,14 +191,14 @@ async function virtualAuthenticator(page: Page): Promise<CDPSession> {
       automaticPresenceSimulation: true,
     },
   });
-  return cdp;
+  return authenticatorId;
 }
 
 test('a passkey, made and then used to sign in', async ({ page }, info) => {
   const email = `2fa-passkey-${info.project.name}-${run}@example.org`;
   identityState('seat', email, 'moderator');
   const outside = watchOutside(page);
-  await virtualAuthenticator(page);
+  const laptop = await virtualAuthenticator(page);
 
   const signIn = async () => {
     await page.goto(`${LOCAL}/access/sign-in`);
@@ -238,5 +243,17 @@ test('a passkey, made and then used to sign in', async ({ page }, info) => {
   // The only way to sign in says why it has no Remove.
   await expect(page.getByText(/This is your only way to sign in/)).toBeVisible();
   await noViolations(page);
+
+  // On a device that does not hold the passkey (the phone, when it was made
+  // on a laptop), the browser fails without a reason. The page says what to
+  // do instead of "Something went wrong".
+  await signOut(page);
+  await laptop.cdp.send('WebAuthn.removeVirtualAuthenticator', { authenticatorId: laptop.id });
+  await addAuthenticator(laptop.cdp);
+  await signIn();
+  await expect(page.getByRole('heading', { name: 'One more step' })).toBeVisible();
+  await page.getByRole('button', { name: 'Use a passkey' }).click();
+  await expect(page.getByRole('alert')).toContainText('This device could not use your passkey');
+  await expect(page.getByRole('alert')).toContainText('recovery codes');
   expect(outside).toEqual([]);
 });
