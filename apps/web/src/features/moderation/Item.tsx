@@ -14,11 +14,13 @@
  * access_log row before anything is shown. Closing the row without a reason
  * sends nothing, so it writes nothing and shows nothing.
  *
- * On a desktop two columns, the report on the left and the Decide panel alone
- * on the right, sticky; the closed rows run full width beneath, a line each.
- * On a phone one column and a bar at the foot with Approve… and Decline…, each opening
- * the same Decide form in a sheet with that choice made.
+ * ONE ORDER ON EVERY SCREEN: the report, the decision, its attachments, then
+ * "More" (the closed rows and the record), folded. On a desktop the Decide
+ * panel stays beside the report and its attachments, sticky. On a phone it
+ * follows the report, and a bar at the foot with Approve… and Decline…
+ * opens the same Decide form in a sheet with that choice made.
  */
+import './report-page.css';
 import { roleSatisfies } from '@reportlog/access';
 import {
   addNoteLink,
@@ -153,7 +155,7 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
   return (
     <StaffPage title={r.public_ref} mono>
       {back}
-      <p className="eyebrow">{eyebrow}</p>
+      <p className="muted">{eyebrow}</p>
       <div className="chips">
         <StatusChip r={r} />
         <Chip kind="off">{r.public ? 'Public' : 'Not public'}</Chip>
@@ -162,9 +164,27 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
         {r.threat_open ? <span className="st bad">Threat to safety</span> : null}
       </div>
       <ViewingNotice threadId={threadId} others={viewing.others} changed={viewing.changed} />
-      <div className="grid2 report-grid">
-        <div className="col">
+      {/* One order on every screen (report-page.css): the report, the
+          decision, its attachments, then the less-used actions folded away.
+          On a desktop the decision stays beside the first two. */}
+      <div className="report-page">
+        <div className="rp-said">
           <Said r={r} />
+        </div>
+        {/* The mock-up's `.decide`: sticky beside the report on a desktop; on
+            a phone the bar at the foot opens the same form too. */}
+        <div className="rp-decide col decide">
+          <DecidePanel
+            r={r}
+            history={history}
+            search={search}
+            decided={decided}
+            onDecided={(d) => {
+              onDecided(d, r.public_ref);
+            }}
+          />
+        </div>
+        <div className="rp-att col">
           <Attachments
             threadId={r.thread_id}
             declined={r.moderation_status === 'invalid'}
@@ -178,26 +198,8 @@ function ItemScreen({ threadId, search }: { threadId: string; search: QueueSearc
               ) : null
             }
           />
-          <TheRecord r={r} history={history} />
         </div>
-        {/* The mock-up's `.decide`: sticky beside the report on a desktop, and
-            after it on a phone, where the bar at the foot opens the same form. */}
-        <div className="col decide">
-          <DecidePanel
-            r={r}
-            history={history}
-            search={search}
-            decided={decided}
-            onDecided={(d) => {
-              onDecided(d, r.public_ref);
-            }}
-          />
-        </div>
-      </div>
-      {/* The secondary acts, one compact line each, under both columns where
-          there is room for the label, the current value and the button. */}
-      <div className="item-rows">
-        <Rows r={r} a={assessment} history={history} />
+        <More r={r} a={assessment} history={history} />
       </div>
       {!r.withdrawn && panels.openId === null ? (
         <div className="phone-decide">
@@ -255,7 +257,7 @@ function Said({ r }: { r: QueueItem }) {
   return (
     <Panel title="What the reporter said" aria-label="What the reporter said">
       <AnswerList slug={r.logbook_slug} answers={r.answers} />
-      <p className="m">
+      <p className="muted">
         Filed {when(r.received_at)}
         {r.versions > 1
           ? `, version ${String(r.versions)} (corrected by ${
@@ -264,7 +266,7 @@ function Said({ r }: { r: QueueItem }) {
           : ''}
         {r.filed_via ? `, through ${r.filed_via}` : ''}.{' '}
         {r.may_publish
-          ? 'Publication: the reporter allows publishing.'
+          ? 'The reporter allows publishing.'
           : 'Its reporter did not permit publication: approving it records the judgement, and it stays off the board.'}
       </p>
     </Panel>
@@ -363,6 +365,50 @@ function NextWaiting({ current, search }: { current: string; search: QueueSearch
     >
       Next waiting report
     </Btn>
+  );
+}
+
+// ── the less-used actions ───────────────────────────────────────────────
+
+/**
+ * Everything but the decision and the attachments, folded into one box so
+ * the page leads with what a moderator does on every report. Folded, the
+ * rows stay mounted, so a half-written row is not lost by closing it; a row
+ * left open keeps the box open.
+ */
+function More({ r, a, history }: { r: QueueItem; a: Assessment; history: History }) {
+  const panels = useSettingPanels();
+  const [open, setOpen] = useState(false);
+  const words = [
+    'severity',
+    'threat to safety',
+    'same incident',
+    ...(r.needs_review ? ['second read'] : []),
+    'evidence',
+    ...(r.notes_enabled ? ['editorial note'] : []),
+    ...(r.reporter_withdrew ? [] : ['the board']),
+    ...(r.has_contact ? ['who filed it'] : []),
+    'the record',
+  ];
+  return (
+    <details
+      className="rp-more more"
+      open={open || panels.openId !== null}
+      onToggle={(e) => {
+        setOpen(e.currentTarget.open);
+      }}
+    >
+      <summary>
+        <h2>More</h2>
+        <span className="muted">{words.join(', ')}</span>
+      </summary>
+      <div className="in">
+        <div className="item-rows">
+          <Rows r={r} a={a} history={history} />
+        </div>
+        <TheRecord r={r} history={history} />
+      </div>
+    </details>
   );
 }
 

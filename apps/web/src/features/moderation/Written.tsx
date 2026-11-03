@@ -39,7 +39,7 @@ import {
 import type { TextOutcome } from '@reportlog/contracts';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useId, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { Btn } from '../../mockup/Btn.tsx';
 import {
   CheckBox,
@@ -51,11 +51,11 @@ import {
   Textarea,
 } from '@/mockup/Field.tsx';
 import { Modal } from '../../mockup/Modal.tsx';
-import { Note } from '../../mockup/Note.tsx';
 import { Problem } from '../../mockup/Notice.tsx';
 import { Panel } from '@/mockup/Panel.tsx';
 import { call } from '../../lib/api.ts';
 import { LinkVerdict } from './LinkVerdict.tsx';
+import './report-page.css';
 import { AttachmentChip, when } from './parts.tsx';
 import type { AttachmentState } from './parts.tsx';
 
@@ -73,9 +73,9 @@ export const WHY_MAX = 500;
 
 /** The state of an account, in words. */
 const STATE: Record<TextOutcome, string> = {
-  redacted: 'A note for journalists is written',
-  withheld: 'Left here, for staff only',
-  illegal: 'Erased as illegal',
+  redacted: 'Journalists read your note, never the words.',
+  withheld: 'Left here, for staff only.',
+  illegal: 'Erased as illegal.',
 };
 
 /** Characters, said as a count of them. */
@@ -115,11 +115,7 @@ export function Reveal({
     },
   });
   if (open.data) {
-    return (
-      <p className={mono ? 'mono break-all whitespace-pre-wrap' : 'whitespace-pre-wrap'}>
-        {open.data.text}
-      </p>
-    );
+    return <div className={mono ? 'words mono' : 'words'}>{open.data.text}</div>;
   }
   return (
     <div className="col">
@@ -134,8 +130,8 @@ export function Reveal({
         >
           {open.isPending ? 'Opening…' : label}
         </Btn>
+        <span className="muted">Opening it is recorded with your name.</span>
       </div>
-      <p className="m">Opening it is recorded with your name.</p>
       {open.isError ? <Problem>{open.error.message}</Problem> : null}
     </div>
   );
@@ -175,7 +171,7 @@ export function WrittenPanel({
   outcome,
   length,
   on = 'report',
-  title = 'Written account · not published',
+  title,
   reveal = true,
   declined = false,
 }: {
@@ -186,6 +182,10 @@ export function WrittenPanel({
   length?: number | undefined;
   /** What holds it, for the words of "leave it". */
   on?: 'report' | 'entry';
+  /**
+   * A boxed panel with this heading (a list entry). Without one it is one
+   * item of a report's Attachments panel, headed "Written account".
+   */
   title?: string;
   /** False where the words are on the page already (a list entry's answers). */
   reveal?: boolean;
@@ -195,6 +195,9 @@ export function WrittenPanel({
   const refresh = useWrittenRefresh();
   const [writing, setWriting] = useState(false);
   const [erasing, setErasing] = useState(false);
+  // The words are shown once, here; the note editor quotes from this box.
+  const [shown, setShown] = useState(false);
+  const wordsBox = useRef<HTMLDivElement>(null);
   const leave = useMutation({
     mutationFn: () =>
       call(checkText, {
@@ -204,29 +207,33 @@ export function WrittenPanel({
     onSuccess: refresh,
   });
   const holder = on === 'report' ? 'report' : 'entry';
-  const state = outcome
-    ? STATE[outcome]
-    : shared
-      ? `No note. It stays with the ${holder}, for staff only, unless somebody writes one`
-      : `It stays with the ${holder}, for staff only`;
   const status = textStatus(outcome, shared, declined);
-  return (
-    <Panel title={title} aria-label={title}>
-      <div className="chips">
-        <AttachmentChip state={status} />
-      </div>
-      {declined && outcome !== 'illegal' ? (
-        <p className="m">The report is declined, so this is kept back whatever is decided.</p>
+  const where = shared
+    ? on === 'report'
+      ? 'The reporter allows journalists to read a note about it.'
+      : 'A tip may reach journalists through a note about it.'
+    : 'The reporter did not allow journalists to read it.';
+  const now = declined
+    ? 'The report is declined, so it is kept back.'
+    : outcome
+      ? STATE[outcome]
+      : '';
+  const body = (
+    <>
+      {reveal ? (
+        <div ref={wordsBox}>
+          <Reveal
+            textRef={textRef}
+            onOpened={() => {
+              setShown(true);
+            }}
+          />
+        </div>
       ) : null}
-      {reveal ? <Reveal textRef={textRef} /> : null}
-      <p className="m">
-        {length === undefined ? '' : `${characters(length)} · `}
-        {shared
-          ? on === 'report'
-            ? 'The reporter allows vetted journalists to read a note about it'
-            : 'A tip may reach vetted journalists through a note about it'
-          : 'The reporter did not allow journalists to read it'}{' '}
-        · {state}.
+      <p className="muted">
+        {length === undefined ? '' : `${characters(length)}. `}
+        {where}
+        {now ? ` ${now}` : ''}
       </p>
       {outcome === 'illegal' ? null : (
         <>
@@ -235,21 +242,19 @@ export function WrittenPanel({
               <Btn
                 sm
                 flat
+                look={outcome === null ? 'ink' : undefined}
                 aria-expanded={writing}
                 onClick={() => {
                   setWriting((w) => !w);
                 }}
               >
-                {outcome === 'redacted'
-                  ? 'Read or change the note'
-                  : 'Write a note for journalists'}
+                {outcome === 'redacted' ? 'Change the note' : 'Write a note for journalists'}
               </Btn>
             ) : null}
             {shared && outcome === null ? (
               <Btn
                 sm
                 flat
-                look="ghost"
                 disabled={leave.isPending}
                 onClick={() => {
                   leave.mutate();
@@ -270,7 +275,15 @@ export function WrittenPanel({
             </Btn>
           </div>
           {leave.isError ? <Problem>{leave.error.message}</Problem> : null}
-          {writing ? <NoteEditor textRef={textRef} /> : null}
+          {writing ? (
+            <NoteEditor
+              textRef={textRef}
+              original={reveal ? { box: wordsBox, shown } : null}
+              onClose={() => {
+                setWriting(false);
+              }}
+            />
+          ) : null}
           {outcome === 'redacted' && !writing ? <NoteReview textRef={textRef} /> : null}
           <EraseIllegal
             textRef={textRef}
@@ -281,7 +294,23 @@ export function WrittenPanel({
           />
         </>
       )}
-    </Panel>
+    </>
+  );
+  if (title) {
+    return (
+      <Panel title={title} aria-label={title} head={<AttachmentChip state={status} />}>
+        {body}
+      </Panel>
+    );
+  }
+  return (
+    <section className="att" aria-label="Written account">
+      <div className="att-head">
+        <h3>Written account</h3>
+        <AttachmentChip state={status} />
+      </div>
+      {body}
+    </section>
   );
 }
 
@@ -414,36 +443,51 @@ const textQuery = (textRef: string) => ({
 });
 
 /**
- * The original beside the note journalists read. The original is shown only
- * after this person presses Show (which is logged); the note never starts
- * from it: it starts blank, or as it was saved.
+ * The note journalists read, written by the moderator in their own words.
+ * Opened only when asked, under the words, in one column. "Quote selection"
+ * puts what is selected in the words above inside quotation marks; with no
+ * words on this panel (a list entry, whose words are on the page already) it
+ * shows them here, once, to quote from.
  */
-function NoteEditor({ textRef }: { textRef: string }) {
+function NoteEditor({
+  textRef,
+  original,
+  onClose,
+}: {
+  textRef: string;
+  original: { box: RefObject<HTMLDivElement | null>; shown: boolean } | null;
+  onClose: () => void;
+}) {
   const refresh = useWrittenRefresh();
   const q = useQuery(textQuery(textRef));
   const [body, setBody] = useState<string | null>(null);
-  const originalBox = useRef<HTMLDivElement>(null);
+  const ownBox = useRef<HTMLDivElement>(null);
   const noteBox = useRef<HTMLTextAreaElement>(null);
-  const [shown, setShown] = useState(false);
+  const [ownShown, setOwnShown] = useState(false);
   const [quoteError, setQuoteError] = useState('');
   const id = useId();
+  const box = original ? original.box : ownBox;
+  const shown = original ? original.shown : ownShown;
   const save = useMutation({
     mutationFn: (copy: string) =>
       call(redactText, { params: { ref: textRef }, body: { body: copy } }),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      await refresh();
+      onClose();
+    },
   });
   const copy = body ?? q.data?.redacted ?? '';
-  // Insert what is selected in the original, inside quotation marks, at the
-  // cursor (or the end). Only a selection inside the original counts.
+  // Insert what is selected in the words, inside quotation marks, at the
+  // cursor (or the end). Only a selection inside the words counts.
   const quote = () => {
     const sel = window.getSelection();
     const picked = sel?.toString().trim() ?? '';
     const inside =
       sel !== null &&
       sel.rangeCount > 0 &&
-      originalBox.current?.contains(sel.getRangeAt(0).commonAncestorContainer) === true;
+      box.current?.contains(sel.getRangeAt(0).commonAncestorContainer) === true;
     if (!picked || !inside) {
-      setQuoteError('Select some of the original text first.');
+      setQuoteError('Select some of the words first.');
       return;
     }
     setQuoteError('');
@@ -454,68 +498,63 @@ function NoteEditor({ textRef }: { textRef: string }) {
   if (q.isPending) return <p role="status">Reading it…</p>;
   if (q.isError) return <Problem>{q.error.message}</Problem>;
   return (
-    <div className="grid2 even">
-      <Panel kind="quiet" title="The original · kept, never changed" headingLevel={3}>
-        <div ref={originalBox}>
+    <div className="note-editor">
+      {original ? null : (
+        <div ref={ownBox}>
           <Reveal
             textRef={textRef}
             onOpened={() => {
-              setShown(true);
+              setOwnShown(true);
             }}
           />
         </div>
+      )}
+      <Field controlId={`${id}-note`}>
+        <Label>The note journalists read</Label>
+        <FieldDescription>
+          In your own words. Journalists never see the original, only what you quote here.
+        </FieldDescription>
+        <Textarea
+          ref={noteBox}
+          rows={5}
+          value={copy}
+          onChange={(e) => {
+            setBody(e.target.value);
+          }}
+        />
+      </Field>
+      {quoteError ? <Problem>{quoteError}</Problem> : null}
+      {save.isError ? <Problem>{save.error.message}</Problem> : null}
+      <div className="acts">
+        <Btn
+          sm
+          flat
+          look="ink"
+          disabled={save.isPending || copy.trim() === ''}
+          onClick={() => {
+            save.mutate(copy);
+          }}
+        >
+          Save the note
+        </Btn>
         {shown ? (
-          <>
-            <div className="acts">
-              <Btn
-                sm
-                flat
-                onMouseDown={(e) => {
-                  // Keep the selection while the button is pressed.
-                  e.preventDefault();
-                }}
-                onClick={quote}
-              >
-                Quote selection
-              </Btn>
-            </div>
-            {quoteError ? <Problem>{quoteError}</Problem> : null}
-          </>
-        ) : null}
-      </Panel>
-      <div className="col">
-        <Field controlId={`${id}-note`}>
-          <Label>The note journalists read</Label>
-          <Textarea
-            ref={noteBox}
-            rows={7}
-            value={copy}
-            onChange={(e) => {
-              setBody(e.target.value);
-            }}
-          />
-          <FieldDescription>
-            Write it in your own words. Journalists never see the original; they see only what you
-            quote here.
-          </FieldDescription>
-        </Field>
-        {save.isError ? <Problem>{save.error.message}</Problem> : null}
-        {save.isSuccess ? <p role="status">Saved. Journalists can now read this note.</p> : null}
-        <div className="acts">
           <Btn
             sm
             flat
-            look="ink"
-            disabled={save.isPending || copy.trim() === ''}
-            onClick={() => {
-              save.mutate(copy);
+            onMouseDown={(e) => {
+              // Keep the selection while the button is pressed.
+              e.preventDefault();
             }}
+            onClick={quote}
           >
-            Save the note
+            Quote selection
           </Btn>
-        </div>
-        <NoteReview textRef={textRef} />
+        ) : null}
+        <Btn sm flat look="ghost" onClick={onClose}>
+          Cancel
+        </Btn>
       </div>
+      <NoteReview textRef={textRef} />
     </div>
   );
 }
@@ -532,9 +571,9 @@ function NoteReview({ textRef }: { textRef: string }) {
   const red = q.data?.item.redaction;
   if (!red) return null;
   return (
-    <Panel kind="quiet" title="Review of the note" headingLevel={3}>
-      <p>
-        Written by {red.redacted_by}, {when(red.redacted_at)}.
+    <div className="col">
+      <p className="muted">
+        Note written by {red.redacted_by}, {when(red.redacted_at)}.
       </p>
       {red.review_verdict ? (
         <p>
@@ -574,7 +613,7 @@ function NoteReview({ textRef }: { textRef: string }) {
           </div>
         </>
       )}
-    </Panel>
+    </div>
   );
 }
 
@@ -606,47 +645,44 @@ export function Attachments({
   }
   const written = data.texts.length + data.links.length + data.erased.length > 0;
   if (!written && !files) return null;
+  const erasedLine = (e: { kind: string; field_key: string; erased_at: string }) => (
+    <p key={`${e.kind}-${e.field_key}-${e.erased_at}`} className="muted">
+      {e.kind === 'private_link' ? 'A link was erased' : 'A written account was erased'}{' '}
+      {when(e.erased_at)}. It is gone; this line stays.
+    </p>
+  );
   return (
-    <section className="col" aria-labelledby={`attachments-${threadId}`}>
-      <h2 id={`attachments-${threadId}`}>Attachments</h2>
-      <p className="m">
-        Each attachment is reviewed on its own. Approving the report puts it on the counts, the
-        board and the maps, and shows none of these to anybody.
-        {declined ? ' The report is declined, so all of them are kept back.' : ''}
-      </p>
-      {data.texts.map((t) => (
-        <WrittenPanel
-          key={t.ref}
-          textRef={t.ref}
-          shared={t.shared}
-          outcome={t.outcome}
-          length={t.length}
-          declined={declined}
-        />
-      ))}
-      {data.erased
-        .filter((e) => e.kind === 'private_text')
-        .map((e) => (
-          <Note key={`${e.kind}-${e.field_key}-${e.erased_at}`}>
-            <span>
-              <b>Written account erased</b> {when(e.erased_at)}. The words are gone; this marker
-              stays.
-            </span>
-          </Note>
-        ))}
-      {data.links.length ? (
-        <Panel title={data.links.length === 1 ? 'Link · not published' : 'Links · not published'}>
+    <>
+      {written ? (
+        <Panel
+          title="Attachments"
+          aria-label="Attachments"
+          sub={`Each is reviewed on its own. Approving the report shows none of these to anybody.${
+            declined ? ' The report is declined, so all of them are kept back.' : ''
+          }`}
+        >
+          {data.texts.map((t) => (
+            <WrittenPanel
+              key={t.ref}
+              textRef={t.ref}
+              shared={t.shared}
+              outcome={t.outcome}
+              length={t.length}
+              declined={declined}
+            />
+          ))}
           {data.links.map((l) => (
-            <div key={l.ref} className="col">
-              <div className="chips">
+            <section key={l.ref} className="att" aria-label="Link">
+              <div className="att-head">
+                <h3>Link</h3>
                 <AttachmentChip state={linkStatus(l.outcome, data.shared, declined)} />
               </div>
-              {data.shared ? null : (
-                <p className="m">The reporter did not allow journalists to see it.</p>
-              )}
               <Reveal textRef={l.ref} label="Show the link" mono />
+              {data.shared ? null : (
+                <p className="muted">The reporter did not allow journalists to see it.</p>
+              )}
               {l.group_id === null ? (
-                <p className="m">Not judged yet.</p>
+                <p className="muted">Not judged yet.</p>
               ) : (
                 <LinkVerdict
                   link={{ group_id: l.group_id, outcome: l.outcome, comment: l.comment }}
@@ -655,21 +691,13 @@ export function Attachments({
                   }
                 />
               )}
-            </div>
+            </section>
           ))}
+          {data.erased.map(erasedLine)}
         </Panel>
       ) : null}
-      {data.erased
-        .filter((e) => e.kind === 'private_link')
-        .map((e) => (
-          <Note key={`${e.kind}-${e.field_key}-${e.erased_at}`}>
-            <span>
-              <b>Link erased</b> {when(e.erased_at)}. The address is gone; this marker stays.
-            </span>
-          </Note>
-        ))}
       {files}
-    </section>
+    </>
   );
 }
 

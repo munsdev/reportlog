@@ -1,0 +1,115 @@
+/*
+ * The moderator's report page: one order on every screen. The report, the
+ * decision, its attachments, then the less-used actions, folded away.
+ * On a desktop the decision stays beside the report and its attachments.
+ */
+.report-page {
+  display: grid;
+  gap: 18px;
+  align-items: start;
+}
+.report-page > * {
+  min-width: 0;
+}
+@media (min-width: 900px) {
+  .report-page {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 24rem);
+    grid-template-areas: 'said decide' 'att decide' 'more more';
+  }
+  .report-page > .rp-said {
+    grid-area: said;
+  }
+  .report-page > .rp-decide {
+    grid-area: decide;
+  }
+  .report-page > .rp-att {
+    grid-area: att;
+  }
+  .report-page > .rp-more {
+    grid-area: more;
+  }
+}
+
+/* One attachment inside the Attachments panel: a heading with its status
+   beside it, then its words, then what can be done. */
+.att {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1.5px solid var(--rl-border);
+}
+.att-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.att-head h3 {
+  margin: 0;
+  font-family: var(--rl-font-display);
+  font-weight: var(--h-weight);
+  font-stretch: var(--h-stretch);
+  font-size: 1.02rem;
+}
+.words {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+  background: var(--rl-background-alt);
+  border-radius: var(--rl-radius);
+}
+.words.mono {
+  font-family: var(--rl-font-mono);
+  font-size: 0.9rem;
+}
+.note-editor {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1.5px solid var(--rl-border);
+  border-radius: var(--rl-radius);
+}
+.note-editor textarea {
+  width: 100%;
+}
+
+/* The less-used actions, folded into one box. */
+details.more {
+  background: var(--rl-surface);
+  border: 1.5px solid var(--rl-border);
+  border-radius: var(--rl-radius);
+}
+details.more > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  min-height: 48px;
+  padding: 12px 18px;
+}
+details.more > summary::-webkit-details-marker {
+  display: none;
+}
+details.more > summary::after {
+  content: '+';
+  margin-left: auto;
+  font-size: 1.3rem;
+  line-height: 1;
+}
+details.more[open] > summary::after {
+  content: '\2212';
+}
+details.more > summary h2 {
+  margin: 0;
+  font-family: var(--rl-font-display);
+  font-weight: var(--h-weight);
+  font-stretch: var(--h-stretch);
+  font-size: 1.15rem;
+}
+details.more > .in {
+  display: grid;
+  gap: 10px;
+  padding: 0 18px 18px;
+}

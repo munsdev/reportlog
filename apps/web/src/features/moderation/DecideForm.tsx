@@ -300,12 +300,10 @@ export function DecideForm({
         </>
       ) : null}
       {choice === 'valid' && report.attachments_waiting > 0 ? (
-        <p className="m">
-          Approving puts it on the counts, the board and the maps. Its{' '}
+        <p className="muted">
           {report.attachments_waiting === 1
-            ? 'attachment still waiting is'
-            : `${String(report.attachments_waiting)} attachments still waiting are`}{' '}
-          reviewed on their own and stay hidden until then.
+            ? 'Approving puts it on the counts, the board and the maps. Its attachment still waiting is reviewed on its own and stays hidden until then.'
+            : `Approving puts it on the counts, the board and the maps. Its ${String(report.attachments_waiting)} attachments still waiting are reviewed on their own and stay hidden until then.`}
         </p>
       ) : null}
       <Field controlId={`${id}-note`}>

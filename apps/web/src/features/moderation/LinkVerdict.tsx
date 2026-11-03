@@ -77,7 +77,7 @@ export function LinkVerdict({ link, sources }: { link: LinkGroupRef; sources?: s
   const erased = link.outcome === 'illegal';
   return (
     <div className="col">
-      <p className="m">
+      <p className="muted">
         {VERDICT_WORDS[link.outcome ?? 'unchecked']}. {sources ?? ''}
         Judged once for every copy, wherever it was sent.
       </p>

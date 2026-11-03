@@ -557,6 +557,43 @@ describe('attachments are reviewed apart from the report (decision 83)', () => {
     expect(within(section).queryByText('Waiting')).toBeNull();
   });
 
+  it('opens the note editor only when asked, and shows the words once', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+      'GET /api/moderation/texts/report-1': {
+        item: { ...text('report-1', true, null), redaction: null },
+        history: [],
+        redacted: null,
+      },
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const user = userEvent.setup();
+    const [waiting] = await screen.findAllByRole('region', { name: /^Written account/ });
+    if (!waiting) throw new Error('no account');
+    expect(within(waiting).queryByLabelText('The note journalists read')).toBeNull();
+    await user.click(within(waiting).getByRole('button', { name: 'Write a note for journalists' }));
+    expect(await within(waiting).findByLabelText('The note journalists read')).toBeVisible();
+    expect(
+      within(waiting).getAllByRole('button', { name: 'Show the written account' }),
+    ).toHaveLength(1);
+    await user.click(within(waiting).getByRole('button', { name: 'Cancel' }));
+    expect(within(waiting).queryByLabelText('The note journalists read')).toBeNull();
+  });
+
+  it('folds the less-used actions under More, after the attachments', async () => {
+    serve({
+      [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
+      [`GET /api/moderation/reports/${THREAD}/written`]: WRITTEN,
+    });
+    wrap(<ItemPage threadId={THREAD} />, `/moderate/${THREAD}`);
+    const section = await screen.findByRole('region', { name: 'Attachments' });
+    const more = screen.getByText('More').closest('details');
+    if (!more) throw new Error('no More');
+    expect(more.open).toBe(false);
+    expect(section.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('"Leave it" sends no reason', async () => {
     const sent = serve({
       [`GET /api/moderation/reports/${THREAD}`]: HOLDING,
@@ -586,7 +623,7 @@ describe('attachments are reviewed apart from the report (decision 83)', () => {
     const user = userEvent.setup();
     const form = await screen.findByRole('form', { name: 'Decide RL-4HT8-0QNC' });
     await user.click(within(form).getByRole('radio', { name: 'Approve' }));
-    expect(within(form).getByText(/reviewed on their own and stay hidden/)).toBeVisible();
+    expect(within(form).getByText(/reviewed on its own and stays hidden/)).toBeVisible();
     await user.click(within(form).getByRole('button', { name: 'Record the decision' }));
     await waitFor(() => {
       expect(sent.filter(isAct)).toHaveLength(1);
