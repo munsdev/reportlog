@@ -32,7 +32,8 @@ const heldState = (...args: string[]) =>
 const baseURL = 'http://127.0.0.1:4173';
 const SCREENS = fileURLToPath(new URL('../../../docs/screens/moderation-83/', import.meta.url));
 const shot = async (page: Page, name: string) => {
-  if (!process.env.SCREENS) return;
+  // Desktop screens only: the phone project runs this spec too.
+  if (!process.env.SCREENS || test.info().project.name !== 'chromium') return;
   // A tall window rather than a full-page capture, which draws the sticky
   // staff bar across the middle of the page.
   const was = page.viewportSize();
