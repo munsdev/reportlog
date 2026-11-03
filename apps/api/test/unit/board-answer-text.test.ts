@@ -17,6 +17,11 @@ describe('answerText for a place', () => {
   it('names a FIPS county with its state', () => {
     expect(answerText('location', '13121', county)).toBe('Fulton County, Georgia');
   });
+  it('names a choice by its wording, and a yes or no in words', () => {
+    const how = { options: [{ code: 'election_day', label: 'In person on election day' }] };
+    expect(answerText('choice_one', 'election_day', how)).toBe('In person on election day');
+    expect(answerText('yes_no', true, {})).toBe('Yes');
+  });
   it('still reads a question with no code setting as written', () => {
     expect(answerText('location', 'CA', { scope: 'world' })).toBe('Canada');
     expect(answerText('location', 'US-CA')).toBe('California');

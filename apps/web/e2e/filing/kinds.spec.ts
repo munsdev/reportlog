@@ -195,10 +195,8 @@ test('every kind of question, filed card by card: each card passes the check, an
   await page.getByRole('radio', { name: 'No, keep it out of the public archive' }).click();
   await next();
 
-  // Something was written, so sharing it is asked, and the address is needed.
-  await on('Can vetted journalists read what you wrote?');
-  await page.getByRole('radio', { name: 'No, keep it for the moderators only' }).click();
-  await next();
+  // Something was written, so the address is needed (decision 84: sharing is
+  // not asked; writing it is the permission).
 
   await on('Your email address');
   const email = `kinds-${run()}@example.org`;

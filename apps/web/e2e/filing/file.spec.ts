@@ -107,10 +107,9 @@ test('a reporter files a report card by card, and confirms it from the email', a
   await page.getByRole('radio', { name: 'Yes, it may be published' }).click();
   await next();
 
-  // Something was written, so sharing it is asked, and the address is needed.
-  await expect(heading(page, 'Can vetted journalists read what you wrote?')).toBeVisible();
-  await page.getByRole('radio', { name: 'No, keep it for the moderators only' }).click();
-  await next();
+  // Something was written, so the address is needed. Sharing is not asked
+  // (decision 84): writing it is the permission.
+  await expect(heading(page, 'Can vetted journalists read what you wrote?')).toHaveCount(0);
 
   await expect(heading(page, 'Your email address')).toBeVisible();
   const email = `reporter-${run()}@example.org`;

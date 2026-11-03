@@ -14,8 +14,6 @@
  *                          happens next, and Start
  *   the logbook's own      one per question being asked
  *   the publication card   its wording and digest come from the server
- *   sharing                only when the reporter wrote something or gave a
- *                          link: may vetted journalists read it (G5)
  *   where to reach you     the address the confirmation link goes to. ONLY
  *                          where the logbook asks for one (owner decision
  *                          E1: a question somebody types into, files, or
@@ -80,7 +78,7 @@ import { useCardHistory } from './cardHistory.ts';
 import type { CardEntry } from './cardHistory.ts';
 import { FormColumn, FormNotice } from './FormNotice.tsx';
 import { Cover } from './Cover.tsx';
-import { ContactCard, ManageCard, ShareCard, shortened } from './WrittenCards.tsx';
+import { ContactCard, ManageCard, shortened } from './WrittenCards.tsx';
 import type { CtaProps } from './HelpNow.tsx';
 import { QuestionControl, isTiles, kindHelp } from './QuestionControl.tsx';
 import { rememberForTip } from './tipOffer.tsx';
@@ -124,8 +122,7 @@ export const STATEMENT =
 
 const looksLikeEmail = (s: string) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s.trim());
 
-type Step =
-  'intro' | 'publish' | 'share' | 'contact' | 'manage' | 'files' | 'review' | `q:${string}`;
+type Step = 'intro' | 'publish' | 'contact' | 'manage' | 'files' | 'review' | `q:${string}`;
 
 export function FilingForm({ slug, history }: { slug: string; history?: RouterHistory }) {
   const logbook = useQuery(publicLogbookQuery(slug));
@@ -263,7 +260,6 @@ function Cards({
   const [publish, setPublish] = useState('');
   const [email, setEmail] = useState('');
   // Whether journalists may read what was written: '' until the reporter chooses.
-  const [share, setShare] = useState<'' | 'yes' | 'no'>('');
   const [consent, setConsent] = useState(false);
   const [step, setStep] = useState<Step>('intro');
   const [backToReview, setBackToReview] = useState(false);
@@ -306,7 +302,10 @@ function Cards({
           answers: toSubmission(questions, raw),
           // Not answering is "no", and the card said so before anybody acted.
           // Under terms nobody was asked: filing is the agreement.
-          ...(wrote ? { journalist_sharing: share === 'yes' } : {}),
+          // DECISION 84: writing something IS the permission. The card that
+          // asked was dropped; the reporter can still withdraw it from My
+          // reports, and the review card says so before anything is sent.
+          ...(wrote ? { journalist_sharing: true } : {}),
           may_publish: terms ? true : publish === 'yes',
           may_publish_digest: terms ? terms.digest : (card?.digest ?? ''),
           ...(draft && uploader.kept.length ? { draft_token: draft } : {}),
@@ -334,7 +333,6 @@ function Cards({
       'intro',
       ...askedCards(questions, r).map((c): Step => `q:${c.id}`),
       ...(terms ? [] : (['publish'] as Step[])),
-      ...(w ? (['share'] as Step[]) : []),
       ...(asksEmail || w ? (['contact'] as Step[]) : emailOptional ? (['manage'] as Step[]) : []),
       ...(takesFiles ? (['files'] as Step[]) : []),
       'review',
@@ -361,7 +359,6 @@ function Cards({
     'intro',
     ...everyCardId(questions).map((id): Step => `q:${id}`),
     'publish',
-    'share',
     'contact',
     'manage',
     'files',
@@ -416,7 +413,6 @@ function Cards({
     intro: title,
     review: 'Check your answers',
     publish: card?.question ?? 'Should this report be published?',
-    share: 'Can vetted journalists read what you wrote?',
     manage: 'Want to be able to correct it later?',
     contact: wrote ? 'Your email address' : 'Where can we reach you?',
     files: fileQuestion?.label ?? 'Files',
@@ -466,7 +462,6 @@ function Cards({
       return cardError
         ? 'The wording of this question did not load. Press Try again.'
         : 'The wording of this question has not loaded yet. Wait a moment, then press Next again.';
-    if (step === 'share' && share === '') return 'Choose yes or no.';
     if (step === 'contact' && !looksLikeEmail(email))
       return 'Enter an email address we can reach you at.';
     if (step === 'manage' && email.trim() !== '' && !looksLikeEmail(email))
@@ -518,10 +513,6 @@ function Cards({
   const sendNow = () => {
     if (!consent) {
       setProblem('Tick the statement above to send the report.');
-      return;
-    }
-    if (wrote && share === '') {
-      setProblem('Choose whether journalists may read what you wrote. Press Change beside it.');
       return;
     }
     if (needsAddress && !looksLikeEmail(email)) {
@@ -633,18 +624,6 @@ function Cards({
             />
           ) : null}
 
-          {step === 'share' ? (
-            <ShareCard
-              eyebrow={title}
-              value={share}
-              onChange={(v) => {
-                setProblem(null);
-                setShare(v);
-              }}
-              problem={problem}
-            />
-          ) : null}
-
           {step === 'contact' ? (
             <ContactCard
               eyebrow={title}
@@ -743,22 +722,6 @@ function Cards({
                     }}
                   />
                 ) : null}
-                {wrote ? (
-                  <ReviewRow
-                    label="Vetted journalists"
-                    value={
-                      share === 'yes'
-                        ? 'May read it after a moderator checks it'
-                        : share === 'no'
-                          ? 'Moderators only'
-                          : null
-                    }
-                    required
-                    onChange={() => {
-                      go('share', true);
-                    }}
-                  />
-                ) : null}
                 {needsAddress ? (
                   <ReviewRow
                     label={wrote ? 'Email' : 'Your email address'}
@@ -784,8 +747,10 @@ function Cards({
                   <span className="mark">What is published</span>
                   <p>
                     After a moderator approves it, your answers are published on the board. What you
-                    wrote and any links are never published, and you can erase them at any time from
-                    My reports. Your answers stay in the sealed record.
+                    wrote and any links are never published. A moderator may pass a short note about
+                    them to vetted journalists, who never see your words or your email. You can
+                    erase them, or stop the note, at any time from My reports. Your answers stay in
+                    the sealed record.
                   </p>
                 </div>
               ) : null}

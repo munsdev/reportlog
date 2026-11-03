@@ -26,7 +26,8 @@
  * two figures can never disagree.
  */
 import { NOT_A_SAMPLE } from '@reportlog/contracts';
-import { placeCodeOf, placeLabel } from '@reportlog/fields';
+import { describeAnswer } from '@reportlog/fields';
+import type { Answers } from '@reportlog/fields';
 import type { Kysely } from 'kysely';
 import type { DB } from '../db/schema.gen.ts';
 import { filterableFields, launchedLogbooks } from '../logbooks/logbooks.ts';
@@ -36,17 +37,27 @@ import { countGuards } from './places.ts';
 export const STATS_NOTE =
   'Counts of reviewed first-hand accounts, not verified facts. Published means a moderator judged a report publishable, which is a weaker claim than true.';
 
-/** One answer as the words a count is listed under. */
-export function answerText(kind: string, v: unknown, settings?: Record<string, unknown>): string {
-  // READ THROUGH THE QUESTION'S OWN CODE FIRST. A state sealed by postal code
-  // is `NC`, and NC read as a bare code is New Caledonia: every state whose
-  // two letters are also a country's was named as that country on the board
-  // (CA Canada, IN India, KY Cayman Is.), and the rest showed bare letters.
-  if (kind === 'location' && typeof v === 'string')
-    return placeLabel(placeCodeOf(v, settings) ?? v);
-  if (typeof v === 'boolean') return v ? 'yes' : 'no';
-  if (typeof v === 'string' || typeof v === 'number') return String(v);
-  return JSON.stringify(v);
+/**
+ * One answer as the words a count is listed under: the option's wording, a
+ * place's name, "Yes", never a code. THE SAME FUNCTION the review card and
+ * the desk read answers with (describeAnswer), so the board cannot name an
+ * answer differently from the page the reporter filed it on. It once read
+ * place codes bare, which named a state sealed by postal code as the country
+ * with the same letters (NC New Caledonia, CA Canada), and showed every
+ * choice as its code ("election_day").
+ */
+export function answerText(
+  kind: string,
+  v: unknown,
+  settings?: Record<string, unknown>,
+  answers?: Record<string, unknown>,
+): string {
+  const text = describeAnswer(
+    { kind, ...(settings ? { settings } : {}) },
+    v,
+    answers as Partial<Answers> | undefined,
+  );
+  return text === '' ? JSON.stringify(v) : text;
 }
 
 export interface Stats {
@@ -95,7 +106,12 @@ export async function computeStats(db: Kysely<DB>): Promise<Stats> {
         // A multiple choice counts once under each choice ticked: "how many
         // reports mention this", which is why these can add up to more.
         for (const one of Array.isArray(v) ? (v as unknown[]) : [v]) {
-          const k = answerText(f.kind, one, f.settings);
+          const k = answerText(
+            f.kind,
+            one,
+            f.settings,
+            (r.answers as Record<string, unknown> | null) ?? undefined,
+          );
           counts[k] = (counts[k] ?? 0) + 1;
         }
       }

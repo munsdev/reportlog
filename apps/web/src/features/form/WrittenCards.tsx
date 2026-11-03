@@ -1,13 +1,11 @@
 /**
- * The cards the free-text kinds add around the questions: sharing (G5), the
- * address, and the optional "manage" card (D2, D8, D20). Their words are the
+ * The cards the free-text kinds add around the questions: the address, and the optional "manage" card (D2, D8, D20). Their words are the
  * approved mock-up's.
  *
  * ADDRESS, ALWAYS HELD (D20): an address given on any report holds the report
  * until the emailed link is followed, so every card that asks says so before
  * anybody types.
  */
-import { Choice, Choices } from '@/mockup/Choice.tsx';
 import { Field, Input } from '@/mockup/Field.tsx';
 import { useId } from 'react';
 import { CardFrame } from './CardFrame.tsx';
@@ -31,59 +29,6 @@ export function shortened(value: string | null, kind: string): string | null {
   if (value === null || kind !== 'private_text') return value;
   const one = value.replace(/\s+/g, ' ');
   return one.length > 60 ? `${one.slice(0, 57).trimEnd()}…` : one;
-}
-
-export function ShareCard({
-  eyebrow,
-  value,
-  onChange,
-  problem,
-}: {
-  eyebrow: string;
-  value: '' | 'yes' | 'no';
-  onChange: (v: 'yes' | 'no') => void;
-  problem: string | null;
-}) {
-  const id = useId();
-  // NOTHING IS SELECTED until the reporter chooses: both tiles are unchecked
-  // while `value` is '' and Next says to choose.
-  return (
-    <CardFrame
-      eyebrow={eyebrow}
-      step="Asked because you wrote something"
-      heading="Can vetted journalists read what you wrote?"
-      focusKey="share"
-      headingId={`${id}-q`}
-      help={
-        <p className="muted">
-          Only journalists the site owner has checked, after a moderator has read it. They never see
-          your email. You can change this later.
-        </p>
-      }
-      error={problem}
-    >
-      <Choices role="radiogroup" aria-labelledby={`${id}-q`}>
-        <Choice
-          name={`${id}-share`}
-          checked={value === 'yes'}
-          onChange={() => {
-            onChange('yes');
-          }}
-        >
-          Yes, after a moderator checks it
-        </Choice>
-        <Choice
-          name={`${id}-share`}
-          checked={value === 'no'}
-          onChange={() => {
-            onChange('no');
-          }}
-        >
-          No, keep it for the moderators only
-        </Choice>
-      </Choices>
-    </CardFrame>
-  );
 }
 
 function AddressFacts({ deleteOn, first }: { deleteOn: string | undefined; first: string }) {

@@ -66,9 +66,7 @@ test('a reporter attaches a photo, sends, and the confirmed report seals it', as
   await next();
   await expect(heading(page, 'Should this report be published?')).toBeVisible();
   await next();
-  await expect(heading(page, 'Can vetted journalists read what you wrote?')).toBeVisible();
-  await page.getByRole('radio', { name: 'No, keep it for the moderators only' }).click();
-  await next();
+  // Decision 84: writing something is the permission; no card asks it.
   const email = `files-${run()}@example.org`;
   await page.getByRole('textbox', { name: 'Email' }).fill(email);
   await next();
